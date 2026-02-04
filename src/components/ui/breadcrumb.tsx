@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Slot } from "radix-ui";
+import { Slot as SlotPrimitive } from "radix-ui";
+const Slot = SlotPrimitive.Root;
 import { ChevronRight, MoreHorizontal } from "lucide-react";
 
 import { cn } from "@/lib/utils";
