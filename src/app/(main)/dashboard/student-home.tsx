@@ -4,18 +4,18 @@ import {
   MessageCircle,
   ArrowRight,
   Megaphone,
-  Plus,
   FileText,
   Eye,
   TrendingUp,
   Bell,
   ChevronRight,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { getQuestions } from "@/actions/questions";
 import { getPosts } from "@/actions/posts";
 import { HomeSearchBar } from "@/components/shared/HomeSearchBar";
 import { SalesSummary } from "@/components/dashboard/SalesSummary";
+import { HeroGreeting } from "@/components/dashboard/HeroGreeting";
+import { FloatingAskButton } from "@/components/dashboard/FloatingAskButton";
 
 function timeAgo(dateStr: string) {
   const now = new Date();
@@ -108,12 +108,7 @@ export async function StudentHome({ userName }: StudentHomeProps) {
         {/* Subtle gradient background card */}
         <div className="absolute inset-0 -z-10 rounded-3xl bg-gradient-to-b from-primary/[0.03] via-transparent to-transparent" />
 
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
-          <span className="bg-gradient-to-r from-primary via-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            {userName}
-          </span>
-          님, 무엇이 궁금하세요?
-        </h1>
+        <HeroGreeting userName={userName} />
         <p className="text-muted-foreground text-sm mb-6">
           메타 광고 운영의 모든 궁금증을 해결해 보세요
         </p>
@@ -409,19 +404,8 @@ export async function StudentHome({ userName }: StudentHomeProps) {
         )}
       </section>
 
-      {/* ─── 7. Floating CTA Button ─── */}
-      <div className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-40">
-        <Button
-          asChild
-          size="lg"
-          className="rounded-full shadow-xl shadow-primary/25 h-12 px-5 gap-2 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/30 hover:scale-105 active:scale-95"
-        >
-          <Link href="/questions/new">
-            <Plus className="h-5 w-5" />
-            <span className="hidden sm:inline">질문하기</span>
-          </Link>
-        </Button>
-      </div>
+      {/* ─── 7. Floating CTA Button (Shimmer 효과) ─── */}
+      <FloatingAskButton />
     </div>
   );
 }

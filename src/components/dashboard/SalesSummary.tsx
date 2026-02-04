@@ -9,6 +9,8 @@ import {
   RefreshCw,
   Calendar,
 } from "lucide-react";
+import { NumberTicker } from "@/components/ui/number-ticker";
+import { BorderBeam } from "@/components/ui/border-beam";
 
 interface SalesData {
   success: boolean;
@@ -22,16 +24,20 @@ interface SalesData {
   generated_at: string;
 }
 
-function formatKoreanCurrency(value: number): string {
+function parseKoreanCurrency(value: number): {
+  num: number;
+  suffix: string;
+  decimals: number;
+} {
   const eok = value / 100_000_000;
   if (eok >= 1) {
-    return `${eok.toFixed(1)}억`;
+    return { num: parseFloat(eok.toFixed(1)), suffix: "억", decimals: 1 };
   }
   const man = value / 10_000;
   if (man >= 1) {
-    return `${man.toFixed(0)}만`;
+    return { num: Math.round(man), suffix: "만", decimals: 0 };
   }
-  return value.toLocaleString("ko-KR");
+  return { num: value, suffix: "", decimals: 0 };
 }
 
 function formatDate(dateStr: string): string {
@@ -86,31 +92,42 @@ export function SalesSummary() {
     return null; // silently hide if API fails
   }
 
+  const spendParsed = parseKoreanCurrency(data.total_spend);
+  const revenueParsed = parseKoreanCurrency(data.total_revenue);
+
   const stats = [
     {
       label: "총 광고비",
-      value: formatKoreanCurrency(data.total_spend),
+      tickerValue: spendParsed.num,
+      tickerDecimals: spendParsed.decimals,
+      suffix: spendParsed.suffix,
       icon: DollarSign,
       gradient: "from-rose-500 to-orange-500",
       bgGlow: "bg-rose-500/20",
     },
     {
       label: "총 매출",
-      value: formatKoreanCurrency(data.total_revenue),
+      tickerValue: revenueParsed.num,
+      tickerDecimals: revenueParsed.decimals,
+      suffix: revenueParsed.suffix,
       icon: TrendingUp,
       gradient: "from-emerald-500 to-teal-500",
       bgGlow: "bg-emerald-500/20",
     },
     {
       label: "ROAS",
-      value: `${data.roas.toFixed(2)}x`,
+      tickerValue: parseFloat(data.roas.toFixed(2)),
+      tickerDecimals: 2,
+      suffix: "x",
       icon: BarChart3,
       gradient: "from-blue-500 to-cyan-500",
       bgGlow: "bg-blue-500/20",
     },
     {
       label: "운영 계정",
-      value: `${data.account_count}개`,
+      tickerValue: data.account_count,
+      tickerDecimals: 0,
+      suffix: "개",
       icon: Users,
       gradient: "from-violet-500 to-purple-500",
       bgGlow: "bg-violet-500/20",
@@ -119,6 +136,15 @@ export function SalesSummary() {
 
   return (
     <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 p-6 sm:p-8 shadow-2xl border border-white/5">
+      {/* BorderBeam 효과 */}
+      <BorderBeam
+        size={200}
+        duration={8}
+        colorFrom="#3b82f6"
+        colorTo="#8b5cf6"
+        borderWidth={2}
+      />
+
       {/* Background decorative elements */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
       <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
@@ -173,7 +199,16 @@ export function SalesSummary() {
 
               {/* Value */}
               <p className="text-white text-xl sm:text-2xl font-bold tracking-tight">
-                {stat.value}
+                <NumberTicker
+                  value={stat.tickerValue}
+                  decimalPlaces={stat.tickerDecimals}
+                  className="text-white"
+                />
+                {stat.suffix && (
+                  <span className="text-white/80 text-lg sm:text-xl ml-0.5">
+                    {stat.suffix}
+                  </span>
+                )}
               </p>
 
               {/* Subtle glow */}
