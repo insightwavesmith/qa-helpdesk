@@ -35,7 +35,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // 인증되지 않은 사용자 → 로그인 페이지로 리다이렉트
-  const publicPaths = ["/login", "/signup", "/"];
+  const publicPaths = ["/login", "/signup", "/", "/pending"];
   const isPublicPath = publicPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );

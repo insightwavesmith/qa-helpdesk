@@ -66,9 +66,15 @@ export default function SignupPage() {
     try {
       const supabase = createClient();
 
+      // signUp에 metadata 포함 → trigger가 profiles 자동 생성
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+          },
+        },
       });
 
       if (authError) {
@@ -98,21 +104,21 @@ export default function SignupPage() {
         }
       }
 
-      const { error: profileError } = await supabase.from("profiles").insert({
-        id: authData.user.id,
-        email: formData.email,
-        name: formData.name,
-        phone: formData.phone,
-        shop_url: formData.shopUrl,
-        shop_name: formData.shopName,
-        business_number: formData.businessNumber,
-        cohort: formData.cohort || null,
-        business_cert_url: businessDocUrl,
-        role: "pending" as const,
-      });
+      // trigger가 기본 profile 생성 → 추가 정보는 UPDATE로 (RLS profiles_update_own 통과)
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          phone: formData.phone,
+          shop_url: formData.shopUrl,
+          shop_name: formData.shopName,
+          business_number: formData.businessNumber,
+          cohort: formData.cohort || null,
+          business_cert_url: businessDocUrl,
+        })
+        .eq("id", authData.user.id);
 
       if (profileError) {
-        setError("프로필 생성 중 오류가 발생했습니다.");
+        setError("프로필 업데이트 중 오류가 발생했습니다.");
         return;
       }
 
