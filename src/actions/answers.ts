@@ -61,7 +61,8 @@ export async function createAnswer(formData: {
     return { data: null, error: "인증되지 않은 사용자입니다." };
   }
 
-  const { data, error } = await supabase
+  const svc = createServiceClient();
+  const { data, error } = await svc
     .from("answers")
     .insert({
       question_id: formData.questionId,
@@ -79,7 +80,7 @@ export async function createAnswer(formData: {
   }
 
   // Update question status to answered
-  await supabase
+  await svc
     .from("questions")
     .update({ status: "answered" })
     .eq("id", formData.questionId);

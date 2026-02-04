@@ -356,9 +356,9 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
               className="rounded-full gap-2"
             >
               <Send className="h-4 w-4" />
-              {uploading
+              {uploading && images.length > 0
                 ? "이미지 업로드 중..."
-                : form.formState.isSubmitting
+                : form.formState.isSubmitting || uploading
                   ? "등록 중..."
                   : "질문 등록"}
             </Button>

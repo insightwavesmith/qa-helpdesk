@@ -112,7 +112,8 @@ export async function createQuestion(formData: {
     return { data: null, error: "인증되지 않은 사용자입니다." };
   }
 
-  const { data, error } = await supabase
+  const svc = createServiceClient();
+  const { data, error } = await svc
     .from("questions")
     .insert({
       title: formData.title,
