@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Toaster } from "@/components/ui/sonner";
+import ClientToaster from "@/components/layout/client-toaster";
 import ThemeProvider from "@/components/layout/theme-provider";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
@@ -28,7 +28,6 @@ export default function RootLayout({
       <head>
         <link
           rel="stylesheet"
-          as="style"
           crossOrigin="anonymous"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
         />
@@ -53,7 +52,7 @@ export default function RootLayout({
             disableTransitionOnChange
             enableColorScheme
           >
-            <Toaster />
+            <ClientToaster />
             {children}
           </ThemeProvider>
         </NuqsAdapter>
