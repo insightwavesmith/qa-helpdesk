@@ -1,13 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 export async function getAnswersByQuestionId(
   questionId: string,
   { includeUnapproved = false }: { includeUnapproved?: boolean } = {}
 ) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   let query = supabase
     .from("answers")
@@ -33,7 +33,7 @@ export async function getAnswersByQuestionId(
 }
 
 export async function getPendingAnswersCount() {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   const { count, error } = await supabase
     .from("answers")
@@ -94,7 +94,7 @@ export async function getPendingAnswers({
   page = 1,
   pageSize = 20,
 }: { page?: number; pageSize?: number } = {}) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -117,7 +117,7 @@ export async function getPendingAnswers({
 }
 
 export async function approveAnswer(answerId: string) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   const { error } = await supabase
     .from("answers")
@@ -137,7 +137,7 @@ export async function approveAnswer(answerId: string) {
 }
 
 export async function deleteAnswer(answerId: string) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   const { error } = await supabase
     .from("answers")
@@ -154,7 +154,7 @@ export async function deleteAnswer(answerId: string) {
 }
 
 export async function updateAnswer(answerId: string, content: string) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   const { error } = await supabase
     .from("answers")

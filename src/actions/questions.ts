@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 export async function getQuestions({
   page = 1,
@@ -16,7 +16,7 @@ export async function getQuestions({
   search?: string;
   status?: string;
 } = {}) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -73,7 +73,7 @@ export async function getQuestions({
 }
 
 export async function getQuestionById(id: string) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   const { data, error } = await supabase
     .from("questions")
@@ -137,7 +137,7 @@ export async function createQuestion(formData: {
 }
 
 export async function getCategories() {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   const { data, error } = await supabase
     .from("qa_categories")

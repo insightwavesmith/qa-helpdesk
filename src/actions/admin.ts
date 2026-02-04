@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
@@ -11,7 +11,7 @@ export async function getMembers({
   pageSize = 20,
   role,
 }: { page?: number; pageSize?: number; role?: string } = {}) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -36,7 +36,7 @@ export async function getMembers({
 }
 
 export async function approveMember(userId: string) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   const { error } = await supabase
     .from("profiles")
@@ -53,7 +53,7 @@ export async function approveMember(userId: string) {
 }
 
 export async function rejectMember(userId: string, reason?: string) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   const update: Record<string, unknown> = { role: "rejected" };
   if (reason) update.reject_reason = reason;
@@ -73,7 +73,7 @@ export async function rejectMember(userId: string, reason?: string) {
 }
 
 export async function getDashboardStats() {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   const questionsResult = await supabase
     .from("questions")
@@ -116,7 +116,7 @@ export async function getDashboardStats() {
 }
 
 export async function getWeeklyQuestionStats() {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   // Last 4 weeks of daily question counts
   const fourWeeksAgo = new Date();
@@ -157,7 +157,7 @@ export async function getWeeklyQuestionStats() {
 }
 
 export async function getRecentQuestions(limit = 5) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   const { data, error } = await supabase
     .from("questions")
@@ -176,7 +176,7 @@ export async function getRecentQuestions(limit = 5) {
 }
 
 export async function getRecentPosts(limit = 5) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   const { data, error } = await supabase
     .from("posts")

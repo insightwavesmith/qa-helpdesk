@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 export async function getPosts({
   page = 1,
@@ -14,7 +14,7 @@ export async function getPosts({
   category?: string;
   search?: string;
 } = {}) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -48,7 +48,7 @@ export async function getPosts({
 }
 
 export async function getPostById(id: string) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   const { data, error } = await supabase
     .from("posts")
@@ -77,7 +77,7 @@ export async function createPost(formData: {
   content: string;
   category: "info" | "notice" | "webinar";
 }) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -109,7 +109,7 @@ export async function createPost(formData: {
 }
 
 export async function getCommentsByPostId(postId: string) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   const { data, error } = await supabase
     .from("comments")
@@ -132,7 +132,7 @@ export async function createComment(formData: {
   questionId?: string;
   content: string;
 }) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

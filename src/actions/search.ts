@@ -1,13 +1,13 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 export async function searchQuestions(query: string, limit = 5) {
   if (!query || query.trim().length < 1) {
     return { data: [], error: null };
   }
 
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   const { data, error } = await supabase
     .from("questions")
@@ -27,7 +27,7 @@ export async function searchQuestions(query: string, limit = 5) {
 }
 
 export async function getPopularQuestions(limit = 5) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   const { data, error } = await supabase
     .from("questions")
