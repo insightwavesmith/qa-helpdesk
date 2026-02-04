@@ -36,13 +36,13 @@ export default async function PostsPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">정보 공유</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm mt-1">
             유용한 정보를 공유하고 의견을 나눠보세요.
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="rounded-full">
           <Link href="/posts/new">
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-1.5 h-4 w-4" />
             글쓰기
           </Link>
         </Button>

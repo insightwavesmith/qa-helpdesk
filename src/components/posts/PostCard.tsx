@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Eye, ThumbsUp, Pin } from "lucide-react";
 
@@ -15,6 +14,7 @@ interface PostCardProps {
     created_at: string;
     author?: { id: string; name: string; shop_name?: string } | null;
   };
+  layout?: "list" | "grid";
 }
 
 const categoryLabels: Record<string, string> = {
@@ -23,36 +23,95 @@ const categoryLabels: Record<string, string> = {
   webinar: "웨비나",
 };
 
-function formatDate(dateStr: string) {
+function timeAgo(dateStr: string) {
+  const now = new Date();
   const d = new Date(dateStr);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+  const diffMs = now.getTime() - d.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "방금";
+  if (diffMin < 60) return `${diffMin}분 전`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}시간 전`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 7) return `${diffDay}일 전`;
+  return d.toLocaleDateString("ko-KR");
 }
 
-export function PostCard({ post }: PostCardProps) {
-  return (
-    <Link href={`/posts/${post.id}`}>
-      <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2 mb-1">
+export function PostCard({ post, layout = "list" }: PostCardProps) {
+  if (layout === "grid") {
+    return (
+      <Link href={`/posts/${post.id}`} className="group">
+        <article className="rounded-xl border p-4 h-full transition-all hover:shadow-md hover:border-primary/20">
+          <div className="flex items-center gap-2 mb-2">
             {post.is_pinned && (
-              <Badge variant="destructive" className="gap-1">
-                <Pin className="h-3 w-3" />
+              <Badge
+                variant="destructive"
+                className="gap-1 text-[10px] px-1.5 py-0 h-5 rounded-full"
+              >
+                <Pin className="h-2.5 w-2.5" />
                 고정
               </Badge>
             )}
-            <Badge variant="outline">
+            <Badge
+              variant="outline"
+              className="text-[11px] rounded-full"
+            >
               {categoryLabels[post.category] || post.category}
             </Badge>
           </div>
-          <CardTitle className="text-lg line-clamp-1">{post.title}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+          <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors leading-snug">
+            {post.title}
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
             {post.content}
           </p>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span>{post.author?.name || "모찌"}</span>
-            <span>{formatDate(post.created_at)}</span>
+          <div className="flex items-center gap-2 mt-3 text-[11px] text-muted-foreground">
+            <span>{post.author?.name || "관리자"}</span>
+            <span>·</span>
+            <span>{timeAgo(post.created_at)}</span>
+            <span className="flex items-center gap-0.5 ml-auto">
+              <Eye className="h-3 w-3" />
+              {post.view_count}
+            </span>
+          </div>
+        </article>
+      </Link>
+    );
+  }
+
+  // List layout (Substack-style)
+  return (
+    <Link href={`/posts/${post.id}`} className="block group">
+      <article className="py-5 border-b last:border-b-0 transition-colors group-hover:bg-muted/30 -mx-2 px-2 rounded-lg">
+        <div className="flex items-center gap-2 mb-1.5">
+          {post.is_pinned && (
+            <Badge
+              variant="destructive"
+              className="gap-1 text-[10px] px-1.5 py-0 h-5 rounded-full"
+            >
+              <Pin className="h-2.5 w-2.5" />
+              고정
+            </Badge>
+          )}
+          <span className="text-xs font-medium text-primary">
+            {categoryLabels[post.category] || post.category}
+          </span>
+        </div>
+
+        <h3 className="font-semibold text-[16px] leading-snug group-hover:text-primary transition-colors line-clamp-2">
+          {post.title}
+        </h3>
+
+        <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
+          {post.content}
+        </p>
+
+        <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground/70">
+            {post.author?.name || "관리자"}
+          </span>
+          <span>{timeAgo(post.created_at)}</span>
+          <div className="flex items-center gap-3 ml-auto">
             <span className="flex items-center gap-1">
               <Eye className="h-3 w-3" />
               {post.view_count}
@@ -62,8 +121,8 @@ export function PostCard({ post }: PostCardProps) {
               {post.like_count}
             </span>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </article>
     </Link>
   );
 }

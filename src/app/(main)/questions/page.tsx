@@ -9,12 +9,18 @@ import { QuestionsListClient } from "./questions-list-client";
 export default async function QuestionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; category?: string; search?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    category?: string;
+    search?: string;
+    status?: string;
+  }>;
 }) {
   const params = await searchParams;
   const page = parseInt(params.page || "1", 10);
   const categorySlug = params.category || "all";
   const search = params.search || "";
+  const status = params.status || "all";
 
   const categories = await getCategories();
 
@@ -29,6 +35,7 @@ export default async function QuestionsPage({
     pageSize: 10,
     categoryId,
     search: search || undefined,
+    status: status !== "all" ? status : undefined,
   });
 
   const totalPages = Math.ceil((count || 0) / 10);
@@ -43,13 +50,13 @@ export default async function QuestionsPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Q&A</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm mt-1">
             질문을 올리고 답변을 받아보세요.
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="rounded-full">
           <Link href="/questions/new">
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-1.5 h-4 w-4" />
             질문하기
           </Link>
         </Button>
@@ -70,6 +77,7 @@ export default async function QuestionsPage({
           categories={categoryTabs}
           currentCategory={categorySlug}
           currentSearch={search}
+          currentStatus={status}
           currentPage={page}
           totalPages={totalPages}
           totalCount={count || 0}

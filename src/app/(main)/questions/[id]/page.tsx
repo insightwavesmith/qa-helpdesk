@@ -1,26 +1,37 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Eye, ThumbsUp } from "lucide-react";
+import { ArrowLeft, Eye, ThumbsUp, MessageCircle } from "lucide-react";
 import { getQuestionById } from "@/actions/questions";
 import { getAnswersByQuestionId } from "@/actions/answers";
 import { AnswerCard } from "@/components/questions/AnswerCard";
 import { AnswerForm } from "./answer-form";
 
-const statusLabels: Record<
+const statusConfig: Record<
   string,
-  { label: string; variant: "default" | "secondary" | "outline" }
+  { label: string; className: string }
 > = {
-  open: { label: "답변 대기", variant: "secondary" },
-  answered: { label: "답변 완료", variant: "default" },
-  closed: { label: "마감", variant: "outline" },
+  open: {
+    label: "답변 대기",
+    className:
+      "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400",
+  },
+  answered: {
+    label: "답변 완료",
+    className:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
+  },
+  closed: {
+    label: "마감",
+    className:
+      "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+  },
 };
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
 export default async function QuestionDetailPage({
@@ -36,60 +47,91 @@ export default async function QuestionDetailPage({
   }
 
   const { data: answers } = await getAnswersByQuestionId(id);
-
-  const status = statusLabels[question.status] || statusLabels.open;
+  const st = statusConfig[question.status] || statusConfig.open;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      {/* Back button */}
-      <Button variant="ghost" size="sm" asChild>
+    <div className="space-y-8">
+      {/* Back */}
+      <Button variant="ghost" size="sm" asChild className="-ml-2">
         <Link href="/questions">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          목록으로
+          <ArrowLeft className="mr-1.5 h-4 w-4" />
+          Q&A 목록
         </Link>
       </Button>
 
-      {/* Question */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2 mb-2">
-            {question.category && (
-              <Badge variant="outline">{(question.category as { name: string }).name}</Badge>
-            )}
-            <Badge variant={status.variant}>{status.label}</Badge>
-          </div>
-          <CardTitle className="text-2xl">{question.title}</CardTitle>
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <span>{(question.author as { name: string } | null)?.name || "익명"}</span>
-            <span>{formatDate(question.created_at)}</span>
-            <span className="flex items-center gap-1">
-              <Eye className="h-3 w-3" />
-              {question.view_count}
+      {/* Question Article — Substack reading style */}
+      <article>
+        {/* Meta badges */}
+        <div className="flex items-center gap-2 mb-3">
+          {question.category && (
+            <span className="text-sm font-medium text-primary">
+              {(question.category as { name: string }).name}
             </span>
-            <span className="flex items-center gap-1">
-              <ThumbsUp className="h-3 w-3" />
-              {question.like_count}
-            </span>
+          )}
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full font-medium ${st.className}`}
+          >
+            {st.label}
+          </span>
+        </div>
+
+        {/* Title */}
+        <h1 className="text-2xl sm:text-3xl font-bold leading-tight tracking-tight">
+          {question.title}
+        </h1>
+
+        {/* Author & date row */}
+        <div className="flex items-center gap-3 mt-4 pb-6 border-b">
+          <div className="flex items-center justify-center h-9 w-9 rounded-full bg-primary/10 text-primary font-semibold text-sm">
+            {((question.author as { name: string } | null)?.name || "익")[0]}
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-            {question.content}
+          <div>
+            <p className="text-sm font-medium">
+              {(question.author as { name: string } | null)?.name || "익명"}
+            </p>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>{formatDate(question.created_at)}</span>
+              <span>·</span>
+              <span className="flex items-center gap-0.5">
+                <Eye className="h-3 w-3" />
+                {question.view_count}
+              </span>
+              <span className="flex items-center gap-0.5">
+                <ThumbsUp className="h-3 w-3" />
+                {question.like_count}
+              </span>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Content body — generous line-height, readable */}
+        <div className="mt-6 text-base leading-[1.8] whitespace-pre-wrap text-foreground/90">
+          {question.content}
+        </div>
+      </article>
 
       {/* Answers */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold">답변 {answers.length}개</h2>
+      <section className="pt-2">
+        <div className="flex items-center gap-2 mb-4">
+          <MessageCircle className="h-5 w-5" />
+          <h2 className="text-lg font-bold">답변 {answers.length}개</h2>
+        </div>
+
         {answers.length === 0 ? (
-          <p className="text-sm text-muted-foreground">아직 답변이 없습니다.</p>
+          <div className="text-center py-8 text-muted-foreground border border-dashed rounded-xl">
+            <p className="text-sm">아직 답변이 없습니다.</p>
+            <p className="text-xs mt-1 opacity-70">
+              첫 번째 답변을 남겨보세요!
+            </p>
+          </div>
         ) : (
-          answers.map((answer) => (
-            <AnswerCard key={answer.id} answer={answer} />
-          ))
+          <div className="space-y-4">
+            {answers.map((answer) => (
+              <AnswerCard key={answer.id} answer={answer} />
+            ))}
+          </div>
         )}
-      </div>
+      </section>
 
       {/* Answer Form */}
       <AnswerForm questionId={id} />

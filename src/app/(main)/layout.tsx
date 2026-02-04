@@ -5,6 +5,7 @@ import AppSidebar from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/Header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { StudentLayoutClient } from "@/components/layout/student-layout-client";
 
 export default async function MainLayout({
   children,
@@ -34,26 +35,40 @@ export default async function MainLayout({
     redirect("/pending");
   }
 
-  // Sidebar state from cookie
-  const cookieStore = await cookies();
-  const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
+  const isAdmin = profile?.role === "admin";
 
-  return (
-    <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar
-        userRole={profile?.role}
-        userName={profile?.name || "사용자"}
-        userEmail={profile?.email || user.email || ""}
-      />
-      <SidebarInset>
-        <Header
-          userName={profile?.name || "사용자"}
+  // Admin: existing sidebar layout
+  if (isAdmin) {
+    const cookieStore = await cookies();
+    const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
+
+    return (
+      <SidebarProvider defaultOpen={defaultOpen}>
+        <AppSidebar
           userRole={profile?.role}
+          userName={profile?.name || "사용자"}
+          userEmail={profile?.email || user.email || ""}
         />
-        <ScrollArea className="h-[calc(100dvh-4rem)]">
-          <main className="flex-1 p-4 md:px-6 md:py-6">{children}</main>
-        </ScrollArea>
-      </SidebarInset>
-    </SidebarProvider>
+        <SidebarInset>
+          <Header
+            userName={profile?.name || "사용자"}
+            userRole={profile?.role}
+          />
+          <ScrollArea className="h-[calc(100dvh-4rem)]">
+            <main className="flex-1 p-4 md:px-6 md:py-6">{children}</main>
+          </ScrollArea>
+        </SidebarInset>
+      </SidebarProvider>
+    );
+  }
+
+  // Student: Substack-style layout
+  return (
+    <StudentLayoutClient
+      userName={profile?.name || "사용자"}
+      userEmail={profile?.email || user.email || ""}
+    >
+      {children}
+    </StudentLayoutClient>
   );
 }

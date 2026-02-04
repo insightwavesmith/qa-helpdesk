@@ -59,6 +59,14 @@ export function PostsListClient({
 
   return (
     <div className="space-y-4">
+      {/* Search */}
+      <SearchBar
+        placeholder="게시글 제목 또는 내용으로 검색"
+        defaultValue={currentSearch}
+        onSearch={(query) => updateParams({ search: query })}
+      />
+
+      {/* Category filter */}
       <CategoryFilter
         categories={categories}
         currentValue={currentCategory}
@@ -67,30 +75,33 @@ export function PostsListClient({
         }
       />
 
-      <SearchBar
-        placeholder="게시글 제목 또는 내용으로 검색"
-        defaultValue={currentSearch}
-        onSearch={(query) => updateParams({ search: query })}
-      />
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">
+          {totalCount}개의 게시글
+        </span>
+      </div>
 
-      <p className="text-sm text-muted-foreground">
-        총 {totalCount}개의 게시글
-      </p>
-
+      {/* Post List */}
       {posts.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          {currentSearch
-            ? "검색 결과가 없습니다."
-            : "아직 게시글이 없습니다. 첫 번째 글을 작성해보세요!"}
+        <div className="text-center py-16 text-muted-foreground">
+          <p className="text-base">
+            {currentSearch
+              ? "검색 결과가 없습니다."
+              : "아직 게시글이 없습니다."}
+          </p>
+          <p className="text-sm mt-1 opacity-70">
+            {!currentSearch && "첫 번째 글을 작성해보세요!"}
+          </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div>
           {posts.map((post) => (
             <PostCard key={post.id} post={post} />
           ))}
         </div>
       )}
 
+      {/* Pagination */}
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}

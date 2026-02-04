@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Send } from "lucide-react";
 import { createAnswer } from "@/actions/answers";
 import { toast } from "sonner";
 
@@ -46,26 +46,28 @@ export function AnswerForm({ questionId }: AnswerFormProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">답변 작성</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Textarea
-            placeholder="답변 내용을 입력하세요..."
-            rows={6}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            required
-          />
-          <div className="flex justify-end">
-            <Button type="submit" disabled={loading}>
-              {loading ? "등록 중..." : "답변 등록"}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+    <div className="rounded-xl border p-5">
+      <h3 className="text-base font-semibold mb-3">답변 작성</h3>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <Textarea
+          placeholder="답변 내용을 입력하세요..."
+          rows={5}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          className="resize-none text-[15px] leading-relaxed"
+          required
+        />
+        <div className="flex justify-end">
+          <Button
+            type="submit"
+            disabled={loading}
+            className="rounded-full gap-2"
+          >
+            <Send className="h-4 w-4" />
+            {loading ? "등록 중..." : "답변 등록"}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 }

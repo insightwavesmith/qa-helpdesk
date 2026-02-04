@@ -43,7 +43,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="bg-background overflow-hidden overscroll-none font-sans antialiased">
+      <body className="bg-background overscroll-none font-sans antialiased">
         <NuqsAdapter>
           <ThemeProvider
             attribute="class"

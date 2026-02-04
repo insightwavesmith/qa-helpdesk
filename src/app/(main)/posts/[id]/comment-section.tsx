@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { User } from "lucide-react";
+import { MessageCircle, Send } from "lucide-react";
 import { createComment } from "@/actions/posts";
 import { toast } from "sonner";
 
@@ -21,12 +20,24 @@ interface CommentSectionProps {
   initialComments: Comment[];
 }
 
-function formatDate(dateStr: string) {
+function timeAgo(dateStr: string) {
+  const now = new Date();
   const d = new Date(dateStr);
-  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const diffMs = now.getTime() - d.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "방금";
+  if (diffMin < 60) return `${diffMin}분 전`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}시간 전`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 7) return `${diffDay}일 전`;
+  return d.toLocaleDateString("ko-KR");
 }
 
-export function CommentSection({ postId, initialComments }: CommentSectionProps) {
+export function CommentSection({
+  postId,
+  initialComments,
+}: CommentSectionProps) {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -60,56 +71,66 @@ export function CommentSection({ postId, initialComments }: CommentSectionProps)
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">댓글 {initialComments.length}개</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Comment List */}
-        {initialComments.length === 0 ? (
-          <p className="text-sm text-muted-foreground">아직 댓글이 없습니다.</p>
-        ) : (
-          <div className="space-y-3">
-            {initialComments.map((comment) => (
-              <div
-                key={comment.id}
-                className="flex gap-3 p-3 rounded-lg bg-muted/30"
-              >
-                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-muted shrink-0">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium">
-                      {comment.author?.name || "익명"}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDate(comment.created_at)}
-                    </span>
-                  </div>
-                  <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+    <section>
+      <div className="flex items-center gap-2 mb-4">
+        <MessageCircle className="h-5 w-5" />
+        <h2 className="text-lg font-bold">
+          댓글 {initialComments.length}개
+        </h2>
+      </div>
 
-        {/* Comment Form */}
-        <form onSubmit={handleSubmit} className="space-y-3 pt-3 border-t">
+      {/* Comment List */}
+      {initialComments.length > 0 && (
+        <div className="space-y-1 mb-6">
+          {initialComments.map((comment) => (
+            <div
+              key={comment.id}
+              className="py-4 border-b last:border-b-0"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center justify-center h-7 w-7 rounded-full bg-muted text-xs font-medium">
+                  {(comment.author?.name || "익")[0]}
+                </div>
+                <span className="text-sm font-medium">
+                  {comment.author?.name || "익명"}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {timeAgo(comment.created_at)}
+                </span>
+              </div>
+              <p className="text-[15px] leading-relaxed whitespace-pre-wrap pl-9">
+                {comment.content}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Comment Form */}
+      <div className="rounded-xl border p-5">
+        <h3 className="text-base font-semibold mb-3">댓글 작성</h3>
+        <form onSubmit={handleSubmit} className="space-y-3">
           <Textarea
             placeholder="댓글을 입력하세요..."
             rows={3}
             value={content}
             onChange={(e) => setContent(e.target.value)}
+            className="resize-none text-[15px] leading-relaxed"
             required
           />
           <div className="flex justify-end">
-            <Button type="submit" size="sm" disabled={loading}>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={loading}
+              className="rounded-full gap-2"
+            >
+              <Send className="h-3.5 w-3.5" />
               {loading ? "등록 중..." : "댓글 등록"}
             </Button>
           </div>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

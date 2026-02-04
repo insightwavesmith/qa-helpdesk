@@ -1,7 +1,5 @@
 "use client";
 
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
 interface CategoryFilterProps {
   categories: { value: string; label: string }[];
   currentValue: string;
@@ -13,16 +11,26 @@ export function CategoryFilter({
   currentValue,
   onChange,
 }: CategoryFilterProps) {
+  const allItems = [{ value: "all", label: "전체" }, ...categories];
+
   return (
-    <Tabs value={currentValue} onValueChange={onChange}>
-      <TabsList className="flex-wrap h-auto gap-1">
-        <TabsTrigger value="all">전체</TabsTrigger>
-        {categories.map((cat) => (
-          <TabsTrigger key={cat.value} value={cat.value}>
+    <div className="flex gap-2 overflow-x-auto pb-1 -mb-1 scrollbar-hide">
+      {allItems.map((cat) => {
+        const isActive = currentValue === cat.value || (!currentValue && cat.value === "all");
+        return (
+          <button
+            key={cat.value}
+            onClick={() => onChange(cat.value)}
+            className={`shrink-0 text-sm px-3.5 py-1.5 rounded-full border transition-colors ${
+              isActive
+                ? "bg-primary text-primary-foreground border-primary font-medium"
+                : "bg-background text-muted-foreground border-border hover:bg-accent hover:text-accent-foreground"
+            }`}
+          >
             {cat.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
+          </button>
+        );
+      })}
+    </div>
   );
 }

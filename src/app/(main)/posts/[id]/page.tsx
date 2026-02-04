@@ -1,9 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Eye, ThumbsUp } from "lucide-react";
+import { ArrowLeft, Eye, ThumbsUp, Pin } from "lucide-react";
 import { getPostById, getCommentsByPostId } from "@/actions/posts";
 import { CommentSection } from "./comment-section";
 
@@ -15,7 +14,7 @@ const categoryLabels: Record<string, string> = {
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
 export default async function PostDetailPage({
@@ -33,43 +32,67 @@ export default async function PostDetailPage({
   const { data: comments } = await getCommentsByPostId(id);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <Button variant="ghost" size="sm" asChild>
+    <div className="space-y-8">
+      {/* Back */}
+      <Button variant="ghost" size="sm" asChild className="-ml-2">
         <Link href="/posts">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          목록으로
+          <ArrowLeft className="mr-1.5 h-4 w-4" />
+          정보공유 목록
         </Link>
       </Button>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2 mb-2">
-            <Badge variant="outline">
-              {categoryLabels[post.category] || post.category}
+      {/* Article — Substack reading style */}
+      <article>
+        {/* Category + pin */}
+        <div className="flex items-center gap-2 mb-3">
+          {post.is_pinned && (
+            <Badge
+              variant="destructive"
+              className="gap-1 text-[10px] px-1.5 py-0 h-5 rounded-full"
+            >
+              <Pin className="h-2.5 w-2.5" />
+              고정
             </Badge>
+          )}
+          <span className="text-sm font-medium text-primary">
+            {categoryLabels[post.category] || post.category}
+          </span>
+        </div>
+
+        {/* Title */}
+        <h1 className="text-2xl sm:text-3xl font-bold leading-tight tracking-tight">
+          {post.title}
+        </h1>
+
+        {/* Author & date */}
+        <div className="flex items-center gap-3 mt-4 pb-6 border-b">
+          <div className="flex items-center justify-center h-9 w-9 rounded-full bg-primary/10 text-primary font-semibold text-sm">
+            {((post.author as { name: string } | null)?.name || "관")[0]}
           </div>
-          <CardTitle className="text-2xl">{post.title}</CardTitle>
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <span>
-              {(post.author as { name: string } | null)?.name || "모찌"}
-            </span>
-            <span>{formatDate(post.created_at)}</span>
-            <span className="flex items-center gap-1">
-              <Eye className="h-3 w-3" />
-              {post.view_count}
-            </span>
-            <span className="flex items-center gap-1">
-              <ThumbsUp className="h-3 w-3" />
-              {post.like_count}
-            </span>
+          <div>
+            <p className="text-sm font-medium">
+              {(post.author as { name: string } | null)?.name || "관리자"}
+            </p>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>{formatDate(post.created_at)}</span>
+              <span>·</span>
+              <span className="flex items-center gap-0.5">
+                <Eye className="h-3 w-3" />
+                {post.view_count}
+              </span>
+              <span className="flex items-center gap-0.5">
+                <ThumbsUp className="h-3 w-3" />
+                {post.like_count}
+              </span>
+            </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-            {post.content}
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Content body */}
+        <div className="mt-6 text-base leading-[1.8] whitespace-pre-wrap text-foreground/90">
+          {post.content}
+        </div>
+      </article>
 
       {/* Comments */}
       <CommentSection postId={id} initialComments={comments} />

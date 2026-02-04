@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { MessageCircle, Eye, ThumbsUp } from "lucide-react";
 
 interface QuestionCardProps {
@@ -18,44 +16,78 @@ interface QuestionCardProps {
   };
 }
 
-const statusLabels: Record<
+const statusConfig: Record<
   string,
-  { label: string; variant: "default" | "secondary" | "outline" }
+  { label: string; className: string }
 > = {
-  open: { label: "답변 대기", variant: "secondary" },
-  answered: { label: "답변 완료", variant: "default" },
-  closed: { label: "마감", variant: "outline" },
+  open: {
+    label: "미답변",
+    className:
+      "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400",
+  },
+  answered: {
+    label: "답변완료",
+    className:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
+  },
+  closed: {
+    label: "마감",
+    className:
+      "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+  },
 };
 
-function formatDate(dateStr: string) {
+function timeAgo(dateStr: string) {
+  const now = new Date();
   const d = new Date(dateStr);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+  const diffMs = now.getTime() - d.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "방금";
+  if (diffMin < 60) return `${diffMin}분 전`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}시간 전`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 7) return `${diffDay}일 전`;
+  return d.toLocaleDateString("ko-KR");
 }
 
 export function QuestionCard({ question }: QuestionCardProps) {
-  const status = statusLabels[question.status] || statusLabels.open;
+  const st = statusConfig[question.status] || statusConfig.open;
 
   return (
-    <Link href={`/questions/${question.id}`}>
-      <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2 mb-1">
-            {question.category && (
-              <Badge variant="outline">{question.category.name}</Badge>
-            )}
-            <Badge variant={status.variant}>{status.label}</Badge>
-          </div>
-          <CardTitle className="text-lg line-clamp-1">
-            {question.title}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-            {question.content}
-          </p>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span>{question.author?.name || "익명"}</span>
-            <span>{formatDate(question.created_at)}</span>
+    <Link href={`/questions/${question.id}`} className="block group">
+      <article className="py-5 border-b last:border-b-0 transition-colors group-hover:bg-muted/30 -mx-2 px-2 rounded-lg">
+        {/* Category + Status row */}
+        <div className="flex items-center gap-2 mb-1.5">
+          {question.category && (
+            <span className="text-xs font-medium text-primary">
+              {question.category.name}
+            </span>
+          )}
+          <span
+            className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${st.className}`}
+          >
+            {st.label}
+          </span>
+        </div>
+
+        {/* Title */}
+        <h3 className="font-semibold text-[16px] leading-snug group-hover:text-primary transition-colors line-clamp-2">
+          {question.title}
+        </h3>
+
+        {/* Preview */}
+        <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
+          {question.content}
+        </p>
+
+        {/* Meta row */}
+        <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground/70">
+            {question.author?.name || "익명"}
+          </span>
+          <span>{timeAgo(question.created_at)}</span>
+          <div className="flex items-center gap-3 ml-auto">
             <span className="flex items-center gap-1">
               <Eye className="h-3 w-3" />
               {question.view_count}
@@ -69,8 +101,8 @@ export function QuestionCard({ question }: QuestionCardProps) {
               {question.answers_count || 0}
             </span>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </article>
     </Link>
   );
 }

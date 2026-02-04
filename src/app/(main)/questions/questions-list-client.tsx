@@ -6,6 +6,7 @@ import { QuestionCard } from "@/components/questions/QuestionCard";
 import { SearchBar } from "@/components/shared/SearchBar";
 import { CategoryFilter } from "@/components/shared/CategoryFilter";
 import { Pagination } from "@/components/shared/Pagination";
+import { Badge } from "@/components/ui/badge";
 
 interface QuestionsListClientProps {
   questions: Array<{
@@ -23,16 +24,24 @@ interface QuestionsListClientProps {
   categories: { value: string; label: string }[];
   currentCategory: string;
   currentSearch: string;
+  currentStatus: string;
   currentPage: number;
   totalPages: number;
   totalCount: number;
 }
+
+const statusFilters = [
+  { value: "all", label: "전체" },
+  { value: "open", label: "미답변" },
+  { value: "answered", label: "답변완료" },
+];
 
 export function QuestionsListClient({
   questions,
   categories,
   currentCategory,
   currentSearch,
+  currentStatus,
   currentPage,
   totalPages,
   totalCount,
@@ -50,8 +59,12 @@ export function QuestionsListClient({
           params.delete(key);
         }
       });
-      // Reset page when category or search changes
-      if ("category" in updates || "search" in updates) {
+      // Reset page when category/search/status changes
+      if (
+        "category" in updates ||
+        "search" in updates ||
+        "status" in updates
+      ) {
         params.delete("page");
       }
       router.push(`/questions?${params.toString()}`);
@@ -61,13 +74,6 @@ export function QuestionsListClient({
 
   return (
     <div className="space-y-4">
-      {/* Category Filter */}
-      <CategoryFilter
-        categories={categories}
-        currentValue={currentCategory}
-        onChange={(value) => updateParams({ category: value === "all" ? "" : value })}
-      />
-
       {/* Search Bar */}
       <SearchBar
         placeholder="질문 제목 또는 내용으로 검색"
@@ -75,20 +81,53 @@ export function QuestionsListClient({
         onSearch={(query) => updateParams({ search: query })}
       />
 
-      {/* Results count */}
-      <p className="text-sm text-muted-foreground">
-        총 {totalCount}개의 질문
-      </p>
+      {/* Category Filter */}
+      <CategoryFilter
+        categories={categories}
+        currentValue={currentCategory}
+        onChange={(value) =>
+          updateParams({ category: value === "all" ? "" : value })
+        }
+      />
+
+      {/* Status filter pills */}
+      <div className="flex items-center gap-2">
+        {statusFilters.map((sf) => (
+          <button
+            key={sf.value}
+            onClick={() =>
+              updateParams({ status: sf.value === "all" ? "" : sf.value })
+            }
+            className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+              currentStatus === sf.value ||
+              (sf.value === "all" && !currentStatus) ||
+              (sf.value === "all" && currentStatus === "all")
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background text-muted-foreground border-border hover:bg-accent"
+            }`}
+          >
+            {sf.label}
+          </button>
+        ))}
+        <span className="text-xs text-muted-foreground ml-auto">
+          {totalCount}개
+        </span>
+      </div>
 
       {/* Question List */}
       {questions.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          {currentSearch
-            ? "검색 결과가 없습니다."
-            : "아직 질문이 없습니다. 첫 번째 질문을 올려보세요!"}
+        <div className="text-center py-16 text-muted-foreground">
+          <p className="text-base">
+            {currentSearch
+              ? "검색 결과가 없습니다."
+              : "아직 질문이 없습니다."}
+          </p>
+          <p className="text-sm mt-1 opacity-70">
+            {!currentSearch && "첫 번째 질문을 올려보세요!"}
+          </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div>
           {questions.map((question) => (
             <QuestionCard key={question.id} question={question} />
           ))}
