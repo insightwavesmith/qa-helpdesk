@@ -49,7 +49,8 @@ export default async function QuestionDetailPage({
   } = await supabase.auth.getUser();
   let isAdmin = false;
   if (user) {
-    const { data: profile } = await supabase
+    const svc = (await import("@/lib/supabase/server")).createServiceClient();
+    const { data: profile } = await svc
       .from("profiles")
       .select("role")
       .eq("id", user.id)
