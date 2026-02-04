@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus } from "lucide-react";
 import { getPosts } from "@/actions/posts";
 import { PostsListClient } from "./posts-list-client";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 export default async function PostsPage({
   searchParams,
@@ -15,6 +16,16 @@ export default async function PostsPage({
   const page = parseInt(params.page || "1", 10);
   const category = params.category || "all";
   const search = params.search || "";
+
+  // 관리자 여부 확인
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  let isAdmin = false;
+  if (user) {
+    const svc = createServiceClient();
+    const { data: profile } = await svc.from("profiles").select("role").eq("id", user.id).single();
+    isAdmin = profile?.role === "admin";
+  }
 
   const { data: posts, count } = await getPosts({
     page,
@@ -40,12 +51,14 @@ export default async function PostsPage({
             유용한 정보를 공유하고 의견을 나눠보세요.
           </p>
         </div>
-        <Button asChild className="rounded-full">
-          <Link href="/posts/new">
-            <Plus className="mr-1.5 h-4 w-4" />
-            글쓰기
-          </Link>
-        </Button>
+        {isAdmin && (
+          <Button asChild className="rounded-full">
+            <Link href="/posts/new">
+              <Plus className="mr-1.5 h-4 w-4" />
+              글쓰기
+            </Link>
+          </Button>
+        )}
       </div>
 
       <Suspense
