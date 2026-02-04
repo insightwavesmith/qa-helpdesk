@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/client";
+import { updateBusinessCertUrl } from "@/actions/auth";
 import { GraduationCap, Loader2, Upload, FileCheck } from "lucide-react";
 
 export default function SignupPage() {
@@ -66,13 +67,18 @@ export default function SignupPage() {
     try {
       const supabase = createClient();
 
-      // signUp에 metadata 포함 → trigger가 profiles 자동 생성
+      // signUp에 metadata 포함 → trigger가 profiles 자동 생성 (모든 필드 포함)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           data: {
             name: formData.name,
+            phone: formData.phone,
+            shop_url: formData.shopUrl,
+            shop_name: formData.shopName,
+            business_number: formData.businessNumber,
+            cohort: formData.cohort || null,
           },
         },
       });
@@ -88,7 +94,6 @@ export default function SignupPage() {
       }
 
       // 사업자등록증 파일 업로드
-      let businessDocUrl = null;
       if (businessFile) {
         const fileExt = businessFile.name.split(".").pop();
         const filePath = `business-docs/${authData.user.id}.${fileExt}`;
@@ -100,26 +105,9 @@ export default function SignupPage() {
           const {
             data: { publicUrl },
           } = supabase.storage.from("documents").getPublicUrl(filePath);
-          businessDocUrl = publicUrl;
+          // server action으로 프로필 업데이트 (service role = RLS 우회)
+          await updateBusinessCertUrl(authData.user.id, publicUrl);
         }
-      }
-
-      // trigger가 기본 profile 생성 → 추가 정보는 UPDATE로 (RLS profiles_update_own 통과)
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          phone: formData.phone,
-          shop_url: formData.shopUrl,
-          shop_name: formData.shopName,
-          business_number: formData.businessNumber,
-          cohort: formData.cohort || null,
-          business_cert_url: businessDocUrl,
-        })
-        .eq("id", authData.user.id);
-
-      if (profileError) {
-        setError("프로필 업데이트 중 오류가 발생했습니다.");
-        return;
       }
 
       router.push("/pending");
