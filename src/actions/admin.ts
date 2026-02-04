@@ -52,12 +52,15 @@ export async function approveMember(userId: string) {
   return { error: null };
 }
 
-export async function rejectMember(userId: string) {
+export async function rejectMember(userId: string, reason?: string) {
   const supabase = await createClient();
+
+  const update: Record<string, unknown> = { role: "rejected" };
+  if (reason) update.reject_reason = reason;
 
   const { error } = await supabase
     .from("profiles")
-    .update({ role: "rejected" } as never)
+    .update(update as never)
     .eq("id", userId);
 
   if (error) {

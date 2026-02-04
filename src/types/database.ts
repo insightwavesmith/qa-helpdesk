@@ -23,6 +23,7 @@ export interface Database {
           cohort: string | null;
           monthly_ad_budget: string | null;
           category: string | null;
+          reject_reason: string | null;
           role: "pending" | "approved" | "admin" | "rejected";
           created_at: string;
           updated_at: string;
@@ -39,6 +40,7 @@ export interface Database {
           cohort?: string | null;
           monthly_ad_budget?: string | null;
           category?: string | null;
+          reject_reason?: string | null;
           role?: "pending" | "approved" | "admin" | "rejected";
           created_at?: string;
           updated_at?: string;
@@ -55,6 +57,7 @@ export interface Database {
           cohort?: string | null;
           monthly_ad_budget?: string | null;
           category?: string | null;
+          reject_reason?: string | null;
           role?: "pending" | "approved" | "admin" | "rejected";
           created_at?: string;
           updated_at?: string;

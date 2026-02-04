@@ -107,7 +107,7 @@ export default function SignupPage() {
         shop_name: formData.shopName,
         business_number: formData.businessNumber,
         cohort: formData.cohort || null,
-        business_doc_url: businessDocUrl,
+        business_cert_url: businessDocUrl,
         role: "pending" as const,
       });
 
