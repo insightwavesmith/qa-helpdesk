@@ -6,6 +6,7 @@ import { Header } from "@/components/layout/Header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StudentLayoutClient } from "@/components/layout/student-layout-client";
+import { getPendingAnswersCount } from "@/actions/answers";
 
 export default async function MainLayout({
   children,
@@ -41,6 +42,7 @@ export default async function MainLayout({
   if (isAdmin) {
     const cookieStore = await cookies();
     const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
+    const pendingAnswersCount = await getPendingAnswersCount();
 
     return (
       <SidebarProvider defaultOpen={defaultOpen}>
@@ -48,6 +50,7 @@ export default async function MainLayout({
           userRole={profile?.role}
           userName={profile?.name || "사용자"}
           userEmail={profile?.email || user.email || ""}
+          pendingAnswersCount={pendingAnswersCount}
         />
         <SidebarInset>
           <Header

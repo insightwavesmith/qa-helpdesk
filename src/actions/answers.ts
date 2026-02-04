@@ -3,10 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-export async function getAnswersByQuestionId(questionId: string) {
+export async function getAnswersByQuestionId(
+  questionId: string,
+  { includeUnapproved = false }: { includeUnapproved?: boolean } = {}
+) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("answers")
     .select(
       "*, author:profiles!answers_author_id_fkey(id, name, shop_name)"
@@ -14,12 +17,35 @@ export async function getAnswersByQuestionId(questionId: string) {
     .eq("question_id", questionId)
     .order("created_at", { ascending: true });
 
+  // 수강생: 승인된 답변만 표시 / 관리자: 전체 표시
+  if (!includeUnapproved) {
+    query = query.eq("is_approved", true);
+  }
+
+  const { data, error } = await query;
+
   if (error) {
     console.error("getAnswersByQuestionId error:", error);
     return { data: [], error: error.message };
   }
 
   return { data: data || [], error: null };
+}
+
+export async function getPendingAnswersCount() {
+  const supabase = await createClient();
+
+  const { count, error } = await supabase
+    .from("answers")
+    .select("*", { count: "exact", head: true })
+    .eq("is_approved", false);
+
+  if (error) {
+    console.error("getPendingAnswersCount error:", error);
+    return 0;
+  }
+
+  return count || 0;
 }
 
 export async function createAnswer(formData: {

@@ -64,12 +64,14 @@ interface AppSidebarProps {
   userRole?: string;
   userName?: string;
   userEmail?: string;
+  pendingAnswersCount?: number;
 }
 
 export default function AppSidebar({
   userRole = "approved",
   userName = "사용자",
   userEmail = "",
+  pendingAnswersCount = 0,
 }: AppSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -86,6 +88,8 @@ export default function AppSidebar({
     const isActive =
       pathname === item.href || pathname.startsWith(item.href + "/");
     const Icon = item.icon;
+    const showBadge =
+      item.href === "/admin/answers" && pendingAnswersCount > 0;
 
     return (
       <SidebarMenuItem key={item.href}>
@@ -97,6 +101,11 @@ export default function AppSidebar({
           <Link href={item.href}>
             <Icon className="h-4 w-4" />
             <span>{item.label}</span>
+            {showBadge && (
+              <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[10px] font-medium text-white">
+                {pendingAnswersCount}
+              </span>
+            )}
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>

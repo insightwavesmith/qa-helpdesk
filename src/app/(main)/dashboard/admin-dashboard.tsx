@@ -14,6 +14,7 @@ import {
   Users,
   TrendingUp,
   ArrowRight,
+  Bot,
 } from "lucide-react";
 import {
   getDashboardStats,
@@ -75,7 +76,7 @@ export async function AdminDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardDescription>전체 질문</CardDescription>
@@ -91,14 +92,37 @@ export async function AdminDashboard() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardDescription>답변 대기</CardDescription>
+            <CardDescription>미답변 질문</CardDescription>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{stats.openQuestions}</div>
-            <p className="text-xs text-muted-foreground mt-1">미답변 질문</p>
+            <p className="text-xs text-muted-foreground mt-1">답변 대기 중</p>
           </CardContent>
         </Card>
+        <Link href="/admin/answers">
+          <Card className={`cursor-pointer transition-colors hover:border-blue-300 dark:hover:border-blue-700 ${stats.pendingAnswers > 0 ? "border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/30" : ""}`}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardDescription className="flex items-center gap-1.5">
+                검토 대기 답변
+                {stats.pendingAnswers > 0 && (
+                  <Badge className="h-5 px-1.5 text-[10px] bg-blue-600 hover:bg-blue-600">
+                    {stats.pendingAnswers}
+                  </Badge>
+                )}
+              </CardDescription>
+              <Bot className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-3xl font-bold ${stats.pendingAnswers > 0 ? "text-blue-600 dark:text-blue-400" : ""}`}>
+                {stats.pendingAnswers}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {stats.pendingAnswers > 0 ? "승인이 필요합니다 →" : "모두 처리됨"}
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardDescription>정보 공유</CardDescription>

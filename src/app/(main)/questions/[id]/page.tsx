@@ -7,6 +7,7 @@ import { getQuestionById } from "@/actions/questions";
 import { getAnswersByQuestionId } from "@/actions/answers";
 import { AnswerCard } from "@/components/questions/AnswerCard";
 import { AnswerForm } from "./answer-form";
+import { createClient } from "@/lib/supabase/server";
 
 const statusConfig: Record<
   string,
@@ -41,12 +42,30 @@ export default async function QuestionDetailPage({
 }) {
   const { id } = await params;
 
+  // 현재 사용자 역할 확인
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  let isAdmin = false;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    isAdmin = profile?.role === "admin";
+  }
+
   const { data: question, error } = await getQuestionById(id);
   if (error || !question) {
     notFound();
   }
 
-  const { data: answers } = await getAnswersByQuestionId(id);
+  // 관리자: 미승인 답변 포함 전체 표시 / 수강생: 승인된 답변만
+  const { data: answers } = await getAnswersByQuestionId(id, {
+    includeUnapproved: isAdmin,
+  });
   const st = statusConfig[question.status] || statusConfig.open;
 
   // 답변 분류: AI 답변, 공식 답변, 일반 답변
