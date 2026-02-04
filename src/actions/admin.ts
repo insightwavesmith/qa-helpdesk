@@ -159,7 +159,7 @@ export async function getRecentQuestions(limit = 5) {
   const { data, error } = await supabase
     .from("questions")
     .select(
-      "*, author:profiles!questions_author_id_fkey(name), category:categories!questions_category_id_fkey(name)"
+      "*, author:profiles!questions_author_id_fkey(name), category:qa_categories!questions_category_id_fkey(name)"
     )
     .order("created_at", { ascending: false })
     .limit(limit);

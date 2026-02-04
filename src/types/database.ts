@@ -1,4 +1,4 @@
-// Supabase 자동 생성 타입 (수동 정의 - 추후 supabase gen types로 대체)
+// Supabase 자동 생성 타입 (REST API 스키마 기반 - 2026-02-04)
 export type Json =
   | string
   | number
@@ -61,7 +61,7 @@ export interface Database {
         };
         Relationships: [];
       };
-      categories: {
+      qa_categories: {
         Row: {
           id: number;
           name: string;
@@ -82,6 +82,33 @@ export interface Database {
           slug?: string;
           description?: string | null;
           sort_order?: number;
+        };
+        Relationships: [];
+      };
+      categories: {
+        Row: {
+          id: string;
+          name: string;
+          icon: string | null;
+          sort_order: number;
+          is_new: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          icon?: string | null;
+          sort_order?: number;
+          is_new?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          icon?: string | null;
+          sort_order?: number;
+          is_new?: boolean;
+          created_at?: string;
         };
         Relationships: [];
       };
@@ -137,7 +164,7 @@ export interface Database {
             foreignKeyName: "questions_category_id_fkey";
             columns: ["category_id"];
             isOneToOne: false;
-            referencedRelation: "categories";
+            referencedRelation: "qa_categories";
             referencedColumns: ["id"];
           },
         ];
@@ -427,6 +454,236 @@ export interface Database {
             referencedColumns: ["id"];
           },
         ];
+      };
+      cohorts: {
+        Row: {
+          id: string;
+          name: string;
+          short_name: string;
+          start_date: string | null;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          short_name: string;
+          start_date?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          short_name?: string;
+          start_date?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      assignments: {
+        Row: {
+          id: string;
+          cohort_id: string | null;
+          name: string;
+          due_date: string | null;
+          week_number: number | null;
+          notion_link: string | null;
+          sort_order: number;
+          title: string | null;
+        };
+        Insert: {
+          id?: string;
+          cohort_id?: string | null;
+          name: string;
+          due_date?: string | null;
+          week_number?: number | null;
+          notion_link?: string | null;
+          sort_order?: number;
+          title?: string | null;
+        };
+        Update: {
+          id?: string;
+          cohort_id?: string | null;
+          name?: string;
+          due_date?: string | null;
+          week_number?: number | null;
+          notion_link?: string | null;
+          sort_order?: number;
+          title?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "assignments_cohort_id_fkey";
+            columns: ["cohort_id"];
+            isOneToOne: false;
+            referencedRelation: "cohorts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      blocks: {
+        Row: {
+          id: string;
+          category_id: string | null;
+          name: string;
+          time_minutes: number;
+          type: string;
+          details: Json | null;
+          assets: Json | null;
+          sort_order: number;
+          created_at: string;
+          parent_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          category_id?: string | null;
+          name: string;
+          time_minutes?: number;
+          type?: string;
+          details?: Json | null;
+          assets?: Json | null;
+          sort_order?: number;
+          created_at?: string;
+          parent_id?: string | null;
+        };
+        Update: {
+          id?: string;
+          category_id?: string | null;
+          name?: string;
+          time_minutes?: number;
+          type?: string;
+          details?: Json | null;
+          assets?: Json | null;
+          sort_order?: number;
+          created_at?: string;
+          parent_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "blocks_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "blocks_parent_id_fkey";
+            columns: ["parent_id"];
+            isOneToOne: false;
+            referencedRelation: "blocks";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      curriculum: {
+        Row: {
+          id: string;
+          cohort_id: string | null;
+          week_number: number;
+          block_id: string | null;
+          sort_order: number;
+          parent_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          cohort_id?: string | null;
+          week_number: number;
+          block_id?: string | null;
+          sort_order?: number;
+          parent_id?: string | null;
+        };
+        Update: {
+          id?: string;
+          cohort_id?: string | null;
+          week_number?: number;
+          block_id?: string | null;
+          sort_order?: number;
+          parent_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "curriculum_cohort_id_fkey";
+            columns: ["cohort_id"];
+            isOneToOne: false;
+            referencedRelation: "cohorts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "curriculum_block_id_fkey";
+            columns: ["block_id"];
+            isOneToOne: false;
+            referencedRelation: "blocks";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "curriculum_parent_id_fkey";
+            columns: ["parent_id"];
+            isOneToOne: false;
+            referencedRelation: "curriculum";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      schedules: {
+        Row: {
+          id: string;
+          cohort_id: string | null;
+          week_number: number;
+          date: string | null;
+          start_time: string | null;
+          end_time: string | null;
+          type: string;
+          location: string | null;
+        };
+        Insert: {
+          id?: string;
+          cohort_id?: string | null;
+          week_number: number;
+          date?: string | null;
+          start_time?: string | null;
+          end_time?: string | null;
+          type?: string;
+          location?: string | null;
+        };
+        Update: {
+          id?: string;
+          cohort_id?: string | null;
+          week_number?: number;
+          date?: string | null;
+          start_time?: string | null;
+          end_time?: string | null;
+          type?: string;
+          location?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "schedules_cohort_id_fkey";
+            columns: ["cohort_id"];
+            isOneToOne: false;
+            referencedRelation: "cohorts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      progress: {
+        Row: {
+          id: number;
+          completed: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: number;
+          completed?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: number;
+          completed?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
       };
     };
     Views: {

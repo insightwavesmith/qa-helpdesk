@@ -23,7 +23,7 @@ export async function getQuestions({
   let query = supabase
     .from("questions")
     .select(
-      "*, author:profiles!questions_author_id_fkey(id, name, shop_name), category:categories!questions_category_id_fkey(id, name, slug)",
+      "*, author:profiles!questions_author_id_fkey(id, name, shop_name), category:qa_categories!questions_category_id_fkey(id, name, slug)",
       { count: "exact" }
     )
     .order("created_at", { ascending: false })
@@ -78,7 +78,7 @@ export async function getQuestionById(id: string) {
   const { data, error } = await supabase
     .from("questions")
     .select(
-      "*, author:profiles!questions_author_id_fkey(id, name, shop_name), category:categories!questions_category_id_fkey(id, name, slug)"
+      "*, author:profiles!questions_author_id_fkey(id, name, shop_name), category:qa_categories!questions_category_id_fkey(id, name, slug)"
     )
     .eq("id", id)
     .single();
@@ -136,7 +136,7 @@ export async function getCategories() {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("categories")
+    .from("qa_categories")
     .select("*")
     .order("sort_order", { ascending: true });
 
