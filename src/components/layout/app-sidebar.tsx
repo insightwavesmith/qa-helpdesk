@@ -14,7 +14,6 @@ import {
   LogOut,
   User,
   ChevronsUpDown,
-  GraduationCap,
 } from "lucide-react";
 import {
   Sidebar,
@@ -33,7 +32,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -99,10 +97,10 @@ export default function AppSidebar({
           isActive={isActive}
         >
           <Link href={item.href}>
-            <Icon className="h-4 w-4" />
-            <span>{item.label}</span>
+            <Icon className="h-[18px] w-[18px] opacity-60 shrink-0" />
+            <span className="text-[14px]">{item.label}</span>
             {showBadge && (
-              <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[10px] font-medium text-white">
+              <span className="ml-auto flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[11px] font-medium text-primary-foreground leading-none">
                 {pendingAnswersCount}
               </span>
             )}
@@ -114,33 +112,28 @@ export default function AppSidebar({
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader>
+      {/* Workspace header - Notion style */}
+      <SidebarHeader className="px-3 pt-3 pb-0">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard" className="flex items-center gap-2">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <GraduationCap className="size-4" />
+              <Link href="/dashboard" className="flex items-center gap-2.5">
+                <div className="flex size-[22px] items-center justify-center rounded-[4px] bg-foreground/10 text-[13px] font-semibold text-foreground/70">
+                  사
                 </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">
-                    사관학교 헬프데스크
-                  </span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    Q&A 지식베이스
-                  </span>
-                </div>
+                <span className="text-[14px] font-medium text-foreground truncate">
+                  사관학교 헬프데스크
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className="overflow-x-hidden">
+      <SidebarContent className="overflow-x-hidden px-1">
         {/* Main Navigation */}
-        <SidebarGroup>
-          <SidebarGroupLabel>메뉴</SidebarGroupLabel>
-          <SidebarMenu>
+        <SidebarGroup className="py-1">
+          <SidebarMenu className="gap-0.5">
             {mainNavItems.map(renderNavItem)}
           </SidebarMenu>
         </SidebarGroup>
@@ -148,10 +141,12 @@ export default function AppSidebar({
         {/* Admin Navigation */}
         {userRole === "admin" && (
           <>
-            <SidebarSeparator />
-            <SidebarGroup>
-              <SidebarGroupLabel>관리자</SidebarGroupLabel>
-              <SidebarMenu>
+            <SidebarSeparator className="mx-3 opacity-50" />
+            <SidebarGroup className="py-1">
+              <SidebarGroupLabel className="px-2 text-[11px] font-medium text-muted-foreground tracking-wide mb-0.5">
+                관리
+              </SidebarGroupLabel>
+              <SidebarMenu className="gap-0.5">
                 {adminNavItems.map(renderNavItem)}
               </SidebarMenu>
             </SidebarGroup>
@@ -159,60 +154,59 @@ export default function AppSidebar({
         )}
       </SidebarContent>
 
-      <SidebarFooter>
+      {/* User footer - Notion style */}
+      <SidebarFooter className="px-2 pb-2">
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                  className="data-[state=open]:bg-sidebar-accent"
                 >
-                  <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarFallback className="rounded-lg text-xs">
+                  <Avatar className="h-[22px] w-[22px] rounded-[4px]">
+                    <AvatarFallback className="rounded-[4px] text-[11px] font-medium bg-foreground/10 text-foreground/70">
                       {initials}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">{userName}</span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {userRole === "admin" ? "관리자" : "회원"}
-                    </span>
+                  <div className="grid flex-1 text-left leading-tight">
+                    <span className="text-[13px] font-normal text-sidebar-foreground truncate">{userName}</span>
                   </div>
-                  <ChevronsUpDown className="ml-auto size-4" />
+                  <ChevronsUpDown className="ml-auto size-3.5 opacity-40" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-                side="bottom"
-                align="end"
+                className="w-(--radix-dropdown-menu-trigger-width) min-w-52 rounded-lg"
+                side="top"
+                align="start"
                 sideOffset={4}
               >
-                <DropdownMenuLabel className="p-0 font-normal">
-                  <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                    <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarFallback className="rounded-lg text-xs">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-semibold">{userName}</span>
-                      <span className="truncate text-xs text-muted-foreground">
-                        {userEmail}
-                      </span>
-                    </div>
+                <div className="flex items-center gap-2.5 px-2 py-2 text-left">
+                  <Avatar className="h-7 w-7 rounded-[4px]">
+                    <AvatarFallback className="rounded-[4px] text-[11px] font-medium bg-foreground/10 text-foreground/70">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="grid text-left leading-tight">
+                    <span className="text-[13px] font-medium">{userName}</span>
+                    <span className="text-[12px] text-muted-foreground">
+                      {userEmail}
+                    </span>
                   </div>
-                </DropdownMenuLabel>
+                </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => router.push("/settings")}
+                  className="text-[13px] rounded-[4px]"
                 >
-                  <User className="mr-2 h-4 w-4" />
+                  <User className="mr-2 h-4 w-4 opacity-60" />
                   프로필 설정
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
-                  <LogOut className="mr-2 h-4 w-4" />
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-[13px] rounded-[4px]"
+                >
+                  <LogOut className="mr-2 h-4 w-4 opacity-60" />
                   로그아웃
                 </DropdownMenuItem>
               </DropdownMenuContent>

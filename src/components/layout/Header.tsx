@@ -1,9 +1,6 @@
 "use client";
 
-import { Bell } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
 import { Breadcrumbs } from "./breadcrumbs";
 import { ThemeModeToggle } from "./theme-toggle";
 
@@ -14,18 +11,14 @@ interface HeaderProps {
 
 export function Header({ userName: _userName, userRole: _userRole }: HeaderProps) {
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-      <div className="flex items-center gap-2 px-4">
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 h-4" />
+    <header className="flex h-[45px] shrink-0 items-center justify-between gap-2 transition-[width,height] duration-150 ease-in-out group-has-data-[collapsible=icon]/sidebar-wrapper:h-[40px]">
+      <div className="flex items-center gap-1.5 px-3">
+        <SidebarTrigger className="-ml-1 size-6 text-muted-foreground hover:text-foreground" />
+        <span className="text-border mx-1 text-[18px] font-[200]">/</span>
         <Breadcrumbs />
       </div>
 
-      <div className="flex items-center gap-2 px-4">
-        <Button variant="ghost" size="icon" className="relative size-8">
-          <Bell className="h-4 w-4" />
-          <span className="sr-only">알림</span>
-        </Button>
+      <div className="flex items-center gap-1 px-3">
         <ThemeModeToggle />
       </div>
     </header>

@@ -39,7 +39,7 @@ export default async function MainLayout({
 
   const isAdmin = profile?.role === "admin";
 
-  // Admin: existing sidebar layout
+  // Admin: Notion-style sidebar layout
   if (isAdmin) {
     const cookieStore = await cookies();
     const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
@@ -58,8 +58,10 @@ export default async function MainLayout({
             userName={profile?.name || "사용자"}
             userRole={profile?.role}
           />
-          <ScrollArea className="h-[calc(100dvh-4rem)]">
-            <main className="flex-1 p-4 md:px-6 md:py-6">{children}</main>
+          <ScrollArea className="h-[calc(100dvh-45px)]">
+            <main className="mx-auto w-full max-w-[900px] px-8 py-6 md:px-12 md:py-8">
+              {children}
+            </main>
           </ScrollArea>
         </SidebarInset>
       </SidebarProvider>
