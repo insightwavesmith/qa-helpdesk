@@ -4,7 +4,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 import { PostCard } from "@/components/posts/PostCard";
 import { SearchBar } from "@/components/shared/SearchBar";
-import { CategoryFilter } from "@/components/shared/CategoryFilter";
 import { Pagination } from "@/components/shared/Pagination";
 
 interface PostsListClientProps {
@@ -19,8 +18,6 @@ interface PostsListClientProps {
     created_at: string;
     author?: { id: string; name: string; shop_name?: string } | null;
   }>;
-  categories: { value: string; label: string }[];
-  currentCategory: string;
   currentSearch: string;
   currentPage: number;
   totalPages: number;
@@ -29,8 +26,6 @@ interface PostsListClientProps {
 
 export function PostsListClient({
   posts,
-  categories,
-  currentCategory,
   currentSearch,
   currentPage,
   totalPages,
@@ -49,7 +44,7 @@ export function PostsListClient({
           params.delete(key);
         }
       });
-      if ("category" in updates || "search" in updates) {
+      if ("search" in updates) {
         params.delete("page");
       }
       router.push(`/posts?${params.toString()}`);
@@ -64,15 +59,6 @@ export function PostsListClient({
         placeholder="게시글 제목 또는 내용으로 검색"
         defaultValue={currentSearch}
         onSearch={(query) => updateParams({ search: query })}
-      />
-
-      {/* Category filter */}
-      <CategoryFilter
-        categories={categories}
-        currentValue={currentCategory}
-        onChange={(value) =>
-          updateParams({ category: value === "all" ? "" : value })
-        }
       />
 
       <div className="flex items-center justify-between">

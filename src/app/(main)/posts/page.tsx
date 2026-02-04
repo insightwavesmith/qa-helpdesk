@@ -14,7 +14,7 @@ export default async function PostsPage({
 }) {
   const params = await searchParams;
   const page = parseInt(params.page || "1", 10);
-  const category = params.category || "all";
+  const category = "notice"; // 공지만 표시
   const search = params.search || "";
 
   // 관리자 여부 확인
@@ -30,17 +30,11 @@ export default async function PostsPage({
   const { data: posts, count } = await getPosts({
     page,
     pageSize: 10,
-    category: category !== "all" ? category : undefined,
+    category: "notice", // 공지만 표시
     search: search || undefined,
   });
 
   const totalPages = Math.ceil((count || 0) / 10);
-
-  const categoryTabs = [
-    { value: "info", label: "정보" },
-    { value: "notice", label: "공지" },
-    { value: "webinar", label: "웨비나" },
-  ];
 
   return (
     <div className="space-y-6">
@@ -72,8 +66,6 @@ export default async function PostsPage({
       >
         <PostsListClient
           posts={posts}
-          categories={categoryTabs}
-          currentCategory={category}
           currentSearch={search}
           currentPage={page}
           totalPages={totalPages}

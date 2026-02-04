@@ -9,12 +9,16 @@ export async function getQuestions({
   categoryId,
   search,
   status,
+  tab = "all",
+  authorId,
 }: {
   page?: number;
   pageSize?: number;
   categoryId?: number | null;
   search?: string;
   status?: string;
+  tab?: string;
+  authorId?: string;
 } = {}) {
   const supabase = createServiceClient();
   const from = (page - 1) * pageSize;
@@ -37,7 +41,17 @@ export async function getQuestions({
     query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
   }
 
-  if (status && status !== "all") {
+  // Handle tab-specific filtering
+  if (tab === "all") {
+    // 전체 Q&A: only answered questions
+    query = query.eq("status", "answered");
+  } else if (tab === "mine" && authorId) {
+    // 내 질문: all statuses for the author
+    query = query.eq("author_id", authorId);
+  }
+
+  // Additional status filter (only if not using tab-specific filtering)
+  if (tab === "mine" && status && status !== "all") {
     query = query.eq("status", status as "open" | "answered" | "closed");
   }
 

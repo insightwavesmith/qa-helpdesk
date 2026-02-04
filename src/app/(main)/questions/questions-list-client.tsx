@@ -28,6 +28,8 @@ interface QuestionsListClientProps {
   currentPage: number;
   totalPages: number;
   totalCount: number;
+  currentTab: string;
+  currentUserId?: string;
 }
 
 const statusFilters = [
@@ -45,6 +47,8 @@ export function QuestionsListClient({
   currentPage,
   totalPages,
   totalCount,
+  currentTab,
+  currentUserId,
 }: QuestionsListClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -74,6 +78,33 @@ export function QuestionsListClient({
 
   return (
     <div className="space-y-4">
+      {/* Tab switching */}
+      <div className="flex items-center gap-2 border-b">
+        <button
+          onClick={() => updateParams({ tab: "all" })}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            currentTab === "all"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          전체 Q&A
+        </button>
+        <button
+          onClick={() => updateParams({ tab: "mine" })}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            currentTab === "mine"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          내 질문
+        </button>
+        <span className="text-xs text-muted-foreground ml-auto">
+          {totalCount}개
+        </span>
+      </div>
+
       {/* Search Bar */}
       <SearchBar
         placeholder="질문 제목 또는 내용으로 검색"
@@ -81,38 +112,39 @@ export function QuestionsListClient({
         onSearch={(query) => updateParams({ search: query })}
       />
 
-      {/* Category Filter */}
-      <CategoryFilter
-        categories={categories}
-        currentValue={currentCategory}
-        onChange={(value) =>
-          updateParams({ category: value === "all" ? "" : value })
-        }
-      />
+      {/* Category Filter - 전체 Q&A에서만 표시 */}
+      {currentTab === "all" && (
+        <CategoryFilter
+          categories={categories}
+          currentValue={currentCategory}
+          onChange={(value) =>
+            updateParams({ category: value === "all" ? "" : value })
+          }
+        />
+      )}
 
-      {/* Status filter pills */}
-      <div className="flex items-center gap-2">
-        {statusFilters.map((sf) => (
-          <button
-            key={sf.value}
-            onClick={() =>
-              updateParams({ status: sf.value === "all" ? "" : sf.value })
-            }
-            className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-              currentStatus === sf.value ||
-              (sf.value === "all" && !currentStatus) ||
-              (sf.value === "all" && currentStatus === "all")
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background text-muted-foreground border-border hover:bg-accent"
-            }`}
-          >
-            {sf.label}
-          </button>
-        ))}
-        <span className="text-xs text-muted-foreground ml-auto">
-          {totalCount}개
-        </span>
-      </div>
+      {/* "내 질문" 탭에서는 상태 필터 제거, 전체 Q&A는 기본적으로 답변완료만 보여줌 */}
+      {currentTab === "mine" && (
+        <div className="flex items-center gap-2">
+          {statusFilters.map((sf) => (
+            <button
+              key={sf.value}
+              onClick={() =>
+                updateParams({ status: sf.value === "all" ? "" : sf.value })
+              }
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                currentStatus === sf.value ||
+                (sf.value === "all" && !currentStatus) ||
+                (sf.value === "all" && currentStatus === "all")
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-muted-foreground border-border hover:bg-accent"
+              }`}
+            >
+              {sf.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Question List */}
       {questions.length === 0 ? (
