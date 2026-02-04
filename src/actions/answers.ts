@@ -79,12 +79,7 @@ export async function createAnswer(formData: {
     return { data: null, error: error.message };
   }
 
-  // Update question status to answered
-  await svc
-    .from("questions")
-    .update({ status: "answered" })
-    .eq("id", formData.questionId);
-
+  // 답변 등록만 하고, 상태 변경은 관리자 승인 시 처리
   revalidatePath(`/questions/${formData.questionId}`);
   revalidatePath("/questions");
   revalidatePath("/dashboard");
@@ -120,20 +115,35 @@ export async function getPendingAnswers({
 export async function approveAnswer(answerId: string) {
   const supabase = createServiceClient();
 
-  const { error } = await supabase
+  // 답변 승인
+  const { data: answer, error } = await supabase
     .from("answers")
     .update({
       is_approved: true,
       approved_at: new Date().toISOString(),
     })
-    .eq("id", answerId);
+    .eq("id", answerId)
+    .select("question_id")
+    .single();
 
   if (error) {
     console.error("approveAnswer error:", error);
     return { error: error.message };
   }
 
+  // 답변 승인 시 질문 상태를 "answered"로 변경
+  if (answer?.question_id) {
+    await supabase
+      .from("questions")
+      .update({ status: "answered" })
+      .eq("id", answer.question_id);
+
+    revalidatePath(`/questions/${answer.question_id}`);
+  }
+
   revalidatePath("/admin/answers");
+  revalidatePath("/questions");
+  revalidatePath("/dashboard");
   return { error: null };
 }
 
