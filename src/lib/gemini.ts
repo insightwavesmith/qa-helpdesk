@@ -1,9 +1,8 @@
 // Gemini API 유틸리티 (임베딩 + 생성)
-// TODO: Phase 2에서 구현 예정
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const EMBEDDING_MODEL = "text-embedding-004";
-const GENERATION_MODEL = "gemini-2.0-flash";
+const GENERATION_MODEL = "gemini-2.5-flash-preview-05-20";
 
 /**
  * 텍스트를 벡터 임베딩으로 변환
@@ -23,7 +22,8 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   );
 
   if (!response.ok) {
-    throw new Error(`Embedding API error: ${response.statusText}`);
+    const errorText = await response.text();
+    throw new Error(`Embedding API error: ${response.status} ${errorText}`);
   }
 
   const data = await response.json();
@@ -32,16 +32,14 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 
 /**
  * AI 답변 생성 (RAG 기반)
- * 참고 강의 청크를 컨텍스트로 포함
+ * 검색된 강의 청크를 컨텍스트로 Gemini 2.5 Flash에 전달
  */
 export async function generateAnswer(
   question: string,
   context: string[]
 ): Promise<string> {
-  const systemPrompt = `당신은 메타(Facebook) 광고 전문가입니다. 
-제공된 강의 자료를 기반으로 질문에 정확하게 답변해주세요.
-답변은 한국어로, 실무에 도움이 되도록 구체적으로 작성해주세요.
-강의 자료에 없는 내용은 추측하지 말고 "강의 자료에서 확인되지 않는 내용입니다"라고 안내해주세요.`;
+  const systemPrompt =
+    "당신은 자사몰사관학교의 메타 광고 전문 AI 어시스턴트입니다. 제공된 강의 내용을 기반으로 정확하고 실용적인 답변을 해주세요. 강의 내용에 없는 정보는 추측하지 마세요.";
 
   const contextText = context.join("\n\n---\n\n");
 
@@ -51,12 +49,15 @@ export async function generateAnswer(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        system_instruction: {
+          parts: [{ text: systemPrompt }],
+        },
         contents: [
           {
             role: "user",
             parts: [
               {
-                text: `${systemPrompt}\n\n## 참고 강의 자료\n${contextText}\n\n## 질문\n${question}`,
+                text: `## 참고 강의 자료\n${contextText}\n\n## 질문\n${question}`,
               },
             ],
           },
@@ -70,7 +71,8 @@ export async function generateAnswer(
   );
 
   if (!response.ok) {
-    throw new Error(`Generation API error: ${response.statusText}`);
+    const errorText = await response.text();
+    throw new Error(`Generation API error: ${response.status} ${errorText}`);
   }
 
   const data = await response.json();

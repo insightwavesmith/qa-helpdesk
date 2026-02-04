@@ -131,9 +131,31 @@ export async function createQuestion(formData: {
     return { data: null, error: error.message };
   }
 
+  // AI 답변 비동기 생성 (백그라운드, 에러 시 조용히 실패)
+  triggerAiAnswer(data.id, `${formData.title}\n${formData.content}`);
+
   revalidatePath("/questions");
   revalidatePath("/dashboard");
   return { data, error: null };
+}
+
+/**
+ * AI 답변 생성 API 비동기 호출
+ * 질문 등록 완료 후 백그라운드에서 실행되며, 실패해도 질문 등록에 영향 없음
+ */
+function triggerAiAnswer(questionId: string, questionText: string) {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
+    || process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000";
+
+  fetch(`${baseUrl}/api/ai-answer`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ questionId, questionText }),
+  }).catch((err) => {
+    console.error("AI 답변 트리거 실패 (무시됨):", err);
+  });
 }
 
 export async function getCategories() {
