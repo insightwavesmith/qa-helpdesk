@@ -10,9 +10,9 @@ export default async function DashboardPage() {
 
   const { data: profile } = (await supabase
     .from("profiles")
-    .select("role")
+    .select("role, name")
     .eq("id", user!.id)
-    .single()) as { data: { role: string } | null };
+    .single()) as { data: { role: string; name: string } | null };
 
   const isAdmin = profile?.role === "admin";
 
@@ -20,5 +20,5 @@ export default async function DashboardPage() {
     return <AdminDashboard />;
   }
 
-  return <StudentHome />;
+  return <StudentHome userName={profile?.name || "사용자"} />;
 }

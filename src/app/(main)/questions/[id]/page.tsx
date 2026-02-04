@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Eye, ThumbsUp, MessageCircle } from "lucide-react";
+import { ArrowLeft, Eye, ThumbsUp, MessageCircle, Sparkles, CheckCircle } from "lucide-react";
 import { getQuestionById } from "@/actions/questions";
 import { getAnswersByQuestionId } from "@/actions/answers";
 import { AnswerCard } from "@/components/questions/AnswerCard";
@@ -49,6 +49,25 @@ export default async function QuestionDetailPage({
   const { data: answers } = await getAnswersByQuestionId(id);
   const st = statusConfig[question.status] || statusConfig.open;
 
+  // 답변 분류: AI 답변, 공식 답변, 일반 답변
+  const aiAnswers = answers.filter((a) => a.is_ai);
+  const officialAnswers = answers.filter(
+    (a) =>
+      !a.is_ai &&
+      (a.author?.name?.toLowerCase().includes("smith") ||
+        a.author?.name?.includes("관리자") ||
+        a.author?.name?.toLowerCase().includes("admin"))
+  );
+  const otherAnswers = answers.filter(
+    (a) =>
+      !a.is_ai &&
+      !(
+        a.author?.name?.toLowerCase().includes("smith") ||
+        a.author?.name?.includes("관리자") ||
+        a.author?.name?.toLowerCase().includes("admin")
+      )
+  );
+
   return (
     <div className="space-y-8">
       {/* Back */}
@@ -59,7 +78,7 @@ export default async function QuestionDetailPage({
         </Link>
       </Button>
 
-      {/* Question Article — Substack reading style */}
+      {/* Question Article */}
       <article>
         {/* Meta badges */}
         <div className="flex items-center gap-2 mb-3">
@@ -104,7 +123,7 @@ export default async function QuestionDetailPage({
           </div>
         </div>
 
-        {/* Content body — generous line-height, readable */}
+        {/* Content body */}
         <div className="mt-6 text-base leading-[1.8] whitespace-pre-wrap text-foreground/90">
           {question.content}
         </div>
@@ -135,11 +154,23 @@ export default async function QuestionDetailPage({
           )}
       </article>
 
-      {/* Answers */}
+      {/* Answers Section — Thread style */}
       <section className="pt-2">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-6">
           <MessageCircle className="h-5 w-5" />
           <h2 className="text-lg font-bold">답변 {answers.length}개</h2>
+          {aiAnswers.length > 0 && (
+            <Badge className="gap-1 text-[10px] px-2 py-0.5 h-5 bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-800">
+              <Sparkles className="h-2.5 w-2.5" />
+              AI {aiAnswers.length}
+            </Badge>
+          )}
+          {officialAnswers.length > 0 && (
+            <Badge className="gap-1 text-[10px] px-2 py-0.5 h-5 bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-emerald-200 dark:bg-emerald-900 dark:text-emerald-300 dark:border-emerald-800">
+              <CheckCircle className="h-2.5 w-2.5" />
+              공식 {officialAnswers.length}
+            </Badge>
+          )}
         </div>
 
         {answers.length === 0 ? (
@@ -151,7 +182,14 @@ export default async function QuestionDetailPage({
           </div>
         ) : (
           <div className="space-y-4">
-            {answers.map((answer) => (
+            {/* 공식 답변 먼저, 그 다음 AI 답변, 마지막 일반 답변 */}
+            {officialAnswers.map((answer) => (
+              <AnswerCard key={answer.id} answer={answer} />
+            ))}
+            {aiAnswers.map((answer) => (
+              <AnswerCard key={answer.id} answer={answer} />
+            ))}
+            {otherAnswers.map((answer) => (
               <AnswerCard key={answer.id} answer={answer} />
             ))}
           </div>
