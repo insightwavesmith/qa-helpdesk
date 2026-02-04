@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import AppSidebar from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/Header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
@@ -22,8 +22,9 @@ export default async function MainLayout({
     redirect("/login");
   }
 
-  // 프로필 조회
-  const { data: profile } = (await supabase
+  // 프로필 조회 (service role로 RLS 우회)
+  const serviceClient = createServiceClient();
+  const { data: profile } = (await serviceClient
     .from("profiles")
     .select("name, role, email")
     .eq("id", user.id)
