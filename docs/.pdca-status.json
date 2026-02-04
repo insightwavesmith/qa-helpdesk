@@ -1,0 +1,207 @@
+{
+  "project": "Q&A Knowledge Base",
+  "generated_at": "2026-02-04T14:58:00Z",
+  "methodology": "bkit PDCA",
+  "features": {
+    "auth-rls": {
+      "name": "인증 및 RLS 정책",
+      "pdca": {
+        "plan": {
+          "status": "completed",
+          "document": "01-plan/features/auth-rls.plan.md",
+          "completed_at": "2025-12-01"
+        },
+        "design": {
+          "status": "completed", 
+          "document": "02-design/features/auth-rls.design.md",
+          "completed_at": "2025-12-01"
+        },
+        "check": {
+          "status": "completed",
+          "document": "03-analysis/auth-rls.analysis.md",
+          "match_rate": 95,
+          "rating": "🟢",
+          "completed_at": "2026-02-04"
+        },
+        "act": {
+          "status": "pending",
+          "recommendations": [
+            "세분화된 에러 처리 구현",
+            "reject_reason 필드 설계서 반영",
+            "승인 대기 전용 페이지 구현"
+          ]
+        }
+      }
+    },
+    "answer-approval": {
+      "name": "답변 승인 워크플로우",
+      "pdca": {
+        "plan": {
+          "status": "completed",
+          "document": "01-plan/features/answer-approval.plan.md",
+          "completed_at": "2025-12-01"
+        },
+        "design": {
+          "status": "completed",
+          "document": "02-design/features/answer-approval.design.md", 
+          "completed_at": "2025-12-01"
+        },
+        "check": {
+          "status": "completed",
+          "document": "03-analysis/answer-approval.analysis.md",
+          "match_rate": 98,
+          "rating": "🟢",
+          "completed_at": "2026-02-04"
+        },
+        "act": {
+          "status": "pending",
+          "recommendations": [
+            "이메일 알림 시스템 구현",
+            "승인 이력 추적 기능 완성"
+          ]
+        }
+      }
+    },
+    "rag-ai-answer": {
+      "name": "RAG 기반 AI 답변",
+      "pdca": {
+        "plan": {
+          "status": "completed",
+          "document": "01-plan/features/rag-ai-answer.plan.md",
+          "completed_at": "2025-12-01"
+        },
+        "design": {
+          "status": "completed",
+          "document": "02-design/features/rag-ai-answer.design.md",
+          "completed_at": "2025-12-01"
+        },
+        "check": {
+          "status": "completed", 
+          "document": "03-analysis/rag-ai-answer.analysis.md",
+          "match_rate": 15,
+          "rating": "🔴",
+          "completed_at": "2026-02-04"
+        },
+        "act": {
+          "status": "pending",
+          "priority": "high",
+          "recommendations": [
+            "OpenAI/Anthropic API 통합 구현",
+            "Supabase Vector Extension 활성화",
+            "강의 자료 벡터화 파이프라인 구축",
+            "AI 답변 생성 및 검토 워크플로우 구현"
+          ]
+        }
+      }
+    },
+    "image-attachment": {
+      "name": "질문 이미지 첨부",
+      "pdca": {
+        "plan": {
+          "status": "completed",
+          "document": "01-plan/features/image-attachment.plan.md",
+          "completed_at": "2025-12-01"
+        },
+        "design": {
+          "status": "completed",
+          "document": "02-design/features/image-attachment.design.md",
+          "completed_at": "2025-12-01"
+        },
+        "check": {
+          "status": "completed",
+          "document": "03-analysis/image-attachment.analysis.md", 
+          "match_rate": 20,
+          "rating": "🔴",
+          "completed_at": "2026-02-04"
+        },
+        "act": {
+          "status": "pending",
+          "priority": "medium",
+          "recommendations": [
+            "Supabase Storage 버킷 설정",
+            "이미지 업로드 API 구현",
+            "이미지 업로드 UI 컴포넌트 개발",
+            "파일 형식/크기 검증 로직 구현"
+          ]
+        }
+      }
+    },
+    "home-dashboard": {
+      "name": "홈 대시보드",
+      "pdca": {
+        "plan": {
+          "status": "completed",
+          "document": "01-plan/features/home-dashboard.plan.md",
+          "completed_at": "2025-12-01"
+        },
+        "design": {
+          "status": "completed",
+          "document": "02-design/features/home-dashboard.design.md",
+          "completed_at": "2025-12-01"
+        },
+        "check": {
+          "status": "completed",
+          "document": "03-analysis/home-dashboard.analysis.md",
+          "match_rate": 92,
+          "rating": "🟢", 
+          "completed_at": "2026-02-04"
+        },
+        "act": {
+          "status": "pending",
+          "recommendations": [
+            "실시간 알림 연동 구현",
+            "접근성 개선",
+            "모바일 UX 최적화"
+          ]
+        }
+      }
+    },
+    "qa-ux-redesign": {
+      "name": "Q&A UX 리디자인",
+      "pdca": {
+        "plan": {
+          "status": "completed",
+          "document": "01-plan/features/qa-ux-redesign.plan.md",
+          "completed_at": "2025-12-01"
+        },
+        "design": {
+          "status": "completed",
+          "document": "02-design/features/qa-ux-redesign.design.md",
+          "completed_at": "2025-12-01"
+        },
+        "check": {
+          "status": "completed",
+          "document": "03-analysis/qa-ux-redesign.analysis.md",
+          "match_rate": 100,
+          "rating": "🟢",
+          "completed_at": "2026-02-04"
+        },
+        "act": {
+          "status": "pending",
+          "recommendations": [
+            "사용성 테스트 진행",
+            "성능 모니터링",
+            "A/B 테스트 실시"
+          ]
+        }
+      }
+    }
+  },
+  "summary": {
+    "total_features": 6,
+    "completed_plan": 6,
+    "completed_design": 6, 
+    "completed_check": 6,
+    "pending_act": 6,
+    "average_match_rate": 70.0,
+    "high_priority_actions": [
+      "rag-ai-answer",
+      "image-attachment"
+    ],
+    "excellent_implementations": [
+      "qa-ux-redesign",
+      "answer-approval", 
+      "auth-rls"
+    ]
+  }
+}

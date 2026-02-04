@@ -5,7 +5,6 @@ import AppSidebar from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/Header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { StudentLayoutClient } from "@/components/layout/student-layout-client";
 import { getPendingAnswersCount } from "@/actions/answers";
 
 export default async function MainLayout({
@@ -22,7 +21,6 @@ export default async function MainLayout({
     redirect("/login");
   }
 
-  // 프로필 조회 (service role로 RLS 우회)
   const serviceClient = createServiceClient();
   const { data: profile } = (await serviceClient
     .from("profiles")
@@ -32,49 +30,35 @@ export default async function MainLayout({
     data: { name: string; role: string; email: string } | null;
   };
 
-  // 승인 대기 중인 사용자는 pending 페이지로
   if (profile?.role === "pending" || profile?.role === "rejected") {
     redirect("/pending");
   }
 
   const isAdmin = profile?.role === "admin";
+  const cookieStore = await cookies();
+  const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
+  const pendingAnswersCount = isAdmin ? await getPendingAnswersCount() : 0;
 
-  // Admin: Notion-style sidebar layout
-  if (isAdmin) {
-    const cookieStore = await cookies();
-    const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
-    const pendingAnswersCount = await getPendingAnswersCount();
-
-    return (
-      <SidebarProvider defaultOpen={defaultOpen}>
-        <AppSidebar
-          userRole={profile?.role}
-          userName={profile?.name || "사용자"}
-          userEmail={profile?.email || user.email || ""}
-          pendingAnswersCount={pendingAnswersCount}
-        />
-        <SidebarInset>
-          <Header
-            userName={profile?.name || "사용자"}
-            userRole={profile?.role}
-          />
-          <ScrollArea className="h-[calc(100dvh-45px)]">
-            <main className="mx-auto w-full max-w-[900px] px-8 py-6 md:px-12 md:py-8">
-              {children}
-            </main>
-          </ScrollArea>
-        </SidebarInset>
-      </SidebarProvider>
-    );
-  }
-
-  // Student: Substack-style layout
+  // 모든 유저가 동일한 사이드바 레이아웃 사용 (노션 스타일)
   return (
-    <StudentLayoutClient
-      userName={profile?.name || "사용자"}
-      userEmail={profile?.email || user.email || ""}
-    >
-      {children}
-    </StudentLayoutClient>
+    <SidebarProvider defaultOpen={defaultOpen}>
+      <AppSidebar
+        userRole={profile?.role}
+        userName={profile?.name || "사용자"}
+        userEmail={profile?.email || user.email || ""}
+        pendingAnswersCount={pendingAnswersCount}
+      />
+      <SidebarInset>
+        <Header
+          userName={profile?.name || "사용자"}
+          userRole={profile?.role}
+        />
+        <ScrollArea className="h-[calc(100dvh-45px)]">
+          <main className="mx-auto w-full max-w-[900px] px-8 py-4 md:px-16 md:py-6">
+            {children}
+          </main>
+        </ScrollArea>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

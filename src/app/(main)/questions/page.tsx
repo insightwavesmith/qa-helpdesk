@@ -58,16 +58,11 @@ export default async function QuestionsPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Q&A</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            질문을 올리고 답변을 받아보세요.
-          </p>
-        </div>
-        <Button asChild className="rounded-full">
+        <h1 className="text-[32px] font-bold tracking-tight">Q&A</h1>
+        <Button asChild size="sm" variant="ghost" className="text-primary hover:text-primary">
           <Link href="/questions/new">
-            <Plus className="mr-1.5 h-4 w-4" />
-            질문하기
+            <Plus className="mr-1 h-4 w-4" />
+            새 질문
           </Link>
         </Button>
       </div>
