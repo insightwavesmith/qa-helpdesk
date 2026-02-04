@@ -101,6 +101,7 @@ export async function createQuestion(formData: {
   title: string;
   content: string;
   categoryId: number | null;
+  imageUrls?: string[];
 }) {
   const supabase = await createClient();
   const {
@@ -118,6 +119,9 @@ export async function createQuestion(formData: {
       content: formData.content,
       category_id: formData.categoryId,
       author_id: user.id,
+      image_urls: formData.imageUrls && formData.imageUrls.length > 0
+        ? formData.imageUrls
+        : [],
     })
     .select()
     .single();

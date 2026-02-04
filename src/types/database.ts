@@ -119,6 +119,7 @@ export interface Database {
           category_id: number | null;
           title: string;
           content: string;
+          image_urls: Json;
           embedding: string | null;
           status: "open" | "answered" | "closed";
           view_count: number;
@@ -132,6 +133,7 @@ export interface Database {
           category_id?: number | null;
           title: string;
           content: string;
+          image_urls?: Json;
           embedding?: string | null;
           status?: "open" | "answered" | "closed";
           view_count?: number;
@@ -145,6 +147,7 @@ export interface Database {
           category_id?: number | null;
           title?: string;
           content?: string;
+          image_urls?: Json;
           embedding?: string | null;
           status?: "open" | "answered" | "closed";
           view_count?: number;

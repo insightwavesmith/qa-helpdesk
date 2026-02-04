@@ -123,6 +123,66 @@ export async function StudentHome() {
         </div>
       )}
 
+      {/* Info/Posts Section — 정보 공유를 최상단에 */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold">정보 공유</h2>
+          <Link
+            href="/posts"
+            className="text-sm text-primary hover:underline flex items-center gap-1"
+          >
+            전체보기
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+
+        {posts.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground rounded-xl border border-dashed">
+            <FileText className="h-8 w-8 mx-auto mb-3 opacity-40" />
+            <p className="text-sm">아직 공유된 정보가 없습니다.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {posts.map((p) => (
+              <Link
+                key={p.id}
+                href={`/posts/${p.id}`}
+                className="group"
+              >
+                <article className="rounded-xl border p-4 transition-all hover:shadow-md hover:border-primary/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="outline" className="text-[11px] rounded-full">
+                      {p.category === "info"
+                        ? "정보"
+                        : p.category === "webinar"
+                          ? "웨비나"
+                          : p.category}
+                    </Badge>
+                  </div>
+                  <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors leading-snug">
+                    {p.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
+                    {p.content}
+                  </p>
+                  <div className="flex items-center gap-2 mt-3 text-[11px] text-muted-foreground">
+                    <span>
+                      {(p.author as { name: string } | null)?.name || "관리자"}
+                    </span>
+                    <span>·</span>
+                    <span>{timeAgo(p.created_at)}</span>
+                    <span className="flex items-center gap-0.5 ml-auto">
+                      <Eye className="h-3 w-3" />
+                      {p.view_count}
+                    </span>
+                  </div>
+                </article>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* Recent Q&A Section */}
       <section>
         <div className="flex items-center justify-between mb-4">
@@ -196,66 +256,6 @@ export async function StudentHome() {
           </Link>
         </Button>
       </div>
-
-      {/* Info/Posts Section */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold">정보 공유</h2>
-          <Link
-            href="/posts"
-            className="text-sm text-primary hover:underline flex items-center gap-1"
-          >
-            전체보기
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-
-        {posts.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground rounded-xl border border-dashed">
-            <FileText className="h-8 w-8 mx-auto mb-3 opacity-40" />
-            <p className="text-sm">아직 공유된 정보가 없습니다.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {posts.map((p) => (
-              <Link
-                key={p.id}
-                href={`/posts/${p.id}`}
-                className="group"
-              >
-                <article className="rounded-xl border p-4 transition-all hover:shadow-md hover:border-primary/20">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="outline" className="text-[11px] rounded-full">
-                      {p.category === "info"
-                        ? "정보"
-                        : p.category === "webinar"
-                          ? "웨비나"
-                          : p.category}
-                    </Badge>
-                  </div>
-                  <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors leading-snug">
-                    {p.title}
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
-                    {p.content}
-                  </p>
-                  <div className="flex items-center gap-2 mt-3 text-[11px] text-muted-foreground">
-                    <span>
-                      {(p.author as { name: string } | null)?.name || "관리자"}
-                    </span>
-                    <span>·</span>
-                    <span>{timeAgo(p.created_at)}</span>
-                    <span className="flex items-center gap-0.5 ml-auto">
-                      <Eye className="h-3 w-3" />
-                      {p.view_count}
-                    </span>
-                  </div>
-                </article>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
     </div>
   );
 }

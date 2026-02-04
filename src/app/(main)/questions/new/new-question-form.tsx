@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,9 +24,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, ImagePlus, X } from "lucide-react";
 import { createQuestion } from "@/actions/questions";
+import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+
+const MAX_IMAGES = 5;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const questionSchema = z.object({
   title: z
@@ -41,12 +46,20 @@ const questionSchema = z.object({
 
 type QuestionFormValues = z.infer<typeof questionSchema>;
 
+interface ImagePreview {
+  file: File;
+  preview: string;
+}
+
 interface NewQuestionFormProps {
   categories: { id: number; name: string; slug: string }[];
 }
 
 export function NewQuestionForm({ categories }: NewQuestionFormProps) {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [images, setImages] = useState<ImagePreview[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   const form = useForm<QuestionFormValues>({
     resolver: zodResolver(questionSchema),
@@ -57,12 +70,100 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
     },
   });
 
+  const handleImageSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
+
+      const remaining = MAX_IMAGES - images.length;
+      if (remaining <= 0) {
+        toast.error(`이미지는 최대 ${MAX_IMAGES}개까지 첨부할 수 있습니다.`);
+        return;
+      }
+
+      const validFiles = files.slice(0, remaining).filter((file) => {
+        if (file.size > MAX_FILE_SIZE) {
+          toast.error(`${file.name}: 5MB 이하의 이미지만 첨부 가능합니다.`);
+          return false;
+        }
+        if (!file.type.startsWith("image/")) {
+          toast.error(`${file.name}: 이미지 파일만 첨부 가능합니다.`);
+          return false;
+        }
+        return true;
+      });
+
+      const newPreviews = validFiles.map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+
+      setImages((prev) => [...prev, ...newPreviews]);
+
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    },
+    [images.length]
+  );
+
+  const removeImage = useCallback((index: number) => {
+    setImages((prev) => {
+      const removed = prev[index];
+      URL.revokeObjectURL(removed.preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  }, []);
+
+  const uploadImages = async (): Promise<string[]> => {
+    if (images.length === 0) return [];
+
+    const supabase = createClient();
+    const urls: string[] = [];
+
+    for (const img of images) {
+      const ext = img.file.name.split(".").pop() || "jpg";
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const filePath = `questions/${fileName}`;
+
+      const { error } = await supabase.storage
+        .from("question-images")
+        .upload(filePath, img.file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (error) {
+        console.error("Image upload error:", error);
+        throw new Error(`이미지 업로드 실패: ${img.file.name}`);
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("question-images").getPublicUrl(filePath);
+
+      urls.push(publicUrl);
+    }
+
+    return urls;
+  };
+
   const onSubmit = async (values: QuestionFormValues) => {
     try {
+      setUploading(true);
+
+      // Upload images first
+      let imageUrls: string[] = [];
+      if (images.length > 0) {
+        imageUrls = await uploadImages();
+      }
+
       const { data, error } = await createQuestion({
         title: values.title,
         content: values.content,
         categoryId: parseInt(values.categoryId, 10),
+        imageUrls,
       });
 
       if (error) {
@@ -72,8 +173,12 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
 
       toast.success("질문이 등록되었습니다.");
       router.push(`/questions/${data?.id || ""}`);
-    } catch {
-      toast.error("질문 등록 중 오류가 발생했습니다.");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "질문 등록 중 오류가 발생했습니다."
+      );
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -166,6 +271,76 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
             )}
           />
 
+          {/* Image Upload Section */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">
+                이미지 첨부{" "}
+                <span className="text-muted-foreground font-normal">
+                  (선택, 최대 {MAX_IMAGES}개)
+                </span>
+              </label>
+              {images.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {images.length}/{MAX_IMAGES}
+                </span>
+              )}
+            </div>
+
+            {/* Image previews */}
+            {images.length > 0 && (
+              <div className="flex flex-wrap gap-3">
+                {images.map((img, idx) => (
+                  <div
+                    key={idx}
+                    className="relative group rounded-lg overflow-hidden border w-24 h-24"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={img.preview}
+                      alt={`첨부 이미지 ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(idx)}
+                      className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Upload button */}
+            {images.length < MAX_IMAGES && (
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  multiple
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-lg gap-2"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <ImagePlus className="h-4 w-4" />
+                  이미지 추가
+                </Button>
+                <p className="text-[11px] text-muted-foreground mt-1.5">
+                  JPG, PNG, GIF, WebP / 파일당 5MB 이하
+                </p>
+              </div>
+            )}
+          </div>
+
           <div className="flex gap-3 pt-2">
             <Button
               type="button"
@@ -177,11 +352,15 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
             </Button>
             <Button
               type="submit"
-              disabled={form.formState.isSubmitting}
+              disabled={form.formState.isSubmitting || uploading}
               className="rounded-full gap-2"
             >
               <Send className="h-4 w-4" />
-              {form.formState.isSubmitting ? "등록 중..." : "질문 등록"}
+              {uploading
+                ? "이미지 업로드 중..."
+                : form.formState.isSubmitting
+                  ? "등록 중..."
+                  : "질문 등록"}
             </Button>
           </div>
         </form>

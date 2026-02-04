@@ -108,6 +108,31 @@ export default async function QuestionDetailPage({
         <div className="mt-6 text-base leading-[1.8] whitespace-pre-wrap text-foreground/90">
           {question.content}
         </div>
+
+        {/* Attached images */}
+        {Array.isArray(question.image_urls) &&
+          (question.image_urls as string[]).length > 0 && (
+            <div className="mt-6 space-y-3">
+              {(question.image_urls as string[]).map(
+                (url: string, idx: number) => (
+                  <a
+                    key={idx}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={url}
+                      alt={`첨부 이미지 ${idx + 1}`}
+                      className="max-w-full sm:max-w-lg rounded-lg border shadow-sm"
+                    />
+                  </a>
+                )
+              )}
+            </div>
+          )}
       </article>
 
       {/* Answers */}
