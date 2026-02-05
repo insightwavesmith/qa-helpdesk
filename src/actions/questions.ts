@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createAIAnswerForQuestion } from "@/lib/rag";
 
 export async function getQuestions({
   page = 1,
@@ -145,6 +146,11 @@ export async function createQuestion(formData: {
     console.error("createQuestion error:", error);
     return { data: null, error: error.message };
   }
+
+  // AI 답변 자동 생성 (비동기, 실패해도 질문 생성은 성공)
+  createAIAnswerForQuestion(data.id, formData.title, formData.content).catch(
+    (err) => console.error("AI answer generation failed:", err)
+  );
 
   revalidatePath("/questions");
   revalidatePath("/dashboard");
