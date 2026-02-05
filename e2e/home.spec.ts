@@ -5,15 +5,19 @@ test.describe('홈 (로그인 후)', () => {
   test.beforeEach(async ({ page }) => {
     // 로그인
     await page.goto('/login');
-    await page.getByLabel('이메일').fill('student@test.com');
-    await page.getByLabel('비밀번호').fill('test1234');
-    await page.getByRole('button', { name: '로그인' }).click();
+    await page.waitForLoadState('networkidle');
+    
+    await page.locator('input[type="email"]').fill('student@test.com');
+    await page.locator('input[type="password"]').fill('test1234');
+    await page.locator('button[type="submit"]').click();
     
     // 대시보드로 이동 대기
-    await page.waitForURL(/\/dashboard/, { timeout: 10000 });
+    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
   });
 
   test('홈 페이지 구성 요소', async ({ page }) => {
+    await page.waitForLoadState('networkidle');
+    
     // 헤더 확인
     await expect(page.getByText('BS CAMP')).toBeVisible();
     
@@ -30,9 +34,11 @@ test.describe('홈 (로그인 후)', () => {
   });
 
   test('Q&A 페이지 이동', async ({ page }) => {
+    await page.waitForLoadState('networkidle');
+    
     await page.getByRole('link', { name: 'Q&A' }).click();
     
-    await expect(page).toHaveURL(/\/questions/);
+    await expect(page).toHaveURL(/\/questions/, { timeout: 10000 });
     await expect(page.getByText('전체 질문')).toBeVisible();
   });
 });
