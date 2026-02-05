@@ -118,11 +118,13 @@ export default function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href="/dashboard" className="flex items-center gap-2.5">
-                <div className="flex size-[22px] items-center justify-center rounded-[4px] bg-foreground/10 text-[13px] font-semibold text-foreground/70">
-                  사
-                </div>
+                <img
+                  src="/logo.png"
+                  alt="BS CAMP"
+                  className="size-[22px] rounded-[4px] object-cover"
+                />
                 <span className="text-[14px] font-medium text-foreground truncate">
-                  사관학교 헬프데스크
+                  BS CAMP
                 </span>
               </Link>
             </SidebarMenuButton>

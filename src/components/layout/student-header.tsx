@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
-  GraduationCap,
   Search,
   X,
   LogOut,
@@ -168,11 +167,13 @@ export function StudentHeader({ userName, userEmail }: StudentHeaderProps) {
             href="/dashboard"
             className="flex items-center gap-2 shrink-0"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <GraduationCap className="h-4 w-4" />
-            </div>
+            <img
+              src="/logo.png"
+              alt="BS CAMP"
+              className="h-8 w-8 rounded-lg object-cover"
+            />
             <span className="font-semibold text-base hidden sm:inline">
-              사관학교
+              BS CAMP
             </span>
           </Link>
 
