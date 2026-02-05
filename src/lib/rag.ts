@@ -34,7 +34,8 @@ export async function searchRelevantChunks(
   const embedding = await generateEmbedding(questionText);
   
   // 벡터 유사도 검색 (RPC 함수 호출)
-  const { data, error } = await supabase.rpc("match_lecture_chunks", {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.rpc as any)("match_lecture_chunks", {
     query_embedding: embedding,
     match_threshold: threshold,
     match_count: limit,
@@ -118,7 +119,8 @@ export async function createAIAnswerForQuestion(
     }
     
     // AI 답변 저장 (승인 대기 상태)
-    const { error } = await supabase.from("answers").insert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from("answers") as any).insert({
       question_id: questionId,
       author_id: null, // AI 답변
       content: result.answer,
