@@ -183,29 +183,30 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
   };
 
   return (
-    <div className="space-y-6">
-      <Button variant="ghost" size="sm" asChild className="-ml-2">
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      <Button variant="ghost" size="sm" asChild className="-ml-2 mb-6">
         <Link href="/questions">
           <ArrowLeft className="mr-1.5 h-4 w-4" />
           Q&A 목록
         </Link>
       </Button>
 
-      <div>
-        <h1 className="text-2xl font-bold">새 질문 작성</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          메타 광고 관련 궁금한 점을 자유롭게 질문해주세요.
-          <br />
-          AI가 강의 자료를 기반으로 초안 답변을 드리고, Smith님이 검토 후
-          승인합니다.
-        </p>
-      </div>
+      <div className="bg-card-bg rounded-xl border border-border-color p-8 fade-in">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-text-main">새 질문 작성</h1>
+          <p className="text-sm text-text-secondary mt-1">
+            메타 광고 관련 궁금한 점을 자유롭게 질문해주세요.
+            <br />
+            AI가 강의 자료를 기반으로 초안 답변을 드리고, Smith님이 검토 후
+            승인합니다.
+          </p>
+        </div>
 
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-5"
-        >
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-5"
+          >
           <FormField
             control={form.control}
             name="categoryId"
@@ -363,8 +364,9 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
                   : "질문 등록"}
             </Button>
           </div>
-        </form>
-      </Form>
+          </form>
+        </Form>
+      </div>
     </div>
   );
 }

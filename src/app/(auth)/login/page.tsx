@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
+import { ThemeModeToggle } from "@/components/layout/theme-toggle";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -40,7 +41,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-warm flex items-center justify-center p-4">
+    <div className="min-h-screen bg-bg-warm flex items-center justify-center p-4 relative">
+      {/* 테마 토글 */}
+      <div className="absolute top-4 right-4">
+        <ThemeModeToggle />
+      </div>
+      
       <div className="w-full max-w-md">
         {/* 헤더 */}
         <div className="text-center mb-8">

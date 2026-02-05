@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/client";
 import { updateBusinessCertUrl } from "@/actions/auth";
 import { GraduationCap, Loader2, Upload, FileCheck } from "lucide-react";
+import { ThemeModeToggle } from "@/components/layout/theme-toggle";
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -119,7 +120,12 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 px-4 py-8">
+    <div className="flex min-h-svh items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 px-4 py-8 relative">
+      {/* 테마 토글 */}
+      <div className="absolute top-4 right-4">
+        <ThemeModeToggle />
+      </div>
+      
       <div className="w-full max-w-lg space-y-6">
         {/* Logo */}
         <div className="flex flex-col items-center gap-2">
