@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, ChevronRight } from "lucide-react";
+import { Search } from "lucide-react";
 import { getPosts } from "@/actions/posts";
 import { getQuestions } from "@/actions/questions";
 
@@ -17,6 +17,14 @@ function timeAgo(dateStr: string) {
   return d.toLocaleDateString("ko-KR");
 }
 
+// 사용자 아바타 색상
+function getAvatarColor(name?: string): string {
+  const colors = ["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-pink-500", "bg-yellow-500"];
+  if (!name) return "bg-gray-500";
+  const index = name.charCodeAt(0) % colors.length;
+  return colors[index];
+}
+
 interface StudentHomeProps {
   userName: string;
 }
@@ -27,8 +35,8 @@ export async function StudentHome({ userName }: StudentHomeProps) {
 
   try {
     const [nResult, qResult] = await Promise.all([
-      getPosts({ page: 1, pageSize: 5, category: "notice" }),
-      getQuestions({ page: 1, pageSize: 5 }),
+      getPosts({ page: 1, pageSize: 3, category: "notice" }),
+      getQuestions({ page: 1, pageSize: 6 }),
     ]);
     notices = nResult.data;
     recentQuestions = qResult.data;
@@ -37,59 +45,54 @@ export async function StudentHome({ userName }: StudentHomeProps) {
   }
 
   return (
-    <div className="space-y-10">
-      {/* Page title — Notion style */}
-      <div>
-        <h1 className="text-[32px] font-bold tracking-tight text-foreground">
-          {userName}님, 안녕하세요
-        </h1>
-        <div className="mt-3">
-          <Link
-            href="/questions/new"
-            className="inline-flex items-center gap-1.5 text-[14px] text-primary hover:underline"
-          >
-            <Plus className="h-4 w-4" />
-            새 질문 작성하기
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      {/* 검색바 */}
+      <div className="mb-12">
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-3xl font-bold text-center mb-6 text-text-main">
+            궁금한 것이 있으신가요?
+          </h1>
+          <Link href="/questions" className="block">
+            <div className="relative search-focus rounded-xl">
+              <input
+                type="text"
+                placeholder="질문 검색하기..."
+                className="w-full px-6 py-4 text-lg border border-border-color rounded-xl focus:outline-none transition-shadow bg-card-bg text-text-main"
+                readOnly
+              />
+              <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 text-primary w-6 h-6" />
+            </div>
           </Link>
         </div>
       </div>
 
-      {/* 공지사항 — Notion-style list */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[14px] font-semibold text-muted-foreground uppercase tracking-wide">
-            공지사항
-          </h2>
-          <Link
-            href="/notices"
-            className="text-[13px] text-muted-foreground hover:text-foreground transition-colors"
-          >
-            전체보기
-          </Link>
-        </div>
-
+      {/* 공지사항 */}
+      <section className="mb-12">
+        <h2 className="text-xl font-bold mb-4 flex items-center text-text-main">
+          <span className="mr-2">📢</span> 공지사항
+        </h2>
+        
         {notices.length === 0 ? (
-          <p className="text-[14px] text-muted-foreground py-4">
-            등록된 공지사항이 없습니다.
-          </p>
+          <div className="bg-card-bg rounded-xl border border-border-color p-6 card-hover">
+            <p className="text-text-secondary text-center">등록된 공지사항이 없습니다.</p>
+          </div>
         ) : (
-          <div>
-            {notices.map((notice) => (
-              <Link
-                key={notice.id}
-                href={`/posts/${notice.id}`}
-                className="group block"
-              >
-                <div className="flex items-center gap-3 py-2 -mx-2 px-2 rounded-[6px] transition-colors duration-150 hover:bg-accent">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] text-foreground line-clamp-1 group-hover:text-primary transition-colors duration-150">
-                      {notice.title}
+          <div className="bg-card-bg rounded-xl border border-border-color p-6 card-hover">
+            {notices.slice(0, 1).map((notice) => (
+              <Link key={notice.id} href={`/posts/${notice.id}`} className="block">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-lg mb-2 text-text-main">{notice.title}</h3>
+                    <p className="text-text-secondary line-clamp-2">{notice.content}</p>
+                    <p className="text-sm text-text-muted mt-2">
+                      {timeAgo(notice.created_at)} • 관리자
                     </p>
                   </div>
-                  <span className="text-[12px] text-muted-foreground shrink-0">
-                    {timeAgo(notice.created_at)}
-                  </span>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
                 </div>
               </Link>
             ))}
@@ -97,52 +100,68 @@ export async function StudentHome({ userName }: StudentHomeProps) {
         )}
       </section>
 
-      {/* 최근 Q&A — Notion-style list */}
+      {/* 최근 Q&A */}
       <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[14px] font-semibold text-muted-foreground uppercase tracking-wide">
-            최근 질문
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold flex items-center text-text-main">
+            <span className="mr-2">💬</span> 최근 Q&A
           </h2>
-          <Link
-            href="/questions"
-            className="text-[13px] text-muted-foreground hover:text-foreground transition-colors"
-          >
-            전체보기
+          <Link href="/questions" className="text-primary font-medium hover:underline">
+            더보기 →
           </Link>
         </div>
-
+        
         {recentQuestions.length === 0 ? (
-          <p className="text-[14px] text-muted-foreground py-4">
-            등록된 질문이 없습니다.
-          </p>
+          <div className="bg-card-bg rounded-xl border border-border-color p-8 text-center card-hover">
+            <p className="text-text-secondary">등록된 질문이 없습니다.</p>
+            <Link
+              href="/questions/new"
+              className="inline-block mt-4 px-6 py-2 bg-primary text-white rounded-lg font-medium btn-primary"
+            >
+              첫 질문 작성하기
+            </Link>
+          </div>
         ) : (
-          <div>
-            {recentQuestions.map((q) => (
-              <Link
-                key={q.id}
-                href={`/questions/${q.id}`}
-                className="group block"
-              >
-                <div className="flex items-center gap-3 py-2 -mx-2 px-2 rounded-[6px] transition-colors duration-150 hover:bg-accent">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] text-foreground line-clamp-1 group-hover:text-primary transition-colors duration-150">
-                      {q.title}
-                    </p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {q.category && (
-                        <span className="text-[12px] text-muted-foreground">
-                          {q.category.name}
-                        </span>
-                      )}
-                      <span className="text-[12px] text-muted-foreground">
-                        {q.author?.name || "익명"}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {recentQuestions.slice(0, 6).map((question) => (
+              <Link key={question.id} href={`/questions/${question.id}`}>
+                <article className="bg-card-bg rounded-xl border border-border-color p-6 card-hover fade-in h-full">
+                  <h3 className="font-bold text-lg mb-3 line-clamp-2 text-text-main">
+                    {question.title}
+                  </h3>
+                  <p className="text-text-secondary text-sm mb-4 line-clamp-3">
+                    {question.content}
+                  </p>
+                  
+                  {question.category && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                        {question.category.name}
                       </span>
                     </div>
+                  )}
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-6 h-6 ${getAvatarColor(question.author?.name)} rounded-full flex items-center justify-center`}>
+                        <span className="text-white text-xs font-medium">
+                          {question.author?.name?.charAt(0) || "?"}
+                        </span>
+                      </div>
+                      <span className="text-text-secondary">{question.author?.name || "익명"}</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        question.status === "answered" 
+                          ? "bg-success text-white" 
+                          : "bg-warning text-white"
+                      }`}>
+                        {question.status === "answered" ? "답변완료" : "답변대기"}
+                      </span>
+                      <span className="text-text-muted">{timeAgo(question.created_at)}</span>
+                    </div>
                   </div>
-                  <span className="text-[11px] text-muted-foreground shrink-0 px-1.5 py-0.5 rounded bg-secondary">
-                    {q.status === "answered" ? "답변완료" : q.status === "closed" ? "마감" : "대기"}
-                  </span>
-                </div>
+                </article>
               </Link>
             ))}
           </div>

@@ -6,114 +6,108 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
-  --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
+  --color-primary-foreground: var(--primary-foreground);
   --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  
+  /* BS CAMP Custom Colors */
+  --color-text-main: #37352f;
+  --color-text-secondary: #73726a;
+  --color-text-muted: #a8a29e;
+  --color-bg-warm: #f7f6f5;
+  --color-bg-soft: #faf9f8;
+  --color-card-bg: #ffffff;
+  --color-card-hover: #fafafa;
+  --color-border-color: #e5e7eb;
+  --color-border-light: #f3f4f6;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  
+  --font-sans: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  --font-accent: "Space Grotesk", monospace;
+  --font-mono: var(--font-geist-mono);
+  
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
-  --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
-  --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
-  @keyframes shimmer-slide {
-  to {
-    transform: translate(calc(100cqw - 100%), 0);
-    }
-  }
-  @keyframes spin-around {
-  0% {
-    transform: translateZ(0) rotate(0);
-    }
-  15%, 35% {
-    transform: translateZ(0) rotate(90deg);
-    }
-  65%, 85% {
-    transform: translateZ(0) rotate(270deg);
-    }
-  100% {
-    transform: translateZ(0) rotate(360deg);
-    }
-  }
-  --animate-gradient: gradient 8s linear infinite
-;
-  @keyframes gradient {
-  to {
-    background-position: var(--bg-size, 300%) 0;}}}
-
-/* ── Notion-Inspired Theme (Light) ── */
-:root {
-  --radius: 0.375rem;
-  /* Core Notion colors */
-  --background: #ffffff;
-  --foreground: rgb(55, 53, 47);
-  --card: #ffffff;
-  --card-foreground: rgb(55, 53, 47);
-  --popover: #ffffff;
-  --popover-foreground: rgb(55, 53, 47);
-  /* Primary = Notion blue */
-  --primary: rgb(35, 131, 226);
-  --primary-foreground: #ffffff;
-  /* Secondary/muted = Notion warm grays */
-  --secondary: rgb(247, 246, 243);
-  --secondary-foreground: rgb(55, 53, 47);
-  --muted: rgb(247, 246, 243);
-  --muted-foreground: rgba(55, 53, 47, 0.65);
-  --accent: rgba(55, 53, 47, 0.04);
-  --accent-foreground: rgb(55, 53, 47);
-  --destructive: #eb5757;
-  /* Borders = very subtle */
-  --border: rgba(55, 53, 47, 0.09);
-  --input: rgba(55, 53, 47, 0.16);
-  --ring: rgb(35, 131, 226);
-  /* Charts */
-  --chart-1: rgb(35, 131, 226);
-  --chart-2: rgb(111, 207, 151);
-  --chart-3: rgb(242, 153, 74);
-  --chart-4: rgb(155, 89, 182);
-  --chart-5: rgb(231, 76, 60);
-  /* Sidebar = Notion's warm off-white */
-  --sidebar: rgb(247, 246, 243);
-  --sidebar-foreground: rgb(55, 53, 47);
-  --sidebar-primary: rgb(35, 131, 226);
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(55, 53, 47, 0.06);
-  --sidebar-accent-foreground: rgb(55, 53, 47);
-  --sidebar-border: transparent;
-  --sidebar-ring: rgb(35, 131, 226);
 }
 
-/* ── Notion-Inspired Theme (Dark) ── */
+/* ── BS CAMP Theme (Light) ── */
+:root {
+  --radius: 0.75rem;
+  
+  /* Primary = Coral Red */
+  --primary: #FF5757;
+  --primary-foreground: #ffffff;
+  
+  /* Core Colors */
+  --background: #f7f6f5;
+  --foreground: #37352f;
+  --card: #ffffff;
+  --card-foreground: #37352f;
+  --popover: #ffffff;
+  --popover-foreground: #37352f;
+  
+  /* Secondary/muted */
+  --secondary: #faf9f8;
+  --secondary-foreground: #37352f;
+  --muted: #faf9f8;
+  --muted-foreground: #73726a;
+  --accent: #fafafa;
+  --accent-foreground: #37352f;
+  --destructive: #eb5757;
+  
+  /* Borders */
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #FF5757;
+  
+  /* Charts */
+  --chart-1: #FF5757;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #8b5cf6;
+  --chart-5: #ef4444;
+  
+  /* Sidebar */
+  --sidebar: #faf9f8;
+  --sidebar-foreground: #37352f;
+  --sidebar-primary: #FF5757;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #fafafa;
+  --sidebar-accent-foreground: #37352f;
+  --sidebar-border: transparent;
+  --sidebar-ring: #FF5757;
+}
+
+/* ── BS CAMP Theme (Dark) ── */
 .dark {
   --background: rgb(25, 25, 25);
   --foreground: rgba(255, 255, 255, 0.9);
@@ -121,8 +115,8 @@
   --card-foreground: rgba(255, 255, 255, 0.9);
   --popover: rgb(32, 32, 32);
   --popover-foreground: rgba(255, 255, 255, 0.9);
-  --primary: rgb(82, 156, 202);
-  --primary-foreground: rgb(25, 25, 25);
+  --primary: #FF5757;
+  --primary-foreground: #ffffff;
   --secondary: rgb(47, 47, 47);
   --secondary-foreground: rgba(255, 255, 255, 0.9);
   --muted: rgba(255, 255, 255, 0.06);
@@ -132,20 +126,20 @@
   --destructive: #eb5757;
   --border: rgba(255, 255, 255, 0.07);
   --input: rgba(255, 255, 255, 0.1);
-  --ring: rgb(82, 156, 202);
-  --chart-1: rgb(82, 156, 202);
-  --chart-2: rgb(111, 207, 151);
-  --chart-3: rgb(242, 153, 74);
-  --chart-4: rgb(187, 107, 217);
-  --chart-5: rgb(231, 76, 60);
+  --ring: #FF5757;
+  --chart-1: #FF5757;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #a78bfa;
+  --chart-5: #ef4444;
   --sidebar: rgb(32, 32, 32);
   --sidebar-foreground: rgba(255, 255, 255, 0.9);
-  --sidebar-primary: rgb(82, 156, 202);
-  --sidebar-primary-foreground: rgba(255, 255, 255, 0.9);
+  --sidebar-primary: #FF5757;
+  --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: rgba(255, 255, 255, 0.055);
   --sidebar-accent-foreground: rgba(255, 255, 255, 0.9);
   --sidebar-border: transparent;
-  --sidebar-ring: rgb(82, 156, 202);
+  --sidebar-ring: #FF5757;
 }
 
 @layer base {
@@ -156,64 +150,72 @@
     @apply bg-background text-foreground;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-feature-settings: "kern";
-    text-rendering: optimizeLegibility;
-    line-height: 1.5;
   }
 }
 
-/* ── Notion-style global overrides ── */
+/* ── BS CAMP Custom Utilities ── */
 
-/* All interactive elements: smooth transitions */
-button, a, input, textarea, select,
-[role="button"], [role="menuitem"], [role="tab"] {
-  transition: background-color 120ms ease-in, color 120ms ease-in, border-color 120ms ease-in, opacity 120ms ease-in;
+/* Card hover effect */
+.card-hover {
+  transition: all 0.3s ease-out;
+  transform: translateY(0);
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px rgba(55, 53, 47, 0.1);
 }
 
-/* Notion-style scrollbar (thin, unobtrusive) */
+/* Primary button effect */
+.btn-primary {
+  transition: all 0.15s ease-out;
+}
+.btn-primary:hover {
+  background-color: #E84444;
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* Tag chip hover */
+.tag-chip {
+  transition: all 0.15s ease-out;
+  cursor: pointer;
+}
+.tag-chip:hover {
+  background-color: #FF5757;
+  color: white;
+}
+
+/* Search focus effect */
+.search-focus:focus-within {
+  box-shadow: 0 0 0 4px rgba(255, 87, 87, 0.1);
+}
+
+/* Fade in animation */
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Nav item hover */
+.nav-item:hover {
+  color: #FF5757;
+}
+
+/* Smooth transitions for all interactive elements */
+button, a, input, textarea, select {
+  transition: background-color 120ms ease-in, color 120ms ease-in, border-color 120ms ease-in;
+}
+
+/* Scrollbar */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(55, 53, 47, 0.15) transparent;
 }
 .dark * {
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-}
-
-/* Hide scrollbar utility */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-/* View Transition Wave Effect */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
-}
-
-::view-transition-old(root) {
-  z-index: 0;
-}
-
-::view-transition-new(root) {
-  z-index: 1;
-}
-
-@keyframes reveal {
-  from {
-    clip-path: circle(0% at var(--x, 50%) var(--y, 50%));
-    opacity: 0.7;
-  }
-  to {
-    clip-path: circle(150% at var(--x, 50%) var(--y, 50%));
-    opacity: 1;
-  }
-}
-
-::view-transition-new(root) {
-  animation: reveal 0.4s ease-in-out forwards;
 }
