@@ -1,7 +1,5 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Plus } from "lucide-react";
 import { getQuestions, getCategories } from "@/actions/questions";
 import { QuestionsListClient } from "./questions-list-client";
@@ -25,7 +23,6 @@ export default async function QuestionsPage({
   const status = params.status || "all";
   const tab = params.tab || "all";
 
-  // Get current user for "내 질문" tab
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const currentUserId = user?.id;
@@ -40,15 +37,15 @@ export default async function QuestionsPage({
 
   const { data: questions, count } = await getQuestions({
     page,
-    pageSize: 10,
-    categoryId: tab === "all" ? categoryId : undefined, // 카테고리 필터는 전체 Q&A에서만
+    pageSize: 12,
+    categoryId: tab === "all" ? categoryId : undefined,
     search: search || undefined,
     status: status !== "all" ? status : undefined,
     tab,
     authorId: tab === "mine" ? currentUserId : undefined,
   });
 
-  const totalPages = Math.ceil((count || 0) / 10);
+  const totalPages = Math.ceil((count || 0) / 12);
 
   const categoryTabs = categories.map((c) => ({
     value: c.slug,
@@ -56,27 +53,8 @@ export default async function QuestionsPage({
   }));
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-[32px] font-bold tracking-tight">Q&A</h1>
-        <Button asChild size="sm" variant="ghost" className="text-primary hover:text-primary">
-          <Link href="/questions/new">
-            <Plus className="mr-1 h-4 w-4" />
-            새 질문
-          </Link>
-        </Button>
-      </div>
-
-      <Suspense
-        fallback={
-          <div className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-32 w-full" />
-          </div>
-        }
-      >
+    <div className="max-w-6xl mx-auto px-4 py-8 relative">
+      <Suspense fallback={<QuestionsLoading />}>
         <QuestionsListClient
           questions={questions}
           categories={categoryTabs}
@@ -90,6 +68,28 @@ export default async function QuestionsPage({
           currentUserId={currentUserId}
         />
       </Suspense>
+      
+      {/* 플로팅 질문 작성 버튼 */}
+      <Link 
+        href="/questions/new"
+        className="fixed bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-lg hover:shadow-xl transition-shadow btn-primary flex items-center justify-center z-50"
+      >
+        <Plus className="w-6 h-6" />
+      </Link>
+    </div>
+  );
+}
+
+function QuestionsLoading() {
+  return (
+    <div className="space-y-6">
+      <div className="h-12 bg-card-bg rounded-xl animate-pulse" />
+      <div className="h-10 bg-card-bg rounded-lg animate-pulse w-1/2" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="h-48 bg-card-bg rounded-xl animate-pulse" />
+        ))}
+      </div>
     </div>
   );
 }
