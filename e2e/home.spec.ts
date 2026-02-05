@@ -8,7 +8,7 @@ test.describe('홈 (로그인 후)', () => {
     await page.waitForLoadState('networkidle');
     
     await page.locator('input[type="email"]').fill('student@test.com');
-    await page.locator('input[type="password"]').fill('test1234');
+    await page.locator('input[type="password"]').fill('test1234!');
     await page.locator('button[type="submit"]').click();
     
     // 대시보드로 이동 대기

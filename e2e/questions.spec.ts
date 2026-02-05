@@ -7,7 +7,7 @@ test.describe('Q&A', () => {
     await page.waitForLoadState('networkidle');
     
     await page.locator('input[type="email"]').fill('student@test.com');
-    await page.locator('input[type="password"]').fill('test1234');
+    await page.locator('input[type="password"]').fill('test1234!');
     await page.locator('button[type="submit"]').click();
     await page.waitForURL(/\/dashboard/, { timeout: 15000 });
   });
