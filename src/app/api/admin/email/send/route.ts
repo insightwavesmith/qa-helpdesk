@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { newsletterTemplate } from "@/lib/email-templates";
+import { renderEmail, type TemplateName } from "@/lib/email-renderer";
 
 const BATCH_SIZE = 50;
 const BATCH_DELAY_MS = 1000;
@@ -48,16 +48,33 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { target, customEmails, subject, html } = body as {
+    const {
+      target,
+      customEmails,
+      subject,
+      html,
+      template,
+      templateProps,
+    } = body as {
       target: "all_leads" | "all_students" | "all_members" | "custom";
       customEmails?: string[];
       subject: string;
-      html: string;
+      html?: string;
+      template?: TemplateName;
+      templateProps?: Record<string, string>;
     };
 
-    if (!subject || !html) {
+    if (!subject) {
       return NextResponse.json(
-        { error: "제목과 본문은 필수입니다." },
+        { error: "제목은 필수입니다." },
+        { status: 400 }
+      );
+    }
+
+    // 템플릿 또는 html 중 하나는 필수
+    if (!template && !html) {
+      return NextResponse.json(
+        { error: "템플릿 또는 HTML 본문이 필요합니다." },
         { status: 400 }
       );
     }
@@ -122,7 +139,22 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const fullHtml = newsletterTemplate({ subject, bodyHtml: html });
+    // HTML 렌더링: React Email 템플릿 또는 기존 HTML
+    let fullHtml: string;
+    const templateName = template || "newsletter";
+
+    if (template && templateProps) {
+      fullHtml = await renderEmail(template, {
+        subject,
+        ...templateProps,
+      } as Parameters<typeof renderEmail>[1]);
+    } else {
+      // 기존 방식: newsletter 템플릿에 html 본문 삽입
+      fullHtml = await renderEmail("newsletter", {
+        subject,
+        bodyHtml: html || "",
+      });
+    }
 
     // 배치 발송
     let sent = 0;
@@ -146,7 +178,7 @@ export async function POST(request: NextRequest) {
               recipient_email: recipient.email,
               recipient_type: recipient.type,
               subject,
-              template: "newsletter",
+              template: templateName,
               status: "sent",
               sent_at: new Date().toISOString(),
             });
@@ -160,7 +192,7 @@ export async function POST(request: NextRequest) {
               recipient_email: recipient.email,
               recipient_type: recipient.type,
               subject,
-              template: "newsletter",
+              template: templateName,
               status: "failed",
               error_message: errorMessage,
             });

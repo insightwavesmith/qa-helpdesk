@@ -39,6 +39,7 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 
 type TargetGroup = "all_leads" | "all_students" | "all_members" | "custom";
+type TemplateType = "newsletter" | "webinar" | "performance";
 
 interface RecipientCounts {
   leads: number;
@@ -63,13 +64,34 @@ const TARGET_LABELS: Record<TargetGroup, string> = {
   custom: "직접 입력",
 };
 
+const TEMPLATE_LABELS: Record<TemplateType, string> = {
+  newsletter: "뉴스레터",
+  webinar: "웨비나 초대",
+  performance: "성과 공유",
+};
+
 export default function AdminEmailPage() {
   const [subject, setSubject] = useState("");
-  const [html, setHtml] = useState("");
   const [target, setTarget] = useState<TargetGroup>("all_leads");
   const [customEmails, setCustomEmails] = useState("");
   const [sending, setSending] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [templateType, setTemplateType] = useState<TemplateType>("newsletter");
+
+  // Newsletter fields
+  const [html, setHtml] = useState("");
+
+  // Webinar fields
+  const [webinarTitle, setWebinarTitle] = useState("");
+  const [webinarDate, setWebinarDate] = useState("");
+  const [webinarTime, setWebinarTime] = useState("");
+  const [webinarUrl, setWebinarUrl] = useState("");
+
+  // Performance fields
+  const [perfRoas, setPerfRoas] = useState("");
+  const [perfRevenue, setPerfRevenue] = useState("");
+  const [perfAdSpend, setPerfAdSpend] = useState("");
+  const [perfBody, setPerfBody] = useState("");
 
   const [counts, setCounts] = useState<RecipientCounts | null>(null);
   const [history, setHistory] = useState<EmailSendRecord[]>([]);
@@ -88,7 +110,6 @@ export default function AdminEmailPage() {
   }, []);
 
   useEffect(() => {
-    // 수신자 수 조회
     fetch("/api/admin/email/recipients")
       .then((res) => res.json())
       .then((data) => {
@@ -114,13 +135,21 @@ export default function AdminEmailPage() {
     }
   };
 
+  const isFormValid = () => {
+    if (!subject.trim()) return false;
+    switch (templateType) {
+      case "newsletter":
+        return !!html.trim();
+      case "webinar":
+        return !!webinarTitle.trim() && !!webinarDate.trim() && !!webinarTime.trim() && !!webinarUrl.trim();
+      case "performance":
+        return !!perfRoas.trim() && !!perfRevenue.trim() && !!perfAdSpend.trim();
+    }
+  };
+
   const handleSend = async () => {
     if (!subject.trim()) {
       toast.error("제목을 입력해주세요.");
-      return;
-    }
-    if (!html.trim()) {
-      toast.error("본문을 입력해주세요.");
       return;
     }
 
@@ -135,12 +164,33 @@ export default function AdminEmailPage() {
 
     setSending(true);
     try {
-      const body: Record<string, unknown> = { target, subject, html };
+      const body: Record<string, unknown> = { target, subject };
       if (target === "custom") {
         body.customEmails = customEmails
           .split(/[\n,]/)
           .map((e) => e.trim())
           .filter(Boolean);
+      }
+
+      if (templateType === "newsletter") {
+        body.template = "newsletter";
+        body.templateProps = { bodyHtml: html };
+      } else if (templateType === "webinar") {
+        body.template = "webinar";
+        body.templateProps = {
+          title: webinarTitle,
+          date: webinarDate,
+          time: webinarTime,
+          registrationUrl: webinarUrl,
+        };
+      } else if (templateType === "performance") {
+        body.template = "performance";
+        body.templateProps = {
+          roas: perfRoas,
+          revenue: perfRevenue,
+          adSpend: perfAdSpend,
+          bodyText: perfBody || "자사몰 사관학교 수강생들의 성과를 공유합니다.",
+        };
       }
 
       const res = await fetch("/api/admin/email/send", {
@@ -162,6 +212,14 @@ export default function AdminEmailPage() {
       setSubject("");
       setHtml("");
       setCustomEmails("");
+      setWebinarTitle("");
+      setWebinarDate("");
+      setWebinarTime("");
+      setWebinarUrl("");
+      setPerfRoas("");
+      setPerfRevenue("");
+      setPerfAdSpend("");
+      setPerfBody("");
       loadHistory();
     } catch {
       toast.error("발송 중 오류가 발생했습니다.");
@@ -261,10 +319,30 @@ export default function AdminEmailPage() {
             이메일 작성
           </CardTitle>
           <CardDescription>
-            HTML 형식으로 이메일을 작성합니다. BS CAMP 뉴스레터 템플릿이 자동 적용됩니다.
+            템플릿을 선택하고 이메일을 작성합니다. React Email 기반 템플릿이 적용됩니다.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* 템플릿 선택 */}
+          <div className="space-y-1.5">
+            <label className="text-[13px] font-medium">템플릿</label>
+            <Select
+              value={templateType}
+              onValueChange={(v) => setTemplateType(v as TemplateType)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(TEMPLATE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* 수신 대상 */}
           <div className="space-y-1.5">
             <label className="text-[13px] font-medium">수신 대상</label>
@@ -305,29 +383,112 @@ export default function AdminEmailPage() {
             </div>
           )}
 
-          {/* 제목 */}
+          {/* 제목 (공통) */}
           <div className="space-y-1.5">
             <label className="text-[13px] font-medium">제목</label>
             <Input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="[BS CAMP] 뉴스레터 제목"
+              placeholder="[BS CAMP] 이메일 제목"
             />
           </div>
 
-          {/* 본문 */}
-          <div className="space-y-1.5">
-            <label className="text-[13px] font-medium">
-              본문 (HTML)
-            </label>
-            <Textarea
-              value={html}
-              onChange={(e) => setHtml(e.target.value)}
-              placeholder="<h2>안녕하세요!</h2><p>BS CAMP 뉴스레터입니다.</p>"
-              rows={12}
-              className="font-mono text-[13px]"
-            />
-          </div>
+          {/* 뉴스레터 필드 */}
+          {templateType === "newsletter" && (
+            <div className="space-y-1.5">
+              <label className="text-[13px] font-medium">
+                본문 (HTML)
+              </label>
+              <Textarea
+                value={html}
+                onChange={(e) => setHtml(e.target.value)}
+                placeholder="<h2>안녕하세요!</h2><p>BS CAMP 뉴스레터입니다.</p>"
+                rows={12}
+                className="font-mono text-[13px]"
+              />
+            </div>
+          )}
+
+          {/* 웨비나 필드 */}
+          {templateType === "webinar" && (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-medium">웨비나 제목</label>
+                <Input
+                  value={webinarTitle}
+                  onChange={(e) => setWebinarTitle(e.target.value)}
+                  placeholder="사례로 배우는 메타 광고"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[13px] font-medium">날짜</label>
+                  <Input
+                    value={webinarDate}
+                    onChange={(e) => setWebinarDate(e.target.value)}
+                    placeholder="2026. 02. 12. 목"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[13px] font-medium">시간</label>
+                  <Input
+                    value={webinarTime}
+                    onChange={(e) => setWebinarTime(e.target.value)}
+                    placeholder="15:00~17:30"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-medium">신청 링크</label>
+                <Input
+                  value={webinarUrl}
+                  onChange={(e) => setWebinarUrl(e.target.value)}
+                  placeholder="https://whattime.co.kr/inwv/..."
+                />
+              </div>
+            </div>
+          )}
+
+          {/* 성과 공유 필드 */}
+          {templateType === "performance" && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[13px] font-medium">ROAS</label>
+                  <Input
+                    value={perfRoas}
+                    onChange={(e) => setPerfRoas(e.target.value)}
+                    placeholder="254%"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[13px] font-medium">매출</label>
+                  <Input
+                    value={perfRevenue}
+                    onChange={(e) => setPerfRevenue(e.target.value)}
+                    placeholder="104억"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[13px] font-medium">광고비</label>
+                  <Input
+                    value={perfAdSpend}
+                    onChange={(e) => setPerfAdSpend(e.target.value)}
+                    placeholder="40.8억"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[13px] font-medium">본문</label>
+                <Textarea
+                  value={perfBody}
+                  onChange={(e) => setPerfBody(e.target.value)}
+                  placeholder="자사몰 사관학교 수강생들의 성과를 공유합니다."
+                  rows={4}
+                />
+              </div>
+            </div>
+          )}
 
           {/* 안내 */}
           <div className="flex items-start gap-2 rounded-md bg-amber-50 p-3 text-[13px] text-amber-800">
@@ -341,7 +502,7 @@ export default function AdminEmailPage() {
           <div className="flex gap-3 pt-2">
             <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" disabled={!html.trim()}>
+                <Button variant="outline" disabled={!isFormValid()}>
                   <Eye className="h-4 w-4 mr-2" />
                   미리보기
                 </Button>
@@ -350,19 +511,25 @@ export default function AdminEmailPage() {
                 <DialogHeader>
                   <DialogTitle>{subject || "(제목 없음)"}</DialogTitle>
                 </DialogHeader>
-                <div className="border rounded-md overflow-hidden">
-                  <iframe
-                    srcDoc={generatePreviewHtml(subject, html)}
-                    className="w-full h-[500px]"
-                    title="이메일 미리보기"
-                  />
-                </div>
+                <PreviewFrame
+                  templateType={templateType}
+                  subject={subject}
+                  html={html}
+                  webinarTitle={webinarTitle}
+                  webinarDate={webinarDate}
+                  webinarTime={webinarTime}
+                  webinarUrl={webinarUrl}
+                  perfRoas={perfRoas}
+                  perfRevenue={perfRevenue}
+                  perfAdSpend={perfAdSpend}
+                  perfBody={perfBody}
+                />
               </DialogContent>
             </Dialog>
 
             <Button
               onClick={handleSend}
-              disabled={sending || !subject.trim() || !html.trim()}
+              disabled={sending || !isFormValid()}
             >
               {sending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -438,36 +605,98 @@ export default function AdminEmailPage() {
   );
 }
 
-function generatePreviewHtml(subject: string, bodyHtml: string) {
-  return `<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8" />
-  <style>
-    body { margin: 0; padding: 0; background-color: #f7f6f5; font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif; }
-    .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
-    .header { background-color: #1a1a1a; padding: 28px 32px; text-align: center; }
-    .header h1 { color: #ffffff; font-size: 18px; font-weight: 600; margin: 0; }
-    .body { padding: 32px; color: #333333; font-size: 15px; line-height: 1.7; }
-    .body h1, .body h2, .body h3 { color: #1a1a1a; }
-    .body a { color: #FF5757; }
-    .footer { background-color: #fafafa; padding: 24px 32px; text-align: center; font-size: 12px; color: #999999; line-height: 1.6; }
-    .divider { border: 0; border-top: 1px solid #eeeeee; margin: 24px 0; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>BS CAMP</h1>
+function PreviewFrame({
+  templateType,
+  subject,
+  html,
+  webinarTitle,
+  webinarDate,
+  webinarTime,
+  webinarUrl,
+  perfRoas,
+  perfRevenue,
+  perfAdSpend,
+  perfBody,
+}: {
+  templateType: TemplateType;
+  subject: string;
+  html: string;
+  webinarTitle: string;
+  webinarDate: string;
+  webinarTime: string;
+  webinarUrl: string;
+  perfRoas: string;
+  perfRevenue: string;
+  perfAdSpend: string;
+  perfBody: string;
+}) {
+  const [previewHtml, setPreviewHtml] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    const body: Record<string, unknown> = {
+      template: templateType,
+      subject,
+    };
+
+    if (templateType === "newsletter") {
+      body.templateProps = { bodyHtml: html };
+    } else if (templateType === "webinar") {
+      body.templateProps = {
+        title: webinarTitle,
+        date: webinarDate,
+        time: webinarTime,
+        registrationUrl: webinarUrl,
+      };
+    } else if (templateType === "performance") {
+      body.templateProps = {
+        roas: perfRoas,
+        revenue: perfRevenue,
+        adSpend: perfAdSpend,
+        bodyText: perfBody || "자사몰 사관학교 수강생들의 성과를 공유합니다.",
+      };
+    }
+
+    fetch("/api/admin/email/preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.html) {
+          setPreviewHtml(data.html);
+        } else {
+          setPreviewHtml(
+            `<p style="padding:20px;color:#999;">미리보기를 불러올 수 없습니다.</p>`
+          );
+        }
+      })
+      .catch(() => {
+        setPreviewHtml(
+          `<p style="padding:20px;color:#999;">미리보기 오류가 발생했습니다.</p>`
+        );
+      })
+      .finally(() => setLoading(false));
+  }, [templateType, subject, html, webinarTitle, webinarDate, webinarTime, webinarUrl, perfRoas, perfRevenue, perfAdSpend, perfBody]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12 text-muted-foreground">
+        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+        미리보기 렌더링 중...
+      </div>
+    );
+  }
+
+  return (
+    <div className="border rounded-md overflow-hidden">
+      <iframe
+        srcDoc={previewHtml}
+        className="w-full h-[500px]"
+        title="이메일 미리보기"
+      />
     </div>
-    <div class="body">
-      ${bodyHtml}
-    </div>
-    <div class="footer">
-      <hr class="divider" />
-      <p>본 메일은 BS CAMP에서 발송한 뉴스레터입니다.<br/>수신거부 링크</p>
-    </div>
-  </div>
-</body>
-</html>`;
+  );
 }
