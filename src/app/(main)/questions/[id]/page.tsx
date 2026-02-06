@@ -3,14 +3,9 @@ import Link from "next/link";
 import { getQuestionById } from "@/actions/questions";
 import { getAnswersByQuestionId } from "@/actions/answers";
 import { AnswerForm } from "./answer-form";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { ImageGallery } from "@/components/questions/ImageGallery";
 import { SourceReferences, parseSourceRefs } from "@/components/questions/SourceReferences";
-
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
-}
 
 function timeAgo(dateStr: string) {
   const now = new Date();
@@ -44,7 +39,7 @@ export default async function QuestionDetailPage({
   const { data: { user } } = await supabase.auth.getUser();
   let isAdmin = false;
   if (user) {
-    const svc = (await import("@/lib/supabase/server")).createServiceClient();
+    const svc = createServiceClient();
     const { data: profile } = await svc
       .from("profiles")
       .select("role")
@@ -58,11 +53,11 @@ export default async function QuestionDetailPage({
     notFound();
   }
 
-  const { data: answers } = await getAnswersByQuestionId(id, {
+  const { data: answers = [] } = await getAnswersByQuestionId(id, {
     includeUnapproved: isAdmin,
   });
 
-  const approvedAnswers = answers.filter((a) => a.is_approved);
+  const approvedAnswers = (answers ?? []).filter((a) => a.is_approved);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -174,10 +169,11 @@ export default async function QuestionDetailPage({
                       {answer.content}
                     </div>
 
-                    {answer.is_ai && (() => {
-                      const refs = parseSourceRefs((answer as Record<string, unknown>).source_refs);
-                      return refs.length > 0 ? <SourceReferences sourceRefs={refs} /> : null;
-                    })()}
+                    {answer.is_ai && (
+                      <SourceReferences
+                        sourceRefs={parseSourceRefs((answer as Record<string, unknown>).source_refs)}
+                      />
+                    )}
 
                     <div className="flex items-center justify-between text-sm text-text-secondary">
                       <span>{timeAgo(answer.created_at)}</span>

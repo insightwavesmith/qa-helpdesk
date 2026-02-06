@@ -63,7 +63,6 @@ export async function generateRAGAnswer(
     const chunks = await searchRelevantChunks(questionText, 5, 0.4);
     
     if (chunks.length === 0) {
-      console.log("No relevant chunks found for question");
       // 청크가 없어도 일반 답변 시도
       const answer = await generateAnswer(questionText, [
         "강의 자료에서 직접적으로 관련된 내용을 찾지 못했습니다. 일반적인 메타 광고 지식을 바탕으로 답변드립니다.",
@@ -134,7 +133,6 @@ export async function createAIAnswerForQuestion(
       return false;
     }
     
-    console.log(`AI answer created for question ${questionId}`);
     return true;
   } catch (error) {
     console.error("createAIAnswerForQuestion error:", error);

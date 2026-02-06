@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // 모찌(시스템) API: 외부에서 게시글 생성용
-// TODO: API 키 인증 추가
+// CRON_SECRET을 API 키로 사용
+
+function verifyApiKey(req: NextRequest): boolean {
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader) return false;
+  return authHeader === `Bearer ${process.env.CRON_SECRET}`;
+}
 
 export async function POST(request: NextRequest) {
+  if (!verifyApiKey(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { title, content, category } = body;
