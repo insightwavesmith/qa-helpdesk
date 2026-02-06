@@ -1,17 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AccountSelector, type AdAccount } from "./components/account-selector";
-import { PeriodTabs, type DateRange } from "./components/period-tabs";
+import { type AdAccount } from "./components/account-selector";
+import { type DateRange } from "./components/period-tabs";
 import {
-  AdMetricsTable,
   type AdInsightRow,
   type BenchmarkRow,
 } from "./components/ad-metrics-table";
-import { LpMetricsCard, type LpMetricRow } from "./components/lp-metrics-card";
-import { BenchmarkCompare } from "./components/benchmark-compare";
+import { type LpMetricRow } from "./components/lp-metrics-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, BarChart3, Ruler } from "lucide-react";
+import { AlertTriangle, BarChart3 } from "lucide-react";
+
+import {
+  ProtractorHeader,
+  PeriodSelector,
+  SummaryCards,
+  DiagnosticPanel,
+  PerformanceTrendChart,
+  ConversionFunnel,
+  DailyMetricsTable,
+} from "@/components/protractor";
 
 // 어제 날짜 (기본값)
 function yesterday(): DateRange {
@@ -43,7 +51,6 @@ export default function ProtractorPage() {
         if (!res.ok) throw new Error(json.error || "계정 로드 실패");
         const data: AdAccount[] = json.data ?? [];
         setAccounts(data);
-        // 계정이 1개이면 자동 선택
         if (data.length === 1) {
           setSelectedAccountId(data[0].account_id);
         }
@@ -109,43 +116,35 @@ export default function ProtractorPage() {
     fetchData();
   }, [fetchData]);
 
-  // 기간 변경 핸들러
   const handlePeriodChange = (range: DateRange) => {
     setDateRange(range);
   };
 
-  // 계정 변경 핸들러
   const handleAccountSelect = (accountId: string) => {
     setSelectedAccountId(accountId);
   };
 
-  return (
-    <div className="mx-auto w-full max-w-[1100px] space-y-6 px-4 py-6 sm:px-6">
-      {/* 페이지 제목 */}
-      <div>
-        <h1 className="flex items-center gap-2 text-2xl font-bold">
-          <Ruler className="h-6 w-6" />
-          총가치각도기
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Meta 광고 성과를 벤치마크와 비교하여 진단합니다
-        </p>
-      </div>
+  // 실데이터 연결 전까지 unused 방지
+  void lpMetrics;
+  void benchmarks;
+  void insights;
 
-      {/* 계정 선택 + 기간 선택 */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <AccountSelector
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Header: 제목 + 계정선택 + 기간선택 */}
+      <header className="-m-6 mb-0 flex flex-col gap-4 border-b border-border bg-card px-6 py-4">
+        <ProtractorHeader
           accounts={accounts}
           selectedAccountId={selectedAccountId}
           onSelect={handleAccountSelect}
           isLoading={loadingAccounts}
         />
-        <PeriodTabs onPeriodChange={handlePeriodChange} />
-      </div>
+        <PeriodSelector onPeriodChange={handlePeriodChange} />
+      </header>
 
       {/* 에러 메시지 */}
       {error && (
-        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive">
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           {error}
         </div>
@@ -154,9 +153,9 @@ export default function ProtractorPage() {
       {/* 로딩 */}
       {loadingData && (
         <div className="space-y-4">
+          <Skeleton className="h-[120px] w-full rounded-lg" />
           <Skeleton className="h-[200px] w-full rounded-lg" />
           <Skeleton className="h-[300px] w-full rounded-lg" />
-          <Skeleton className="h-[200px] w-full rounded-lg" />
         </div>
       )}
 
@@ -171,18 +170,21 @@ export default function ProtractorPage() {
         </div>
       )}
 
-      {/* 데이터 표시 */}
+      {/* 데이터 표시 — 더미 데이터 → 나중에 실데이터 연결 */}
       {selectedAccountId && !loadingData && (
-        <div className="space-y-6">
-          {/* 광고 성과 테이블 */}
-          <AdMetricsTable insights={insights} benchmarks={benchmarks} />
-
-          {/* LP 지표 */}
-          <LpMetricsCard lpMetrics={lpMetrics} />
-
-          {/* 벤치마크 비교 */}
-          <BenchmarkCompare insights={insights} benchmarks={benchmarks} />
-        </div>
+        <>
+          <SummaryCards />
+          <DiagnosticPanel />
+          <div className="grid gap-6 xl:grid-cols-5">
+            <div className="xl:col-span-3">
+              <PerformanceTrendChart />
+            </div>
+            <div className="xl:col-span-2">
+              <ConversionFunnel />
+            </div>
+          </div>
+          <DailyMetricsTable />
+        </>
       )}
     </div>
   );
