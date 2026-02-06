@@ -41,13 +41,13 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
     pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <header className="bg-card-bg border-b border-border-color sticky top-0 z-40">
+    <header className="bg-card border-b border-border sticky top-0 z-40">
       <div className="max-w-6xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* 로고 */}
           <Link href="/dashboard" className="flex items-center">
             <img src="/logo.png" alt="BS CAMP" className="w-8 h-8 rounded-lg object-cover" />
-            <span className="ml-2 text-xl font-bold text-text-main font-accent">BS CAMP</span>
+            <span className="ml-2 text-xl font-bold text-foreground font-accent">BS CAMP</span>
           </Link>
           
           {/* 데스크탑 네비게이션 */}
@@ -59,7 +59,7 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
                 className={`nav-item font-medium ${
                   isActive(item.href)
                     ? "text-primary"
-                    : "text-text-secondary hover:text-primary"
+                    : "text-muted-foreground hover:text-primary"
                 }`}
               >
                 {item.label}
@@ -84,26 +84,26 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
                     className="fixed inset-0 z-40" 
                     onClick={() => setProfileMenuOpen(false)}
                   />
-                  <div className="absolute right-0 mt-2 w-56 bg-card-bg rounded-lg shadow-lg border border-border-color py-2 z-50">
-                    <div className="px-4 py-2 border-b border-border-color">
-                      <p className="text-sm font-medium text-text-main">{userName}</p>
-                      <p className="text-xs text-text-secondary">{userEmail}</p>
+                  <div className="absolute right-0 mt-2 w-56 bg-card rounded-lg shadow-lg border border-border py-2 z-50">
+                    <div className="px-4 py-2 border-b border-border">
+                      <p className="text-sm font-medium text-foreground">{userName}</p>
+                      <p className="text-xs text-muted-foreground">{userEmail}</p>
                     </div>
                     <button
                       onClick={() => {
                         setProfileMenuOpen(false);
                         router.push("/settings");
                       }}
-                      className="w-full px-4 py-2 text-left text-sm text-text-main hover:bg-accent flex items-center"
+                      className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-accent flex items-center"
                     >
-                      <Settings className="w-4 h-4 mr-2 text-text-secondary" />
+                      <Settings className="w-4 h-4 mr-2 text-muted-foreground" />
                       설정
                     </button>
                     <button
                       onClick={handleLogout}
-                      className="w-full px-4 py-2 text-left text-sm text-text-main hover:bg-accent flex items-center"
+                      className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-accent flex items-center"
                     >
-                      <LogOut className="w-4 h-4 mr-2 text-text-secondary" />
+                      <LogOut className="w-4 h-4 mr-2 text-muted-foreground" />
                       로그아웃
                     </button>
                   </div>
@@ -114,7 +114,7 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
             {/* 모바일 메뉴 버튼 */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-text-secondary hover:text-primary"
+              className="md:hidden p-2 text-muted-foreground hover:text-primary"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -123,7 +123,7 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
         
         {/* 모바일 네비게이션 */}
         {mobileMenuOpen && (
-          <nav className="md:hidden mt-4 pt-4 border-t border-border-color space-y-2">
+          <nav className="md:hidden mt-4 pt-4 border-t border-border space-y-2">
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -132,7 +132,7 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
                 className={`block py-2 font-medium ${
                   isActive(item.href)
                     ? "text-primary"
-                    : "text-text-secondary"
+                    : "text-muted-foreground"
                 }`}
               >
                 {item.label}

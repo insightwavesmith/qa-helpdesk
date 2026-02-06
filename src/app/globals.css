@@ -36,16 +36,16 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   
-  /* BS CAMP Custom Colors */
-  --color-text-main: #37352f;
-  --color-text-secondary: #73726a;
-  --color-text-muted: #a8a29e;
-  --color-bg-warm: #f7f6f5;
-  --color-bg-soft: #faf9f8;
-  --color-card-bg: #ffffff;
-  --color-card-hover: #fafafa;
-  --color-border-color: #e5e7eb;
-  --color-border-light: #f3f4f6;
+  /* BS CAMP Custom Colors — light/dark aware via CSS vars */
+  --color-text-main: var(--foreground);
+  --color-text-secondary: var(--muted-foreground);
+  --color-text-muted: var(--muted-foreground);
+  --color-bg-warm: var(--background);
+  --color-bg-soft: var(--secondary);
+  --color-card-bg: var(--card);
+  --color-card-hover: var(--accent);
+  --color-border-color: var(--border);
+  --color-border-light: var(--border);
   --color-success: #10b981;
   --color-warning: #f59e0b;
   
@@ -62,84 +62,84 @@
 /* ── BS CAMP Theme (Light) ── */
 :root {
   --radius: 0.75rem;
-  
-  /* Primary = Coral Red */
-  --primary: #FF5757;
+
+  /* Primary = BS CAMP Orange */
+  --primary: #E85A2A;
   --primary-foreground: #ffffff;
-  
+
   /* Core Colors */
-  --background: #f7f6f5;
-  --foreground: #37352f;
+  --background: #f8f9fc;
+  --foreground: #1a1a1a;
   --card: #ffffff;
-  --card-foreground: #37352f;
+  --card-foreground: #1a1a1a;
   --popover: #ffffff;
-  --popover-foreground: #37352f;
-  
+  --popover-foreground: #1a1a1a;
+
   /* Secondary/muted */
-  --secondary: #faf9f8;
-  --secondary-foreground: #37352f;
-  --muted: #faf9f8;
-  --muted-foreground: #73726a;
-  --accent: #fafafa;
-  --accent-foreground: #37352f;
-  --destructive: #eb5757;
-  
+  --secondary: #f1f3f8;
+  --secondary-foreground: #1a1a1a;
+  --muted: #f1f3f8;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #1a1a1a;
+  --destructive: #ef4444;
+
   /* Borders */
-  --border: #e5e7eb;
-  --input: #e5e7eb;
-  --ring: #FF5757;
-  
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #E85A2A;
+
   /* Charts */
-  --chart-1: #FF5757;
+  --chart-1: #E85A2A;
   --chart-2: #10b981;
   --chart-3: #f59e0b;
   --chart-4: #8b5cf6;
   --chart-5: #ef4444;
-  
+
   /* Sidebar */
-  --sidebar: #faf9f8;
-  --sidebar-foreground: #37352f;
-  --sidebar-primary: #FF5757;
+  --sidebar: #f1f3f8;
+  --sidebar-foreground: #1a1a1a;
+  --sidebar-primary: #E85A2A;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #fafafa;
-  --sidebar-accent-foreground: #37352f;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #1a1a1a;
   --sidebar-border: transparent;
-  --sidebar-ring: #FF5757;
+  --sidebar-ring: #E85A2A;
 }
 
 /* ── BS CAMP Theme (Dark) ── */
 .dark {
-  --background: rgb(25, 25, 25);
-  --foreground: rgba(255, 255, 255, 0.9);
-  --card: rgb(32, 32, 32);
-  --card-foreground: rgba(255, 255, 255, 0.9);
-  --popover: rgb(32, 32, 32);
-  --popover-foreground: rgba(255, 255, 255, 0.9);
-  --primary: #FF5757;
+  --background: #0f1729;
+  --foreground: #e2e8f0;
+  --card: #1e293b;
+  --card-foreground: #e2e8f0;
+  --popover: #1e293b;
+  --popover-foreground: #e2e8f0;
+  --primary: #E85A2A;
   --primary-foreground: #ffffff;
-  --secondary: rgb(47, 47, 47);
-  --secondary-foreground: rgba(255, 255, 255, 0.9);
+  --secondary: #1e293b;
+  --secondary-foreground: #e2e8f0;
   --muted: rgba(255, 255, 255, 0.06);
-  --muted-foreground: rgba(255, 255, 255, 0.5);
-  --accent: rgba(255, 255, 255, 0.055);
-  --accent-foreground: rgba(255, 255, 255, 0.9);
-  --destructive: #eb5757;
-  --border: rgba(255, 255, 255, 0.07);
+  --muted-foreground: #94a3b8;
+  --accent: rgba(255, 255, 255, 0.06);
+  --accent-foreground: #e2e8f0;
+  --destructive: #ef4444;
+  --border: rgba(255, 255, 255, 0.1);
   --input: rgba(255, 255, 255, 0.1);
-  --ring: #FF5757;
-  --chart-1: #FF5757;
+  --ring: #E85A2A;
+  --chart-1: #E85A2A;
   --chart-2: #10b981;
   --chart-3: #f59e0b;
   --chart-4: #a78bfa;
   --chart-5: #ef4444;
-  --sidebar: rgb(32, 32, 32);
-  --sidebar-foreground: rgba(255, 255, 255, 0.9);
-  --sidebar-primary: #FF5757;
+  --sidebar: #1e293b;
+  --sidebar-foreground: #e2e8f0;
+  --sidebar-primary: #E85A2A;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(255, 255, 255, 0.055);
-  --sidebar-accent-foreground: rgba(255, 255, 255, 0.9);
+  --sidebar-accent: rgba(255, 255, 255, 0.06);
+  --sidebar-accent-foreground: #e2e8f0;
   --sidebar-border: transparent;
-  --sidebar-ring: #FF5757;
+  --sidebar-ring: #E85A2A;
 }
 
 @layer base {
@@ -162,7 +162,7 @@
 }
 .card-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 15px rgba(55, 53, 47, 0.1);
+  box-shadow: 0 10px 15px rgba(26, 26, 26, 0.08);
 }
 
 /* Primary button effect */
@@ -170,7 +170,7 @@
   transition: all 0.15s ease-out;
 }
 .btn-primary:hover {
-  background-color: #E84444;
+  background-color: #d14e22;
   transform: translateY(-1px);
 }
 .btn-primary:active {
@@ -183,13 +183,13 @@
   cursor: pointer;
 }
 .tag-chip:hover {
-  background-color: #FF5757;
+  background-color: var(--primary);
   color: white;
 }
 
 /* Search focus effect */
 .search-focus:focus-within {
-  box-shadow: 0 0 0 4px rgba(255, 87, 87, 0.1);
+  box-shadow: 0 0 0 4px rgba(232, 90, 42, 0.1);
 }
 
 /* Fade in animation */
@@ -203,7 +203,7 @@
 
 /* Nav item hover */
 .nav-item:hover {
-  color: #FF5757;
+  color: var(--primary);
 }
 
 /* Smooth transitions for all interactive elements */
@@ -214,7 +214,7 @@ button, a, input, textarea, select {
 /* Scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(55, 53, 47, 0.15) transparent;
+  scrollbar-color: rgba(26, 26, 26, 0.15) transparent;
 }
 .dark * {
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;

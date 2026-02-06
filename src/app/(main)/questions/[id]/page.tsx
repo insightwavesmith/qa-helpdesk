@@ -107,7 +107,7 @@ export default async function QuestionDetailPage({
             
             {question.category && (
               <div className="flex flex-wrap gap-2 mb-4">
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
+                <span className="px-3 py-1 bg-primary/10 text-primary text-sm font-medium rounded-full">
                   {question.category.name}
                 </span>
               </div>

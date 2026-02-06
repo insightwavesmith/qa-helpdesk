@@ -4,7 +4,18 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { GraduationCap, Loader2 } from "lucide-react";
 import { ThemeModeToggle } from "@/components/layout/theme-toggle";
 
 export default function LoginPage() {
@@ -41,89 +52,80 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-warm flex items-center justify-center p-4 relative">
-      {/* 테마 토글 */}
+    <div className="flex min-h-svh items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 px-4 py-8 relative">
       <div className="absolute top-4 right-4">
         <ThemeModeToggle />
       </div>
-      
-      <div className="w-full max-w-md">
-        {/* 헤더 */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <img src="/logo.png" alt="BS CAMP" className="w-10 h-10 rounded-lg object-cover" />
-            <span className="ml-2 text-xl font-bold text-text-main font-accent">BS CAMP</span>
+
+      <div className="w-full max-w-md space-y-6">
+        {/* 브랜드 헤더 */}
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg">
+            <GraduationCap className="h-6 w-6" />
           </div>
-          <p className="text-text-secondary font-medium">BS CAMP Q&A 헬프데스크</p>
+          <h1 className="text-2xl font-bold tracking-tight">BS CAMP</h1>
+          <p className="text-sm text-muted-foreground">Q&A 헬프데스크</p>
         </div>
-        
+
         {/* 로그인 카드 */}
-        <div className="bg-card-bg rounded-xl shadow-lg border border-border-color p-8 card-hover fade-in">
-          <h1 className="text-2xl font-bold mb-6 text-center text-text-main">로그인</h1>
-          
-          <form onSubmit={handleLogin} className="space-y-4">
-            {error && (
-              <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
-            
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-text-main mb-2">
-                이메일
-              </label>
-              <input
-                id="email"
-                type="email"
-                placeholder="example@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoFocus
-                className="w-full px-4 py-3 border border-border-color rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors bg-white text-text-main"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-text-main mb-2">
-                비밀번호
-              </label>
-              <input
-                id="password"
-                type="password"
-                placeholder="비밀번호를 입력하세요"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-3 border border-border-color rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors bg-white text-text-main"
-              />
-            </div>
-            
-            <button 
-              type="submit" 
-              disabled={loading}
-              className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  로그인 중...
-                </>
-              ) : (
-                "로그인"
+        <Card className="shadow-lg fade-in">
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="text-xl">로그인</CardTitle>
+            <CardDescription>이메일과 비밀번호를 입력해주세요.</CardDescription>
+          </CardHeader>
+          <form onSubmit={handleLogin}>
+            <CardContent className="space-y-4">
+              {error && (
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+                  {error}
+                </div>
               )}
-            </button>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">이메일</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="example@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">비밀번호</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="비밀번호를 입력하세요"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-4 pb-8">
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    로그인 중...
+                  </>
+                ) : (
+                  "로그인"
+                )}
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                계정이 없으신가요?{" "}
+                <Link href="/signup" className="font-medium text-primary hover:underline">
+                  회원가입
+                </Link>
+              </p>
+            </CardFooter>
           </form>
-          
-          <div className="mt-6 text-center">
-            <p className="text-text-secondary text-sm">
-              계정이 없으신가요?{" "}
-              <Link href="/signup" className="text-primary hover:underline font-medium">
-                회원가입
-              </Link>
-            </p>
-          </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

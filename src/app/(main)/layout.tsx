@@ -41,7 +41,7 @@ export default async function MainLayout({
   // 학생용: 상단 헤더만 (목업 스타일)
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-bg-warm">
+      <div className="min-h-screen bg-background">
         <StudentHeader
           userName={profile?.name || "사용자"}
           userEmail={profile?.email || user.email || ""}

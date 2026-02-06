@@ -141,7 +141,7 @@ export function QuestionsListClient({
             className={`tag-chip px-4 py-2 text-sm font-medium rounded-full transition-colors ${
               currentCategory === "all" || !currentCategory
                 ? "bg-primary text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-primary hover:text-white"
+                : "bg-muted text-muted-foreground hover:bg-primary hover:text-white"
             }`}
           >
             전체
@@ -153,7 +153,7 @@ export function QuestionsListClient({
               className={`tag-chip px-4 py-2 text-sm font-medium rounded-full transition-colors ${
                 currentCategory === cat.value
                   ? "bg-primary text-white"
-                  : "bg-blue-100 text-blue-700 hover:bg-primary hover:text-white"
+                  : "bg-primary/10 text-primary hover:bg-primary hover:text-white"
               }`}
             >
               {cat.label}
@@ -186,7 +186,7 @@ export function QuestionsListClient({
                 
                 {question.category && (
                   <div className="flex flex-wrap gap-2 mb-4">
-                    <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                    <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
                       {question.category.name}
                     </span>
                   </div>
