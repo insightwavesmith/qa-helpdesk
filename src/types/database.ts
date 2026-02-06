@@ -850,6 +850,71 @@ export interface Database {
         };
         Relationships: [];
       };
+      email_sends: {
+        Row: {
+          id: string;
+          recipient_email: string;
+          recipient_type: string;
+          subject: string;
+          template: string | null;
+          status: string;
+          sent_at: string | null;
+          opened_at: string | null;
+          clicked_at: string | null;
+          error_message: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          recipient_email: string;
+          recipient_type: string;
+          subject: string;
+          template?: string | null;
+          status?: string;
+          sent_at?: string | null;
+          opened_at?: string | null;
+          clicked_at?: string | null;
+          error_message?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          recipient_email?: string;
+          recipient_type?: string;
+          subject?: string;
+          template?: string | null;
+          status?: string;
+          sent_at?: string | null;
+          opened_at?: string | null;
+          clicked_at?: string | null;
+          error_message?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      student_registry: {
+        Row: {
+          id: string;
+          name: string;
+          email: string;
+          phone: string | null;
+          shop_name: string | null;
+          shop_url: string | null;
+          cohort: string | null;
+          registered_at: string | null;
+          matched_profile_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          email: string;
+          [key: string]: unknown;
+        };
+        Update: {
+          [key: string]: unknown;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
