@@ -83,9 +83,9 @@ export default function NewPostPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <Card>
+      <Card className="bg-white rounded-xl shadow-sm border border-gray-200">
         <CardHeader>
-          <CardTitle>새 글 작성</CardTitle>
+          <CardTitle className="text-gray-900">새 글 작성</CardTitle>
           <CardDescription>
             메타 광고 관련 유용한 정보를 공유해주세요.
             <br />
@@ -130,6 +130,7 @@ export default function NewPostPage() {
                     <FormControl>
                       <Input
                         placeholder="게시글 제목을 입력하세요"
+                        className="border-gray-200 rounded-lg focus:ring-[#F75D5D]"
                         {...field}
                       />
                     </FormControl>
@@ -148,6 +149,7 @@ export default function NewPostPage() {
                       <Textarea
                         placeholder="내용을 입력하세요"
                         rows={15}
+                        className="border-gray-200 rounded-lg focus:ring-[#F75D5D]"
                         {...field}
                       />
                     </FormControl>
@@ -164,7 +166,7 @@ export default function NewPostPage() {
               >
                 취소
               </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
+              <Button type="submit" disabled={form.formState.isSubmitting} className="bg-[#F75D5D] hover:bg-[#E54949]">
                 {form.formState.isSubmitting ? "등록 중..." : "글 등록"}
               </Button>
             </CardFooter>

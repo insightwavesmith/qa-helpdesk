@@ -54,26 +54,26 @@ export default async function PostDetailPage({
               고정
             </Badge>
           )}
-          <span className="text-sm font-medium text-primary">
+          <span className="text-sm font-medium text-[#F75D5D]">
             {categoryLabels[post.category] || post.category}
           </span>
         </div>
 
         {/* Title */}
-        <h1 className="text-2xl sm:text-3xl font-bold leading-tight tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold leading-tight text-gray-900">
           {post.title}
         </h1>
 
         {/* Author & date */}
-        <div className="flex items-center gap-3 mt-4 pb-6 border-b">
-          <div className="flex items-center justify-center h-9 w-9 rounded-full bg-primary/10 text-primary font-semibold text-sm">
+        <div className="flex items-center gap-3 mt-4 pb-6 border-b border-gray-200">
+          <div className="flex items-center justify-center h-9 w-9 rounded-full bg-[#FEF2F2] text-[#F75D5D] font-semibold text-sm">
             {((post.author as { name: string } | null)?.name || "관")[0]}
           </div>
           <div>
             <p className="text-sm font-medium">
               {(post.author as { name: string } | null)?.name || "관리자"}
             </p>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs text-gray-500">
               <span>{formatDate(post.created_at)}</span>
               <span>·</span>
               <span className="flex items-center gap-0.5">
@@ -89,7 +89,7 @@ export default async function PostDetailPage({
         </div>
 
         {/* Content body */}
-        <div className="mt-6 text-base leading-[1.8] whitespace-pre-wrap text-foreground/90">
+        <div className="mt-6 text-base leading-[1.8] whitespace-pre-wrap text-gray-900/90">
           {post.content}
         </div>
       </article>

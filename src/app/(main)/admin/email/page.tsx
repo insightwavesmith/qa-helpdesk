@@ -254,10 +254,10 @@ export default function AdminEmailPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-[22px] font-semibold text-foreground">
+        <h1 className="text-2xl font-bold text-gray-900">
           이메일 발송
         </h1>
-        <p className="text-[14px] text-muted-foreground mt-1">
+        <p className="text-[14px] text-gray-500 mt-1">
           뉴스레터 및 공지 이메일을 발송합니다.
         </p>
       </div>
@@ -271,7 +271,7 @@ export default function AdminEmailPage() {
                 <Users className="h-4 w-4 text-orange-600" />
               </div>
               <div>
-                <p className="text-[12px] text-muted-foreground">리드</p>
+                <p className="text-[12px] text-gray-500">리드</p>
                 <p className="text-[20px] font-semibold">
                   {counts?.leads ?? "..."}
                 </p>
@@ -286,7 +286,7 @@ export default function AdminEmailPage() {
                 <Users className="h-4 w-4 text-blue-600" />
               </div>
               <div>
-                <p className="text-[12px] text-muted-foreground">수강생</p>
+                <p className="text-[12px] text-gray-500">수강생</p>
                 <p className="text-[20px] font-semibold">
                   {counts?.students ?? "..."}
                 </p>
@@ -301,7 +301,7 @@ export default function AdminEmailPage() {
                 <Users className="h-4 w-4 text-green-600" />
               </div>
               <div>
-                <p className="text-[12px] text-muted-foreground">가입 회원</p>
+                <p className="text-[12px] text-gray-500">가입 회원</p>
                 <p className="text-[20px] font-semibold">
                   {counts?.members ?? "..."}
                 </p>
@@ -530,6 +530,7 @@ export default function AdminEmailPage() {
             <Button
               onClick={handleSend}
               disabled={sending || !isFormValid()}
+              className="bg-[#F75D5D] hover:bg-[#E54949]"
             >
               {sending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -550,12 +551,12 @@ export default function AdminEmailPage() {
         </CardHeader>
         <CardContent>
           {loadingHistory ? (
-            <div className="flex items-center justify-center py-8 text-muted-foreground">
+            <div className="flex items-center justify-center py-8 text-gray-500">
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               불러오는 중...
             </div>
           ) : historyGroups.length === 0 ? (
-            <p className="text-center py-8 text-[14px] text-muted-foreground">
+            <p className="text-center py-8 text-[14px] text-gray-500">
               아직 발송 이력이 없습니다.
             </p>
           ) : (
@@ -586,7 +587,7 @@ export default function AdminEmailPage() {
                     <TableCell className="text-right text-red-500">
                       {group.failed}
                     </TableCell>
-                    <TableCell className="text-right text-[13px] text-muted-foreground">
+                    <TableCell className="text-right text-[13px] text-gray-500">
                       {new Date(group.created_at).toLocaleDateString("ko-KR", {
                         month: "short",
                         day: "numeric",
@@ -683,7 +684,7 @@ function PreviewFrame({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12 text-muted-foreground">
+      <div className="flex items-center justify-center py-12 text-gray-500">
         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
         미리보기 렌더링 중...
       </div>
@@ -691,7 +692,7 @@ function PreviewFrame({
   }
 
   return (
-    <div className="border rounded-md overflow-hidden">
+    <div className="border border-gray-200 rounded-xl overflow-hidden">
       <iframe
         srcDoc={previewHtml}
         className="w-full h-[500px]"

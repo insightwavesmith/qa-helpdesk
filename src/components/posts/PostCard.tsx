@@ -41,7 +41,7 @@ export function PostCard({ post, layout = "list" }: PostCardProps) {
   if (layout === "grid") {
     return (
       <Link href={`/posts/${post.id}`} className="group">
-        <article className="rounded-xl border p-4 h-full transition-all hover:shadow-md hover:border-primary/20">
+        <article className="bg-white rounded-xl border border-gray-200 p-4 h-full transition-all hover:shadow-md hover:border-[#F75D5D]/20">
           <div className="flex items-center gap-2 mb-2">
             {post.is_pinned && (
               <Badge
@@ -59,13 +59,13 @@ export function PostCard({ post, layout = "list" }: PostCardProps) {
               {categoryLabels[post.category] || post.category}
             </Badge>
           </div>
-          <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors leading-snug">
+          <h3 className="font-semibold text-sm text-gray-900 line-clamp-2 group-hover:text-[#F75D5D] transition-colors leading-snug">
             {post.title}
           </h3>
-          <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
+          <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">
             {post.content}
           </p>
-          <div className="flex items-center gap-2 mt-3 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-2 mt-3 text-[11px] text-gray-500">
             <span>{post.author?.name || "관리자"}</span>
             <span>·</span>
             <span>{timeAgo(post.created_at)}</span>
@@ -82,7 +82,7 @@ export function PostCard({ post, layout = "list" }: PostCardProps) {
   // List layout (Substack-style)
   return (
     <Link href={`/posts/${post.id}`} className="block group">
-      <article className="py-5 border-b last:border-b-0 transition-colors group-hover:bg-muted/30 -mx-2 px-2 rounded-lg">
+      <article className="py-5 border-b last:border-b-0 transition-colors group-hover:bg-gray-50/50 -mx-2 px-2 rounded-lg">
         <div className="flex items-center gap-2 mb-1.5">
           {post.is_pinned && (
             <Badge
@@ -93,21 +93,21 @@ export function PostCard({ post, layout = "list" }: PostCardProps) {
               고정
             </Badge>
           )}
-          <span className="text-xs font-medium text-primary">
+          <span className="text-xs font-medium text-[#F75D5D]">
             {categoryLabels[post.category] || post.category}
           </span>
         </div>
 
-        <h3 className="font-semibold text-[16px] leading-snug group-hover:text-primary transition-colors line-clamp-2">
+        <h3 className="font-semibold text-[16px] leading-snug text-gray-900 group-hover:text-[#F75D5D] transition-colors line-clamp-2">
           {post.title}
         </h3>
 
-        <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
+        <p className="text-sm text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">
           {post.content}
         </p>
 
-        <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground/70">
+        <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
+          <span className="font-medium text-gray-900/70">
             {post.author?.name || "관리자"}
           </span>
           <span>{timeAgo(post.created_at)}</span>

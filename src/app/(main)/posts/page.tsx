@@ -39,9 +39,9 @@ export default async function PostsPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-[32px] font-bold tracking-tight">정보 공유</h1>
+        <h1 className="text-2xl font-bold text-gray-900">정보 공유</h1>
         {isAdmin && (
-          <Button asChild size="sm" variant="ghost" className="text-primary hover:text-primary">
+          <Button asChild size="sm" variant="ghost" className="text-[#F75D5D] hover:bg-red-50 hover:text-[#F75D5D]">
             <Link href="/posts/new">
               <Plus className="mr-1 h-4 w-4" />
               글쓰기

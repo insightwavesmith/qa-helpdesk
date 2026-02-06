@@ -88,13 +88,13 @@ export function CommentSection({
               className="py-4 border-b last:border-b-0"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="flex items-center justify-center h-7 w-7 rounded-full bg-muted text-xs font-medium">
+                <div className="flex items-center justify-center h-7 w-7 rounded-full bg-gray-50 text-xs font-medium">
                   {(comment.author?.name || "익")[0]}
                 </div>
                 <span className="text-sm font-medium">
                   {comment.author?.name || "익명"}
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-gray-500">
                   {timeAgo(comment.created_at)}
                 </span>
               </div>
@@ -107,7 +107,7 @@ export function CommentSection({
       )}
 
       {/* Comment Form */}
-      <div className="rounded-xl border p-5">
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
         <h3 className="text-base font-semibold mb-3">댓글 작성</h3>
         <form onSubmit={handleSubmit} className="space-y-3">
           <Textarea
@@ -123,7 +123,7 @@ export function CommentSection({
               type="submit"
               size="sm"
               disabled={loading}
-              className="rounded-full gap-2"
+              className="rounded-lg gap-2 bg-[#F75D5D] hover:bg-[#E54949]"
             >
               <Send className="h-3.5 w-3.5" />
               {loading ? "등록 중..." : "댓글 등록"}

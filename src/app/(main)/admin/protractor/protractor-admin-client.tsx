@@ -172,10 +172,10 @@ export function ProtractorAdminClient() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-gray-500">
               전체 계정
             </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -184,7 +184,7 @@ export function ProtractorAdminClient() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-gray-500">
               Meta 정상
             </CardTitle>
             <CheckCircle className="h-4 w-4 text-green-500" />
@@ -198,7 +198,7 @@ export function ProtractorAdminClient() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-gray-500">
               Mixpanel 정상
             </CardTitle>
             <CheckCircle className="h-4 w-4 text-green-500" />
@@ -212,7 +212,7 @@ export function ProtractorAdminClient() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-gray-500">
               문제 있음
             </CardTitle>
             <AlertTriangle className="h-4 w-4 text-red-500" />
@@ -236,7 +236,7 @@ export function ProtractorAdminClient() {
         </CardHeader>
         <CardContent>
           {accounts.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
+            <p className="text-center text-gray-500 py-8">
               등록된 계정이 없습니다.
             </p>
           ) : (
@@ -256,7 +256,7 @@ export function ProtractorAdminClient() {
                     {/* 계정명 + ID */}
                     <TableCell>
                       <div className="font-medium">{acc.account_name}</div>
-                      <div className="text-xs text-muted-foreground font-mono">
+                      <div className="text-xs text-gray-500 font-mono">
                         {acc.account_id}
                       </div>
                     </TableCell>
@@ -268,7 +268,7 @@ export function ProtractorAdminClient() {
                           <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0">
                             정상
                           </Badge>
-                          <div className="text-xs text-muted-foreground mt-1">
+                          <div className="text-xs text-gray-500 mt-1">
                             {formatDate(acc.meta.last_date)} &middot;{" "}
                             {acc.meta.ad_count}개 광고
                           </div>
@@ -288,7 +288,7 @@ export function ProtractorAdminClient() {
                           <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0">
                             정상
                           </Badge>
-                          <div className="text-xs text-muted-foreground mt-1">
+                          <div className="text-xs text-gray-500 mt-1">
                             {formatDate(acc.mixpanel.last_date)} &middot;{" "}
                             {acc.mixpanel.sessions}명 세션
                           </div>
@@ -307,7 +307,7 @@ export function ProtractorAdminClient() {
                     </TableCell>
 
                     {/* 등록일 */}
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-sm text-gray-500">
                       {formatCreatedAt(acc.created_at)}
                     </TableCell>
 

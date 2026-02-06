@@ -191,10 +191,10 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
         </Link>
       </Button>
 
-      <div className="bg-card-bg rounded-xl border border-border-color p-8 fade-in">
+      <div className="bg-white rounded-xl border border-gray-200 p-8 fade-in">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-text-main">새 질문 작성</h1>
-          <p className="text-sm text-text-secondary mt-1">
+          <h1 className="text-2xl font-bold text-gray-900">새 질문 작성</h1>
+          <p className="text-sm text-gray-500 mt-1">
             메타 광고 관련 궁금한 점을 자유롭게 질문해주세요.
             <br />
             AI가 강의 자료를 기반으로 초안 답변을 드리고, Smith님이 검토 후
@@ -218,7 +218,7 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
                   defaultValue={field.value}
                 >
                   <FormControl>
-                    <SelectTrigger className="rounded-lg">
+                    <SelectTrigger className="rounded-lg border-gray-200 focus:ring-[#F75D5D]">
                       <SelectValue placeholder="카테고리를 선택하세요" />
                     </SelectTrigger>
                   </FormControl>
@@ -244,7 +244,7 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
                 <FormControl>
                   <Input
                     placeholder="질문 제목을 입력하세요"
-                    className="text-base rounded-lg"
+                    className="text-base rounded-lg border-gray-200 focus:ring-[#F75D5D]"
                     {...field}
                   />
                 </FormControl>
@@ -263,7 +263,7 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
                   <Textarea
                     placeholder="구체적으로 작성해주시면 더 정확한 답변을 받으실 수 있습니다."
                     rows={12}
-                    className="text-[15px] leading-relaxed resize-none rounded-lg"
+                    className="text-[15px] leading-relaxed resize-none rounded-lg border-gray-200 focus:ring-[#F75D5D]"
                     {...field}
                   />
                 </FormControl>
@@ -277,12 +277,12 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">
                 이미지 첨부{" "}
-                <span className="text-muted-foreground font-normal">
+                <span className="text-gray-500 font-normal">
                   (선택, 최대 {MAX_IMAGES}개)
                 </span>
               </label>
               {images.length > 0 && (
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-gray-500">
                   {images.length}/{MAX_IMAGES}
                 </span>
               )}
@@ -335,7 +335,7 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
                   <ImagePlus className="h-4 w-4" />
                   이미지 추가
                 </Button>
-                <p className="text-[11px] text-muted-foreground mt-1.5">
+                <p className="text-[11px] text-gray-500 mt-1.5">
                   JPG, PNG, GIF, WebP / 파일당 5MB 이하
                 </p>
               </div>
@@ -346,7 +346,7 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
             <Button
               type="button"
               variant="outline"
-              className="rounded-full"
+              className="rounded-lg"
               onClick={() => router.back()}
             >
               취소
@@ -354,7 +354,7 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
             <Button
               type="submit"
               disabled={form.formState.isSubmitting || uploading}
-              className="rounded-full gap-2"
+              className="rounded-lg gap-2 bg-[#F75D5D] hover:bg-[#E54949]"
             >
               <Send className="h-4 w-4" />
               {uploading && images.length > 0

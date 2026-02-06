@@ -41,13 +41,13 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
     pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <header className="bg-card border-b border-border sticky top-0 z-40">
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
       <div className="max-w-6xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* 로고 */}
           <Link href="/dashboard" className="flex items-center">
             <img src="/logo.png" alt="BS CAMP" className="w-8 h-8 rounded-lg object-cover" />
-            <span className="ml-2 text-xl font-bold text-foreground font-accent">BS CAMP</span>
+            <span className="ml-2 text-xl font-bold text-gray-900 font-accent">BS CAMP</span>
           </Link>
           
           {/* 데스크탑 네비게이션 */}
@@ -58,8 +58,8 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
                 href={item.href}
                 className={`nav-item font-medium ${
                   isActive(item.href)
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-primary"
+                    ? "text-[#F75D5D]"
+                    : "text-gray-500 hover:text-[#F75D5D]"
                 }`}
               >
                 {item.label}
@@ -73,7 +73,7 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
             <div className="relative">
               <button
                 onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                className="w-8 h-8 bg-warning rounded-full flex items-center justify-center text-white text-sm font-medium hover:opacity-80 transition-opacity"
+                className="w-8 h-8 bg-[#F75D5D] rounded-full flex items-center justify-center text-white text-sm font-medium hover:opacity-80 transition-opacity"
               >
                 {initials}
               </button>
@@ -84,26 +84,26 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
                     className="fixed inset-0 z-40" 
                     onClick={() => setProfileMenuOpen(false)}
                   />
-                  <div className="absolute right-0 mt-2 w-56 bg-card rounded-lg shadow-lg border border-border py-2 z-50">
-                    <div className="px-4 py-2 border-b border-border">
-                      <p className="text-sm font-medium text-foreground">{userName}</p>
-                      <p className="text-xs text-muted-foreground">{userEmail}</p>
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+                    <div className="px-4 py-2 border-b border-gray-200">
+                      <p className="text-sm font-medium text-gray-900">{userName}</p>
+                      <p className="text-xs text-gray-500">{userEmail}</p>
                     </div>
                     <button
                       onClick={() => {
                         setProfileMenuOpen(false);
                         router.push("/settings");
                       }}
-                      className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-accent flex items-center"
+                      className="w-full px-4 py-2 text-left text-sm text-gray-900 hover:bg-gray-50 flex items-center"
                     >
-                      <Settings className="w-4 h-4 mr-2 text-muted-foreground" />
+                      <Settings className="w-4 h-4 mr-2 text-gray-500" />
                       설정
                     </button>
                     <button
                       onClick={handleLogout}
-                      className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-accent flex items-center"
+                      className="w-full px-4 py-2 text-left text-sm text-gray-900 hover:bg-gray-50 flex items-center"
                     >
-                      <LogOut className="w-4 h-4 mr-2 text-muted-foreground" />
+                      <LogOut className="w-4 h-4 mr-2 text-gray-500" />
                       로그아웃
                     </button>
                   </div>
@@ -114,7 +114,7 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
             {/* 모바일 메뉴 버튼 */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-muted-foreground hover:text-primary"
+              className="md:hidden p-2 text-gray-500 hover:text-[#F75D5D]"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -123,7 +123,7 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
         
         {/* 모바일 네비게이션 */}
         {mobileMenuOpen && (
-          <nav className="md:hidden mt-4 pt-4 border-t border-border space-y-2">
+          <nav className="md:hidden mt-4 pt-4 border-t border-gray-200 space-y-2">
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -131,8 +131,8 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
                 onClick={() => setMobileMenuOpen(false)}
                 className={`block py-2 font-medium ${
                   isActive(item.href)
-                    ? "text-primary"
-                    : "text-muted-foreground"
+                    ? "text-[#F75D5D]"
+                    : "text-gray-500"
                 }`}
               >
                 {item.label}

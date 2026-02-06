@@ -62,14 +62,14 @@ export function PostsListClient({
       />
 
       <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">
+        <span className="text-xs text-gray-500">
           {totalCount}개의 게시글
         </span>
       </div>
 
       {/* Post List */}
       {posts.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
+        <div className="text-center py-16 text-gray-500">
           <p className="text-base">
             {currentSearch
               ? "검색 결과가 없습니다."
