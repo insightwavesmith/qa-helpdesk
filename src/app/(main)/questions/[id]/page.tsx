@@ -5,7 +5,7 @@ import { getAnswersByQuestionId } from "@/actions/answers";
 import { AnswerForm } from "./answer-form";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { ImageGallery } from "@/components/questions/ImageGallery";
-import { SourceReferences, parseSourceRefs } from "@/components/questions/SourceReferences";
+import { SourceReferences } from "@/components/questions/SourceReferences";
 
 function timeAgo(dateStr: string) {
   const now = new Date();
@@ -171,7 +171,7 @@ export default async function QuestionDetailPage({
 
                     {answer.is_ai && (
                       <SourceReferences
-                        sourceRefs={parseSourceRefs((answer as Record<string, unknown>).source_refs)}
+                        rawSourceRefs={(answer as Record<string, unknown>).source_refs}
                       />
                     )}
 

@@ -21,7 +21,7 @@ function isSourceRef(item: unknown): item is SourceRef {
   );
 }
 
-export function parseSourceRefs(raw: unknown): SourceRef[] {
+function parseSourceRefs(raw: unknown): SourceRef[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter(isSourceRef);
 }
@@ -42,7 +42,8 @@ function SimilarityBadge({ similarity }: { similarity: number }) {
   );
 }
 
-export function SourceReferences({ sourceRefs }: { sourceRefs: SourceRef[] }) {
+export function SourceReferences({ rawSourceRefs }: { rawSourceRefs: unknown }) {
+  const sourceRefs = parseSourceRefs(rawSourceRefs);
   const [open, setOpen] = useState(false);
 
   if (sourceRefs.length === 0) return null;

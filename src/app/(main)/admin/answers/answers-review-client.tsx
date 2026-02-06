@@ -19,7 +19,7 @@ import {
   Loader2,
   ExternalLink,
 } from "lucide-react";
-import { SourceReferences, parseSourceRefs } from "@/components/questions/SourceReferences";
+import { SourceReferences } from "@/components/questions/SourceReferences";
 
 interface Answer {
   id: string;
@@ -198,7 +198,7 @@ export function AnswersReviewClient({
                       </div>
                       {answer.is_ai && !!answer.source_refs && (
                         <div className="mb-4">
-                          <SourceReferences sourceRefs={parseSourceRefs(answer.source_refs)} />
+                          <SourceReferences rawSourceRefs={answer.source_refs} />
                         </div>
                       )}
                       <div className="flex gap-2">
