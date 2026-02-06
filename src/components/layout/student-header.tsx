@@ -29,6 +29,7 @@ export function StudentHeader({ userName, userEmail }: StudentHeaderProps) {
     { label: "홈", href: "/dashboard" },
     { label: "Q&A", href: "/questions" },
     { label: "정보공유", href: "/posts" },
+    { label: "총가치각도기", href: "/protractor" },
   ];
 
   const isActive = (href: string) => 
