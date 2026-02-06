@@ -1,6 +1,4 @@
 import { Suspense } from "react";
-import Link from "next/link";
-import { Plus } from "lucide-react";
 import { getQuestions, getCategories } from "@/actions/questions";
 import { QuestionsListClient } from "./questions-list-client";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
@@ -65,43 +63,39 @@ export default async function QuestionsPage({
   }));
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 relative">
-      <Suspense fallback={<QuestionsLoading />}>
-        <QuestionsListClient
-          questions={questions}
-          categories={categoryTabs}
-          currentCategory={categorySlug}
-          currentSearch={search}
-          currentStatus={status}
-          currentPage={page}
-          totalPages={totalPages}
-          totalCount={count || 0}
-          currentTab={tab}
-          currentUserId={currentUserId}
-        />
-      </Suspense>
-      
-      {/* 플로팅 질문 작성 버튼 (student/alumni/admin만) */}
-      {canCreateQuestion && (
-        <Link 
-          href="/questions/new"
-          className="fixed bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-lg hover:shadow-xl transition-shadow btn-primary flex items-center justify-center z-50"
-        >
-          <Plus className="w-6 h-6" />
-        </Link>
-      )}
-    </div>
+    <Suspense fallback={<QuestionsLoading />}>
+      <QuestionsListClient
+        questions={questions}
+        categories={categoryTabs}
+        currentCategory={categorySlug}
+        currentSearch={search}
+        currentStatus={status}
+        currentPage={page}
+        totalPages={totalPages}
+        totalCount={count || 0}
+        currentTab={tab}
+        currentUserId={currentUserId}
+        canCreateQuestion={canCreateQuestion}
+      />
+    </Suspense>
   );
 }
 
 function QuestionsLoading() {
   return (
-    <div className="space-y-6">
-      <div className="h-12 bg-card-bg rounded-xl animate-pulse" />
-      <div className="h-10 bg-card-bg rounded-lg animate-pulse w-1/2" />
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="h-48 bg-card-bg rounded-xl animate-pulse" />
+    <div className="p-6 max-w-4xl mx-auto space-y-5">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <div className="h-7 w-32 bg-muted rounded animate-pulse" />
+          <div className="h-4 w-64 bg-muted rounded animate-pulse" />
+        </div>
+        <div className="h-10 w-24 bg-muted rounded-md animate-pulse" />
+      </div>
+      <div className="h-10 bg-muted rounded-md animate-pulse" />
+      <div className="h-9 w-80 bg-muted rounded-md animate-pulse" />
+      <div className="space-y-3">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="h-28 bg-muted rounded-lg animate-pulse" />
         ))}
       </div>
     </div>

@@ -3,7 +3,11 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Search, Plus, MessageSquare } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface QuestionsListClientProps {
   questions: Array<{
@@ -27,39 +31,34 @@ interface QuestionsListClientProps {
   totalCount: number;
   currentTab: string;
   currentUserId?: string;
+  canCreateQuestion?: boolean;
 }
 
-function timeAgo(dateStr: string) {
-  const now = new Date();
+const categoryColorMap: Record<string, string> = {
+  "광고소재": "bg-blue-50 text-blue-700 border-blue-200",
+  "타겟팅": "bg-emerald-50 text-emerald-700 border-emerald-200",
+  "예산": "bg-amber-50 text-amber-700 border-amber-200",
+  "측정": "bg-violet-50 text-violet-700 border-violet-200",
+  "기타": "bg-slate-50 text-slate-600 border-slate-200",
+};
+
+function getCategoryColor(name: string): string {
+  return categoryColorMap[name] || "bg-slate-50 text-slate-600 border-slate-200";
+}
+
+function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
-  const diffMs = now.getTime() - d.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return "방금";
-  if (diffMin < 60) return `${diffMin}분 전`;
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}시간 전`;
-  const diffDay = Math.floor(diffHr / 24);
-  if (diffDay < 7) return `${diffDay}일 전`;
-  return d.toLocaleDateString("ko-KR");
-}
-
-function getAvatarColor(name?: string): string {
-  const colors = ["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-indigo-500", "bg-pink-500"];
-  if (!name) return "bg-gray-500";
-  const index = name.charCodeAt(0) % colors.length;
-  return colors[index];
+  return d.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\. /g, "-").replace(".", "");
 }
 
 export function QuestionsListClient({
   questions,
-  categories,
-  currentCategory,
   currentSearch,
-  currentStatus,
   currentPage,
   totalPages,
   totalCount,
   currentTab,
+  canCreateQuestion,
 }: QuestionsListClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -88,128 +87,129 @@ export function QuestionsListClient({
     updateParams({ search: searchInput });
   };
 
+  const handleTabChange = (value: string) => {
+    updateParams({ tab: value });
+  };
+
   return (
-    <div className="space-y-8">
-      {/* 검색바 */}
-      <form onSubmit={handleSearch} className="max-w-2xl">
-        <div className="relative search-focus rounded-xl">
-          <input
+    <div className="p-6 max-w-4xl mx-auto">
+      <div className="flex flex-col gap-5 mb-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-foreground">질문 게시판</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Meta 광고에 대해 궁금한 점을 질문하고 답변을 받아보세요
+            </p>
+          </div>
+          {canCreateQuestion && (
+            <Button asChild className="gap-1.5">
+              <Link href="/questions/new">
+                <Plus className="h-4 w-4" />
+                새 질문
+              </Link>
+            </Button>
+          )}
+        </div>
+
+        {/* Search */}
+        <form onSubmit={handleSearch} className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
             type="text"
-            placeholder="질문 검색하기..."
+            placeholder="질문 검색..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full px-6 py-3 text-lg border border-border-color rounded-xl focus:outline-none transition-shadow bg-card-bg text-text-main"
+            className="pl-9 h-10 bg-card border"
           />
-          <button type="submit" className="absolute right-4 top-1/2 transform -translate-y-1/2 text-primary">
-            <Search className="w-6 h-6" />
-          </button>
-        </div>
-      </form>
+        </form>
 
-      {/* 탭 네비게이션 */}
-      <div className="border-b border-border-color">
-        <nav className="flex space-x-8">
-          <button
-            onClick={() => updateParams({ tab: "all" })}
-            className={`py-3 px-1 border-b-2 font-medium transition-colors ${
-              currentTab === "all" || !currentTab
-                ? "border-primary text-primary"
-                : "border-transparent text-text-secondary hover:text-primary hover:border-border-color"
-            }`}
-          >
-            전체 질문
-          </button>
-          <button
-            onClick={() => updateParams({ tab: "mine" })}
-            className={`py-3 px-1 border-b-2 font-medium transition-colors ${
-              currentTab === "mine"
-                ? "border-primary text-primary"
-                : "border-transparent text-text-secondary hover:text-primary hover:border-border-color"
-            }`}
-          >
-            내 질문
-          </button>
-        </nav>
+        {/* Tabs */}
+        <Tabs
+          value={currentTab || "all"}
+          onValueChange={handleTabChange}
+        >
+          <TabsList className="bg-muted h-9">
+            <TabsTrigger value="all" className="text-sm">전체</TabsTrigger>
+            <TabsTrigger value="mine" className="text-sm">내 질문</TabsTrigger>
+            <TabsTrigger value="answered" className="text-sm">답변완료</TabsTrigger>
+            <TabsTrigger value="pending" className="text-sm">답변대기</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
-      {/* 카테고리 필터 */}
-      <div>
-        <p className="text-sm font-medium text-text-secondary mb-3">카테고리</p>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => updateParams({ category: "all" })}
-            className={`tag-chip px-4 py-2 text-sm font-medium rounded-full transition-colors ${
-              currentCategory === "all" || !currentCategory
-                ? "bg-primary text-white"
-                : "bg-muted text-muted-foreground hover:bg-primary hover:text-white"
-            }`}
-          >
-            전체
-          </button>
-          {categories.map((cat) => (
-            <button
-              key={cat.value}
-              onClick={() => updateParams({ category: cat.value })}
-              className={`tag-chip px-4 py-2 text-sm font-medium rounded-full transition-colors ${
-                currentCategory === cat.value
-                  ? "bg-primary text-white"
-                  : "bg-primary/10 text-primary hover:bg-primary hover:text-white"
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 결과 카운트 */}
-      <p className="text-sm text-text-secondary">
-        총 {totalCount}개의 질문
-      </p>
-
-      {/* Q&A 카드 그리드 */}
+      {/* Question Cards */}
       {questions.length === 0 ? (
-        <div className="bg-card-bg rounded-xl border border-border-color p-12 text-center">
-          <p className="text-text-secondary">검색 결과가 없습니다.</p>
+        <div className="rounded-lg border bg-card p-12 text-center">
+          <p className="text-muted-foreground">검색 결과가 없습니다.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="flex flex-col gap-3">
           {questions.map((question) => (
-            <Link key={question.id} href={`/questions/${question.id}`}>
-              <article className="bg-card-bg rounded-xl border border-border-color p-6 card-hover fade-in h-full">
-                <h3 className="font-bold text-lg mb-3 line-clamp-2 text-text-main">
-                  {question.title}
-                </h3>
-                <p className="text-text-secondary text-sm mb-4 line-clamp-3">
-                  {question.content}
-                </p>
-                
-                {question.category && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
-                      {question.category.name}
-                    </span>
-                  </div>
-                )}
-                
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-6 h-6 ${getAvatarColor(question.author?.name)} rounded-full flex items-center justify-center`}>
-                      <span className="text-white text-xs font-medium">
-                        {question.author?.name?.charAt(0) || "?"}
+            <Link
+              key={question.id}
+              href={`/questions/${question.id}`}
+              className="block group"
+            >
+              <article className="rounded-lg border bg-card p-5 transition-all group-hover:border-primary/30 group-hover:shadow-sm">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    {/* Category + Status Badges */}
+                    <div className="flex items-center gap-2 mb-2">
+                      {question.category && (
+                        <Badge
+                          variant="outline"
+                          className={`text-xs font-medium ${getCategoryColor(question.category.name)}`}
+                        >
+                          {question.category.name}
+                        </Badge>
+                      )}
+                      <Badge
+                        variant="outline"
+                        className={`text-xs font-medium ${
+                          question.status === "answered"
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                            : "border-amber-200 bg-amber-50 text-amber-700"
+                        }`}
+                      >
+                        {question.status === "answered" ? "답변완료" : "답변대기"}
+                      </Badge>
+                    </div>
+
+                    {/* Title */}
+                    <h3 className="text-base font-semibold text-card-foreground leading-snug mb-3 line-clamp-2 group-hover:text-primary transition-colors">
+                      {question.title}
+                    </h3>
+
+                    {/* Author + Date */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="relative flex shrink-0 overflow-hidden rounded-full h-6 w-6">
+                          <span className="flex h-full w-full items-center justify-center rounded-full text-[10px] font-medium bg-muted text-muted-foreground">
+                            {question.author?.name?.charAt(0) || "?"}
+                          </span>
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          {question.author?.name || "익명"}
+                        </span>
+                      </div>
+                      <span className="text-xs text-muted-foreground/60">
+                        {formatDate(question.created_at)}
                       </span>
                     </div>
-                    <span className="text-text-secondary">{question.author?.name || "익명"}</span>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      question.status === "answered" 
-                        ? "bg-success text-white" 
-                        : "bg-warning text-white"
-                    }`}>
-                      {question.status === "answered" ? "답변완료" : "답변대기"}
+
+                  {/* Answer Count */}
+                  <div className="flex flex-col items-center shrink-0 pt-1">
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <MessageSquare className="h-4 w-4" />
+                      <span className="text-sm font-medium">
+                        {question.answers_count || 0}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground/60 mt-0.5">
+                      답변
                     </span>
-                    <span className="text-text-muted">{timeAgo(question.created_at)}</span>
                   </div>
                 </div>
               </article>
@@ -218,55 +218,56 @@ export function QuestionsListClient({
         </div>
       )}
 
-      {/* 페이지네이션 */}
+      {/* Total Count */}
+      <div className="mt-6 text-center">
+        <p className="text-xs text-muted-foreground">총 {totalCount}개의 질문</p>
+      </div>
+
+      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center">
-          <nav className="flex space-x-2">
-            <button
+        <div className="flex justify-center mt-4">
+          <nav className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => updateParams({ page: String(Math.max(1, currentPage - 1)) })}
               disabled={currentPage <= 1}
-              className="px-3 py-2 text-text-secondary hover:text-primary disabled:opacity-50"
             >
-              ←
-            </button>
+              &larr;
+            </Button>
             {[...Array(Math.min(5, totalPages))].map((_, i) => {
               const pageNum = i + 1;
               return (
-                <button
+                <Button
                   key={pageNum}
+                  variant={currentPage === pageNum ? "default" : "ghost"}
+                  size="sm"
                   onClick={() => updateParams({ page: String(pageNum) })}
-                  className={`px-3 py-2 rounded-lg ${
-                    currentPage === pageNum
-                      ? "bg-primary text-white"
-                      : "text-text-secondary hover:text-primary hover:bg-bg-soft"
-                  }`}
                 >
                   {pageNum}
-                </button>
+                </Button>
               );
             })}
             {totalPages > 5 && (
               <>
-                <span className="px-3 py-2 text-text-muted">...</span>
-                <button
+                <span className="px-2 text-muted-foreground">...</span>
+                <Button
+                  variant={currentPage === totalPages ? "default" : "ghost"}
+                  size="sm"
                   onClick={() => updateParams({ page: String(totalPages) })}
-                  className={`px-3 py-2 rounded-lg ${
-                    currentPage === totalPages
-                      ? "bg-primary text-white"
-                      : "text-text-secondary hover:text-primary hover:bg-bg-soft"
-                  }`}
                 >
                   {totalPages}
-                </button>
+                </Button>
               </>
             )}
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => updateParams({ page: String(Math.min(totalPages, currentPage + 1)) })}
               disabled={currentPage >= totalPages}
-              className="px-3 py-2 text-text-secondary hover:text-primary disabled:opacity-50"
             >
-              →
-            </button>
+              &rarr;
+            </Button>
           </nav>
         </div>
       )}

@@ -1,11 +1,25 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ChevronRight, MessageSquare, Sparkles, User, Shield } from "lucide-react";
 import { getQuestionById } from "@/actions/questions";
 import { getAnswersByQuestionId } from "@/actions/answers";
 import { AnswerForm } from "./answer-form";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { ImageGallery } from "@/components/questions/ImageGallery";
 import { SourceReferences } from "@/components/questions/SourceReferences";
+import { Badge } from "@/components/ui/badge";
+
+const categoryColorMap: Record<string, string> = {
+  "광고소재": "bg-blue-50 text-blue-700 border-blue-200",
+  "타겟팅": "bg-emerald-50 text-emerald-700 border-emerald-200",
+  "예산": "bg-amber-50 text-amber-700 border-amber-200",
+  "측정": "bg-violet-50 text-violet-700 border-violet-200",
+  "기타": "bg-slate-50 text-slate-600 border-slate-200",
+};
+
+function getCategoryColor(name: string): string {
+  return categoryColorMap[name] || "bg-slate-50 text-slate-600 border-slate-200";
+}
 
 function timeAgo(dateStr: string) {
   const now = new Date();
@@ -21,11 +35,9 @@ function timeAgo(dateStr: string) {
   return d.toLocaleDateString("ko-KR");
 }
 
-function getAvatarColor(name?: string): string {
-  const colors = ["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-indigo-500", "bg-pink-500"];
-  if (!name) return "bg-gray-500";
-  const index = name.charCodeAt(0) % colors.length;
-  return colors[index];
+function isOfficialAnswer(author?: { name: string } | null): boolean {
+  const name = author?.name?.toLowerCase() || "";
+  return name.includes("smith") || name.includes("관리자") || name.includes("admin");
 }
 
 export default async function QuestionDetailPage({
@@ -49,6 +61,7 @@ export default async function QuestionDetailPage({
       isAdmin = profile?.role === "admin";
     }
   } catch (e) {
+    void e;
   }
 
   let question: Awaited<ReturnType<typeof getQuestionById>>["data"];
@@ -59,6 +72,7 @@ export default async function QuestionDetailPage({
     }
     question = result.data;
   } catch (e) {
+    void e;
     notFound();
   }
 
@@ -69,139 +83,175 @@ export default async function QuestionDetailPage({
     });
     approvedAnswers = (answers ?? []).filter((a) => a.is_approved);
   } catch (e) {
+    void e;
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      {/* 브레드크럼 */}
-      <nav className="mb-8 text-sm">
-        <ol className="flex items-center space-x-2 text-text-secondary">
-          <li><Link href="/dashboard" className="hover:text-primary">홈</Link></li>
-          <li className="text-text-muted">›</li>
-          <li><Link href="/questions" className="hover:text-primary">Q&A</Link></li>
-          <li className="text-text-muted">›</li>
-          <li className="text-text-main">{question.category?.name || "질문"}</li>
+    <div className="p-6 max-w-4xl mx-auto">
+      {/* Breadcrumb */}
+      <nav className="mb-6">
+        <ol className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <li>
+            <Link href="/questions" className="hover:text-foreground transition-colors">
+              Q&A
+            </Link>
+          </li>
+          <li><ChevronRight className="h-3.5 w-3.5" /></li>
+          <li className="text-foreground font-medium truncate max-w-xs">
+            {question.category?.name || "질문"}
+          </li>
         </ol>
       </nav>
 
-      {/* 질문 카드 */}
-      <article className="bg-card-bg rounded-xl border border-border-color p-8 mb-8 fade-in">
-        <div className="flex items-start space-x-4">
-          <div className={`flex-shrink-0 w-12 h-12 ${getAvatarColor(question.author?.name)} rounded-full flex items-center justify-center`}>
-            <span className="text-white font-medium">
+      {/* Question Card */}
+      <article className="rounded-lg border bg-card p-6 mb-6">
+        {/* Badges */}
+        <div className="flex items-center gap-2 mb-3">
+          {question.category && (
+            <Badge
+              variant="outline"
+              className={`text-xs font-medium ${getCategoryColor(question.category.name)}`}
+            >
+              {question.category.name}
+            </Badge>
+          )}
+          <Badge
+            variant="outline"
+            className={`text-xs font-medium ${
+              question.status === "answered"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-amber-200 bg-amber-50 text-amber-700"
+            }`}
+          >
+            {question.status === "answered" ? "답변완료" : "답변대기"}
+          </Badge>
+        </div>
+
+        {/* Title */}
+        <h1 className="text-xl font-bold text-foreground mb-4">
+          {question.title}
+        </h1>
+
+        {/* Content */}
+        <div className="text-[15px] leading-relaxed text-foreground/90 whitespace-pre-wrap mb-5">
+          {question.content}
+        </div>
+
+        {/* Images */}
+        {Array.isArray(question.image_urls) && question.image_urls.length > 0 && (
+          <div className="mb-5">
+            <ImageGallery imageUrls={question.image_urls as string[]} />
+          </div>
+        )}
+
+        {/* Author info */}
+        <div className="flex items-center justify-between pt-4 border-t">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
               {question.author?.name?.charAt(0) || "?"}
             </span>
-          </div>
-          
-          <div className="flex-1">
-            <div className="flex items-center flex-wrap gap-3 mb-3">
-              <h1 className="text-2xl font-bold text-text-main">{question.title}</h1>
-              <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                question.status === "answered" 
-                  ? "bg-success text-white" 
-                  : "bg-warning text-white"
-              }`}>
-                {question.status === "answered" ? "답변완료" : "답변대기"}
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-foreground">
+                {question.author?.name || "익명"}
               </span>
-            </div>
-            
-            {question.category && (
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="px-3 py-1 bg-primary/10 text-primary text-sm font-medium rounded-full">
-                  {question.category.name}
-                </span>
-              </div>
-            )}
-            
-            <div className="prose max-w-none mb-6 text-text-main whitespace-pre-wrap">
-              {question.content}
-            </div>
-
-            {Array.isArray(question.image_urls) && question.image_urls.length > 0 && (
-              <div className="mb-6">
-                <ImageGallery imageUrls={question.image_urls as string[]} />
-              </div>
-            )}
-
-            <div className="flex items-center justify-between text-sm text-text-secondary">
-              <div className="flex items-center space-x-2">
-                <span className="font-medium">{question.author?.name || "익명"}</span>
-                {question.author?.shop_name && (
-                  <>
-                    <span>•</span>
-                    <span>{question.author.shop_name}</span>
-                  </>
-                )}
-              </div>
-              <span>{timeAgo(question.created_at)}</span>
+              {question.author?.shop_name && (
+                <span className="text-xs text-muted-foreground">{question.author.shop_name}</span>
+              )}
             </div>
           </div>
+          <span className="text-xs text-muted-foreground">{timeAgo(question.created_at)}</span>
         </div>
       </article>
 
-      {/* 답변 섹션 */}
-      <section className="mb-8">
-        <h2 className="text-xl font-bold mb-6 flex items-center text-text-main">
-          <span className="mr-2">💬</span> 답변 ({approvedAnswers.length}개)
-        </h2>
-        
+      {/* Answers Section */}
+      <section className="mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <MessageSquare className="h-5 w-5 text-foreground" />
+          <h2 className="text-lg font-semibold text-foreground">
+            답변 {approvedAnswers.length}개
+          </h2>
+        </div>
+
         {approvedAnswers.length === 0 ? (
-          <div className="bg-card-bg rounded-xl border border-border-color p-8 text-center">
-            <p className="text-text-secondary">아직 답변이 없습니다.</p>
+          <div className="rounded-lg border bg-card p-8 text-center">
+            <p className="text-muted-foreground">아직 답변이 없습니다.</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {approvedAnswers.map((answer) => (
-              <article key={answer.id} className="bg-card-bg rounded-xl border border-border-color p-6 fade-in">
-                <div className="flex items-start space-x-4">
-                  <div className={`flex-shrink-0 w-10 h-10 ${answer.is_ai ? "bg-primary" : getAvatarColor(answer.author?.name)} rounded-full flex items-center justify-center`}>
-                    <span className="text-white font-medium">
-                      {answer.is_ai ? "AI" : answer.author?.name?.charAt(0) || "?"}
+          <div className="flex flex-col gap-4">
+            {approvedAnswers.map((answer) => {
+              const isAI = answer.is_ai;
+              const isOfficial = !isAI && isOfficialAnswer(answer.author);
+
+              return (
+                <article
+                  key={answer.id}
+                  className={`rounded-lg border bg-card p-5 ${
+                    isAI ? "border-l-4 border-l-primary" : ""
+                  }`}
+                >
+                  {/* Author row */}
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div
+                      className={`flex items-center justify-center h-8 w-8 rounded-full ${
+                        isAI
+                          ? "bg-primary/10"
+                          : isOfficial
+                            ? "bg-emerald-50"
+                            : "bg-muted"
+                      }`}
+                    >
+                      {isAI ? (
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      ) : isOfficial ? (
+                        <Shield className="h-4 w-4 text-emerald-600" />
+                      ) : (
+                        <User className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="text-sm font-semibold text-foreground">
+                        {isAI ? "AI 어시스턴트" : answer.author?.name || "익명"}
+                      </span>
+                      {isAI && (
+                        <Badge className="gap-1 text-[10px] px-2 py-0.5 h-5 bg-primary/10 text-primary hover:bg-primary/10 border-primary/20">
+                          <Sparkles className="h-2.5 w-2.5" />
+                          AI 답변
+                        </Badge>
+                      )}
+                      {isOfficial && (
+                        <Badge className="gap-1 text-[10px] px-2 py-0.5 h-5 bg-emerald-50 text-emerald-700 hover:bg-emerald-50 border-emerald-200">
+                          공식 답변
+                        </Badge>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {timeAgo(answer.created_at)}
                     </span>
                   </div>
-                  
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <span className="font-medium text-text-main">
-                        {answer.is_ai ? "AI 어시스턴트" : answer.author?.name || "익명"}
-                      </span>
-                      {answer.is_ai && (
-                        <span className="px-2 py-1 bg-primary text-white text-xs font-medium rounded-full">
-                          AI
-                        </span>
-                      )}
-                      {!answer.is_ai && answer.author?.name?.toLowerCase().includes("admin") && (
-                        <span className="px-2 py-1 bg-success text-white text-xs font-medium rounded-full">
-                          관리자
-                        </span>
-                      )}
-                    </div>
-                    
-                    <div className="prose max-w-none mb-4 text-text-main whitespace-pre-wrap">
-                      {answer.content}
-                    </div>
 
-                    {answer.is_ai && (
+                  {/* Content */}
+                  <div className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground/90 pl-[42px]">
+                    {answer.content}
+                  </div>
+
+                  {/* Source references for AI answers */}
+                  {isAI && (
+                    <div className="pl-[42px]">
                       <SourceReferences
                         rawSourceRefs={(answer as Record<string, unknown>).source_refs}
                       />
-                    )}
-
-                    <div className="flex items-center justify-between text-sm text-text-secondary">
-                      <span>{timeAgo(answer.created_at)}</span>
                     </div>
-                  </div>
-                </div>
-              </article>
-            ))}
+                  )}
+                </article>
+              );
+            })}
           </div>
         )}
       </section>
 
-      {/* 답변 작성 폼 (관리자만) */}
+      {/* Answer Form (admin only) */}
       {isAdmin && (
-        <section className="bg-card-bg rounded-xl border border-border-color p-6">
-          <h3 className="font-bold text-lg mb-4 text-text-main">답변 작성</h3>
+        <section className="rounded-lg border bg-card p-5">
           <AnswerForm questionId={id} />
         </section>
       )}
