@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { getQuestions, getCategories } from "@/actions/questions";
 import { QuestionsListClient } from "./questions-list-client";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 export default async function QuestionsPage({
   searchParams,
@@ -26,6 +26,18 @@ export default async function QuestionsPage({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const currentUserId = user?.id;
+
+  // 역할 조회: student/alumni/admin만 질문 작성 가능
+  let canCreateQuestion = false;
+  if (user) {
+    const svc = createServiceClient();
+    const { data: profile } = await svc
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    canCreateQuestion = ["student", "alumni", "admin"].includes(profile?.role || "");
+  }
 
   const categories = await getCategories();
 
@@ -69,13 +81,15 @@ export default async function QuestionsPage({
         />
       </Suspense>
       
-      {/* 플로팅 질문 작성 버튼 */}
-      <Link 
-        href="/questions/new"
-        className="fixed bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-lg hover:shadow-xl transition-shadow btn-primary flex items-center justify-center z-50"
-      >
-        <Plus className="w-6 h-6" />
-      </Link>
+      {/* 플로팅 질문 작성 버튼 (student/alumni/admin만) */}
+      {canCreateQuestion && (
+        <Link 
+          href="/questions/new"
+          className="fixed bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-lg hover:shadow-xl transition-shadow btn-primary flex items-center justify-center z-50"
+        >
+          <Plus className="w-6 h-6" />
+        </Link>
+      )}
     </div>
   );
 }

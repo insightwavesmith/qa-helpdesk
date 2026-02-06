@@ -31,7 +31,8 @@ export default async function MainLayout({
     data: { name: string; role: string; email: string } | null;
   };
 
-  if (profile?.role === "pending" || profile?.role === "rejected") {
+  // lead는 아직 승인되지 않은 상태 → 대기 페이지로
+  if (profile?.role === "lead") {
     redirect("/pending");
   }
 

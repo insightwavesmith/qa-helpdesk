@@ -66,7 +66,7 @@ interface AppSidebarProps {
 }
 
 export default function AppSidebar({
-  userRole = "approved",
+  userRole = "member",
   userName = "사용자",
   userEmail = "",
   pendingAnswersCount = 0,

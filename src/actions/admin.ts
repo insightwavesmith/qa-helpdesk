@@ -22,7 +22,7 @@ export async function getMembers({
     .range(from, to);
 
   if (role && role !== "all") {
-    query = query.eq("role", role as "pending" | "approved" | "admin" | "rejected");
+    query = query.eq("role", role as "lead" | "member" | "student" | "alumni" | "admin");
   }
 
   const { data, count, error } = await query;
@@ -35,12 +35,12 @@ export async function getMembers({
   return { data: data || [], count: count || 0, error: null };
 }
 
-export async function approveMember(userId: string) {
+export async function approveMember(userId: string, newRole: "member" | "student" = "member") {
   const supabase = createServiceClient();
 
   const { error } = await supabase
     .from("profiles")
-    .update({ role: "approved" } as never)
+    .update({ role: newRole } as never)
     .eq("id", userId);
 
   if (error) {
@@ -55,7 +55,7 @@ export async function approveMember(userId: string) {
 export async function rejectMember(userId: string, reason?: string) {
   const supabase = createServiceClient();
 
-  const update: Record<string, unknown> = { role: "rejected" };
+  const update: Record<string, unknown> = { role: "lead" };
   if (reason) update.reject_reason = reason;
 
   const { error } = await supabase
@@ -89,10 +89,11 @@ export async function getDashboardStats() {
     .select("*", { count: "exact" })
     .eq("is_published", true);
 
+  // member, student, alumni 모두 활성 회원으로 카운트
   const membersResult = await supabase
     .from("profiles")
     .select("*", { count: "exact" })
-    .eq("role", "approved");
+    .in("role", ["member", "student", "alumni"]);
 
   // This week's questions count
   const oneWeekAgo = new Date();
@@ -111,7 +112,7 @@ export async function getDashboardStats() {
     openQuestions,
     pendingAnswers: pendingAnswersResult.count || 0,
     totalPosts: postsResult.count || 0,
-    approvedMembers: membersResult.count || 0,
+    activeMembers: membersResult.count || 0,
   };
 }
 

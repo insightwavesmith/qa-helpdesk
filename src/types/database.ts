@@ -24,7 +24,12 @@ export interface Database {
           monthly_ad_budget: string | null;
           category: string | null;
           reject_reason: string | null;
-          role: "pending" | "approved" | "admin" | "rejected";
+          role: "lead" | "member" | "student" | "alumni" | "admin";
+          meta_account_id: string | null;
+          mixpanel_project_id: string | null;
+          mixpanel_board_id: string | null;
+          onboarding_completed: boolean;
+          onboarding_step: number;
           created_at: string;
           updated_at: string;
         };
@@ -41,7 +46,12 @@ export interface Database {
           monthly_ad_budget?: string | null;
           category?: string | null;
           reject_reason?: string | null;
-          role?: "pending" | "approved" | "admin" | "rejected";
+          role?: "lead" | "member" | "student" | "alumni" | "admin";
+          meta_account_id?: string | null;
+          mixpanel_project_id?: string | null;
+          mixpanel_board_id?: string | null;
+          onboarding_completed?: boolean;
+          onboarding_step?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -58,7 +68,12 @@ export interface Database {
           monthly_ad_budget?: string | null;
           category?: string | null;
           reject_reason?: string | null;
-          role?: "pending" | "approved" | "admin" | "rejected";
+          role?: "lead" | "member" | "student" | "alumni" | "admin";
+          meta_account_id?: string | null;
+          mixpanel_project_id?: string | null;
+          mixpanel_board_id?: string | null;
+          onboarding_completed?: boolean;
+          onboarding_step?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -672,6 +687,182 @@ export interface Database {
             referencedColumns: ["id"];
           },
         ];
+      };
+      invite_codes: {
+        Row: {
+          id: string;
+          code: string;
+          cohort: string | null;
+          max_uses: number;
+          used_count: number;
+          expires_at: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          code: string;
+          cohort?: string | null;
+          max_uses?: number;
+          used_count?: number;
+          expires_at?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          code?: string;
+          cohort?: string | null;
+          max_uses?: number;
+          used_count?: number;
+          expires_at?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      ad_accounts: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          account_id: string;
+          account_name: string | null;
+          mixpanel_project_id: string | null;
+          mixpanel_board_id: string | null;
+          active: boolean;
+          meta_status: Record<string, unknown> | null;
+          mixpanel_status: Record<string, unknown> | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          account_id: string;
+          account_name?: string | null;
+          mixpanel_project_id?: string | null;
+          mixpanel_board_id?: string | null;
+          active?: boolean;
+          meta_status?: Record<string, unknown> | null;
+          mixpanel_status?: Record<string, unknown> | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          account_id?: string;
+          account_name?: string | null;
+          mixpanel_project_id?: string | null;
+          mixpanel_board_id?: string | null;
+          active?: boolean;
+          meta_status?: Record<string, unknown> | null;
+          mixpanel_status?: Record<string, unknown> | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      daily_ad_insights: {
+        Row: {
+          id: string;
+          date: string;
+          account_id: string;
+          account_name: string | null;
+          campaign_id: string | null;
+          campaign_name: string | null;
+          adset_id: string | null;
+          adset_name: string | null;
+          ad_id: string | null;
+          ad_name: string | null;
+          roas: number;
+          spend: number;
+          impressions: number;
+          clicks: number;
+          purchases: number;
+          purchase_value: number;
+          ctr: number;
+          collected_at: string;
+        };
+        Insert: {
+          id?: string;
+          date: string;
+          account_id: string;
+          [key: string]: unknown;
+        };
+        Update: {
+          [key: string]: unknown;
+        };
+        Relationships: [];
+      };
+      daily_lp_metrics: {
+        Row: {
+          id: string;
+          date: string;
+          account_id: string;
+          project_name: string | null;
+          total_users: number;
+          bounce_1s_rate: number;
+          bounce_10s_rate: number;
+          avg_time_on_page: number;
+          collected_at: string;
+        };
+        Insert: {
+          id?: string;
+          date: string;
+          account_id: string;
+          [key: string]: unknown;
+        };
+        Update: {
+          [key: string]: unknown;
+        };
+        Relationships: [];
+      };
+      benchmarks: {
+        Row: {
+          id: string;
+          date: string;
+          period: string;
+          metric_name: string;
+          p50: number | null;
+          p75: number | null;
+          p90: number | null;
+          avg_value: number | null;
+          sample_size: number | null;
+          calculated_at: string;
+        };
+        Insert: {
+          id?: string;
+          date: string;
+          metric_name: string;
+          [key: string]: unknown;
+        };
+        Update: {
+          [key: string]: unknown;
+        };
+        Relationships: [];
+      };
+      leads: {
+        Row: {
+          id: string;
+          name: string;
+          email: string;
+          phone: string | null;
+          company_name: string | null;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          email: string;
+          [key: string]: unknown;
+        };
+        Update: {
+          [key: string]: unknown;
+        };
+        Relationships: [];
       };
       progress: {
         Row: {

@@ -21,7 +21,7 @@ export async function AdminDashboard() {
     openQuestions: 0,
     pendingAnswers: 0,
     totalPosts: 0,
-    approvedMembers: 0,
+    activeMembers: 0,
   };
   let recentQuestions: Awaited<ReturnType<typeof getRecentQuestions>> = [];
   let recentPosts: Awaited<ReturnType<typeof getRecentPosts>> = [];
@@ -63,7 +63,7 @@ export async function AdminDashboard() {
             { label: "미답변", value: stats.openQuestions, icon: Clock },
             { label: "검토 대기", value: stats.pendingAnswers, icon: Bot, href: "/admin/answers", highlight: stats.pendingAnswers > 0 },
             { label: "게시글", value: stats.totalPosts, icon: FileText },
-            { label: "회원", value: stats.approvedMembers, icon: Users },
+            { label: "회원", value: stats.activeMembers, icon: Users },
           ].map((stat) => {
             const Icon = stat.icon;
             const content = (

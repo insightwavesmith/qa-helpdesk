@@ -14,9 +14,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CategoryFilter } from "@/components/shared/CategoryFilter";
 import { Pagination } from "@/components/shared/Pagination";
-import { approveMember, rejectMember } from "@/actions/admin";
+import { approveMember } from "@/actions/admin";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle, Loader2 } from "lucide-react";
 
 interface Member {
   id: string;
@@ -42,16 +42,18 @@ const roleLabels: Record<
   string,
   { label: string; variant: "default" | "secondary" | "outline" | "destructive" }
 > = {
-  pending: { label: "대기", variant: "secondary" },
-  approved: { label: "승인", variant: "default" },
+  lead: { label: "리드", variant: "secondary" },
+  member: { label: "멤버", variant: "default" },
+  student: { label: "수강생", variant: "default" },
+  alumni: { label: "졸업생", variant: "outline" },
   admin: { label: "관리자", variant: "default" },
-  rejected: { label: "거절", variant: "destructive" },
 };
 
 const roleFilters = [
-  { value: "pending", label: "대기" },
-  { value: "approved", label: "승인" },
-  { value: "rejected", label: "거절" },
+  { value: "lead", label: "리드" },
+  { value: "member", label: "멤버" },
+  { value: "student", label: "수강생" },
+  { value: "alumni", label: "졸업생" },
   { value: "admin", label: "관리자" },
 ];
 
@@ -96,7 +98,7 @@ export function MembersClient({
       if (error) {
         toast.error(`승인 실패: ${error}`);
       } else {
-        toast.success("회원이 승인되었습니다.");
+        toast.success("회원이 멤버로 승인되었습니다.");
         router.refresh();
       }
     } catch {
@@ -106,14 +108,16 @@ export function MembersClient({
     }
   };
 
-  const handleReject = async (userId: string) => {
+  // 특정 역할로 승인/전환
+  const handleApproveAs = async (userId: string, role: "member" | "student") => {
     setLoadingId(userId);
     try {
-      const { error } = await rejectMember(userId);
+      const { error } = await approveMember(userId, role);
       if (error) {
-        toast.error(`거절 실패: ${error}`);
+        toast.error(`전환 실패: ${error}`);
       } else {
-        toast.success("회원이 거절되었습니다.");
+        const roleLabel = role === "student" ? "수강생" : "멤버";
+        toast.success(`회원이 ${roleLabel}으로 전환되었습니다.`);
         router.refresh();
       }
     } catch {
@@ -157,7 +161,7 @@ export function MembersClient({
             </TableHeader>
             <TableBody>
               {members.map((member) => {
-                const role = roleLabels[member.role] || roleLabels.pending;
+                const role = roleLabels[member.role] || roleLabels.lead;
                 const isLoading = loadingId === member.id;
 
                 return (
@@ -175,7 +179,8 @@ export function MembersClient({
                       {formatDate(member.created_at)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {member.role === "pending" && (
+                      {/* lead: 멤버 승인 또는 수강생 승인 */}
+                      {member.role === "lead" && (
                         <div className="flex justify-end gap-1">
                           <Button
                             size="sm"
@@ -188,31 +193,32 @@ export function MembersClient({
                             ) : (
                               <CheckCircle className="h-4 w-4" />
                             )}
-                            <span className="ml-1">승인</span>
+                            <span className="ml-1">멤버 승인</span>
                           </Button>
                           <Button
                             size="sm"
-                            variant="destructive"
-                            onClick={() => handleReject(member.id)}
+                            variant="secondary"
+                            onClick={() => handleApproveAs(member.id, "student")}
                             disabled={isLoading}
                           >
                             {isLoading ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                              <XCircle className="h-4 w-4" />
+                              <CheckCircle className="h-4 w-4" />
                             )}
-                            <span className="ml-1">거절</span>
+                            <span className="ml-1">수강생 승인</span>
                           </Button>
                         </div>
                       )}
-                      {member.role === "rejected" && (
+                      {/* member → student 승격 */}
+                      {member.role === "member" && (
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleApprove(member.id)}
+                          onClick={() => handleApproveAs(member.id, "student")}
                           disabled={isLoading}
                         >
-                          재승인
+                          수강생 전환
                         </Button>
                       )}
                     </TableCell>
