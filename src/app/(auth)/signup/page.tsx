@@ -20,9 +20,29 @@ import { updateBusinessCertUrl } from "@/actions/auth";
 import { GraduationCap, Loader2, Upload, FileCheck, ShieldCheck } from "lucide-react";
 import { ThemeModeToggle } from "@/components/layout/theme-toggle";
 
+// 전화번호 자동 하이픈
+function formatPhone(value: string) {
+  const nums = value.replace(/\D/g, "").slice(0, 11);
+  if (nums.length <= 3) return nums;
+  if (nums.length <= 7) return `${nums.slice(0, 3)}-${nums.slice(3)}`;
+  return `${nums.slice(0, 3)}-${nums.slice(3, 7)}-${nums.slice(7)}`;
+}
+
+// 사업자등록번호 자동 하이픈
+function formatBizNum(value: string) {
+  const nums = value.replace(/\D/g, "").slice(0, 10);
+  if (nums.length <= 3) return nums;
+  if (nums.length <= 5) return `${nums.slice(0, 3)}-${nums.slice(3)}`;
+  return `${nums.slice(0, 3)}-${nums.slice(3, 5)}-${nums.slice(5)}`;
+}
+
+// 광고계정 ID 숫자만
+function formatAccountId(value: string) {
+  return value.replace(/\D/g, "");
+}
+
 function SignupForm() {
   const searchParams = useSearchParams();
-  // /signup?type=student 이면 수강생 가입
   const isStudentSignup = searchParams.get("type") === "student";
 
   const [formData, setFormData] = useState({
@@ -70,7 +90,6 @@ function SignupForm() {
       return;
     }
 
-    // 수강생 가입 시 필수 필드 체크
     if (isStudentSignup) {
       if (!formData.metaAccountId || !formData.mixpanelProjectId || !formData.mixpanelSecret) {
         setError("총가치각도기 연동 정보를 모두 입력해주세요.");
@@ -89,17 +108,15 @@ function SignupForm() {
         shop_url: formData.shopUrl,
         shop_name: formData.shopName,
         business_number: formData.businessNumber,
-        cohort: formData.cohort || null,
       };
 
       if (isStudentSignup) {
+        metadata.cohort = formData.cohort || null;
         metadata.meta_account_id = formData.metaAccountId;
         metadata.mixpanel_project_id = formData.mixpanelProjectId;
         metadata.mixpanel_secret = formData.mixpanelSecret;
-        // 수강생은 바로 student로 가입 (이미 결제+인증 완료된 사람들)
         metadata.role = "student";
       }
-      // 일반 가입은 lead → 관리자 승인 후 member
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -146,7 +163,6 @@ function SignupForm() {
         });
       }
 
-      // 수강생 → 대시보드, 일반 → 승인 대기
       router.push(isStudentSignup ? "/dashboard" : "/pending");
     } catch {
       setError("회원가입 중 오류가 발생했습니다.");
@@ -227,7 +243,13 @@ function SignupForm() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="phone">전화번호 *</Label>
-                      <Input id="phone" placeholder="010-1234-5678" value={formData.phone} onChange={(e) => updateField("phone", e.target.value)} required />
+                      <Input
+                        id="phone"
+                        placeholder="010-1234-5678"
+                        value={formData.phone}
+                        onChange={(e) => updateField("phone", formatPhone(e.target.value))}
+                        required
+                      />
                     </div>
                   </div>
                 </div>
@@ -247,15 +269,24 @@ function SignupForm() {
                     <Label htmlFor="shopUrl">쇼핑몰 URL *</Label>
                     <Input id="shopUrl" placeholder="https://myshop.com" value={formData.shopUrl} onChange={(e) => updateField("shopUrl", e.target.value)} required />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className={isStudentSignup ? "grid grid-cols-2 gap-3" : ""}>
                     <div className="space-y-2">
                       <Label htmlFor="businessNumber">사업자등록번호 *</Label>
-                      <Input id="businessNumber" placeholder="000-00-00000" value={formData.businessNumber} onChange={(e) => updateField("businessNumber", e.target.value)} required />
+                      <Input
+                        id="businessNumber"
+                        placeholder="000-00-00000"
+                        value={formData.businessNumber}
+                        onChange={(e) => updateField("businessNumber", formatBizNum(e.target.value))}
+                        required
+                      />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cohort">수강 기수</Label>
-                      <Input id="cohort" placeholder="예: 7기" value={formData.cohort} onChange={(e) => updateField("cohort", e.target.value)} />
-                    </div>
+                    {/* 수강생만 기수 입력 */}
+                    {isStudentSignup && (
+                      <div className="space-y-2">
+                        <Label htmlFor="cohort">수강 기수</Label>
+                        <Input id="cohort" placeholder="예: 7기" value={formData.cohort} onChange={(e) => updateField("cohort", e.target.value)} />
+                      </div>
+                    )}
                   </div>
 
                   {/* 수강생만: 총가치각도기 연동 */}
@@ -265,7 +296,14 @@ function SignupForm() {
                       <h3 className="text-sm font-semibold text-muted-foreground">총가치각도기 연동</h3>
                       <div className="space-y-2">
                         <Label htmlFor="metaAccountId">Meta 광고계정 ID *</Label>
-                        <Input id="metaAccountId" placeholder="act_123456789" value={formData.metaAccountId} onChange={(e) => updateField("metaAccountId", e.target.value)} required />
+                        <Input
+                          id="metaAccountId"
+                          placeholder="123456789"
+                          value={formData.metaAccountId}
+                          onChange={(e) => updateField("metaAccountId", formatAccountId(e.target.value))}
+                          required
+                        />
+                        <p className="text-xs text-muted-foreground">숫자만 입력 (act_ 제외)</p>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-2">
@@ -312,7 +350,7 @@ function SignupForm() {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex flex-col gap-4">
+            <CardFooter className="flex flex-col gap-4 pb-8">
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? (
                   <>
