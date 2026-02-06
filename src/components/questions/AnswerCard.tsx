@@ -1,5 +1,6 @@
 import { Bot, User, CheckCircle, ThumbsUp, Shield, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { SourceReferences, parseSourceRefs } from "@/components/questions/SourceReferences";
 
 interface AnswerCardProps {
   answer: {
@@ -125,6 +126,13 @@ export function AnswerCard({ answer }: AnswerCardProps) {
       >
         {answer.content}
       </div>
+
+      {/* Source references for AI answers */}
+      {isAI && !!answer.source_refs && (
+        <div className="pl-[46px]">
+          <SourceReferences sourceRefs={parseSourceRefs(answer.source_refs)} />
+        </div>
+      )}
 
       {/* Likes */}
       {answer.like_count > 0 && (

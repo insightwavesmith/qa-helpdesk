@@ -19,6 +19,7 @@ import {
   Loader2,
   ExternalLink,
 } from "lucide-react";
+import { SourceReferences, parseSourceRefs } from "@/components/questions/SourceReferences";
 
 interface Answer {
   id: string;
@@ -26,6 +27,7 @@ interface Answer {
   is_ai: boolean;
   is_approved: boolean;
   created_at: string;
+  source_refs?: unknown;
   author?: { id: string; name: string } | null;
   question?: { id: string; title: string } | null;
 }
@@ -194,6 +196,11 @@ export function AnswersReviewClient({
                       <div className="prose prose-sm max-w-none whitespace-pre-wrap mb-4">
                         {answer.content}
                       </div>
+                      {answer.is_ai && !!answer.source_refs && (
+                        <div className="mb-4">
+                          <SourceReferences sourceRefs={parseSourceRefs(answer.source_refs)} />
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <Button
                           size="sm"

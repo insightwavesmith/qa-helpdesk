@@ -4,6 +4,8 @@ import { getQuestionById } from "@/actions/questions";
 import { getAnswersByQuestionId } from "@/actions/answers";
 import { AnswerForm } from "./answer-form";
 import { createClient } from "@/lib/supabase/server";
+import { ImageGallery } from "@/components/questions/ImageGallery";
+import { SourceReferences, parseSourceRefs } from "@/components/questions/SourceReferences";
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
@@ -107,7 +109,13 @@ export default async function QuestionDetailPage({
             <div className="prose max-w-none mb-6 text-text-main whitespace-pre-wrap">
               {question.content}
             </div>
-            
+
+            {Array.isArray(question.image_urls) && question.image_urls.length > 0 && (
+              <div className="mb-6">
+                <ImageGallery imageUrls={question.image_urls as string[]} />
+              </div>
+            )}
+
             <div className="flex items-center justify-between text-sm text-text-secondary">
               <div className="flex items-center space-x-2">
                 <span className="font-medium">{question.author?.name || "익명"}</span>
@@ -165,7 +173,12 @@ export default async function QuestionDetailPage({
                     <div className="prose max-w-none mb-4 text-text-main whitespace-pre-wrap">
                       {answer.content}
                     </div>
-                    
+
+                    {answer.is_ai && (() => {
+                      const refs = parseSourceRefs((answer as Record<string, unknown>).source_refs);
+                      return refs.length > 0 ? <SourceReferences sourceRefs={refs} /> : null;
+                    })()}
+
                     <div className="flex items-center justify-between text-sm text-text-secondary">
                       <span>{timeAgo(answer.created_at)}</span>
                     </div>
