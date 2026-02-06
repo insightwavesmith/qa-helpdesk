@@ -11,7 +11,7 @@ const META_THEME_COLORS = {
 
 export const metadata: Metadata = {
   title: "BS CAMP",
-  description: "자사몰사관학교 수강생 전용 Q&A 헬프데스크",
+  description: "BS CAMP 수강생 전용 Q&A 헬프데스크",
 };
 
 export const viewport: Viewport = {

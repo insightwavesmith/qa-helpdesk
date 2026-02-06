@@ -19,7 +19,7 @@ export default function PendingPage() {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg">
             <GraduationCap className="h-6 w-6" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">사관학교 헬프데스크</h1>
+          <h1 className="text-2xl font-bold tracking-tight">BS CAMP</h1>
         </div>
 
         <Card className="shadow-lg text-center">

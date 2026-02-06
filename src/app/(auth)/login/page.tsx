@@ -54,7 +54,7 @@ export default function LoginPage() {
             <img src="/logo.png" alt="BS CAMP" className="w-10 h-10 rounded-lg object-cover" />
             <span className="ml-2 text-xl font-bold text-text-main font-accent">BS CAMP</span>
           </div>
-          <p className="text-text-secondary font-medium">자사몰사관학교 Q&A 헬프데스크</p>
+          <p className="text-text-secondary font-medium">BS CAMP Q&A 헬프데스크</p>
         </div>
         
         {/* 로그인 카드 */}

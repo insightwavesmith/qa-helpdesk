@@ -166,7 +166,7 @@ function SignupForm() {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg">
             {isStudentSignup ? <ShieldCheck className="h-6 w-6" /> : <GraduationCap className="h-6 w-6" />}
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">자사몰사관학교</h1>
+          <h1 className="text-2xl font-bold tracking-tight">BS CAMP</h1>
           {isStudentSignup && (
             <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">
               수강생 가입
