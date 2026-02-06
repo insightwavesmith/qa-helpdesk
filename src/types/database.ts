@@ -688,39 +688,7 @@ export interface Database {
           },
         ];
       };
-      invite_codes: {
-        Row: {
-          id: string;
-          code: string;
-          cohort: string | null;
-          max_uses: number;
-          used_count: number;
-          expires_at: string | null;
-          created_by: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          code: string;
-          cohort?: string | null;
-          max_uses?: number;
-          used_count?: number;
-          expires_at?: string | null;
-          created_by?: string | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          code?: string;
-          cohort?: string | null;
-          max_uses?: number;
-          used_count?: number;
-          expires_at?: string | null;
-          created_by?: string | null;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
+      // invite_codes: 삭제됨 - /signup?type=student 방식으로 변경
       ad_accounts: {
         Row: {
           id: string;
