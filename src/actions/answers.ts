@@ -3,6 +3,24 @@
 import { revalidatePath } from "next/cache";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
+async function requireAdmin() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("인증되지 않은 사용자입니다.");
+
+  const svc = createServiceClient();
+  const { data: profile } = await svc
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "admin") throw new Error("권한이 없습니다.");
+  return svc;
+}
+
 export async function getAnswersByQuestionId(
   questionId: string,
   { includeUnapproved = false }: { includeUnapproved?: boolean } = {}
@@ -90,7 +108,7 @@ export async function getPendingAnswers({
   page = 1,
   pageSize = 20,
 }: { page?: number; pageSize?: number } = {}) {
-  const supabase = createServiceClient();
+  const supabase = await requireAdmin();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -113,7 +131,7 @@ export async function getPendingAnswers({
 }
 
 export async function approveAnswer(answerId: string) {
-  const supabase = createServiceClient();
+  const supabase = await requireAdmin();
 
   // 답변 승인
   const { data: answer, error } = await supabase
@@ -148,7 +166,7 @@ export async function approveAnswer(answerId: string) {
 }
 
 export async function deleteAnswer(answerId: string) {
-  const supabase = createServiceClient();
+  const supabase = await requireAdmin();
 
   const { error } = await supabase
     .from("answers")
@@ -165,7 +183,7 @@ export async function deleteAnswer(answerId: string) {
 }
 
 export async function updateAnswer(answerId: string, content: string) {
-  const supabase = createServiceClient();
+  const supabase = await requireAdmin();
 
   const { error } = await supabase
     .from("answers")

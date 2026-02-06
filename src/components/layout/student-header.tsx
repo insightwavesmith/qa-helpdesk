@@ -9,9 +9,12 @@ import { createClient } from "@/lib/supabase/client";
 interface StudentHeaderProps {
   userName: string;
   userEmail: string;
+  userRole?: string;
 }
 
-export function StudentHeader({ userName, userEmail }: StudentHeaderProps) {
+const PROTRACTOR_ROLES = ["student", "alumni", "admin"];
+
+export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const pathname = usePathname();
@@ -29,7 +32,9 @@ export function StudentHeader({ userName, userEmail }: StudentHeaderProps) {
     { label: "홈", href: "/dashboard" },
     { label: "Q&A", href: "/questions" },
     { label: "정보공유", href: "/posts" },
-    { label: "총가치각도기", href: "/protractor" },
+    ...(userRole && PROTRACTOR_ROLES.includes(userRole)
+      ? [{ label: "총가치각도기", href: "/protractor" }]
+      : []),
   ];
 
   const isActive = (href: string) => 

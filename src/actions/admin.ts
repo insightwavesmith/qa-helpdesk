@@ -1,17 +1,35 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
+
+async function requireAdmin() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("인증되지 않은 사용자입니다.");
+
+  const svc = createServiceClient();
+  const { data: profile } = await svc
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "admin") throw new Error("권한이 없습니다.");
+  return svc;
+}
 
 export async function getMembers({
   page = 1,
   pageSize = 20,
   role,
 }: { page?: number; pageSize?: number; role?: string } = {}) {
-  const supabase = createServiceClient();
+  const supabase = await requireAdmin();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -36,7 +54,7 @@ export async function getMembers({
 }
 
 export async function approveMember(userId: string, newRole: "member" | "student" = "member") {
-  const supabase = createServiceClient();
+  const supabase = await requireAdmin();
 
   const update: ProfileUpdate = { role: newRole };
   const { error } = await supabase
@@ -54,7 +72,7 @@ export async function approveMember(userId: string, newRole: "member" | "student
 }
 
 export async function rejectMember(userId: string, reason?: string) {
-  const supabase = createServiceClient();
+  const supabase = await requireAdmin();
 
   const update: ProfileUpdate = { role: "lead" };
   if (reason) update.reject_reason = reason;

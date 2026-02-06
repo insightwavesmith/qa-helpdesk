@@ -45,6 +45,7 @@ export default async function MainLayout({
         <StudentHeader
           userName={profile?.name || "사용자"}
           userEmail={profile?.email || user.email || ""}
+          userRole={profile?.role}
         />
         <main>
           {children}
