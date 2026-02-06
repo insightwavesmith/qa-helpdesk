@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Globe, Inbox } from "lucide-react";
 
 // LP 지표 로우 타입 (daily_lp_metrics 테이블)
 export interface LpMetricRow {
@@ -76,11 +77,14 @@ export function LpMetricsCard({ lpMetrics }: LpMetricsCardProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">🌐 LP(랜딩페이지) 지표</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Globe className="h-4 w-4" />
+            LP(랜딩페이지) 지표
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <p className="text-lg">📭</p>
+            <Inbox className="h-8 w-8" />
             <p className="mt-2 text-sm">아직 수집된 LP 데이터가 없습니다</p>
           </div>
         </CardContent>
@@ -91,7 +95,10 @@ export function LpMetricsCard({ lpMetrics }: LpMetricsCardProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">🌐 LP(랜딩페이지) 지표</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Globe className="h-4 w-4" />
+          LP(랜딩페이지) 지표
+        </CardTitle>
         <p className="text-sm text-muted-foreground">
           Mixpanel 기반 랜딩페이지 품질 지표 (기간 평균)
         </p>

@@ -9,6 +9,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart3, Inbox } from "lucide-react";
+import { findAboveAvg, getVerdict, fmt, fmtCurrency, fmtPercent } from "./utils";
+import { VerdictDot } from "./verdict-dot";
 
 // 광고 인사이트 로우 타입 (daily_ad_insights 테이블)
 export interface AdInsightRow {
@@ -66,56 +69,6 @@ export interface BenchmarkRow {
   [key: string]: string | number | undefined;
 }
 
-// 벤치마크에서 above_avg 값 찾기
-function findAboveAvg(
-  benchmarks: BenchmarkRow[],
-  rankingType: string,
-  creativeType = "VIDEO"
-): BenchmarkRow | undefined {
-  return benchmarks.find(
-    (b) =>
-      b.ranking_type === rankingType &&
-      b.ranking_group === "above_avg" &&
-      b.creative_type === creativeType
-  );
-}
-
-// 3단계 판정: 우수🟢 / 보통🟡 / 미달🔴
-function getVerdict(
-  value: number | undefined | null,
-  aboveAvg: number | undefined | null,
-  higherBetter = true
-): { emoji: string; className: string } {
-  if (value == null || aboveAvg == null || aboveAvg === 0) {
-    return { emoji: "", className: "" };
-  }
-  const threshold = aboveAvg * 0.75;
-
-  if (higherBetter) {
-    if (value >= aboveAvg) return { emoji: "🟢", className: "text-green-600 dark:text-green-400" };
-    if (value >= threshold) return { emoji: "🟡", className: "text-yellow-600 dark:text-yellow-400" };
-    return { emoji: "🔴", className: "text-red-600 dark:text-red-400" };
-  } else {
-    if (value <= aboveAvg) return { emoji: "🟢", className: "text-green-600 dark:text-green-400" };
-    if (value <= aboveAvg * 1.25) return { emoji: "🟡", className: "text-yellow-600 dark:text-yellow-400" };
-    return { emoji: "🔴", className: "text-red-600 dark:text-red-400" };
-  }
-}
-
-// 숫자 포맷
-function fmt(n: number | undefined | null): string {
-  if (n == null) return "-";
-  return n.toLocaleString("ko-KR");
-}
-function fmtCurrency(n: number | undefined | null): string {
-  if (n == null) return "-";
-  return "₩" + Math.round(n).toLocaleString("ko-KR");
-}
-function fmtPercent(n: number | undefined | null): string {
-  if (n == null) return "-";
-  return n.toFixed(2) + "%";
-}
-
 // 인사이트 데이터를 광고별로 집계 (기간 합산)
 function aggregateByAd(rows: AdInsightRow[]): AdInsightRow[] {
   const map = new Map<string, AdInsightRow>();
@@ -156,11 +109,14 @@ export function AdMetricsTable({ insights, benchmarks }: AdMetricsTableProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">📊 광고 성과</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <BarChart3 className="h-4 w-4" />
+            광고 성과
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <p className="text-lg">📭</p>
+            <Inbox className="h-8 w-8" />
             <p className="mt-2 text-sm">아직 수집된 광고 데이터가 없습니다</p>
           </div>
         </CardContent>
@@ -182,7 +138,10 @@ export function AdMetricsTable({ insights, benchmarks }: AdMetricsTableProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">📊 광고 성과</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <BarChart3 className="h-4 w-4" />
+          광고 성과
+        </CardTitle>
         <p className="text-sm text-muted-foreground">
           광고비 기준 상위 광고 · 벤치마크 대비 판정
         </p>
@@ -236,7 +195,7 @@ export function AdMetricsTable({ insights, benchmarks }: AdMetricsTableProps) {
                       {fmt(ad.clicks)}
                     </TableCell>
                     <TableCell className={`text-right whitespace-nowrap font-medium ${ctrV.className}`}>
-                      {fmtPercent(ad.ctr)} {ctrV.emoji}
+                      {fmtPercent(ad.ctr)}
                     </TableCell>
                     <TableCell className="text-right whitespace-nowrap">
                       {fmt(ad.purchases)}
@@ -247,8 +206,8 @@ export function AdMetricsTable({ insights, benchmarks }: AdMetricsTableProps) {
                     <TableCell className={`text-right whitespace-nowrap font-bold ${roasV.className}`}>
                       {ad.roas?.toFixed(2) || "-"}
                     </TableCell>
-                    <TableCell className="text-center text-lg">
-                      {roasV.emoji || "⚪"}
+                    <TableCell className="text-center">
+                      <VerdictDot label={roasV.label} />
                     </TableCell>
                   </TableRow>
                 );
@@ -259,10 +218,10 @@ export function AdMetricsTable({ insights, benchmarks }: AdMetricsTableProps) {
 
         {/* 범례 */}
         <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
-          <span>🟢 우수 (≥ 기준선)</span>
-          <span>🟡 보통 (≥ 75%)</span>
-          <span>🔴 미달 (&lt; 75%)</span>
-          <span>⚪ 데이터 부족</span>
+          <span className="flex items-center gap-1"><VerdictDot label="우수" /> 우수 ({"\u2265"} 기준선)</span>
+          <span className="flex items-center gap-1"><VerdictDot label="보통" /> 보통 ({"\u2265"} 75%)</span>
+          <span className="flex items-center gap-1"><VerdictDot label="미달" /> 미달 (&lt; 75%)</span>
+          <span className="flex items-center gap-1"><VerdictDot label="데이터 없음" /> 데이터 부족</span>
         </div>
       </CardContent>
     </Card>

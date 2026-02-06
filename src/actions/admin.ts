@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
@@ -38,9 +38,10 @@ export async function getMembers({
 export async function approveMember(userId: string, newRole: "member" | "student" = "member") {
   const supabase = createServiceClient();
 
+  const update: ProfileUpdate = { role: newRole };
   const { error } = await supabase
     .from("profiles")
-    .update({ role: newRole } as never)
+    .update(update)
     .eq("id", userId);
 
   if (error) {
@@ -55,12 +56,12 @@ export async function approveMember(userId: string, newRole: "member" | "student
 export async function rejectMember(userId: string, reason?: string) {
   const supabase = createServiceClient();
 
-  const update: Record<string, unknown> = { role: "lead" };
+  const update: ProfileUpdate = { role: "lead" };
   if (reason) update.reject_reason = reason;
 
   const { error } = await supabase
     .from("profiles")
-    .update(update as never)
+    .update(update)
     .eq("id", userId);
 
   if (error) {
@@ -75,41 +76,38 @@ export async function rejectMember(userId: string, reason?: string) {
 export async function getDashboardStats() {
   const supabase = createServiceClient();
 
-  const questionsResult = await supabase
-    .from("questions")
-    .select("*", { count: "exact" });
-
-  const pendingAnswersResult = await supabase
-    .from("answers")
-    .select("*", { count: "exact" })
-    .eq("is_approved", false);
-
-  const postsResult = await supabase
-    .from("posts")
-    .select("*", { count: "exact" })
-    .eq("is_published", true);
-
-  // member, student, alumni 모두 활성 회원으로 카운트
-  const membersResult = await supabase
-    .from("profiles")
-    .select("*", { count: "exact" })
-    .in("role", ["member", "student", "alumni"]);
-
-  // This week's questions count
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-  const questions = questionsResult.data || [];
-  const weeklyQuestions = questions.filter(
-    (q) => new Date(q.created_at) > oneWeekAgo
-  ).length;
 
-  // Open (unanswered) questions
-  const openQuestions = questions.filter((q) => q.status === "open").length;
+  const [questionsResult, weeklyResult, openResult, pendingAnswersResult, postsResult, membersResult] =
+    await Promise.all([
+      supabase.from("questions").select("id", { count: "exact", head: true }),
+      supabase
+        .from("questions")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", oneWeekAgo.toISOString()),
+      supabase
+        .from("questions")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "open"),
+      supabase
+        .from("answers")
+        .select("id", { count: "exact", head: true })
+        .eq("is_approved", false),
+      supabase
+        .from("posts")
+        .select("id", { count: "exact", head: true })
+        .eq("is_published", true),
+      supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .in("role", ["member", "student", "alumni"]),
+    ]);
 
   return {
     totalQuestions: questionsResult.count || 0,
-    weeklyQuestions,
-    openQuestions,
+    weeklyQuestions: weeklyResult.count || 0,
+    openQuestions: openResult.count || 0,
     pendingAnswers: pendingAnswersResult.count || 0,
     totalPosts: postsResult.count || 0,
     activeMembers: membersResult.count || 0,
@@ -125,7 +123,7 @@ export async function getWeeklyQuestionStats() {
 
   const { data, error } = await supabase
     .from("questions")
-    .select("*")
+    .select("created_at")
     .gte("created_at", fourWeeksAgo.toISOString())
     .order("created_at", { ascending: true });
 

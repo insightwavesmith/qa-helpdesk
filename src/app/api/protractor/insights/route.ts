@@ -1,41 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { requireProtractorAccess, verifyAccountOwnership } from "../_shared";
 
 // GET /api/protractor/insights?account_id=xxx&start=YYYY-MM-DD&end=YYYY-MM-DD
-// student 이상만 접근 가능
-// daily_ad_insights 테이블에서 해당 계정의 광고 인사이트 데이터 조회
+// student 이상만 접근 가능 + 자신의 계정만 (admin은 전체)
 export async function GET(request: NextRequest) {
   try {
-    // 인증 확인
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireProtractorAccess();
+    if ("response" in auth) return auth.response;
+    const { user, profile, svc } = auth;
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "인증이 필요합니다." },
-        { status: 401 }
-      );
-    }
-
-    // 역할 확인: student/alumni/admin만 접근 가능
-    const svc = createServiceClient();
-    const { data: profile } = await svc
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    const allowedRoles = ["student", "alumni", "admin"];
-    if (!profile || !allowedRoles.includes(profile.role)) {
-      return NextResponse.json(
-        { error: "접근 권한이 없습니다." },
-        { status: 403 }
-      );
-    }
-
-    // 쿼리 파라미터 파싱
     const { searchParams } = new URL(request.url);
     const accountId = searchParams.get("account_id");
     const start = searchParams.get("start");
@@ -48,21 +21,23 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // daily_ad_insights에서 데이터 조회
-    // daily_ad_insights 테이블은 database.ts 타입에 미정의 → any 캐스트
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (svc as any)
+    // 계정 소유권 확인
+    const hasAccess = await verifyAccountOwnership(svc, user.id, profile.role, accountId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "해당 계정에 대한 접근 권한이 없습니다." },
+        { status: 403 }
+      );
+    }
+
+    let query = svc
       .from("daily_ad_insights")
       .select("*")
       .eq("account_id", accountId)
       .order("date", { ascending: true });
 
-    if (start) {
-      query = query.gte("date", start);
-    }
-    if (end) {
-      query = query.lte("date", end);
-    }
+    if (start) query = query.gte("date", start);
+    if (end) query = query.lte("date", end);
 
     const { data, error } = await query;
 

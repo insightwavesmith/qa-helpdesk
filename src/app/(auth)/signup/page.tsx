@@ -65,7 +65,7 @@ function SignupForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const updateField = (field: string, value: string) => {
+  const updateField = (field: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -152,15 +152,17 @@ function SignupForm() {
 
       // 수강생이면 Mixpanel 시크릿 저장
       if (isStudentSignup && formData.mixpanelSecret) {
-        await fetch("/api/protractor/save-secret", {
+        const secretRes = await fetch("/api/protractor/save-secret", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            userId: authData.user.id,
             metaAccountId: formData.metaAccountId,
             mixpanelSecret: formData.mixpanelSecret,
           }),
         });
+        if (!secretRes.ok) {
+          console.error("시크릿 저장 실패:", await secretRes.text());
+        }
       }
 
       router.push(isStudentSignup ? "/dashboard" : "/pending");

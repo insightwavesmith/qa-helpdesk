@@ -11,6 +11,7 @@ import {
 import { LpMetricsCard, type LpMetricRow } from "./components/lp-metrics-card";
 import { BenchmarkCompare } from "./components/benchmark-compare";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AlertTriangle, BarChart3, Ruler } from "lucide-react";
 
 // 어제 날짜 (기본값)
 function yesterday(): DateRange {
@@ -122,7 +123,10 @@ export default function ProtractorPage() {
     <div className="mx-auto w-full max-w-[1100px] space-y-6 px-4 py-6 sm:px-6">
       {/* 페이지 제목 */}
       <div>
-        <h1 className="text-2xl font-bold">📐 총가치각도기</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-bold">
+          <Ruler className="h-6 w-6" />
+          총가치각도기
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Meta 광고 성과를 벤치마크와 비교하여 진단합니다
         </p>
@@ -141,8 +145,9 @@ export default function ProtractorPage() {
 
       {/* 에러 메시지 */}
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
-          ⚠️ {error}
+        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          {error}
         </div>
       )}
 
@@ -158,7 +163,7 @@ export default function ProtractorPage() {
       {/* 계정 미선택 */}
       {!selectedAccountId && !loadingAccounts && (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-          <p className="text-4xl">📊</p>
+          <BarChart3 className="h-10 w-10" />
           <p className="mt-3 text-base font-medium">광고계정을 선택하세요</p>
           <p className="mt-1 text-sm">
             위 드롭다운에서 분석할 광고계정을 선택하면 데이터가 표시됩니다

@@ -9,52 +9,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Inbox, Ruler } from "lucide-react";
 import type { AdInsightRow, BenchmarkRow } from "./ad-metrics-table";
-
-// 벤치마크에서 above_avg 그룹 값 찾기
-function findAboveAvg(
-  benchmarks: BenchmarkRow[],
-  rankingType: string,
-  creativeType = "VIDEO"
-): BenchmarkRow | undefined {
-  return benchmarks.find(
-    (b) =>
-      b.ranking_type === rankingType &&
-      b.ranking_group === "above_avg" &&
-      b.creative_type === creativeType
-  );
-}
-
-// 3단계 판정
-function getVerdict(
-  value: number | undefined | null,
-  aboveAvg: number | undefined | null,
-  higherBetter = true
-): { emoji: string; className: string; label: string } {
-  if (value == null || aboveAvg == null || aboveAvg === 0) {
-    return { emoji: "⚪", className: "text-muted-foreground", label: "데이터 없음" };
-  }
-  const threshold = aboveAvg * 0.75;
-
-  if (higherBetter) {
-    if (value >= aboveAvg)
-      return { emoji: "🟢", className: "text-green-600 dark:text-green-400", label: "우수" };
-    if (value >= threshold)
-      return { emoji: "🟡", className: "text-yellow-600 dark:text-yellow-400", label: "보통" };
-    return { emoji: "🔴", className: "text-red-600 dark:text-red-400", label: "미달" };
-  } else {
-    if (value <= aboveAvg)
-      return { emoji: "🟢", className: "text-green-600 dark:text-green-400", label: "우수" };
-    if (value <= aboveAvg * 1.25)
-      return { emoji: "🟡", className: "text-yellow-600 dark:text-yellow-400", label: "보통" };
-    return { emoji: "🔴", className: "text-red-600 dark:text-red-400", label: "미달" };
-  }
-}
-
-function fmtPct(n: number | undefined | null): string {
-  if (n == null) return "-";
-  return n.toFixed(2) + "%";
-}
+import { findAboveAvg, getVerdict, fmtPercent } from "./utils";
+import { VerdictDot } from "./verdict-dot";
 
 // 인사이트에서 기간 평균 계산
 function calcAverage(
@@ -85,7 +43,7 @@ const VIDEO_METRICS: MetricDef[] = [
     benchKey: "avg_video_p3s_rate",
     benchGroup: "engagement",
     higherBetter: true,
-    format: fmtPct,
+    format: fmtPercent,
   },
   {
     label: "ThruPlay율",
@@ -93,7 +51,7 @@ const VIDEO_METRICS: MetricDef[] = [
     benchKey: "avg_thruplay_rate",
     benchGroup: "engagement",
     higherBetter: true,
-    format: fmtPct,
+    format: fmtPercent,
   },
   {
     label: "지속 비율",
@@ -101,7 +59,7 @@ const VIDEO_METRICS: MetricDef[] = [
     benchKey: "avg_retention_rate",
     benchGroup: "engagement",
     higherBetter: true,
-    format: fmtPct,
+    format: fmtPercent,
   },
 ];
 
@@ -112,7 +70,7 @@ const ENGAGEMENT_METRICS: MetricDef[] = [
     benchKey: "avg_ctr",
     benchGroup: "conversion",
     higherBetter: true,
-    format: fmtPct,
+    format: fmtPercent,
   },
   {
     label: "좋아요/만노출",
@@ -147,7 +105,7 @@ const CONVERSION_METRICS: MetricDef[] = [
     benchKey: "avg_click_to_cart_rate",
     benchGroup: "conversion",
     higherBetter: true,
-    format: fmtPct,
+    format: fmtPercent,
   },
   {
     label: "클릭→결제시작",
@@ -155,7 +113,7 @@ const CONVERSION_METRICS: MetricDef[] = [
     benchKey: "avg_click_to_checkout_rate",
     benchGroup: "conversion",
     higherBetter: true,
-    format: fmtPct,
+    format: fmtPercent,
   },
   {
     label: "결제→구매",
@@ -163,7 +121,7 @@ const CONVERSION_METRICS: MetricDef[] = [
     benchKey: "avg_checkout_to_purchase_rate",
     benchGroup: "conversion",
     higherBetter: true,
-    format: fmtPct,
+    format: fmtPercent,
   },
   {
     label: "클릭→구매",
@@ -171,7 +129,7 @@ const CONVERSION_METRICS: MetricDef[] = [
     benchKey: "avg_click_to_purchase_rate",
     benchGroup: "conversion",
     higherBetter: true,
-    format: fmtPct,
+    format: fmtPercent,
   },
   {
     label: "ROAS",
@@ -197,11 +155,14 @@ export function BenchmarkCompare({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">📐 벤치마크 비교</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Ruler className="h-4 w-4" />
+            벤치마크 비교
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <p className="text-lg">📭</p>
+            <Inbox className="h-8 w-8" />
             <p className="mt-2 text-sm">
               비교할 데이터가 부족합니다
             </p>
@@ -217,7 +178,10 @@ export function BenchmarkCompare({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">📐 벤치마크 비교</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Ruler className="h-4 w-4" />
+          벤치마크 비교
+        </CardTitle>
         <p className="text-sm text-muted-foreground">
           내 평균 수치 vs 업종 상위 기준선
         </p>
@@ -226,7 +190,7 @@ export function BenchmarkCompare({
         <div className="grid gap-6 lg:grid-cols-3">
           {/* 영상 기반점수 */}
           <MetricSection
-            title="🎬 기반점수 (영상)"
+            title="기반점수 (영상)"
             badge="Engagement 기준"
             metrics={VIDEO_METRICS}
             insights={insights}
@@ -236,7 +200,7 @@ export function BenchmarkCompare({
 
           {/* 참여율 */}
           <MetricSection
-            title="💬 참여율"
+            title="참여율"
             badge="Engagement 기준"
             metrics={ENGAGEMENT_METRICS}
             insights={insights}
@@ -246,7 +210,7 @@ export function BenchmarkCompare({
 
           {/* 전환율 */}
           <MetricSection
-            title="🛒 전환율"
+            title="전환율"
             badge="Conversion 기준"
             metrics={CONVERSION_METRICS}
             insights={insights}
@@ -309,7 +273,7 @@ function MetricSection({
                 >
                   {m.format(myVal)}
                 </TableCell>
-                <TableCell className="text-center">{v.emoji}</TableCell>
+                <TableCell className="text-center"><VerdictDot label={v.label} /></TableCell>
                 <TableCell className="text-right text-[11px] text-muted-foreground">
                   {benchVal != null ? m.format(benchVal) : "-"}
                 </TableCell>
