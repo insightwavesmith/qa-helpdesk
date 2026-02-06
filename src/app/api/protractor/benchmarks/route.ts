@@ -41,7 +41,7 @@ export async function GET() {
     const { data, error } = await (svc as any)
       .from("benchmarks")
       .select("*")
-      .order("created_at", { ascending: false })
+      .order("calculated_at", { ascending: false })
       .limit(100);
 
     if (error) {
