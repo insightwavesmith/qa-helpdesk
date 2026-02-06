@@ -17,6 +17,18 @@ const BENCHMARK_METRICS = [
   "clicks",
   "purchases",
   "purchase_value",
+  "video_p3s_rate",
+  "thruplay_rate",
+  "retention_rate",
+  "reactions_per_10k",
+  "comments_per_10k",
+  "shares_per_10k",
+  "engagement_per_10k",
+  "click_to_cart_rate",
+  "click_to_checkout_rate",
+  "checkout_to_purchase_rate",
+  "click_to_purchase_rate",
+  "reach_to_purchase_rate",
 ] as const;
 
 function round(v: number, d: number): number {
@@ -53,7 +65,7 @@ export async function POST(req: NextRequest) {
     // 1. daily_ad_insights에서 최근 7일 데이터 조회
     const { data: insights, error: fetchErr } = await svc
       .from("daily_ad_insights")
-      .select("roas, ctr, spend, impressions, clicks, purchases, purchase_value")
+      .select("roas, ctr, spend, impressions, clicks, purchases, purchase_value, video_p3s_rate, thruplay_rate, retention_rate, reactions_per_10k, comments_per_10k, shares_per_10k, engagement_per_10k, click_to_cart_rate, click_to_checkout_rate, checkout_to_purchase_rate, click_to_purchase_rate, reach_to_purchase_rate")
       .gte("date", sevenDaysAgo)
       .lte("date", today);
 
@@ -71,7 +83,7 @@ export async function POST(req: NextRequest) {
 
     for (const metric of BENCHMARK_METRICS) {
       const values = insights
-        .map((row) => Number(row[metric]))
+        .map((row) => Number(row[metric as keyof typeof row]))
         .filter((v) => Number.isFinite(v) && v > 0)
         .sort((a, b) => a - b);
 

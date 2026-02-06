@@ -26,11 +26,12 @@ const METRIC_FIELD_MAP: Record<string, { field: string; group: "engagement" | "c
 };
 
 // EAV 행들을 프론트엔드가 기대하는 wide-format BenchmarkRow로 피벗
+// p75를 "상위 기준선" (above_avg) 값으로 사용
 function pivotBenchmarks(
-  rows: { metric_name: string; avg_value: number | null; date: string }[]
+  rows: { metric_name: string; avg_value: number | null; p75: number | null; date: string }[]
 ): Record<string, unknown>[] {
   // date별로 그룹핑 (같은 날짜의 metric_name들을 하나의 wide row로 합침)
-  const byDate = new Map<string, { metric_name: string; avg_value: number | null }[]>();
+  const byDate = new Map<string, { metric_name: string; avg_value: number | null; p75: number | null }[]>();
   for (const row of rows) {
     const existing = byDate.get(row.date) ?? [];
     existing.push(row);
@@ -55,12 +56,15 @@ function pivotBenchmarks(
 
     for (const m of metrics) {
       const mapping = METRIC_FIELD_MAP[m.metric_name];
-      if (!mapping || m.avg_value == null) continue;
+      if (!mapping) continue;
+      // p75를 기준선으로 사용, 없으면 avg_value 폴백
+      const value = m.p75 ?? m.avg_value;
+      if (value == null) continue;
 
       if (mapping.group === "engagement") {
-        engRow[mapping.field] = m.avg_value;
+        engRow[mapping.field] = value;
       } else {
-        convRow[mapping.field] = m.avg_value;
+        convRow[mapping.field] = value;
       }
     }
 
@@ -101,7 +105,7 @@ export async function GET() {
     const latestDate = latest[0].date;
     const { data, error } = await svc
       .from("benchmarks")
-      .select("metric_name, avg_value, date")
+      .select("metric_name, avg_value, p75, date")
       .eq("date", latestDate);
 
     if (error) {
