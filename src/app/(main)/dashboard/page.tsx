@@ -1,6 +1,6 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { AdminDashboard } from "./admin-dashboard";
 import { StudentHome } from "./student-home";
+import { V0Dashboard } from "./v0-dashboard";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -18,7 +18,7 @@ export default async function DashboardPage() {
   const isAdmin = profile?.role === "admin";
 
   if (isAdmin) {
-    return <AdminDashboard />;
+    return <V0Dashboard />;
   }
 
   return <StudentHome userName={profile?.name || "사용자"} />;

@@ -1,12 +1,9 @@
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import AppSidebar from "@/components/layout/app-sidebar";
-import { Header } from "@/components/layout/Header";
 import { StudentHeader } from "@/components/layout/student-header";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { getPendingAnswersCount } from "@/actions/answers";
+import { DashboardSidebar } from "@/components/dashboard/Sidebar";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 
 export default async function MainLayout({
   children,
@@ -37,7 +34,7 @@ export default async function MainLayout({
   }
 
   const isAdmin = profile?.role === "admin";
-  
+
   // 학생용: 상단 헤더만 (목업 스타일)
   if (!isAdmin) {
     return (
@@ -53,31 +50,26 @@ export default async function MainLayout({
       </div>
     );
   }
-  
-  // 관리자용: 사이드바 레이아웃
-  const cookieStore = await cookies();
-  const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
+
+  // 관리자용: v0 스타일 대시보드 사이드바 레이아웃
   const pendingAnswersCount = await getPendingAnswersCount();
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar
+    <div className="flex h-screen overflow-hidden">
+      <DashboardSidebar
         userRole={profile?.role}
         userName={profile?.name || "사용자"}
         userEmail={profile?.email || user.email || ""}
         pendingAnswersCount={pendingAnswersCount}
       />
-      <SidebarInset>
-        <Header
-          userName={profile?.name || "사용자"}
-          userRole={profile?.role}
-        />
-        <ScrollArea className="h-[calc(100dvh-45px)]">
-          <main className="mx-auto w-full max-w-[900px] px-8 py-4 md:px-16 md:py-6">
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <DashboardHeader userName={profile?.name || "사용자"} />
+        <main className="flex-1 overflow-y-auto bg-background p-6">
+          <div className="mx-auto max-w-[1600px]">
             {children}
-          </main>
-        </ScrollArea>
-      </SidebarInset>
-    </SidebarProvider>
+          </div>
+        </main>
+      </div>
+    </div>
   );
 }

@@ -96,14 +96,14 @@
   --chart-4: #8b5cf6;
   --chart-5: #ef4444;
 
-  /* Sidebar */
-  --sidebar: #f1f3f8;
-  --sidebar-foreground: #1a1a1a;
+  /* Sidebar — white background per v0 redesign */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #64748b;
   --sidebar-primary: #E85A2A;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #f1f5f9;
   --sidebar-accent-foreground: #1a1a1a;
-  --sidebar-border: transparent;
+  --sidebar-border: #e2e8f0;
   --sidebar-ring: #E85A2A;
 }
 
