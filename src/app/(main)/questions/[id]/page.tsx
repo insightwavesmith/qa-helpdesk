@@ -35,29 +35,55 @@ export default async function QuestionDetailPage({
 }) {
   const { id } = await params;
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
   let isAdmin = false;
-  if (user) {
-    const svc = createServiceClient();
-    const { data: profile } = await svc
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-    isAdmin = profile?.role === "admin";
+  try {
+    console.log("[DEBUG] Step 1: createClient");
+    const supabase = await createClient();
+    console.log("[DEBUG] Step 2: getUser");
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log("[DEBUG] Step 2 done, user:", user?.id);
+    if (user) {
+      console.log("[DEBUG] Step 3: createServiceClient");
+      const svc = createServiceClient();
+      console.log("[DEBUG] Step 3 done, querying profile");
+      const { data: profile } = await svc
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      isAdmin = profile?.role === "admin";
+      console.log("[DEBUG] Step 3 done, isAdmin:", isAdmin);
+    }
+  } catch (e) {
+    console.error("[DEBUG] Auth/admin check error:", e);
   }
 
-  const { data: question, error } = await getQuestionById(id);
-  if (error || !question) {
+  let question: Awaited<ReturnType<typeof getQuestionById>>["data"];
+  try {
+    console.log("[DEBUG] Step 4: getQuestionById", id);
+    const result = await getQuestionById(id);
+    console.log("[DEBUG] Step 4 done, error:", result.error, "has data:", !!result.data);
+    if (result.error || !result.data) {
+      notFound();
+    }
+    question = result.data;
+  } catch (e) {
+    console.error("[DEBUG] getQuestionById error:", e);
     notFound();
   }
 
-  const { data: answers = [] } = await getAnswersByQuestionId(id, {
-    includeUnapproved: isAdmin,
-  });
-
-  const approvedAnswers = (answers ?? []).filter((a) => a.is_approved);
+  let approvedAnswers: Awaited<ReturnType<typeof getAnswersByQuestionId>>["data"] = [];
+  try {
+    console.log("[DEBUG] Step 5: getAnswersByQuestionId");
+    const { data: answers = [] } = await getAnswersByQuestionId(id, {
+      includeUnapproved: isAdmin,
+    });
+    console.log("[DEBUG] Step 5 done, answers count:", answers?.length);
+    approvedAnswers = (answers ?? []).filter((a) => a.is_approved);
+    console.log("[DEBUG] Step 5 approved count:", approvedAnswers.length);
+  } catch (e) {
+    console.error("[DEBUG] getAnswersByQuestionId error:", e);
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
