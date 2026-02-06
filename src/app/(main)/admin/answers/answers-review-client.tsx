@@ -131,32 +131,36 @@ export function AnswersReviewClient({
             const isEditing = editingId === answer.id;
 
             return (
-              <Card key={answer.id}>
+              <Card key={answer.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {answer.is_ai ? (
-                        <Bot className="h-4 w-4 text-blue-500" />
+                        <div className="bg-blue-50 p-1.5 rounded-lg">
+                          <Bot className="h-4 w-4 text-blue-500" />
+                        </div>
                       ) : (
-                        <User className="h-4 w-4 text-gray-500" />
+                        <div className="bg-gray-50 p-1.5 rounded-lg">
+                          <User className="h-4 w-4 text-gray-500" />
+                        </div>
                       )}
-                      <span className="text-sm font-medium">
+                      <span className="text-sm font-medium text-gray-900">
                         {answer.is_ai
                           ? "AI 답변"
                           : answer.author?.name || "익명"}
                       </span>
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant="secondary" className="text-xs bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-50">
                         검토 대기
                       </Badge>
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-gray-500">
                       {formatDate(answer.created_at)}
                     </span>
                   </div>
                   {answer.question && (
                     <Link
                       href={`/questions/${answer.question.id}`}
-                      className="flex items-center gap-1 text-sm text-primary hover:underline mt-1"
+                      className="flex items-center gap-1 text-sm text-[#F75D5D] hover:underline mt-1"
                     >
                       <ExternalLink className="h-3 w-3" />
                       {answer.question.title}
@@ -174,6 +178,7 @@ export function AnswersReviewClient({
                       <div className="flex gap-2">
                         <Button
                           size="sm"
+                          className="bg-[#F75D5D] hover:bg-[#E54949] text-white rounded-lg"
                           onClick={() => handleSaveEdit(answer.id)}
                           disabled={isLoading}
                         >
@@ -185,6 +190,7 @@ export function AnswersReviewClient({
                         <Button
                           size="sm"
                           variant="outline"
+                          className="rounded-lg"
                           onClick={() => setEditingId(null)}
                         >
                           취소
@@ -193,7 +199,7 @@ export function AnswersReviewClient({
                     </div>
                   ) : (
                     <>
-                      <div className="prose prose-sm max-w-none whitespace-pre-wrap mb-4">
+                      <div className="prose prose-sm max-w-none whitespace-pre-wrap mb-4 text-gray-700">
                         {answer.content}
                       </div>
                       {answer.is_ai && !!answer.source_refs && (
@@ -204,6 +210,7 @@ export function AnswersReviewClient({
                       <div className="flex gap-2">
                         <Button
                           size="sm"
+                          className="bg-[#F75D5D] hover:bg-[#E54949] text-white rounded-lg"
                           onClick={() => handleApprove(answer.id)}
                           disabled={isLoading}
                         >
@@ -217,6 +224,7 @@ export function AnswersReviewClient({
                         <Button
                           size="sm"
                           variant="outline"
+                          className="rounded-lg"
                           onClick={() => handleEdit(answer)}
                           disabled={isLoading}
                         >
@@ -226,6 +234,7 @@ export function AnswersReviewClient({
                         <Button
                           size="sm"
                           variant="destructive"
+                          className="rounded-lg"
                           onClick={() => handleDelete(answer.id)}
                           disabled={isLoading}
                         >

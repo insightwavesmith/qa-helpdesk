@@ -19,8 +19,8 @@ export default async function AdminAnswersPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">답변 검토</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl font-bold text-gray-900">답변 검토</h1>
+        <p className="text-sm text-gray-500 mt-1">
           AI 생성 답변을 검토하고 승인하세요.
         </p>
       </div>

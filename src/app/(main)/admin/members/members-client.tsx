@@ -40,13 +40,13 @@ interface MembersClientProps {
 
 const roleLabels: Record<
   string,
-  { label: string; variant: "default" | "secondary" | "outline" | "destructive" }
+  { label: string; variant: "default" | "secondary" | "outline" | "destructive"; className: string }
 > = {
-  lead: { label: "리드", variant: "secondary" },
-  member: { label: "멤버", variant: "default" },
-  student: { label: "수강생", variant: "default" },
-  alumni: { label: "졸업생", variant: "outline" },
-  admin: { label: "관리자", variant: "default" },
+  lead: { label: "리드", variant: "secondary", className: "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-50" },
+  member: { label: "멤버", variant: "default", className: "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-50" },
+  student: { label: "수강생", variant: "default", className: "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-50" },
+  alumni: { label: "졸업생", variant: "outline", className: "bg-red-50 text-red-700 border border-red-200 hover:bg-red-50" },
+  admin: { label: "관리자", variant: "default", className: "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-50" },
 };
 
 const roleFilters = [
@@ -146,17 +146,17 @@ export function MembersClient({
           해당 조건의 회원이 없습니다.
         </div>
       ) : (
-        <div className="rounded-md border">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>이름</TableHead>
-                <TableHead>이메일</TableHead>
-                <TableHead>쇼핑몰</TableHead>
-                <TableHead>사업자번호</TableHead>
-                <TableHead>상태</TableHead>
-                <TableHead>가입일</TableHead>
-                <TableHead className="text-right">관리</TableHead>
+              <TableRow className="bg-gray-50/80 hover:bg-gray-50/80">
+                <TableHead className="text-xs font-medium text-gray-500 uppercase">이름</TableHead>
+                <TableHead className="text-xs font-medium text-gray-500 uppercase">이메일</TableHead>
+                <TableHead className="text-xs font-medium text-gray-500 uppercase">쇼핑몰</TableHead>
+                <TableHead className="text-xs font-medium text-gray-500 uppercase">사업자번호</TableHead>
+                <TableHead className="text-xs font-medium text-gray-500 uppercase">상태</TableHead>
+                <TableHead className="text-xs font-medium text-gray-500 uppercase">가입일</TableHead>
+                <TableHead className="text-xs font-medium text-gray-500 uppercase text-right">관리</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -165,17 +165,17 @@ export function MembersClient({
                 const isLoading = loadingId === member.id;
 
                 return (
-                  <TableRow key={member.id}>
-                    <TableCell className="font-medium">{member.name}</TableCell>
-                    <TableCell className="text-sm">{member.email}</TableCell>
-                    <TableCell className="text-sm">{member.shop_name}</TableCell>
-                    <TableCell className="text-sm font-mono">
+                  <TableRow key={member.id} className="hover:bg-gray-50/50 transition-colors">
+                    <TableCell className="font-medium text-gray-900">{member.name}</TableCell>
+                    <TableCell className="text-sm text-gray-600">{member.email}</TableCell>
+                    <TableCell className="text-sm text-gray-600">{member.shop_name}</TableCell>
+                    <TableCell className="text-sm font-mono text-gray-600">
                       {member.business_number}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={role.variant}>{role.label}</Badge>
+                      <Badge variant={role.variant} className={role.className}>{role.label}</Badge>
                     </TableCell>
-                    <TableCell className="text-sm">
+                    <TableCell className="text-sm text-gray-500">
                       {formatDate(member.created_at)}
                     </TableCell>
                     <TableCell className="text-right">
@@ -184,7 +184,7 @@ export function MembersClient({
                         <div className="flex justify-end gap-1">
                           <Button
                             size="sm"
-                            variant="default"
+                            className="bg-[#F75D5D] hover:bg-[#E54949] text-white rounded-lg"
                             onClick={() => handleApprove(member.id)}
                             disabled={isLoading}
                           >
@@ -198,6 +198,7 @@ export function MembersClient({
                           <Button
                             size="sm"
                             variant="secondary"
+                            className="rounded-lg"
                             onClick={() => handleApproveAs(member.id, "student")}
                             disabled={isLoading}
                           >
@@ -215,6 +216,7 @@ export function MembersClient({
                         <Button
                           size="sm"
                           variant="outline"
+                          className="rounded-lg"
                           onClick={() => handleApproveAs(member.id, "student")}
                           disabled={isLoading}
                         >
