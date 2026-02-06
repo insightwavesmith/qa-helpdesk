@@ -58,6 +58,7 @@ const adminNavItems: NavItem[] = [
   { label: "회원 관리", href: "/admin/members", icon: Users },
   { label: "답변 검토", href: "/admin/answers", icon: CheckCircle },
   { label: "통계", href: "/admin/stats", icon: BarChart3 },
+  { label: "총가치각도기 관리", href: "/admin/protractor", icon: Crosshair },
 ];
 
 interface AppSidebarProps {
