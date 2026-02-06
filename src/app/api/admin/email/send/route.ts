@@ -143,17 +143,24 @@ export async function POST(request: NextRequest) {
     let fullHtml: string;
     const templateName = template || "newsletter";
 
-    if (template && templateProps) {
-      fullHtml = await renderEmail(template, {
-        subject,
-        ...templateProps,
-      } as Parameters<typeof renderEmail>[1]);
-    } else {
-      // 기존 방식: newsletter 템플릿에 html 본문 삽입
-      fullHtml = await renderEmail("newsletter", {
-        subject,
-        bodyHtml: html || "",
-      });
+    try {
+      if (template && templateProps) {
+        fullHtml = await renderEmail(template as TemplateName, {
+          subject,
+          ...templateProps,
+        } as any);
+      } else {
+        fullHtml = await renderEmail("newsletter", {
+          subject,
+          bodyHtml: html || "",
+        });
+      }
+    } catch (renderError) {
+      console.error("Template render error:", renderError);
+      return NextResponse.json(
+        { error: `템플릿 렌더링 오류: ${renderError instanceof Error ? renderError.message : String(renderError)}` },
+        { status: 500 }
+      );
     }
 
     // 배치 발송
