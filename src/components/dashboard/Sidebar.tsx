@@ -16,6 +16,7 @@ import {
   CheckCircle,
   BarChart3,
   Crosshair,
+  Monitor,
   Mail,
   LogOut,
   User,
@@ -42,6 +43,7 @@ const adminNavItems: NavItem[] = [
   { label: "답변 검토", href: "/admin/answers", icon: CheckCircle },
   { label: "통계", href: "/admin/stats", icon: BarChart3 },
   { label: "총가치각도기 관리", href: "/admin/protractor", icon: Crosshair },
+  { label: "광고계정 관리", href: "/admin/accounts", icon: Monitor },
   { label: "이메일 발송", href: "/admin/email", icon: Mail },
 ];
 
