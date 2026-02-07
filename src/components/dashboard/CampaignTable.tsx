@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ArrowUpDown, ArrowDown, Search } from "lucide-react";
+import { ArrowUpDown, ArrowDown, Search, Target } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -27,132 +27,13 @@ interface Campaign {
   conversions: string;
 }
 
-const campaigns: Campaign[] = [
-  {
-    name: "리타겟팅 - 장바구니 이탈",
-    platform: "Meta",
-    platformColor: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-    status: "진행중",
-    statusColor: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-    impressions: "892.0K",
-    clicks: "38.5K",
-    ctr: "4.32%",
-    adSpend: "₩1463만",
-    revenue: "₩8520만",
-    roas: 5.82,
-    roasColor: "text-emerald-500",
-    conversions: "2,130",
-  },
-  {
-    name: "검색 광고 - 브랜드 키워드",
-    platform: "Google",
-    platformColor: "bg-red-500/10 text-red-500 border-red-500/20",
-    status: "진행중",
-    statusColor: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-    impressions: "560.0K",
-    clicks: "28.4K",
-    ctr: "5.07%",
-    adSpend: "₩1278만",
-    revenue: "₩7230만",
-    roas: 5.66,
-    roasColor: "text-emerald-500",
-    conversions: "1,560",
-  },
-  {
-    name: "네이버 쇼핑검색",
-    platform: "Naver",
-    platformColor: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-    status: "진행중",
-    statusColor: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-    impressions: "780.0K",
-    clicks: "31.2K",
-    ctr: "4.00%",
-    adSpend: "₩1934만",
-    revenue: "₩9560만",
-    roas: 4.94,
-    roasColor: "text-emerald-500",
-    conversions: "1,780",
-  },
-  {
-    name: "브랜드 인지도 캠페인",
-    platform: "Meta",
-    platformColor: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-    status: "진행중",
-    statusColor: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-    impressions: "1.2M",
-    clicks: "42.3K",
-    ctr: "3.40%",
-    adSpend: "₩2200만",
-    revenue: "₩9850만",
-    roas: 4.48,
-    roasColor: "text-emerald-500",
-    conversions: "1,842",
-  },
-  {
-    name: "인스타그램 릴스 광고",
-    platform: "Meta",
-    platformColor: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-    status: "진행중",
-    statusColor: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-    impressions: "3.2M",
-    clicks: "54.4K",
-    ctr: "1.70%",
-    adSpend: "₩1578만",
-    revenue: "₩6820만",
-    roas: 4.32,
-    roasColor: "text-emerald-500",
-    conversions: "1,290",
-  },
-  {
-    name: "카카오 모먼트 - 도달",
-    platform: "Kakao",
-    platformColor: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
-    status: "진행중",
-    statusColor: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-    impressions: "1.6M",
-    clicks: "21.8K",
-    ctr: "1.40%",
-    adSpend: "₩743만",
-    revenue: "₩2850만",
-    roas: 3.84,
-    roasColor: "text-amber-500",
-    conversions: "640",
-  },
-  {
-    name: "디스플레이 광고 - GDN",
-    platform: "Google",
-    platformColor: "bg-red-500/10 text-red-500 border-red-500/20",
-    status: "일시정지",
-    statusColor: "bg-amber-500/10 text-amber-500 border-amber-500/20",
-    impressions: "2.1M",
-    clicks: "18.9K",
-    ctr: "0.90%",
-    adSpend: "₩529만",
-    revenue: "₩1580만",
-    roas: 2.99,
-    roasColor: "text-red-500",
-    conversions: "420",
-  },
-  {
-    name: "유튜브 인스트림 광고",
-    platform: "Google",
-    platformColor: "bg-red-500/10 text-red-500 border-red-500/20",
-    status: "종료",
-    statusColor: "bg-muted text-muted-foreground border-border",
-    impressions: "4.5M",
-    clicks: "13.5K",
-    ctr: "0.30%",
-    adSpend: "₩203만",
-    revenue: "₩540만",
-    roas: 2.67,
-    roasColor: "text-red-500",
-    conversions: "180",
-  },
-];
+interface CampaignTableProps {
+  campaigns?: Campaign[];
+}
 
 type SortKey = "name" | "roas" | "impressions" | "clicks" | "ctr" | "adSpend" | "revenue" | "conversions";
 
-export function CampaignTable() {
+export function CampaignTable({ campaigns = [] }: CampaignTableProps) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("roas");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -182,7 +63,7 @@ export function CampaignTable() {
       if (sortKey === "roas") return dir * (a.roas - b.roas);
       return 0;
     });
-  }, [search, sortKey, sortDir]);
+  }, [campaigns, search, sortKey, sortDir]);
 
   const SortButton = ({
     label,
@@ -211,6 +92,27 @@ export function CampaignTable() {
       )}
     </button>
   );
+
+  if (campaigns.length === 0) {
+    return (
+      <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+        <div className="space-y-1.5 p-6">
+          <div className="tracking-tight text-base font-semibold text-card-foreground">
+            캠페인 성과
+          </div>
+        </div>
+        <div className="p-6 pt-0">
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-50 mb-4">
+              <Target className="h-6 w-6 text-gray-400" />
+            </div>
+            <p className="text-sm font-medium text-gray-900 mb-1">데이터가 없습니다</p>
+            <p className="text-xs text-gray-500">캠페인 데이터가 연동되면 성과를 확인할 수 있습니다</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm">

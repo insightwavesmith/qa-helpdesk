@@ -59,32 +59,34 @@ export function StatCards({ stats = defaultStats }: StatCardsProps) {
                   <Icon className="h-5 w-5 text-primary" />
                 </div>
               </div>
-              <div className="mt-3 flex items-center gap-1.5">
-                {isPositive ? (
-                  <TrendingUp
-                    className={`h-3.5 w-3.5 ${
+              {stat.value !== "\u2014" && stat.change !== 0 && (
+                <div className="mt-3 flex items-center gap-1.5">
+                  {isPositive ? (
+                    <TrendingUp
+                      className={`h-3.5 w-3.5 ${
+                        isGoodChange ? "text-emerald-500" : "text-red-500"
+                      }`}
+                    />
+                  ) : (
+                    <TrendingDown
+                      className={`h-3.5 w-3.5 ${
+                        isGoodChange ? "text-emerald-500" : "text-red-500"
+                      }`}
+                    />
+                  )}
+                  <span
+                    className={`text-xs font-semibold ${
                       isGoodChange ? "text-emerald-500" : "text-red-500"
                     }`}
-                  />
-                ) : (
-                  <TrendingDown
-                    className={`h-3.5 w-3.5 ${
-                      isGoodChange ? "text-emerald-500" : "text-red-500"
-                    }`}
-                  />
-                )}
-                <span
-                  className={`text-xs font-semibold ${
-                    isGoodChange ? "text-emerald-500" : "text-red-500"
-                  }`}
-                >
-                  {isPositive ? "+" : ""}
-                  {stat.change}%
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  vs last period
-                </span>
-              </div>
+                  >
+                    {isPositive ? "+" : ""}
+                    {stat.change}%
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    vs last period
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         );

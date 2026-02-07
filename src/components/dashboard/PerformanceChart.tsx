@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BarChart3 } from "lucide-react";
 import {
   AreaChart,
   Area,
@@ -11,28 +12,16 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const chartData = [
-  { date: "01/01", revenue: 3200, adSpend: 680, roas: 4.7 },
-  { date: "01/03", revenue: 3800, adSpend: 750, roas: 5.1 },
-  { date: "01/05", revenue: 4100, adSpend: 820, roas: 5.0 },
-  { date: "01/07", revenue: 3600, adSpend: 700, roas: 5.1 },
-  { date: "01/09", revenue: 4500, adSpend: 900, roas: 5.0 },
-  { date: "01/11", revenue: 4200, adSpend: 850, roas: 4.9 },
-  { date: "01/12", revenue: 3900, adSpend: 800, roas: 4.9 },
-  { date: "01/13", revenue: 4800, adSpend: 950, roas: 5.1 },
-  { date: "01/14", revenue: 5100, adSpend: 1000, roas: 5.1 },
-  { date: "01/15", revenue: 4600, adSpend: 920, roas: 5.0 },
-  { date: "01/16", revenue: 5300, adSpend: 1050, roas: 5.0 },
-  { date: "01/17", revenue: 4900, adSpend: 980, roas: 5.0 },
-  { date: "01/18", revenue: 5500, adSpend: 1100, roas: 5.0 },
-  { date: "01/19", revenue: 5200, adSpend: 1020, roas: 5.1 },
-  { date: "01/21", revenue: 4700, adSpend: 940, roas: 5.0 },
-  { date: "01/22", revenue: 5800, adSpend: 1150, roas: 5.0 },
-  { date: "01/24", revenue: 6200, adSpend: 1200, roas: 5.2 },
-  { date: "01/26", revenue: 5900, adSpend: 1100, roas: 5.4 },
-  { date: "01/28", revenue: 6500, adSpend: 1250, roas: 5.2 },
-  { date: "01/31", revenue: 7200, adSpend: 1400, roas: 5.1 },
-];
+interface ChartDataPoint {
+  date: string;
+  revenue: number;
+  adSpend: number;
+  roas: number;
+}
+
+interface PerformanceChartProps {
+  data?: ChartDataPoint[];
+}
 
 type MetricKey = "revenue" | "adSpend" | "roas";
 
@@ -43,12 +32,12 @@ interface MetricConfig {
 }
 
 const metrics: MetricConfig[] = [
-  { key: "revenue", label: "매출", color: "#E85A2A" },
+  { key: "revenue", label: "매출", color: "#F75D5D" },
   { key: "adSpend", label: "광고비", color: "#3B82F6" },
   { key: "roas", label: "ROAS", color: "#10B981" },
 ];
 
-export function PerformanceChart() {
+export function PerformanceChart({ data = [] }: PerformanceChartProps) {
   const [activeMetrics, setActiveMetrics] = useState<Set<MetricKey>>(
     new Set(["revenue", "adSpend"])
   );
@@ -64,6 +53,27 @@ export function PerformanceChart() {
       return next;
     });
   };
+
+  if (data.length === 0) {
+    return (
+      <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+        <div className="space-y-1.5 p-6 pb-2">
+          <div className="tracking-tight text-base font-semibold text-card-foreground">
+            광고 성과 추이
+          </div>
+        </div>
+        <div className="p-6 pt-0">
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-50 mb-4">
+              <BarChart3 className="h-6 w-6 text-gray-400" />
+            </div>
+            <p className="text-sm font-medium text-gray-900 mb-1">데이터가 없습니다</p>
+            <p className="text-xs text-gray-500">광고 데이터가 연동되면 추이를 확인할 수 있습니다</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
@@ -95,13 +105,13 @@ export function PerformanceChart() {
         <div className="h-[320px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
-              data={chartData}
+              data={data}
               margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
             >
               <defs>
                 <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#E85A2A" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#E85A2A" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#F75D5D" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="#F75D5D" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="gradAdSpend" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.3} />
@@ -153,7 +163,7 @@ export function PerformanceChart() {
                 <Area
                   type="monotone"
                   dataKey="revenue"
-                  stroke="#E85A2A"
+                  stroke="#F75D5D"
                   strokeWidth={2}
                   fill="url(#gradRevenue)"
                   name="매출"

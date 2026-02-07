@@ -1,73 +1,99 @@
-# TASK: P1-4 TipTap WYSIWYG 이메일 에디터
+# TASK: UI/UX 전면 QA + 수정
 
-## 목표
-기존 textarea HTML 직접 입력 → TipTap WYSIWYG 에디터로 교체.
-스티비 수준의 이메일 편집 경험 제공.
+> 우선순위: Critical
+> 목표: 모든 페이지를 검수하고, 발견한 문제를 즉시 수정한다.
+> 디자인 기준: Primary #F75D5D, hover #E54949, white bg, Pretendard 폰트, Triple Whale 심미성
 
-## 설계 문서
-`/Users/smith/.openclaw/workspace/projects/qa-knowledge-base/docs/02-design/P1-email-ai-autowrite.md`
+## 프로젝트 구조
+- Next.js 14 App Router
+- Supabase (auth + DB)
+- Tailwind CSS + shadcn/ui
+- 한국어 UI only, 라이트 모드 only
 
-## 현재 상태
-- 이메일 발송 페이지: `src/app/(main)/admin/email/page.tsx`
-- 기존 에디터: textarea에 HTML 직접 입력
-- 템플릿 3가지: newsletter(HTML 수동), webinar(폼), performance(폼)
-- 발송: Nodemailer SMTP, 50건 배치
-- React Email 렌더링: `src/lib/email-renderer.ts`
-- 이메일 템플릿: `src/emails/newsletter.tsx`, `webinar-invite.tsx`, `performance-report.tsx`
+## 수정 필수 사항 (Critical → Major → Minor 순서)
 
-## 작업
+### Critical
 
-### 1. TipTap 설치
-```bash
-npm install @tiptap/react @tiptap/starter-kit @tiptap/extension-link @tiptap/extension-image @tiptap/extension-placeholder @tiptap/extension-text-align @tiptap/extension-underline @tiptap/extension-color @tiptap/extension-text-style @tiptap/pm
-```
+#### C1. 대시보드 더미 데이터 제거 (/dashboard)
+- `src/app/(main)/dashboard/page.tsx` 확인
+- **채널별 성과** 섹션: Google Ads, Naver Ads, Kakao Ads 하드코딩 → 제거
+- **캠페인 성과** 테이블: 하드코딩된 더미 캠페인 → 제거
+- 데이터 없으면 깔끔한 Empty State로 대체
+  - 아이콘 + "광고 데이터가 연동되면 성과를 확인할 수 있습니다" 메시지
 
-### 2. TipTap 에디터 컴포넌트 (신규)
-`src/components/email/tiptap-editor.tsx`
+#### C2. 대시보드 상단 카드 빈값 처리 (/dashboard)
+- ROAS, 총 매출, 광고비, CTR, CPC 카드가 전부 "—" + "0% vs last period"
+- 데이터 없을 때 → "—" 대신 "데이터 없음" 또는 카드 자체를 숨기기
+- "vs last period" 비교값이 0%면 비교 텍스트 숨기기
+- **차트도 동일**: 데이터 없으면 빈 그래프 대신 Empty State
 
-툴바:
-- 텍스트: Bold, Italic, Underline, Strikethrough
-- 헤딩: H1, H2, H3
-- 리스트: Bullet, Ordered
-- 정렬: Left, Center, Right
-- 링크: URL 삽입/수정
-- 이미지: URL로 이미지 삽입
-- 구분선: Horizontal Rule
-- 색상: 텍스트 색상 (primary #F75D5D 포함)
+#### C3. 대시보드 레이아웃 — 데이터 없을 때 전체적으로 자연스럽게
+- 현재: 빈 카드 + 빈 차트 + 더미 데이터 = 혼란스러움
+- 목표: 데이터 없는 상태에서도 "곧 데이터가 채워질 예정" 느낌의 깔끔한 페이지
 
-에디터 영역:
-- 최소 높이 400px
-- 플레이스홀더: "이메일 내용을 작성하세요..."
-- 포커스 시 border highlight
+### Major
 
-### 3. 이메일 발송 페이지 수정
-`src/app/(main)/admin/email/page.tsx`
+#### M1. 통계 페이지 0값 수정 (/admin/stats)
+- 모든 통계가 0으로 표시됨 (실제 DB에 질문 1개, 회원 3명 있음)
+- `src/app/(main)/admin/stats/page.tsx` 확인
+- Supabase 쿼리가 실제 데이터를 가져오는지 확인 + 수정
+- profiles 테이블, questions 테이블, answers 테이블, posts 테이블 카운트
 
-변경:
-- newsletter 탭: textarea → TipTap 에디터
-- TipTap JSON → HTML 변환 → 기존 발송 파이프라인에 연결
-- 미리보기: TipTap HTML 출력 → React Email 래핑 → 미리보기
-- 발송: TipTap getHTML() → 기존 newsletter 템플릿에 삽입
+#### M2. 설정 페이지 프로필 미표시 (/settings)
+- `src/app/(main)/settings/page.tsx` 확인
+- 현재 로그인 유저의 profiles 데이터를 폼에 채워야 함
+- 이름, 전화번호, 쇼핑몰 이름, 쇼핑몰 URL → DB에서 읽어서 defaultValue로
 
-### 4. 콘텐츠 라이브러리 UI (향후 확장 준비)
-- 지금은 에디터만 교체
-- 나중에 content_library에서 콘텐츠 불러오기 기능 추가 예정
-- 에디터에 "불러오기" 버튼 자리만 마련 (disabled 상태)
+#### M3. 상단 날짜 필터 정리
+- 헤더에 "2025.01.01 - 2025.01.31 | 최근 30일" 필터가 모든 페이지에 보임
+- 이 필터가 실제 기능하는 페이지: dashboard, protractor
+- 나머지 페이지에서는 보이지 않거나, 비활성 상태로 표시
 
-## 디자인
-- Primary: #F75D5D, Hover: #E54949
-- 폰트: Pretendard
-- 한국어 UI
-- 라이트 모드 only
-- 툴바: shadcn/ui 기반 (ToggleGroup 또는 커스텀)
-- 에디터 영역: 깔끔한 white bg + border
+### UX/디자인 점검 (수정 중 발견하면 같이 처리)
 
-## 체크리스트
-- [x] TipTap 패키지 설치
-- [x] tiptap-editor.tsx 컴포넌트 작성
-- [x] 툴바 (볼드/이탤릭/헤딩/리스트/링크/이미지/정렬)
-- [x] 이메일 페이지에서 textarea → TipTap 교체
-- [x] HTML 변환 + 미리보기 연동
-- [x] 발송 시 TipTap HTML → 기존 파이프라인 연결
-- [x] npm run build 성공
-- [ ] git add -A && git commit -m "feat: P1-4 TipTap WYSIWYG 이메일 에디터" && git push
+#### D1. 색상 일관성 점검
+- Primary: #F75D5D (rgb 247,93,93)
+- Hover: #E54949
+- 사이드바 active 배경: primary/10 (연한 코랄)
+- 버튼: primary 배경 + white 텍스트
+- 뱃지 색상이 의미에 맞는지 확인 (리드=노랑, 멤버=초록, 관리자=빨강 등)
+
+#### D2. 여백/간격 일관성
+- 페이지 padding, 카드 간격, 섹션 간격이 페이지마다 다른지 확인
+- 통일 기준: 페이지 p-6, 카드 gap-6, 섹션 gap-8
+
+#### D3. 폰트 일관성
+- Pretendard 적용 확인
+- 제목: text-2xl font-bold
+- 부제: text-muted-foreground
+- 본문: text-sm 기본
+
+#### D4. 반응형 기본 확인
+- 사이드바가 모바일에서 어떻게 되는지 (collapse)
+- 카드 그리드가 좁은 화면에서 1열로 변하는지
+
+#### D5. 수강생 vs 관리자 뷰
+- 수강생 로그인 시 관리 메뉴(회원관리, 답변검토, 통계 등)가 안 보여야 함
+- 코드에서 role 기반 메뉴 필터링 확인
+
+## 작업 방식
+1. 각 페이지 코드를 읽고 문제 발견
+2. 즉시 수정 (코드 변경)
+3. 수정 후 `npm run build` 확인
+4. 모든 수정 완료 후 `git add -A && git commit -m "fix: UI/UX QA 전면 수정" && git push`
+
+## 참고 파일
+- 디자인 기준: `docs/qa-report-ui-ux.md` (QA 보고서)
+- 관련 컴포넌트: `src/components/` 하위 전체
+- 레이아웃: `src/app/(main)/layout.tsx`, `src/components/sidebar.tsx`
+- Supabase: `src/lib/supabase/` (client, server, service)
+
+## 체크리스트 (완료 후 확인)
+- [ ] `npm run build` 성공
+- [ ] `git push` 완료
+- [ ] 더미 데이터 전부 제거
+- [ ] Empty State 자연스럽게 처리
+- [ ] 통계 페이지 실데이터 표시
+- [ ] 설정 프로필 자동 채우기
+- [ ] 날짜 필터 범위 정리
+- [ ] 색상/여백/폰트 일관성

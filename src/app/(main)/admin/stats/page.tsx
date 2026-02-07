@@ -14,59 +14,100 @@ import {
   FileText,
   TrendingUp,
 } from "lucide-react";
+import { createServiceClient } from "@/lib/supabase/server";
 
-const statCards = [
-  {
-    label: "총 질문 수",
-    value: 0,
-    icon: MessageSquare,
-    accentColor: "border-l-blue-500",
-    iconBg: "bg-blue-50",
-    iconColor: "text-blue-500",
-  },
-  {
-    label: "AI 답변 수",
-    value: 0,
-    icon: Bot,
-    accentColor: "border-l-purple-500",
-    iconBg: "bg-purple-50",
-    iconColor: "text-purple-500",
-  },
-  {
-    label: "승인된 답변",
-    value: 0,
-    icon: CheckCircle,
-    accentColor: "border-l-emerald-500",
-    iconBg: "bg-emerald-50",
-    iconColor: "text-emerald-500",
-  },
-  {
-    label: "활성 회원",
-    value: 0,
-    icon: Users,
-    accentColor: "border-l-[#F75D5D]",
-    iconBg: "bg-red-50",
-    iconColor: "text-[#F75D5D]",
-  },
-  {
-    label: "게시글 수",
-    value: 0,
-    icon: FileText,
-    accentColor: "border-l-amber-500",
-    iconBg: "bg-amber-50",
-    iconColor: "text-amber-500",
-  },
-  {
-    label: "이번 주 질문",
-    value: 0,
-    icon: TrendingUp,
-    accentColor: "border-l-blue-400",
-    iconBg: "bg-blue-50",
-    iconColor: "text-blue-400",
-  },
-];
+async function getStats() {
+  const supabase = createServiceClient();
 
-export default function AdminStatsPage() {
+  const [
+    questionsResult,
+    answersResult,
+    approvedResult,
+    activeUsersResult,
+    postsResult,
+    weeklyQuestionsResult,
+  ] = await Promise.all([
+    supabase.from("questions").select("*", { count: "exact", head: true }),
+    supabase.from("answers").select("*", { count: "exact", head: true }),
+    supabase
+      .from("answers")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "approved"),
+    supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true })
+      .in("role", ["member", "student", "alumni", "admin"]),
+    supabase.from("posts").select("*", { count: "exact", head: true }),
+    supabase
+      .from("questions")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+  ]);
+
+  return {
+    totalQuestions: questionsResult.count ?? 0,
+    totalAnswers: answersResult.count ?? 0,
+    approvedAnswers: approvedResult.count ?? 0,
+    activeUsers: activeUsersResult.count ?? 0,
+    totalPosts: postsResult.count ?? 0,
+    weeklyQuestions: weeklyQuestionsResult.count ?? 0,
+  };
+}
+
+export default async function AdminStatsPage() {
+  const stats = await getStats();
+
+  const statCards = [
+    {
+      label: "총 질문 수",
+      value: stats.totalQuestions,
+      icon: MessageSquare,
+      accentColor: "border-l-blue-500",
+      iconBg: "bg-blue-50",
+      iconColor: "text-blue-500",
+    },
+    {
+      label: "AI 답변 수",
+      value: stats.totalAnswers,
+      icon: Bot,
+      accentColor: "border-l-purple-500",
+      iconBg: "bg-purple-50",
+      iconColor: "text-purple-500",
+    },
+    {
+      label: "승인된 답변",
+      value: stats.approvedAnswers,
+      icon: CheckCircle,
+      accentColor: "border-l-emerald-500",
+      iconBg: "bg-emerald-50",
+      iconColor: "text-emerald-500",
+    },
+    {
+      label: "활성 회원",
+      value: stats.activeUsers,
+      icon: Users,
+      accentColor: "border-l-[#F75D5D]",
+      iconBg: "bg-red-50",
+      iconColor: "text-[#F75D5D]",
+    },
+    {
+      label: "게시글 수",
+      value: stats.totalPosts,
+      icon: FileText,
+      accentColor: "border-l-amber-500",
+      iconBg: "bg-amber-50",
+      iconColor: "text-amber-500",
+    },
+    {
+      label: "이번 주 질문",
+      value: stats.weeklyQuestions,
+      icon: TrendingUp,
+      accentColor: "border-l-blue-400",
+      iconBg: "bg-blue-50",
+      iconColor: "text-blue-400",
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div>

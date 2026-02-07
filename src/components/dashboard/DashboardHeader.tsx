@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarDays, Bell } from "lucide-react";
+import { usePathname } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -9,35 +10,73 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const titleMap: Record<string, string> = {
+  "/dashboard": "대시보드",
+  "/questions": "Q&A",
+  "/posts": "정보공유",
+  "/notices": "공지사항",
+  "/protractor": "총가치각도기",
+  "/settings": "설정",
+  "/admin/members": "회원 관리",
+  "/admin/answers": "답변 검토",
+  "/admin/stats": "통계",
+  "/admin/protractor": "총가치각도기 관리",
+  "/admin/accounts": "광고계정 관리",
+  "/admin/email": "이메일 발송",
+};
+
+const dateFilterPaths = ["/dashboard", "/protractor", "/admin/protractor"];
+
+function getTitle(pathname: string): string {
+  // Exact match first
+  if (titleMap[pathname]) return titleMap[pathname];
+  // Check prefix match for nested routes
+  for (const [path, title] of Object.entries(titleMap)) {
+    if (pathname.startsWith(path + "/")) return title;
+  }
+  return "대시보드";
+}
+
+function shouldShowDateFilter(pathname: string): boolean {
+  return dateFilterPaths.some(
+    (p) => pathname === p || pathname.startsWith(p + "/")
+  );
+}
+
 interface DashboardHeaderProps {
   userName?: string;
 }
 
 export function DashboardHeader({ userName = "사용자" }: DashboardHeaderProps) {
+  const pathname = usePathname();
   const initials = userName.slice(0, 2).toUpperCase();
+  const title = getTitle(pathname);
+  const showDateFilter = shouldShowDateFilter(pathname);
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-card px-6">
       <div className="flex items-center gap-4">
-        <h1 className="text-lg font-bold text-card-foreground">대시보드</h1>
-        <div className="hidden items-center gap-2 md:flex">
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5">
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">
-              2025.01.01 - 2025.01.31
-            </span>
+        <h1 className="text-lg font-bold text-card-foreground">{title}</h1>
+        {showDateFilter && (
+          <div className="hidden items-center gap-2 md:flex">
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5">
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">
+                2025.01.01 - 2025.01.31
+              </span>
+            </div>
+            <Select defaultValue="30d">
+              <SelectTrigger className="h-8 w-[120px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7d">최근 7일</SelectItem>
+                <SelectItem value="30d">최근 30일</SelectItem>
+                <SelectItem value="90d">최근 90일</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Select defaultValue="30d">
-            <SelectTrigger className="h-8 w-[120px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7d">최근 7일</SelectItem>
-              <SelectItem value="30d">최근 30일</SelectItem>
-              <SelectItem value="90d">최근 90일</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        )}
       </div>
       <div className="flex items-center gap-2">
         <button
