@@ -1,10 +1,14 @@
+export type ContentType = 'info' | 'result' | 'promo';
+export type ContentCategory = 'education' | 'news' | 'case-study' | 'webinar' | 'recruitment';
+
 export interface Content {
   id: string;
   title: string;
   body_md: string;
   summary: string | null;
   thumbnail_url: string | null;
-  category: string;
+  type: ContentType;
+  category: ContentCategory;
   tags: string[];
   status: 'draft' | 'review' | 'ready' | 'published' | 'archived';
   source_type: string | null;

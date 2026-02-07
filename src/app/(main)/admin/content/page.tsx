@@ -48,16 +48,24 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
 };
 
 const CATEGORY_LABEL: Record<string, string> = {
-  blueprint: "블루프린트",
-  trend: "트렌드",
-  insight: "인사이트",
-  general: "일반",
+  education: "교육",
+  news: "소식",
+  "case-study": "수강생 사례",
+  webinar: "웨비나",
+  recruitment: "모집",
+};
+
+const TYPE_BADGE: Record<string, { label: string; className: string }> = {
+  info: { label: "정보", className: "bg-blue-50 text-blue-700 border-blue-200" },
+  result: { label: "성과", className: "bg-green-50 text-green-700 border-green-200" },
+  promo: { label: "홍보", className: "bg-orange-50 text-orange-700 border-orange-200" },
 };
 
 export default function AdminContentPage() {
   const [contents, setContents] = useState<Content[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -68,8 +76,9 @@ export default function AdminContentPage() {
   const loadContents = useCallback(async () => {
     setLoading(true);
     try {
-      const params: { category?: string; status?: string; pageSize?: number } =
+      const params: { type?: string; category?: string; status?: string; pageSize?: number } =
         { pageSize: 100 };
+      if (typeFilter !== "all") params.type = typeFilter;
       if (categoryFilter !== "all") params.category = categoryFilter;
       if (statusFilter !== "all") params.status = statusFilter;
 
@@ -82,7 +91,7 @@ export default function AdminContentPage() {
     } finally {
       setLoading(false);
     }
-  }, [categoryFilter, statusFilter]);
+  }, [typeFilter, categoryFilter, statusFilter]);
 
   useEffect(() => {
     loadContents();
@@ -105,7 +114,7 @@ export default function AdminContentPage() {
     [contents]
   );
 
-  const isUnfiltered = categoryFilter === "all" && statusFilter === "all";
+  const isUnfiltered = typeFilter === "all" && categoryFilter === "all" && statusFilter === "all";
 
   const statCards = [
     {
@@ -171,16 +180,29 @@ export default function AdminContentPage() {
 
       {/* Filters */}
       <div className="flex gap-3">
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-[130px]">
+            <SelectValue placeholder="타입" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">전체 타입</SelectItem>
+            <SelectItem value="info">정보</SelectItem>
+            <SelectItem value="result">성과</SelectItem>
+            <SelectItem value="promo">홍보</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="카테고리" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">전체 카테고리</SelectItem>
-            <SelectItem value="blueprint">블루프린트</SelectItem>
-            <SelectItem value="trend">트렌드</SelectItem>
-            <SelectItem value="insight">인사이트</SelectItem>
-            <SelectItem value="general">일반</SelectItem>
+            <SelectItem value="education">교육</SelectItem>
+            <SelectItem value="news">소식</SelectItem>
+            <SelectItem value="case-study">수강생 사례</SelectItem>
+            <SelectItem value="webinar">웨비나</SelectItem>
+            <SelectItem value="recruitment">모집</SelectItem>
           </SelectContent>
         </Select>
 
@@ -214,16 +236,21 @@ export default function AdminContentPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[50%]">제목</TableHead>
+                  <TableHead className="w-[40%]">제목</TableHead>
+                  <TableHead>타입</TableHead>
                   <TableHead>카테고리</TableHead>
                   <TableHead>상태</TableHead>
-                  <TableHead className="text-right">작성일</TableHead>
+                  <TableHead className="text-right">날짜</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {contents.map((item) => {
                   const statusInfo = STATUS_BADGE[item.status] ?? {
                     label: item.status,
+                    className: "",
+                  };
+                  const typeInfo = TYPE_BADGE[item.type] ?? {
+                    label: item.type || "-",
                     className: "",
                   };
                   return (
@@ -234,6 +261,14 @@ export default function AdminContentPage() {
                     >
                       <TableCell className="font-medium max-w-[400px] truncate">
                         {item.title}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={`text-[11px] ${typeInfo.className}`}
+                        >
+                          {typeInfo.label}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary" className="text-[11px]">
@@ -250,7 +285,6 @@ export default function AdminContentPage() {
                       </TableCell>
                       <TableCell className="text-right text-[13px] text-gray-500">
                         {new Date(item.created_at).toLocaleDateString("ko-KR", {
-                          year: "numeric",
                           month: "short",
                           day: "numeric",
                         })}

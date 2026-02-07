@@ -28,11 +28,13 @@ function escapeHtml(str: string): string {
 }
 
 export async function getContents({
+  type,
   category,
   status,
   page = 1,
   pageSize = 20,
 }: {
+  type?: string;
   category?: string;
   status?: string;
   page?: number;
@@ -47,6 +49,10 @@ export async function getContents({
     .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(from, to);
+
+  if (type) {
+    query = query.eq("type", type);
+  }
 
   if (category) {
     query = query.eq("category", category);
@@ -88,6 +94,7 @@ export async function createContent(input: {
   body_md: string;
   summary?: string | null;
   thumbnail_url?: string | null;
+  type?: string;
   category?: string;
   tags?: string[];
   status?: string;
@@ -119,6 +126,7 @@ export async function updateContent(
     body_md?: string;
     summary?: string | null;
     thumbnail_url?: string | null;
+    type?: string;
     category?: string;
     tags?: string[];
     status?: string;
@@ -173,12 +181,22 @@ export async function publishToPost(contentId: string) {
     return { data: null, error: fetchError?.message || "콘텐츠를 찾을 수 없습니다." };
   }
 
+  // 디자인 포매팅: 카테고리 배지 + 본문 + 출처 + 작성일
+  const catLabels: Record<string, string> = {
+    education: "교육", news: "소식", "case-study": "수강생 사례",
+    webinar: "웨비나", recruitment: "모집",
+  };
+  const catLabel = catLabels[content.category] || content.category;
+  const sourceLine = content.source_ref ? `\n\n> 출처: ${content.source_ref}` : "";
+  const dateLine = `\n\n---\n*${new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}*`;
+  const formattedContent = `**[${catLabel}]**\n\n${content.body_md}${sourceLine}${dateLine}`;
+
   // Insert into posts table
   const { data: post, error: postError } = await supabase
     .from("posts")
     .insert({
       title: content.title,
-      content: content.body_md,
+      content: formattedContent,
       category: "info" as const,
       is_published: true,
       published_at: new Date().toISOString(),
@@ -226,38 +244,56 @@ export async function generateNewsletterFromContents(contentIds: string[]) {
     return "<p>선택된 콘텐츠가 없습니다.</p>";
   }
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://qa-knowledge-base.vercel.app";
+  const categoryLabels: Record<string, string> = {
+    education: "교육", news: "소식", "case-study": "수강생 사례",
+    webinar: "웨비나", recruitment: "모집",
+  };
+
   const sectionsHtml = contents
     .map((c) => {
-      const lines = c.body_md.split("\n").filter((l: string) => l.trim());
-      const bullets: string[] = [];
-      const paragraphs: string[] = [];
+      const contentType = c.type || "info";
+      const catLabel = categoryLabels[c.category] || c.category;
 
-      for (const line of lines) {
-        const bulletMatch = line.match(/^[-*]\s+(.+)/);
-        if (bulletMatch) {
-          bullets.push(`  <li>${escapeHtml(bulletMatch[1])}</li>`);
-        } else {
-          paragraphs.push(`<p>${escapeHtml(line)}</p>`);
-        }
+      if (contentType === "info") {
+        const summaryText = escapeHtml(c.summary || c.body_md.slice(0, 200));
+        return `<table style="width:100%;border:1px solid #eee;border-radius:8px;padding:16px">
+  <tr><td style="color:#666;font-size:12px">${escapeHtml(catLabel)}</td></tr>
+  <tr><td style="font-size:18px;font-weight:bold;padding:8px 0">${escapeHtml(c.title)}</td></tr>
+  <tr><td style="color:#333;font-size:14px;line-height:1.6">${summaryText}</td></tr>
+  <tr><td style="padding-top:12px">
+    <a href="${siteUrl}/posts?content_id=${c.id}" style="background:#F75D5D;color:white;padding:8px 20px;border-radius:4px;text-decoration:none">
+      자세히 보기
+    </a>
+  </td></tr>
+</table>`;
       }
 
-      let html = `<h3>${escapeHtml(c.title)}</h3>\n`;
-      html += paragraphs.join("\n");
-      if (bullets.length > 0) {
-        html += `\n<ul>\n${bullets.join("\n")}\n</ul>`;
+      if (contentType === "result") {
+        const bodyText = escapeHtml(c.body_md);
+        return `<table style="width:100%;background:#f8f9fa;border-radius:8px;padding:16px">
+  <tr><td style="color:#F75D5D;font-size:12px;font-weight:bold">수강생 성과</td></tr>
+  <tr><td style="font-size:18px;font-weight:bold;padding:8px 0">${escapeHtml(c.title)}</td></tr>
+  <tr><td style="color:#333;font-size:14px;line-height:1.6">${bodyText}</td></tr>
+</table>`;
       }
-      return html;
+
+      // promo
+      const promoDesc = escapeHtml(c.summary || c.body_md.slice(0, 150));
+      const ctaUrl = c.source_ref || siteUrl;
+      return `<table style="width:100%;background:#FFF5F5;border:2px solid #F75D5D;border-radius:8px;padding:20px;text-align:center">
+  <tr><td style="font-size:20px;font-weight:bold;color:#1a1a2e">${escapeHtml(c.title)}</td></tr>
+  <tr><td style="color:#666;font-size:14px;padding:8px 0">${promoDesc}</td></tr>
+  <tr><td style="padding-top:12px">
+    <a href="${ctaUrl}" style="background:#F75D5D;color:white;padding:12px 32px;border-radius:4px;text-decoration:none;font-weight:bold">
+      신청하기
+    </a>
+  </td></tr>
+</table>`;
     })
     .join("\n\n");
 
-  return `<h2>뉴스레터</h2>
-<p>안녕하세요, 자사몰사관학교입니다.</p>
-
-${sectionsHtml}
-
-<hr />
-<p><strong>총가치각도기로 내 광고 성과를 확인해보세요</strong></p>
-<p>궁금한 점은 Q&amp;A 게시판에 남겨주세요.</p>`;
+  return sectionsHtml;
 }
 
 export async function embedContent(contentId: string) {

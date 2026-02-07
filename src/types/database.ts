@@ -925,6 +925,7 @@ export interface Database {
           body_md: string;
           summary: string | null;
           thumbnail_url: string | null;
+          type: string;
           category: string;
           tags: string[];
           status: string;
@@ -941,6 +942,7 @@ export interface Database {
           body_md: string;
           summary?: string | null;
           thumbnail_url?: string | null;
+          type?: string;
           category?: string;
           tags?: string[];
           status?: string;
@@ -957,6 +959,7 @@ export interface Database {
           body_md?: string;
           summary?: string | null;
           thumbnail_url?: string | null;
+          type?: string;
           category?: string;
           tags?: string[];
           status?: string;
