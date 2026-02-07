@@ -11,6 +11,24 @@ const categoryLabels: Record<string, string> = {
   news: "소식",
 };
 
+async function loadFont(): Promise<ArrayBuffer | null> {
+  const urls = [
+    "https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-kr@5.0.1/files/noto-sans-kr-korean-700-normal.woff2",
+    "https://fonts.gstatic.com/s/notosanskr/v36/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyeLTq8H4hfeE.woff",
+  ];
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { cache: "force-cache" });
+      if (res.ok && res.headers.get("content-length") !== "0") {
+        return await res.arrayBuffer();
+      }
+    } catch {
+      // try next URL
+    }
+  }
+  return null;
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const title = searchParams.get("title") || "BS CAMP";
@@ -18,9 +36,18 @@ export async function GET(req: NextRequest) {
 
   const catLabel = categoryLabels[category] || category;
 
-  const fontUrl =
-    "https://fonts.gstatic.com/s/notosanskr/v36/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyeLTq8H4hfeE.woff";
-  const fontBuffer = await fetch(fontUrl).then((res) => res.arrayBuffer());
+  const fontData = await loadFont();
+
+  const fontsOption = fontData
+    ? [
+        {
+          name: "Noto Sans KR",
+          data: fontData,
+          weight: 700 as const,
+          style: "normal" as const,
+        },
+      ]
+    : undefined;
 
   return new ImageResponse(
     (
@@ -33,7 +60,7 @@ export async function GET(req: NextRequest) {
           justifyContent: "center",
           alignItems: "center",
           background: "linear-gradient(135deg, #F75D5D 0%, #E54949 100%)",
-          fontFamily: "'Noto Sans KR', sans-serif",
+          fontFamily: fontData ? "'Noto Sans KR', sans-serif" : "sans-serif",
           padding: "60px",
         }}
       >
@@ -87,14 +114,7 @@ export async function GET(req: NextRequest) {
     {
       width: 1200,
       height: 630,
-      fonts: [
-        {
-          name: "Noto Sans KR",
-          data: fontBuffer,
-          weight: 700,
-          style: "normal" as const,
-        },
-      ],
+      ...(fontsOption ? { fonts: fontsOption } : {}),
     }
   );
 }
