@@ -2,8 +2,6 @@ import {
   Body,
   Container,
   Head,
-  Heading,
-  Hr,
   Html,
   Link,
   Preview,
@@ -45,21 +43,18 @@ export default function Newsletter({
         <Container style={container}>
           {/* Header */}
           <Section style={header}>
-            <Text style={headerBrand}>자사몰 사관학교</Text>
-            <Heading as="h1" style={headerTitle}>
-              BS CAMP
-            </Heading>
+            <Text style={headerBrand}>BS CAMP</Text>
           </Section>
 
           {/* Body */}
           <Section style={bodySection}>
-            <Heading as="h2" style={subjectHeading}>
-              {subject}
-            </Heading>
-            <Section
-              dangerouslySetInnerHTML={{ __html: bodyHtml }}
-              style={htmlContent}
-            />
+            <Text style={subjectHeading}>{subject}</Text>
+            <Section style={contentCard}>
+              <Section
+                dangerouslySetInnerHTML={{ __html: bodyHtml }}
+                style={htmlContent}
+              />
+            </Section>
           </Section>
 
           {/* Optional CTA */}
@@ -73,8 +68,7 @@ export default function Newsletter({
 
           {/* Footer */}
           <Section style={footer}>
-            <Hr style={divider} />
-            <Text style={footerBrand}>자사몰 사관학교</Text>
+            <Text style={footerBrand}>자사몰사관학교</Text>
             <Text style={footerText}>
               본 메일은 BS CAMP에서 발송한 뉴스레터입니다.
               <br />
@@ -103,33 +97,30 @@ const main: React.CSSProperties = {
   fontFamily:
     "Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
   margin: 0,
-  padding: "20px 0",
+  padding: "24px 0",
 };
 
 const container: React.CSSProperties = {
   maxWidth: "600px",
   margin: "0 auto",
   backgroundColor: "#ffffff",
+  borderRadius: "8px",
+  overflow: "hidden",
 };
 
 const header: React.CSSProperties = {
-  backgroundColor: "#1a1a1a",
-  padding: "28px 32px",
+  backgroundColor: "#ffffff",
+  padding: "24px 32px",
   textAlign: "center",
+  borderBottom: "2px solid #F75D5D",
 };
 
 const headerBrand: React.CSSProperties = {
-  color: "#E85A2A",
-  fontSize: "14px",
-  fontWeight: 600,
-  margin: "0 0 8px",
-};
-
-const headerTitle: React.CSSProperties = {
-  color: "#ffffff",
-  fontSize: "18px",
-  fontWeight: 600,
+  color: "#F75D5D",
+  fontSize: "20px",
+  fontWeight: 700,
   margin: 0,
+  letterSpacing: "0.5px",
 };
 
 const bodySection: React.CSSProperties = {
@@ -140,8 +131,16 @@ const subjectHeading: React.CSSProperties = {
   color: "#1a1a1a",
   fontSize: "22px",
   fontWeight: 700,
-  margin: "0 0 20px",
+  margin: "0 0 24px",
   padding: 0,
+  lineHeight: "1.4",
+};
+
+const contentCard: React.CSSProperties = {
+  backgroundColor: "#ffffff",
+  border: "1px solid #eeeeee",
+  borderRadius: "8px",
+  padding: "24px",
 };
 
 const htmlContent: React.CSSProperties = {
@@ -156,31 +155,26 @@ const ctaWrapper: React.CSSProperties = {
 };
 
 const ctaButton: React.CSSProperties = {
-  backgroundColor: "#E85A2A",
+  backgroundColor: "#F75D5D",
   color: "#ffffff",
   fontSize: "16px",
   fontWeight: 700,
-  padding: "14px 36px",
-  borderRadius: "500px",
+  padding: "16px 40px",
+  borderRadius: "8px",
   textDecoration: "none",
   display: "inline-block",
 };
 
 const footer: React.CSSProperties = {
-  backgroundColor: "#fafafa",
+  backgroundColor: "#f7f7f7",
   padding: "24px 32px",
   textAlign: "center",
 };
 
-const divider: React.CSSProperties = {
-  border: 0,
-  borderTop: "1px solid #eeeeee",
-  margin: "0 0 16px",
-};
-
 const footerBrand: React.CSSProperties = {
-  color: "#a4a4a4",
-  fontSize: "12px",
+  color: "#888888",
+  fontSize: "13px",
+  fontWeight: 600,
   margin: "0 0 8px",
 };
 

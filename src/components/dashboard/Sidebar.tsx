@@ -17,6 +17,7 @@ import {
   BarChart3,
   Crosshair,
   Monitor,
+  FileText,
   Mail,
   LogOut,
 } from "lucide-react";
@@ -43,6 +44,7 @@ const adminNavItems: NavItem[] = [
   { label: "통계", href: "/admin/stats", icon: BarChart3 },
   { label: "총가치각도기 관리", href: "/admin/protractor", icon: Crosshair },
   { label: "광고계정 관리", href: "/admin/accounts", icon: Monitor },
+  { label: "콘텐츠 관리", href: "/admin/content", icon: FileText },
   { label: "이메일 발송", href: "/admin/email", icon: Mail },
 ];
 

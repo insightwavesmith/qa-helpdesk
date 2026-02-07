@@ -34,11 +34,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Send, Eye, Loader2, Users, Mail, AlertCircle } from "lucide-react";
+import { Send, Eye, Loader2, Users, Mail, AlertCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import AiWriteDialog from "@/components/email/ai-write-dialog";
+import ContentPickerDialog from "@/components/content/content-picker-dialog";
 
 const TipTapEditor = dynamic(() => import("@/components/email/tiptap-editor"), {
   ssr: false,
@@ -89,6 +90,7 @@ export default function AdminEmailPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [templateType, setTemplateType] = useState<TemplateType>("newsletter");
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [contentPickerOpen, setContentPickerOpen] = useState(false);
 
   // Newsletter fields
   const [html, setHtml] = useState("");
@@ -408,7 +410,17 @@ export default function AdminEmailPage() {
           {/* 뉴스레터 필드 */}
           {templateType === "newsletter" && (
             <div className="space-y-1.5">
-              <label className="text-[13px] font-medium">본문</label>
+              <div className="flex items-center justify-between">
+                <label className="text-[13px] font-medium">본문</label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setContentPickerOpen(true)}
+                >
+                  <FileText className="h-4 w-4 mr-1.5" />
+                  콘텐츠에서 가져오기
+                </Button>
+              </div>
               <TipTapEditor
                 content={html}
                 onChange={setHtml}
@@ -423,6 +435,16 @@ export default function AdminEmailPage() {
                   setSubject(result.subject);
                   setAiDialogOpen(false);
                   toast.success("AI 뉴스레터가 생성되었습니다.");
+                }}
+              />
+              <ContentPickerDialog
+                open={contentPickerOpen}
+                onOpenChange={setContentPickerOpen}
+                onImport={(result) => {
+                  setHtml(result.html);
+                  setSubject(result.subject);
+                  setContentPickerOpen(false);
+                  toast.success("콘텐츠를 가져왔습니다.");
                 }}
               />
             </div>
