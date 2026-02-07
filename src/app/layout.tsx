@@ -4,10 +4,7 @@ import ThemeProvider from "@/components/layout/theme-provider";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
 
-const META_THEME_COLORS = {
-  light: "#f8f9fc",
-  dark: "#0f1729",
-};
+const META_THEME_COLOR = "#f8f9fc";
 
 export const metadata: Metadata = {
   title: "BS CAMP",
@@ -15,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: META_THEME_COLORS.light,
+  themeColor: META_THEME_COLOR,
 };
 
 export default function RootLayout({

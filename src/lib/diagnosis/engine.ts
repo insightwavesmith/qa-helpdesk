@@ -12,7 +12,7 @@ export function judgeMetric(
   myValue: number | null,
   aboveAvg: number | null,
   averageAvg: number | null,
-  belowAvg: number | null = null,
+  _belowAvg: number | null = null,
   isReverse = false,
 ): Verdict {
   if (myValue == null || aboveAvg == null || averageAvg == null) {

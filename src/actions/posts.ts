@@ -77,7 +77,7 @@ export async function createPost(formData: {
   content: string;
   category: "info" | "notice" | "webinar";
 }) {
-  const supabase = createServiceClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -86,7 +86,8 @@ export async function createPost(formData: {
     return { data: null, error: "인증되지 않은 사용자입니다." };
   }
 
-  const { data, error } = await supabase
+  const svc = createServiceClient();
+  const { data, error } = await svc
     .from("posts")
     .insert({
       title: formData.title,
@@ -132,7 +133,7 @@ export async function createComment(formData: {
   questionId?: string;
   content: string;
 }) {
-  const supabase = createServiceClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -141,7 +142,8 @@ export async function createComment(formData: {
     return { data: null, error: "인증되지 않은 사용자입니다." };
   }
 
-  const { data, error } = await supabase
+  const svc = createServiceClient();
+  const { data, error } = await svc
     .from("comments")
     .insert({
       post_id: formData.postId || null,

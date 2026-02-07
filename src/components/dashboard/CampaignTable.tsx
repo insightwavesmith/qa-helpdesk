@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { ArrowUpDown, ArrowDown, Search, Target } from "lucide-react";
 import {
   Table,
@@ -38,14 +38,14 @@ export function CampaignTable({ campaigns = [] }: CampaignTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("roas");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  const handleSort = (key: SortKey) => {
+  const handleSort = useCallback((key: SortKey) => {
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
       setSortDir("desc");
     }
-  };
+  }, [sortKey]);
 
   const filtered = useMemo(() => {
     let result = campaigns;
@@ -65,32 +65,27 @@ export function CampaignTable({ campaigns = [] }: CampaignTableProps) {
     });
   }, [campaigns, search, sortKey, sortDir]);
 
-  const SortButton = ({
-    label,
-    field,
-    align = "right",
-  }: {
-    label: string;
-    field: SortKey;
-    align?: "left" | "right";
-  }) => (
-    <button
-      onClick={() => handleSort(field)}
-      className={`inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-card-foreground transition-colors ${
-        align === "right" ? "ml-auto" : ""
-      }`}
-    >
-      {label}
-      {sortKey === field ? (
-        <ArrowDown
-          className={`ml-1 h-3 w-3 transition-transform ${
-            sortDir === "asc" ? "rotate-180" : ""
-          }`}
-        />
-      ) : (
-        <ArrowUpDown className="ml-1 h-3 w-3 opacity-40" />
-      )}
-    </button>
+  const renderSortButton = useCallback(
+    (label: string, field: SortKey, align: "left" | "right" = "right") => (
+      <button
+        onClick={() => handleSort(field)}
+        className={`inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-card-foreground transition-colors ${
+          align === "right" ? "ml-auto" : ""
+        }`}
+      >
+        {label}
+        {sortKey === field ? (
+          <ArrowDown
+            className={`ml-1 h-3 w-3 transition-transform ${
+              sortDir === "asc" ? "rotate-180" : ""
+            }`}
+          />
+        ) : (
+          <ArrowUpDown className="ml-1 h-3 w-3 opacity-40" />
+        )}
+      </button>
+    ),
+    [handleSort, sortKey, sortDir]
   );
 
   if (campaigns.length === 0) {
@@ -136,7 +131,7 @@ export function CampaignTable({ campaigns = [] }: CampaignTableProps) {
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="min-w-[200px]">
-                  <SortButton label="캠페인명" field="name" align="left" />
+                  {renderSortButton("캠페인명", "name", "left")}
                 </TableHead>
                 <TableHead>
                   <span className="text-xs font-semibold uppercase tracking-wider">
@@ -149,25 +144,25 @@ export function CampaignTable({ campaigns = [] }: CampaignTableProps) {
                   </span>
                 </TableHead>
                 <TableHead className="text-right">
-                  <SortButton label="노출수" field="impressions" />
+                  {renderSortButton("노출수", "impressions")}
                 </TableHead>
                 <TableHead className="text-right">
-                  <SortButton label="클릭수" field="clicks" />
+                  {renderSortButton("클릭수", "clicks")}
                 </TableHead>
                 <TableHead className="text-right">
-                  <SortButton label="CTR" field="ctr" />
+                  {renderSortButton("CTR", "ctr")}
                 </TableHead>
                 <TableHead className="text-right">
-                  <SortButton label="광고비" field="adSpend" />
+                  {renderSortButton("광고비", "adSpend")}
                 </TableHead>
                 <TableHead className="text-right">
-                  <SortButton label="매출" field="revenue" />
+                  {renderSortButton("매출", "revenue")}
                 </TableHead>
                 <TableHead className="text-right">
-                  <SortButton label="ROAS" field="roas" />
+                  {renderSortButton("ROAS", "roas")}
                 </TableHead>
                 <TableHead className="text-right">
-                  <SortButton label="전환" field="conversions" />
+                  {renderSortButton("전환", "conversions")}
                 </TableHead>
               </TableRow>
             </TableHeader>

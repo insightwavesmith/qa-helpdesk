@@ -148,6 +148,7 @@ export async function POST(request: NextRequest) {
         fullHtml = await renderEmail(template as TemplateName, {
           subject,
           ...templateProps,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any);
       } else {
         fullHtml = await renderEmail("newsletter", {

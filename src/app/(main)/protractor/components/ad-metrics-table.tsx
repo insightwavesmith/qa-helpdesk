@@ -125,7 +125,6 @@ export function AdMetricsTable({ insights, benchmarks }: AdMetricsTableProps) {
   }
 
   const ads = aggregateByAd(insights);
-  const engBench = findAboveAvg(benchmarks, "engagement");
   const convBench = findAboveAvg(benchmarks, "conversion");
 
   // 전체 합계

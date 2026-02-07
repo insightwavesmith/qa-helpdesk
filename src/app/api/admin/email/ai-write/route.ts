@@ -130,29 +130,29 @@ export async function POST(request: NextRequest) {
     let firstSectionTitle: string;
 
     if (category === "webinar") {
-      contentHtml = buildWebinarHtml();
       firstSectionTitle = "다가오는 웨비나 안내";
-    } else {
-      const sections = await getContentSources(category, topic);
-      const selected = sections.slice(0, MAX_SECTIONS);
-      sources = [...new Set(selected.map((s) => s.source))];
-      firstSectionTitle = selected[0]?.title || topicLabel;
-
-      const title = `${CATEGORY_LABELS[category] || category} - ${firstSectionTitle}`;
-      contentHtml = buildNewsletterHtml(title, intro, selected);
-    }
-
-    if (category === "webinar") {
       const title = `웨비나 안내 - ${topicLabel}`;
       contentHtml = buildNewsletterHtml(title, intro, []);
-      // 웨비나 본문을 직접 삽입
       contentHtml = contentHtml.replace(
         "<p>아직 준비된 콘텐츠가 없습니다. 곧 업데이트 예정입니다.</p>",
         buildWebinarHtml()
       );
+    } else {
+      const sections = await getContentSources(category, topic);
+      const selected = sections.slice(0, MAX_SECTIONS);
+      sources = [...new Set(selected.map((s) => s.source))];
+      firstSectionTitle = selected[0]?.title || "";
+
+      const title = firstSectionTitle
+        ? `${CATEGORY_LABELS[category] || category} - ${firstSectionTitle}`
+        : CATEGORY_LABELS[category] || category;
+      contentHtml = buildNewsletterHtml(title, intro, selected);
     }
 
-    const subject = `[BS CAMP] ${CATEGORY_LABELS[category] || category} - ${firstSectionTitle}`;
+    const categoryLabel = CATEGORY_LABELS[category] || category;
+    const subject = firstSectionTitle
+      ? `[BS CAMP] ${categoryLabel} - ${firstSectionTitle}`
+      : `[BS CAMP] ${categoryLabel}`;
 
     return NextResponse.json({
       subject,

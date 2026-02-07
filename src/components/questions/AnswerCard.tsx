@@ -47,9 +47,9 @@ export function AnswerCard({ answer }: AnswerCardProps) {
     <div
       className={`rounded-xl border p-5 transition-all ${
         isAI
-          ? "border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/30"
+          ? "border-blue-200 bg-blue-50/50"
           : isOfficial
-            ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-900 dark:bg-emerald-950/30"
+            ? "border-emerald-200 bg-emerald-50/50"
             : ""
       }`}
     >
@@ -58,16 +58,16 @@ export function AnswerCard({ answer }: AnswerCardProps) {
         <div
           className={`flex items-center justify-center h-9 w-9 rounded-full ${
             isAI
-              ? "bg-blue-100 dark:bg-blue-900"
+              ? "bg-blue-100"
               : isOfficial
-                ? "bg-emerald-100 dark:bg-emerald-900"
+                ? "bg-emerald-100"
                 : "bg-muted"
           }`}
         >
           {isAI ? (
-            <Bot className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <Bot className="h-4 w-4 text-blue-600" />
           ) : isOfficial ? (
-            <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            <Shield className="h-4 w-4 text-emerald-600" />
           ) : (
             <User className="h-4 w-4 text-muted-foreground" />
           )}
@@ -80,7 +80,7 @@ export function AnswerCard({ answer }: AnswerCardProps) {
 
             {/* AI 답변 뱃지 — 파란색 */}
             {isAI && (
-              <Badge className="gap-1 text-[10px] px-2 py-0.5 h-5 bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-800">
+              <Badge className="gap-1 text-[10px] px-2 py-0.5 h-5 bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200">
                 <Sparkles className="h-2.5 w-2.5" />
                 AI 답변
               </Badge>
@@ -88,7 +88,7 @@ export function AnswerCard({ answer }: AnswerCardProps) {
 
             {/* 공식 답변 뱃지 — 초록색 + 체크 */}
             {isOfficial && (
-              <Badge className="gap-1 text-[10px] px-2 py-0.5 h-5 bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-emerald-200 dark:bg-emerald-900 dark:text-emerald-300 dark:border-emerald-800">
+              <Badge className="gap-1 text-[10px] px-2 py-0.5 h-5 bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-emerald-200">
                 <CheckCircle className="h-2.5 w-2.5" />
                 공식 답변
               </Badge>
@@ -96,7 +96,7 @@ export function AnswerCard({ answer }: AnswerCardProps) {
 
             {/* 승인 뱃지 */}
             {answer.is_approved && (
-              <Badge className="gap-1 text-[10px] px-2 py-0.5 h-5 bg-green-100 text-green-700 hover:bg-green-100 border-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-800">
+              <Badge className="gap-1 text-[10px] px-2 py-0.5 h-5 bg-green-100 text-green-700 hover:bg-green-100 border-green-200">
                 <CheckCircle className="h-2.5 w-2.5" />
                 승인됨
               </Badge>

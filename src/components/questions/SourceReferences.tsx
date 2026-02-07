@@ -30,10 +30,10 @@ function SimilarityBadge({ similarity }: { similarity: number }) {
   const pct = Math.round(similarity * 100);
   const color =
     similarity >= 0.7
-      ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+      ? "bg-green-100 text-green-700"
       : similarity >= 0.5
-        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
-        : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
+        ? "bg-yellow-100 text-yellow-700"
+        : "bg-gray-100 text-gray-600";
 
   return (
     <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded ${color}`}>
@@ -49,7 +49,7 @@ export function SourceReferences({ rawSourceRefs }: { rawSourceRefs: unknown }) 
   if (sourceRefs.length === 0) return null;
 
   return (
-    <div className="mt-3 border rounded-lg border-border dark:border-gray-700">
+    <div className="mt-3 border rounded-lg border-border">
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -68,7 +68,7 @@ export function SourceReferences({ rawSourceRefs }: { rawSourceRefs: unknown }) 
       </button>
 
       {open && (
-        <ul className="border-t border-border dark:border-gray-700 divide-y divide-border dark:divide-gray-700">
+        <ul className="border-t border-border divide-y divide-border">
           {sourceRefs.map((ref, i) => (
             <li
               key={`${ref.lecture_name}-${ref.chunk_index}-${i}`}

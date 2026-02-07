@@ -1,107 +1,68 @@
-# TASK: 이메일 AI 자동작성 기능
+# TASK: 전체 코드 QA
 
-> 설계 문서: docs/02-design/P1-email-ai-write.md 참조
-> 디자인: Primary #F75D5D, hover #E54949, Pretendard, shadcn/ui
+## 목표
+qa-helpdesk 프로젝트의 전체 코드를 검수한다. 버그, 타입 에러, 보안 이슈, 미완성 코드를 찾아서 수정한다.
 
-## 요약
-이메일 발송 페이지에서 "AI 작성" 버튼 → 카테고리/주제 선택 → AI가 뉴스레터 초안 생성 → TipTap 에디터에 삽입
+## QA 체크리스트
 
-## 만들 파일
+### 1. 빌드 + 타입 체크
+- [ ] `npx tsc --noEmit` 타입 에러 0개
+- [ ] `npm run build` 성공
+- [ ] `npm run lint` 경고/에러 확인
 
-### 1. AI 작성 다이얼로그 (신규)
-`src/components/email/ai-write-dialog.tsx`
-- shadcn Dialog 사용
-- 카테고리 드롭다운: blueprint / trend / webinar / tips / custom
-- 주제 텍스트 입력 (선택)
-- 톤 선택: educational / casual / urgent
-- "생성하기" 버튼 → POST /api/admin/email/ai-write 호출
-- 로딩 상태 표시 (스피너)
-- 성공 시 콜백으로 HTML 전달 → 부모가 에디터에 삽입
+### 2. API 라우트 검수
+- `src/app/api/` 하위 모든 라우트 확인
+- [ ] 인증 체크 누락 없는지 (admin 전용 API에 인증 있는지)
+- [ ] 에러 핸들링 (try-catch, 적절한 status code)
+- [ ] SQL 인젝션 가능성 (Supabase RLS 의존이면 OK)
+- [ ] request body 유효성 검증
+- [ ] createClient vs createServiceClient 사용 적절한지
 
-### 2. API 엔드포인트 (신규)
-`src/app/api/admin/email/ai-write/route.ts`
-- POST 핸들러
-- request body: { category, topic?, tone, template }
-- 콘텐츠 소스 파일 읽기 (카테고리별 매핑)
-- 프롬프트 조합 → LLM API 호출은 하지 않음!
-- **대신**: 콘텐츠 소스에서 직접 HTML 뉴스레터를 조합
-  - 카테고리별 소스 파일을 읽고
-  - 구조화된 뉴스레터 HTML 템플릿에 내용 삽입
-  - 제목(subject) + 본문(content) + 참조소스(sources) 반환
-- **주의**: 외부 AI API 호출 없음. 파일 기반 조합으로 구현
+### 3. 컴포넌트 검수
+- `src/components/` 하위 모든 컴포넌트
+- [ ] "use client" 필요한 곳에 있는지
+- [ ] import 누락 없는지
+- [ ] key prop 누락 없는지 (map 렌더링)
+- [ ] 사용되지 않는 import/변수 제거
+- [ ] 접근성 기본 (aria-label, alt 등)
 
-### 소스 파일 경로 (서버에서 읽을 수 있는 경로)
-콘텐츠 소스 파일들은 다음 경로에 있음:
-```
-/Users/smith/Library/Mobile Documents/com~apple~CloudDocs/claude/brand-school/marketing/knowledge/
-  blueprint/
-    01-getting-started/  (campaign-objectives.md, ads-manager-structure.md, advantage-plus-shopping.md)
-    02-targeting/        (audience-targeting.md)
-    03-optimization/     (pixel-and-capi.md, advantage-plus-shopping.md)
-    04-measurement/      (measurement-methodology.md)
-    05-creative/         (creative-best-practices.md)
-  blogs/
-    2026-02-flighted-meta-best-practices.md
-    2026-02-anchour-meta-2026-playbook.md
-```
+### 4. 페이지 검수
+- `src/app/(main)/` 하위 모든 페이지
+- [ ] 권한 체크 (admin 페이지에 admin 체크 있는지)
+- [ ] 로딩/에러/빈 상태 처리
+- [ ] 하드코딩된 더미 데이터 없는지
+- [ ] 날짜/시간 포맷 일관성
 
-### 콘텐츠 조합 로직
-1. 카테고리에 맞는 .md 파일들을 읽음
-2. 각 파일에서 핵심 섹션 추출 (## 헤더 기준)
-3. 뉴스레터 HTML 템플릿에 삽입:
-   - 인사말
-   - 메인 콘텐츠 (소스에서 추출)
-   - CTA (총가치각도기 사용, Q&A 질문 등)
-   - 푸터
-4. topic이 있으면 해당 주제 관련 섹션만 필터링
+### 5. 보안 검수
+- [ ] 서비스 키가 클라이언트에 노출되지 않는지
+- [ ] 환경변수 사용 적절한지
+- [ ] CORS/인증 설정
+- [ ] RLS 정책 점검 (Supabase)
 
-### 3. TipTap 에디터 수정
-`src/components/email/tiptap-editor.tsx`
-- 툴바에 "AI 작성" 버튼 추가 (Sparkles 아이콘)
-- 클릭 시 ai-write-dialog 열림
-- 다이얼로그에서 생성 완료 → editor.commands.setContent(html)로 삽입
+### 6. 디자인 시스템 일관성
+- [ ] Primary 색상: #F75D5D (hover: #E54949) 일관 사용
+- [ ] Pretendard 폰트 로드 확인
+- [ ] light mode only (dark mode 코드 없는지)
+- [ ] 한글 UI 일관성
 
-### 4. 이메일 페이지 수정
-`src/app/(main)/admin/email/page.tsx`
-- AI 작성 결과에서 subject도 받아서 제목 필드에 자동 채우기
+### 7. 성능/최적화
+- [ ] 불필요한 re-render 가능성
+- [ ] 이미지 최적화 (next/image 사용)
+- [ ] 큰 번들 import 체크 (dynamic import 필요한지)
 
-## 뉴스레터 HTML 템플릿 구조
-```html
-<h2>{제목}</h2>
-<p>안녕하세요, 자사몰사관학교입니다.</p>
-<p>{인트로 - 1~2문장}</p>
+## 알려진 버그 (반드시 수정)
+- src/app/api/admin/email/ai-write/route.ts에서 topic이 없을 때 제목이 "[BS CAMP] 블루프린트 - 블루프린트"처럼 카테고리명이 중복됨. firstSectionTitle이 섹션이 없으면 topicLabel(=카테고리명)로 fallback되기 때문. 섹션이 없으면 제목에서 카테고리명만 쓰도록 수정.
 
-<h3>{섹션1 제목}</h3>
-<p>{섹션1 내용}</p>
-<ul>
-  <li>{포인트1}</li>
-  <li>{포인트2}</li>
-  <li>{포인트3}</li>
-</ul>
+## 수정 방법
+- 발견한 이슈를 즉시 수정
+- 수정 불가능한 이슈는 `docs/code-qa-report.md`에 기록
+- 수정 완료 후:
+  1. npm run build
+  2. git add -A && git commit -m "fix: 전체 코드 QA 수정" && git push
+  3. openclaw gateway wake --text "Done: 전체 코드 QA 완료" --mode now
 
-<h3>{섹션2 제목}</h3>
-<p>{섹션2 내용}</p>
-
-<hr />
-<p><strong>총가치각도기로 내 광고 성과를 확인해보세요</strong></p>
-<p>궁금한 점은 Q&A 게시판에 남겨주세요.</p>
-```
-
-## 작업 순서
-1. content-sources 유틸 (소스 파일 읽기)
-2. /api/admin/email/ai-write API
-3. ai-write-dialog.tsx UI
-4. tiptap-editor.tsx 수정 (버튼 추가)
-5. email page.tsx 수정 (제목 자동 채우기)
-6. npm run build
-7. git add -A && git commit -m "feat: 이메일 AI 자동작성" && git push
-8. openclaw gateway wake --text "Done: 이메일 AI 자동작성 완료" --mode now
-
-## 체크리스트
-- [ ] AI 작성 버튼이 에디터 툴바에 보임
-- [ ] 클릭 → 다이얼로그 열림
-- [ ] 카테고리 선택 + 생성 → 에디터에 HTML 삽입
-- [ ] 제목도 자동 채워짐
-- [ ] 소스 파일을 못 읽어도 에러 안 남 (graceful fallback)
-- [ ] npm run build 성공
-- [ ] git push 완료
+## 주의사항
+- UI 변경 X (코드 품질만)
+- 기존 동작 깨뜨리지 않기
+- 확실하지 않으면 수정 대신 리포트에 기록
+- 에이전트팀 사용하지 말 것. 단일 에이전트로 순차 진행 (메모리 절약)

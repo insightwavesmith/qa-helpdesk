@@ -39,20 +39,6 @@ function getActionValue(actions: Action[] | undefined, type: string): number {
   return a ? safeFloat(a.value) : 0;
 }
 
-function getVideoActionValue(arr: Action[] | undefined): number {
-  if (!arr || arr.length === 0) return 0;
-  return safeFloat(arr[0]?.value);
-}
-
-function normalizeRanking(r: string | null | undefined): string {
-  if (!r) return "UNKNOWN";
-  const u = r.toUpperCase();
-  if (u.includes("ABOVE")) return "ABOVE_AVERAGE";
-  if (u.includes("BELOW")) return "BELOW_AVERAGE";
-  if (u === "AVERAGE") return "AVERAGE";
-  return "UNKNOWN";
-}
-
 function round(v: number, d: number): number {
   const m = 10 ** d;
   return Math.round(v * m) / m;

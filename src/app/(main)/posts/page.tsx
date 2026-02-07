@@ -14,7 +14,6 @@ export default async function PostsPage({
 }) {
   const params = await searchParams;
   const page = parseInt(params.page || "1", 10);
-  const category = "notice"; // 공지만 표시
   const search = params.search || "";
 
   // 관리자 여부 확인

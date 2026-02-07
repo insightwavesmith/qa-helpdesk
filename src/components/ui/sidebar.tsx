@@ -387,6 +387,7 @@ function SidebarGroupLabel({
   asChild = false,
   ...props
 }: React.ComponentProps<"div"> & { asChild?: boolean }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Comp: any = asChild ? Slot : "div";
 
   return (
@@ -408,6 +409,7 @@ function SidebarGroupAction({
   asChild = false,
   ...props
 }: React.ComponentProps<"button"> & { asChild?: boolean }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Comp: any = asChild ? Slot : "button";
 
   return (
@@ -497,6 +499,7 @@ function SidebarMenuButton({
   isActive?: boolean;
   tooltip?: string | React.ComponentProps<typeof TooltipContent>;
 } & VariantProps<typeof sidebarMenuButtonVariants>) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Comp: any = asChild ? Slot : "button";
   const { isMobile, state } = useSidebar();
 
@@ -543,6 +546,7 @@ function SidebarMenuAction({
   asChild?: boolean;
   showOnHover?: boolean;
 }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Comp: any = asChild ? Slot : "button";
 
   return (
@@ -594,9 +598,11 @@ function SidebarMenuSkeleton({
 }: React.ComponentProps<"div"> & {
   showIcon?: boolean;
 }) {
+  /* eslint-disable react-hooks/purity -- skeleton width randomization is intentional */
   const width = React.useMemo(() => {
     return `${Math.floor(Math.random() * 40) + 50}%`;
   }, []);
+  /* eslint-enable react-hooks/purity */
 
   return (
     <div
@@ -664,6 +670,7 @@ function SidebarMenuSubButton({
   size?: "sm" | "md";
   isActive?: boolean;
 }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Comp: any = asChild ? Slot : "a";
 
   return (

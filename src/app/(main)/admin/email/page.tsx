@@ -654,6 +654,7 @@ function PreviewFrame({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch 전 loading 표시는 의도적 패턴
     setLoading(true);
     const body: Record<string, unknown> = {
       template: templateType,

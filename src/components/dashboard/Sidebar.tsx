@@ -19,7 +19,6 @@ import {
   Monitor,
   Mail,
   LogOut,
-  User,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 

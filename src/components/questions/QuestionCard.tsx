@@ -23,17 +23,17 @@ const statusConfig: Record<
   open: {
     label: "미답변",
     className:
-      "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400",
+      "bg-orange-100 text-orange-700",
   },
   answered: {
     label: "답변완료",
     className:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
+      "bg-emerald-100 text-emerald-700",
   },
   closed: {
     label: "마감",
     className:
-      "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+      "bg-gray-100 text-gray-600",
   },
 };
 
