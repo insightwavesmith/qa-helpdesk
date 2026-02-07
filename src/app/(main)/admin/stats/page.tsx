@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 async function getStats() {
   const supabase = createServiceClient();
 

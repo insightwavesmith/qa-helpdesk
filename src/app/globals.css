@@ -64,7 +64,7 @@
   --radius: 0.75rem;
 
   /* Primary = BS CAMP Orange */
-  --primary: #E85A2A;
+  --primary: #F75D5D;
   --primary-foreground: #ffffff;
 
   /* Core Colors */
@@ -87,10 +87,10 @@
   /* Borders */
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #E85A2A;
+  --ring: #F75D5D;
 
   /* Charts */
-  --chart-1: #E85A2A;
+  --chart-1: #F75D5D;
   --chart-2: #10b981;
   --chart-3: #f59e0b;
   --chart-4: #8b5cf6;
@@ -99,12 +99,12 @@
   /* Sidebar — white background per v0 redesign */
   --sidebar: #ffffff;
   --sidebar-foreground: #64748b;
-  --sidebar-primary: #E85A2A;
+  --sidebar-primary: #F75D5D;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #f1f5f9;
   --sidebar-accent-foreground: #1a1a1a;
   --sidebar-border: #e2e8f0;
-  --sidebar-ring: #E85A2A;
+  --sidebar-ring: #F75D5D;
 }
 
 /* ── BS CAMP Theme (Dark) ── */
@@ -115,7 +115,7 @@
   --card-foreground: #e2e8f0;
   --popover: #1e293b;
   --popover-foreground: #e2e8f0;
-  --primary: #E85A2A;
+  --primary: #F75D5D;
   --primary-foreground: #ffffff;
   --secondary: #1e293b;
   --secondary-foreground: #e2e8f0;
@@ -126,20 +126,20 @@
   --destructive: #ef4444;
   --border: rgba(255, 255, 255, 0.1);
   --input: rgba(255, 255, 255, 0.1);
-  --ring: #E85A2A;
-  --chart-1: #E85A2A;
+  --ring: #F75D5D;
+  --chart-1: #F75D5D;
   --chart-2: #10b981;
   --chart-3: #f59e0b;
   --chart-4: #a78bfa;
   --chart-5: #ef4444;
   --sidebar: #1e293b;
   --sidebar-foreground: #e2e8f0;
-  --sidebar-primary: #E85A2A;
+  --sidebar-primary: #F75D5D;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: rgba(255, 255, 255, 0.06);
   --sidebar-accent-foreground: #e2e8f0;
   --sidebar-border: transparent;
-  --sidebar-ring: #E85A2A;
+  --sidebar-ring: #F75D5D;
 }
 
 @layer base {
@@ -170,7 +170,7 @@
   transition: all 0.15s ease-out;
 }
 .btn-primary:hover {
-  background-color: #d14e22;
+  background-color: #E54949;
   transform: translateY(-1px);
 }
 .btn-primary:active {
@@ -189,7 +189,7 @@
 
 /* Search focus effect */
 .search-focus:focus-within {
-  box-shadow: 0 0 0 4px rgba(232, 90, 42, 0.1);
+  box-shadow: 0 0 0 4px rgba(247, 93, 93, 0.1);
 }
 
 /* Fade in animation */

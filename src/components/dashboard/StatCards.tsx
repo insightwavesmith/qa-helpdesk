@@ -16,25 +16,27 @@ interface StatCardData {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-const defaultStats: StatCardData[] = [
-  { label: "ROAS", value: "—", change: 0, icon: Target },
-  { label: "총 매출", value: "—", change: 0, icon: DollarSign },
-  { label: "광고비", value: "—", change: 0, icon: ChartColumn },
-  { label: "CTR", value: "—", change: 0, icon: MousePointerClick },
-  { label: "CPC", value: "—", change: 0, icon: DollarSign },
+const placeholderStats: StatCardData[] = [
+  { label: "ROAS", value: "", change: 0, icon: Target },
+  { label: "총 매출", value: "", change: 0, icon: DollarSign },
+  { label: "광고비", value: "", change: 0, icon: ChartColumn },
+  { label: "CTR", value: "", change: 0, icon: MousePointerClick },
+  { label: "CPC", value: "", change: 0, icon: DollarSign },
 ];
 
 interface StatCardsProps {
   stats?: StatCardData[];
 }
 
-export function StatCards({ stats = defaultStats }: StatCardsProps) {
+export function StatCards({ stats }: StatCardsProps) {
+  const items = stats ?? placeholderStats;
+  const isEmpty = !stats;
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-      {stats.map((stat) => {
+      {items.map((stat) => {
         const Icon = stat.icon;
         const isPositive = stat.change > 0;
-        // For CPC and 광고비, negative change is actually good
         const isGoodChange =
           stat.label === "CPC" || stat.label === "광고비"
             ? stat.change < 0
@@ -51,15 +53,19 @@ export function StatCards({ stats = defaultStats }: StatCardsProps) {
                   <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     {stat.label}
                   </p>
-                  <p className="text-2xl font-bold text-card-foreground">
-                    {stat.value}
-                  </p>
+                  {isEmpty ? (
+                    <p className="text-sm text-muted-foreground">데이터 없음</p>
+                  ) : (
+                    <p className="text-2xl font-bold text-card-foreground">
+                      {stat.value}
+                    </p>
+                  )}
                 </div>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                  <Icon className="h-5 w-5 text-primary" />
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${isEmpty ? "bg-muted" : "bg-primary/10"}`}>
+                  <Icon className={`h-5 w-5 ${isEmpty ? "text-muted-foreground" : "text-primary"}`} />
                 </div>
               </div>
-              {stat.value !== "\u2014" && stat.change !== 0 && (
+              {!isEmpty && stat.change !== 0 && (
                 <div className="mt-3 flex items-center gap-1.5">
                   {isPositive ? (
                     <TrendingUp
@@ -83,7 +89,7 @@ export function StatCards({ stats = defaultStats }: StatCardsProps) {
                     {stat.change}%
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    vs last period
+                    전기 대비
                   </span>
                 </div>
               )}
