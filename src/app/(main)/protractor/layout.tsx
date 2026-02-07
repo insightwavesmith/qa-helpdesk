@@ -2,7 +2,12 @@ import { redirect } from "next/navigation";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/types";
 
-const ALLOWED_ROLES: UserRole[] = ["student", "alumni", "admin"];
+/**
+ * 접근 제어:
+ * - lead → /pending 리다이렉트
+ * - 그 외 모든 role → 통과 (page.tsx에서 실제/샘플 분기)
+ */
+const BLOCKED_ROLES: UserRole[] = ["lead"];
 
 export default async function ProtractorLayout({
   children,
@@ -25,8 +30,12 @@ export default async function ProtractorLayout({
     .eq("id", user.id)
     .single();
 
-  if (!profile || !ALLOWED_ROLES.includes(profile.role)) {
+  if (!profile) {
     redirect("/dashboard");
+  }
+
+  if (BLOCKED_ROLES.includes(profile.role)) {
+    redirect("/pending");
   }
 
   return <>{children}</>;
