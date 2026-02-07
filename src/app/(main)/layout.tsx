@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { StudentHeader } from "@/components/layout/student-header";
 import { getPendingAnswersCount } from "@/actions/answers";
@@ -19,14 +20,47 @@ export default async function MainLayout({
     redirect("/login");
   }
 
-  const serviceClient = createServiceClient();
-  const { data: profile } = (await serviceClient
-    .from("profiles")
-    .select("name, role, email")
-    .eq("id", user.id)
-    .single()) as {
-    data: { name: string; role: string; email: string } | null;
-  };
+  // 프로필 캐싱: 쿠키 기반 5분 TTL
+  const cookieStore = await cookies();
+  const cachedProfileCookie = cookieStore.get("cached_profile");
+  let profile: { name: string; role: string; email: string } | null = null;
+
+  if (cachedProfileCookie) {
+    try {
+      const cached = JSON.parse(cachedProfileCookie.value);
+      if (cached.ts && Date.now() - cached.ts <= 300_000) {
+        profile = { name: cached.name, role: cached.role, email: cached.email };
+      }
+    } catch {
+      // 파싱 실패 시 DB에서 다시 조회
+    }
+  }
+
+  if (!profile) {
+    const serviceClient = createServiceClient();
+    const { data: freshProfile } = (await serviceClient
+      .from("profiles")
+      .select("name, role, email")
+      .eq("id", user.id)
+      .single()) as {
+      data: { name: string; role: string; email: string } | null;
+    };
+    profile = freshProfile;
+
+    if (profile) {
+      cookieStore.set("cached_profile", JSON.stringify({
+        name: profile.name,
+        role: profile.role,
+        email: profile.email,
+        ts: Date.now(),
+      }), {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 300,
+      });
+    }
+  }
 
   // lead는 아직 승인되지 않은 상태 → 대기 페이지로
   if (profile?.role === "lead") {

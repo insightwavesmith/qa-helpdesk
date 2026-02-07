@@ -9,7 +9,11 @@ import {
   Users,
 } from "lucide-react";
 import { StatCards } from "@/components/dashboard/StatCards";
-import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
+import dynamic from "next/dynamic";
+const PerformanceChart = dynamic(
+  () => import("@/components/dashboard/PerformanceChart").then(m => m.PerformanceChart),
+  { ssr: false, loading: () => <div className="h-[350px] rounded-lg bg-muted animate-pulse" /> }
+);
 import { ChannelBreakdown } from "@/components/dashboard/ChannelBreakdown";
 import { CampaignTable } from "@/components/dashboard/CampaignTable";
 
