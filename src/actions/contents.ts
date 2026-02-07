@@ -27,6 +27,47 @@ function escapeHtml(str: string): string {
     .replace(/"/g, "&quot;");
 }
 
+/** 간단한 마크다운→HTML 변환 (TipTap 호환) */
+function mdToHtml(md: string): string {
+  return md
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return "";
+      // headings
+      if (trimmed.startsWith("### ")) return `<h3>${escapeHtml(trimmed.slice(4))}</h3>`;
+      if (trimmed.startsWith("## ")) return `<h2>${escapeHtml(trimmed.slice(3))}</h2>`;
+      if (trimmed.startsWith("# ")) return `<h1>${escapeHtml(trimmed.slice(2))}</h1>`;
+      // list items
+      if (/^[-*]\s/.test(trimmed)) {
+        const text = escapeHtml(trimmed.slice(2));
+        return `<li>${applyInlineFormatting(text)}</li>`;
+      }
+      // paragraph
+      return `<p>${applyInlineFormatting(escapeHtml(trimmed))}</p>`;
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+/** 인라인 마크다운 서식 변환 (bold, italic) */
+function applyInlineFormatting(html: string): string {
+  return html
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+}
+
+/** 마크다운 기호 제거 (요약용) */
+function stripMarkdown(md: string): string {
+  return md
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/^[-*]\s+/gm, "")
+    .replace(/\n+/g, " ")
+    .trim();
+}
+
 export async function getContents({
   type,
   category,
@@ -256,40 +297,36 @@ export async function generateNewsletterFromContents(contentIds: string[]) {
       const catLabel = categoryLabels[c.category] || c.category;
 
       if (contentType === "info") {
-        const summaryText = escapeHtml(c.summary || c.body_md.slice(0, 200));
-        return `<table style="width:100%;border:1px solid #eee;border-radius:8px;padding:16px">
-  <tr><td style="color:#666;font-size:12px">${escapeHtml(catLabel)}</td></tr>
-  <tr><td style="font-size:18px;font-weight:bold;padding:8px 0">${escapeHtml(c.title)}</td></tr>
-  <tr><td style="color:#333;font-size:14px;line-height:1.6">${summaryText}</td></tr>
-  <tr><td style="padding-top:12px">
-    <a href="${siteUrl}/posts?content_id=${c.id}" style="background:#F75D5D;color:white;padding:8px 20px;border-radius:4px;text-decoration:none">
-      자세히 보기
-    </a>
-  </td></tr>
-</table>`;
+        const summaryHtml = c.summary
+          ? `<p style="color:#333;font-size:14px;line-height:1.6;margin:0">${escapeHtml(c.summary)}</p>`
+          : `<p style="color:#333;font-size:14px;line-height:1.6;margin:0">${escapeHtml(stripMarkdown(c.body_md).slice(0, 200))}</p>`;
+        return `<div style="border:1px solid #eee;border-radius:8px;padding:16px;margin-bottom:16px">
+  <p style="color:#666;font-size:12px;margin:0">${escapeHtml(catLabel)}</p>
+  <h3 style="font-size:18px;font-weight:bold;margin:8px 0">${escapeHtml(c.title)}</h3>
+  ${summaryHtml}
+  <p style="margin-top:12px"><a href="${siteUrl}/posts?content_id=${c.id}" style="background:#F75D5D;color:white;padding:8px 20px;border-radius:4px;text-decoration:none">자세히 보기</a></p>
+</div>`;
       }
 
       if (contentType === "result") {
-        const bodyText = escapeHtml(c.body_md);
-        return `<table style="width:100%;background:#f8f9fa;border-radius:8px;padding:16px">
-  <tr><td style="color:#F75D5D;font-size:12px;font-weight:bold">수강생 성과</td></tr>
-  <tr><td style="font-size:18px;font-weight:bold;padding:8px 0">${escapeHtml(c.title)}</td></tr>
-  <tr><td style="color:#333;font-size:14px;line-height:1.6">${bodyText}</td></tr>
-</table>`;
+        const bodyHtml = mdToHtml(c.body_md);
+        return `<div style="background:#f8f9fa;border-radius:8px;padding:16px;margin-bottom:16px">
+  <p style="color:#F75D5D;font-size:12px;font-weight:bold;margin:0">수강생 성과</p>
+  <h3 style="font-size:18px;font-weight:bold;margin:8px 0">${escapeHtml(c.title)}</h3>
+  <div style="color:#333;font-size:14px;line-height:1.6">${bodyHtml}</div>
+</div>`;
       }
 
       // promo
-      const promoDesc = escapeHtml(c.summary || c.body_md.slice(0, 150));
+      const promoDesc = c.summary
+        ? escapeHtml(c.summary)
+        : escapeHtml(stripMarkdown(c.body_md).slice(0, 150));
       const ctaUrl = c.source_ref || siteUrl;
-      return `<table style="width:100%;background:#FFF5F5;border:2px solid #F75D5D;border-radius:8px;padding:20px;text-align:center">
-  <tr><td style="font-size:20px;font-weight:bold;color:#1a1a2e">${escapeHtml(c.title)}</td></tr>
-  <tr><td style="color:#666;font-size:14px;padding:8px 0">${promoDesc}</td></tr>
-  <tr><td style="padding-top:12px">
-    <a href="${ctaUrl}" style="background:#F75D5D;color:white;padding:12px 32px;border-radius:4px;text-decoration:none;font-weight:bold">
-      신청하기
-    </a>
-  </td></tr>
-</table>`;
+      return `<div style="background:#FFF5F5;border:2px solid #F75D5D;border-radius:8px;padding:20px;text-align:center;margin-bottom:16px">
+  <h3 style="font-size:20px;font-weight:bold;color:#1a1a2e;margin:0">${escapeHtml(c.title)}</h3>
+  <p style="color:#666;font-size:14px;margin:8px 0">${promoDesc}</p>
+  <p style="margin-top:12px"><a href="${ctaUrl}" style="background:#F75D5D;color:white;padding:12px 32px;border-radius:4px;text-decoration:none;font-weight:bold">신청하기</a></p>
+</div>`;
     })
     .join("\n\n");
 
