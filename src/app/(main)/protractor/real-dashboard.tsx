@@ -16,15 +16,10 @@ import {
   PeriodSelector,
   SummaryCards,
   DiagnosticPanel,
+  PerformanceTrendChart,
   ConversionFunnel,
   DailyMetricsTable,
 } from "@/components/protractor";
-
-import dynamic from "next/dynamic";
-const PerformanceTrendChart = dynamic(
-  () => import("@/components/protractor/PerformanceTrendChart").then(m => m.PerformanceTrendChart),
-  { ssr: false, loading: () => <div className="h-[350px] rounded-lg bg-muted animate-pulse" /> }
-);
 
 import {
   aggregateSummary,
