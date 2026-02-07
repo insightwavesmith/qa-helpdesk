@@ -28,6 +28,7 @@ import {
   Minus,
   Palette,
   FolderOpen,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +36,7 @@ interface TipTapEditorProps {
   content: string;
   onChange: (html: string) => void;
   placeholder?: string;
+  onAiWrite?: () => void;
 }
 
 const PRESET_COLORS = [
@@ -88,6 +90,7 @@ export default function TipTapEditor({
   content,
   onChange,
   placeholder = "이메일 내용을 작성하세요...",
+  onAiWrite,
 }: TipTapEditorProps) {
   const [showColors, setShowColors] = useState(false);
   const colorRef = useRef<HTMLDivElement>(null);
@@ -454,6 +457,19 @@ export default function TipTapEditor({
         </div>
 
         <ToolbarSeparator />
+
+        {/* AI 작성 */}
+        {onAiWrite && (
+          <>
+            <ToolbarButton onClick={onAiWrite} title="AI 작성">
+              <Sparkles className="size-4" />
+            </ToolbarButton>
+            <span className="text-xs text-[#F75D5D] font-medium cursor-pointer" onClick={onAiWrite}>
+              AI 작성
+            </span>
+            <ToolbarSeparator />
+          </>
+        )}
 
         {/* Load button (disabled, for future use) */}
         <ToolbarButton onClick={() => {}} disabled title="콘텐츠 불러오기">

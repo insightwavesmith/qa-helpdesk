@@ -1,0 +1,169 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { getContentSources, type ContentSection } from "@/lib/content-sources";
+
+const CATEGORY_LABELS: Record<string, string> = {
+  blueprint: "블루프린트",
+  trend: "트렌드",
+  webinar: "웨비나",
+  tips: "실전 팁",
+  custom: "뉴스레터",
+};
+
+const TONE_INTROS: Record<string, (topic: string) => string> = {
+  educational: (topic) => `오늘은 ${topic}에 대해 알아보겠습니다.`,
+  casual: (topic) => `안녕하세요! 이번 주 ${topic} 소식을 전해드려요.`,
+  urgent: (topic) =>
+    `지금 바로 확인하세요! ${topic}에 대한 중요 업데이트입니다.`,
+};
+
+const MAX_SECTIONS = 3;
+
+function buildSectionHtml(section: ContentSection): string {
+  const lines = section.content.split("\n").filter((l) => l.trim());
+  const bullets: string[] = [];
+  const paragraphs: string[] = [];
+
+  for (const line of lines) {
+    const bulletMatch = line.match(/^[-*]\s+(.+)/);
+    if (bulletMatch) {
+      bullets.push(`  <li>${bulletMatch[1]}</li>`);
+    } else {
+      paragraphs.push(`<p>${line}</p>`);
+    }
+  }
+
+  let html = `<h3>${section.title}</h3>\n`;
+  html += paragraphs.join("\n");
+  if (bullets.length > 0) {
+    html += `\n<ul>\n${bullets.join("\n")}\n</ul>`;
+  }
+
+  return html;
+}
+
+function buildWebinarHtml(): string {
+  return `<h3>다가오는 웨비나 안내</h3>
+<p>BS CAMP에서 준비한 실전 광고 웨비나에 참여해보세요.</p>
+<ul>
+  <li>메타 광고 최적화 전략 웨비나</li>
+  <li>자사몰 퍼포먼스 마케팅 실전편</li>
+  <li>참가 신청은 BS CAMP 홈페이지에서 가능합니다.</li>
+</ul>
+<p><strong>웨비나 참가 시 총가치각도기 분석 리포트를 무료로 제공해드립니다.</strong></p>`;
+}
+
+function buildNewsletterHtml(
+  title: string,
+  intro: string,
+  sections: ContentSection[]
+): string {
+  const sectionHtmls = sections
+    .slice(0, MAX_SECTIONS)
+    .map(buildSectionHtml)
+    .join("\n\n");
+
+  const bodyContent = sectionHtmls || "<p>아직 준비된 콘텐츠가 없습니다. 곧 업데이트 예정입니다.</p>";
+
+  return `<h2>${title}</h2>
+<p>안녕하세요, 자사몰사관학교입니다.</p>
+<p>${intro}</p>
+
+${bodyContent}
+
+<hr />
+<p><strong>총가치각도기로 내 광고 성과를 확인해보세요</strong></p>
+<p>궁금한 점은 Q&amp;A 게시판에 남겨주세요.</p>`;
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    // 인증 + admin 권한 확인
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "인증이 필요합니다." },
+        { status: 401 }
+      );
+    }
+
+    const svc = createServiceClient();
+    const { data: profile } = await svc
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.role !== "admin") {
+      return NextResponse.json(
+        { error: "관리자 권한이 필요합니다." },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const { category, topic, tone } = body as {
+      category: string;
+      topic?: string;
+      tone: string;
+      template?: string;
+    };
+
+    if (!category) {
+      return NextResponse.json(
+        { error: "카테고리는 필수입니다." },
+        { status: 400 }
+      );
+    }
+
+    const toneKey = tone || "educational";
+    const topicLabel = topic || CATEGORY_LABELS[category] || category;
+    const introFn = TONE_INTROS[toneKey] || TONE_INTROS.educational;
+    const intro = introFn(topicLabel);
+
+    let contentHtml: string;
+    let sources: string[] = [];
+    let firstSectionTitle: string;
+
+    if (category === "webinar") {
+      contentHtml = buildWebinarHtml();
+      firstSectionTitle = "다가오는 웨비나 안내";
+    } else {
+      const sections = await getContentSources(category, topic);
+      const selected = sections.slice(0, MAX_SECTIONS);
+      sources = [...new Set(selected.map((s) => s.source))];
+      firstSectionTitle = selected[0]?.title || topicLabel;
+
+      const title = `${CATEGORY_LABELS[category] || category} - ${firstSectionTitle}`;
+      contentHtml = buildNewsletterHtml(title, intro, selected);
+    }
+
+    if (category === "webinar") {
+      const title = `웨비나 안내 - ${topicLabel}`;
+      contentHtml = buildNewsletterHtml(title, intro, []);
+      // 웨비나 본문을 직접 삽입
+      contentHtml = contentHtml.replace(
+        "<p>아직 준비된 콘텐츠가 없습니다. 곧 업데이트 예정입니다.</p>",
+        buildWebinarHtml()
+      );
+    }
+
+    const subject = `[BS CAMP] ${CATEGORY_LABELS[category] || category} - ${firstSectionTitle}`;
+
+    return NextResponse.json({
+      subject,
+      content: contentHtml,
+      sources,
+    });
+  } catch (error) {
+    console.error("AI write error:", error);
+    return NextResponse.json(
+      { error: "콘텐츠 생성 중 오류가 발생했습니다." },
+      { status: 500 }
+    );
+  }
+}

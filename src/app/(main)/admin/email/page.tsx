@@ -38,6 +38,7 @@ import { Send, Eye, Loader2, Users, Mail, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
+import AiWriteDialog from "@/components/email/ai-write-dialog";
 
 const TipTapEditor = dynamic(() => import("@/components/email/tiptap-editor"), {
   ssr: false,
@@ -87,6 +88,7 @@ export default function AdminEmailPage() {
   const [sending, setSending] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [templateType, setTemplateType] = useState<TemplateType>("newsletter");
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
 
   // Newsletter fields
   const [html, setHtml] = useState("");
@@ -411,6 +413,17 @@ export default function AdminEmailPage() {
                 content={html}
                 onChange={setHtml}
                 placeholder="이메일 내용을 작성하세요..."
+                onAiWrite={() => setAiDialogOpen(true)}
+              />
+              <AiWriteDialog
+                open={aiDialogOpen}
+                onOpenChange={setAiDialogOpen}
+                onGenerated={(result) => {
+                  setHtml(result.content);
+                  setSubject(result.subject);
+                  setAiDialogOpen(false);
+                  toast.success("AI 뉴스레터가 생성되었습니다.");
+                }}
               />
             </div>
           )}
