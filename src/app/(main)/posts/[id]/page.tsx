@@ -1,20 +1,26 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Eye, ThumbsUp, Pin } from "lucide-react";
-import { getPostById, getCommentsByPostId } from "@/actions/posts";
+import { ArrowLeft } from "lucide-react";
+import { getPostById, getCommentsByPostId, getPosts } from "@/actions/posts";
+import { PostHero } from "@/components/posts/post-hero";
+import { PostToc } from "@/components/posts/post-toc";
+import { PostBody } from "@/components/posts/post-body";
+import { PostRelated } from "@/components/posts/post-related";
+import { NewsletterCta } from "@/components/posts/newsletter-cta";
 import { CommentSection } from "./comment-section";
 
-const categoryLabels: Record<string, string> = {
-  info: "정보",
-  notice: "공지",
-  webinar: "웨비나",
+const categoryConfig: Record<string, { label: string; bg: string; text: string }> = {
+  info: { label: "교육", bg: "#FFF5F5", text: "#F75D5D" },
+  notice: { label: "소식", bg: "#EFF6FF", text: "#3B82F6" },
+  webinar: { label: "웨비나", bg: "#FFF7ED", text: "#F97316" },
 };
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}.${m}.${day}`;
 }
 
 export default async function PostDetailPage({
@@ -31,68 +37,65 @@ export default async function PostDetailPage({
 
   const { data: comments } = await getCommentsByPostId(id);
 
+  // 관련 글: 같은 카테고리 글 3개
+  const { data: relatedRaw } = await getPosts({
+    page: 1,
+    pageSize: 4,
+    category: post.category,
+  });
+  const relatedPosts = relatedRaw
+    .filter((p: { id: string }) => p.id !== post.id)
+    .slice(0, 3);
+
+  const catConfig = categoryConfig[post.category] || categoryConfig.info;
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-4xl mx-auto">
       {/* Back */}
-      <Button variant="ghost" size="sm" asChild className="-ml-2">
-        <Link href="/posts">
-          <ArrowLeft className="mr-1.5 h-4 w-4" />
-          정보공유 목록
-        </Link>
-      </Button>
+      <Link
+        href="/posts"
+        className="inline-flex items-center gap-1.5 text-sm text-[#666666] hover:text-[#F75D5D] transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        목록으로 돌아가기
+      </Link>
 
-      {/* Article — Substack reading style */}
-      <article>
-        {/* Category + pin */}
-        <div className="flex items-center gap-2 mb-3">
-          {post.is_pinned && (
-            <Badge
-              variant="destructive"
-              className="gap-1 text-[10px] px-1.5 py-0 h-5 rounded-full"
-            >
-              <Pin className="h-2.5 w-2.5" />
-              고정
-            </Badge>
-          )}
-          <span className="text-sm font-medium text-[#F75D5D]">
-            {categoryLabels[post.category] || post.category}
-          </span>
-        </div>
+      {/* Category Badge */}
+      <div>
+        <span
+          className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded"
+          style={{ backgroundColor: catConfig.bg, color: catConfig.text }}
+        >
+          {catConfig.label}
+        </span>
+      </div>
 
-        {/* Title */}
-        <h1 className="text-2xl sm:text-3xl font-bold leading-tight text-gray-900">
-          {post.title}
-        </h1>
+      {/* Title */}
+      <h1 className="text-2xl sm:text-[32px] font-bold text-[#1a1a2e] leading-tight">
+        {post.title}
+      </h1>
 
-        {/* Author & date */}
-        <div className="flex items-center gap-3 mt-4 pb-6 border-b border-gray-200">
-          <div className="flex items-center justify-center h-9 w-9 rounded-full bg-[#FEF2F2] text-[#F75D5D] font-semibold text-sm">
-            {((post.author as { name: string } | null)?.name || "관")[0]}
-          </div>
-          <div>
-            <p className="text-sm font-medium">
-              {(post.author as { name: string } | null)?.name || "관리자"}
-            </p>
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <span>{formatDate(post.created_at)}</span>
-              <span>·</span>
-              <span className="flex items-center gap-0.5">
-                <Eye className="h-3 w-3" />
-                {post.view_count}
-              </span>
-              <span className="flex items-center gap-0.5">
-                <ThumbsUp className="h-3 w-3" />
-                {post.like_count}
-              </span>
-            </div>
-          </div>
-        </div>
+      {/* Meta */}
+      <div className="flex items-center gap-2 text-sm text-[#999999]">
+        <span>{formatDate(post.created_at)}</span>
+        <span>·</span>
+        <span>{catConfig.label}</span>
+      </div>
 
-        {/* Content body */}
-        <div className="mt-6 text-base leading-[1.8] whitespace-pre-wrap text-gray-900/90">
-          {post.content}
-        </div>
-      </article>
+      {/* Hero Banner */}
+      <PostHero title={post.title} />
+
+      {/* TOC */}
+      <PostToc content={post.content} />
+
+      {/* Body */}
+      <PostBody content={post.content} />
+
+      {/* Related Posts */}
+      <PostRelated posts={relatedPosts} />
+
+      {/* Newsletter CTA */}
+      <NewsletterCta />
 
       {/* Comments */}
       <CommentSection postId={id} initialComments={comments} />

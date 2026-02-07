@@ -1,0 +1,116 @@
+.post-body {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #333333;
+}
+
+.post-body h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-top: 48px;
+  margin-bottom: 16px;
+  padding-top: 24px;
+  border-top: 1px solid #eeeeee;
+  color: #1a1a2e;
+}
+
+.post-body h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-top: 32px;
+  margin-bottom: 12px;
+  color: #1a1a2e;
+}
+
+.post-body p {
+  margin-bottom: 16px;
+}
+
+.post-body blockquote {
+  border-left: 4px solid #F75D5D;
+  background: #FFF5F5;
+  padding: 16px;
+  margin: 16px 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.post-body blockquote p {
+  margin-bottom: 0;
+}
+
+.post-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  border: 1px solid #eeeeee;
+}
+
+.post-body table th {
+  background: #f9fafb;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  border: 1px solid #eeeeee;
+}
+
+.post-body table td {
+  padding: 12px;
+  border: 1px solid #eeeeee;
+}
+
+.post-body pre {
+  background: #f1f5f9;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 16px 0;
+}
+
+.post-body pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.post-body code {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.post-body a {
+  color: #F75D5D;
+  text-decoration: underline;
+}
+
+.post-body a:hover {
+  color: #E54949;
+}
+
+.post-body ul,
+.post-body ol {
+  padding-left: 24px;
+  margin-bottom: 16px;
+}
+
+.post-body li {
+  margin-bottom: 8px;
+}
+
+.post-body img {
+  width: 100%;
+  border-radius: 8px;
+  margin: 16px 0;
+}
+
+.post-body hr {
+  border: none;
+  border-top: 1px solid #eeeeee;
+  margin: 32px 0;
+}
+
+.post-body strong {
+  font-weight: 700;
+  color: #1a1a2e;
+}
