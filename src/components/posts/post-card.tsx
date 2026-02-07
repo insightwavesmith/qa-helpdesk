@@ -49,15 +49,13 @@ function CategoryBadge({ category }: { category: string }) {
 }
 
 function Thumbnail({ title, category }: { title: string; category: string }) {
-  const config = categoryConfig[category] || categoryConfig.info;
   return (
-    <div
-      className={`w-full aspect-video rounded-lg bg-gradient-to-br ${config.gradient} flex items-center justify-center p-6`}
-    >
-      <p className="text-white font-bold text-base text-center line-clamp-3 leading-snug">
-        {title}
-      </p>
-    </div>
+    <img
+      src={`/api/og?title=${encodeURIComponent(title)}&category=${encodeURIComponent(category)}`}
+      alt={title}
+      className="w-full aspect-video rounded-lg object-cover"
+      loading="lazy"
+    />
   );
 }
 

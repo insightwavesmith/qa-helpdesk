@@ -83,7 +83,7 @@ export default async function PostDetailPage({
       </div>
 
       {/* Hero Banner */}
-      <PostHero title={post.title} />
+      <PostHero title={post.title} category={post.category} />
 
       {/* TOC */}
       <PostToc content={post.content} />

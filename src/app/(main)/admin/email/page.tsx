@@ -50,6 +50,18 @@ const TipTapEditor = dynamic(() => import("@/components/email/tiptap-editor"), {
   ),
 });
 
+const EmailSplitEditor = dynamic(
+  () => import("@/components/email/email-split-editor"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[600px] rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center text-sm text-gray-400">
+        에디터 로딩 중...
+      </div>
+    ),
+  }
+);
+
 type TargetGroup = "all_leads" | "all_students" | "all_members" | "custom";
 type TemplateType = "newsletter" | "webinar" | "performance";
 
@@ -409,7 +421,7 @@ export default function AdminEmailPage() {
 
           {/* 뉴스레터 필드 */}
           {templateType === "newsletter" && (
-            <div className="space-y-1.5">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-[13px] font-medium">본문</label>
                 <Button
@@ -421,10 +433,10 @@ export default function AdminEmailPage() {
                   콘텐츠에서 가져오기
                 </Button>
               </div>
-              <TipTapEditor
+              <EmailSplitEditor
                 content={html}
                 onChange={setHtml}
-                placeholder="이메일 내용을 작성하세요..."
+                subject={subject}
                 onAiWrite={() => setAiDialogOpen(true)}
               />
               <AiWriteDialog
@@ -542,12 +554,14 @@ export default function AdminEmailPage() {
           {/* 버튼 */}
           <div className="flex gap-3 pt-2">
             <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" disabled={!isFormValid()}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  미리보기
-                </Button>
-              </DialogTrigger>
+              {templateType !== "newsletter" && (
+                <DialogTrigger asChild>
+                  <Button variant="outline" disabled={!isFormValid()}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    미리보기
+                  </Button>
+                </DialogTrigger>
+              )}
               <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{subject || "(제목 없음)"}</DialogTitle>
