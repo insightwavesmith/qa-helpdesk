@@ -36,7 +36,17 @@ import {
 } from "@/components/ui/dialog";
 import { Send, Eye, Loader2, Users, Mail, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
+
+const TipTapEditor = dynamic(() => import("@/components/email/tiptap-editor"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[460px] rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center text-sm text-gray-400">
+      에디터 로딩 중...
+    </div>
+  ),
+});
 
 type TargetGroup = "all_leads" | "all_students" | "all_members" | "custom";
 type TemplateType = "newsletter" | "webinar" | "performance";
@@ -396,15 +406,11 @@ export default function AdminEmailPage() {
           {/* 뉴스레터 필드 */}
           {templateType === "newsletter" && (
             <div className="space-y-1.5">
-              <label className="text-[13px] font-medium">
-                본문 (HTML)
-              </label>
-              <Textarea
-                value={html}
-                onChange={(e) => setHtml(e.target.value)}
-                placeholder="<h2>안녕하세요!</h2><p>BS CAMP 뉴스레터입니다.</p>"
-                rows={12}
-                className="font-mono text-[13px]"
+              <label className="text-[13px] font-medium">본문</label>
+              <TipTapEditor
+                content={html}
+                onChange={setHtml}
+                placeholder="이메일 내용을 작성하세요..."
               />
             </div>
           )}
