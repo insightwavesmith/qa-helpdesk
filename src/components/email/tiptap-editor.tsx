@@ -95,6 +95,11 @@ export default function TipTapEditor({
   const [showColors, setShowColors] = useState(false);
   const colorRef = useRef<HTMLDivElement>(null);
 
+  // 프로그래밍적 setContent와 사용자 편집을 구분하여
+  // 가져온 HTML(인라인 스타일 포함)이 onChange로 덮어씌워지는 것을 방지
+  const isProgrammaticUpdate = useRef(false);
+  const lastSyncedContent = useRef("");
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -115,6 +120,10 @@ export default function TipTapEditor({
     ],
     content,
     onUpdate: ({ editor: e }) => {
+      if (isProgrammaticUpdate.current) {
+        isProgrammaticUpdate.current = false;
+        return;
+      }
       onChange(e.getHTML());
     },
     editorProps: {
@@ -124,11 +133,14 @@ export default function TipTapEditor({
     },
   });
 
-  // Sync editor content when parent resets html (e.g. after send)
+  // Sync editor content when parent resets html (e.g. after send, import)
   useEffect(() => {
     if (!editor) return;
+    if (content === lastSyncedContent.current) return;
+    lastSyncedContent.current = content;
     const currentHtml = editor.getHTML();
     if (content !== currentHtml) {
+      isProgrammaticUpdate.current = true;
       editor.commands.setContent(content || "");
     }
   }, [content, editor]);
