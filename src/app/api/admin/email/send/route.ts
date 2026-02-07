@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
       html,
       template,
       templateProps,
+      attachments,
     } = body as {
       target: "all_leads" | "all_students" | "all_members" | "custom";
       customEmails?: string[];
@@ -62,6 +63,7 @@ export async function POST(request: NextRequest) {
       html?: string;
       template?: TemplateName;
       templateProps?: Record<string, string>;
+      attachments?: { filename: string; url: string; size: number }[];
     };
 
     if (!subject) {
@@ -180,6 +182,12 @@ export async function POST(request: NextRequest) {
               to: recipient.email,
               subject,
               html: fullHtml,
+              ...(attachments && attachments.length > 0 && {
+                attachments: attachments.map((a) => ({
+                  filename: a.filename,
+                  path: a.url,
+                })),
+              }),
             });
 
             await svc.from("email_sends").insert({

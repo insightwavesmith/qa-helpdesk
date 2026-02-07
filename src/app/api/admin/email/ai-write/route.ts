@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { getContentSources, type ContentSection } from "@/lib/content-sources";
+
+interface ContentSection {
+  title: string;
+  content: string;
+  source: string;
+}
 
 const CATEGORY_LABELS: Record<string, string> = {
   blueprint: "블루프린트",
@@ -138,7 +143,27 @@ export async function POST(request: NextRequest) {
         buildWebinarHtml()
       );
     } else {
-      const sections = await getContentSources(category, topic);
+      // Query contents from DB instead of local files
+      let query = svc
+        .from("contents")
+        .select("*")
+        .eq("status", "ready");
+      if (category && category !== "custom") {
+        query = query.eq("category", category);
+      }
+      if (topic) {
+        query = query.or(
+          `title.ilike.%${topic}%,body_md.ilike.%${topic}%`
+        );
+      }
+      const { data: contents } = await query.limit(MAX_SECTIONS);
+
+      const sections: ContentSection[] = (contents || []).map((c) => ({
+        title: c.title,
+        content: c.body_md,
+        source: c.source_ref || c.category,
+      }));
+
       const selected = sections.slice(0, MAX_SECTIONS);
       sources = [...new Set(selected.map((s) => s.source))];
       firstSectionTitle = selected[0]?.title || "";

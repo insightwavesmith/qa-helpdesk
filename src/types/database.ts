@@ -259,6 +259,7 @@ export interface Database {
           published_at: string | null;
           view_count: number;
           like_count: number;
+          content_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -273,6 +274,7 @@ export interface Database {
           published_at?: string | null;
           view_count?: number;
           like_count?: number;
+          content_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -287,6 +289,7 @@ export interface Database {
           published_at?: string | null;
           view_count?: number;
           like_count?: number;
+          content_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -914,6 +917,148 @@ export interface Database {
           [key: string]: unknown;
         };
         Relationships: [];
+      };
+      contents: {
+        Row: {
+          id: string;
+          title: string;
+          body_md: string;
+          summary: string | null;
+          thumbnail_url: string | null;
+          category: string;
+          tags: string[];
+          status: string;
+          source_type: string | null;
+          source_ref: string | null;
+          source_hash: string | null;
+          author_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          body_md: string;
+          summary?: string | null;
+          thumbnail_url?: string | null;
+          category?: string;
+          tags?: string[];
+          status?: string;
+          source_type?: string | null;
+          source_ref?: string | null;
+          source_hash?: string | null;
+          author_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          body_md?: string;
+          summary?: string | null;
+          thumbnail_url?: string | null;
+          category?: string;
+          tags?: string[];
+          status?: string;
+          source_type?: string | null;
+          source_ref?: string | null;
+          source_hash?: string | null;
+          author_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      distributions: {
+        Row: {
+          id: string;
+          content_id: string;
+          channel: string;
+          channel_ref: string | null;
+          rendered_title: string | null;
+          rendered_body: string | null;
+          status: string;
+          distributed_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          content_id: string;
+          channel: string;
+          channel_ref?: string | null;
+          rendered_title?: string | null;
+          rendered_body?: string | null;
+          status?: string;
+          distributed_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          content_id?: string;
+          channel?: string;
+          channel_ref?: string | null;
+          rendered_title?: string | null;
+          rendered_body?: string | null;
+          status?: string;
+          distributed_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "distributions_content_id_fkey";
+            columns: ["content_id"];
+            isOneToOne: false;
+            referencedRelation: "contents";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      email_logs: {
+        Row: {
+          id: string;
+          content_id: string | null;
+          subject: string;
+          template: string;
+          html_body: string;
+          recipient_count: number;
+          status: string;
+          sent_at: string | null;
+          created_at: string;
+          attachments: Json;
+        };
+        Insert: {
+          id?: string;
+          content_id?: string | null;
+          subject: string;
+          template?: string;
+          html_body: string;
+          recipient_count?: number;
+          status?: string;
+          sent_at?: string | null;
+          created_at?: string;
+          attachments?: Json;
+        };
+        Update: {
+          id?: string;
+          content_id?: string | null;
+          subject?: string;
+          template?: string;
+          html_body?: string;
+          recipient_count?: number;
+          status?: string;
+          sent_at?: string | null;
+          created_at?: string;
+          attachments?: Json;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_content_id_fkey";
+            columns: ["content_id"];
+            isOneToOne: false;
+            referencedRelation: "contents";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: {
