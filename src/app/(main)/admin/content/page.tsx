@@ -37,6 +37,10 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
     label: "발행가능",
     className: "bg-green-50 text-green-700 border-green-200",
   },
+  published: {
+    label: "게시완료",
+    className: "bg-blue-50 text-blue-700 border-blue-200",
+  },
   archived: {
     label: "보관",
     className: "bg-slate-100 text-slate-600 border-slate-200",
@@ -44,9 +48,9 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
 };
 
 const CATEGORY_LABEL: Record<string, string> = {
-  blueprint: "Blueprint",
-  trend: "Trend",
-  insight: "Insight",
+  blueprint: "블루프린트",
+  trend: "트렌드",
+  insight: "인사이트",
   general: "일반",
 };
 
@@ -173,9 +177,9 @@ export default function AdminContentPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">전체 카테고리</SelectItem>
-            <SelectItem value="blueprint">Blueprint</SelectItem>
-            <SelectItem value="trend">Trend</SelectItem>
-            <SelectItem value="insight">Insight</SelectItem>
+            <SelectItem value="blueprint">블루프린트</SelectItem>
+            <SelectItem value="trend">트렌드</SelectItem>
+            <SelectItem value="insight">인사이트</SelectItem>
             <SelectItem value="general">일반</SelectItem>
           </SelectContent>
         </Select>

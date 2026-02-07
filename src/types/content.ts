@@ -6,7 +6,7 @@ export interface Content {
   thumbnail_url: string | null;
   category: string;
   tags: string[];
-  status: 'draft' | 'review' | 'ready' | 'archived';
+  status: 'draft' | 'review' | 'ready' | 'published' | 'archived';
   source_type: string | null;
   source_ref: string | null;
   source_hash: string | null;

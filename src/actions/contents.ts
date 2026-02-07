@@ -1,6 +1,31 @@
 "use server";
 
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { generateEmbedding } from "@/lib/gemini";
+
+async function requireAdmin() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("인증되지 않은 사용자입니다.");
+  const svc = createServiceClient();
+  const { data: profile } = await svc
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (profile?.role !== "admin") throw new Error("권한이 없습니다.");
+  return svc;
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 export async function getContents({
   category,
@@ -13,7 +38,7 @@ export async function getContents({
   page?: number;
   pageSize?: number;
 } = {}) {
-  const supabase = createServiceClient();
+  const supabase = await requireAdmin();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -42,7 +67,7 @@ export async function getContents({
 }
 
 export async function getContentById(id: string) {
-  const supabase = createServiceClient();
+  const supabase = await requireAdmin();
 
   const { data, error } = await supabase
     .from("contents")
@@ -71,7 +96,7 @@ export async function createContent(input: {
   source_hash?: string | null;
   author_id?: string | null;
 }) {
-  const supabase = createServiceClient();
+  const supabase = await requireAdmin();
 
   const { data, error } = await supabase
     .from("contents")
@@ -103,7 +128,7 @@ export async function updateContent(
     author_id?: string | null;
   }
 ) {
-  const supabase = createServiceClient();
+  const supabase = await requireAdmin();
 
   const { data, error } = await supabase
     .from("contents")
@@ -121,7 +146,7 @@ export async function updateContent(
 }
 
 export async function deleteContent(id: string) {
-  const supabase = createServiceClient();
+  const supabase = await requireAdmin();
 
   const { error } = await supabase.from("contents").delete().eq("id", id);
 
@@ -134,7 +159,7 @@ export async function deleteContent(id: string) {
 }
 
 export async function publishToPost(contentId: string) {
-  const supabase = createServiceClient();
+  const supabase = await requireAdmin();
 
   // Fetch the content
   const { data: content, error: fetchError } = await supabase
@@ -168,7 +193,7 @@ export async function publishToPost(contentId: string) {
   }
 
   // Insert distribution record
-  await supabase.from("distributions").insert({
+  const { error: distError } = await supabase.from("distributions").insert({
     content_id: contentId,
     channel: "post",
     channel_ref: post.id,
@@ -177,18 +202,20 @@ export async function publishToPost(contentId: string) {
     status: "published",
     distributed_at: new Date().toISOString(),
   });
+  if (distError) console.error("Distribution insert error:", distError);
 
   // Update content status
-  await supabase
+  const { error: statusError } = await supabase
     .from("contents")
     .update({ status: "published", updated_at: new Date().toISOString() })
     .eq("id", contentId);
+  if (statusError) console.error("Content status update error:", statusError);
 
   return { data: post, error: null };
 }
 
 export async function generateNewsletterFromContents(contentIds: string[]) {
-  const supabase = createServiceClient();
+  const supabase = await requireAdmin();
 
   const { data: contents, error } = await supabase
     .from("contents")
@@ -208,13 +235,13 @@ export async function generateNewsletterFromContents(contentIds: string[]) {
       for (const line of lines) {
         const bulletMatch = line.match(/^[-*]\s+(.+)/);
         if (bulletMatch) {
-          bullets.push(`  <li>${bulletMatch[1]}</li>`);
+          bullets.push(`  <li>${escapeHtml(bulletMatch[1])}</li>`);
         } else {
-          paragraphs.push(`<p>${line}</p>`);
+          paragraphs.push(`<p>${escapeHtml(line)}</p>`);
         }
       }
 
-      let html = `<h3>${c.title}</h3>\n`;
+      let html = `<h3>${escapeHtml(c.title)}</h3>\n`;
       html += paragraphs.join("\n");
       if (bullets.length > 0) {
         html += `\n<ul>\n${bullets.join("\n")}\n</ul>`;
@@ -231,4 +258,64 @@ ${sectionsHtml}
 <hr />
 <p><strong>총가치각도기로 내 광고 성과를 확인해보세요</strong></p>
 <p>궁금한 점은 Q&amp;A 게시판에 남겨주세요.</p>`;
+}
+
+export async function embedContent(contentId: string) {
+  const supabase = await requireAdmin();
+
+  const { data: content, error: fetchError } = await supabase
+    .from("contents")
+    .select("title, body_md")
+    .eq("id", contentId)
+    .single();
+
+  if (fetchError || !content) {
+    return { error: fetchError?.message || "콘텐츠를 찾을 수 없습니다." };
+  }
+
+  try {
+    const embedding = await generateEmbedding(content.title + " " + content.body_md);
+    const { error: updateError } = await supabase
+      .from("contents")
+      .update({ embedding } as Record<string, unknown>)
+      .eq("id", contentId);
+
+    if (updateError) {
+      return { error: updateError.message };
+    }
+    return { error: null };
+  } catch (e) {
+    console.error("embedContent error:", e);
+    return { error: e instanceof Error ? e.message : "임베딩 생성 실패" };
+  }
+}
+
+export async function embedAllContents() {
+  const supabase = await requireAdmin();
+
+  const { data: contents, error } = await supabase
+    .from("contents")
+    .select("id, title, body_md")
+    .is("embedding", null);
+
+  if (error) {
+    return { count: 0, error: error.message };
+  }
+
+  let successCount = 0;
+  for (const c of contents || []) {
+    try {
+      const embedding = await generateEmbedding(c.title + " " + c.body_md);
+      const { error: updateError } = await supabase
+        .from("contents")
+        .update({ embedding } as Record<string, unknown>)
+        .eq("id", c.id);
+
+      if (!updateError) successCount++;
+    } catch (e) {
+      console.error(`embedAllContents error for ${c.id}:`, e);
+    }
+  }
+
+  return { count: successCount, error: null };
 }

@@ -53,7 +53,7 @@ export default function ContentEditorDialog({
       setTagsInput(content.tags.join(", "));
       setStatus(content.status);
     }
-  }, [content]);
+  }, [content?.id]);
 
   const handleSave = async () => {
     if (!content) return;
@@ -160,9 +160,9 @@ export default function ContentEditorDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="blueprint">Blueprint</SelectItem>
-                  <SelectItem value="trend">Trend</SelectItem>
-                  <SelectItem value="insight">Insight</SelectItem>
+                  <SelectItem value="blueprint">블루프린트</SelectItem>
+                  <SelectItem value="trend">트렌드</SelectItem>
+                  <SelectItem value="insight">인사이트</SelectItem>
                   <SelectItem value="general">일반</SelectItem>
                 </SelectContent>
               </Select>

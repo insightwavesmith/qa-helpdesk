@@ -4,24 +4,7 @@
       "Read",
       "Edit",
       "Write",
-      "Bash(ls:*)",
-      "Bash(cat:*)",
-      "Bash(find:*)",
-      "Bash(grep:*)",
-      "Bash(head:*)",
-      "Bash(tail:*)",
-      "Bash(wc:*)",
-      "Bash(echo:*)",
-      "Bash(mkdir:*)",
-      "Bash(cp:*)",
-      "Bash(mv:*)",
-      "Bash(touch:*)",
-      "Bash(npm:*)",
-      "Bash(npx:*)",
-      "Bash(node:*)",
-      "Bash(git:*)",
-      "Bash(curl:*)",
-      "Bash(openclaw:*)"
+      "Bash(*)"
     ]
   }
 }

@@ -1,185 +1,83 @@
-# TASK: Phase 1 — 콘텐츠 허브 인프라
+# Phase 2: 콘텐츠 허브 UI + 배포 연동
 
-> 설계 문서: `docs/02-design/content-hub-architecture.md`
-> Supabase URL: https://symvlrsmkjlztoopbnht.supabase.co
-> Supabase Service Key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5bXZscnNta2psenRvb3Bibmh0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTYwODYyMiwiZXhwIjoyMDgxMTg0NjIyfQ.FJLi7AiKw98JqUqPdkj2MBj9fDW6ZSsfgzUDVSFKc8Q
+설계 문서: `docs/02-design/P2-content-hub-ui.md`
+아키텍처: `docs/02-design/content-hub-architecture.md`
 
-## 주의사항 (매우 중요)
-- **기존 파일 수정 최소화** — 새 파일 추가 위주로 작업
-- **기존 기능 절대 깨뜨리지 않기** — posts, email, protractor 등 다 정상 동작해야 함
-- **빌드 + lint 통과 필수**
-- 한국어 UI, #F75D5D primary, Pretendard 폰트
+## 선행 완료
+- DB 테이블: contents, distributions, email_logs (이미 생성됨)
+- 서버 액션: `src/actions/contents.ts` (CRUD + publishToPost + generateNewsletterFromContents)
+- 타입: `src/types/database.ts` (contents, distributions, email_logs 포함)
+- 타입: `src/types/content.ts` (Content, Distribution, ChannelAdapter 등)
 
-## 작업 순서
+## 에이전트팀 구성
+- **frontend-dev 1명**: 콘텐츠 관리 페이지 + 콘텐츠 선택 모달 + 사이드바 수정
+- **frontend-dev 1명**: 뉴스레터 템플릿 리디자인 + 이메일 페이지 수정
 
-### 1. DB 테이블 생성 (curl로 Supabase SQL 실행)
+## 태스크
 
-```sql
--- 콘텐츠 허브 테이블
-CREATE TABLE IF NOT EXISTS contents (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  title text NOT NULL,
-  body_md text NOT NULL,
-  summary text,
-  thumbnail_url text,
-  category text NOT NULL DEFAULT 'general',
-  tags text[] DEFAULT '{}',
-  status text NOT NULL DEFAULT 'draft',
-  source_type text,
-  source_ref text,
-  source_hash text,
-  author_id uuid REFERENCES auth.users(id),
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
+### Task 1: 콘텐츠 관리 페이지 (frontend-dev A)
+**새 파일**: `src/app/(main)/admin/content/page.tsx`
+- "use client" 페이지
+- 상단: "콘텐츠 관리" h1 + "동기화" 버튼 (향후용, disabled) + 콘텐츠 수 카드 4개 (전체/초안/검수대기/발행가능)
+- 필터: 카테고리 Select (전체/blueprint/trend/insight/general) + 상태 Select (전체/draft/review/ready/archived)
+- 테이블: 제목 | 카테고리(Badge) | 상태(Badge, 색상별) | 작성일
+- 행 클릭 → 편집 Dialog 열림
+- 서버 액션 사용: `getContents`, `updateContent`, `deleteContent`, `publishToPost`
+- **반드시 기존 디자인 시스템 따르기**: shadcn/ui 컴포넌트, #F75D5D 프라이머리, Pretendard 폰트
+- 상태 배지 색상: draft=gray, review=yellow, ready=green, archived=slate
 
-CREATE INDEX IF NOT EXISTS idx_contents_category ON contents(category);
-CREATE INDEX IF NOT EXISTS idx_contents_status ON contents(status);
-CREATE INDEX IF NOT EXISTS idx_contents_tags ON contents USING GIN(tags);
+### Task 2: 콘텐츠 편집 Dialog (frontend-dev A)
+**새 파일**: `src/components/content/content-editor-dialog.tsx`
+- Dialog 컴포넌트 (shadcn/ui Dialog)
+- 제목 Input, 본문 Textarea (큰 사이즈), 카테고리 Select, 태그 Input (콤마 구분)
+- 상태 Select (draft/review/ready/archived)
+- "저장" 버튼 → updateContent
+- "정보공유에 게시" 버튼 (ready 상태일 때만 활성) → publishToPost → toast 알림
+- "삭제" 버튼 → confirm → deleteContent
 
-ALTER TABLE contents ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role full access" ON contents FOR ALL USING (true);
+### Task 3: 사이드바에 콘텐츠 관리 메뉴 추가 (frontend-dev A)
+**수정 파일**: `src/components/dashboard/Sidebar.tsx`
+- 관리 섹션에 "콘텐츠 관리" 추가 (이메일 발송 위)
+- 아이콘: `FileText` from lucide-react
+- 경로: `/admin/content`
+- **기존 메뉴 순서/구조 변경 최소화**
 
--- 배포 기록 테이블
-CREATE TABLE IF NOT EXISTS distributions (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  content_id uuid REFERENCES contents(id) ON DELETE CASCADE,
-  channel text NOT NULL,
-  channel_ref text,
-  rendered_title text,
-  rendered_body text,
-  status text NOT NULL DEFAULT 'pending',
-  distributed_at timestamptz,
-  created_at timestamptz DEFAULT now()
-);
+### Task 4: 이메일 페이지에 콘텐츠 가져오기 기능 (frontend-dev B)
+**수정 파일**: `src/app/(main)/admin/email/page.tsx`
+**새 파일**: `src/components/content/content-picker-dialog.tsx`
 
-CREATE INDEX IF NOT EXISTS idx_distributions_content ON distributions(content_id);
-CREATE INDEX IF NOT EXISTS idx_distributions_channel ON distributions(channel);
+콘텐츠 선택 모달:
+- ready 상태 콘텐츠 목록 (체크박스로 다중 선택)
+- 카테고리 필터
+- 선택 후 "가져오기" 버튼 → `generateNewsletterFromContents(selectedIds)` 호출
+- 결과 HTML → 부모의 setHtml + setSubject에 전달
 
-ALTER TABLE distributions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role full access" ON distributions FOR ALL USING (true);
+이메일 페이지 수정:
+- 뉴스레터 템플릿 선택 시 "콘텐츠에서 가져오기" 버튼 추가 (AI 자동작성 버튼 옆)
+- 기존 AI 자동작성은 그대로 유지
 
--- 이메일 발송 이력 테이블
-CREATE TABLE IF NOT EXISTS email_logs (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  content_id uuid REFERENCES contents(id),
-  subject text NOT NULL,
-  template text NOT NULL DEFAULT 'newsletter',
-  html_body text NOT NULL,
-  recipient_count integer DEFAULT 0,
-  status text NOT NULL DEFAULT 'draft',
-  sent_at timestamptz,
-  created_at timestamptz DEFAULT now(),
-  attachments jsonb DEFAULT '[]'
-);
+### Task 5: 뉴스레터 템플릿 리디자인 (frontend-dev B)
+**수정 파일**: `src/emails/newsletter.tsx`
 
-ALTER TABLE email_logs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role full access" ON email_logs FOR ALL USING (true);
+현재 react-email 기본 스타일 → beehiiv/Flodesk 수준으로 업그레이드:
+- **헤더**: 흰 배경, "BS CAMP" 텍스트 로고 (coral red #F75D5D), 하단에 얇은 coral 라인
+- **본문**: 카드형 섹션 (흰 배경 + 얇은 border + 8px 라운드)
+- **CTA 버튼**: coral red 배경 (#F75D5D), 흰 텍스트, 큰 패딩 (16px 40px), 라운드
+- **푸터**: 회색 배경, 자사몰사관학교 정보, "수신거부" 링크
+- **전체**: max-width 600px, 넉넉한 여백 (section 간 24px), 시스템 폰트 스택
+- react-email 컴포넌트 사용: `<Html>`, `<Body>`, `<Container>`, `<Section>`, `<Text>`, `<Button>`, `<Hr>`
+- **기존 props 인터페이스 유지** (bodyHtml 등 — 하위 호환)
 
--- posts 테이블에 content_id 컬럼 추가 (기존 데이터 호환)
-ALTER TABLE posts ADD COLUMN IF NOT EXISTS content_id uuid REFERENCES contents(id);
-```
+## 공통 규칙
+- shadcn/ui 컴포넌트 사용 (import from `@/components/ui/`)
+- 프라이머리 색상: #F75D5D (hover: #E54949)
+- 한국어 UI
+- 이모지 사용 안 함
+- `npm run lint` 에러 0개
+- `npm run build` 성공
 
-SQL은 curl로 Supabase REST API를 통해 실행:
-```bash
-curl -X POST 'https://symvlrsmkjlztoopbnht.supabase.co/rest/v1/rpc/exec_sql' \
-  -H 'apikey: SERVICE_KEY' \
-  -H 'Authorization: Bearer SERVICE_KEY' \
-  -H 'Content-Type: application/json' \
-  -d '{"query": "SQL_HERE"}'
-```
-
-만약 rpc/exec_sql이 없으면, 개별 SQL 문을 Supabase Dashboard SQL Editor에서 실행하거나, `psql`로 직접 실행.
-
-### 2. TypeScript 타입 정의
-`src/types/content.ts` (새 파일):
-```typescript
-export interface Content {
-  id: string;
-  title: string;
-  body_md: string;
-  summary: string | null;
-  thumbnail_url: string | null;
-  category: string;
-  tags: string[];
-  status: 'draft' | 'review' | 'ready' | 'archived';
-  source_type: string | null;
-  source_ref: string | null;
-  source_hash: string | null;
-  author_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Distribution {
-  id: string;
-  content_id: string;
-  channel: string;
-  channel_ref: string | null;
-  rendered_title: string | null;
-  rendered_body: string | null;
-  status: 'pending' | 'published' | 'sent' | 'failed';
-  distributed_at: string | null;
-  created_at: string;
-}
-
-export interface EmailLog {
-  id: string;
-  content_id: string | null;
-  subject: string;
-  template: string;
-  html_body: string;
-  recipient_count: number;
-  status: 'draft' | 'sent' | 'failed';
-  sent_at: string | null;
-  created_at: string;
-  attachments: { filename: string; url: string; size: number }[];
-}
-```
-
-### 3. 콘텐츠 서버 액션 (새 파일)
-`src/actions/contents.ts`:
-- `getContents({ category, status, page, pageSize })` — 콘텐츠 목록 조회
-- `getContentById(id)` — 단일 콘텐츠 조회
-- `createContent(data)` — 콘텐츠 생성
-- `updateContent(id, data)` — 콘텐츠 수정
-- `deleteContent(id)` — 콘텐츠 삭제
-- `publishToPost(contentId)` — 콘텐츠 → 정보공유 게시 (posts에 insert + distributions 기록)
-- `generateNewsletterFromContents(contentIds)` — 여러 콘텐츠 → 뉴스레터 HTML 생성
-
-모두 `createServiceClient()` 사용 (service role).
-
-### 4. 콘텐츠 동기화 스크립트 (새 파일)
-`scripts/sync-contents.ts`:
-- `/Users/smith/Library/Mobile Documents/com~apple~CloudDocs/claude/brand-school/marketing/knowledge/` 하위 .md 파일 스캔
-- 각 파일을 contents 테이블에 upsert (source_hash로 변경 감지)
-- 카테고리는 디렉토리명으로 결정:
-  - blueprint/ → 'blueprint'
-  - blogs/ → 'trend'
-  - 기타 → 'general'
-- 실행: `npx tsx scripts/sync-contents.ts`
-
-### 5. AI 작성 API 수정 (기존 파일 수정 — 최소)
-`src/app/api/admin/email/ai-write/route.ts`:
-- 기존 로컬 파일 읽기 로직 → contents DB 조회로 변경
-- 카테고리 필터링 유지
-- fallback: DB에 없으면 기본 템플릿 반환
-
-### 6. 파일 첨부 API (새 파일)
-`src/app/api/admin/email/upload/route.ts`:
-- multipart/form-data로 파일 받기
-- Supabase Storage `email-attachments` 버킷에 업로드
-- 10MB 제한, MIME 타입 검증
-- public URL 반환
-
-`src/app/api/admin/email/send/route.ts` (기존 파일 수정 — 최소):
-- request body에 `attachments` 배열 추가 처리
-- nodemailer에 attachments 전달
-
-## 완료 조건
-- [ ] `npm run build` 성공
-- [ ] tsc 타입체크 통과
-- [ ] lint 에러 없음
-- [ ] 기존 페이지들 정상 동작 (기존 기능 깨지면 안 됨)
-- [ ] `git add -A && git commit -m "feat: 콘텐츠 허브 인프라 (Phase 1)" && git push`
-- [ ] 완료 후: `openclaw gateway wake --text "Done: Phase 1 콘텐츠 허브 인프라 완료" --mode now`
+## 완료 후
+1. `npm run lint` 확인
+2. `npm run build` 확인
+3. `git add -A && git commit -m "feat: 콘텐츠 허브 UI + 뉴스레터 리디자인 (Phase 2)" && git push`
+4. `openclaw gateway wake --text "Done: Phase 2 콘텐츠 허브 UI 완료"`

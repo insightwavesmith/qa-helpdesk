@@ -49,28 +49,12 @@ export default function ContentPickerDialog({
 
   useEffect(() => {
     if (!open) return;
-
     setSelectedIds(new Set());
     setCategory("all");
-
-    const load = async () => {
-      setLoading(true);
-      const params: { status: string; category?: string } = { status: "ready" };
-      if (category !== "all") params.category = category;
-      const { data, error } = await getContents(params);
-      if (error) {
-        toast.error("콘텐츠 목록을 불러올 수 없습니다.");
-      }
-      setContents((data as Content[]) || []);
-      setLoading(false);
-    };
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
-
     const load = async () => {
       setLoading(true);
       const params: { status: string; category?: string } = { status: "ready" };
@@ -78,6 +62,8 @@ export default function ContentPickerDialog({
       const { data, error } = await getContents(params);
       if (error) {
         toast.error("콘텐츠 목록을 불러올 수 없습니다.");
+        setLoading(false);
+        return;
       }
       setContents((data as Content[]) || []);
       setLoading(false);
