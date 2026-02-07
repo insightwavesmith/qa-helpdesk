@@ -211,3 +211,68 @@ export async function getRecentPosts(limit = 5) {
 
   return data || [];
 }
+
+// A1: 수강생 상세 — 프로필 + 배정된 광고계정 조회
+export async function getMemberDetail(userId: string) {
+  const svc = await requireAdmin();
+  const [profileRes, accountsRes] = await Promise.all([
+    svc.from('profiles').select('*').eq('id', userId).single(),
+    svc.from('ad_accounts').select('*').eq('user_id', userId).order('account_name'),
+  ]);
+  return { profile: profileRes.data, accounts: accountsRes.data || [] };
+}
+
+// A2: 프로필 수정
+export async function updateMember(userId: string, data: ProfileUpdate) {
+  const svc = await requireAdmin();
+  const { error } = await svc.from('profiles').update(data).eq('id', userId);
+  if (error) return { error: error.message };
+  revalidatePath('/admin/members');
+  return { error: null };
+}
+
+// A3: 역할 변경
+export async function changeRole(userId: string, newRole: string) {
+  const svc = await requireAdmin();
+  const { error } = await svc.from('profiles').update({ role: newRole as ProfileUpdate['role'] }).eq('id', userId);
+  if (error) return { error: error.message };
+  revalidatePath('/admin/members');
+  return { error: null };
+}
+
+// A4: 비활성화/재활성화
+export async function deactivateMember(userId: string) {
+  return changeRole(userId, 'inactive');
+}
+
+// A5: 광고계정 추가
+export async function addAdAccount(data: { accountId: string; accountName: string; userId?: string }) {
+  const svc = await requireAdmin();
+  const { error } = await svc.from('ad_accounts').insert({
+    account_id: data.accountId,
+    account_name: data.accountName,
+    user_id: data.userId || null,
+    active: true,
+  });
+  if (error) return { error: error.message };
+  revalidatePath('/admin/accounts');
+  return { error: null };
+}
+
+// A6: 광고계정 수정
+export async function updateAdAccount(id: string, data: { account_name?: string; mixpanel_project_id?: string; mixpanel_board_id?: string }) {
+  const svc = await requireAdmin();
+  const { error } = await svc.from('ad_accounts').update(data).eq('id', id);
+  if (error) return { error: error.message };
+  revalidatePath('/admin/accounts');
+  return { error: null };
+}
+
+// A7: 광고계정 활성/비활성 토글
+export async function toggleAdAccount(id: string, active: boolean) {
+  const svc = await requireAdmin();
+  const { error } = await svc.from('ad_accounts').update({ active }).eq('id', id);
+  if (error) return { error: error.message };
+  revalidatePath('/admin/accounts');
+  return { error: null };
+}

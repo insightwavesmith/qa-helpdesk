@@ -14,9 +14,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CategoryFilter } from "@/components/shared/CategoryFilter";
 import { Pagination } from "@/components/shared/Pagination";
-import { approveMember } from "@/actions/admin";
+import { approveMember, getMemberDetail } from "@/actions/admin";
 import { toast } from "sonner";
 import { CheckCircle, Loader2 } from "lucide-react";
+import { MemberDetailModal } from "./member-detail-modal";
 
 interface Member {
   id: string;
@@ -72,6 +73,22 @@ export function MembersClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [detailModal, setDetailModal] = useState<{ profile: Member; accounts: Array<{ id: string; account_id: string; account_name: string | null; active: boolean }> } | null>(null);
+  const [detailLoading, setDetailLoading] = useState<string | null>(null);
+
+  const handleOpenDetail = async (memberId: string) => {
+    setDetailLoading(memberId);
+    try {
+      const { profile, accounts } = await getMemberDetail(memberId);
+      if (profile) {
+        setDetailModal({ profile: profile as Member, accounts });
+      }
+    } catch {
+      toast.error("상세 정보를 불러오는데 실패했습니다.");
+    } finally {
+      setDetailLoading(null);
+    }
+  };
 
   const updateParams = useCallback(
     (updates: Record<string, string>) => {
@@ -165,8 +182,17 @@ export function MembersClient({
                 const isLoading = loadingId === member.id;
 
                 return (
-                  <TableRow key={member.id} className="hover:bg-gray-50/50 transition-colors">
-                    <TableCell className="font-medium text-gray-900">{member.name}</TableCell>
+                  <TableRow
+                    key={member.id}
+                    className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                    onClick={() => handleOpenDetail(member.id)}
+                  >
+                    <TableCell className="font-medium text-gray-900">
+                      <span className="flex items-center gap-1">
+                        {detailLoading === member.id && <Loader2 className="h-3 w-3 animate-spin text-gray-400" />}
+                        {member.name}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-sm text-gray-600">{member.email}</TableCell>
                     <TableCell className="text-sm text-gray-600">{member.shop_name}</TableCell>
                     <TableCell className="text-sm font-mono text-gray-600">
@@ -178,7 +204,7 @@ export function MembersClient({
                     <TableCell className="text-sm text-gray-500">
                       {formatDate(member.created_at)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       {/* lead: 멤버 승인 또는 수강생 승인 */}
                       {member.role === "lead" && (
                         <div className="flex justify-end gap-1">
@@ -237,6 +263,18 @@ export function MembersClient({
         totalPages={totalPages}
         onPageChange={(page) => updateParams({ page: String(page) })}
       />
+
+      {detailModal && (
+        <MemberDetailModal
+          profile={detailModal.profile}
+          accounts={detailModal.accounts}
+          onClose={() => setDetailModal(null)}
+          onUpdated={() => {
+            setDetailModal(null);
+            router.refresh();
+          }}
+        />
+      )}
     </div>
   );
 }
