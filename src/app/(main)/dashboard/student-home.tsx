@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { getPosts } from "@/actions/posts";
 import { getQuestions } from "@/actions/questions";
+import { StudentAdSummary } from "./student-ad-summary";
 
 function timeAgo(dateStr: string) {
   const now = new Date();
@@ -65,6 +66,11 @@ export async function StudentHome({ userName }: StudentHomeProps) {
           </Link>
         </div>
       </div>
+
+      {/* 내 광고 성과 요약 */}
+      <section className="mb-12">
+        <StudentAdSummary />
+      </section>
 
       {/* 공지사항 */}
       <section className="mb-12">

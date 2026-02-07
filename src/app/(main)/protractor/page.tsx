@@ -21,12 +21,105 @@ import {
   DailyMetricsTable,
 } from "@/components/protractor";
 
+import {
+  aggregateSummary,
+  toSummaryCards,
+  toDailyTrend,
+  toFunnelData,
+  toDailyMetrics,
+} from "@/lib/protractor/aggregate";
+
 // 어제 날짜 (기본값)
 function yesterday(): DateRange {
   const d = new Date();
   d.setDate(d.getDate() - 1);
   const s = d.toISOString().split("T")[0];
   return { start: s, end: s };
+}
+
+// 진단 결과 타입
+interface DiagnosisIssue {
+  title: string;
+  description: string;
+  severity: "심각" | "주의" | "양호";
+}
+
+interface DiagnosisData {
+  grade: "A" | "B" | "C" | "D" | "F";
+  gradeLabel: string;
+  summary: string;
+  issues: DiagnosisIssue[];
+}
+
+// 진단 verdict → grade 변환
+function verdictToGrade(diagnoses: {
+  overall_verdict: string;
+  one_line_diagnosis: string;
+  ad_name: string;
+  parts: { part_name: string; verdict: string; metrics: { name: string; verdict: string; my_value: number | null; above_avg: number | null }[] }[];
+}[]): DiagnosisData {
+  if (!diagnoses || diagnoses.length === 0) {
+    return { grade: "C", gradeLabel: "데이터 없음", summary: "진단할 광고 데이터가 부족합니다.", issues: [] };
+  }
+
+  // 전체 verdict 분포 계산
+  const verdictCounts = { "🟢": 0, "🟡": 0, "🔴": 0, "⚪": 0 };
+  for (const d of diagnoses) {
+    const v = d.overall_verdict as keyof typeof verdictCounts;
+    if (v in verdictCounts) verdictCounts[v]++;
+  }
+
+  // 등급 산출
+  let grade: DiagnosisData["grade"];
+  let gradeLabel: string;
+  const total = diagnoses.length;
+  const goodRatio = verdictCounts["🟢"] / total;
+  const poorRatio = verdictCounts["🔴"] / total;
+
+  if (goodRatio >= 0.8) { grade = "A"; gradeLabel = "우수"; }
+  else if (goodRatio >= 0.5) { grade = "B"; gradeLabel = "양호"; }
+  else if (poorRatio >= 0.6) { grade = "F"; gradeLabel = "위험"; }
+  else if (poorRatio >= 0.3) { grade = "D"; gradeLabel = "주의 필요"; }
+  else { grade = "C"; gradeLabel = "보통"; }
+
+  // 한줄 진단 (첫 번째 광고의 one_line_diagnosis 사용)
+  const summary = diagnoses[0].one_line_diagnosis;
+
+  // 이슈 생성 (각 광고의 파트별 WARNING/BAD 항목)
+  const issues: DiagnosisIssue[] = [];
+  for (const d of diagnoses) {
+    for (const part of d.parts) {
+      if (part.verdict === "🔴") {
+        const badMetrics = part.metrics
+          .filter((m) => m.verdict === "🔴")
+          .map((m) => m.name)
+          .join(", ");
+        issues.push({
+          title: `${d.ad_name.substring(0, 30)} - ${part.part_name}`,
+          description: badMetrics ? `미달 지표: ${badMetrics}` : `${part.part_name} 파트 전체가 미달입니다.`,
+          severity: "심각",
+        });
+      } else if (part.verdict === "🟡") {
+        issues.push({
+          title: `${d.ad_name.substring(0, 30)} - ${part.part_name}`,
+          description: `${part.part_name} 파트가 보통 수준입니다. 개선 여지가 있습니다.`,
+          severity: "주의",
+        });
+      } else if (part.verdict === "🟢") {
+        issues.push({
+          title: `${d.ad_name.substring(0, 30)} - ${part.part_name}`,
+          description: `${part.part_name} 파트가 우수합니다.`,
+          severity: "양호",
+        });
+      }
+    }
+  }
+
+  // 심각 → 주의 → 양호 순 정렬
+  const severityOrder = { "심각": 0, "주의": 1, "양호": 2 };
+  issues.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+
+  return { grade, gradeLabel, summary, issues: issues.slice(0, 8) };
 }
 
 export default function ProtractorPage() {
@@ -37,9 +130,11 @@ export default function ProtractorPage() {
   const [insights, setInsights] = useState<AdInsightRow[]>([]);
   const [lpMetrics, setLpMetrics] = useState<LpMetricRow[]>([]);
   const [benchmarks, setBenchmarks] = useState<BenchmarkRow[]>([]);
+  const [diagnosisData, setDiagnosisData] = useState<DiagnosisData | null>(null);
 
   const [loadingAccounts, setLoadingAccounts] = useState(true);
   const [loadingData, setLoadingData] = useState(false);
+  const [loadingDiagnosis, setLoadingDiagnosis] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // 1) 계정 목록 로드
@@ -116,6 +211,37 @@ export default function ProtractorPage() {
     fetchData();
   }, [fetchData]);
 
+  // 4) 진단 호출 (insights 로드 완료 후)
+  useEffect(() => {
+    if (!selectedAccountId || insights.length === 0) {
+      setDiagnosisData(null);
+      return;
+    }
+
+    (async () => {
+      setLoadingDiagnosis(true);
+      try {
+        const res = await fetch("/api/diagnose", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            accountId: selectedAccountId,
+            startDate: dateRange.start,
+            endDate: dateRange.end,
+          }),
+        });
+        const json = await res.json();
+        if (res.ok && json.diagnoses) {
+          setDiagnosisData(verdictToGrade(json.diagnoses));
+        }
+      } catch {
+        // 진단 실패해도 대시보드는 표시
+      } finally {
+        setLoadingDiagnosis(false);
+      }
+    })();
+  }, [selectedAccountId, insights, dateRange]);
+
   const handlePeriodChange = (range: DateRange) => {
     setDateRange(range);
   };
@@ -124,10 +250,16 @@ export default function ProtractorPage() {
     setSelectedAccountId(accountId);
   };
 
-  // 실데이터 연결 전까지 unused 방지
+  // 실데이터 집계
+  const summary = insights.length > 0 ? aggregateSummary(insights) : null;
+  const summaryCards = summary ? toSummaryCards(summary) : undefined;
+  const trendData = insights.length > 0 ? toDailyTrend(insights) : undefined;
+  const funnelResult = insights.length > 0 ? toFunnelData(insights) : undefined;
+  const dailyMetrics = insights.length > 0 ? toDailyMetrics(insights) : undefined;
+
+  // unused 방지
   void lpMetrics;
   void benchmarks;
-  void insights;
 
   return (
     <div className="flex flex-col gap-6">
@@ -170,20 +302,36 @@ export default function ProtractorPage() {
         </div>
       )}
 
-      {/* 데이터 표시 — 더미 데이터 → 나중에 실데이터 연결 */}
+      {/* 데이터 표시 — 실데이터 연결 */}
       {selectedAccountId && !loadingData && (
         <>
-          <SummaryCards />
-          <DiagnosticPanel />
+          <SummaryCards cards={summaryCards} />
+
+          {loadingDiagnosis ? (
+            <Skeleton className="h-[200px] w-full rounded-lg" />
+          ) : diagnosisData ? (
+            <DiagnosticPanel
+              grade={diagnosisData.grade}
+              gradeLabel={diagnosisData.gradeLabel}
+              summary={diagnosisData.summary}
+              issues={diagnosisData.issues}
+            />
+          ) : (
+            <DiagnosticPanel />
+          )}
+
           <div className="grid gap-6 xl:grid-cols-5">
             <div className="xl:col-span-3">
-              <PerformanceTrendChart />
+              <PerformanceTrendChart data={trendData} />
             </div>
             <div className="xl:col-span-2">
-              <ConversionFunnel />
+              <ConversionFunnel
+                steps={funnelResult?.steps}
+                overallRate={funnelResult?.overallRate}
+              />
             </div>
           </div>
-          <DailyMetricsTable />
+          <DailyMetricsTable data={dailyMetrics} />
         </>
       )}
     </div>

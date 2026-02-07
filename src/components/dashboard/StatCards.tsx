@@ -16,15 +16,19 @@ interface StatCardData {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-const stats: StatCardData[] = [
-  { label: "ROAS", value: "4.82x", change: 12.5, icon: Target },
-  { label: "총 매출", value: "₩128,450,000", change: 8.3, icon: DollarSign },
-  { label: "광고비", value: "₩26,640,000", change: -3.2, icon: ChartColumn },
-  { label: "CTR", value: "3.42%", change: 5.7, icon: MousePointerClick },
-  { label: "CPC", value: "₩892", change: -7.1, icon: DollarSign },
+const defaultStats: StatCardData[] = [
+  { label: "ROAS", value: "—", change: 0, icon: Target },
+  { label: "총 매출", value: "—", change: 0, icon: DollarSign },
+  { label: "광고비", value: "—", change: 0, icon: ChartColumn },
+  { label: "CTR", value: "—", change: 0, icon: MousePointerClick },
+  { label: "CPC", value: "—", change: 0, icon: DollarSign },
 ];
 
-export function StatCards() {
+interface StatCardsProps {
+  stats?: StatCardData[];
+}
+
+export function StatCards({ stats = defaultStats }: StatCardsProps) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {stats.map((stat) => {
