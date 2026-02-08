@@ -1,8 +1,8 @@
-import { render } from "@react-email/components";
-import { createElement } from "react";
-import WebinarInvite from "@/emails/webinar-invite";
-import Newsletter from "@/emails/newsletter";
-import PerformanceReport from "@/emails/performance-report";
+import {
+  newsletterTemplate,
+  webinarTemplate,
+  performanceTemplate,
+} from "@/lib/email-templates";
 
 export type TemplateName = "webinar" | "newsletter" | "performance";
 
@@ -42,13 +42,11 @@ export async function renderEmail<T extends TemplateName>(
 ): Promise<string> {
   switch (templateName) {
     case "webinar":
-      return render(createElement(WebinarInvite, props as WebinarProps));
+      return webinarTemplate(props as WebinarProps);
     case "newsletter":
-      return render(createElement(Newsletter, props as NewsletterProps));
+      return newsletterTemplate(props as NewsletterProps);
     case "performance":
-      return render(
-        createElement(PerformanceReport, props as PerformanceProps)
-      );
+      return performanceTemplate(props as PerformanceProps);
     default:
       throw new Error(`Unknown template: ${templateName}`);
   }

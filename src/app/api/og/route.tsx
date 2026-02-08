@@ -11,12 +11,22 @@ const categoryLabels: Record<string, string> = {
   news: "소식",
 };
 
+const gradientMap: Record<string, [string, string]> = {
+  info: ["#3B82F6", "#2563EB"],
+  education: ["#3B82F6", "#2563EB"],
+  notice: ["#10B981", "#059669"],
+  news: ["#10B981", "#059669"],
+  webinar: ["#F97316", "#EA580C"],
+};
+const defaultGradient: [string, string] = ["#F75D5D", "#E54949"];
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = req.nextUrl;
     const title = searchParams.get("title") || "BS CAMP";
     const category = searchParams.get("category") || "";
     const catLabel = categoryLabels[category] || category;
+    const [gradStart, gradEnd] = gradientMap[category] || defaultGradient;
 
     return new ImageResponse(
       (
@@ -28,7 +38,7 @@ export async function GET(req: NextRequest) {
             flexDirection: "column",
             justifyContent: "center",
             alignItems: "center",
-            background: "linear-gradient(135deg, #F75D5D 0%, #E54949 100%)",
+            background: `linear-gradient(135deg, ${gradStart} 0%, ${gradEnd} 100%)`,
             padding: "60px",
           }}
         >

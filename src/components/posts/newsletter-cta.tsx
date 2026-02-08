@@ -1,16 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { Mail } from "lucide-react";
+import { Mail, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { subscribeNewsletter } from "@/actions/leads";
 
 export function NewsletterCta() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim()) return;
-    setSubmitted(true);
+    setLoading(true);
+    try {
+      const result = await subscribeNewsletter(email.trim());
+      if (result.error) {
+        toast.error(result.error);
+      } else if (result.alreadySubscribed) {
+        toast.success("이미 구독 중입니다!");
+        setSubmitted(true);
+      } else {
+        toast.success("구독이 완료되었습니다!");
+        setSubmitted(true);
+      }
+    } catch {
+      toast.error("구독 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (submitted) {
@@ -49,9 +68,10 @@ export function NewsletterCta() {
         />
         <button
           type="submit"
-          className="px-6 py-2.5 text-sm font-medium text-white rounded-lg bg-[#F75D5D] hover:bg-[#E54949] transition-colors shrink-0"
+          disabled={loading}
+          className="px-6 py-2.5 text-sm font-medium text-white rounded-lg bg-[#F75D5D] hover:bg-[#E54949] transition-colors shrink-0 disabled:opacity-60 flex items-center justify-center"
         >
-          구독하기
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "구독하기"}
         </button>
       </form>
     </section>

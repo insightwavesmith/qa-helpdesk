@@ -58,7 +58,7 @@ export default function ContentPickerDialog({
     if (!open) return;
     const load = async () => {
       setLoading(true);
-      const params: { status: string; category?: string } = { status: "ready" };
+      const params: { status?: string; category?: string } = { status: "ready,published" };
       if (category !== "all") params.category = category;
       const { data, error } = await getContents(params);
       if (error) {
@@ -140,7 +140,7 @@ export default function ContentPickerDialog({
             </div>
           ) : contents.length === 0 ? (
             <div className="flex items-center justify-center py-12 text-[14px] text-gray-400">
-              준비 완료된 콘텐츠가 없습니다.
+              사용 가능한 콘텐츠가 없습니다.
             </div>
           ) : (
             <div className="divide-y divide-gray-100">

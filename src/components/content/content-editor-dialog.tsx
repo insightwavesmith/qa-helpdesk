@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Save, Trash2, Send } from "lucide-react";
 import { toast } from "sonner";
-import { updateContent, deleteContent, publishToPost } from "@/actions/contents";
+import { createContent, updateContent, deleteContent, publishToPost } from "@/actions/contents";
 import type { Content, ContentType, ContentCategory } from "@/types/content";
 
 interface ContentEditorDialogProps {
@@ -57,6 +57,14 @@ export default function ContentEditorDialog({
       setCategory(content.category || "education");
       setTagsInput(content.tags.join(", "));
       setStatus(content.status);
+    } else {
+      setTitle("");
+      setBodyMd("");
+      setSummary("");
+      setContentType("info");
+      setCategory("education");
+      setTagsInput("");
+      setStatus("draft");
     }
   }, [content?.id]);
 
@@ -71,14 +79,17 @@ export default function ContentEditorDialog({
   };
 
   const handleSave = async () => {
-    if (!content) return;
+    if (!title.trim()) {
+      toast.error("제목을 입력해주세요.");
+      return;
+    }
     setSaving(true);
     try {
       const tags = tagsInput
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean);
-      const { error } = await updateContent(content.id, {
+      const payload = {
         title,
         body_md: bodyMd,
         summary: summary || null,
@@ -86,12 +97,15 @@ export default function ContentEditorDialog({
         category,
         tags,
         status,
-      });
+      };
+      const { error } = content
+        ? await updateContent(content.id, payload)
+        : await createContent(payload);
       if (error) {
         toast.error(`저장 실패: ${error}`);
         return;
       }
-      toast.success("저장되었습니다.");
+      toast.success(content ? "저장되었습니다." : "콘텐츠가 생성되었습니다.");
       onSaved();
     } catch {
       toast.error("저장 중 오류가 발생했습니다.");
@@ -143,7 +157,7 @@ export default function ContentEditorDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>콘텐츠 편집</DialogTitle>
+          <DialogTitle>{content ? "콘텐츠 편집" : "새 콘텐츠"}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -248,31 +262,35 @@ export default function ContentEditorDialog({
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={isBusy}
-          >
-            {deleting ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Trash2 className="h-4 w-4 mr-2" />
-            )}
-            삭제
-          </Button>
+          {content && (
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isBusy}
+            >
+              {deleting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              삭제
+            </Button>
+          )}
           <div className="flex-1" />
-          <Button
-            variant="outline"
-            onClick={handlePublish}
-            disabled={isBusy || status !== "ready"}
-          >
-            {publishing ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4 mr-2" />
-            )}
-            정보공유에 게시
-          </Button>
+          {content && (
+            <Button
+              variant="outline"
+              onClick={handlePublish}
+              disabled={isBusy || status !== "ready"}
+            >
+              {publishing ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4 mr-2" />
+              )}
+              정보공유에 게시
+            </Button>
+          )}
           <Button
             onClick={handleSave}
             disabled={isBusy}

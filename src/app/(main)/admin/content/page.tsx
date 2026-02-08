@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, FileText, RefreshCw } from "lucide-react";
+import { Loader2, FileText, RefreshCw, Plus } from "lucide-react";
 import { getContents } from "@/actions/contents";
 import type { Content } from "@/types/content";
 import ContentEditorDialog from "@/components/content/content-editor-dialog";
@@ -141,6 +141,12 @@ export default function AdminContentPage() {
       bg: "bg-green-50",
       text: "text-green-600",
     },
+    {
+      label: "게시완료",
+      value: isUnfiltered ? countByStatus("published") : "-",
+      bg: "bg-blue-50",
+      text: "text-blue-600",
+    },
   ];
 
   return (
@@ -153,14 +159,23 @@ export default function AdminContentPage() {
             콘텐츠를 관리하고 편집합니다.
           </p>
         </div>
-        <Button variant="outline" disabled>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          동기화
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => { setSelectedContent(null); setEditorOpen(true); }}
+            className="bg-[#F75D5D] hover:bg-[#E54949]"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            새 콘텐츠
+          </Button>
+          <Button variant="outline" disabled>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            동기화
+          </Button>
+        </div>
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-5 gap-4">
         {statCards.map((card) => (
           <Card key={card.label}>
             <CardContent className="pt-5 pb-4 px-5">
@@ -215,6 +230,7 @@ export default function AdminContentPage() {
             <SelectItem value="draft">초안</SelectItem>
             <SelectItem value="review">검수대기</SelectItem>
             <SelectItem value="ready">발행가능</SelectItem>
+            <SelectItem value="published">게시완료</SelectItem>
             <SelectItem value="archived">보관</SelectItem>
           </SelectContent>
         </Select>

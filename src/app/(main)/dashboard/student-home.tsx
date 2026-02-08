@@ -33,14 +33,17 @@ interface StudentHomeProps {
 export async function StudentHome({ userName: _userName }: StudentHomeProps) {
   let notices: Awaited<ReturnType<typeof getPosts>>["data"] = [];
   let recentQuestions: Awaited<ReturnType<typeof getQuestions>>["data"] = [];
+  let latestPosts: Awaited<ReturnType<typeof getPosts>>["data"] = [];
 
   try {
-    const [nResult, qResult] = await Promise.all([
+    const [nResult, qResult, pResult] = await Promise.all([
       getPosts({ page: 1, pageSize: 3, category: "notice" }),
       getQuestions({ page: 1, pageSize: 6 }),
+      getPosts({ page: 1, pageSize: 3, category: "info" }),
     ]);
     notices = nResult.data;
     recentQuestions = qResult.data;
+    latestPosts = pResult.data;
   } catch (e) {
     console.error("StudentHome data fetch error:", e);
   }
@@ -80,7 +83,8 @@ export async function StudentHome({ userName: _userName }: StudentHomeProps) {
         
         {notices.length === 0 ? (
           <div className="bg-card-bg rounded-xl border border-border-color p-6 card-hover">
-            <p className="text-text-secondary text-center">등록된 공지사항이 없습니다.</p>
+            <p className="text-text-main font-semibold text-center">BS CAMP에 오신 것을 환영합니다!</p>
+            <p className="text-text-secondary text-center mt-1 text-sm">새로운 공지사항이 등록되면 이곳에 표시됩니다.</p>
           </div>
         ) : (
           <div className="bg-card-bg rounded-xl border border-border-color p-6 card-hover">
@@ -166,6 +170,42 @@ export async function StudentHome({ userName: _userName }: StudentHomeProps) {
                       </span>
                       <span className="text-text-muted">{timeAgo(question.created_at)}</span>
                     </div>
+                  </div>
+                </article>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* 정보공유 최신글 */}
+      <section className="mt-12">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold flex items-center text-text-main">
+            <span className="mr-2">📚</span> 정보공유 최신글
+          </h2>
+          <Link href="/posts" className="text-primary font-medium hover:underline">
+            더보기 →
+          </Link>
+        </div>
+
+        {latestPosts.length === 0 ? (
+          <div className="bg-card-bg rounded-xl border border-border-color p-8 text-center card-hover">
+            <p className="text-text-secondary">등록된 정보공유 글이 없습니다.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {latestPosts.map((post) => (
+              <Link key={post.id} href={`/posts/${post.id}`}>
+                <article className="bg-card-bg rounded-xl border border-border-color p-6 card-hover fade-in h-full">
+                  <h3 className="font-bold text-lg mb-3 line-clamp-2 text-text-main">
+                    {post.title}
+                  </h3>
+                  <p className="text-text-secondary text-sm mb-4 line-clamp-3">
+                    {post.content}
+                  </p>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-text-muted">{timeAgo(post.created_at)}</span>
                   </div>
                 </article>
               </Link>

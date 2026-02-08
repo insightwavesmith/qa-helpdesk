@@ -219,11 +219,16 @@ export default function AdminEmailPage() {
         };
       }
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
       const res = await fetch("/api/admin/email/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       const result = await res.json();
 
@@ -247,8 +252,12 @@ export default function AdminEmailPage() {
       setPerfAdSpend("");
       setPerfBody("");
       loadHistory();
-    } catch {
-      toast.error("발송 중 오류가 발생했습니다.");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        toast.error("발송 요청이 시간 초과되었습니다. 다시 시도해주세요.");
+      } else {
+        toast.error("발송 중 오류가 발생했습니다.");
+      }
     } finally {
       setSending(false);
     }

@@ -4,6 +4,7 @@ import { StudentHeader } from "@/components/layout/student-header";
 import { getPendingAnswersCount } from "@/actions/answers";
 import { DashboardSidebar } from "@/components/dashboard/Sidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { MobileSidebar } from "@/components/dashboard/MobileSidebar";
 
 export default async function MainLayout({
   children,
@@ -56,7 +57,15 @@ export default async function MainLayout({
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <DashboardSidebar
+      <div className="hidden md:block">
+        <DashboardSidebar
+          userRole={profile?.role}
+          userName={profile?.name || "사용자"}
+          userEmail={profile?.email || user.email || ""}
+          pendingAnswersCount={pendingAnswersCount}
+        />
+      </div>
+      <MobileSidebar
         userRole={profile?.role}
         userName={profile?.name || "사용자"}
         userEmail={profile?.email || user.email || ""}
