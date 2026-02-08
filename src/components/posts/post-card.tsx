@@ -31,7 +31,7 @@ function formatDate(dateStr: string) {
   return `${y}.${m}.${day}`;
 }
 
-function getExcerpt(content: string, maxLen = 100): string {
+export function getExcerpt(content: string, maxLen = 100): string {
   const cleaned = content
     .replace(/\*\*\[.*?\]\*\*/g, "")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")

@@ -156,7 +156,7 @@ export function PostsRedesignClient({
               {posts.length === 0 ? (
                 <div className="text-center py-16 text-gray-500">
                   <p className="text-base">아직 게시글이 없습니다.</p>
-                  <p className="text-sm mt-1 text-gray-400">첫 번째 글을 작성해보세요!</p>
+                  <p className="text-sm mt-1 text-gray-400">새로운 콘텐츠가 곧 업데이트됩니다.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">

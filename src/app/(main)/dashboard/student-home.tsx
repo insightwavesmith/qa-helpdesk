@@ -3,6 +3,7 @@ import { Search } from "lucide-react";
 import { getPosts } from "@/actions/posts";
 import { getQuestions } from "@/actions/questions";
 import { StudentAdSummary } from "./student-ad-summary";
+import { getExcerpt } from "@/components/posts/post-card";
 
 function timeAgo(dateStr: string) {
   const now = new Date();
@@ -98,7 +99,7 @@ export async function StudentHome({ userName: _userName }: StudentHomeProps) {
                   </div>
                   <div className="flex-1">
                     <h3 className="font-bold text-lg mb-2 text-text-main">{notice.title}</h3>
-                    <p className="text-text-secondary line-clamp-2">{notice.content}</p>
+                    <p className="text-text-secondary line-clamp-2">{getExcerpt(notice.content, 120)}</p>
                     <p className="text-sm text-text-muted mt-2">
                       {timeAgo(notice.created_at)} • 관리자
                     </p>
@@ -202,7 +203,7 @@ export async function StudentHome({ userName: _userName }: StudentHomeProps) {
                     {post.title}
                   </h3>
                   <p className="text-text-secondary text-sm mb-4 line-clamp-3">
-                    {post.content}
+                    {getExcerpt(post.content, 120)}
                   </p>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-text-muted">{timeAgo(post.created_at)}</span>
