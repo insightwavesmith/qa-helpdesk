@@ -1,77 +1,186 @@
-# TASK: 정보공유 UI/UX 개선 + OG 이미지 개선
+# TASK — Phase 1: 통합 콘텐츠 파이프라인 기반 정비
 
-## 목표
-수강생 관점에서 정보공유 페이지가 완성도 있어 보이도록 UI 정리.
-마켓핏랩 블로그(mfitlab.com/solutions/blog) 수준의 여백/레이아웃.
-
-## 레퍼런스
-- 마켓핏랩 블로그: 좌우 여백 충분, max-width container, 카드에 이미지
-- 현재 Q&A 페이지: `max-w-4xl mx-auto p-6` — 이 여백감이 기준
-
-## 디자인 시스템
-- Primary: #F75D5D, Hover: #E54949
-- Background: white, Font: Pretendard
-- Light mode only (다크모드 금지)
+> 설계서: `projects/active/unified-content-pipeline.md` 참고
+> 현재 상태: posts 테이블(정보공유)과 contents 테이블(소스)이 분리됨 → contents 하나로 통합
 
 ---
 
-## T1: 정보공유 페이지 좌우 여백 + 컨테이너 정리 [frontend-dev]
-- **파일**: `src/app/(main)/posts/page.tsx`
-- 현재: `<div className="space-y-8">` — 여백 없음
-- 수정: `<div className="max-w-6xl mx-auto px-6 py-8 space-y-8">`
-- max-w-6xl (1152px): 카드 3열 + 여백. Q&A는 max-w-4xl인데 posts는 카드 레이아웃이라 더 넓어야 함
-- **수강생 레이아웃(layout.tsx)**: `<main>` 에 기본 패딩 추가하지 말 것 — posts page.tsx에서 직접 처리
-- **완료 기준**: 좌우 최소 24px 여백, 카드가 화면 끝에 붙지 않음
+## T1: DB 마이그레이션 SQL 작성 (@backend-dev)
 
-## T2: OG 이미지 카테고리별 차별화 [backend-dev]
-- **파일**: `src/app/api/og/route.tsx`
-- 현재: education/info 전부 파란색 (#3B82F6→#2563EB)
-- 수정 — 카테고리별 색상 + 아이콘 텍스트:
-  ```
-  education/info: coral (#F75D5D → #E54949) + "📚"
-  news/notice:    green (#10B981 → #059669) + "📰"  
-  webinar:        orange (#F97316 → #EA580C) + "🎙️"
-  default:        dark  (#1a1a2e → #2d2d4e) + "💡"
-  ```
-- OG 이미지에 subtle 패턴 추가 (grid dots 또는 diagonal lines) — CSS로 구현 가능
-- **완료 기준**: `/api/og?title=테스트&category=education` → coral 배경, `/api/og?title=테스트&category=news` → green 배경
+`supabase/migrations/00007_unified_content.sql` 생성:
 
-## T3: 카드 스타일 개선 [frontend-dev]
-- **파일**: `src/components/posts/post-card.tsx`
-- 현재: Thumbnail 컴포넌트가 OG API 호출 — 이건 유지
-- 수정:
-  1. 카드 테두리: `border-gray-100` → `border-gray-200` (약간 더 선명)
-  2. hover 시 그림자 강화: `hover:shadow-lg` → `hover:shadow-md hover:-translate-y-0.5 transition-all`
-  3. 카드 내 excerpt에서 마크다운 잔여물 정리 강화: `**[소식]**` 같은 raw markdown이 보이는 문제 수정
-  4. getExcerpt 함수에서 `**`, `[`, `]` 제거 패턴 보강
-- **완료 기준**: 카드 hover 시 미세하게 올라가는 애니메이션, 마크다운 잔여물 없음
+```sql
+-- 1) contents 테이블 확장
+ALTER TABLE contents ADD COLUMN IF NOT EXISTS email_summary TEXT;
+ALTER TABLE contents ADD COLUMN IF NOT EXISTS email_subject TEXT;
+ALTER TABLE contents ADD COLUMN IF NOT EXISTS images JSONB DEFAULT '[]';
+ALTER TABLE contents ADD COLUMN IF NOT EXISTS video_url TEXT;
+ALTER TABLE contents ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT FALSE;
+ALTER TABLE contents ADD COLUMN IF NOT EXISTS view_count INT DEFAULT 0;
+ALTER TABLE contents ADD COLUMN IF NOT EXISTS like_count INT DEFAULT 0;
+ALTER TABLE contents ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ;
+ALTER TABLE contents ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMPTZ;
+ALTER TABLE contents ADD COLUMN IF NOT EXISTS ai_source TEXT;
 
-## T4: 최신 콘텐츠 중복 제거 [frontend-dev]
-- **파일**: `src/app/(main)/posts/posts-redesign-client.tsx`
-- 현재: "전체" 탭에서 카테고리별 섹션 + "최신 콘텐츠" 섹션이 같은 포스트를 중복 노출
-- 수정: "최신 콘텐츠" 섹션에서 카테고리 섹션에 이미 노출된 포스트 ID를 제외
-- 또는: 카테고리별 섹션 3개 → 뉴스레터 CTA → 페이지네이션 (최신 콘텐츠 섹션 자체를 제거하고 카테고리 섹션 아래에 "전체 보기" 버튼)
-- **마켓핏랩 패턴 참고**: 베스트 → 카테고리별 → CTA → 고객사례 → 최신 (중복 없음)
-- dependsOn: T1
-- **완료 기준**: 같은 카드가 페이지에 2번 나오지 않음
+-- 2) 카테고리 업데이트 (education, news, case_study)
+-- 기존 contents의 education → 유지, news → 유지
+-- posts의 info → education, notice → news, webinar → case_study
 
-## T5: 코드 리뷰 [code-reviewer]
-- T1~T4 전체 리뷰
-- 체크: TypeScript 타입 오류, tailwind 클래스 유효성, 접근성(alt text 등)
-- `npm run build` 통과 확인
-- dependsOn: T1, T2, T3, T4
+-- 3) posts 데이터를 contents로 이관
+-- posts에 있는 10개 published 글을 contents에 복사
+-- title, content(→body_md), category(매핑), view_count, is_pinned, created_at
+INSERT INTO contents (title, body_md, summary, category, status, is_pinned, view_count, like_count, published_at, created_at, updated_at)
+SELECT 
+  p.title,
+  p.content,
+  LEFT(p.content, 200),
+  CASE p.category 
+    WHEN 'info' THEN 'education'
+    WHEN 'notice' THEN 'news'
+    WHEN 'webinar' THEN 'case_study'
+    ELSE 'education'
+  END,
+  'published',
+  p.is_pinned,
+  p.view_count,
+  p.like_count,
+  p.published_at,
+  p.created_at,
+  p.updated_at
+FROM posts p
+WHERE p.is_published = true
+ON CONFLICT DO NOTHING;
+
+-- 4) 기존 contents의 published 상태 확인
+-- status='published'인 것만 정보공유에 노출
+
+-- 5) 인덱스
+CREATE INDEX IF NOT EXISTS idx_contents_published_at ON contents(published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_contents_is_pinned ON contents(is_pinned);
+```
+
+**주의:** 이건 SQL 파일 작성만. 실제 실행은 모찌가 Supabase에서 직접.
+**완료 기준:** 마이그레이션 SQL 파일 생성, 문법 오류 없음
 
 ---
 
-## 수정 대상 파일 목록
-| 파일 | 담당 | 변경 내용 |
-|------|------|-----------|
-| `src/app/(main)/posts/page.tsx` | frontend-dev | 컨테이너 여백 |
-| `src/app/api/og/route.tsx` | backend-dev | 카테고리별 색상 |
-| `src/components/posts/post-card.tsx` | frontend-dev | 카드 스타일 |
-| `src/app/(main)/posts/posts-redesign-client.tsx` | frontend-dev | 중복 제거 |
+## T2: 백엔드 — 정보공유 데이터 소스 변경 (@backend-dev)
+**dependsOn: T1**
 
-## 제약
-- 한국어 UI, light mode only
-- 기존 컴포넌트 최대한 유지, 새 파일 지양
-- `npm run build` 에러 없이 통과
+현재 `src/actions/posts.ts`의 `getPosts()`가 posts 테이블 읽음 → contents 테이블로 변경
+
+### 변경 파일:
+1. **`src/actions/posts.ts`** — `getPosts()` 수정:
+   - `from("posts")` → `from("contents")`
+   - `eq("is_published", true)` → `eq("status", "published")`
+   - `content` 컬럼 → `body_md` 컬럼
+   - category 매핑: education, news, case_study
+   - select에 새 컬럼 추가 (email_summary, images 등)
+
+2. **`src/actions/posts.ts`** — `getPostById()` 수정:
+   - 같은 패턴으로 contents 테이블에서 읽기
+
+3. **`src/types/index.ts`** — PostCategory 타입 변경:
+   - `"info" | "notice" | "webinar"` → `"education" | "news" | "case_study"`
+
+4. **`src/app/(main)/dashboard/student-home.tsx`** — latestPosts 쿼리도 contents로
+
+**완료 기준:** 정보공유 페이지가 contents 테이블에서 데이터를 읽고, 기존과 동일하게 표시
+
+---
+
+## T3: 프론트엔드 — 카테고리 + 레이아웃 (@frontend-dev)
+
+### 3-a: 카테고리 변경
+**파일:** `src/components/posts/post-card.tsx`
+```typescript
+// Before
+export const categoryConfig = {
+  info: { label: "교육", bg: "#FFF5F5", text: "#F75D5D" },
+  notice: { label: "소식", bg: "#EFF6FF", text: "#3B82F6" },
+  webinar: { label: "웨비나", bg: "#FFF7ED", text: "#F97316" },
+};
+
+// After
+export const categoryConfig = {
+  education: { label: "교육", bg: "#FFF5F5", text: "#F75D5D" },
+  news: { label: "소식", bg: "#EFF6FF", text: "#3B82F6" },
+  case_study: { label: "고객사례", bg: "#FFF7ED", text: "#F97316" },
+};
+```
+
+**파일:** `src/components/posts/category-tabs.tsx` — 탭 라벨 변경
+**파일:** `src/app/api/og/route.tsx` — OG 이미지 카테고리 매핑 변경
+
+### 3-b: 레이아웃 조정
+**파일:** `src/app/(main)/posts/posts-redesign-client.tsx`
+
+현재: 교육 섹션 3개 → 뉴스레터 → 최신 콘텐츠 (나머지)
+변경:
+1. 맨 위: **베스트 콘텐츠 1개** (is_pinned, 좌우로 길게) — 이미 `PostCard featured` 있음
+2. 그 아래: **최신 3개 카드**
+3. 카테고리 섹션: **고객사례 / 교육 / 소식** 순서
+4. 뉴스레터 CTA (하단)
+
+### 3-c: PostCard 데이터 인터페이스 변경
+`content` → `body_md`, category 타입 변경
+
+**완료 기준:** 정보공유 페이지에 교육/소식/고객사례 탭 + 베스트 hero + 3카드 + 카테고리 섹션
+
+---
+
+## T4: 경쟁 가설 — 통합 에디터 초기 설계 (@frontend-dev vs @backend-dev)
+
+> **경쟁 가설 패턴 적용.** 같은 문제를 두 접근법으로 설계. 코드가 아니라 설계 문서(md)로 비교.
+
+### 문제: 정보공유 글쓰기 + 이메일 작성을 하나의 에디터로 통합하는 최선의 방법은?
+
+### Hypothesis A (@frontend-dev): 기존 에디터 확장
+- 현재 `email-split-editor.tsx` (TipTap + 미리보기 분할) 을 확장
+- 상단에 [정보공유] [이메일] 탭 추가
+- 정보공유 탭: 마크다운 미리보기
+- 이메일 탭: react-email 미리보기
+- 장점: 기존 코드 재사용, 빠른 구현
+- 단점: 이메일 에디터에 종속된 구조
+- **산출물:** `docs/02-design/unified-editor-hypothesis-a.md` (구조도 + 컴포넌트 트리 + 장단점)
+
+### Hypothesis B (@backend-dev): 새 통합 에디터
+- `/admin/editor/[id]` 새 라우트
+- 콘텐츠 중심 설계 (contents 테이블 직접 CRUD)
+- 채널은 "배포 옵션"으로 분리 (체크박스: 정보공유 / 이메일)
+- 각 채널별 미리보기 패널
+- 장점: 확장성 (카카오, SNS 등 추가 용이)
+- 단점: 기존 코드 재사용 적음, 구현 시간 김
+- **산출물:** `docs/02-design/unified-editor-hypothesis-b.md` (구조도 + 컴포넌트 트리 + 장단점)
+
+**완료 기준:** 두 설계 문서 모두 작성. 모찌가 비교 후 Smith님에게 보고.
+
+---
+
+## T5: 코드 리뷰 + 빌드 (@code-reviewer)
+**dependsOn: T1, T2, T3**
+
+- TypeScript 타입 에러 없는지 확인
+- category 타입 일관성 (education/news/case_study 전체)
+- `npm run build` 성공
+- 미사용 import 정리
+
+**완료 기준:** build 성공, Critical 이슈 0건
+
+---
+
+## T6: Git 커밋 + 푸시 (@code-reviewer)
+**dependsOn: T5**
+
+- `git add -A`
+- `git commit -m "feat: 통합 콘텐츠 파이프라인 Phase 1 — DB통합, 카테고리변경, 레이아웃"`
+- `git push origin main`
+
+---
+
+## 작업 규칙
+- 기존 파일 최소 변경, 새 파일 선호
+- SQL 마이그레이션은 파일 작성만 (실행은 모찌가)
+- 경쟁 가설은 코드가 아니라 설계 문서(md)로 비교
+- posts 테이블 관련 코드는 삭제하지 말고, contents로 리다이렉트만
+- `body_md` 컬럼을 사용하되, 기존 `content` 필드명은 인터페이스에서 매핑

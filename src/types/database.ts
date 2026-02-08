@@ -933,6 +933,16 @@ export interface Database {
           source_ref: string | null;
           source_hash: string | null;
           author_id: string | null;
+          email_summary: string | null;
+          email_subject: string | null;
+          images: Json;
+          video_url: string | null;
+          is_pinned: boolean;
+          view_count: number;
+          like_count: number;
+          published_at: string | null;
+          email_sent_at: string | null;
+          ai_source: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -950,6 +960,16 @@ export interface Database {
           source_ref?: string | null;
           source_hash?: string | null;
           author_id?: string | null;
+          email_summary?: string | null;
+          email_subject?: string | null;
+          images?: Json;
+          video_url?: string | null;
+          is_pinned?: boolean;
+          view_count?: number;
+          like_count?: number;
+          published_at?: string | null;
+          email_sent_at?: string | null;
+          ai_source?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -967,10 +987,28 @@ export interface Database {
           source_ref?: string | null;
           source_hash?: string | null;
           author_id?: string | null;
+          email_summary?: string | null;
+          email_subject?: string | null;
+          images?: Json;
+          video_url?: string | null;
+          is_pinned?: boolean;
+          view_count?: number;
+          like_count?: number;
+          published_at?: string | null;
+          email_sent_at?: string | null;
+          ai_source?: string | null;
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "contents_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       distributions: {
         Row: {

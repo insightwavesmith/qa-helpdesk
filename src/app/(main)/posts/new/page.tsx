@@ -42,7 +42,7 @@ const postSchema = z.object({
     .string()
     .min(10, "내용은 10자 이상 입력해주세요.")
     .max(50000, "내용은 50000자 이내로 입력해주세요."),
-  category: z.enum(["info", "notice", "webinar"], {
+  category: z.enum(["education", "news", "case_study"], {
     error: "카테고리를 선택해주세요.",
   }),
 });
@@ -57,7 +57,7 @@ export default function NewPostPage() {
     defaultValues: {
       title: "",
       content: "",
-      category: "info",
+      category: "education",
     },
   });
 
@@ -111,9 +111,9 @@ export default function NewPostPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="info">정보</SelectItem>
-                        <SelectItem value="notice">공지</SelectItem>
-                        <SelectItem value="webinar">웨비나</SelectItem>
+                        <SelectItem value="education">교육</SelectItem>
+                        <SelectItem value="news">소식</SelectItem>
+                        <SelectItem value="case_study">고객사례</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

@@ -38,9 +38,9 @@ export async function StudentHome({ userName: _userName }: StudentHomeProps) {
 
   try {
     const [nResult, qResult, pResult] = await Promise.all([
-      getPosts({ page: 1, pageSize: 3, category: "notice" }),
+      getPosts({ page: 1, pageSize: 3, category: "news" }),
       getQuestions({ page: 1, pageSize: 6 }),
-      getPosts({ page: 1, pageSize: 3, category: "info" }),
+      getPosts({ page: 1, pageSize: 3, category: "education" }),
     ]);
     notices = nResult.data;
     recentQuestions = qResult.data;

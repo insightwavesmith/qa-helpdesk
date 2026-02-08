@@ -6,8 +6,8 @@ export type UserRole = "lead" | "member" | "student" | "alumni" | "admin";
 // 질문 상태
 export type QuestionStatus = "open" | "answered" | "closed";
 
-// 게시글 카테고리
-export type PostCategory = "info" | "notice" | "webinar";
+// 게시글 카테고리 (contents 테이블 기준)
+export type PostCategory = "education" | "news" | "case_study";
 
 // 프로필
 export interface Profile {
@@ -79,12 +79,13 @@ export interface SourceRef {
   relevance_score: number;
 }
 
-// 게시글
+// 게시글 (contents 테이블 기반, 기존 호환 필드 포함)
 export interface Post {
   id: string;
   author_id: string | null;
   title: string;
   content: string;
+  body_md: string;
   category: PostCategory;
   is_published: boolean;
   is_pinned: boolean;
@@ -93,6 +94,13 @@ export interface Post {
   like_count: number;
   created_at: string;
   updated_at: string;
+  // contents 확장 필드
+  summary: string | null;
+  email_summary: string | null;
+  images: unknown[];
+  video_url: string | null;
+  type: string;
+  tags: string[];
   // 조인된 필드
   author?: Profile;
 }

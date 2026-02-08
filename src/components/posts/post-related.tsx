@@ -4,6 +4,7 @@ interface PostData {
   id: string;
   title: string;
   content: string;
+  body_md?: string;
   category: string;
   is_pinned: boolean;
   view_count: number;

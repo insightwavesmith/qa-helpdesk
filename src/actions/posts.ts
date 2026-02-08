@@ -3,6 +3,25 @@
 import { revalidatePath } from "next/cache";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
+// 기존 posts 카테고리 → contents 카테고리 매핑
+const legacyToCategory: Record<string, string> = {
+  info: "education",
+  notice: "news",
+  webinar: "case_study",
+};
+
+// contents 행을 기존 Post 인터페이스 형태로 변환
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapContentToPost<T extends Record<string, any>>(row: T): T & { content: string; is_published: boolean } {
+  return {
+    ...row,
+    // body_md → content 호환 필드 매핑
+    content: (row.body_md as string) || "",
+    // is_published 호환 (status가 published면 true)
+    is_published: row.status === "published",
+  };
+}
+
 export async function getPosts({
   page = 1,
   pageSize = 10,
@@ -19,22 +38,25 @@ export async function getPosts({
   const to = from + pageSize - 1;
 
   let query = supabase
-    .from("posts")
+    .from("contents")
     .select(
-      "*, author:profiles!posts_author_id_fkey(id, name, shop_name)",
+      "*, author:profiles(id, name, shop_name)",
       { count: "exact" }
     )
-    .eq("is_published", true)
+    .eq("status", "published")
     .order("is_pinned", { ascending: false })
+    .order("published_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
     .range(from, to);
 
   if (category && category !== "all") {
-    query = query.eq("category", category as "info" | "notice" | "webinar");
+    // 기존 카테고리(info/notice/webinar) → contents 카테고리 변환
+    const mapped = legacyToCategory[category] || category;
+    query = query.eq("category", mapped);
   }
 
   if (search) {
-    query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
+    query = query.or(`title.ilike.%${search}%,body_md.ilike.%${search}%`);
   }
 
   const { data, count, error } = await query;
@@ -44,16 +66,17 @@ export async function getPosts({
     return { data: [], count: 0, error: error.message };
   }
 
-  return { data: data || [], count: count || 0, error: null };
+  const mapped = (data || []).map(mapContentToPost);
+  return { data: mapped, count: count || 0, error: null };
 }
 
 export async function getPostById(id: string) {
   const supabase = createServiceClient();
 
   const { data, error } = await supabase
-    .from("posts")
+    .from("contents")
     .select(
-      "*, author:profiles!posts_author_id_fkey(id, name, shop_name)"
+      "*, author:profiles(id, name, shop_name)"
     )
     .eq("id", id)
     .single();
@@ -65,17 +88,17 @@ export async function getPostById(id: string) {
 
   // Increment view count
   await supabase
-    .from("posts")
+    .from("contents")
     .update({ view_count: (data.view_count || 0) + 1 })
     .eq("id", id);
 
-  return { data, error: null };
+  return { data: mapContentToPost(data), error: null };
 }
 
 export async function createPost(formData: {
   title: string;
   content: string;
-  category: "info" | "notice" | "webinar";
+  category: "education" | "news" | "case_study";
 }) {
   const supabase = await createClient();
   const {
@@ -88,13 +111,13 @@ export async function createPost(formData: {
 
   const svc = createServiceClient();
   const { data, error } = await svc
-    .from("posts")
+    .from("contents")
     .insert({
       title: formData.title,
-      content: formData.content,
+      body_md: formData.content,
       category: formData.category,
       author_id: user.id,
-      is_published: false, // 관리자 승인 후 공개
+      status: "draft", // 관리자 승인 후 공개
     })
     .select()
     .single();
@@ -106,7 +129,7 @@ export async function createPost(formData: {
 
   revalidatePath("/posts");
   revalidatePath("/dashboard");
-  return { data, error: null };
+  return { data: mapContentToPost(data), error: null };
 }
 
 export async function getCommentsByPostId(postId: string) {

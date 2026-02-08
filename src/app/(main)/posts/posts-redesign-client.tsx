@@ -13,6 +13,7 @@ interface PostData {
   id: string;
   title: string;
   content: string;
+  body_md?: string;
   category: string;
   is_pinned: boolean;
   view_count: number;
@@ -31,7 +32,8 @@ interface PostsRedesignClientProps {
   totalCount: number;
 }
 
-const categoryKeys = Object.keys(categoryConfig);
+// 카테고리 섹션 표시 순서: 고객사례 → 교육 → 소식
+const categoryOrder = ["case_study", "education", "news"];
 
 export function PostsRedesignClient({
   posts,
@@ -67,25 +69,33 @@ export function PostsRedesignClient({
   const postsByCategory = useMemo(() => {
     const grouped: Record<string, PostData[]> = {};
     for (const post of posts) {
-      const cat = post.category || "info";
+      const cat = post.category || "education";
       if (!grouped[cat]) grouped[cat] = [];
       grouped[cat].push(post);
     }
     return grouped;
   }, [posts]);
 
-  // Collect IDs of posts already shown in category sections + pinned
+  // 최신 3개 (pinned 제외)
+  const latestPosts = useMemo(() => {
+    return posts
+      .filter((p) => !pinnedPost || p.id !== pinnedPost.id)
+      .slice(0, 3);
+  }, [posts, pinnedPost]);
+
+  // Collect IDs of posts already shown in pinned + latest + category sections
   const shownPostIds = useMemo(() => {
     const ids = new Set<string>();
     if (pinnedPost) ids.add(pinnedPost.id);
-    for (const catKey of categoryKeys) {
+    latestPosts.forEach((p) => ids.add(p.id));
+    for (const catKey of categoryOrder) {
       const catPosts = postsByCategory[catKey];
       if (catPosts) {
         catPosts.slice(0, 3).forEach((p) => ids.add(p.id));
       }
     }
     return ids;
-  }, [pinnedPost, postsByCategory]);
+  }, [pinnedPost, latestPosts, postsByCategory]);
 
   const remainingPosts = useMemo(
     () => posts.filter((p) => !shownPostIds.has(p.id)),
@@ -137,7 +147,7 @@ export function PostsRedesignClient({
         </>
       ) : (
         <>
-          {/* Hero: pinned post */}
+          {/* Hero: pinned post (베스트 콘텐츠) */}
           {pinnedPost && currentPage === 1 && !isCategoryFiltered && (
             <section className="py-4">
               <h2 className="text-lg font-bold text-[#1a1a2e] mb-4">베스트 콘텐츠</h2>
@@ -173,11 +183,23 @@ export function PostsRedesignClient({
             </>
           ) : (
             <>
-              {/* Section-based layout: grouped by category */}
-              {categoryKeys.map((catKey) => {
+              {/* 최신 콘텐츠 3개 */}
+              {latestPosts.length > 0 && currentPage === 1 && (
+                <section className="py-4">
+                  <h2 className="text-lg font-bold text-[#1a1a2e] mb-4">최신 콘텐츠</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                    {latestPosts.map((post) => (
+                      <PostCard key={post.id} post={post} />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* 카테고리별 섹션: 고객사례 → 교육 → 소식 */}
+              {categoryOrder.map((catKey) => {
                 const catPosts = postsByCategory[catKey];
                 if (!catPosts || catPosts.length === 0) return null;
-                const catLabel = categoryConfig[catKey].label;
+                const catLabel = categoryConfig[catKey]?.label || catKey;
                 const displayPosts = catPosts.slice(0, 3);
                 return (
                   <section key={catKey} className="py-8">
@@ -200,13 +222,13 @@ export function PostsRedesignClient({
                 );
               })}
 
-              {/* Newsletter CTA */}
+              {/* 뉴스레터 CTA */}
               <NewsletterCta />
 
-              {/* All latest posts — excluding already-shown posts */}
+              {/* 나머지 게시글 */}
               {remainingPosts.length > 0 && (
                 <section className="py-8">
-                  <h2 className="text-lg font-bold text-[#1a1a2e] mb-5">최신 콘텐츠</h2>
+                  <h2 className="text-lg font-bold text-[#1a1a2e] mb-5">더 많은 콘텐츠</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
                     {remainingPosts.map((post) => (
                       <PostCard key={post.id} post={post} />

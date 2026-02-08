@@ -10,9 +10,9 @@ import { NewsletterCta } from "@/components/posts/newsletter-cta";
 import { CommentSection } from "./comment-section";
 
 const categoryConfig: Record<string, { label: string; bg: string; text: string }> = {
-  info: { label: "교육", bg: "#FFF5F5", text: "#F75D5D" },
-  notice: { label: "소식", bg: "#EFF6FF", text: "#3B82F6" },
-  webinar: { label: "웨비나", bg: "#FFF7ED", text: "#F97316" },
+  education: { label: "교육", bg: "#FFF5F5", text: "#F75D5D" },
+  news: { label: "소식", bg: "#EFF6FF", text: "#3B82F6" },
+  case_study: { label: "고객사례", bg: "#FFF7ED", text: "#F97316" },
 };
 
 function formatDate(dateStr: string) {
@@ -47,7 +47,7 @@ export default async function PostDetailPage({
     .filter((p: { id: string }) => p.id !== post.id)
     .slice(0, 3);
 
-  const catConfig = categoryConfig[post.category] || categoryConfig.info;
+  const catConfig = categoryConfig[post.category] || categoryConfig.education;
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">

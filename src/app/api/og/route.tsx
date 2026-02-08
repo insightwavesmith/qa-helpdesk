@@ -4,28 +4,34 @@ import { NextRequest } from "next/server";
 export const runtime = "edge";
 
 const categoryLabels: Record<string, string> = {
-  info: "교육",
-  notice: "소식",
-  webinar: "웨비나",
   education: "교육",
   news: "소식",
+  case_study: "고객사례",
+  // 하위호환
+  info: "교육",
+  notice: "소식",
+  webinar: "고객사례",
 };
 
 const gradientMap: Record<string, [string, string]> = {
-  info: ["#F75D5D", "#E54949"],
   education: ["#F75D5D", "#E54949"],
-  notice: ["#10B981", "#059669"],
   news: ["#10B981", "#059669"],
+  case_study: ["#F97316", "#EA580C"],
+  // 하위호환
+  info: ["#F75D5D", "#E54949"],
+  notice: ["#10B981", "#059669"],
   webinar: ["#F97316", "#EA580C"],
 };
 const defaultGradient: [string, string] = ["#1a1a2e", "#2d2d4e"];
 
 const categoryEmoji: Record<string, string> = {
-  info: "\u{1F4DA}",
   education: "\u{1F4DA}",
-  notice: "\u{1F4F0}",
   news: "\u{1F4F0}",
-  webinar: "\u{1F399}\uFE0F",
+  case_study: "\u{1F3AF}",
+  // 하위호환
+  info: "\u{1F4DA}",
+  notice: "\u{1F4F0}",
+  webinar: "\u{1F3AF}",
 };
 const defaultEmoji = "\u{1F4A1}";
 

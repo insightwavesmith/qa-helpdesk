@@ -4,6 +4,7 @@ interface PostData {
   id: string;
   title: string;
   content: string;
+  body_md?: string;
   category: string;
   is_pinned: boolean;
   view_count: number;
@@ -18,9 +19,9 @@ interface PostCardProps {
 }
 
 export const categoryConfig: Record<string, { label: string; bg: string; text: string }> = {
-  info: { label: "교육", bg: "#FFF5F5", text: "#F75D5D" },
-  notice: { label: "소식", bg: "#EFF6FF", text: "#3B82F6" },
-  webinar: { label: "웨비나", bg: "#FFF7ED", text: "#F97316" },
+  education: { label: "교육", bg: "#FFF5F5", text: "#F75D5D" },
+  news: { label: "소식", bg: "#EFF6FF", text: "#3B82F6" },
+  case_study: { label: "고객사례", bg: "#FFF7ED", text: "#F97316" },
 };
 
 function formatDate(dateStr: string) {
@@ -42,7 +43,7 @@ export function getExcerpt(content: string, maxLen = 100): string {
 }
 
 function CategoryBadge({ category }: { category: string }) {
-  const config = categoryConfig[category] || categoryConfig.info;
+  const config = categoryConfig[category] || categoryConfig.education;
   return (
     <span
       className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded"
@@ -78,7 +79,7 @@ export function PostCard({ post, featured = false }: PostCardProps) {
               {post.title}
             </h2>
             <p className="mt-2 text-sm text-gray-500 line-clamp-3 leading-relaxed">
-              {getExcerpt(post.content, 150)}
+              {getExcerpt(post.body_md || post.content, 150)}
             </p>
             <span className="mt-4 text-xs text-gray-400">
               {formatDate(post.created_at)} · 조회 {post.view_count}
@@ -99,7 +100,7 @@ export function PostCard({ post, featured = false }: PostCardProps) {
             {post.title}
           </h3>
           <p className="mt-1.5 text-sm text-gray-500 line-clamp-2 leading-relaxed flex-1">
-            {getExcerpt(post.content)}
+            {getExcerpt(post.body_md || post.content)}
           </p>
           <span className="mt-3 text-xs text-gray-400">
             {formatDate(post.created_at)} · 조회 {post.view_count}
