@@ -43,7 +43,7 @@ export default async function PostsPage({
   const regularPosts = posts.filter((p: { id: string }) => p.id !== pinnedPost?.id);
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
       {/* Header */}
       <div>
         <div className="flex items-center justify-between">

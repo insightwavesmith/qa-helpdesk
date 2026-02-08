@@ -32,8 +32,13 @@ function formatDate(dateStr: string) {
 }
 
 function getExcerpt(content: string, maxLen = 100): string {
-  const plain = content.replace(/[#*_~`>\-\[\]()!|]/g, "").replace(/\n+/g, " ").trim();
-  return plain.length > maxLen ? plain.slice(0, maxLen) + "..." : plain;
+  const cleaned = content
+    .replace(/\*\*\[.*?\]\*\*/g, "")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/[#*_~`>\-\[\]()!|]/g, "")
+    .replace(/\n+/g, " ")
+    .trim();
+  return cleaned.length > maxLen ? cleaned.slice(0, maxLen) + "..." : cleaned;
 }
 
 function CategoryBadge({ category }: { category: string }) {
@@ -63,7 +68,7 @@ export function PostCard({ post, featured = false }: PostCardProps) {
   if (featured) {
     return (
       <Link href={`/posts/${post.id}`} className="block group">
-        <article className="flex flex-col md:flex-row bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-shadow">
+        <article className="flex flex-col md:flex-row bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
           <div className="md:w-3/5 shrink-0">
             <Thumbnail title={post.title} category={post.category} />
           </div>
@@ -86,7 +91,7 @@ export function PostCard({ post, featured = false }: PostCardProps) {
 
   return (
     <Link href={`/posts/${post.id}`} className="block group">
-      <article className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-shadow h-full flex flex-col">
+      <article className="bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all h-full flex flex-col">
         <Thumbnail title={post.title} category={post.category} />
         <div className="p-4 flex flex-col flex-1">
           <CategoryBadge category={post.category} />

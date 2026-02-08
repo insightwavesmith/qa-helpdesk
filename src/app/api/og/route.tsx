@@ -12,13 +12,22 @@ const categoryLabels: Record<string, string> = {
 };
 
 const gradientMap: Record<string, [string, string]> = {
-  info: ["#3B82F6", "#2563EB"],
-  education: ["#3B82F6", "#2563EB"],
+  info: ["#F75D5D", "#E54949"],
+  education: ["#F75D5D", "#E54949"],
   notice: ["#10B981", "#059669"],
   news: ["#10B981", "#059669"],
   webinar: ["#F97316", "#EA580C"],
 };
-const defaultGradient: [string, string] = ["#F75D5D", "#E54949"];
+const defaultGradient: [string, string] = ["#1a1a2e", "#2d2d4e"];
+
+const categoryEmoji: Record<string, string> = {
+  info: "\u{1F4DA}",
+  education: "\u{1F4DA}",
+  notice: "\u{1F4F0}",
+  news: "\u{1F4F0}",
+  webinar: "\u{1F399}\uFE0F",
+};
+const defaultEmoji = "\u{1F4A1}";
 
 export async function GET(req: NextRequest) {
   try {
@@ -27,6 +36,7 @@ export async function GET(req: NextRequest) {
     const category = searchParams.get("category") || "";
     const catLabel = categoryLabels[category] || category;
     const [gradStart, gradEnd] = gradientMap[category] || defaultGradient;
+    const emoji = categoryEmoji[category] || defaultEmoji;
 
     return new ImageResponse(
       (
@@ -40,8 +50,22 @@ export async function GET(req: NextRequest) {
             alignItems: "center",
             background: `linear-gradient(135deg, ${gradStart} 0%, ${gradEnd} 100%)`,
             padding: "60px",
+            position: "relative",
           }}
         >
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              backgroundImage:
+                "radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)",
+              backgroundSize: "30px 30px",
+              display: "flex",
+            }}
+          />
           <div
             style={{
               position: "absolute",
@@ -81,7 +105,7 @@ export async function GET(req: NextRequest) {
                 display: "flex",
               }}
             >
-              {catLabel}
+              {emoji} {catLabel}
             </div>
           ) : null}
         </div>

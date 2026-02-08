@@ -74,6 +74,24 @@ export function PostsRedesignClient({
     return grouped;
   }, [posts]);
 
+  // Collect IDs of posts already shown in category sections + pinned
+  const shownPostIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (pinnedPost) ids.add(pinnedPost.id);
+    for (const catKey of categoryKeys) {
+      const catPosts = postsByCategory[catKey];
+      if (catPosts) {
+        catPosts.slice(0, 3).forEach((p) => ids.add(p.id));
+      }
+    }
+    return ids;
+  }, [pinnedPost, postsByCategory]);
+
+  const remainingPosts = useMemo(
+    () => posts.filter((p) => !shownPostIds.has(p.id)),
+    [posts, shownPostIds]
+  );
+
   const isSearchMode = !!currentSearch;
   const isCategoryFiltered = currentCategory !== "all";
 
@@ -185,29 +203,24 @@ export function PostsRedesignClient({
               {/* Newsletter CTA */}
               <NewsletterCta />
 
-              {/* All latest posts */}
-              <section className="py-8">
-                <h2 className="text-lg font-bold text-[#1a1a2e] mb-5">최신 콘텐츠</h2>
-                {posts.length === 0 ? (
-                  <div className="text-center py-16 text-gray-500">
-                    <p className="text-base">아직 게시글이 없습니다.</p>
-                    <p className="text-sm mt-1 text-gray-400">첫 번째 글을 작성해보세요!</p>
-                  </div>
-                ) : (
+              {/* All latest posts — excluding already-shown posts */}
+              {remainingPosts.length > 0 && (
+                <section className="py-8">
+                  <h2 className="text-lg font-bold text-[#1a1a2e] mb-5">최신 콘텐츠</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-                    {posts.map((post) => (
+                    {remainingPosts.map((post) => (
                       <PostCard key={post.id} post={post} />
                     ))}
                   </div>
-                )}
-                <div className="mt-6">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={(page) => updateParams({ page: String(page) })}
-                  />
-                </div>
-              </section>
+                  <div className="mt-6">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={(page) => updateParams({ page: String(page) })}
+                    />
+                  </div>
+                </section>
+              )}
             </>
           )}
         </>
