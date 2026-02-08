@@ -23,7 +23,7 @@ export async function subscribeNewsletter(email: string) {
   const { error } = await svc.from("leads").insert({
     email,
     name: "",
-    status: "active",
+    status: "new",
   });
 
   if (error) {
