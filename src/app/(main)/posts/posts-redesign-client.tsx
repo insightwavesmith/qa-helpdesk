@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
-import { PostCard } from "@/components/posts/post-card";
+import { useCallback, useMemo } from "react";
+import { PostCard, categoryConfig } from "@/components/posts/post-card";
 import { CategoryTabs } from "@/components/posts/category-tabs";
 import { NewsletterCta } from "@/components/posts/newsletter-cta";
 import { SearchBar } from "@/components/shared/SearchBar";
 import { Pagination } from "@/components/shared/Pagination";
+import { ChevronRight } from "lucide-react";
 
 interface PostData {
   id: string;
@@ -29,6 +30,8 @@ interface PostsRedesignClientProps {
   totalPages: number;
   totalCount: number;
 }
+
+const categoryKeys = Object.keys(categoryConfig);
 
 export function PostsRedesignClient({
   posts,
@@ -60,9 +63,19 @@ export function PostsRedesignClient({
     [router, searchParams]
   );
 
-  // Split posts for CTA insertion (after 6 cards)
-  const firstBatch = posts.slice(0, 6);
-  const secondBatch = posts.slice(6);
+  // Group posts by category for section layout
+  const postsByCategory = useMemo(() => {
+    const grouped: Record<string, PostData[]> = {};
+    for (const post of posts) {
+      const cat = post.category || "info";
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(post);
+    }
+    return grouped;
+  }, [posts]);
+
+  const isSearchMode = !!currentSearch;
+  const isCategoryFiltered = currentCategory !== "all";
 
   return (
     <div className="space-y-8">
@@ -79,60 +92,126 @@ export function PostsRedesignClient({
         onSearch={(query) => updateParams({ search: query })}
       />
 
-      {/* Best Content */}
-      {pinnedPost && !currentSearch && currentPage === 1 && (
-        <section>
-          <h2 className="text-lg font-bold text-[#1a1a2e] mb-4">베스트 콘텐츠</h2>
-          <PostCard post={pinnedPost} featured />
-        </section>
-      )}
-
-      {/* Results count */}
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-[#999999]">
-          {totalCount}개의 게시글
-        </span>
-      </div>
-
-      {/* Post Grid */}
-      {posts.length === 0 ? (
-        <div className="text-center py-16 text-[#666666]">
-          <p className="text-base">
-            {currentSearch
-              ? "검색 결과가 없습니다."
-              : "아직 게시글이 없습니다."}
-          </p>
-          <p className="text-sm mt-1 text-[#999999]">
-            {!currentSearch && "첫 번째 글을 작성해보세요!"}
-          </p>
-        </div>
-      ) : (
+      {/* Search mode: flat grid layout */}
+      {isSearchMode ? (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {firstBatch.map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-400">
+              검색 결과 {totalCount}개
+            </span>
           </div>
-
-          {/* Newsletter CTA after 6 cards */}
-          {firstBatch.length >= 6 && <NewsletterCta />}
-
-          {secondBatch.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {secondBatch.map((post) => (
+          {posts.length === 0 ? (
+            <div className="text-center py-16 text-gray-500">
+              <p className="text-base">검색 결과가 없습니다.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+              {posts.map((post) => (
                 <PostCard key={post.id} post={post} />
               ))}
             </div>
           )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={(page) => updateParams({ page: String(page) })}
+          />
+        </>
+      ) : (
+        <>
+          {/* Hero: pinned post */}
+          {pinnedPost && currentPage === 1 && !isCategoryFiltered && (
+            <section className="py-4">
+              <h2 className="text-lg font-bold text-[#1a1a2e] mb-4">베스트 콘텐츠</h2>
+              <PostCard post={pinnedPost} featured />
+            </section>
+          )}
+
+          {/* Category-filtered mode: simple grid */}
+          {isCategoryFiltered ? (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-400">
+                  {totalCount}개의 게시글
+                </span>
+              </div>
+              {posts.length === 0 ? (
+                <div className="text-center py-16 text-gray-500">
+                  <p className="text-base">아직 게시글이 없습니다.</p>
+                  <p className="text-sm mt-1 text-gray-400">첫 번째 글을 작성해보세요!</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                  {posts.map((post) => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
+                </div>
+              )}
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page) => updateParams({ page: String(page) })}
+              />
+            </>
+          ) : (
+            <>
+              {/* Section-based layout: grouped by category */}
+              {categoryKeys.map((catKey) => {
+                const catPosts = postsByCategory[catKey];
+                if (!catPosts || catPosts.length === 0) return null;
+                const catLabel = categoryConfig[catKey].label;
+                const displayPosts = catPosts.slice(0, 3);
+                return (
+                  <section key={catKey} className="py-8">
+                    <div className="flex items-center justify-between mb-5">
+                      <h2 className="text-lg font-bold text-[#1a1a2e]">{catLabel}</h2>
+                      <button
+                        onClick={() => updateParams({ category: catKey })}
+                        className="flex items-center gap-0.5 text-sm text-gray-500 hover:text-[#F75D5D] transition-colors"
+                      >
+                        더 살펴보기
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                      {displayPosts.map((post) => (
+                        <PostCard key={post.id} post={post} />
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+
+              {/* Newsletter CTA */}
+              <NewsletterCta />
+
+              {/* All latest posts */}
+              <section className="py-8">
+                <h2 className="text-lg font-bold text-[#1a1a2e] mb-5">최신 콘텐츠</h2>
+                {posts.length === 0 ? (
+                  <div className="text-center py-16 text-gray-500">
+                    <p className="text-base">아직 게시글이 없습니다.</p>
+                    <p className="text-sm mt-1 text-gray-400">첫 번째 글을 작성해보세요!</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                    {posts.map((post) => (
+                      <PostCard key={post.id} post={post} />
+                    ))}
+                  </div>
+                )}
+                <div className="mt-6">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={(page) => updateParams({ page: String(page) })}
+                  />
+                </div>
+              </section>
+            </>
+          )}
         </>
       )}
-
-      {/* Pagination */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={(page) => updateParams({ page: String(page) })}
-      />
     </div>
   );
 }
