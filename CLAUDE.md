@@ -7,6 +7,24 @@
 4. **디자인 시스템**: Primary `#F75D5D`, hover `#E54949`, Pretendard 폰트, 라이트 모드만.
 5. **DB 안전**: RLS 정책 필수. SECURITY DEFINER → SET search_path = public. 변수명 테이블/타입과 겹치지 않게.
 
+## 에이전트팀 운영
+- 이 프로젝트는 **상시 에이전트팀**으로 운영됨
+- Leader는 delegate 모드 — 코드 직접 작성 금지, 조율만
+- 모든 구현은 plan approval 후에만 진행
+- TASK.md를 읽고 작업 분배 (의존성 순서 준수)
+- 완료 후: `openclaw gateway wake --text 'Done' --mode now`
+
+## 플러그인 (설치 완료 2026-02-08)
+- **Compound Engineering** (v2.30.0) — every-marketplace
+  - `/workflows:review` — 멀티 리뷰 (보안/성능/아키텍처)
+  - `/workflows:compound` — 작업 후 교훈 문서화
+  - `/workflows:plan` — 구조화된 계획
+- **Conductor** (v0.1.0) — claude-conductor
+  - `/conductor:setup` — 프로젝트 컨텍스트 설정
+  - `/conductor:new-track` — 새 작업 트랙
+  - `/conductor:implement` — 구현 실행
+  - `/conductor:status` — 상태 확인
+
 ## 작업 완료 기준
 - [ ] `npm run build` 성공
 - [ ] lint 에러 0개

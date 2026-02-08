@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { CalendarDays, Bell } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
   Select,
@@ -99,14 +99,7 @@ export function DashboardHeader({ userName = "사용자" }: DashboardHeaderProps
         )}
       </div>
       <div className="flex items-center gap-2">
-        <button
-          className="relative inline-flex items-center justify-center rounded-md h-9 w-9 text-muted-foreground hover:text-card-foreground hover:bg-accent transition-colors"
-          aria-label="알림"
-        >
-          <Bell className="h-4 w-4" />
-          <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-primary" />
-        </button>
-        <div className="ml-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
           {initials}
         </div>
       </div>

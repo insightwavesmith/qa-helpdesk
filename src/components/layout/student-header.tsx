@@ -47,7 +47,7 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
           {/* 로고 */}
           <Link href="/dashboard" className="flex items-center">
             <img src="/logo.png" alt="BS CAMP" className="w-8 h-8 rounded-lg object-cover" />
-            <span className="ml-2 text-xl font-bold text-gray-900 font-accent">BS CAMP</span>
+            <span className="ml-2 text-xl font-bold text-gray-900 font-accent [word-spacing:-3px]">BS CAMP</span>
           </Link>
           
           {/* 데스크탑 네비게이션 */}

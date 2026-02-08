@@ -6,5 +6,34 @@
       "Write",
       "Bash(*)"
     ]
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "teammateMode": "tmux",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ \"$(git branch --show-current)\" != \"main\" ] || echo 'WARNING: Editing on main branch — ensure build passes before push' >&2",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/smith/.openclaw/workspace/projects/qa-knowledge-base/app && npx tsc --noEmit --quiet 2>&1 | tail -5; if [ $? -ne 0 ]; then echo '{\"block\": true, \"message\": \"TypeScript 에러 있음. 수정 후 다시 완료 처리하세요.\"}' >&2; exit 2; fi",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
   }
 }

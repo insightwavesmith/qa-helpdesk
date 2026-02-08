@@ -43,18 +43,14 @@ export async function getQuestions({
   }
 
   // Handle tab-specific filtering
-  if (tab === "all") {
-    // 전체 Q&A: only answered questions
-    query = query.eq("status", "answered");
-  } else if (tab === "mine" && authorId) {
-    // 내 질문: all statuses for the author
+  if (tab === "mine" && authorId) {
     query = query.eq("author_id", authorId);
+  } else if (tab === "answered") {
+    query = query.in("status", ["answered", "closed"]);
+  } else if (tab === "pending") {
+    query = query.eq("status", "open");
   }
-
-  // Additional status filter (only if not using tab-specific filtering)
-  if (tab === "mine" && status && status !== "all") {
-    query = query.eq("status", status as "open" | "answered" | "closed");
-  }
+  // tab === "all" → 필터 없음 (전체 표시)
 
   const { data, count, error } = await query;
 
