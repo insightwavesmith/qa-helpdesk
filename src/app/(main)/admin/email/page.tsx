@@ -35,15 +35,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Send, Eye, Loader2, Users, Mail, AlertCircle, FileText, UserCheck, UserX } from "lucide-react";
+import { Send, Eye, Loader2, Users, Mail, AlertCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import AiWriteDialog from "@/components/email/ai-write-dialog";
 import ContentPickerDialog from "@/components/content/content-picker-dialog";
 import { getContentAsEmailHtml, updateContentEmailSentAt } from "@/actions/contents";
-import { getSubscribers } from "@/actions/subscribers";
 
 const TipTapEditor = dynamic(() => import("@/components/email/tiptap-editor"), {
   ssr: false,
@@ -330,35 +328,6 @@ function AdminEmailPageInner() {
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
 
-  // 구독자 관리 탭
-  const [activeTab, setActiveTab] = useState("send");
-  const [subscribers, setSubscribers] = useState<Array<{ id: string; name: string | null; email: string; created_at: string; email_opted_out: boolean | null }>>([]);
-  const [subscriberCount, setSubscriberCount] = useState(0);
-  const [subscriberPage, setSubscriberPage] = useState(1);
-  const [loadingSubscribers, setLoadingSubscribers] = useState(false);
-  const subscriberPageSize = 20;
-
-  const loadSubscribers = useCallback(async (page: number) => {
-    setLoadingSubscribers(true);
-    try {
-      const result = await getSubscribers(page, subscriberPageSize);
-      setSubscribers(result.data);
-      setSubscriberCount(result.count);
-    } catch {
-      toast.error("구독자 목록을 불러올 수 없습니다.");
-    } finally {
-      setLoadingSubscribers(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === "subscribers") {
-      loadSubscribers(subscriberPage);
-    }
-  }, [activeTab, subscriberPage, loadSubscribers]);
-
-  const subscriberTotalPages = Math.ceil(subscriberCount / subscriberPageSize);
-
   return (
     <div className="space-y-6">
       <div>
@@ -366,23 +335,11 @@ function AdminEmailPageInner() {
           이메일 관리
         </h1>
         <p className="text-[14px] text-gray-500 mt-1">
-          최신정보 및 공지 이메일을 발송하고 구독자를 관리합니다.
+          최신정보 및 공지 이메일을 발송합니다.
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="send" className="gap-1.5">
-            <Mail className="h-3.5 w-3.5" />
-            이메일 발송
-          </TabsTrigger>
-          <TabsTrigger value="subscribers" className="gap-1.5">
-            <Users className="h-3.5 w-3.5" />
-            구독자 관리
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="send" className="mt-4 space-y-6">
+      <div className="space-y-6">
 
       {/* 수신자 현황 */}
       <div className="grid grid-cols-3 gap-4">
@@ -778,107 +735,7 @@ function AdminEmailPageInner() {
           )}
         </CardContent>
       </Card>
-        </TabsContent>
-
-        <TabsContent value="subscribers" className="mt-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-[16px]">
-                    <Users className="inline-block h-4 w-4 mr-2 opacity-60" />
-                    구독자 관리
-                  </CardTitle>
-                  <CardDescription>
-                    뉴스레터 구독자 목록입니다. 총 {subscriberCount}명
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {loadingSubscribers ? (
-                <div className="flex items-center justify-center py-12 text-gray-500">
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  불러오는 중...
-                </div>
-              ) : subscribers.length === 0 ? (
-                <p className="text-center py-12 text-[14px] text-gray-500">
-                  아직 구독자가 없습니다.
-                </p>
-              ) : (
-                <>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>이름</TableHead>
-                        <TableHead>이메일</TableHead>
-                        <TableHead>구독일</TableHead>
-                        <TableHead className="text-center">수신 상태</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {subscribers.map((sub) => (
-                        <TableRow key={sub.id}>
-                          <TableCell className="font-medium">
-                            {sub.name || "-"}
-                          </TableCell>
-                          <TableCell className="text-[13px] text-gray-600">
-                            {sub.email}
-                          </TableCell>
-                          <TableCell className="text-[13px] text-gray-500">
-                            {new Date(sub.created_at).toLocaleDateString("ko-KR", {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            })}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {sub.email_opted_out ? (
-                              <Badge variant="outline" className="text-[11px] border-red-200 bg-red-50 text-red-600 gap-1">
-                                <UserX className="h-3 w-3" />
-                                수신거부
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-[11px] border-green-200 bg-green-50 text-green-600 gap-1">
-                                <UserCheck className="h-3 w-3" />
-                                수신중
-                              </Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-
-                  {subscriberTotalPages > 1 && (
-                    <div className="flex justify-center gap-2 mt-4 pt-4 border-t">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={subscriberPage <= 1}
-                        onClick={() => setSubscriberPage((p) => p - 1)}
-                      >
-                        이전
-                      </Button>
-                      <span className="flex items-center text-sm text-gray-500 px-3">
-                        {subscriberPage} / {subscriberTotalPages}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={subscriberPage >= subscriberTotalPages}
-                        onClick={() => setSubscriberPage((p) => p + 1)}
-                      >
-                        다음
-                      </Button>
-                    </div>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      </div>
     </div>
   );
 }

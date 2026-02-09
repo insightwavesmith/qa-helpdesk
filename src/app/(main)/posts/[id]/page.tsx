@@ -1,25 +1,31 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getPostById, getPosts } from "@/actions/posts";
-import { PostHero } from "@/components/posts/post-hero";
-import { PostToc } from "@/components/posts/post-toc";
-import { PostBody } from "@/components/posts/post-body";
-import { PostRelated } from "@/components/posts/post-related";
-import { NewsletterCta } from "@/components/posts/newsletter-cta";
+import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import PostDetailClient from "./PostDetailClient";
 
-const categoryConfig: Record<string, { label: string; bg: string; text: string }> = {
-  education: { label: "교육", bg: "#FFF5F5", text: "#F75D5D" },
-  notice: { label: "공지", bg: "#EFF6FF", text: "#3B82F6" },
-  case_study: { label: "고객사례", bg: "#FFF7ED", text: "#F97316" },
-};
+async function checkIsAdmin(): Promise<boolean> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return false;
 
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}.${m}.${day}`;
+    const svc = createServiceClient();
+    const { data: profile } = await svc
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    return profile?.role === "admin";
+  } catch {
+    return false;
+  }
 }
 
 export default async function PostDetailPage({
@@ -29,10 +35,16 @@ export default async function PostDetailPage({
 }) {
   const { id } = await params;
 
-  const { data: post, error } = await getPostById(id);
-  if (error || !post) {
+  const [postResult, isAdmin] = await Promise.all([
+    getPostById(id),
+    checkIsAdmin(),
+  ]);
+
+  if (postResult.error || !postResult.data) {
     notFound();
   }
+
+  const post = postResult.data;
 
   // 관련 글: 같은 카테고리 글 3개
   const { data: relatedRaw } = await getPosts({
@@ -43,8 +55,6 @@ export default async function PostDetailPage({
   const relatedPosts = relatedRaw
     .filter((p: { id: string }) => p.id !== post.id)
     .slice(0, 3);
-
-  const catConfig = categoryConfig[post.category] || categoryConfig.education;
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
@@ -57,42 +67,35 @@ export default async function PostDetailPage({
         목록으로 돌아가기
       </Link>
 
-      {/* Category Badge */}
-      <div>
-        <span
-          className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded"
-          style={{ backgroundColor: catConfig.bg, color: catConfig.text }}
-        >
-          {catConfig.label}
-        </span>
-      </div>
-
-      {/* Title */}
-      <h1 className="text-2xl sm:text-[32px] font-bold text-[#1a1a2e] leading-tight">
-        {post.title}
-      </h1>
-
-      {/* Meta */}
-      <div className="flex items-center gap-2 text-sm text-[#999999]">
-        <span>{formatDate(post.created_at)}</span>
-        <span>·</span>
-        <span>{catConfig.label}</span>
-      </div>
-
-      {/* Hero Banner */}
-      <PostHero title={post.title} category={post.category} />
-
-      {/* TOC */}
-      <PostToc content={post.content} />
-
-      {/* Body */}
-      <PostBody content={post.content} />
-
-      {/* Related Posts */}
-      <PostRelated posts={relatedPosts} />
-
-      {/* Newsletter CTA */}
-      <NewsletterCta />
+      <Suspense fallback={null}>
+        <PostDetailClient
+          post={{
+            id: post.id,
+            title: post.title,
+            content: post.content,
+            body_md: post.body_md,
+            category: post.category,
+            is_pinned: post.is_pinned,
+            view_count: post.view_count,
+            status: post.status,
+            created_at: post.created_at,
+            author: post.author,
+          }}
+          relatedPosts={relatedPosts.map((p: { id: string; title: string; content: string; body_md?: string; category: string; is_pinned: boolean; view_count: number; created_at: string; author?: { id: string; name: string; shop_name?: string } | null }) => ({
+            id: p.id,
+            title: p.title,
+            content: p.content,
+            body_md: p.body_md,
+            category: p.category,
+            is_pinned: p.is_pinned,
+            view_count: p.view_count,
+            like_count: 0,
+            created_at: p.created_at,
+            author: p.author,
+          }))}
+          isAdmin={isAdmin}
+        />
+      </Suspense>
     </div>
   );
 }

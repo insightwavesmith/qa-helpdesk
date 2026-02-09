@@ -5,11 +5,12 @@ import { MembersClient } from "./members-client";
 export default async function AdminMembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; role?: string }>;
+  searchParams: Promise<{ page?: string; role?: string; tab?: string }>;
 }) {
   const params = await searchParams;
   const page = parseInt(params.page || "1", 10);
   const role = params.role || "all";
+  const tab = params.tab || "members";
 
   const { data: members, count } = await getMembers({
     page,
@@ -36,6 +37,7 @@ export default async function AdminMembersPage({
         totalPages={totalPages}
         totalCount={count || 0}
         subscriberCount={subscriberCount}
+        currentTab={tab}
       />
     </div>
   );

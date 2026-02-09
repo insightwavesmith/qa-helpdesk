@@ -177,6 +177,58 @@ export async function createPost(formData: {
   return { data: mapContentToPost(data), error: null };
 }
 
+export async function updatePostInline(
+  id: string,
+  input: { title?: string; body_md?: string; status?: string }
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { data: null, error: "인증되지 않은 사용자입니다." };
+  }
+
+  const svc = createServiceClient();
+  const { data: profile } = await svc
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "admin") {
+    return { data: null, error: "권한이 없습니다." };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
+  if (input.title !== undefined) updateData.title = input.title;
+  if (input.body_md !== undefined) updateData.body_md = input.body_md;
+  if (input.status !== undefined) {
+    updateData.status = input.status;
+    if (input.status === "published") {
+      updateData.published_at = new Date().toISOString();
+    }
+  }
+
+  const { data, error } = await svc
+    .from("contents")
+    .update(updateData)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("updatePostInline error:", error);
+    return { data: null, error: error.message };
+  }
+
+  revalidatePath("/posts");
+  revalidatePath(`/posts/${id}`);
+  return { data: mapContentToPost(data), error: null };
+}
+
 export async function getCommentsByQuestionId(questionId: string) {
   const supabase = createServiceClient();
 

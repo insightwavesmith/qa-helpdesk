@@ -179,6 +179,8 @@ export async function updateContent(
     source_ref?: string | null;
     source_hash?: string | null;
     author_id?: string | null;
+    email_subject?: string | null;
+    email_summary?: string | null;
   }
 ) {
   const supabase = await requireAdmin();

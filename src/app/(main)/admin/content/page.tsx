@@ -21,6 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Loader2, FileText, RefreshCw, Plus, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { getContents } from "@/actions/contents";
 import type { Content } from "@/types/content";
 import ContentEditorDialog from "@/components/content/content-editor-dialog";
@@ -45,6 +46,10 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   archived: {
     label: "보관",
     className: "bg-slate-100 text-slate-600 border-slate-200",
+  },
+  sent: {
+    label: "발송됨",
+    className: "bg-purple-50 text-purple-700 border-purple-200",
   },
 };
 
@@ -80,11 +85,15 @@ export default function AdminContentPage() {
         { pageSize: 100 };
       if (typeFilter !== "all") params.type = typeFilter;
       if (categoryFilter !== "all") params.category = categoryFilter;
-      if (statusFilter !== "all") params.status = statusFilter;
+      if (statusFilter !== "all" && statusFilter !== "sent") params.status = statusFilter;
 
       const { data, count } = await getContents(params);
-      setContents(data as Content[]);
-      setTotalCount(count ?? 0);
+      let filtered = data as Content[];
+      if (statusFilter === "sent") {
+        filtered = filtered.filter((c) => c.email_sent_at !== null);
+      }
+      setContents(filtered);
+      setTotalCount(statusFilter === "sent" ? filtered.length : (count ?? 0));
     } catch {
       setContents([]);
       setTotalCount(0);
@@ -147,6 +156,12 @@ export default function AdminContentPage() {
       bg: "bg-blue-50",
       text: "text-blue-600",
     },
+    {
+      label: "발송됨",
+      value: isUnfiltered ? contents.filter((c) => c.email_sent_at).length : "-",
+      bg: "bg-purple-50",
+      text: "text-purple-600",
+    },
   ];
 
   return (
@@ -175,7 +190,7 @@ export default function AdminContentPage() {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-6 gap-4">
         {statCards.map((card) => (
           <Card key={card.label}>
             <CardContent className="pt-5 pb-4 px-5">
@@ -230,6 +245,7 @@ export default function AdminContentPage() {
             <SelectItem value="ready">발행가능</SelectItem>
             <SelectItem value="published">게시완료</SelectItem>
             <SelectItem value="archived">보관</SelectItem>
+            <SelectItem value="sent">발송됨</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -255,6 +271,7 @@ export default function AdminContentPage() {
                   <TableHead>카테고리</TableHead>
                   <TableHead>상태</TableHead>
                   <TableHead>이메일</TableHead>
+                  <TableHead>편집</TableHead>
                   <TableHead className="text-right">날짜</TableHead>
                 </TableRow>
               </TableHeader>
@@ -320,6 +337,25 @@ export default function AdminContentPage() {
                         ) : (
                           <span className="text-[12px] text-gray-300">-</span>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/posts/${item.id}?edit=true`}
+                            className="text-xs text-gray-500 hover:text-[#F75D5D] transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            정보공유
+                          </Link>
+                          <span className="text-gray-300">|</span>
+                          <Link
+                            href={`/admin/email?content_id=${item.id}`}
+                            className="text-xs text-gray-500 hover:text-[#F75D5D] transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            뉴스레터
+                          </Link>
+                        </div>
                       </TableCell>
                       <TableCell className="text-right text-[13px] text-gray-500">
                         {new Date(item.created_at).toLocaleDateString("ko-KR", {

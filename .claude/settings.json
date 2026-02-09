@@ -22,6 +22,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CMD=$(cat | jq -r '.tool_input.command // \"\"'); if echo \"$CMD\" | grep -qiE 'claude\\s+(-p|--print)'; then echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"claude -p 절대 금지. 래퍼(scripts/agent-team.sh) 또는 인터랙티브 모드만 허용.\"}}'; exit 0; fi",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "TaskCompleted": [

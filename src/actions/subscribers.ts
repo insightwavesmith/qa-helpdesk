@@ -20,15 +20,39 @@ async function requireAdmin() {
   return svc;
 }
 
-export async function getSubscribers(page = 1, pageSize = 20) {
+/** LIKE 인젝션 방지: %, _, \ 이스케이프 */
+function escapeLike(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
+export async function getSubscribers(
+  page = 1,
+  pageSize = 20,
+  options?: { status?: "active" | "opted_out"; search?: string }
+) {
   const svc = await requireAdmin();
 
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  const { data, error, count } = await svc
+  let query = svc
     .from("leads")
-    .select("id, name, email, created_at, email_opted_out", { count: "exact" })
+    .select("id, name, email, created_at, email_opted_out", { count: "exact" });
+
+  // 수신 상태 필터
+  if (options?.status === "active") {
+    query = query.eq("email_opted_out", false);
+  } else if (options?.status === "opted_out") {
+    query = query.eq("email_opted_out", true);
+  }
+
+  // 이름/이메일 검색
+  if (options?.search?.trim()) {
+    const escaped = escapeLike(options.search.trim());
+    query = query.or(`email.ilike.%${escaped}%,name.ilike.%${escaped}%`);
+  }
+
+  const { data, error, count } = await query
     .order("created_at", { ascending: false })
     .range(from, to);
 
