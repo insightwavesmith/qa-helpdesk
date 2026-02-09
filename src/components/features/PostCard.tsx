@@ -9,9 +9,10 @@ interface PostCardProps {
 }
 
 const categoryLabels: Record<string, string> = {
-  info: "정보",
+  education: "교육",
   notice: "공지",
-  webinar: "웨비나",
+  case_study: "고객사례",
+  newsletter: "뉴스레터",
 };
 
 export function PostCard({ post }: PostCardProps) {

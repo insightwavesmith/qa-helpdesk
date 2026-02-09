@@ -8,11 +8,11 @@ interface ContentSection {
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  blueprint: "블루프린트",
-  trend: "트렌드",
-  webinar: "웨비나",
-  tips: "실전 팁",
-  custom: "뉴스레터",
+  education: "교육",
+  notice: "공지",
+  case_study: "고객사례",
+  newsletter: "뉴스레터",
+  custom: "직접 입력",
 };
 
 const TONE_INTROS: Record<string, (topic: string) => string> = {
@@ -45,17 +45,6 @@ function buildSectionHtml(section: ContentSection): string {
   }
 
   return html;
-}
-
-function buildWebinarHtml(): string {
-  return `<h3>다가오는 웨비나 안내</h3>
-<p>BS CAMP에서 준비한 실전 광고 웨비나에 참여해보세요.</p>
-<ul>
-  <li>메타 광고 최적화 전략 웨비나</li>
-  <li>자사몰 퍼포먼스 마케팅 실전편</li>
-  <li>참가 신청은 BS CAMP 홈페이지에서 가능합니다.</li>
-</ul>
-<p><strong>웨비나 참가 시 총가치각도기 분석 리포트를 무료로 제공해드립니다.</strong></p>`;
 }
 
 function buildNewsletterHtml(
@@ -134,45 +123,35 @@ export async function POST(request: NextRequest) {
     let sources: string[] = [];
     let firstSectionTitle: string;
 
-    if (category === "webinar") {
-      firstSectionTitle = "다가오는 웨비나 안내";
-      const title = `웨비나 안내 - ${topicLabel}`;
-      contentHtml = buildNewsletterHtml(title, intro, []);
-      contentHtml = contentHtml.replace(
-        "<p>아직 준비된 콘텐츠가 없습니다. 곧 업데이트 예정입니다.</p>",
-        buildWebinarHtml()
-      );
-    } else {
-      // Query contents from DB instead of local files
-      let query = svc
-        .from("contents")
-        .select("*")
-        .eq("status", "ready");
-      if (category && category !== "custom") {
-        query = query.eq("category", category);
-      }
-      if (topic) {
-        query = query.or(
-          `title.ilike.%${topic}%,body_md.ilike.%${topic}%`
-        );
-      }
-      const { data: contents } = await query.limit(MAX_SECTIONS);
-
-      const sections: ContentSection[] = (contents || []).map((c) => ({
-        title: c.title,
-        content: c.body_md,
-        source: c.source_ref || c.category,
-      }));
-
-      const selected = sections.slice(0, MAX_SECTIONS);
-      sources = [...new Set(selected.map((s) => s.source))];
-      firstSectionTitle = selected[0]?.title || "";
-
-      const title = firstSectionTitle
-        ? `${CATEGORY_LABELS[category] || category} - ${firstSectionTitle}`
-        : CATEGORY_LABELS[category] || category;
-      contentHtml = buildNewsletterHtml(title, intro, selected);
+    // Query contents from DB
+    let query = svc
+      .from("contents")
+      .select("*")
+      .eq("status", "ready");
+    if (category && category !== "custom") {
+      query = query.eq("category", category);
     }
+    if (topic) {
+      query = query.or(
+        `title.ilike.%${topic}%,body_md.ilike.%${topic}%`
+      );
+    }
+    const { data: contents } = await query.limit(MAX_SECTIONS);
+
+    const sections: ContentSection[] = (contents || []).map((c) => ({
+      title: c.title,
+      content: c.body_md,
+      source: c.source_ref || c.category,
+    }));
+
+    const selected = sections.slice(0, MAX_SECTIONS);
+    sources = [...new Set(selected.map((s) => s.source))];
+    firstSectionTitle = selected[0]?.title || "";
+
+    const title = firstSectionTitle
+      ? `${CATEGORY_LABELS[category] || category} - ${firstSectionTitle}`
+      : CATEGORY_LABELS[category] || category;
+    contentHtml = buildNewsletterHtml(title, intro, selected);
 
     const categoryLabel = CATEGORY_LABELS[category] || category;
     const subject = firstSectionTitle

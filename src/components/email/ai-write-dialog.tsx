@@ -30,11 +30,10 @@ interface AiWriteDialogProps {
 }
 
 const CATEGORIES = [
-  { value: "meta-ads", label: "메타 광고" },
-  { value: "ad-performance", label: "광고 성과" },
-  { value: "store-ops", label: "자사몰 운영" },
-  { value: "creative", label: "크리에이티브" },
-  { value: "webinar", label: "웨비나" },
+  { value: "education", label: "교육" },
+  { value: "notice", label: "공지" },
+  { value: "case_study", label: "고객사례" },
+  { value: "newsletter", label: "뉴스레터" },
   { value: "custom", label: "직접 입력" },
 ];
 

@@ -68,9 +68,14 @@ export async function MemberDashboard() {
 
       {/* 공지사항 */}
       <section className="mb-12">
-        <h2 className="text-xl font-bold mb-4 flex items-center text-text-main">
-          공지사항
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold flex items-center text-text-main">
+            공지사항
+          </h2>
+          <Link href="/notices" className="text-sm text-[#F75D5D] hover:text-[#E54949]">
+            더보기
+          </Link>
+        </div>
 
         {notices.length === 0 ? (
           <div className="bg-card-bg rounded-xl border border-border-color p-6 card-hover">
