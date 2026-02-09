@@ -247,66 +247,9 @@ export interface Database {
           },
         ];
       };
-      posts: {
-        Row: {
-          id: string;
-          author_id: string | null;
-          title: string;
-          content: string;
-          category: "info" | "notice" | "webinar";
-          is_published: boolean;
-          is_pinned: boolean;
-          published_at: string | null;
-          view_count: number;
-          like_count: number;
-          content_id: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          author_id?: string | null;
-          title: string;
-          content: string;
-          category?: "info" | "notice" | "webinar";
-          is_published?: boolean;
-          is_pinned?: boolean;
-          published_at?: string | null;
-          view_count?: number;
-          like_count?: number;
-          content_id?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          author_id?: string | null;
-          title?: string;
-          content?: string;
-          category?: "info" | "notice" | "webinar";
-          is_published?: boolean;
-          is_pinned?: boolean;
-          published_at?: string | null;
-          view_count?: number;
-          like_count?: number;
-          content_id?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "posts_author_id_fkey";
-            columns: ["author_id"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       comments: {
         Row: {
           id: string;
-          post_id: string | null;
           question_id: string | null;
           author_id: string;
           content: string;
@@ -314,7 +257,6 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          post_id?: string | null;
           question_id?: string | null;
           author_id: string;
           content: string;
@@ -322,20 +264,12 @@ export interface Database {
         };
         Update: {
           id?: string;
-          post_id?: string | null;
           question_id?: string | null;
           author_id?: string;
           content?: string;
           created_at?: string;
         };
         Relationships: [
-          {
-            foreignKeyName: "comments_post_id_fkey";
-            columns: ["post_id"];
-            isOneToOne: false;
-            referencedRelation: "posts";
-            referencedColumns: ["id"];
-          },
           {
             foreignKeyName: "comments_question_id_fkey";
             columns: ["question_id"];
@@ -358,7 +292,6 @@ export interface Database {
           user_id: string;
           question_id: string | null;
           answer_id: string | null;
-          post_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -366,7 +299,6 @@ export interface Database {
           user_id: string;
           question_id?: string | null;
           answer_id?: string | null;
-          post_id?: string | null;
           created_at?: string;
         };
         Update: {
@@ -374,7 +306,6 @@ export interface Database {
           user_id?: string;
           question_id?: string | null;
           answer_id?: string | null;
-          post_id?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -397,13 +328,6 @@ export interface Database {
             columns: ["answer_id"];
             isOneToOne: false;
             referencedRelation: "answers";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "likes_post_id_fkey";
-            columns: ["post_id"];
-            isOneToOne: false;
-            referencedRelation: "posts";
             referencedColumns: ["id"];
           },
         ];

@@ -1,5 +1,5 @@
 export type ContentType = 'info' | 'result' | 'promo';
-export type ContentCategory = 'education' | 'news' | 'case-study' | 'webinar' | 'recruitment';
+export type ContentCategory = 'education' | 'notice' | 'case_study' | 'newsletter';
 
 export interface Content {
   id: string;

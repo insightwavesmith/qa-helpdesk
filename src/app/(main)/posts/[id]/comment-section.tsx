@@ -16,7 +16,6 @@ interface Comment {
 }
 
 interface CommentSectionProps {
-  postId: string;
   initialComments: Comment[];
 }
 
@@ -35,7 +34,6 @@ function timeAgo(dateStr: string) {
 }
 
 export function CommentSection({
-  postId,
   initialComments,
 }: CommentSectionProps) {
   const [content, setContent] = useState("");
@@ -52,7 +50,6 @@ export function CommentSection({
     setLoading(true);
     try {
       const { error } = await createComment({
-        postId,
         content: content.trim(),
       });
 

@@ -14,12 +14,12 @@ import {
   ChevronRight,
   Users,
   CheckCircle,
-  BarChart3,
   Crosshair,
   Monitor,
   FileText,
   Mail,
   LogOut,
+  Lock,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -41,10 +41,9 @@ const mainNavItems: NavItem[] = [
 const adminNavItems: NavItem[] = [
   { label: "회원 관리", href: "/admin/members", icon: Users },
   { label: "답변 검토", href: "/admin/answers", icon: CheckCircle },
-  { label: "통계", href: "/admin/stats", icon: BarChart3 },
+  { label: "콘텐츠 관리", href: "/admin/content", icon: FileText },
   { label: "총가치각도기 관리", href: "/admin/protractor", icon: Crosshair },
   { label: "광고계정 관리", href: "/admin/accounts", icon: Monitor },
-  { label: "콘텐츠 관리", href: "/admin/content", icon: FileText },
   { label: "이메일 발송", href: "/admin/email", icon: Mail },
 ];
 
@@ -76,9 +75,22 @@ export function DashboardSidebar({
   const renderNavItem = (item: NavItem) => {
     const isActive =
       pathname === item.href || pathname.startsWith(item.href + "/");
-    const Icon = item.icon;
+    const isLocked = item.href === "/protractor" && userRole === "member";
+    const Icon = isLocked ? Lock : item.icon;
     const showBadge =
       item.href === "/admin/answers" && pendingAnswersCount > 0;
+
+    if (isLocked) {
+      return (
+        <span
+          key={item.href}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-400 pointer-events-none"
+        >
+          <Icon className="h-5 w-5 shrink-0" />
+          {!collapsed && <span>{item.label}</span>}
+        </span>
+      );
+    }
 
     return (
       <Link

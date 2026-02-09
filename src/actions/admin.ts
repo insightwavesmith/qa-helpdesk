@@ -113,9 +113,9 @@ export async function getDashboardStats() {
         .select("id", { count: "exact", head: true })
         .eq("is_approved", false),
       supabase
-        .from("posts")
+        .from("contents")
         .select("id", { count: "exact", head: true })
-        .eq("is_published", true),
+        .eq("status", "published"),
       supabase
         .from("profiles")
         .select("id", { count: "exact", head: true })
@@ -196,11 +196,11 @@ export async function getRecentPosts(limit = 5) {
   const supabase = createServiceClient();
 
   const { data, error } = await supabase
-    .from("posts")
+    .from("contents")
     .select(
-      "*, author:profiles!posts_author_id_fkey(name)"
+      "*, author:profiles!contents_author_id_fkey(name)"
     )
-    .eq("is_published", true)
+    .eq("status", "published")
     .order("created_at", { ascending: false })
     .limit(limit);
 

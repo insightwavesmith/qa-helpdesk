@@ -39,7 +39,7 @@ async function getStats() {
       .from("profiles")
       .select("*", { count: "exact", head: true })
       .in("role", ["member", "student", "alumni", "admin"]),
-    supabase.from("posts").select("*", { count: "exact", head: true }),
+    supabase.from("contents").select("*", { count: "exact", head: true }).eq("status", "published"),
     supabase
       .from("questions")
       .select("*", { count: "exact", head: true })
@@ -93,7 +93,7 @@ export default async function AdminStatsPage() {
       iconColor: "text-[#F75D5D]",
     },
     {
-      label: "게시글 수",
+      label: "콘텐츠 수",
       value: stats.totalPosts,
       icon: FileText,
       accentColor: "border-l-amber-500",

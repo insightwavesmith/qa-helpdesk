@@ -20,8 +20,9 @@ interface PostCardProps {
 
 export const categoryConfig: Record<string, { label: string; bg: string; text: string }> = {
   education: { label: "교육", bg: "#FFF5F5", text: "#F75D5D" },
-  news: { label: "소식", bg: "#EFF6FF", text: "#3B82F6" },
+  notice: { label: "공지", bg: "#EFF6FF", text: "#3B82F6" },
   case_study: { label: "고객사례", bg: "#FFF7ED", text: "#F97316" },
+  newsletter: { label: "뉴스레터", bg: "#F0FDF4", text: "#22C55E" },
 };
 
 function formatDate(dateStr: string) {

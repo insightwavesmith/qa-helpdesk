@@ -32,8 +32,8 @@ interface PostsRedesignClientProps {
   totalCount: number;
 }
 
-// 카테고리 섹션 표시 순서: 고객사례 → 교육 → 소식
-const categoryOrder = ["case_study", "education", "news"];
+// 카테고리 섹션 표시 순서: 고객사례 → 교육 → 뉴스레터
+const categoryOrder = ["case_study", "education", "newsletter"];
 
 export function PostsRedesignClient({
   posts,

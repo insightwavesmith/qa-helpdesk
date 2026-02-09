@@ -49,10 +49,9 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
 
 const CATEGORY_LABEL: Record<string, string> = {
   education: "교육",
-  news: "소식",
-  "case-study": "수강생 사례",
-  webinar: "웨비나",
-  recruitment: "모집",
+  notice: "공지",
+  case_study: "고객사례",
+  newsletter: "뉴스레터",
 };
 
 const TYPE_BADGE: Record<string, { label: string; className: string }> = {
@@ -214,10 +213,9 @@ export default function AdminContentPage() {
           <SelectContent>
             <SelectItem value="all">전체 카테고리</SelectItem>
             <SelectItem value="education">교육</SelectItem>
-            <SelectItem value="news">소식</SelectItem>
-            <SelectItem value="case-study">수강생 사례</SelectItem>
-            <SelectItem value="webinar">웨비나</SelectItem>
-            <SelectItem value="recruitment">모집</SelectItem>
+            <SelectItem value="notice">공지</SelectItem>
+            <SelectItem value="case_study">고객사례</SelectItem>
+            <SelectItem value="newsletter">뉴스레터</SelectItem>
           </SelectContent>
         </Select>
 

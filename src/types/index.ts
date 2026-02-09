@@ -7,7 +7,7 @@ export type UserRole = "lead" | "member" | "student" | "alumni" | "admin";
 export type QuestionStatus = "open" | "answered" | "closed";
 
 // 게시글 카테고리 (contents 테이블 기준)
-export type PostCategory = "education" | "news" | "case_study";
+export type PostCategory = "education" | "notice" | "case_study" | "newsletter";
 
 // 프로필
 export interface Profile {
@@ -108,7 +108,6 @@ export interface Post {
 // 댓글
 export interface Comment {
   id: string;
-  post_id: string | null;
   question_id: string | null;
   author_id: string;
   content: string;

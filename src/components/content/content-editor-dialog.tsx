@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Save, Trash2, Send } from "lucide-react";
 import { toast } from "sonner";
-import { createContent, updateContent, deleteContent, publishToPost } from "@/actions/contents";
+import { createContent, updateContent, deleteContent, publishContent } from "@/actions/contents";
 import type { Content, ContentType, ContentCategory } from "@/types/content";
 
 interface ContentEditorDialogProps {
@@ -118,7 +118,7 @@ export default function ContentEditorDialog({
     if (!content) return;
     setPublishing(true);
     try {
-      const { error } = await publishToPost(content.id);
+      const { error } = await publishContent(content.id);
       if (error) {
         toast.error(`게시 실패: ${error}`);
         return;
@@ -194,10 +194,9 @@ export default function ContentEditorDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="education">교육</SelectItem>
-                  <SelectItem value="news">소식</SelectItem>
-                  <SelectItem value="case-study">수강생 사례</SelectItem>
-                  <SelectItem value="webinar">웨비나</SelectItem>
-                  <SelectItem value="recruitment">모집</SelectItem>
+                  <SelectItem value="notice">공지</SelectItem>
+                  <SelectItem value="case_study">고객사례</SelectItem>
+                  <SelectItem value="newsletter">뉴스레터</SelectItem>
                 </SelectContent>
               </Select>
             </div>

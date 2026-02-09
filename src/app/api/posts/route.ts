@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createServiceClient } from "@/lib/supabase/server";
 
-// 모찌(시스템) API: 외부에서 게시글 생성용
+// 모찌(시스템) API: 외부에서 콘텐츠 생성용
 // CRON_SECRET을 API 키로 사용
 
 function verifyApiKey(req: NextRequest): boolean {
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { title, content } = body;
+    const { title, content, category } = body;
 
     if (!title || !content) {
       return NextResponse.json(
@@ -25,17 +26,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: 서비스 클라이언트로 게시글 생성
-    // const supabase = createServiceClient();
-    // const { data, error } = await supabase.from("posts").insert({
-    //   title,
-    //   content,
-    //   category: category || "info",
-    //   author_id: null, // 시스템 작성
-    //   is_published: false,
-    // });
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("contents")
+      .insert({
+        title,
+        body_md: content,
+        category: category || "education",
+        status: "draft",
+      })
+      .select()
+      .single();
 
-    return NextResponse.json({ message: "게시글이 생성되었습니다." });
+    if (error) {
+      console.error("API POST /api/posts error:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ data });
   } catch {
     return NextResponse.json(
       { error: "서버 오류가 발생했습니다." },
@@ -45,6 +53,18 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  // TODO: 공개된 게시글 목록 조회
-  return NextResponse.json({ posts: [] });
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("contents")
+    .select("id, title, category, status, created_at")
+    .eq("status", "published")
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error) {
+    console.error("API GET /api/posts error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ posts: data || [] });
 }

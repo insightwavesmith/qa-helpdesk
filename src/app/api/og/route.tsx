@@ -5,33 +5,24 @@ export const runtime = "edge";
 
 const categoryLabels: Record<string, string> = {
   education: "교육",
-  news: "소식",
+  notice: "공지",
   case_study: "고객사례",
-  // 하위호환
-  info: "교육",
-  notice: "소식",
-  webinar: "고객사례",
+  newsletter: "뉴스레터",
 };
 
 const gradientMap: Record<string, [string, string]> = {
   education: ["#F75D5D", "#E54949"],
-  news: ["#10B981", "#059669"],
-  case_study: ["#F97316", "#EA580C"],
-  // 하위호환
-  info: ["#F75D5D", "#E54949"],
   notice: ["#10B981", "#059669"],
-  webinar: ["#F97316", "#EA580C"],
+  case_study: ["#F97316", "#EA580C"],
+  newsletter: ["#8B5CF6", "#7C3AED"],
 };
 const defaultGradient: [string, string] = ["#1a1a2e", "#2d2d4e"];
 
 const categoryEmoji: Record<string, string> = {
   education: "\u{1F4DA}",
-  news: "\u{1F4F0}",
-  case_study: "\u{1F3AF}",
-  // 하위호환
-  info: "\u{1F4DA}",
   notice: "\u{1F4F0}",
-  webinar: "\u{1F3AF}",
+  case_study: "\u{1F3AF}",
+  newsletter: "\u{1F4E8}",
 };
 const defaultEmoji = "\u{1F4A1}";
 

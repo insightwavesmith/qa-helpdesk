@@ -8,8 +8,8 @@ interface CategoryTabsProps {
 const tabs = [
   { value: "all", label: "전체" },
   { value: "education", label: "교육" },
-  { value: "news", label: "소식" },
   { value: "case_study", label: "고객사례" },
+  { value: "newsletter", label: "뉴스레터" },
 ];
 
 export function CategoryTabs({ current, onChange }: CategoryTabsProps) {

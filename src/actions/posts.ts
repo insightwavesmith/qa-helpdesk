@@ -3,21 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
-// 기존 posts 카테고리 → contents 카테고리 매핑
-const legacyToCategory: Record<string, string> = {
-  info: "education",
-  notice: "news",
-  webinar: "case_study",
-};
-
 // contents 행을 기존 Post 인터페이스 형태로 변환
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapContentToPost<T extends Record<string, any>>(row: T): T & { content: string; is_published: boolean } {
   return {
     ...row,
-    // body_md → content 호환 필드 매핑
     content: (row.body_md as string) || "",
-    // is_published 호환 (status가 published면 true)
     is_published: row.status === "published",
   };
 }
@@ -50,9 +41,10 @@ export async function getPosts({
     .range(from, to);
 
   if (category && category !== "all") {
-    // 기존 카테고리(info/notice/webinar) → contents 카테고리 변환
-    const mapped = legacyToCategory[category] || category;
-    query = query.eq("category", mapped);
+    query = query.eq("category", category);
+  } else {
+    // 기본: notice 카테고리 제외 (공지사항은 /notices 페이지에서 별도 표시)
+    query = query.in("category", ["education", "case_study", "newsletter"]);
   }
 
   if (search) {
@@ -95,10 +87,57 @@ export async function getPostById(id: string) {
   return { data: mapContentToPost(data), error: null };
 }
 
+export async function getNotices({
+  page = 1,
+  pageSize = 20,
+}: { page?: number; pageSize?: number } = {}) {
+  const supabase = createServiceClient();
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, count, error } = await supabase
+    .from("contents")
+    .select("id, title, summary, body_md, published_at, created_at, view_count", { count: "exact" })
+    .eq("category", "notice")
+    .eq("status", "published")
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (error) {
+    console.error("getNotices error:", error);
+    return { data: [], count: 0, error: error.message };
+  }
+  return { data: data || [], count: count || 0, error: null };
+}
+
+export async function getNoticeById(id: string) {
+  const supabase = createServiceClient();
+
+  const { data, error } = await supabase
+    .from("contents")
+    .select("id, title, body_md, summary, published_at, created_at, view_count, author_id")
+    .eq("id", id)
+    .eq("category", "notice")
+    .single();
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  // 조회수 증가
+  await supabase
+    .from("contents")
+    .update({ view_count: (data.view_count || 0) + 1 })
+    .eq("id", id);
+
+  return { data, error: null };
+}
+
 export async function createPost(formData: {
   title: string;
   content: string;
-  category: "education" | "news" | "case_study";
+  category: "education" | "notice" | "case_study" | "newsletter";
 }) {
   const supabase = await createClient();
   const {
@@ -117,7 +156,7 @@ export async function createPost(formData: {
       body_md: formData.content,
       category: formData.category,
       author_id: user.id,
-      status: "draft", // 관리자 승인 후 공개
+      status: "draft",
     })
     .select()
     .single();
@@ -132,7 +171,7 @@ export async function createPost(formData: {
   return { data: mapContentToPost(data), error: null };
 }
 
-export async function getCommentsByPostId(postId: string) {
+export async function getCommentsByQuestionId(questionId: string) {
   const supabase = createServiceClient();
 
   const { data, error } = await supabase
@@ -140,11 +179,11 @@ export async function getCommentsByPostId(postId: string) {
     .select(
       "*, author:profiles!comments_author_id_fkey(id, name, shop_name)"
     )
-    .eq("post_id", postId)
+    .eq("question_id", questionId)
     .order("created_at", { ascending: true });
 
   if (error) {
-    console.error("getCommentsByPostId error:", error);
+    console.error("getCommentsByQuestionId error:", error);
     return { data: [], error: error.message };
   }
 
@@ -152,7 +191,6 @@ export async function getCommentsByPostId(postId: string) {
 }
 
 export async function createComment(formData: {
-  postId?: string;
   questionId?: string;
   content: string;
 }) {
@@ -169,7 +207,6 @@ export async function createComment(formData: {
   const { data, error } = await svc
     .from("comments")
     .insert({
-      post_id: formData.postId || null,
       question_id: formData.questionId || null,
       content: formData.content,
       author_id: user.id,
@@ -182,9 +219,6 @@ export async function createComment(formData: {
     return { data: null, error: error.message };
   }
 
-  if (formData.postId) {
-    revalidatePath(`/posts/${formData.postId}`);
-  }
   if (formData.questionId) {
     revalidatePath(`/questions/${formData.questionId}`);
   }

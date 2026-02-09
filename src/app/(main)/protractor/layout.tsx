@@ -5,9 +5,10 @@ import type { UserRole } from "@/types";
 /**
  * 접근 제어:
  * - lead → /pending 리다이렉트
- * - 그 외 모든 role → 통과 (page.tsx에서 실제/샘플 분기)
+ * - member → /dashboard 리다이렉트 (수강생 전용)
+ * - 그 외 role → 통과 (page.tsx에서 실제/샘플 분기)
  */
-const BLOCKED_ROLES: UserRole[] = ["lead"];
+const BLOCKED_ROLES: UserRole[] = ["lead", "member"];
 
 export default async function ProtractorLayout({
   children,
@@ -35,7 +36,7 @@ export default async function ProtractorLayout({
   }
 
   if (BLOCKED_ROLES.includes(profile.role)) {
-    redirect("/pending");
+    redirect(profile.role === "member" ? "/dashboard" : "/pending");
   }
 
   return <>{children}</>;

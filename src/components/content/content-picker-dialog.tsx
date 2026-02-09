@@ -31,10 +31,9 @@ interface ContentPickerDialogProps {
 const CATEGORY_LABELS: Record<string, string> = {
   all: "전체",
   education: "교육",
-  news: "소식",
-  "case-study": "수강생 사례",
-  webinar: "웨비나",
-  recruitment: "모집",
+  notice: "공지",
+  case_study: "고객사례",
+  newsletter: "뉴스레터",
 };
 
 export default function ContentPickerDialog({

@@ -10,13 +10,13 @@ import {
   Settings,
   Users,
   CheckCircle,
-  BarChart3,
   LogOut,
   User,
   ChevronsUpDown,
   Crosshair,
   Monitor,
   Mail,
+  Lock,
 } from "lucide-react";
 import {
   Sidebar,
@@ -59,7 +59,7 @@ const mainNavItems: NavItem[] = [
 const adminNavItems: NavItem[] = [
   { label: "회원 관리", href: "/admin/members", icon: Users },
   { label: "답변 검토", href: "/admin/answers", icon: CheckCircle },
-  { label: "통계", href: "/admin/stats", icon: BarChart3 },
+  { label: "콘텐츠 관리", href: "/admin/content", icon: FileText },
   { label: "총가치각도기 관리", href: "/admin/protractor", icon: Crosshair },
   { label: "광고계정 관리", href: "/admin/accounts", icon: Monitor },
   { label: "이메일 발송", href: "/admin/email", icon: Mail },
@@ -92,9 +92,21 @@ export default function AppSidebar({
   const renderNavItem = (item: NavItem) => {
     const isActive =
       pathname === item.href || pathname.startsWith(item.href + "/");
-    const Icon = item.icon;
+    const isLocked = item.href === "/protractor" && userRole === "member";
+    const Icon = isLocked ? Lock : item.icon;
     const showBadge =
       item.href === "/admin/answers" && pendingAnswersCount > 0;
+
+    if (isLocked) {
+      return (
+        <SidebarMenuItem key={item.href}>
+          <SidebarMenuButton tooltip={item.label} className="text-gray-400 pointer-events-none">
+            <Icon className="h-[18px] w-[18px] shrink-0" />
+            <span className="text-[14px]">{item.label}</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      );
+    }
 
     return (
       <SidebarMenuItem key={item.href}>

@@ -211,70 +211,40 @@ export async function deleteContent(id: string) {
   return { error: null };
 }
 
-export async function publishToPost(contentId: string) {
+export async function publishContent(contentId: string) {
   const supabase = await requireAdmin();
 
-  // Fetch the content
-  const { data: content, error: fetchError } = await supabase
+  // Update content status to published
+  const now = new Date().toISOString();
+  const { data: updated, error: updateError } = await supabase
     .from("contents")
-    .select("*")
-    .eq("id", contentId)
-    .single();
-
-  if (fetchError || !content) {
-    console.error("publishToPost fetch error:", fetchError);
-    return { data: null, error: fetchError?.message || "콘텐츠를 찾을 수 없습니다." };
-  }
-
-  // 디자인 포매팅: 카테고리 배지 + 본문 + 출처 + 작성일
-  const catLabels: Record<string, string> = {
-    education: "교육", news: "소식", "case-study": "수강생 사례",
-    webinar: "웨비나", recruitment: "모집",
-  };
-  const catLabel = catLabels[content.category] || content.category;
-  const sourceLine = content.source_ref ? `\n\n> 출처: ${content.source_ref}` : "";
-  const dateLine = `\n\n---\n*${new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}*`;
-  const formattedContent = `**[${catLabel}]**\n\n${content.body_md}${sourceLine}${dateLine}`;
-
-  // Insert into posts table
-  const { data: post, error: postError } = await supabase
-    .from("posts")
-    .insert({
-      title: content.title,
-      content: formattedContent,
-      category: "info" as const,
-      is_published: true,
-      published_at: new Date().toISOString(),
-      content_id: contentId,
+    .update({
+      status: "published",
+      published_at: now,
+      updated_at: now,
     })
+    .eq("id", contentId)
     .select()
     .single();
 
-  if (postError) {
-    console.error("publishToPost insert error:", postError);
-    return { data: null, error: postError.message };
+  if (updateError) {
+    console.error("publishContent update error:", updateError);
+    return { data: null, error: updateError.message };
   }
 
   // Insert distribution record
   const { error: distError } = await supabase.from("distributions").insert({
     content_id: contentId,
     channel: "post",
-    channel_ref: post.id,
-    rendered_title: content.title,
-    rendered_body: content.body_md,
+    channel_ref: contentId,
+    rendered_title: updated.title,
+    rendered_body: updated.body_md,
     status: "published",
-    distributed_at: new Date().toISOString(),
+    distributed_at: now,
   });
   if (distError) console.error("Distribution insert error:", distError);
 
-  // Update content status
-  const { error: statusError } = await supabase
-    .from("contents")
-    .update({ status: "published", updated_at: new Date().toISOString() })
-    .eq("id", contentId);
-  if (statusError) console.error("Content status update error:", statusError);
-
-  return { data: post, error: null };
+  return { data: updated, error: null };
 }
 
 export async function generateNewsletterFromContents(contentIds: string[]) {
@@ -291,8 +261,8 @@ export async function generateNewsletterFromContents(contentIds: string[]) {
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://qa-knowledge-base.vercel.app";
   const categoryLabels: Record<string, string> = {
-    education: "교육", news: "소식", "case-study": "수강생 사례",
-    webinar: "웨비나", recruitment: "모집",
+    education: "교육", notice: "공지", case_study: "고객사례",
+    newsletter: "뉴스레터",
   };
 
   const sectionsHtml = contents

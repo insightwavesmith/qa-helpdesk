@@ -2,8 +2,8 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { getPosts, getNotices } from "@/actions/posts";
 import { getQuestions } from "@/actions/questions";
-import { StudentAdSummary } from "./student-ad-summary";
 import { getExcerpt } from "@/components/posts/post-card";
+import { LockedFeatureCard } from "@/components/ui/locked-feature-card";
 
 function timeAgo(dateStr: string) {
   const now = new Date();
@@ -19,7 +19,6 @@ function timeAgo(dateStr: string) {
   return d.toLocaleDateString("ko-KR");
 }
 
-// 사용자 아바타 색상
 function getAvatarColor(name?: string): string {
   const colors = ["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-pink-500", "bg-yellow-500"];
   if (!name) return "bg-gray-500";
@@ -27,11 +26,7 @@ function getAvatarColor(name?: string): string {
   return colors[index];
 }
 
-interface StudentHomeProps {
-  userName: string;
-}
-
-export async function StudentHome({ userName: _userName }: StudentHomeProps) {
+export async function MemberDashboard() {
   let notices: Awaited<ReturnType<typeof getNotices>>["data"] = [];
   let recentQuestions: Awaited<ReturnType<typeof getQuestions>>["data"] = [];
   let latestPosts: Awaited<ReturnType<typeof getPosts>>["data"] = [];
@@ -46,7 +41,7 @@ export async function StudentHome({ userName: _userName }: StudentHomeProps) {
     recentQuestions = qResult.data;
     latestPosts = pResult.data;
   } catch (e) {
-    console.error("StudentHome data fetch error:", e);
+    console.error("MemberDashboard data fetch error:", e);
   }
 
   return (
@@ -71,17 +66,12 @@ export async function StudentHome({ userName: _userName }: StudentHomeProps) {
         </div>
       </div>
 
-      {/* 내 광고 성과 요약 */}
-      <section className="mb-12">
-        <StudentAdSummary />
-      </section>
-
       {/* 공지사항 */}
       <section className="mb-12">
         <h2 className="text-xl font-bold mb-4 flex items-center text-text-main">
-          <span className="mr-2">📢</span> 공지사항
+          공지사항
         </h2>
-        
+
         {notices.length === 0 ? (
           <div className="bg-card-bg rounded-xl border border-border-color p-6 card-hover">
             <p className="text-text-main font-semibold text-center">BS CAMP에 오신 것을 환영합니다!</p>
@@ -101,7 +91,7 @@ export async function StudentHome({ userName: _userName }: StudentHomeProps) {
                     <h3 className="font-bold text-lg mb-2 text-text-main">{notice.title}</h3>
                     <p className="text-text-secondary line-clamp-2">{getExcerpt(notice.summary || notice.body_md || "", 120)}</p>
                     <p className="text-sm text-text-muted mt-2">
-                      {timeAgo(notice.created_at)} • 관리자
+                      {timeAgo(notice.created_at)}
                     </p>
                   </div>
                 </div>
@@ -111,26 +101,20 @@ export async function StudentHome({ userName: _userName }: StudentHomeProps) {
         )}
       </section>
 
-      {/* 최근 Q&A */}
+      {/* 최근 Q&A (읽기만) */}
       <section>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold flex items-center text-text-main">
-            <span className="mr-2">💬</span> 최근 Q&A
+            최근 Q&A
           </h2>
           <Link href="/questions" className="text-primary font-medium hover:underline">
-            더보기 →
+            더보기
           </Link>
         </div>
-        
+
         {recentQuestions.length === 0 ? (
           <div className="bg-card-bg rounded-xl border border-border-color p-8 text-center card-hover">
             <p className="text-text-secondary">등록된 질문이 없습니다.</p>
-            <Link
-              href="/questions/new"
-              className="inline-block mt-4 px-6 py-2 bg-primary text-white rounded-lg font-medium btn-primary"
-            >
-              첫 질문 작성하기
-            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -143,7 +127,7 @@ export async function StudentHome({ userName: _userName }: StudentHomeProps) {
                   <p className="text-text-secondary text-sm mb-4 line-clamp-3">
                     {question.content}
                   </p>
-                  
+
                   {question.category && (
                     <div className="flex flex-wrap gap-2 mb-4">
                       <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
@@ -151,7 +135,7 @@ export async function StudentHome({ userName: _userName }: StudentHomeProps) {
                       </span>
                     </div>
                   )}
-                  
+
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center space-x-2">
                       <div className={`w-6 h-6 ${getAvatarColor(question.author?.name)} rounded-full flex items-center justify-center`}>
@@ -163,8 +147,8 @@ export async function StudentHome({ userName: _userName }: StudentHomeProps) {
                     </div>
                     <div className="flex items-center space-x-3">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        question.status === "answered" 
-                          ? "bg-success text-white" 
+                        question.status === "answered"
+                          ? "bg-success text-white"
                           : "bg-warning text-white"
                       }`}>
                         {question.status === "answered" ? "답변완료" : "답변대기"}
@@ -183,10 +167,10 @@ export async function StudentHome({ userName: _userName }: StudentHomeProps) {
       <section className="mt-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold flex items-center text-text-main">
-            <span className="mr-2">📚</span> 정보공유 최신글
+            정보공유 최신글
           </h2>
           <Link href="/posts" className="text-primary font-medium hover:underline">
-            더보기 →
+            더보기
           </Link>
         </div>
 
@@ -213,6 +197,16 @@ export async function StudentHome({ userName: _userName }: StudentHomeProps) {
             ))}
           </div>
         )}
+      </section>
+
+      {/* 총가치각도기 잠금 CTA */}
+      <section className="mt-12">
+        <LockedFeatureCard
+          title="총가치각도기"
+          description="수강생 전용 기능입니다"
+          ctaLabel="수강 안내 보기"
+          ctaHref="/posts"
+        />
       </section>
     </div>
   );

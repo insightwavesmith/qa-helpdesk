@@ -1,18 +1,18 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getPostById, getCommentsByPostId, getPosts } from "@/actions/posts";
+import { getPostById, getPosts } from "@/actions/posts";
 import { PostHero } from "@/components/posts/post-hero";
 import { PostToc } from "@/components/posts/post-toc";
 import { PostBody } from "@/components/posts/post-body";
 import { PostRelated } from "@/components/posts/post-related";
 import { NewsletterCta } from "@/components/posts/newsletter-cta";
-import { CommentSection } from "./comment-section";
 
 const categoryConfig: Record<string, { label: string; bg: string; text: string }> = {
   education: { label: "교육", bg: "#FFF5F5", text: "#F75D5D" },
-  news: { label: "소식", bg: "#EFF6FF", text: "#3B82F6" },
+  notice: { label: "공지", bg: "#EFF6FF", text: "#3B82F6" },
   case_study: { label: "고객사례", bg: "#FFF7ED", text: "#F97316" },
+  newsletter: { label: "뉴스레터", bg: "#F0FDF4", text: "#22C55E" },
 };
 
 function formatDate(dateStr: string) {
@@ -34,8 +34,6 @@ export default async function PostDetailPage({
   if (error || !post) {
     notFound();
   }
-
-  const { data: comments } = await getCommentsByPostId(id);
 
   // 관련 글: 같은 카테고리 글 3개
   const { data: relatedRaw } = await getPosts({
@@ -96,9 +94,6 @@ export default async function PostDetailPage({
 
       {/* Newsletter CTA */}
       <NewsletterCta />
-
-      {/* Comments */}
-      <CommentSection postId={id} initialComments={comments} />
     </div>
   );
 }

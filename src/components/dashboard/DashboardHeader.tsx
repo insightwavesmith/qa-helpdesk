@@ -20,7 +20,7 @@ const titleMap: Record<string, string> = {
   "/settings": "설정",
   "/admin/members": "회원 관리",
   "/admin/answers": "답변 검토",
-  "/admin/stats": "통계",
+  "/admin/content": "콘텐츠 관리",
   "/admin/protractor": "총가치각도기 관리",
   "/admin/accounts": "광고계정 관리",
   "/admin/email": "이메일 발송",

@@ -1,6 +1,7 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { StudentHome } from "./student-home";
-import { V0Dashboard } from "./v0-dashboard";
+import { AdminDashboard } from "./admin-dashboard";
+import { MemberDashboard } from "./member-dashboard";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -15,11 +16,16 @@ export default async function DashboardPage() {
     .eq("id", user!.id)
     .single()) as { data: { role: string; name: string } | null };
 
-  const isAdmin = profile?.role === "admin";
+  const role = profile?.role;
 
-  if (isAdmin) {
-    return <V0Dashboard />;
+  if (role === "admin") {
+    return <AdminDashboard />;
   }
 
+  if (role === "member") {
+    return <MemberDashboard />;
+  }
+
+  // student, alumni
   return <StudentHome userName={profile?.name || "사용자"} />;
 }
