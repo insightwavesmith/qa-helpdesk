@@ -307,6 +307,44 @@ export async function generateNewsletterFromContents(contentIds: string[]) {
   return sectionsHtml;
 }
 
+export async function getContentAsEmailHtml(contentId: string) {
+  const supabase = await requireAdmin();
+
+  const { data, error } = await supabase
+    .from("contents")
+    .select("title, body_md, email_subject, email_summary")
+    .eq("id", contentId)
+    .single();
+
+  if (error || !data) {
+    return { data: null, error: error?.message || "콘텐츠를 찾을 수 없습니다." };
+  }
+
+  const html = mdToHtml(data.body_md);
+  const subject = data.email_subject || data.title;
+
+  return {
+    data: { html, subject },
+    error: null,
+  };
+}
+
+export async function updateContentEmailSentAt(contentId: string) {
+  const supabase = await requireAdmin();
+
+  const { error } = await supabase
+    .from("contents")
+    .update({ email_sent_at: new Date().toISOString() })
+    .eq("id", contentId);
+
+  if (error) {
+    console.error("updateContentEmailSentAt error:", error);
+    return { error: error.message };
+  }
+
+  return { error: null };
+}
+
 export async function embedContent(contentId: string) {
   const supabase = await requireAdmin();
 

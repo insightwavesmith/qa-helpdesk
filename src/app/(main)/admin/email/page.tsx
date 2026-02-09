@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,6 +41,7 @@ import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import AiWriteDialog from "@/components/email/ai-write-dialog";
 import ContentPickerDialog from "@/components/content/content-picker-dialog";
+import { getContentAsEmailHtml, updateContentEmailSentAt } from "@/actions/contents";
 
 const TipTapEditor = dynamic(() => import("@/components/email/tiptap-editor"), {
   ssr: false,
@@ -62,13 +64,14 @@ const EmailSplitEditor = dynamic(
   }
 );
 
-type TargetGroup = "all_leads" | "all_students" | "all_members" | "custom";
+type TargetGroup = "all" | "all_leads" | "all_students" | "all_members" | "custom";
 type TemplateType = "newsletter" | "webinar" | "performance";
 
 interface RecipientCounts {
   leads: number;
   students: number;
   members: number;
+  all_deduplicated: number;
 }
 
 interface EmailSendRecord {
@@ -82,6 +85,7 @@ interface EmailSendRecord {
 }
 
 const TARGET_LABELS: Record<TargetGroup, string> = {
+  all: "전체 (중복 제거)",
   all_leads: "전체 리드 (웨비나 신청자)",
   all_students: "수강생",
   all_members: "가입 회원",
@@ -95,6 +99,17 @@ const TEMPLATE_LABELS: Record<TemplateType, string> = {
 };
 
 export default function AdminEmailPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-16 text-gray-500"><Loader2 className="h-4 w-4 mr-2 animate-spin" />로딩 중...</div>}>
+      <AdminEmailPageInner />
+    </Suspense>
+  );
+}
+
+function AdminEmailPageInner() {
+  const searchParams = useSearchParams();
+  const contentIdParam = searchParams.get("content_id");
+
   const [subject, setSubject] = useState("");
   const [target, setTarget] = useState<TargetGroup>("all_leads");
   const [customEmails, setCustomEmails] = useState("");
@@ -103,6 +118,7 @@ export default function AdminEmailPage() {
   const [templateType, setTemplateType] = useState<TemplateType>("newsletter");
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [contentPickerOpen, setContentPickerOpen] = useState(false);
+  const [linkedContentId, setLinkedContentId] = useState<string | null>(null);
 
   // Newsletter fields
   const [html, setHtml] = useState("");
@@ -145,9 +161,25 @@ export default function AdminEmailPage() {
     loadHistory();
   }, [loadHistory]);
 
+  // content_id 쿼리파라미터로 콘텐츠 자동 로드
+  useEffect(() => {
+    if (!contentIdParam) return;
+    setLinkedContentId(contentIdParam);
+    setTemplateType("newsletter");
+    getContentAsEmailHtml(contentIdParam).then((result) => {
+      if (result.data) {
+        setSubject(result.data.subject);
+        setHtml(result.data.html);
+        toast.success("콘텐츠가 이메일에 로드되었습니다.");
+      }
+    });
+  }, [contentIdParam]);
+
   const getTargetCount = () => {
     if (!counts) return "...";
     switch (target) {
+      case "all":
+        return counts.all_deduplicated ?? "...";
       case "all_leads":
         return counts.leads;
       case "all_students":
@@ -240,6 +272,13 @@ export default function AdminEmailPage() {
       toast.success(
         `발송 완료: ${result.sent}건 성공, ${result.failed}건 실패`
       );
+
+      // 콘텐츠 연동 발송인 경우 email_sent_at 업데이트
+      if (linkedContentId) {
+        await updateContentEmailSentAt(linkedContentId);
+        setLinkedContentId(null);
+      }
+
       setSubject("");
       setHtml("");
       setCustomEmails("");
@@ -389,6 +428,9 @@ export default function AdminEmailPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">
+                  전체 — 중복 제거 ({counts?.all_deduplicated ?? "..."}명)
+                </SelectItem>
                 <SelectItem value="all_leads">
                   전체 리드 ({counts?.leads ?? "..."}명)
                 </SelectItem>

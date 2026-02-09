@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { renderEmail, type TemplateName } from "@/lib/email-renderer";
+import { makeUnsubscribeUrl, replaceUnsubscribeUrl } from "@/lib/email-templates";
 
 const BATCH_SIZE = 50;
 const BATCH_DELAY_MS = 1000;
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
       templateProps,
       attachments,
     } = body as {
-      target: "all_leads" | "all_students" | "all_members" | "custom";
+      target: "all" | "all_leads" | "all_students" | "all_members" | "custom";
       customEmails?: string[];
       subject: string;
       html?: string;
@@ -109,6 +110,21 @@ export async function POST(request: NextRequest) {
         .select("email")
         .in("role", ["member", "student", "alumni", "admin"]);
       recipients = (data || []).map((r) => ({ email: r.email, type: "member" }));
+    } else if (target === "all") {
+      // leads(opted_out 제외) + profiles 통합, 중복 제거
+      const [leadsData, profilesData] = await Promise.all([
+        svc.from("leads").select("email").eq("email_opted_out", false),
+        svc.from("profiles").select("email").in("role", ["member", "student", "alumni", "admin"]),
+      ]);
+      const emailMap = new Map<string, string>();
+      for (const r of leadsData.data || []) {
+        emailMap.set(r.email, "lead");
+      }
+      // profiles 덮어쓰기 (회원 정보 우선)
+      for (const r of profilesData.data || []) {
+        emailMap.set(r.email, "member");
+      }
+      recipients = Array.from(emailMap.entries()).map(([email, type]) => ({ email, type }));
     }
 
     if (recipients.length === 0) {
@@ -166,6 +182,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 수신거부 URL용 base URL
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://bscamp.kr");
+
     // 배치 발송
     let sent = 0;
     let failed = 0;
@@ -177,11 +197,15 @@ export async function POST(request: NextRequest) {
       const results = await Promise.allSettled(
         batch.map(async (recipient) => {
           try {
+            // 수신자별 수신거부 URL 삽입
+            const unsubUrl = makeUnsubscribeUrl(baseUrl, recipient.email);
+            const recipientHtml = replaceUnsubscribeUrl(fullHtml, unsubUrl);
+
             await transporter.sendMail({
               from: `"BS CAMP" <${process.env.SMTP_USER}>`,
               to: recipient.email,
               subject,
-              html: fullHtml,
+              html: recipientHtml,
               ...(attachments && attachments.length > 0 && {
                 attachments: attachments.map((a) => ({
                   filename: a.filename,

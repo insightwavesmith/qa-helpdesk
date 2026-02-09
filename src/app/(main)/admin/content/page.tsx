@@ -19,7 +19,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, FileText, RefreshCw, Plus } from "lucide-react";
+import { Loader2, FileText, RefreshCw, Plus, Mail } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { getContents } from "@/actions/contents";
 import type { Content } from "@/types/content";
 import ContentEditorDialog from "@/components/content/content-editor-dialog";
@@ -61,6 +62,7 @@ const TYPE_BADGE: Record<string, { label: string; className: string }> = {
 };
 
 export default function AdminContentPage() {
+  const router = useRouter();
   const [contents, setContents] = useState<Content[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -250,10 +252,11 @@ export default function AdminContentPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[40%]">제목</TableHead>
+                  <TableHead className="w-[35%]">제목</TableHead>
                   <TableHead>타입</TableHead>
                   <TableHead>카테고리</TableHead>
                   <TableHead>상태</TableHead>
+                  <TableHead>이메일</TableHead>
                   <TableHead className="text-right">날짜</TableHead>
                 </TableRow>
               </TableHeader>
@@ -296,6 +299,29 @@ export default function AdminContentPage() {
                         >
                           {statusInfo.label}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {item.email_sent_at ? (
+                          <Badge
+                            variant="outline"
+                            className="text-[11px] bg-purple-50 text-purple-700 border-purple-200"
+                          >
+                            발송됨 {new Date(item.email_sent_at).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}
+                          </Badge>
+                        ) : (item.status === "ready" || item.status === "published") ? (
+                          <button
+                            className="inline-flex items-center gap-1 text-[12px] text-gray-500 hover:text-[#F75D5D] transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/admin/email?content_id=${item.id}`);
+                            }}
+                          >
+                            <Mail className="h-3.5 w-3.5" />
+                            발송
+                          </button>
+                        ) : (
+                          <span className="text-[12px] text-gray-300">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right text-[13px] text-gray-500">
                         {new Date(item.created_at).toLocaleDateString("ko-KR", {

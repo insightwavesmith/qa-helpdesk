@@ -745,6 +745,7 @@ export interface Database {
           phone: string | null;
           company_name: string | null;
           status: string;
+          email_opted_out: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -752,9 +753,11 @@ export interface Database {
           id?: string;
           name: string;
           email: string;
+          email_opted_out?: boolean;
           [key: string]: unknown;
         };
         Update: {
+          email_opted_out?: boolean;
           [key: string]: unknown;
         };
         Relationships: [];
@@ -1024,6 +1027,45 @@ export interface Database {
             referencedColumns: ["id"];
           },
         ];
+      };
+      content_sources: {
+        Row: {
+          id: string;
+          name: string;
+          url: string;
+          feed_type: "rss" | "html" | "api";
+          is_active: boolean;
+          last_crawled_at: string | null;
+          crawl_frequency: "daily" | "weekly";
+          config: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          url: string;
+          feed_type?: "rss" | "html" | "api";
+          is_active?: boolean;
+          last_crawled_at?: string | null;
+          crawl_frequency?: "daily" | "weekly";
+          config?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          url?: string;
+          feed_type?: "rss" | "html" | "api";
+          is_active?: boolean;
+          last_crawled_at?: string | null;
+          crawl_frequency?: "daily" | "weekly";
+          config?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
     };
     Views: {

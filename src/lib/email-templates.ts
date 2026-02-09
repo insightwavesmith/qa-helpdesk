@@ -10,17 +10,31 @@ function escapeHtml(str: string): string {
 const FONT_FAMILY =
   "Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
-function footerHtml(): string {
+const FOOTER_PLACEHOLDER = "{{UNSUBSCRIBE_URL}}";
+
+function footerHtml(unsubscribeUrl?: string): string {
   const year = new Date().getFullYear();
+  const unsubLink = unsubscribeUrl
+    ? `<a href="${unsubscribeUrl}" style="color:#999999;text-decoration:underline;">수신거부</a>`
+    : `<a href="mailto:smith.kim@inwv.co?subject=수신거부 요청" style="color:#999999;text-decoration:underline;">수신거부</a>`;
   return `<div style="background-color:#f7f7f7;padding:24px 32px;text-align:center;">
   <hr style="border:0;border-top:1px solid #eeeeee;margin:0 0 16px;" />
   <p style="color:#a4a4a4;font-size:12px;margin:0 0 8px;">자사몰 사관학교</p>
   <p style="color:#999999;font-size:12px;line-height:1.6;margin:0 0 8px;">
     본 메일은 BS CAMP에서 발송한 뉴스레터입니다.<br />
-    수신을 원하지 않으시면 <a href="mailto:smith.kim@inwv.co?subject=수신거부 요청" style="color:#999999;text-decoration:underline;">수신거부</a>를 클릭해주세요.
+    수신을 원하지 않으시면 ${unsubLink}를 클릭해주세요.
   </p>
   <p style="color:#aaaaaa;font-size:11px;margin:0;">&copy; ${year} BS CAMP. All rights reserved.</p>
 </div>`;
+}
+
+export function makeUnsubscribeUrl(baseUrl: string, email: string): string {
+  const token = Buffer.from(email).toString("base64url");
+  return `${baseUrl}/unsubscribe?token=${token}`;
+}
+
+export function replaceUnsubscribeUrl(html: string, unsubscribeUrl: string): string {
+  return html.replace(FOOTER_PLACEHOLDER, unsubscribeUrl);
 }
 
 function fontFaceStyle(): string {
@@ -76,7 +90,7 @@ export function newsletterTemplate({
     </div>
     ${ctaHtml}
     <!-- Footer -->
-    ${footerHtml()}
+    ${footerHtml(FOOTER_PLACEHOLDER)}
   </div>
 </body>
 </html>`;
@@ -173,7 +187,7 @@ export function webinarTemplate({
       </div>
     </div>
     <!-- Footer -->
-    ${footerHtml()}
+    ${footerHtml(FOOTER_PLACEHOLDER)}
   </div>
 </body>
 </html>`;
@@ -251,7 +265,7 @@ export function performanceTemplate({
     </div>
     ${ctaHtml}
     <!-- Footer -->
-    ${footerHtml()}
+    ${footerHtml(FOOTER_PLACEHOLDER)}
   </div>
 </body>
 </html>`;

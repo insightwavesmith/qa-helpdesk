@@ -18,8 +18,11 @@ export function NewsletterCta() {
       const result = await subscribeNewsletter(email.trim());
       if (result.error) {
         toast.error(result.error);
-      } else if (result.alreadySubscribed) {
+      } else if (result.status === "already") {
         toast.success("이미 구독 중입니다!");
+        setSubmitted(true);
+      } else if (result.status === "resubscribed") {
+        toast.success("다시 구독되었습니다!");
         setSubmitted(true);
       } else {
         toast.success("구독이 완료되었습니다!");
