@@ -33,7 +33,7 @@ const CATEGORIES = [
   { value: "education", label: "교육" },
   { value: "notice", label: "공지" },
   { value: "case_study", label: "고객사례" },
-  { value: "newsletter", label: "뉴스레터" },
+  { value: "newsletter", label: "최신정보" },
   { value: "custom", label: "직접 입력" },
 ];
 
@@ -97,7 +97,7 @@ export default function AiWriteDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-[#F75D5D]" />
-            AI 뉴스레터 작성
+            AI 최신정보 작성
           </DialogTitle>
         </DialogHeader>
 

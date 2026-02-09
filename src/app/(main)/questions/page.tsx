@@ -27,6 +27,7 @@ export default async function QuestionsPage({
 
   // 역할 조회: student/alumni/admin만 질문 작성 가능
   let canCreateQuestion = false;
+  let userRole: string | undefined;
   if (user) {
     const svc = createServiceClient();
     const { data: profile } = await svc
@@ -34,6 +35,7 @@ export default async function QuestionsPage({
       .select("role")
       .eq("id", user.id)
       .single();
+    userRole = profile?.role || undefined;
     canCreateQuestion = ["student", "alumni", "admin"].includes(profile?.role || "");
   }
 
@@ -76,6 +78,7 @@ export default async function QuestionsPage({
         currentTab={tab}
         currentUserId={currentUserId}
         canCreateQuestion={canCreateQuestion}
+        userRole={userRole}
       />
     </Suspense>
   );

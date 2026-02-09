@@ -8,6 +8,12 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface QuestionsListClientProps {
   questions: Array<{
@@ -32,6 +38,7 @@ interface QuestionsListClientProps {
   currentTab: string;
   currentUserId?: string;
   canCreateQuestion?: boolean;
+  userRole?: string;
 }
 
 const categoryColorMap: Record<string, string> = {
@@ -61,10 +68,12 @@ export function QuestionsListClient({
   totalCount,
   currentTab,
   canCreateQuestion,
+  userRole,
 }: QuestionsListClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchInput, setSearchInput] = useState(currentSearch);
+  const [memberDialogOpen, setMemberDialogOpen] = useState(false);
 
   const updateParams = useCallback(
     (updates: Record<string, string>) => {
@@ -104,14 +113,38 @@ export function QuestionsListClient({
               Meta 광고에 대해 궁금한 점을 질문하고 답변을 받아보세요
             </p>
           </div>
-          {canCreateQuestion && (
+          {canCreateQuestion ? (
             <Button asChild className="gap-1.5">
               <Link href="/questions/new">
                 <Plus className="h-4 w-4" />
                 새 질문
               </Link>
             </Button>
-          )}
+          ) : userRole === "member" ? (
+            <>
+              <Button className="gap-1.5" onClick={() => setMemberDialogOpen(true)}>
+                <Plus className="h-4 w-4" />
+                새 질문
+              </Button>
+              <Dialog open={memberDialogOpen} onOpenChange={setMemberDialogOpen}>
+                <DialogContent className="sm:max-w-[400px]">
+                  <DialogHeader>
+                    <DialogTitle>수강생 전용 기능</DialogTitle>
+                  </DialogHeader>
+                  <p className="text-sm text-gray-600 mt-2">
+                    수강생만 질문이 가능합니다.
+                  </p>
+                  <div className="mt-4 flex justify-end">
+                    <Button asChild className="bg-[#F75D5D] hover:bg-[#E54949]">
+                      <a href="https://bscamp.co.kr" target="_blank" rel="noopener noreferrer">
+                        수강 안내 보기
+                      </a>
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </>
+          ) : null}
         </div>
 
         {/* Search */}

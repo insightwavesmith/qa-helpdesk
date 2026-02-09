@@ -8,7 +8,7 @@ import type { UserRole } from "@/types";
  * - member → /dashboard 리다이렉트 (수강생 전용)
  * - 그 외 role → 통과 (page.tsx에서 실제/샘플 분기)
  */
-const BLOCKED_ROLES: UserRole[] = ["lead", "member"];
+const BLOCKED_ROLES: UserRole[] = ["lead"];
 
 export default async function ProtractorLayout({
   children,

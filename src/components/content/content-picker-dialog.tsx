@@ -33,7 +33,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   education: "교육",
   notice: "공지",
   case_study: "고객사례",
-  newsletter: "뉴스레터",
+  newsletter: "최신정보",
 };
 
 export default function ContentPickerDialog({
@@ -96,7 +96,7 @@ export default function ContentPickerDialog({
         subject: "[BS CAMP] 이번 주 콘텐츠 모음",
       });
     } catch {
-      toast.error("뉴스레터 생성에 실패했습니다.");
+      toast.error("최신정보 생성에 실패했습니다.");
     } finally {
       setGenerating(false);
     }

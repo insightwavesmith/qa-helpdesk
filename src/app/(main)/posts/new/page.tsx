@@ -114,7 +114,7 @@ export default function NewPostPage() {
                         <SelectItem value="education">교육</SelectItem>
                         <SelectItem value="notice">공지</SelectItem>
                         <SelectItem value="case_study">고객사례</SelectItem>
-                        <SelectItem value="newsletter">뉴스레터</SelectItem>
+                        <SelectItem value="newsletter">최신정보</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

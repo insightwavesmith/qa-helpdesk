@@ -32,7 +32,7 @@ interface PostsRedesignClientProps {
   totalCount: number;
 }
 
-// 카테고리 섹션 표시 순서: 고객사례 → 교육 → 뉴스레터
+// 카테고리 섹션 표시 순서: 고객사례 → 교육 → 최신정보
 const categoryOrder = ["case_study", "education", "newsletter"];
 
 export function PostsRedesignClient({
@@ -222,7 +222,7 @@ export function PostsRedesignClient({
                 );
               })}
 
-              {/* 뉴스레터 CTA */}
+              {/* 최신정보 CTA */}
               <NewsletterCta />
 
               {/* 나머지 게시글 */}

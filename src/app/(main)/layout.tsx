@@ -5,6 +5,7 @@ import { getPendingAnswersCount } from "@/actions/answers";
 import { DashboardSidebar } from "@/components/dashboard/Sidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { MobileSidebar } from "@/components/dashboard/MobileSidebar";
+import { AccessDenied } from "@/components/ui/access-denied";
 
 export default async function MainLayout({
   children,
@@ -17,7 +18,7 @@ export default async function MainLayout({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    return <AccessDenied />;
   }
 
   const serviceClient = createServiceClient();
