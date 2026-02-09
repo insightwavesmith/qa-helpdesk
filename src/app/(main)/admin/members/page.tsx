@@ -1,4 +1,5 @@
 import { getMembers } from "@/actions/admin";
+import { getSubscriberCount } from "@/actions/subscribers";
 import { MembersClient } from "./members-client";
 
 export default async function AdminMembersPage({
@@ -17,6 +18,7 @@ export default async function AdminMembersPage({
   });
 
   const totalPages = Math.ceil((count || 0) / 20);
+  const subscriberCount = await getSubscriberCount();
 
   return (
     <div className="space-y-6">
@@ -33,6 +35,7 @@ export default async function AdminMembersPage({
         currentPage={page}
         totalPages={totalPages}
         totalCount={count || 0}
+        subscriberCount={subscriberCount}
       />
     </div>
   );

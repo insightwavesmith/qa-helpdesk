@@ -12,7 +12,6 @@ const categoryLabels: Record<string, string> = {
   education: "교육",
   notice: "공지",
   case_study: "고객사례",
-  newsletter: "최신정보",
 };
 
 export function PostCard({ post }: PostCardProps) {

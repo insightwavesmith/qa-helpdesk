@@ -262,7 +262,6 @@ export async function generateNewsletterFromContents(contentIds: string[]) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://qa-knowledge-base.vercel.app";
   const categoryLabels: Record<string, string> = {
     education: "교육", notice: "공지", case_study: "고객사례",
-    newsletter: "최신정보",
   };
 
   const sectionsHtml = contents

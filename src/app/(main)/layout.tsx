@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { StudentHeader } from "@/components/layout/student-header";
 import { getPendingAnswersCount } from "@/actions/answers";
 import { DashboardSidebar } from "@/components/dashboard/Sidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { MobileSidebar } from "@/components/dashboard/MobileSidebar";
-import { AccessDenied } from "@/components/ui/access-denied";
+import { Button } from "@/components/ui/button";
 
 export default async function MainLayout({
   children,
@@ -18,7 +19,24 @@ export default async function MainLayout({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return <AccessDenied />;
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-40 border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+          <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+            <Link href="/posts" className="font-bold text-lg text-gray-900" style={{ wordSpacing: "-3px" }}>BS CAMP</Link>
+            <div className="flex items-center gap-2">
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/login">로그인</Link>
+              </Button>
+              <Button asChild size="sm" className="bg-[#F75D5D] hover:bg-[#E54949]">
+                <Link href="/signup">회원가입</Link>
+              </Button>
+            </div>
+          </div>
+        </header>
+        <main>{children}</main>
+      </div>
+    );
   }
 
   const serviceClient = createServiceClient();

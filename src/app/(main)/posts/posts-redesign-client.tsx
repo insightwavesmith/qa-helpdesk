@@ -15,6 +15,7 @@ interface PostData {
   content: string;
   body_md?: string;
   category: string;
+  type?: string;
   is_pinned: boolean;
   view_count: number;
   like_count: number;
@@ -32,8 +33,8 @@ interface PostsRedesignClientProps {
   totalCount: number;
 }
 
-// 카테고리 섹션 표시 순서: 고객사례 → 교육 → 최신정보
-const categoryOrder = ["case_study", "education", "newsletter"];
+// 카테고리 섹션 표시 순서: 고객사례 → 교육
+const categoryOrder = ["case_study", "education"];
 
 export function PostsRedesignClient({
   posts,

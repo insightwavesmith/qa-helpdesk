@@ -7,14 +7,12 @@ const categoryLabels: Record<string, string> = {
   education: "교육",
   notice: "공지",
   case_study: "고객사례",
-  newsletter: "최신정보",
 };
 
 const gradientMap: Record<string, [string, string]> = {
   education: ["#F75D5D", "#E54949"],
   notice: ["#10B981", "#059669"],
   case_study: ["#F97316", "#EA580C"],
-  newsletter: ["#8B5CF6", "#7C3AED"],
 };
 const defaultGradient: [string, string] = ["#1a1a2e", "#2d2d4e"];
 
@@ -22,7 +20,6 @@ const categoryEmoji: Record<string, string> = {
   education: "\u{1F4DA}",
   notice: "\u{1F4F0}",
   case_study: "\u{1F3AF}",
-  newsletter: "\u{1F4E8}",
 };
 const defaultEmoji = "\u{1F4A1}";
 

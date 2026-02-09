@@ -16,8 +16,9 @@ import { CategoryFilter } from "@/components/shared/CategoryFilter";
 import { Pagination } from "@/components/shared/Pagination";
 import { approveMember, getMemberDetail } from "@/actions/admin";
 import { toast } from "sonner";
-import { CheckCircle, Loader2 } from "lucide-react";
+import { CheckCircle, Loader2, Mail } from "lucide-react";
 import { MemberDetailModal } from "./member-detail-modal";
+import Link from "next/link";
 
 interface Member {
   id: string;
@@ -37,6 +38,7 @@ interface MembersClientProps {
   currentPage: number;
   totalPages: number;
   totalCount: number;
+  subscriberCount?: number;
 }
 
 const roleLabels: Record<
@@ -69,6 +71,7 @@ export function MembersClient({
   currentPage,
   totalPages,
   totalCount,
+  subscriberCount,
 }: MembersClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -157,6 +160,15 @@ export function MembersClient({
       <p className="text-sm text-muted-foreground">
         총 {totalCount}명의 회원
       </p>
+      {typeof subscriberCount === "number" && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Mail className="h-3.5 w-3.5" />
+          이메일 구독자 {subscriberCount}명
+          <Link href="/admin/email" className="text-[#F75D5D] hover:underline ml-1">
+            관리하기 →
+          </Link>
+        </div>
+      )}
 
       {members.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">

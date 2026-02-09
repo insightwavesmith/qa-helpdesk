@@ -29,10 +29,12 @@ export default async function PostsPage({
     isAdmin = profile?.role === "admin";
   }
 
+  const isTypeFilter = category === "promo";
   const { data: posts, count } = await getPosts({
     page,
     pageSize: PAGE_SIZE,
-    category: category !== "all" ? category : undefined,
+    category: !isTypeFilter && category !== "all" ? category : undefined,
+    type: isTypeFilter ? "promo" : undefined,
     search: search || undefined,
   });
 

@@ -52,7 +52,6 @@ const CATEGORY_LABEL: Record<string, string> = {
   education: "교육",
   notice: "공지",
   case_study: "고객사례",
-  newsletter: "최신정보",
 };
 
 const TYPE_BADGE: Record<string, { label: string; className: string }> = {
@@ -217,7 +216,6 @@ export default function AdminContentPage() {
             <SelectItem value="education">교육</SelectItem>
             <SelectItem value="notice">공지</SelectItem>
             <SelectItem value="case_study">고객사례</SelectItem>
-            <SelectItem value="newsletter">최신정보</SelectItem>
           </SelectContent>
         </Select>
 

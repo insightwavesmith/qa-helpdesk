@@ -144,6 +144,13 @@ export function QuestionsListClient({
                 </DialogContent>
               </Dialog>
             </>
+          ) : !userRole ? (
+            <Button asChild variant="outline" className="gap-1.5">
+              <Link href="/login">
+                <Plus className="h-4 w-4" />
+                로그인하고 질문하기
+              </Link>
+            </Button>
           ) : null}
         </div>
 

@@ -22,7 +22,6 @@ export const categoryConfig: Record<string, { label: string; bg: string; text: s
   education: { label: "교육", bg: "#FFF5F5", text: "#F75D5D" },
   notice: { label: "공지", bg: "#EFF6FF", text: "#3B82F6" },
   case_study: { label: "고객사례", bg: "#FFF7ED", text: "#F97316" },
-  newsletter: { label: "최신정보", bg: "#F0FDF4", text: "#22C55E" },
 };
 
 function formatDate(dateStr: string) {

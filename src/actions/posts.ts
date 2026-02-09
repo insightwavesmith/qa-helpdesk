@@ -18,11 +18,13 @@ export async function getPosts({
   pageSize = 10,
   category,
   search,
+  type,
 }: {
   page?: number;
   pageSize?: number;
   category?: string;
   search?: string;
+  type?: string;
 } = {}) {
   const supabase = createServiceClient();
   const from = (page - 1) * pageSize;
@@ -44,7 +46,11 @@ export async function getPosts({
     query = query.eq("category", category);
   } else {
     // 기본: notice 카테고리 제외 (공지사항은 /notices 페이지에서 별도 표시)
-    query = query.in("category", ["education", "case_study", "newsletter"]);
+    query = query.in("category", ["education", "case_study"]);
+  }
+
+  if (type) {
+    query = query.eq("type", type);
   }
 
   if (search) {
@@ -137,7 +143,7 @@ export async function getNoticeById(id: string) {
 export async function createPost(formData: {
   title: string;
   content: string;
-  category: "education" | "notice" | "case_study" | "newsletter";
+  category: "education" | "notice" | "case_study";
 }) {
   const supabase = await createClient();
   const {

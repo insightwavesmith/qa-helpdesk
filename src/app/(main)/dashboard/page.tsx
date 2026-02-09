@@ -1,4 +1,5 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import { StudentHome } from "./student-home";
 import { AdminDashboard } from "./admin-dashboard";
 import { MemberDashboard } from "./member-dashboard";
@@ -9,11 +10,15 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (!user) {
+    redirect("/login");
+  }
+
   const svc = createServiceClient();
   const { data: profile } = (await svc
     .from("profiles")
     .select("role, name")
-    .eq("id", user!.id)
+    .eq("id", user.id)
     .single()) as { data: { role: string; name: string } | null };
 
   const role = profile?.role;

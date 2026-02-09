@@ -17,7 +17,7 @@ export default async function ProtractorPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    return <SampleDashboard bannerType="member" />;
   }
 
   const svc = createServiceClient();

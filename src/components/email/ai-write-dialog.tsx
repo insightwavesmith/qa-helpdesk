@@ -33,7 +33,6 @@ const CATEGORIES = [
   { value: "education", label: "교육" },
   { value: "notice", label: "공지" },
   { value: "case_study", label: "고객사례" },
-  { value: "newsletter", label: "최신정보" },
   { value: "custom", label: "직접 입력" },
 ];
 

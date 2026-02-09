@@ -9,7 +9,7 @@ const tabs = [
   { value: "all", label: "전체" },
   { value: "education", label: "교육" },
   { value: "case_study", label: "고객사례" },
-  { value: "newsletter", label: "최신정보" },
+  { value: "promo", label: "최신정보" },
 ];
 
 export function CategoryTabs({ current, onChange }: CategoryTabsProps) {

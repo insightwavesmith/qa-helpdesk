@@ -21,7 +21,7 @@ export default async function ProtractorLayout({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    return <>{children}</>;
   }
 
   const svc = createServiceClient();

@@ -196,7 +196,6 @@ export default function ContentEditorDialog({
                   <SelectItem value="education">교육</SelectItem>
                   <SelectItem value="notice">공지</SelectItem>
                   <SelectItem value="case_study">고객사례</SelectItem>
-                  <SelectItem value="newsletter">최신정보</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -216,7 +215,7 @@ export default function ContentEditorDialog({
           <Tabs defaultValue="body" className="w-full">
             <TabsList className="w-full grid grid-cols-2">
               <TabsTrigger value="body">정보공유용</TabsTrigger>
-              <TabsTrigger value="summary">최신정보용</TabsTrigger>
+              <TabsTrigger value="summary">이메일용 요약</TabsTrigger>
             </TabsList>
             <TabsContent value="body" className="mt-3">
               <Textarea
@@ -231,7 +230,7 @@ export default function ContentEditorDialog({
               <Textarea
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
-                placeholder="최신정보에 들어가는 짧은 버전을 작성하세요..."
+                placeholder="이메일에 들어가는 짧은 요약을 작성하세요..."
                 rows={8}
                 className="min-h-[160px]"
               />
