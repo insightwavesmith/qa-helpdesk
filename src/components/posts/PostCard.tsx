@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Eye, ThumbsUp, Pin } from "lucide-react";
+import { decodeHtmlEntities } from "@/lib/utils/decode-entities";
 
 interface PostCardProps {
   post: {
@@ -61,7 +62,7 @@ export function PostCard({ post, layout = "list" }: PostCardProps) {
             </Badge>
           </div>
           <h3 className="font-semibold text-sm text-gray-900 line-clamp-2 group-hover:text-[#F75D5D] transition-colors leading-snug">
-            {post.title}
+            {decodeHtmlEntities(post.title)}
           </h3>
           <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">
             {post.content}
@@ -100,7 +101,7 @@ export function PostCard({ post, layout = "list" }: PostCardProps) {
         </div>
 
         <h3 className="font-semibold text-[16px] leading-snug text-gray-900 group-hover:text-[#F75D5D] transition-colors line-clamp-2">
-          {post.title}
+          {decodeHtmlEntities(post.title)}
         </h3>
 
         <p className="text-sm text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">

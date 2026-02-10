@@ -13,6 +13,7 @@ import {
   getRecentQuestions,
   getRecentPosts,
 } from "@/actions/admin";
+import { decodeHtmlEntities } from "@/lib/utils/decode-entities";
 
 export async function AdminDashboard() {
   let stats = {
@@ -160,7 +161,7 @@ export async function AdminDashboard() {
                 <div className="flex items-center gap-3 py-2 -mx-2 px-2 rounded-[6px] transition-colors duration-150 hover:bg-accent">
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] text-foreground line-clamp-1 group-hover:text-primary transition-colors duration-150">
-                      {p.title as string}
+                      {decodeHtmlEntities(p.title as string)}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-[12px] text-muted-foreground">

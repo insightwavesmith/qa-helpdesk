@@ -4,6 +4,7 @@ import { getPosts, getNotices } from "@/actions/posts";
 import { getQuestions } from "@/actions/questions";
 import { StudentAdSummary } from "./student-ad-summary";
 import { getExcerpt } from "@/components/posts/post-card";
+import { decodeHtmlEntities } from "@/lib/utils/decode-entities";
 
 function timeAgo(dateStr: string) {
   const now = new Date();
@@ -98,7 +99,7 @@ export async function StudentHome({ userName: _userName }: StudentHomeProps) {
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-lg mb-2 text-text-main">{notice.title}</h3>
+                    <h3 className="font-bold text-lg mb-2 text-text-main">{decodeHtmlEntities(notice.title)}</h3>
                     <p className="text-text-secondary line-clamp-2">{getExcerpt(notice.summary || notice.body_md || "", 120)}</p>
                     <p className="text-sm text-text-muted mt-2">
                       {timeAgo(notice.created_at)} • 관리자
