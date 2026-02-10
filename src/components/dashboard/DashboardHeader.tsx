@@ -23,7 +23,6 @@ const titleMap: Record<string, string> = {
   "/admin/content": "콘텐츠 관리",
   "/admin/protractor": "총가치각도기 관리",
   "/admin/accounts": "광고계정 관리",
-  "/admin/email": "이메일 발송",
 };
 
 const dateFilterPaths = ["/dashboard", "/protractor", "/admin/protractor"];
