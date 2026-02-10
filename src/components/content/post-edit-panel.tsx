@@ -38,11 +38,20 @@ export default function PostEditPanel({
   const [publishing, setPublishing] = useState(false);
   const [dirty, setDirty] = useState(false);
   const autoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(false);
   const lastSavedRef = useRef(mdContent);
 
   const handleChange = useCallback(
     (md: string) => {
       setBodyMd(md);
+
+      if (!mountedRef.current) {
+        // 첫 onChange = MDXEditor 정규화. dirty 안 잡고 기준값만 업데이트
+        mountedRef.current = true;
+        lastSavedRef.current = md;
+        return;
+      }
+
       setDirty(md !== lastSavedRef.current);
 
       // Auto-save after 5s
@@ -63,8 +72,9 @@ export default function PostEditPanel({
     [contentId]
   );
 
-  // initialBodyMd(prop) 변경 시 내부 상태 동기화
+  // initialBodyMd(prop) 변경 시 내부 상태 동기화 — mountedRef도 리셋
   useEffect(() => {
+    mountedRef.current = false;
     setBodyMd(mdContent);
     lastSavedRef.current = mdContent;
     setDirty(false);
