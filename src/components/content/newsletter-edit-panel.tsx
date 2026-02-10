@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import {
 import { updateContent, updateContentEmailSentAt } from "@/actions/contents";
 import { toast } from "sonner";
 import { ensureMarkdown } from "@/lib/html-to-markdown";
+import { newsletterTemplate } from "@/lib/email-templates";
 import type { Content } from "@/types/content";
 
 const MDXEditorComponent = dynamic(
@@ -101,6 +102,9 @@ export default function NewsletterEditPanel({
   const [testSending, setTestSending] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const mountedRef = useRef(false);
+  const lastSavedSummaryRef = useRef(initialSummary);
+  const lastSavedSubjectRef = useRef(content.email_subject || content.title);
 
   useEffect(() => {
     fetch("/api/admin/email/recipients")
@@ -111,12 +115,17 @@ export default function NewsletterEditPanel({
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    mountedRef.current = true;
+  }, []);
+
   const handleEditorChange = useCallback(
     (md: string) => {
       setEmailSummary(md);
-      setDirty(true);
+      if (!mountedRef.current) return;
+      setDirty(md !== lastSavedSummaryRef.current || emailSubject !== lastSavedSubjectRef.current);
     },
-    []
+    [emailSubject]
   );
 
   const handleSave = async () => {
@@ -129,6 +138,8 @@ export default function NewsletterEditPanel({
       if (error) {
         toast.error("저장에 실패했습니다.");
       } else {
+        lastSavedSummaryRef.current = emailSummary;
+        lastSavedSubjectRef.current = emailSubject;
         setDirty(false);
         toast.success("뉴스레터 내용이 저장되었습니다.");
         onContentUpdate();
@@ -138,10 +149,33 @@ export default function NewsletterEditPanel({
     }
   };
 
-  const handleImportFromPost = () => {
-    setEmailSummary(ensureMarkdown(content.body_md));
-    setDirty(true);
-    toast.success("정보공유 본문을 가져왔습니다.");
+  const [summarizing, setSummarizing] = useState(false);
+
+  const handleImportFromPost = async () => {
+    if (!content.body_md) {
+      toast.error("정보공유 본문이 비어 있습니다.");
+      return;
+    }
+    setSummarizing(true);
+    try {
+      const res = await fetch("/api/admin/content/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content_id: content.id }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        toast.error(data.error);
+      } else {
+        setEmailSummary(data.summary);
+        setDirty(true);
+        toast.success("AI 요약이 생성되었습니다.");
+      }
+    } catch {
+      toast.error("AI 요약 생성에 실패했습니다.");
+    } finally {
+      setSummarizing(false);
+    }
   };
 
   const getRecipientCount = (): number => {
@@ -269,8 +303,9 @@ export default function NewsletterEditPanel({
               <Input
                 value={emailSubject}
                 onChange={(e) => {
-                  setEmailSubject(e.target.value);
-                  setDirty(true);
+                  const val = e.target.value;
+                  setEmailSubject(val);
+                  setDirty(val !== lastSavedSubjectRef.current || emailSummary !== lastSavedSummaryRef.current);
                 }}
                 className="h-9 text-sm"
                 placeholder="이메일 제목"
@@ -287,20 +322,15 @@ export default function NewsletterEditPanel({
             variant="outline"
             size="sm"
             onClick={handleImportFromPost}
+            disabled={summarizing}
             className="text-xs gap-1"
           >
-            <FileDown className="size-3.5" />
-            정보공유에서 가져오기
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled
-            className="text-xs gap-1"
-            title="Phase E에서 구현 예정"
-          >
-            <Sparkles className="size-3.5" />
-            AI 요약
+            {summarizing ? (
+              <Sparkles className="size-3.5 animate-spin" />
+            ) : (
+              <FileDown className="size-3.5" />
+            )}
+            {summarizing ? "AI 요약 중..." : "정보공유에서 가져오기"}
           </Button>
           <Button
             variant="outline"
@@ -377,21 +407,17 @@ export default function NewsletterEditPanel({
             <p className="text-xs font-medium text-gray-500 mb-2">
               이메일 미리보기
             </p>
-            <Card className="h-[500px] overflow-auto">
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  <div className="border-b pb-2">
-                    <p className="text-[10px] text-gray-400">제목</p>
-                    <p className="text-sm font-medium">{emailSubject}</p>
-                  </div>
-                  <div
-                    dangerouslySetInnerHTML={{
-                      __html: mdToPreviewHtml(emailSummary),
-                    }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            <iframe
+              srcDoc={newsletterTemplate({
+                subject: emailSubject,
+                bodyHtml: mdToPreviewHtml(emailSummary),
+                ctaText: "전체 글 읽기 →",
+                ctaUrl: `${process.env.NEXT_PUBLIC_SITE_URL || ""}/posts?content_id=${content.id}`,
+                thumbnailUrl: content.thumbnail_url,
+              })}
+              className="w-full h-[500px] border rounded-lg"
+              title="이메일 미리보기"
+            />
           </div>
         )}
       </div>

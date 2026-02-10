@@ -2,9 +2,9 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { Save, Loader2, Eye } from "lucide-react";
+import { Save, Loader2, Eye, Globe, GlobeLock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { updateContent } from "@/actions/contents";
+import { updateContent, publishContent } from "@/actions/contents";
 import { toast } from "sonner";
 import { ensureMarkdown } from "@/lib/html-to-markdown";
 
@@ -20,17 +20,22 @@ const MDXEditorComponent = dynamic(() => import("./mdx-editor-wrapper"), {
 interface PostEditPanelProps {
   contentId: string;
   initialBodyMd: string;
+  status: string;
   onSaved?: () => void;
+  onStatusChange?: () => void;
 }
 
 export default function PostEditPanel({
   contentId,
   initialBodyMd,
+  status,
   onSaved,
+  onStatusChange,
 }: PostEditPanelProps) {
   const mdContent = useMemo(() => ensureMarkdown(initialBodyMd), [initialBodyMd]);
   const [bodyMd, setBodyMd] = useState(mdContent);
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [dirty, setDirty] = useState(false);
   const autoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef(mdContent);
@@ -83,6 +88,36 @@ export default function PostEditPanel({
     }
   };
 
+  const handlePublish = async () => {
+    setPublishing(true);
+    try {
+      const { error } = await publishContent(contentId);
+      if (error) {
+        toast.error("게시에 실패했습니다.");
+      } else {
+        toast.success("게시되었습니다.");
+        onStatusChange?.();
+      }
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleUnpublish = async () => {
+    setPublishing(true);
+    try {
+      const { error } = await updateContent(contentId, { status: "draft" });
+      if (error) {
+        toast.error("게시 취소에 실패했습니다.");
+      } else {
+        toast.success("게시가 취소되었습니다.");
+        onStatusChange?.();
+      }
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   return (
     <div className="space-y-3">
       {/* Toolbar */}
@@ -125,6 +160,36 @@ export default function PostEditPanel({
             )}
             저장
           </Button>
+          {status === "published" ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleUnpublish}
+              disabled={publishing}
+              className="gap-1.5"
+            >
+              {publishing ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <GlobeLock className="size-3.5" />
+              )}
+              게시 취소
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={handlePublish}
+              disabled={publishing}
+              className="bg-blue-600 hover:bg-blue-700 gap-1.5"
+            >
+              {publishing ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Globe className="size-3.5" />
+              )}
+              게시
+            </Button>
+          )}
         </div>
       </div>
 

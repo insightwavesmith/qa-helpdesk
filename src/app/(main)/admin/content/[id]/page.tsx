@@ -155,7 +155,9 @@ export default function ContentDetailPage() {
               <PostEditPanel
                 contentId={content.id}
                 initialBodyMd={content.body_md}
+                status={content.status}
                 onSaved={refreshContent}
+                onStatusChange={refreshContent}
               />
             </div>
             <DetailSidebar

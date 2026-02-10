@@ -102,6 +102,9 @@ export default function AdminContentPage() {
         title: "새 콘텐츠",
         body_md: "",
         status: "draft",
+        type: "info",
+        category: "education",
+        tags: [],
       });
       if (error || !data) {
         toast.error("콘텐츠 생성 실패");

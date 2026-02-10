@@ -53,11 +53,13 @@ export function newsletterTemplate({
   bodyHtml,
   ctaText,
   ctaUrl,
+  thumbnailUrl,
 }: {
   subject: string;
   bodyHtml: string;
   ctaText?: string;
   ctaUrl?: string;
+  thumbnailUrl?: string | null;
 }) {
   const safeSubject = escapeHtml(subject);
   const ctaHtml =
@@ -66,6 +68,11 @@ export function newsletterTemplate({
   <a href="${escapeHtml(ctaUrl)}" style="background-color:#F75D5D;color:#ffffff;font-size:16px;font-weight:700;padding:16px 40px;border-radius:8px;text-decoration:none;display:inline-block;">${escapeHtml(ctaText)}</a>
 </div>`
       : "";
+  const bannerHtml = thumbnailUrl
+    ? `<div style="padding:0;">
+  <img src="${escapeHtml(thumbnailUrl)}" alt="" style="width:100%;height:auto;display:block;" />
+</div>`
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -81,6 +88,7 @@ export function newsletterTemplate({
     <div style="background-color:#ffffff;padding:24px 32px;text-align:center;border-bottom:2px solid #F75D5D;">
       <p style="color:#F75D5D;font-size:20px;font-weight:700;margin:0;letter-spacing:0.5px;">BS CAMP</p>
     </div>
+    ${bannerHtml}
     <!-- Body -->
     <div style="padding:32px;">
       <p style="color:#1a1a1a;font-size:22px;font-weight:700;margin:0 0 24px;line-height:1.4;">${safeSubject}</p>
