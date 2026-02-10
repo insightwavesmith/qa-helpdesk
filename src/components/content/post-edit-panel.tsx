@@ -63,6 +63,13 @@ export default function PostEditPanel({
     [contentId]
   );
 
+  // initialBodyMd(prop) 변경 시 내부 상태 동기화
+  useEffect(() => {
+    setBodyMd(mdContent);
+    lastSavedRef.current = mdContent;
+    setDirty(false);
+  }, [mdContent]);
+
   // Cleanup auto-save timer
   useEffect(() => {
     return () => {
@@ -136,17 +143,24 @@ export default function PostEditPanel({
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <a
-              href={`/posts?content_id=${contentId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="gap-1.5"
-            >
+          {status === "published" ? (
+            <Button variant="outline" size="sm" asChild>
+              <a
+                href={`/posts/${contentId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="gap-1.5"
+              >
+                <Eye className="size-3.5" />
+                미리보기
+              </a>
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" disabled className="gap-1.5" title="게시 후 미리보기 가능">
               <Eye className="size-3.5" />
               미리보기
-            </a>
-          </Button>
+            </Button>
+          )}
           <Button
             size="sm"
             onClick={handleSave}

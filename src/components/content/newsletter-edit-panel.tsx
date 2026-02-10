@@ -415,8 +415,7 @@ export default function NewsletterEditPanel({
                 subject: emailSubject,
                 bodyHtml: mdToPreviewHtml(emailSummary),
                 ctaText: "전체 글 읽기 →",
-                ctaUrl: `${process.env.NEXT_PUBLIC_SITE_URL || ""}/posts?content_id=${content.id}`,
-                thumbnailUrl: content.thumbnail_url,
+                ctaUrl: `${process.env.NEXT_PUBLIC_SITE_URL || ""}/posts/${content.id}`,
               })}
               className="w-full h-[500px] border rounded-lg"
               title="이메일 미리보기"
