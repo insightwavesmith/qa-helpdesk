@@ -102,6 +102,7 @@ export default function NewsletterEditPanel({
   const [testSending, setTestSending] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [editorKey, setEditorKey] = useState(0);
   const mountedRef = useRef(false);
   const lastSavedSummaryRef = useRef(initialSummary);
   const lastSavedSubjectRef = useRef(content.email_subject || content.title);
@@ -168,6 +169,7 @@ export default function NewsletterEditPanel({
         toast.error(data.error);
       } else {
         setEmailSummary(data.summary);
+        setEditorKey((k) => k + 1);
         setDirty(true);
         toast.success("AI 요약이 생성되었습니다.");
       }
@@ -398,7 +400,8 @@ export default function NewsletterEditPanel({
             뉴스레터 본문 (마크다운)
           </p>
           <MDXEditorComponent
-            markdown={initialSummary}
+            key={editorKey}
+            markdown={editorKey === 0 ? initialSummary : emailSummary}
             onChange={handleEditorChange}
           />
         </div>
