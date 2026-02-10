@@ -12,8 +12,8 @@ import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableCell } from "@tiptap/extension-table-cell";
 import { TableHeader } from "@tiptap/extension-table-header";
+import { Markdown } from "tiptap-markdown";
 import { FloatingToolbar } from "./FloatingToolbar";
-import { markdownToHtml } from "@/components/posts/post-body";
 import "@/components/posts/post-body.css";
 
 interface InlineEditorProps {
@@ -21,11 +21,7 @@ interface InlineEditorProps {
   bodyMd: string;
   isEditing: boolean;
   onTitleChange: (title: string) => void;
-  onContentChange: (html: string) => void;
-}
-
-function isHtmlContent(str: string): boolean {
-  return /<[a-z][\s\S]*>/i.test(str);
+  onContentChange: (md: string) => void;
 }
 
 export function InlineEditor({
@@ -36,15 +32,6 @@ export function InlineEditor({
   onContentChange,
 }: InlineEditorProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const initialContentRef = useRef<string>("");
-
-  // Convert markdown to HTML if needed
-  const htmlContent = isHtmlContent(bodyMd) ? bodyMd : markdownToHtml(bodyMd);
-
-  // Store initial content for editor initialization
-  useEffect(() => {
-    initialContentRef.current = htmlContent;
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const editor = useEditor({
     extensions: [
@@ -65,11 +52,17 @@ export function InlineEditor({
       TableRow,
       TableHeader,
       TableCell,
+      Markdown.configure({
+        html: true,
+        transformPastedText: true,
+        transformCopiedText: true,
+      }),
     ],
-    content: htmlContent,
+    content: bodyMd,
     editable: isEditing,
     onUpdate: ({ editor: e }) => {
-      onContentChange(e.getHTML());
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      onContentChange((e.storage as any).markdown.getMarkdown() as string);
     },
     editorProps: {
       attributes: {
@@ -83,7 +76,6 @@ export function InlineEditor({
     if (!editor) return;
     editor.setEditable(isEditing);
     if (isEditing) {
-      // Focus the editor after switching to edit mode
       setTimeout(() => editor.commands.focus("end"), 100);
     }
   }, [isEditing, editor]);

@@ -101,7 +101,6 @@ export default function PostDetailClient({
           const { error } = await updatePostInline(post.id, {
             title,
             body_md: content,
-            status: "draft",
           });
           if (error) {
             console.error("자동저장 실패:", error);
@@ -132,13 +131,12 @@ export default function PostDetailClient({
     const { error } = await updatePostInline(post.id, {
       title: editTitle,
       body_md: editContent,
-      status: "draft",
     });
     if (error) {
       toast.error("저장에 실패했습니다. 다시 시도해주세요.");
     } else {
       lastSavedRef.current = { title: editTitle, content: editContent };
-      toast.success("임시저장되었습니다.");
+      toast.success("저장되었습니다.");
     }
   }
 

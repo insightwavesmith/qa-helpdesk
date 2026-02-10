@@ -8,17 +8,13 @@ import Link from "@tiptap/extension-link";
 import ImageExt from "@tiptap/extension-image";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
+import { Markdown } from "tiptap-markdown";
 import { Save, Send, X, Loader2, Pencil, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { FloatingToolbar } from "@/components/post/FloatingToolbar";
-import { markdownToHtml } from "@/components/posts/post-body";
 import { updateContent } from "@/actions/contents";
 import SendConfirmModal from "./SendConfirmModal";
 import "@/components/posts/post-body.css";
-
-function isHtmlContent(str: string): boolean {
-  return /<[a-z][\s\S]*>/i.test(str);
-}
 
 interface ContentData {
   id: string;
@@ -59,15 +55,10 @@ export default function NewsletterInlineEditor({
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef({ subject: editSubject, body: "" });
 
-  // Convert body_md to HTML for TipTap
-  const htmlContent = isHtmlContent(content.body_md)
-    ? content.body_md
-    : markdownToHtml(content.body_md);
-
   // Initialize editBody
   useEffect(() => {
-    setEditBody(htmlContent);
-    lastSavedRef.current.body = htmlContent;
+    setEditBody(content.body_md);
+    lastSavedRef.current.body = content.body_md;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -86,13 +77,19 @@ export default function NewsletterInlineEditor({
         HTMLAttributes: { class: "post-body-img" },
       }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
+      Markdown.configure({
+        html: true,
+        transformPastedText: true,
+        transformCopiedText: true,
+      }),
     ],
-    content: htmlContent,
+    content: content.body_md,
     editable: true,
     onUpdate: ({ editor: e }) => {
-      const html = e.getHTML();
-      setEditBody(html);
-      scheduleAutoSave(editSubject, html);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const md = (e.storage as any).markdown.getMarkdown() as string;
+      setEditBody(md);
+      scheduleAutoSave(editSubject, md);
     },
     editorProps: {
       attributes: {
