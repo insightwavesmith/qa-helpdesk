@@ -75,6 +75,7 @@ export default async function PostDetailPage({
             content: post.content,
             body_md: post.body_md,
             category: post.category,
+            thumbnail_url: post.thumbnail_url,
             is_pinned: post.is_pinned,
             view_count: post.view_count,
             status: post.status,

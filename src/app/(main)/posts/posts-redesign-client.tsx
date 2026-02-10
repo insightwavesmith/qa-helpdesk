@@ -15,6 +15,7 @@ interface PostData {
   content: string;
   body_md?: string;
   category: string;
+  thumbnail_url?: string | null;
   type?: string;
   is_pinned: boolean;
   view_count: number;

@@ -19,6 +19,7 @@ interface PostData {
   content: string;
   body_md?: string;
   category: string;
+  thumbnail_url?: string | null;
   is_pinned: boolean;
   view_count: number;
   status?: string;
@@ -234,7 +235,7 @@ export default function PostDetailClient({
       </div>
 
       {/* Hero Banner */}
-      <PostHero title={post.title} category={post.category} />
+      <PostHero title={post.title} category={post.category} thumbnailUrl={post.thumbnail_url} />
 
       {/* TOC */}
       <PostToc content={post.content} />

@@ -159,14 +159,22 @@ export async function AdminDashboard() {
             {recentPosts.map((p: Record<string, unknown>) => (
               <Link key={p.id as string} href={`/posts/${p.id}`} className="group block">
                 <div className="flex items-center gap-3 py-2 -mx-2 px-2 rounded-[6px] transition-colors duration-150 hover:bg-accent">
+                  {(p.thumbnail_url as string) ? (
+                    <img
+                      src={p.thumbnail_url as string}
+                      alt=""
+                      className="h-12 w-12 rounded-md object-cover shrink-0"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded-md bg-gradient-to-br from-primary/20 to-primary/5 shrink-0 flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-primary/40" />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] text-foreground line-clamp-1 group-hover:text-primary transition-colors duration-150">
                       {decodeHtmlEntities(p.title as string)}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[12px] text-muted-foreground">
-                        {(p.author as Record<string, unknown>)?.name as string || "관리자"}
-                      </span>
                       <span className="text-[12px] text-muted-foreground">
                         {new Date(p.created_at as string).toLocaleDateString("ko-KR")}
                       </span>

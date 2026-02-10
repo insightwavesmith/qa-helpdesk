@@ -6,6 +6,7 @@ interface PostData {
   content: string;
   body_md?: string;
   category: string;
+  thumbnail_url?: string | null;
   is_pinned: boolean;
   view_count: number;
   like_count: number;
@@ -54,10 +55,10 @@ function CategoryBadge({ category }: { category: string }) {
   );
 }
 
-function Thumbnail({ title, category }: { title: string; category: string }) {
+function Thumbnail({ title, category, thumbnailUrl }: { title: string; category: string; thumbnailUrl?: string | null }) {
   return (
     <img
-      src={`/api/og?title=${encodeURIComponent(title)}&category=${encodeURIComponent(category)}`}
+      src={thumbnailUrl || `/api/og?title=${encodeURIComponent(title)}&category=${encodeURIComponent(category)}`}
       alt={title}
       className="w-full aspect-video object-cover"
       loading="lazy"
@@ -71,7 +72,7 @@ export function PostCard({ post, featured = false }: PostCardProps) {
       <Link href={`/posts/${post.id}`} className="block group">
         <article className="flex flex-col md:flex-row bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
           <div className="md:w-3/5 shrink-0">
-            <Thumbnail title={post.title} category={post.category} />
+            <Thumbnail title={post.title} category={post.category} thumbnailUrl={post.thumbnail_url} />
           </div>
           <div className="flex flex-col justify-center p-5 md:p-6 md:w-2/5">
             <CategoryBadge category={post.category} />
@@ -93,7 +94,7 @@ export function PostCard({ post, featured = false }: PostCardProps) {
   return (
     <Link href={`/posts/${post.id}`} className="block group">
       <article className="bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all h-full flex flex-col">
-        <Thumbnail title={post.title} category={post.category} />
+        <Thumbnail title={post.title} category={post.category} thumbnailUrl={post.thumbnail_url} />
         <div className="p-4 flex flex-col flex-1">
           <CategoryBadge category={post.category} />
           <h3 className="mt-2 text-base font-semibold text-[#1a1a2e] group-hover:text-[#F75D5D] transition-colors line-clamp-2 leading-snug">

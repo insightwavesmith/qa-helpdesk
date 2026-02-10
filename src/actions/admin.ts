@@ -197,7 +197,7 @@ export async function getRecentPosts(limit = 5) {
 
   const { data, error } = await supabase
     .from("contents")
-    .select("id, title, category, status, created_at")
+    .select("id, title, category, status, created_at, thumbnail_url")
     .eq("status", "published")
     .order("created_at", { ascending: false })
     .limit(limit);
