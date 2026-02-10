@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { updateContent, updateContentEmailSentAt } from "@/actions/contents";
 import { toast } from "sonner";
+import { ensureMarkdown } from "@/lib/html-to-markdown";
 import type { Content } from "@/types/content";
 
 const MDXEditorComponent = dynamic(
@@ -83,9 +84,11 @@ export default function NewsletterEditPanel({
   content,
   onContentUpdate,
 }: NewsletterEditPanelProps) {
-  const [emailSummary, setEmailSummary] = useState(
-    content.email_summary || ""
+  const initialSummary = useMemo(
+    () => ensureMarkdown(content.email_summary || ""),
+    [content.email_summary]
   );
+  const [emailSummary, setEmailSummary] = useState(initialSummary);
   const [emailSubject, setEmailSubject] = useState(
     content.email_subject || content.title
   );
@@ -136,7 +139,7 @@ export default function NewsletterEditPanel({
   };
 
   const handleImportFromPost = () => {
-    setEmailSummary(content.body_md);
+    setEmailSummary(ensureMarkdown(content.body_md));
     setDirty(true);
     toast.success("정보공유 본문을 가져왔습니다.");
   };
@@ -365,7 +368,7 @@ export default function NewsletterEditPanel({
             뉴스레터 본문 (마크다운)
           </p>
           <MDXEditorComponent
-            markdown={content.email_summary || ""}
+            markdown={initialSummary}
             onChange={handleEditorChange}
           />
         </div>

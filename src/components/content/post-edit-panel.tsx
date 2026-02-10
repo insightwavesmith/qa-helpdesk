@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Save, Loader2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { updateContent } from "@/actions/contents";
 import { toast } from "sonner";
+import { ensureMarkdown } from "@/lib/html-to-markdown";
 
 const MDXEditorComponent = dynamic(() => import("./mdx-editor-wrapper"), {
   ssr: false,
@@ -27,11 +28,12 @@ export default function PostEditPanel({
   initialBodyMd,
   onSaved,
 }: PostEditPanelProps) {
-  const [bodyMd, setBodyMd] = useState(initialBodyMd);
+  const mdContent = useMemo(() => ensureMarkdown(initialBodyMd), [initialBodyMd]);
+  const [bodyMd, setBodyMd] = useState(mdContent);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const autoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastSavedRef = useRef(initialBodyMd);
+  const lastSavedRef = useRef(mdContent);
 
   const handleChange = useCallback(
     (md: string) => {
@@ -127,7 +129,7 @@ export default function PostEditPanel({
       </div>
 
       {/* MDXEditor */}
-      <MDXEditorComponent markdown={initialBodyMd} onChange={handleChange} />
+      <MDXEditorComponent markdown={mdContent} onChange={handleChange} />
     </div>
   );
 }
