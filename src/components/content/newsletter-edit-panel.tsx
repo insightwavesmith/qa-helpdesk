@@ -39,6 +39,13 @@ const MDXEditorComponent = dynamic(
   }
 );
 
+const CTA_PRESETS = [
+  { id: "read_more", label: "전체글 읽기", text: "전체 글 읽기 →", urlTemplate: "/posts/{id}" },
+  { id: "webinar", label: "웨비나 신청", text: "웨비나 신청하기 →", urlTemplate: "" },
+  { id: "notice", label: "공지사항", text: "공지사항 보기 →", urlTemplate: "/notices" },
+  { id: "custom", label: "직접 입력", text: "", urlTemplate: "" },
+] as const;
+
 interface RecipientStats {
   leads: number;
   students: number;
@@ -97,6 +104,19 @@ export default function NewsletterEditPanel({
   const [recipientStats, setRecipientStats] = useState<RecipientStats | null>(
     null
   );
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+  const defaultCtaText = "전체 글 읽기 →";
+  const defaultCtaUrl = `${siteUrl}/posts/${content.id}`;
+
+  const [ctaText, setCtaText] = useState(content.email_cta_text || defaultCtaText);
+  const [ctaUrl, setCtaUrl] = useState(content.email_cta_url || defaultCtaUrl);
+  const [ctaPreset, setCtaPreset] = useState<string>(() => {
+    const saved = content.email_cta_text;
+    if (!saved) return "read_more";
+    const found = CTA_PRESETS.find((p) => p.text === saved);
+    return found ? found.id : "custom";
+  });
+
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
   const [testSending, setTestSending] = useState(false);
@@ -106,6 +126,8 @@ export default function NewsletterEditPanel({
   const mountedRef = useRef(false);
   const lastSavedSummaryRef = useRef(initialSummary);
   const lastSavedSubjectRef = useRef(content.email_subject || content.title);
+  const lastSavedCtaTextRef = useRef(content.email_cta_text || defaultCtaText);
+  const lastSavedCtaUrlRef = useRef(content.email_cta_url || defaultCtaUrl);
 
   useEffect(() => {
     fetch("/api/admin/email/recipients")
@@ -120,13 +142,25 @@ export default function NewsletterEditPanel({
     mountedRef.current = true;
   }, []);
 
+  const checkDirty = useCallback(
+    (summary: string, subject: string, cText: string, cUrl: string) => {
+      setDirty(
+        summary !== lastSavedSummaryRef.current ||
+        subject !== lastSavedSubjectRef.current ||
+        cText !== lastSavedCtaTextRef.current ||
+        cUrl !== lastSavedCtaUrlRef.current
+      );
+    },
+    []
+  );
+
   const handleEditorChange = useCallback(
     (md: string) => {
       setEmailSummary(md);
       if (!mountedRef.current) return;
-      setDirty(md !== lastSavedSummaryRef.current || emailSubject !== lastSavedSubjectRef.current);
+      checkDirty(md, emailSubject, ctaText, ctaUrl);
     },
-    [emailSubject]
+    [emailSubject, ctaText, ctaUrl, checkDirty]
   );
 
   const handleSave = async () => {
@@ -135,12 +169,16 @@ export default function NewsletterEditPanel({
       const { error } = await updateContent(content.id, {
         email_summary: emailSummary,
         email_subject: emailSubject,
+        email_cta_text: ctaText,
+        email_cta_url: ctaUrl,
       });
       if (error) {
         toast.error("저장에 실패했습니다.");
       } else {
         lastSavedSummaryRef.current = emailSummary;
         lastSavedSubjectRef.current = emailSubject;
+        lastSavedCtaTextRef.current = ctaText;
+        lastSavedCtaUrlRef.current = ctaUrl;
         setDirty(false);
         toast.success("뉴스레터 내용이 저장되었습니다.");
         onContentUpdate();
@@ -212,7 +250,11 @@ export default function NewsletterEditPanel({
           customEmails: ["smith.kim@inwv.co"],
           subject: `[테스트] ${emailSubject}`,
           template: "newsletter",
-          templateProps: { bodyHtml: previewHtml },
+          templateProps: {
+            bodyHtml: previewHtml,
+            ctaText: ctaText || undefined,
+            ctaUrl: ctaUrl || undefined,
+          },
         }),
       });
       const data = await res.json();
@@ -250,7 +292,11 @@ export default function NewsletterEditPanel({
           target,
           subject: emailSubject,
           template: "newsletter",
-          templateProps: { bodyHtml: previewHtml },
+          templateProps: {
+            bodyHtml: previewHtml,
+            ctaText: ctaText || undefined,
+            ctaUrl: ctaUrl || undefined,
+          },
         }),
       });
       const data = await res.json();
@@ -307,10 +353,78 @@ export default function NewsletterEditPanel({
                 onChange={(e) => {
                   const val = e.target.value;
                   setEmailSubject(val);
-                  setDirty(val !== lastSavedSubjectRef.current || emailSummary !== lastSavedSummaryRef.current);
+                  checkDirty(emailSummary, val, ctaText, ctaUrl);
                 }}
                 className="h-9 text-sm"
                 placeholder="이메일 제목"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* CTA 설정 */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <p className="text-xs font-medium text-gray-500">CTA 버튼 설정</p>
+          <div className="flex items-center gap-2">
+            {CTA_PRESETS.map((preset) => (
+              <Button
+                key={preset.id}
+                variant={ctaPreset === preset.id ? "default" : "outline"}
+                size="sm"
+                className={
+                  ctaPreset === preset.id
+                    ? "bg-[#F75D5D] hover:bg-[#E54949] text-xs"
+                    : "text-xs"
+                }
+                onClick={() => {
+                  setCtaPreset(preset.id);
+                  if (preset.id !== "custom") {
+                    setCtaText(preset.text);
+                    const url =
+                      preset.urlTemplate
+                        ? `${siteUrl}${preset.urlTemplate.replace("{id}", content.id)}`
+                        : "";
+                    setCtaUrl(url);
+                    checkDirty(emailSummary, emailSubject, preset.text, url);
+                  }
+                }}
+              >
+                {preset.label}
+              </Button>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-gray-500">
+                버튼 텍스트
+              </label>
+              <Input
+                value={ctaText}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCtaText(val);
+                  setCtaPreset("custom");
+                  checkDirty(emailSummary, emailSubject, val, ctaUrl);
+                }}
+                className="h-9 text-sm"
+                placeholder="버튼에 표시할 텍스트"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-gray-500">
+                링크 URL
+              </label>
+              <Input
+                value={ctaUrl}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCtaUrl(val);
+                  checkDirty(emailSummary, emailSubject, ctaText, val);
+                }}
+                className="h-9 text-sm"
+                placeholder="https://..."
               />
             </div>
           </div>
@@ -414,8 +528,8 @@ export default function NewsletterEditPanel({
               srcDoc={newsletterTemplate({
                 subject: emailSubject,
                 bodyHtml: mdToPreviewHtml(emailSummary),
-                ctaText: "전체 글 읽기 →",
-                ctaUrl: `${process.env.NEXT_PUBLIC_SITE_URL || ""}/posts/${content.id}`,
+                ctaText: ctaText || undefined,
+                ctaUrl: ctaUrl || undefined,
               })}
               className="w-full h-[500px] border rounded-lg"
               title="이메일 미리보기"

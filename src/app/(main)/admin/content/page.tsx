@@ -22,9 +22,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, FileText, Plus, Newspaper, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getContents, createContent } from "@/actions/contents";
+import { getContents } from "@/actions/contents";
 import type { Content } from "@/types/content";
-import { toast } from "sonner";
+import NewContentModal from "@/components/content/new-content-modal";
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   draft: {
@@ -62,7 +62,7 @@ export default function AdminContentPage() {
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [creating, setCreating] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const loadContents = useCallback(async () => {
     setLoading(true);
@@ -95,28 +95,7 @@ export default function AdminContentPage() {
     router.push(`/admin/content/${contentId}`);
   };
 
-  const handleNewContent = async () => {
-    setCreating(true);
-    try {
-      const { data, error } = await createContent({
-        title: "새 콘텐츠",
-        body_md: "",
-        status: "draft",
-        type: "info",
-        category: "education",
-        tags: [],
-      });
-      if (error || !data) {
-        toast.error("콘텐츠 생성 실패");
-        return;
-      }
-      router.push(`/admin/content/${data.id}`);
-    } catch {
-      toast.error("콘텐츠 생성 중 오류가 발생했습니다.");
-    } finally {
-      setCreating(false);
-    }
-  };
+  const handleNewContent = () => setModalOpen(true);
 
   // Status counts
   const countByStatus = useCallback(
@@ -165,14 +144,9 @@ export default function AdminContentPage() {
         </div>
         <Button
           onClick={handleNewContent}
-          disabled={creating}
           className="bg-[#F75D5D] hover:bg-[#E54949]"
         >
-          {creating ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Plus className="h-4 w-4 mr-2" />
-          )}
+          <Plus className="h-4 w-4 mr-2" />
           새 콘텐츠
         </Button>
       </div>
@@ -351,6 +325,12 @@ export default function AdminContentPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <NewContentModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onCreated={(id) => router.push(`/admin/content/${id}`)}
+      />
     </div>
   );
 }

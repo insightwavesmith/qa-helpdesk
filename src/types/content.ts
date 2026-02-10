@@ -17,6 +17,8 @@ export interface Content {
   author_id: string | null;
   email_subject: string | null;
   email_summary: string | null;
+  email_cta_text: string | null;
+  email_cta_url: string | null;
   email_sent_at: string | null;
   created_at: string;
   updated_at: string;

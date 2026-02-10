@@ -862,6 +862,8 @@ export interface Database {
           author_id: string | null;
           email_summary: string | null;
           email_subject: string | null;
+          email_cta_text: string | null;
+          email_cta_url: string | null;
           images: Json;
           video_url: string | null;
           is_pinned: boolean;
@@ -889,6 +891,8 @@ export interface Database {
           author_id?: string | null;
           email_summary?: string | null;
           email_subject?: string | null;
+          email_cta_text?: string | null;
+          email_cta_url?: string | null;
           images?: Json;
           video_url?: string | null;
           is_pinned?: boolean;
@@ -916,6 +920,8 @@ export interface Database {
           author_id?: string | null;
           email_summary?: string | null;
           email_subject?: string | null;
+          email_cta_text?: string | null;
+          email_cta_url?: string | null;
           images?: Json;
           video_url?: string | null;
           is_pinned?: boolean;
