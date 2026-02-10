@@ -477,63 +477,79 @@ export async function crawlUrl(
   }
 }
 
-const GEMINI_CONTENT_MODEL = "gemini-2.0-flash";
+const CONTENT_SYSTEM_PROMPT = `당신은 자사몰사관학교(BS CAMP)의 메타 광고 전문 교육 콘텐츠 작성자입니다.
+
+## 글 스타일
+- ~해요 체 사용 (예: "설정할 수 있어요", "확인해보세요")
+- 마켓핏랩 블로그 스타일: 전문적이되 읽기 쉬운 톤
+- 전문 용어 → 괄호 설명 (ROAS(광고비 대비 수익률))
+- 실무 팁은 볼드 (**팁:** ~하면 더 효과적이에요)
+
+## 글 구조 (필수)
+1. **도입부**: 한 줄 요약 + 왜 읽어야 하는지 + 대상 독자
+2. **넘버링된 h2 소제목** (## 1. OOO, ## 2. OOO)
+3. **비교는 반드시 마크다운 테이블 사용**
+4. **핵심 포인트는 > 인용문(blockquote)으로 하이라이트**
+5. **문단은 2-4문장 이내로 짧게**
+6. **정리**: 핵심 3줄 요약 + 다음 액션 제안
+
+## 형식 규칙
+- 첫 줄: # 제목 (한국어, 영어 금지)
+- 3,000자 이상 작성
+- 이미지 위치는 [이미지: 설명] 형식으로 표시
+- 제목에 영어만 단독 사용 금지 (예: ❌ "ASC Campaign Guide" → ✅ "어드밴티지+ 쇼핑 캠페인 완전 가이드")
+
+## 메타 광고 전문 지식
+- 2024-2025 안드로메다 알고리즘: AI 기반 광고-유저 매칭 100배 가속화
+- ODAX 6가지 캠페인 목표: 인지도, 트래픽, 참여, 리드, 앱 홍보, 판매
+- 3계층 구조: 캠페인(목표) → 광고세트(타겟/예산) → 광고(소재)
+- CBO vs ABO: CBO = AI 자동 분배(권장), ABO = 수동 지정
+- 어드밴티지+(ASC): AI 완전 자동화 캠페인, 소재 다양성이 핵심
+- 타겟팅: 커스텀/유사/관심사/어드밴티지+ 오디언스, 넓은 타겟이 2025년 트렌드
+- 픽셀 + 전환 API(CAPI): 함께 사용해야 95%+ 데이터 정확도
+- 측정: 어트리뷰션 윈도우, 증분성 테스트, 미디어 믹스 모델링
+- 크리에이티브: 다양한 소재 3-5개/광고세트, 2-3주 리프레시 주기
+- iOS 14.5 이후: 개인정보 보호 강화 → CAPI 필수, 넓은 타겟 전환`;
 
 export async function generateContentWithAI(
   topic: string
 ): Promise<{ title: string; bodyMd: string } | { error: string }> {
   await requireAdmin();
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return { error: "GEMINI_API_KEY가 설정되지 않았습니다." };
+    return { error: "ANTHROPIC_API_KEY가 설정되지 않았습니다." };
   }
 
   try {
-    const systemPrompt = `당신은 메타 광고(Meta Ads) 전문가 교육 콘텐츠 작성자입니다.
-다음 규칙을 따르세요:
-- ~해요 체로 작성
-- 마크다운 형식 (제목, 소제목, 리스트, 테이블 활용)
-- 첫 줄은 반드시 # 제목 형식
-- 실무에서 바로 적용 가능한 실용적 내용
-- 2000자 이상 작성`;
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_CONTENT_MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: systemPrompt }],
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 8192,
+        system: CONTENT_SYSTEM_PROMPT,
+        messages: [
+          {
+            role: "user",
+            content: `다음 주제에 대한 메타 광고 전문가 교육 콘텐츠를 작성해주세요: ${topic}`,
           },
-          contents: [
-            {
-              role: "user",
-              parts: [
-                {
-                  text: `다음 주제에 대한 메타 광고 전문가 교육 콘텐츠를 작성해주세요: ${topic}`,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 4096,
-          },
-        }),
-      }
-    );
+        ],
+      }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Gemini API error:", errorText);
+      console.error("Claude API error:", errorText);
       return { error: `AI 생성 실패: ${response.status}` };
     }
 
     const data = await response.json();
-    const text: string =
-      data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const text: string = data.content?.[0]?.text || "";
 
     if (!text.trim()) {
       return { error: "AI가 콘텐츠를 생성하지 못했습니다." };
