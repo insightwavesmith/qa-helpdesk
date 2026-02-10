@@ -11,19 +11,29 @@
 ## bkit PDCA 워크플로우 (필수)
 
 **모든 기능 개발은 이 순서를 따른다. 예외 없음.**
+**코딩부터 시작하면 리젝한다. Plan → Design 문서가 docs/에 있어야 코딩 시작 가능.**
 
 ```
 Plan → Design → Do → Check → Act
 ```
 
-### 폴더 구조
+### 폴더 구조 (iCloud 동기화)
 ```
-docs/
+docs/                                    ← iCloud 심볼릭 링크 (절대 삭제/이동 금지)
 ├── 01-plan/features/{기능}.plan.md      ← 요구사항, 범위, 성공 기준
 ├── 02-design/features/{기능}.design.md  ← 데이터 모델, API, 컴포넌트
 ├── 03-analysis/{기능}.analysis.md       ← Gap 분석 (설계 vs 구현)
 ├── 04-report/features/{기능}.report.md  ← 완료 보고서
+├── mockup/                              ← UX 목업 (HTML/이미지)
 └── .pdca-status.json                    ← 진행 상태 추적
+```
+
+### ⚠ 실행 전 체크 (매 태스크)
+```
+□ docs/01-plan/features/{기능}.plan.md 있는가? → 없으면 작성
+□ docs/02-design/features/{기능}.design.md 있는가? → 없으면 작성
+□ .pdca-status.json에 해당 기능 상태 기록했는가?
+→ 3개 다 YES여야 코딩 시작 가능
 ```
 
 ### 규칙
@@ -33,6 +43,7 @@ docs/
 4. **Check 필수**: 구현 완료 → Gap 분석 (설계 vs 코드 비교)
 5. **Match Rate**: 90% 이상이어야 완료. 미만이면 Act(수정) 후 재검증
 6. **상태 업데이트**: 각 단계 완료 시 `.pdca-status.json` 업데이트
+7. **기존 문서 확인**: 같은 기능의 이전 plan/design/analysis가 있으면 반드시 읽고 시작
 
 ### 역할별 담당
 | 역할 | Plan | Design | Do | Check | Act |
@@ -66,9 +77,29 @@ docs/
 - Leader는 delegate 모드 — 코드 직접 작성 금지, 조율만
 - 모든 구현은 plan approval 후에만 진행
 - TASK.md를 읽고 작업 분배 (의존성 순서 준수)
-- **각 기능 시작 전**: Plan 확인 → Design 작성/확인 → 승인 → 구현
-- **각 기능 완료 후**: Check(Gap 분석) → Match Rate 90%+ → .pdca-status.json 업데이트
-- 완료 후: `openclaw gateway wake --text 'Done' --mode now`
+
+### 리더 메모리 보존 (필수)
+- **세션 종료 전**: `~/.claude/agent-memory/leader/MEMORY.md`에 현재 진행 상황 저장
+  - 완료된 태스크, 진행 중 태스크, 남은 이슈, 팀원별 상태
+- **세션 시작 시**: `~/.claude/agent-memory/leader/MEMORY.md` 먼저 읽기
+- 이 파일이 없으면 TASK.md + 팀원 메모리로 상태 파악
+
+### 태스크 수행 순서 (강제)
+```
+1. TASK.md 읽기
+2. 해당 기능의 기존 docs 확인 (01-plan, 02-design, 03-analysis)
+3. Plan 없으면 → docs/01-plan/features/{기능}.plan.md 작성
+4. Design 없으면 → docs/02-design/features/{기능}.design.md 작성
+5. .pdca-status.json 업데이트 (상태: designing → implementing)
+6. 구현
+7. Check → docs/03-analysis/{기능}.analysis.md 작성
+8. Match Rate 90%+ 확인
+9. .pdca-status.json 업데이트 (상태: completed)
+10. openclaw gateway wake --text 'Done' --mode now
+```
+
+**2번에서 기존 문서가 있으면 반드시 읽고, 설계 변경이 필요하면 문서부터 업데이트한다.**
+**이 순서를 건너뛰고 바로 코딩하면 리젝된다.**
 
 ## 플러그인 (설치 완료 2026-02-08)
 - **Compound Engineering** (v2.30.0) — every-marketplace

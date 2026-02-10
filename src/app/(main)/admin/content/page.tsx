@@ -18,13 +18,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, FileText, RefreshCw, Plus, Mail } from "lucide-react";
+import { Loader2, FileText, Plus, Newspaper, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { getContents } from "@/actions/contents";
+import { getContents, createContent } from "@/actions/contents";
 import type { Content } from "@/types/content";
-import ContentEditorDialog from "@/components/content/content-editor-dialog";
+import { toast } from "sonner";
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   draft: {
@@ -47,10 +47,6 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
     label: "보관",
     className: "bg-slate-100 text-slate-600 border-slate-200",
   },
-  sent: {
-    label: "발송됨",
-    className: "bg-purple-50 text-purple-700 border-purple-200",
-  },
 };
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -59,31 +55,20 @@ const CATEGORY_LABEL: Record<string, string> = {
   case_study: "고객사례",
 };
 
-const TYPE_BADGE: Record<string, { label: string; className: string }> = {
-  info: { label: "정보", className: "bg-blue-50 text-blue-700 border-blue-200" },
-  result: { label: "성과", className: "bg-green-50 text-green-700 border-green-200" },
-  promo: { label: "홍보", className: "bg-orange-50 text-orange-700 border-orange-200" },
-};
-
 export default function AdminContentPage() {
   const router = useRouter();
   const [contents, setContents] = useState<Content[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-
-  // Editor dialog
-  const [selectedContent, setSelectedContent] = useState<Content | null>(null);
-  const [editorOpen, setEditorOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   const loadContents = useCallback(async () => {
     setLoading(true);
     try {
-      const params: { type?: string; category?: string; status?: string; pageSize?: number } =
+      const params: { category?: string; status?: string; pageSize?: number } =
         { pageSize: 100 };
-      if (typeFilter !== "all") params.type = typeFilter;
       if (categoryFilter !== "all") params.category = categoryFilter;
       if (statusFilter !== "all" && statusFilter !== "sent") params.status = statusFilter;
 
@@ -100,30 +85,43 @@ export default function AdminContentPage() {
     } finally {
       setLoading(false);
     }
-  }, [typeFilter, categoryFilter, statusFilter]);
+  }, [categoryFilter, statusFilter]);
 
   useEffect(() => {
     loadContents();
   }, [loadContents]);
 
-  const handleRowClick = (content: Content) => {
-    setSelectedContent(content);
-    setEditorOpen(true);
+  const handleRowClick = (contentId: string) => {
+    router.push(`/admin/content/${contentId}`);
   };
 
-  const handleSaved = () => {
-    setEditorOpen(false);
-    setSelectedContent(null);
-    loadContents();
+  const handleNewContent = async () => {
+    setCreating(true);
+    try {
+      const { data, error } = await createContent({
+        title: "새 콘텐츠",
+        body_md: "",
+        status: "draft",
+      });
+      if (error || !data) {
+        toast.error("콘텐츠 생성 실패");
+        return;
+      }
+      router.push(`/admin/content/${data.id}`);
+    } catch {
+      toast.error("콘텐츠 생성 중 오류가 발생했습니다.");
+    } finally {
+      setCreating(false);
+    }
   };
 
-  // Status counts (from loaded data when no filter applied, otherwise show totalCount)
+  // Status counts
   const countByStatus = useCallback(
     (s: string) => contents.filter((c) => c.status === s).length,
     [contents]
   );
 
-  const isUnfiltered = typeFilter === "all" && categoryFilter === "all" && statusFilter === "all";
+  const isUnfiltered = categoryFilter === "all" && statusFilter === "all";
 
   const statCards = [
     {
@@ -133,28 +131,16 @@ export default function AdminContentPage() {
       text: "text-blue-600",
     },
     {
-      label: "초안",
-      value: isUnfiltered ? countByStatus("draft") : "-",
-      bg: "bg-gray-50",
-      text: "text-gray-600",
-    },
-    {
-      label: "검수대기",
-      value: isUnfiltered ? countByStatus("review") : "-",
-      bg: "bg-yellow-50",
-      text: "text-yellow-600",
-    },
-    {
-      label: "발행가능",
-      value: isUnfiltered ? countByStatus("ready") : "-",
+      label: "게시완료",
+      value: isUnfiltered ? countByStatus("published") : "-",
       bg: "bg-green-50",
       text: "text-green-600",
     },
     {
-      label: "게시완료",
-      value: isUnfiltered ? countByStatus("published") : "-",
-      bg: "bg-blue-50",
-      text: "text-blue-600",
+      label: "초안",
+      value: isUnfiltered ? countByStatus("draft") : "-",
+      bg: "bg-gray-50",
+      text: "text-gray-600",
     },
     {
       label: "발송됨",
@@ -174,211 +160,194 @@ export default function AdminContentPage() {
             콘텐츠를 관리하고 편집합니다.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={() => { setSelectedContent(null); setEditorOpen(true); }}
-            className="bg-[#F75D5D] hover:bg-[#E54949]"
-          >
+        <Button
+          onClick={handleNewContent}
+          disabled={creating}
+          className="bg-[#F75D5D] hover:bg-[#E54949]"
+        >
+          {creating ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
             <Plus className="h-4 w-4 mr-2" />
-            새 콘텐츠
-          </Button>
-          <Button variant="outline" disabled>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            동기화
-          </Button>
-        </div>
+          )}
+          새 콘텐츠
+        </Button>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-6 gap-4">
-        {statCards.map((card) => (
-          <Card key={card.label}>
-            <CardContent className="pt-5 pb-4 px-5">
-              <div className="flex items-center gap-3">
-                <div className={`rounded-md ${card.bg} p-2`}>
-                  <FileText className={`h-4 w-4 ${card.text}`} />
+      {/* Hub Tabs */}
+      <Tabs defaultValue="contents">
+        <TabsList variant="line">
+          <TabsTrigger value="contents" className="gap-1.5">
+            <FileText className="h-4 w-4" />
+            콘텐츠
+          </TabsTrigger>
+          <TabsTrigger value="posts" className="gap-1.5">
+            <Newspaper className="h-4 w-4" />
+            정보공유
+          </TabsTrigger>
+          <TabsTrigger value="email" className="gap-1.5">
+            <Mail className="h-4 w-4" />
+            이메일
+          </TabsTrigger>
+        </TabsList>
+
+        {/* 콘텐츠 탭 */}
+        <TabsContent value="contents" className="space-y-6 mt-4">
+          {/* Stat Cards */}
+          <div className="grid grid-cols-4 gap-4">
+            {statCards.map((card) => (
+              <Card key={card.label}>
+                <CardContent className="pt-5 pb-4 px-5">
+                  <div className="flex items-center gap-3">
+                    <div className={`rounded-md ${card.bg} p-2`}>
+                      <FileText className={`h-4 w-4 ${card.text}`} />
+                    </div>
+                    <div>
+                      <p className="text-[12px] text-gray-500">{card.label}</p>
+                      <p className="text-[20px] font-semibold">{card.value}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Filters */}
+          <div className="flex gap-3">
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="카테고리" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체 카테고리</SelectItem>
+                <SelectItem value="education">교육</SelectItem>
+                <SelectItem value="notice">공지</SelectItem>
+                <SelectItem value="case_study">고객사례</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="상태" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체 상태</SelectItem>
+                <SelectItem value="draft">초안</SelectItem>
+                <SelectItem value="review">검수대기</SelectItem>
+                <SelectItem value="ready">발행가능</SelectItem>
+                <SelectItem value="published">게시완료</SelectItem>
+                <SelectItem value="archived">보관</SelectItem>
+                <SelectItem value="sent">발송됨</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Table */}
+          <Card>
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="flex items-center justify-center py-16 text-gray-500">
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  불러오는 중...
                 </div>
-                <div>
-                  <p className="text-[12px] text-gray-500">{card.label}</p>
-                  <p className="text-[20px] font-semibold">{card.value}</p>
-                </div>
-              </div>
+              ) : contents.length === 0 ? (
+                <p className="text-center py-16 text-[14px] text-gray-500">
+                  콘텐츠가 없습니다.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[40%]">제목</TableHead>
+                      <TableHead>카테고리</TableHead>
+                      <TableHead>정보공유</TableHead>
+                      <TableHead>뉴스레터</TableHead>
+                      <TableHead className="text-right">작성일</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {contents.map((item) => {
+                      const statusInfo = STATUS_BADGE[item.status] ?? {
+                        label: item.status,
+                        className: "",
+                      };
+                      return (
+                        <TableRow
+                          key={item.id}
+                          className="cursor-pointer hover:bg-gray-50"
+                          onClick={() => handleRowClick(item.id)}
+                        >
+                          <TableCell className="font-medium max-w-[400px] truncate">
+                            {item.title}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className="text-[11px]">
+                              {CATEGORY_LABEL[item.category] ?? item.category}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={`text-[11px] ${statusInfo.className}`}
+                            >
+                              {statusInfo.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {item.email_sent_at ? (
+                              <Badge
+                                variant="outline"
+                                className="text-[11px] bg-purple-50 text-purple-700 border-purple-200"
+                              >
+                                발송완료
+                              </Badge>
+                            ) : (
+                              <span className="text-[12px] text-gray-400">미발송</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right text-[13px] text-gray-500">
+                            {new Date(item.created_at).toLocaleDateString("ko-KR", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
-        ))}
-      </div>
+        </TabsContent>
 
-      {/* Filters */}
-      <div className="flex gap-3">
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[130px]">
-            <SelectValue placeholder="타입" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">전체 타입</SelectItem>
-            <SelectItem value="info">정보</SelectItem>
-            <SelectItem value="result">성과</SelectItem>
-            <SelectItem value="promo">홍보</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* 정보공유 탭 (Phase C에서 구현) */}
+        <TabsContent value="posts" className="mt-4">
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-20">
+              <Newspaper className="h-10 w-10 text-gray-300 mb-3" />
+              <p className="text-[15px] font-medium text-gray-500">정보공유 관리</p>
+              <p className="text-[13px] text-gray-400 mt-1">
+                게시 순서 변경, 조회수 성과 등을 관리합니다.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="카테고리" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">전체 카테고리</SelectItem>
-            <SelectItem value="education">교육</SelectItem>
-            <SelectItem value="notice">공지</SelectItem>
-            <SelectItem value="case_study">고객사례</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="상태" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">전체 상태</SelectItem>
-            <SelectItem value="draft">초안</SelectItem>
-            <SelectItem value="review">검수대기</SelectItem>
-            <SelectItem value="ready">발행가능</SelectItem>
-            <SelectItem value="published">게시완료</SelectItem>
-            <SelectItem value="archived">보관</SelectItem>
-            <SelectItem value="sent">발송됨</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Table */}
-      <Card>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="flex items-center justify-center py-16 text-gray-500">
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              불러오는 중...
-            </div>
-          ) : contents.length === 0 ? (
-            <p className="text-center py-16 text-[14px] text-gray-500">
-              콘텐츠가 없습니다.
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[35%]">제목</TableHead>
-                  <TableHead>타입</TableHead>
-                  <TableHead>카테고리</TableHead>
-                  <TableHead>상태</TableHead>
-                  <TableHead>이메일</TableHead>
-                  <TableHead>편집</TableHead>
-                  <TableHead className="text-right">날짜</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {contents.map((item) => {
-                  const statusInfo = STATUS_BADGE[item.status] ?? {
-                    label: item.status,
-                    className: "",
-                  };
-                  const typeInfo = TYPE_BADGE[item.type] ?? {
-                    label: item.type || "-",
-                    className: "",
-                  };
-                  return (
-                    <TableRow
-                      key={item.id}
-                      className="cursor-pointer"
-                      onClick={() => handleRowClick(item)}
-                    >
-                      <TableCell className="font-medium max-w-[400px] truncate">
-                        {item.title}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={`text-[11px] ${typeInfo.className}`}
-                        >
-                          {typeInfo.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="text-[11px]">
-                          {CATEGORY_LABEL[item.category] ?? item.category}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={`text-[11px] ${statusInfo.className}`}
-                        >
-                          {statusInfo.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {item.email_sent_at ? (
-                          <Badge
-                            variant="outline"
-                            className="text-[11px] bg-purple-50 text-purple-700 border-purple-200"
-                          >
-                            발송됨 {new Date(item.email_sent_at).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}
-                          </Badge>
-                        ) : (item.status === "ready" || item.status === "published") ? (
-                          <button
-                            className="inline-flex items-center gap-1 text-[12px] text-gray-500 hover:text-[#F75D5D] transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/admin/email?content_id=${item.id}`);
-                            }}
-                          >
-                            <Mail className="h-3.5 w-3.5" />
-                            발송
-                          </button>
-                        ) : (
-                          <span className="text-[12px] text-gray-300">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={`/posts/${item.id}?edit=true`}
-                            className="text-xs text-gray-500 hover:text-[#F75D5D] transition-colors"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            정보공유
-                          </Link>
-                          <span className="text-gray-300">|</span>
-                          <Link
-                            href={`/admin/email?content_id=${item.id}`}
-                            className="text-xs text-gray-500 hover:text-[#F75D5D] transition-colors"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            뉴스레터
-                          </Link>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right text-[13px] text-gray-500">
-                        {new Date(item.created_at).toLocaleDateString("ko-KR", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Editor Dialog */}
-      <ContentEditorDialog
-        content={selectedContent}
-        open={editorOpen}
-        onOpenChange={setEditorOpen}
-        onSaved={handleSaved}
-      />
+        {/* 이메일 탭 (Phase D에서 구현) */}
+        <TabsContent value="email" className="mt-4">
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-20">
+              <Mail className="h-10 w-10 text-gray-300 mb-3" />
+              <p className="text-[15px] font-medium text-gray-500">이메일 관리</p>
+              <p className="text-[13px] text-gray-400 mt-1">
+                발송 이력, 오픈율/클릭률 성과를 확인합니다.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

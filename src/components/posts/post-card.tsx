@@ -35,6 +35,7 @@ function formatDate(dateStr: string) {
 
 export function getExcerpt(content: string, maxLen = 100): string {
   const cleaned = content
+    .replace(/<[^>]*>/g, "")
     .replace(/\*\*\[.*?\]\*\*/g, "")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/[#*_~`>\-\[\]()!|]/g, "")
