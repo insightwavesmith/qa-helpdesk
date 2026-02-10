@@ -8,6 +8,10 @@ import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
+import { Table } from "@tiptap/extension-table";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TableCell } from "@tiptap/extension-table-cell";
+import { TableHeader } from "@tiptap/extension-table-header";
 import { FloatingToolbar } from "./FloatingToolbar";
 import { markdownToHtml } from "@/components/posts/post-body";
 import "@/components/posts/post-body.css";
@@ -57,6 +61,10 @@ export function InlineEditor({
       }),
       Placeholder.configure({ placeholder: "본문을 작성하세요..." }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
+      Table.configure({ resizable: true, HTMLAttributes: { class: "post-body-table" } }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: htmlContent,
     editable: isEditing,
