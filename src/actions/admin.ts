@@ -197,9 +197,7 @@ export async function getRecentPosts(limit = 5) {
 
   const { data, error } = await supabase
     .from("contents")
-    .select(
-      "*, author:profiles!contents_author_id_fkey(name)"
-    )
+    .select("id, title, category, status, created_at")
     .eq("status", "published")
     .order("created_at", { ascending: false })
     .limit(limit);
