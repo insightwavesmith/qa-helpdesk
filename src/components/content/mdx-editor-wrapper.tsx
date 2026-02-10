@@ -22,6 +22,7 @@ import {
   type MDXEditorMethods,
 } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
+import "@/components/posts/post-body.css";
 import { useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -66,7 +67,7 @@ export default function MDXEditorWrapper({
         ref={editorRef}
         markdown={markdown}
         onChange={onChange}
-        contentEditableClassName="prose prose-sm max-w-4xl mx-auto px-4 py-3 focus:outline-none"
+        contentEditableClassName="prose prose-sm max-w-4xl mx-auto px-4 py-3 focus:outline-none post-body"
         plugins={[
           headingsPlugin(),
           listsPlugin(),
