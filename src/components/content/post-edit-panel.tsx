@@ -153,24 +153,17 @@ export default function PostEditPanel({
           )}
         </div>
         <div className="flex items-center gap-2">
-          {status === "published" ? (
-            <Button variant="outline" size="sm" asChild>
-              <a
-                href={`/posts/${contentId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="gap-1.5"
-              >
-                <Eye className="size-3.5" />
-                미리보기
-              </a>
-            </Button>
-          ) : (
-            <Button variant="outline" size="sm" disabled className="gap-1.5" title="게시 후 미리보기 가능">
+          <Button variant="outline" size="sm" asChild>
+            <a
+              href={`/posts/${contentId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="gap-1.5"
+            >
               <Eye className="size-3.5" />
               미리보기
-            </Button>
-          )}
+            </a>
+          </Button>
           <Button
             size="sm"
             onClick={handleSave}

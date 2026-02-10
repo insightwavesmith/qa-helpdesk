@@ -66,7 +66,7 @@ export default function MDXEditorWrapper({
         ref={editorRef}
         markdown={markdown}
         onChange={onChange}
-        contentEditableClassName="prose prose-sm max-w-none px-4 py-3 focus:outline-none"
+        contentEditableClassName="prose prose-sm max-w-4xl mx-auto px-4 py-3 focus:outline-none"
         plugins={[
           headingsPlugin(),
           listsPlugin(),
