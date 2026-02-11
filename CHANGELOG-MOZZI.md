@@ -7,6 +7,18 @@
 
 ## 2026-02-11
 
+### 19:40 — AI 어시스턴트 → Smith 변경, AI 답변 뱃지 제거
+- **파일**: `src/components/questions/AnswerCard.tsx`, `src/app/(main)/questions/[id]/page.tsx`, `src/lib/gemini.ts`
+- **내용**: AI 답변 작성자명 "AI 어시스턴트" → "Smith", AI 답변 뱃지 제거, 시스템 프롬프트 Smith 대표 역할로 변경
+- **이유**: 고객에게 AI 답변임을 노출하지 않기 위함
+- **커밋**: `f5083b6`
+
+### 15:30 — recipients 쿼리 limit 수정
+- **파일**: `src/actions/recipients.ts`
+- **내용**: 모든 수신자 조회에 `.limit(5000)` + `count: "exact"` 추가
+- **이유**: Supabase 기본 1000행 제한으로 리드 수가 1,000으로 잘리는 문제
+- **커밋**: `4941add`
+
 ### 14:24 — 콘텐츠 편집 다이얼로그 아카이브 버튼 추가
 - **파일**: `src/components/content/content-editor-dialog.tsx`
 - **내용**: 삭제 버튼 옆에 아카이브 버튼 추가. `updateContent(id, { status: "archived" })` 호출. confirm 확인 포함.

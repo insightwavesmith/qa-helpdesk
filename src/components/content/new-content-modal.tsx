@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Globe,
   Sparkles,
@@ -320,15 +321,18 @@ export default function NewContentModal({
 
         {step === "ai" && (
           <div className="space-y-4 pt-2">
-            <Input
+            <Textarea
               value={topicInput}
               onChange={(e) => setTopicInput(e.target.value)}
-              placeholder="예: 메타 광고 리타겟팅 전략"
+              placeholder={"예: 메타 광고 리타겟팅 전략\n\n상세한 지시사항이나 참고 자료를 자유롭게 입력하세요."}
               disabled={loading}
+              rows={6}
+              className="min-h-[160px] resize-y"
               onKeyDown={(e) => {
-                if (e.key === "Enter") handleGenerate();
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleGenerate();
               }}
             />
+            <p className="text-xs text-gray-400">Cmd+Enter로 생성</p>
             <Button
               onClick={handleGenerate}
               disabled={loading || !topicInput.trim()}
