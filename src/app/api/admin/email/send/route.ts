@@ -99,24 +99,27 @@ export async function POST(request: NextRequest) {
       const { data } = await svc
         .from("leads")
         .select("email")
-        .eq("email_opted_out", false);
+        .eq("email_opted_out", false)
+        .limit(5000);
       recipients = (data || []).map((r) => ({ email: r.email, type: "lead" }));
     } else if (target === "all_students") {
       const { data } = await svc
         .from("student_registry")
-        .select("email");
+        .select("email")
+        .limit(5000);
       recipients = (data || []).map((r) => ({ email: r.email, type: "student" }));
     } else if (target === "all_members") {
       const { data } = await svc
         .from("profiles")
         .select("email")
-        .in("role", ["member", "student", "alumni", "admin"]);
+        .in("role", ["member", "student", "alumni", "admin"])
+        .limit(5000);
       recipients = (data || []).map((r) => ({ email: r.email, type: "member" }));
     } else if (target === "all") {
       // leads(opted_out 제외) + profiles 통합, 중복 제거
       const [leadsData, profilesData] = await Promise.all([
-        svc.from("leads").select("email").eq("email_opted_out", false),
-        svc.from("profiles").select("email").in("role", ["member", "student", "alumni", "admin"]),
+        svc.from("leads").select("email").eq("email_opted_out", false).limit(5000),
+        svc.from("profiles").select("email").in("role", ["member", "student", "alumni", "admin"]).limit(5000),
       ]);
       const emailMap = new Map<string, string>();
       for (const r of leadsData.data || []) {
