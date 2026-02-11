@@ -19,6 +19,14 @@ import {
   Loader2,
 } from "lucide-react";
 import { createContent, crawlUrl, generateContentWithAI } from "@/actions/contents";
+import { ContentCategory, ContentType } from "@/types/content";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 
 interface NewContentModalProps {
@@ -65,6 +73,8 @@ export default function NewContentModal({
   const [loading, setLoading] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const [topicInput, setTopicInput] = useState("");
+  const [category, setCategory] = useState<ContentCategory>("education");
+  const [contentType, setContentType] = useState<ContentType>("info");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetState = useCallback(() => {
@@ -72,6 +82,8 @@ export default function NewContentModal({
     setLoading(false);
     setUrlInput("");
     setTopicInput("");
+    setCategory("education");
+    setContentType("info");
   }, []);
 
   const handleOpenChange = useCallback(
@@ -89,6 +101,8 @@ export default function NewContentModal({
         const { data, error } = await createContent({
           title,
           body_md: bodyMd,
+          category,
+          type: contentType,
           source_type: sourceType || null,
           source_ref: sourceRef || null,
         });
@@ -218,7 +232,36 @@ export default function NewContentModal({
         </DialogHeader>
 
         {step === "select" && (
-          <div className="grid grid-cols-2 gap-3 pt-2">
+          <div className="space-y-4 pt-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-[13px] font-medium text-gray-700">카테고리</label>
+              <Select value={category} onValueChange={(v) => setCategory(v as ContentCategory)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="education">교육</SelectItem>
+                  <SelectItem value="notice">공지</SelectItem>
+                  <SelectItem value="case_study">고객사례</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[13px] font-medium text-gray-700">유형</label>
+              <Select value={contentType} onValueChange={(v) => setContentType(v as ContentType)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="info">정보공유</SelectItem>
+                  <SelectItem value="result">성과</SelectItem>
+                  <SelectItem value="promo">홍보</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             {CARDS.map((card) => {
               const Icon = card.icon;
               return (
@@ -243,6 +286,7 @@ export default function NewContentModal({
                 </button>
               );
             })}
+          </div>
           </div>
         )}
 
