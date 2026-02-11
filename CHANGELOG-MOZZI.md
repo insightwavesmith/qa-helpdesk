@@ -7,6 +7,11 @@
 
 ## 2026-02-11
 
+### 14:24 — 콘텐츠 편집 다이얼로그 아카이브 버튼 추가
+- **파일**: `src/components/content/content-editor-dialog.tsx`
+- **내용**: 삭제 버튼 옆에 아카이브 버튼 추가. `updateContent(id, { status: "archived" })` 호출. confirm 확인 포함.
+- **커밋**: `a9eb4fb`
+
 ### 14:02 — getContents archived 필터 추가
 - **파일**: `src/actions/contents.ts`
 - **내용**: `getContents()` status 필터 없이 호출 시 `archived` 상태 자동 제외 (`query.neq("status", "archived")`)
