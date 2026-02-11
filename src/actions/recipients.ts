@@ -71,7 +71,8 @@ export async function getRecipients(
       const { data } = await svc
         .from("leads")
         .select("email, name")
-        .eq("email_opted_out", false);
+        .eq("email_opted_out", false)
+        .limit(5000);
       return {
         recipients: (data || []).map((r) => ({
           email: r.email,
@@ -85,7 +86,8 @@ export async function getRecipients(
     if (target === "all_students") {
       const { data } = await svc
         .from("student_registry")
-        .select("email, name");
+        .select("email, name")
+        .limit(5000);
       return {
         recipients: (data || []).map((r) => ({
           email: r.email,
@@ -100,7 +102,8 @@ export async function getRecipients(
       const { data } = await svc
         .from("profiles")
         .select("email, name")
-        .in("role", ["member", "student", "alumni", "admin"]);
+        .in("role", ["member", "student", "alumni", "admin"])
+        .limit(5000);
       return {
         recipients: (data || []).map((r) => ({
           email: r.email,
@@ -116,11 +119,13 @@ export async function getRecipients(
       svc
         .from("leads")
         .select("email, name")
-        .eq("email_opted_out", false),
+        .eq("email_opted_out", false)
+        .limit(5000),
       svc
         .from("profiles")
         .select("email, name")
-        .in("role", ["member", "student", "alumni", "admin"]),
+        .in("role", ["member", "student", "alumni", "admin"])
+        .limit(5000),
     ]);
 
     const recipientMap = new Map<string, Recipient>();
@@ -164,15 +169,17 @@ export async function getRecipientStats(): Promise<{
     const [leadsResult, studentsResult, membersResult] = await Promise.all([
       svc
         .from("leads")
-        .select("email")
-        .eq("email_opted_out", false),
+        .select("email", { count: "exact" })
+        .eq("email_opted_out", false)
+        .limit(5000),
       svc
         .from("student_registry")
         .select("id", { count: "exact", head: true }),
       svc
         .from("profiles")
-        .select("email")
-        .in("role", ["member", "student", "alumni", "admin"]),
+        .select("email", { count: "exact" })
+        .in("role", ["member", "student", "alumni", "admin"])
+        .limit(5000),
     ]);
 
     const leadsEmails = (leadsResult.data || []).map((r) => r.email);
@@ -183,9 +190,9 @@ export async function getRecipientStats(): Promise<{
 
     return {
       stats: {
-        leads: leadsEmails.length,
+        leads: leadsResult.count ?? leadsEmails.length,
         students: studentsResult.count || 0,
-        members: membersEmails.length,
+        members: membersResult.count ?? membersEmails.length,
         all_deduplicated: allEmails.size,
       },
       error: null,
