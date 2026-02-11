@@ -22,7 +22,7 @@ import {
 import { Loader2, Save, Trash2, Send, Archive } from "lucide-react";
 import { toast } from "sonner";
 import { createContent, updateContent, deleteContent, publishContent } from "@/actions/contents";
-import type { Content, ContentType, ContentCategory } from "@/types/content";
+import type { Content, ContentType } from "@/types/content";
 
 interface ContentEditorDialogProps {
   content: Content | null;
@@ -40,8 +40,7 @@ export default function ContentEditorDialog({
   const [title, setTitle] = useState("");
   const [bodyMd, setBodyMd] = useState("");
   const [summary, setSummary] = useState("");
-  const [contentType, setContentType] = useState<ContentType>("info");
-  const [category, setCategory] = useState<ContentCategory>("education");
+  const [contentType, setContentType] = useState<ContentType>("education");
   const [tagsInput, setTagsInput] = useState("");
   const [status, setStatus] = useState<string>("draft");
   const [saving, setSaving] = useState(false);
@@ -53,16 +52,14 @@ export default function ContentEditorDialog({
       setTitle(content.title);
       setBodyMd(content.body_md);
       setSummary(content.summary || "");
-      setContentType(content.type || "info");
-      setCategory(content.category || "education");
+      setContentType(content.type || "education");
       setTagsInput(content.tags.join(", "));
       setStatus(content.status);
     } else {
       setTitle("");
       setBodyMd("");
       setSummary("");
-      setContentType("info");
-      setCategory("education");
+      setContentType("education");
       setTagsInput("");
       setStatus("draft");
     }
@@ -94,7 +91,6 @@ export default function ContentEditorDialog({
         body_md: bodyMd,
         summary: summary || null,
         type: contentType,
-        category,
         tags,
         status,
       };
@@ -192,34 +188,21 @@ export default function ContentEditorDialog({
             />
           </div>
 
-          {/* 타입 + 카테고리 */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-[13px] font-medium">타입</label>
-              <Select value={contentType} onValueChange={(v) => setContentType(v as ContentType)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="info">정보</SelectItem>
-                  <SelectItem value="result">성과</SelectItem>
-                  <SelectItem value="promo">홍보</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[13px] font-medium">카테고리</label>
-              <Select value={category} onValueChange={(v) => setCategory(v as ContentCategory)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="education">교육</SelectItem>
-                  <SelectItem value="notice">공지</SelectItem>
-                  <SelectItem value="case_study">고객사례</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* 유형 */}
+          <div className="space-y-1.5">
+            <label className="text-[13px] font-medium">콘텐츠 유형</label>
+            <Select value={contentType} onValueChange={(v) => setContentType(v as ContentType)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="education">교육</SelectItem>
+                <SelectItem value="case_study">고객사례</SelectItem>
+                <SelectItem value="webinar">웨비나</SelectItem>
+                <SelectItem value="notice">공지</SelectItem>
+                <SelectItem value="promo">홍보</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* 태그 */}

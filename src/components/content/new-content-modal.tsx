@@ -20,7 +20,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { createContent, crawlUrl, generateContentWithAI } from "@/actions/contents";
-import { ContentCategory, ContentType } from "@/types/content";
+import type { ContentType } from "@/types/content";
 import {
   Select,
   SelectContent,
@@ -74,8 +74,7 @@ export default function NewContentModal({
   const [loading, setLoading] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const [topicInput, setTopicInput] = useState("");
-  const [category, setCategory] = useState<ContentCategory>("education");
-  const [contentType, setContentType] = useState<ContentType>("info");
+  const [contentType, setContentType] = useState<ContentType>("education");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetState = useCallback(() => {
@@ -83,8 +82,7 @@ export default function NewContentModal({
     setLoading(false);
     setUrlInput("");
     setTopicInput("");
-    setCategory("education");
-    setContentType("info");
+    setContentType("education");
   }, []);
 
   const handleOpenChange = useCallback(
@@ -96,16 +94,16 @@ export default function NewContentModal({
   );
 
   const handleCreate = useCallback(
-    async (title: string, bodyMd: string, sourceType?: string, sourceRef?: string) => {
+    async (title: string, bodyMd: string, sourceType?: string, sourceRef?: string, emailSummary?: string) => {
       setLoading(true);
       try {
         const { data, error } = await createContent({
           title,
           body_md: bodyMd,
-          category,
           type: contentType,
           source_type: sourceType || null,
           source_ref: sourceRef || null,
+          email_summary: emailSummary || null,
         });
         if (error || !data) {
           toast.error(error || "콘텐츠 생성에 실패했습니다.");
@@ -120,7 +118,7 @@ export default function NewContentModal({
         setLoading(false);
       }
     },
-    [handleOpenChange, onCreated]
+    [handleOpenChange, onCreated, contentType]
   );
 
   const handleCardClick = useCallback(
@@ -161,18 +159,18 @@ export default function NewContentModal({
     }
     setLoading(true);
     try {
-      const result = await generateContentWithAI(topicInput.trim());
+      const result = await generateContentWithAI(topicInput.trim(), contentType);
       if ("error" in result) {
         toast.error(result.error);
         setLoading(false);
         return;
       }
-      await handleCreate(result.title, result.bodyMd, "ai", topicInput.trim());
+      await handleCreate(result.title, result.bodyMd, "ai", topicInput.trim(), result.emailSummary);
     } catch {
       toast.error("AI 생성에 실패했습니다.");
       setLoading(false);
     }
-  }, [topicInput, handleCreate]);
+  }, [topicInput, contentType, handleCreate]);
 
   const handleFileUpload = useCallback(
     async (file: File) => {
@@ -234,33 +232,20 @@ export default function NewContentModal({
 
         {step === "select" && (
           <div className="space-y-4 pt-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-[13px] font-medium text-gray-700">카테고리</label>
-              <Select value={category} onValueChange={(v) => setCategory(v as ContentCategory)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="education">교육</SelectItem>
-                  <SelectItem value="notice">공지</SelectItem>
-                  <SelectItem value="case_study">고객사례</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[13px] font-medium text-gray-700">유형</label>
-              <Select value={contentType} onValueChange={(v) => setContentType(v as ContentType)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="info">정보공유</SelectItem>
-                  <SelectItem value="result">성과</SelectItem>
-                  <SelectItem value="promo">홍보</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-1.5">
+            <label className="text-[13px] font-medium text-gray-700">콘텐츠 유형</label>
+            <Select value={contentType} onValueChange={(v) => setContentType(v as ContentType)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="education">📚 교육</SelectItem>
+                <SelectItem value="case_study">📊 고객사례</SelectItem>
+                <SelectItem value="webinar">🎓 웨비나</SelectItem>
+                <SelectItem value="notice">📢 공지</SelectItem>
+                <SelectItem value="promo">🎯 홍보</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {CARDS.map((card) => {

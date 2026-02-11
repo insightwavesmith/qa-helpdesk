@@ -28,11 +28,13 @@ interface ContentPickerDialogProps {
   onImport: (result: { html: string; subject: string }) => void;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
+const TYPE_LABELS: Record<string, string> = {
   all: "전체",
   education: "교육",
-  notice: "공지",
   case_study: "고객사례",
+  webinar: "웨비나",
+  notice: "공지",
+  promo: "홍보",
 };
 
 export default function ContentPickerDialog({
@@ -44,20 +46,20 @@ export default function ContentPickerDialog({
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [category, setCategory] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
 
   useEffect(() => {
     if (!open) return;
     setSelectedIds(new Set());
-    setCategory("all");
+    setTypeFilter("all");
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const load = async () => {
       setLoading(true);
-      const params: { status?: string; category?: string } = { status: "ready,published" };
-      if (category !== "all") params.category = category;
+      const params: { status?: string; type?: string } = { status: "ready,published" };
+      if (typeFilter !== "all") params.type = typeFilter;
       const { data, error } = await getContents(params);
       if (error) {
         toast.error("콘텐츠 목록을 불러올 수 없습니다.");
@@ -68,7 +70,7 @@ export default function ContentPickerDialog({
       setLoading(false);
     };
     load();
-  }, [open, category]);
+  }, [open, typeFilter]);
 
   const toggleId = (id: string) => {
     setSelectedIds((prev) => {
@@ -110,17 +112,17 @@ export default function ContentPickerDialog({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Category Filter */}
+        {/* Type Filter */}
         <div className="flex items-center gap-3">
           <span className="text-[13px] font-medium text-gray-600 shrink-0">
-            카테고리
+            유형
           </span>
-          <Select value={category} onValueChange={setCategory}>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-[160px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+              {Object.entries(TYPE_LABELS).map(([value, label]) => (
                 <SelectItem key={value} value={value}>
                   {label}
                 </SelectItem>
@@ -155,7 +157,7 @@ export default function ContentPickerDialog({
                     {item.title}
                   </span>
                   <Badge variant="secondary" className="text-[11px] shrink-0">
-                    {CATEGORY_LABELS[item.category] || item.category}
+                    {TYPE_LABELS[item.type] || item.type}
                   </Badge>
                   <span className="text-[12px] text-gray-400 shrink-0">
                     {new Date(item.created_at).toLocaleDateString("ko-KR", {

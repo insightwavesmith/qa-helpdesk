@@ -1,4 +1,6 @@
-export type ContentType = 'info' | 'result' | 'promo';
+export type ContentType = 'education' | 'case_study' | 'webinar' | 'notice' | 'promo';
+
+/** @deprecated category는 type 단일축으로 통합됨. 하위 호환용으로만 유지. */
 export type ContentCategory = 'education' | 'notice' | 'case_study';
 
 export interface Content {

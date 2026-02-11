@@ -150,6 +150,7 @@ export async function createContent(input: {
   source_ref?: string | null;
   source_hash?: string | null;
   author_id?: string | null;
+  email_summary?: string | null;
 }) {
   const supabase = await requireAdmin();
 
@@ -267,33 +268,46 @@ export async function generateNewsletterFromContents(contentIds: string[]) {
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://qa-knowledge-base.vercel.app";
-  const categoryLabels: Record<string, string> = {
+  const typeLabels: Record<string, string> = {
     education: "교육", notice: "공지", case_study: "고객사례",
+    webinar: "웨비나", promo: "홍보",
   };
 
   const sectionsHtml = contents
     .map((c) => {
-      const contentType = c.type || "info";
-      const catLabel = categoryLabels[c.category] || c.category;
+      const contentType = c.type || "education";
+      const typeLabel = typeLabels[contentType] || contentType;
 
-      if (contentType === "info") {
+      if (contentType === "education" || contentType === "notice") {
         const summaryHtml = c.summary
           ? `<p style="color:#333;font-size:14px;line-height:1.6;margin:0">${escapeHtml(c.summary)}</p>`
           : `<p style="color:#333;font-size:14px;line-height:1.6;margin:0">${escapeHtml(stripMarkdown(c.body_md).slice(0, 200))}</p>`;
         return `<div style="border:1px solid #eee;border-radius:8px;padding:16px;margin-bottom:16px">
-  <p style="color:#666;font-size:12px;margin:0">${escapeHtml(catLabel)}</p>
+  <p style="color:#666;font-size:12px;margin:0">${escapeHtml(typeLabel)}</p>
   <h3 style="font-size:18px;font-weight:bold;margin:8px 0">${escapeHtml(c.title)}</h3>
   ${summaryHtml}
   <p style="margin-top:12px"><a href="${siteUrl}/posts?content_id=${c.id}" style="background:#F75D5D;color:white;padding:8px 20px;border-radius:4px;text-decoration:none">자세히 보기</a></p>
 </div>`;
       }
 
-      if (contentType === "result") {
+      if (contentType === "case_study") {
         const bodyHtml = mdToHtml(c.body_md);
         return `<div style="background:#f8f9fa;border-radius:8px;padding:16px;margin-bottom:16px">
-  <p style="color:#F75D5D;font-size:12px;font-weight:bold;margin:0">수강생 성과</p>
+  <p style="color:#F75D5D;font-size:12px;font-weight:bold;margin:0">${escapeHtml(typeLabel)}</p>
   <h3 style="font-size:18px;font-weight:bold;margin:8px 0">${escapeHtml(c.title)}</h3>
   <div style="color:#333;font-size:14px;line-height:1.6">${bodyHtml}</div>
+</div>`;
+      }
+
+      if (contentType === "webinar") {
+        const summaryHtml = c.summary
+          ? escapeHtml(c.summary)
+          : escapeHtml(stripMarkdown(c.body_md).slice(0, 200));
+        return `<div style="background:#2D2D2D;border-radius:8px;padding:20px;text-align:center;margin-bottom:16px">
+  <p style="color:#E85A2A;font-size:12px;font-weight:bold;margin:0">LIVE 웨비나</p>
+  <h3 style="font-size:20px;font-weight:bold;color:#fff;margin:8px 0">${escapeHtml(c.title)}</h3>
+  <p style="color:#ccc;font-size:14px;margin:8px 0">${summaryHtml}</p>
+  <p style="margin-top:12px"><a href="${c.source_ref || siteUrl}" style="background:#E85A2A;color:white;padding:10px 28px;border-radius:500px;text-decoration:none;font-weight:bold">신청하기</a></p>
 </div>`;
       }
 
@@ -484,27 +498,13 @@ export async function crawlUrl(
   }
 }
 
-const CONTENT_SYSTEM_PROMPT = `당신은 자사몰사관학교(BS CAMP)의 메타 광고 전문 교육 콘텐츠 작성자입니다.
-
-## 글 스타일
+const CONTENT_BASE_STYLE = `## 공통 스타일
 - ~해요 체 사용 (예: "설정할 수 있어요", "확인해보세요")
 - 마켓핏랩 블로그 스타일: 전문적이되 읽기 쉬운 톤
 - 전문 용어 → 괄호 설명 (ROAS(광고비 대비 수익률))
-- 실무 팁은 볼드 (**팁:** ~하면 더 효과적이에요)
-
-## 글 구조 (필수)
-1. **도입부**: 한 줄 요약 + 왜 읽어야 하는지 + 대상 독자
-2. **넘버링된 h2 소제목** (## 1. OOO, ## 2. OOO)
-3. **비교는 반드시 마크다운 테이블 사용**
-4. **핵심 포인트는 > 인용문(blockquote)으로 하이라이트**
-5. **문단은 2-4문장 이내로 짧게**
-6. **정리**: 핵심 3줄 요약 + 다음 액션 제안
-
-## 형식 규칙
 - 첫 줄: # 제목 (한국어, 영어 금지)
-- 3,000자 이상 작성
-- 이미지 위치는 [이미지: 설명] 형식으로 표시
 - 제목에 영어만 단독 사용 금지 (예: ❌ "ASC Campaign Guide" → ✅ "어드밴티지+ 쇼핑 캠페인 완전 가이드")
+- 이미지 위치는 [이미지: 설명] 형식으로 표시
 
 ## 메타 광고 전문 지식
 - 2024-2025 안드로메다 알고리즘: AI 기반 광고-유저 매칭 100배 가속화
@@ -514,19 +514,124 @@ const CONTENT_SYSTEM_PROMPT = `당신은 자사몰사관학교(BS CAMP)의 메�
 - 어드밴티지+(ASC): AI 완전 자동화 캠페인, 소재 다양성이 핵심
 - 타겟팅: 커스텀/유사/관심사/어드밴티지+ 오디언스, 넓은 타겟이 2025년 트렌드
 - 픽셀 + 전환 API(CAPI): 함께 사용해야 95%+ 데이터 정확도
-- 측정: 어트리뷰션 윈도우, 증분성 테스트, 미디어 믹스 모델링
-- 크리에이티브: 다양한 소재 3-5개/광고세트, 2-3주 리프레시 주기
-- iOS 14.5 이후: 개인정보 보호 강화 → CAPI 필수, 넓은 타겟 전환`;
+- 크리에이티브: 다양한 소재 3-5개/광고세트, 2-3주 리프레시 주기`;
+
+const TYPE_PROMPTS: Record<string, { system: string; userPrefix: string; emailSummaryGuide: string }> = {
+  education: {
+    system: `당신은 자사몰사관학교(BS CAMP)의 메타 광고 전문 교육 콘텐츠 작성자입니다.
+
+${CONTENT_BASE_STYLE}
+
+## 교육 콘텐츠 구조 (필수)
+1. **도입부**: 한 줄 요약 + 왜 읽어야 하는지 + 대상 독자
+2. **넘버링된 h2 소제목** (## 1. OOO, ## 2. OOO)
+3. **비교는 반드시 마크다운 테이블 사용**
+4. **핵심 포인트는 > 인용문(blockquote)으로 하이라이트**
+5. **문단은 2-4문장 이내로 짧게**
+6. **실무 팁은 볼드** (**팁:** ~하면 더 효과적이에요)
+7. **정리**: 핵심 3줄 요약 + 다음 액션 제안
+- 3,000자 이상 작성`,
+    userPrefix: "다음 주제에 대한 메타 광고 전문가 교육 콘텐츠를 작성해주세요",
+    emailSummaryGuide: `800~1000자 분량의 이메일 요약을 작성하세요:
+- 핵심 포인트 3~4개를 넘버링하여 정리
+- 각 포인트는 2~3문장으로 요약
+- 마지막에 "자세히 보기" CTA 유도 문구`,
+  },
+  case_study: {
+    system: `당신은 자사몰사관학교(BS CAMP)의 고객 성공사례 작성 전문가입니다.
+
+${CONTENT_BASE_STYLE}
+
+## 고객사례 구조 (필수)
+1. **한 줄 성과 요약** (예: "ROAS 450% 달성, 월 매출 3배 성장")
+2. **비포(Before)**: 기존 문제 상황, 고객 페인포인트
+3. **솔루션(Solution)**: BS CAMP에서 배운 핵심 전략
+4. **애프터(After)**: 수치 중심 성과 (ROAS, 매출, CPA 등)
+5. **핵심 인사이트**: 다른 대표님들이 참고할 포인트
+6. **고객 한마디**: 후기 톤 인용문
+- 수치는 반드시 볼드 처리 (**ROAS 380%**)
+- 2,000자 이상 작성`,
+    userPrefix: "다음 주제에 대한 고객 성공사례를 작성해주세요",
+    emailSummaryGuide: `성과 하이라이트 중심 이메일 요약:
+- ROAS, 매출, CPA 등 핵심 수치를 볼드로 강조
+- 비포→애프터 변화를 한눈에 보여주는 구성
+- "전체 사례 보기" CTA`,
+  },
+  webinar: {
+    system: `당신은 자사몰사관학교(BS CAMP)의 웨비나/라이브 안내 콘텐츠 작성 전문가입니다.
+
+${CONTENT_BASE_STYLE}
+
+## 웨비나 안내 구조 (필수)
+1. **제목**: 웨비나 주제 (임팩트 있게)
+2. **일시/장소**: 날짜, 시간, 플랫폼 (Zoom 등)
+3. **이런 분께 추천**: 대상 청중 3~4가지
+4. **다룰 내용**: 어젠다 5~7개 (넘버링)
+5. **참여 혜택**: 특전, 자료 제공 등
+6. **강사 소개**: 스미스 대표 약력
+7. **신청 방법**: CTA 안내
+- 참여를 유도하는 긴급성 표현 포함
+- 1,500자 이상 작성`,
+    userPrefix: "다음 주제에 대한 웨비나 안내 콘텐츠를 작성해주세요",
+    emailSummaryGuide: `웨비나 이메일 요약:
+- 일시 + 주제 명확히
+- 어젠다 핵심 3~4개
+- 참여 혜택 강조
+- "지금 등록하기" CTA`,
+  },
+  notice: {
+    system: `당신은 자사몰사관학교(BS CAMP)의 공지사항 작성 전문가입니다.
+
+${CONTENT_BASE_STYLE}
+
+## 공지사항 구조 (필수)
+1. **핵심 요약**: 1~2문장으로 변경 사항 요약
+2. **상세 내용**: 변경 배경, 적용 일시, 영향 범위
+3. **주의 사항**: 회원이 알아야 할 점
+4. **문의 안내**: 질문 시 연락처
+- 간결하고 명확하게 작성
+- 500~1,000자`,
+    userPrefix: "다음 내용에 대한 공지사항을 작성해주세요",
+    emailSummaryGuide: `공지 이메일 요약:
+- 변경사항 핵심만 1~2문단
+- 적용 일시 명시
+- "자세히 보기" CTA`,
+  },
+  promo: {
+    system: `당신은 자사몰사관학교(BS CAMP)의 프로모션/마케팅 콘텐츠 작성 전문가입니다.
+
+${CONTENT_BASE_STYLE}
+
+## 프로모션 구조 (필수)
+1. **헤드라인**: 혜택 중심 한 줄 (예: "지금 등록하면 30% 할인!")
+2. **소셜프루프**: 수강생 수, 평균 ROAS 등 신뢰 지표
+3. **핵심 혜택**: 3~5가지 불릿 포인트
+4. **긴급성**: 마감 기한, 한정 인원 등
+5. **가격/조건**: 원가 vs 할인가, 포함 사항
+6. **CTA**: 강한 행동 유도 ("지금 신청하기")
+7. **FAQ**: 자주 묻는 질문 2~3개
+- 설득력 있는 톤, 혜택 반복 강조
+- 1,500자 이상 작성`,
+    userPrefix: "다음 내용에 대한 프로모션 콘텐츠를 작성해주세요",
+    emailSummaryGuide: `프로모션 이메일 요약:
+- 핵심 혜택 + 할인/특전 강조 (볼드)
+- 마감 기한/한정 인원 긴급성
+- "지금 신청하기" 강한 CTA`,
+  },
+};
 
 export async function generateContentWithAI(
-  topic: string
-): Promise<{ title: string; bodyMd: string } | { error: string }> {
+  topic: string,
+  type: string = "education"
+): Promise<{ title: string; bodyMd: string; emailSummary: string } | { error: string }> {
   await requireAdmin();
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return { error: "ANTHROPIC_API_KEY가 설정되지 않았습니다." };
   }
+
+  const typePrompt = TYPE_PROMPTS[type] || TYPE_PROMPTS.education;
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -539,11 +644,17 @@ export async function generateContentWithAI(
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 8192,
-        system: CONTENT_SYSTEM_PROMPT,
+        system: typePrompt.system,
         messages: [
           {
             role: "user",
-            content: `다음 주제에 대한 메타 광고 전문가 교육 콘텐츠를 작성해주세요: ${topic}`,
+            content: `${typePrompt.userPrefix}: ${topic}
+
+본문 작성 후, 아래 구분자 다음에 이메일 요약(email_summary)도 함께 작성해주세요.
+
+---EMAIL_SUMMARY---
+
+${typePrompt.emailSummaryGuide}`,
           },
         ],
       }),
@@ -562,10 +673,16 @@ export async function generateContentWithAI(
       return { error: "AI가 콘텐츠를 생성하지 못했습니다." };
     }
 
+    // 본문과 email_summary 분리
+    const separator = "---EMAIL_SUMMARY---";
+    const parts = text.split(separator);
+    const mainContent = parts[0].trim();
+    const emailSummary = parts.length > 1 ? parts[1].trim() : "";
+
     // 첫 줄(# 제목)을 title로, 나머지를 bodyMd로 분리
-    const lines = text.trim().split("\n");
+    const lines = mainContent.split("\n");
     let title = topic;
-    let bodyMd = text.trim();
+    let bodyMd = mainContent;
 
     const firstLine = lines[0].trim();
     if (firstLine.startsWith("# ")) {
@@ -573,7 +690,7 @@ export async function generateContentWithAI(
       bodyMd = lines.slice(1).join("\n").trim();
     }
 
-    return { title, bodyMd };
+    return { title, bodyMd, emailSummary };
   } catch (e) {
     console.error("generateContentWithAI error:", e);
     return { error: e instanceof Error ? e.message : "AI 콘텐츠 생성 실패" };

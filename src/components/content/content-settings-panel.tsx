@@ -35,7 +35,6 @@ export default function ContentSettingsPanel({
   onContentUpdate,
 }: ContentSettingsPanelProps) {
   const router = useRouter();
-  const [category, setCategory] = useState(content.category);
   const [status, setStatus] = useState(content.status);
   const [type, setType] = useState(content.type);
   const [saving, setSaving] = useState(false);
@@ -47,7 +46,6 @@ export default function ContentSettingsPanel({
     setSaving(true);
     try {
       const { error } = await updateContent(content.id, {
-        category,
         status,
         type,
       });
@@ -88,28 +86,6 @@ export default function ContentSettingsPanel({
 
           <div className="space-y-3">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-500">
-                카테고리
-              </label>
-              <Select
-                value={category}
-                onValueChange={(v) => {
-                  setCategory(v as Content["category"]);
-                  setDirty(true);
-                }}
-              >
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="education">교육</SelectItem>
-                  <SelectItem value="notice">공지</SelectItem>
-                  <SelectItem value="case_study">고객사례</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1">
               <label className="text-xs font-medium text-gray-500">상태</label>
               <Select
                 value={status}
@@ -144,9 +120,11 @@ export default function ContentSettingsPanel({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="info">정보공유</SelectItem>
-                  <SelectItem value="promo">프로모션</SelectItem>
-                  <SelectItem value="result">성과</SelectItem>
+                  <SelectItem value="education">교육</SelectItem>
+                  <SelectItem value="case_study">고객사례</SelectItem>
+                  <SelectItem value="webinar">웨비나</SelectItem>
+                  <SelectItem value="notice">공지</SelectItem>
+                  <SelectItem value="promo">홍보</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -49,10 +49,12 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   },
 };
 
-const CATEGORY_LABEL: Record<string, string> = {
+const TYPE_LABEL: Record<string, string> = {
   education: "교육",
-  notice: "공지",
   case_study: "고객사례",
+  webinar: "웨비나",
+  notice: "공지",
+  promo: "홍보",
 };
 
 export default function AdminContentPage() {
@@ -60,16 +62,16 @@ export default function AdminContentPage() {
   const [contents, setContents] = useState<Content[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [modalOpen, setModalOpen] = useState(false);
 
   const loadContents = useCallback(async () => {
     setLoading(true);
     try {
-      const params: { category?: string; status?: string; pageSize?: number } =
+      const params: { type?: string; status?: string; pageSize?: number } =
         { pageSize: 100 };
-      if (categoryFilter !== "all") params.category = categoryFilter;
+      if (typeFilter !== "all") params.type = typeFilter;
       if (statusFilter !== "all" && statusFilter !== "sent") params.status = statusFilter;
 
       const { data, count } = await getContents(params);
@@ -85,7 +87,7 @@ export default function AdminContentPage() {
     } finally {
       setLoading(false);
     }
-  }, [categoryFilter, statusFilter]);
+  }, [typeFilter, statusFilter]);
 
   useEffect(() => {
     loadContents();
@@ -103,7 +105,7 @@ export default function AdminContentPage() {
     [contents]
   );
 
-  const isUnfiltered = categoryFilter === "all" && statusFilter === "all";
+  const isUnfiltered = typeFilter === "all" && statusFilter === "all";
 
   const statCards = [
     {
@@ -191,15 +193,17 @@ export default function AdminContentPage() {
 
           {/* Filters */}
           <div className="flex gap-3">
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="카테고리" />
+                <SelectValue placeholder="유형" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">전체 카테고리</SelectItem>
+                <SelectItem value="all">전체 유형</SelectItem>
                 <SelectItem value="education">교육</SelectItem>
-                <SelectItem value="notice">공지</SelectItem>
                 <SelectItem value="case_study">고객사례</SelectItem>
+                <SelectItem value="webinar">웨비나</SelectItem>
+                <SelectItem value="notice">공지</SelectItem>
+                <SelectItem value="promo">홍보</SelectItem>
               </SelectContent>
             </Select>
 
@@ -236,7 +240,7 @@ export default function AdminContentPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[40%]">제목</TableHead>
-                      <TableHead>카테고리</TableHead>
+                      <TableHead>유형</TableHead>
                       <TableHead>정보공유</TableHead>
                       <TableHead>뉴스레터</TableHead>
                       <TableHead className="text-right">작성일</TableHead>
@@ -259,7 +263,7 @@ export default function AdminContentPage() {
                           </TableCell>
                           <TableCell>
                             <Badge variant="secondary" className="text-[11px]">
-                              {CATEGORY_LABEL[item.category] ?? item.category}
+                              {TYPE_LABEL[item.type] ?? item.type}
                             </Badge>
                           </TableCell>
                           <TableCell>

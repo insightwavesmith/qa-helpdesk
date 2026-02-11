@@ -18,10 +18,12 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   archived: { label: "보관", className: "bg-slate-100 text-slate-600 border-slate-200" },
 };
 
-const CATEGORY_LABEL: Record<string, string> = {
+const TYPE_LABEL: Record<string, string> = {
   education: "교육",
-  notice: "공지",
   case_study: "고객사례",
+  webinar: "웨비나",
+  notice: "공지",
+  promo: "홍보",
 };
 
 interface DetailSidebarProps {
@@ -134,9 +136,9 @@ export default function DetailSidebar({
               </Badge>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">카테고리</span>
+              <span className="text-xs text-gray-500">유형</span>
               <span className="text-xs font-medium text-gray-700">
-                {CATEGORY_LABEL[content.category] || content.category}
+                {TYPE_LABEL[content.type] || content.type}
               </span>
             </div>
             <div className="flex items-center justify-between">

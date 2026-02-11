@@ -269,3 +269,81 @@ export function performanceTemplate({
 </body>
 </html>`;
 }
+
+// --- Promo Template ---
+
+export function promoTemplate({
+  subject,
+  headline,
+  bodyText,
+  benefits,
+  deadline,
+  ctaText,
+  ctaUrl,
+}: {
+  subject: string;
+  headline: string;
+  bodyText: string;
+  benefits?: string[];
+  deadline?: string;
+  ctaText?: string;
+  ctaUrl?: string;
+}) {
+  const safeSubject = escapeHtml(subject);
+  const safeHeadline = escapeHtml(headline);
+  const safeBodyText = escapeHtml(bodyText);
+  const benefitsHtml = benefits && benefits.length > 0
+    ? `<div style="padding:0 32px 16px;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    ${benefits.map((b) => `<tr>
+      <td style="padding:8px 0;border-bottom:1px solid #fff3f3;">
+        <span style="color:#F75D5D;font-weight:700;margin-right:8px;">\u2713</span>
+        <span style="color:#333333;font-size:15px;">${escapeHtml(b)}</span>
+      </td>
+    </tr>`).join("")}
+  </table>
+</div>`
+    : "";
+  const deadlineHtml = deadline
+    ? `<div style="text-align:center;padding:0 32px 16px;">
+  <span style="display:inline-block;background-color:#FFF5F5;color:#F75D5D;font-size:14px;font-weight:700;padding:8px 20px;border-radius:20px;border:1px solid #F75D5D;">${escapeHtml(deadline)}</span>
+</div>`
+    : "";
+  const ctaHtml2 = ctaText && ctaUrl
+    ? `<div style="text-align:center;padding:16px 32px 32px;">
+  <a href="${escapeHtml(ctaUrl)}" style="background-color:#F75D5D;color:#ffffff;font-size:18px;font-weight:700;padding:18px 48px;border-radius:8px;text-decoration:none;display:inline-block;">${escapeHtml(ctaText)}</a>
+</div>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${safeSubject}</title>
+  <style>${fontFaceStyle()}</style>
+</head>
+<body style="margin:0;padding:24px 0;background-color:#f5f5f5;font-family:${FONT_FAMILY};">
+  <div style="max-width:600px;margin:0 auto;background-color:#ffffff;border-radius:8px;overflow:hidden;">
+    <!-- Header -->
+    <div style="background-color:#F75D5D;padding:24px 32px;text-align:center;">
+      <p style="color:#ffffff;font-size:14px;font-weight:600;margin:0 0 4px;letter-spacing:0.5px;">BS CAMP</p>
+      <p style="color:rgba(255,255,255,0.8);font-size:12px;margin:0;">\uc790\uc0ac\ubab0 \uc0ac\uad00\ud559\uad50</p>
+    </div>
+    <!-- Hero -->
+    <div style="padding:32px 32px 16px;text-align:center;">
+      <h1 style="color:#1a1a1a;font-size:26px;font-weight:700;line-height:1.3;margin:0 0 12px;">${safeHeadline}</h1>
+      <p style="color:#555555;font-size:15px;line-height:1.7;margin:0 0 16px;">${safeBodyText}</p>
+    </div>
+    <!-- Benefits -->
+    ${benefitsHtml}
+    <!-- Deadline -->
+    ${deadlineHtml}
+    <!-- CTA -->
+    ${ctaHtml2}
+    <!-- Footer -->
+    ${footerHtml(FOOTER_PLACEHOLDER)}
+  </div>
+</body>
+</html>`;
+}
