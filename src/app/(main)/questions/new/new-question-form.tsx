@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,6 +60,14 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [images, setImages] = useState<ImagePreview[]>([]);
   const [uploading, setUploading] = useState(false);
+
+  // 컴포넌트 언마운트 시 미리보기 blob URL 해제
+  useEffect(() => {
+    return () => {
+      images.forEach((img) => URL.revokeObjectURL(img.preview));
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const form = useForm<QuestionFormValues>({
     resolver: zodResolver(questionSchema),
