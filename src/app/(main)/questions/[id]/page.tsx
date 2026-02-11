@@ -211,14 +211,9 @@ export default async function QuestionDetailPage({
                     </div>
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <span className="text-sm font-semibold text-foreground">
-                        {isAI ? "AI 어시스턴트" : answer.author?.name || "익명"}
+                        {isAI ? "Smith" : answer.author?.name || "익명"}
                       </span>
-                      {isAI && (
-                        <Badge className="gap-1 text-[10px] px-2 py-0.5 h-5 bg-primary/10 text-primary hover:bg-primary/10 border-primary/20">
-                          <Sparkles className="h-2.5 w-2.5" />
-                          AI 답변
-                        </Badge>
-                      )}
+                      {/* AI 뱃지 제거됨 — 고객에게 AI 답변 노출 안 함 */}
                       {isOfficial && (
                         <Badge className="gap-1 text-[10px] px-2 py-0.5 h-5 bg-emerald-50 text-emerald-700 hover:bg-emerald-50 border-emerald-200">
                           공식 답변

@@ -1,6 +1,7 @@
 // BS CAMP 기본 뉴스레터 템플릿 (Unlayer JSON 형식)
 // 600px, 테두리 없음, Pretendard 폰트, 흰색 배경
 // 스티비/마켓핏랩 스타일 — 깔끔하고 읽기 쉬운 레이아웃
+// Last verified: 2026-02-11
 
 export const BS_CAMP_DEFAULT_TEMPLATE = {
   body: {
