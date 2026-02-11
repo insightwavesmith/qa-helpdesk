@@ -62,14 +62,18 @@ export async function getQuestions({
   // Get answer counts for each question
   if (data && data.length > 0) {
     const questionIds = data.map((q) => q.id);
-    const { data: answerCounts } = await supabase
-      .from("answers")
-      .select("question_id")
-      .in("question_id", questionIds);
+    const countResults = await Promise.all(
+      questionIds.map((qid) =>
+        supabase
+          .from("answers")
+          .select("*", { count: "exact", head: true })
+          .eq("question_id", qid)
+      )
+    );
 
     const countMap: Record<string, number> = {};
-    answerCounts?.forEach((a) => {
-      countMap[a.question_id] = (countMap[a.question_id] || 0) + 1;
+    questionIds.forEach((qid, i) => {
+      countMap[qid] = countResults[i].count || 0;
     });
 
     const enriched = data.map((q) => ({
