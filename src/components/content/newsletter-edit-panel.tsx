@@ -37,6 +37,7 @@ const UnlayerEditor = dynamic(
 );
 
 import { BS_CAMP_DEFAULT_TEMPLATE } from "@/lib/email-default-template";
+import { buildDesignFromSummary } from "@/lib/email-template-utils";
 
 const defaultTemplate: object | null = BS_CAMP_DEFAULT_TEMPLATE;
 
@@ -67,10 +68,12 @@ export default function NewsletterEditPanel({
   const [testSending, setTestSending] = useState(false);
   const [editorReady, setEditorReady] = useState(false);
 
-  // 기존 디자인 JSON이 있으면 로드, 없으면 기본 템플릿
+  // 기존 디자인 JSON이 있으면 로드, email_summary만 있으면 자동 주입, 없으면 기본 템플릿
   const initialDesign = content.email_design_json
     ? (content.email_design_json as object)
-    : defaultTemplate;
+    : content.email_summary
+      ? buildDesignFromSummary(content)
+      : defaultTemplate;
 
   // 기존 email_summary만 있고 Unlayer 데이터 없는 경우 안내
   const hasLegacySummary = !content.email_design_json && !!content.email_summary;
