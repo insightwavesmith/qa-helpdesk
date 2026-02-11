@@ -38,7 +38,7 @@ export function getExcerpt(content: string, maxLen = 100): string {
     .replace(/<[^>]*>/g, "")
     .replace(/\*\*\[.*?\]\*\*/g, "")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/[#*_~`>\-\[\]()!|]/g, "")
+    .replace(/[#*_~`>\-\[\]!|]/g, "")
     .replace(/\n+/g, " ")
     .trim();
   return cleaned.length > maxLen ? cleaned.slice(0, maxLen) + "..." : cleaned;
