@@ -2,9 +2,10 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { getPosts, getNotices } from "@/actions/posts";
 import { getQuestions } from "@/actions/questions";
-import { StudentAdSummary } from "./student-ad-summary";
+import { StudentAdSummary, type AdSummaryData } from "./student-ad-summary";
 import { getExcerpt } from "@/components/posts/post-card";
 import { decodeHtmlEntities } from "@/lib/utils/decode-entities";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 function timeAgo(dateStr: string) {
   const now = new Date();
@@ -50,6 +51,54 @@ export async function StudentHome({ userName: _userName }: StudentHomeProps) {
     console.error("StudentHome data fetch error:", e);
   }
 
+  // 광고 성과 데이터 (실패해도 무시)
+  let adSummary: AdSummaryData | null = null;
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const svc = createServiceClient();
+      const { data: accounts } = await svc
+        .from("ad_accounts")
+        .select("account_id")
+        .eq("user_id", user.id)
+        .limit(1);
+
+      if (accounts && accounts.length > 0) {
+        const end = new Date();
+        end.setDate(end.getDate() - 1);
+        const start = new Date(end);
+        start.setDate(start.getDate() - 6);
+
+        const { data: rows } = await svc
+          .from("daily_ad_insights")
+          .select("spend, purchase_value, purchases")
+          .eq("account_id", accounts[0].account_id)
+          .gte("date", start.toISOString().split("T")[0])
+          .lte("date", end.toISOString().split("T")[0]);
+
+        if (rows && rows.length > 0) {
+          let totalSpend = 0;
+          let totalRevenue = 0;
+          let totalPurchases = 0;
+          for (const row of rows) {
+            totalSpend += row.spend || 0;
+            totalRevenue += row.purchase_value || 0;
+            totalPurchases += row.purchases || 0;
+          }
+          adSummary = {
+            totalRevenue: Math.round(totalRevenue),
+            totalSpend: Math.round(totalSpend),
+            roas: totalSpend > 0 ? +(totalRevenue / totalSpend).toFixed(2) : 0,
+            totalPurchases,
+          };
+        }
+      }
+    }
+  } catch {
+    // 광고 데이터 실패 무시
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* 검색바 */}
@@ -74,7 +123,7 @@ export async function StudentHome({ userName: _userName }: StudentHomeProps) {
 
       {/* 내 광고 성과 요약 */}
       <section className="mb-12">
-        <StudentAdSummary />
+        <StudentAdSummary data={adSummary} />
       </section>
 
       {/* 공지사항 */}
