@@ -1,0 +1,24 @@
+# CHANGELOG-MOZZI.md
+
+모찌가 에이전트팀 외부에서 직접 수정한 내역.
+에이전트팀 리더는 작업 시작 전 이 파일을 확인하고, 충돌 방지할 것.
+
+---
+
+## 2026-02-11
+
+### 14:02 — getContents archived 필터 추가
+- **파일**: `src/actions/contents.ts`
+- **내용**: `getContents()` status 필터 없이 호출 시 `archived` 상태 자동 제외 (`query.neq("status", "archived")`)
+- **이유**: archived 콘텐츠가 관리자 목록에 계속 노출되는 문제
+- **커밋**: `f897951`
+
+### 13:38 — 새 콘텐츠 생성 시 카테고리/유형 선택 추가
+- **파일**: `src/components/content/new-content-modal.tsx`
+- **내용**: 모달 상단에 카테고리(교육/공지/고객사례) + 유형(정보공유/성과/홍보) Select 추가, `createContent` 호출 시 값 전달
+- **이유**: 새 콘텐츠 만들 때 카테고리 선택 불가 문제
+- **커밋**: `e2c9bf9`
+
+### DB 변경 (Supabase 직접)
+- `759ababf` category → `notice`, `557d6340` category → `case_study`
+- 나머지 9개 콘텐츠 status → `archived` (soft delete)
