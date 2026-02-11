@@ -78,6 +78,7 @@ export function ImageLightbox({
         src={imageUrls[currentIndex]}
         alt={`첨부 이미지 ${currentIndex + 1}`}
         className="max-h-[90vh] max-w-[90vw] object-contain"
+        loading="eager"
         onClick={(e) => e.stopPropagation()}
       />
 

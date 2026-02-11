@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { ImageLightbox } from "./ImageLightbox";
 
 interface ImageGalleryProps {
@@ -20,13 +21,14 @@ export function ImageGallery({ imageUrls }: ImageGalleryProps) {
             key={idx}
             type="button"
             onClick={() => setLightboxIndex(idx)}
-            className="overflow-hidden rounded-lg border border-border-color hover:opacity-90 transition-opacity"
+            className="relative overflow-hidden rounded-lg border border-border-color hover:opacity-90 transition-opacity h-32 sm:h-40"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={url}
               alt={`첨부 이미지 ${idx + 1}`}
-              className="w-full h-32 sm:h-40 object-cover cursor-pointer"
+              fill
+              className="object-cover cursor-pointer"
+              sizes="(max-width: 640px) 50vw, 33vw"
             />
           </button>
         ))}
