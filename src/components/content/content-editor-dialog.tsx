@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Save, Trash2, Send } from "lucide-react";
+import { Loader2, Save, Trash2, Send, Archive } from "lucide-react";
 import { toast } from "sonner";
 import { createContent, updateContent, deleteContent, publishContent } from "@/actions/contents";
 import type { Content, ContentType, ContentCategory } from "@/types/content";
@@ -151,7 +151,28 @@ export default function ContentEditorDialog({
     }
   };
 
-  const isBusy = saving || publishing || deleting;
+  const [archiving, setArchiving] = useState(false);
+
+  const handleArchive = async () => {
+    if (!content) return;
+    if (!confirm("아카이브하시겠습니까? 목록에서 숨겨집니다.")) return;
+    setArchiving(true);
+    try {
+      const { error } = await updateContent(content.id, { status: "archived" });
+      if (error) {
+        toast.error(`아카이브 실패: ${error}`);
+        return;
+      }
+      toast.success("아카이브되었습니다.");
+      onSaved();
+    } catch {
+      toast.error("아카이브 중 오류가 발생했습니다.");
+    } finally {
+      setArchiving(false);
+    }
+  };
+
+  const isBusy = saving || publishing || deleting || archiving;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -261,18 +282,32 @@ export default function ContentEditorDialog({
 
         <DialogFooter className="gap-2 sm:gap-0">
           {content && (
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isBusy}
-            >
-              {deleting ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Trash2 className="h-4 w-4 mr-2" />
-              )}
-              삭제
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleArchive}
+                disabled={isBusy}
+              >
+                {archiving ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Archive className="h-4 w-4 mr-2" />
+                )}
+                아카이브
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={isBusy}
+              >
+                {deleting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                삭제
+              </Button>
+            </div>
           )}
           <div className="flex-1" />
           {content && (
