@@ -105,6 +105,9 @@ export async function getContents({
     } else {
       query = query.eq("status", status);
     }
+  } else {
+    // 기본: archived 제외
+    query = query.neq("status", "archived");
   }
 
   const { data, count, error } = await query;
