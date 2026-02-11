@@ -1,246 +1,196 @@
-# TASK.md — Phase B-4: 새 콘텐츠 생성 4카드 모달
+# TASK.md — 뉴스레터 에디터 도입 (Phase 1)
+> 2026-02-11 | 마크다운 기반 이메일 편집 → Unlayer 드래그앤드롭 에디터 전환
+> 리뷰 v1+v2 반영 완료: 2026-02-11 11:51
 
 ## 목표
-"새 콘텐츠" 버튼 클릭 시 4가지 생성 옵션을 제공하는 모달 표시.
-현재: 빈 콘텐츠 바로 생성 → 상세 페이지 이동.
-변경: 4카드 선택 모달 → 옵션별 처리 → 상세 페이지 이동.
+콘텐츠 허브 관리자의 뉴스레터 편집 기능에 Unlayer 드래그앤드롭 에디터를 도입한다.
+- 관리자가 스티비처럼 블록을 끌어다 놓아 이메일을 디자인할 수 있다
+- 디자인 JSON + 렌더링된 HTML을 DB에 저장/불러올 수 있다
+- 저장된 HTML로 이메일 발송이 된다
+- BS CAMP 기본 뉴스레터 템플릿 1개가 프리로드된다
 
-## 디자인
+## ⚠️ 데이터 파이프라인 보호 원칙
+**기존 동작하는 파이프라인을 절대 깨뜨리지 않는다.**
+- 기존 email_summary → mdToPreviewHtml → newsletterTemplate → nodemailer 경로는 100% 유지
+- Unlayer는 별도 경로(email_html)로 추가. 기존 경로에 영향 없어야 함
+- 기존 Server Action(`src/actions/contents.ts`)은 수정하지 않음
+- 기존 email/send route의 `renderEmail("newsletter", ...)` 폴백 경로 건드리지 않음
+- 새 기능 추가 시 기존 코드 삭제/변경 최소화. 분기(if email_html)로 처리
 
-### 모달 레이아웃
+## 레퍼런스
+- Unlayer React 문서: https://docs.unlayer.com/builder/react-component
+- Unlayer Project ID: 284274
+- 스티비 뉴스레터 흐름 분석: workspace/projects/active/stibee-research.md
+- 마켓핏랩 뉴스레터 레이아웃: 테두리 없음, 본문 직접 배치, 이미지 풀와이드
+
+## 현재 코드 구조 (필독)
+- **content 저장**: `src/actions/contents.ts` → `updateContent` Server Action (API route 아님!)
+- **이메일 발송**: `src/app/api/admin/email/send/route.ts` → body에서 `{ html, template, templateProps }` 받음
+- **발송 렌더링**: html이 없으면 `renderEmail("newsletter", { subject, bodyHtml })` 호출
+- **수신거부**: `src/lib/email-templates.ts`에 `{{UNSUBSCRIBE_URL}}` placeholder → `replaceUnsubscribeUrl()` 치환
+- **타입**: `src/types/content.ts` (Content interface) + `src/types/database.ts` (DB 타입)
+- **CTA 설정**: newsletter-edit-panel.tsx에 CTA 프리셋 UI 있음 (전체글 읽기, 웨비나 신청 등)
+
+## 제약
+- Next.js + React + TypeScript + Tailwind CSS
+- Supabase (PostgreSQL) — contents 테이블에 컬럼 추가
+- Unlayer react-email-editor 무료 플랜 (projectId: 284274)
+- 무료 플랜 제한: Localization 불가, Custom Storage 불가 (기본 Unlayer S3, 파일당 2MB), Stock Images/Image Editor 불가
+- 무료 플랜에서 되는 것: 이미지 업로드(기본 S3, 2MB), URL 입력, 모든 기본 블록, Device Preview
+- 기존 email_summary 컬럼은 유지 (하위호환)
+- 기존 관리자 인증/권한 체계 그대로 유지
+- 이메일 발송은 기존 nodemailer + Gmail SMTP 경로 사용
+- `react-email-editor` 설치 시 React 19 peer dep 충돌 가능 → `--legacy-peer-deps` 사용
+
+## 기존 에디터 정리 방침
+1. `/admin/content/[id]` 뉴스레터 탭 (MDXEditor `newsletter-edit-panel.tsx`) → **Unlayer로 교체 (이번 Phase 1)**
+2. `/admin/email` 페이지 (TipTap `email-split-editor.tsx`) → **Phase 1에서는 유지, Phase 2에서 폐기 검토**
+3. `/admin/email/[id]` 페이지 → **미사용 확인 후 삭제 대상**
+4. **기존 CTA 프리셋 UI** → Unlayer 에디터 내에서 버튼 블록으로 대체. 기존 CTA 설정 카드 제거.
+
+## 기존 콘텐츠 전환 UX
+- email_design_json이 있는 콘텐츠: Unlayer에 디자인 JSON 로드
+- email_design_json이 없고 email_summary만 있는 콘텐츠: BS CAMP 기본 템플릿 로드 + 상단에 안내 배너 "기존 텍스트 뉴스레터가 있습니다. 아래 에디터에서 새로 디자인하세요."
+- 둘 다 없는 새 콘텐츠: BS CAMP 기본 템플릿 로드
+
+## AI 요약 기능 연계
+- Phase 1: AI 요약은 기존 그대로 (email_summary 저장). Unlayer 에디터는 별도 저장 경로.
+- Phase 2: AI가 Unlayer JSON 직접 생성 방식으로 전환 검토
+
+## 태스크
+
+### T1. DB 스키마 확장 + 타입 갱신 → backend-dev
+- 파일: 직접 SQL, `src/types/database.ts`, `src/types/content.ts`
+- 의존: 없음
+- 작업:
+  - contents 테이블에 컬럼 추가:
+    - `email_design_json` (jsonb, nullable) — Unlayer 디자인 JSON
+    - `email_html` (text, nullable) — Unlayer에서 export한 HTML
+  - 기존 email_summary 컬럼은 그대로 유지
+  - `src/types/database.ts` 타입 갱신
+  - `src/types/content.ts` Content interface에 새 필드 추가
+- 완료 기준:
+  - [ ] 두 컬럼이 contents 테이블에 존재
+  - [ ] 기존 데이터에 영향 없음
+  - [ ] RLS 정책이 새 컬럼도 커버
+  - [ ] `database.ts` + `content.ts` 타입에 새 컬럼 반영됨
+
+### T2. Unlayer 에디터 컴포넌트 구현 → frontend-dev
+- 파일:
+  - package.json (react-email-editor 추가)
+  - src/components/admin/unlayer-editor.tsx (신규)
+  - src/components/admin/newsletter-edit-panel.tsx (기존 MDXEditor → Unlayer로 교체)
+- 의존: 없음 (T1과 병렬 가능, 저장 API 연동만 T3 이후)
+- 작업:
+  - `npm install react-email-editor --legacy-peer-deps`
+  - **SSR 비활성화 필수**: `dynamic(() => import(...), { ssr: false })` 사용
+  - UnlayerEditor 컴포넌트 생성:
+    - projectId: 284274
+    - displayMode: "email"
+    - `"use client"` 컴포넌트
+    - onReady에서 기존 디자인 JSON 로드 (있으면)
+    - 없으면 BS CAMP 기본 템플릿 로드
+    - email_summary만 있는 경우: 기본 템플릿 + 안내 배너
+  - Unlayer를 **풀폭으로 배치** (기존 2컬럼 구조 → Unlayer 내장 미리보기로 대체)
+  - **기존 CTA 프리셋 카드 제거** (Unlayer 에디터 내 버튼 블록으로 대체)
+  - 저장 버튼: exportHtml → design JSON + HTML을 전용 API로 전송
+  - 미리보기: Unlayer 내장 Device Preview 활용
+  - 테스트 발송 버튼: exportHtml → send API에 `{ html: exportedHtml }` 전달
+- 완료 기준:
+  - [ ] 뉴스레터 탭에서 Unlayer 에디터 렌더링됨 (SSR 에러 없음)
+  - [ ] 블록 드래그앤드롭 정상 작동
+  - [ ] 저장 → DB 저장 → 새로고침 시 디자인 복원
+  - [ ] 테스트 발송 기능 동작
+
+### T3. Unlayer 전용 저장 API route 신규 생성 → backend-dev
+- 파일:
+  - src/app/api/admin/content/[id]/newsletter/route.ts (신규)
+- 의존: T1 완료 후 (T2와 병렬 가능)
+- 작업:
+  - **기존 `src/actions/contents.ts` Server Action은 수정하지 않음** (파이프라인 보호)
+  - 새 API route 생성: `PATCH /api/admin/content/[id]/newsletter`
+    - body: `{ email_design_json, email_html }`
+    - Supabase service client로 해당 content의 두 필드만 업데이트
+    - admin 권한 확인
+  - **body size limit**: route 단위로 `export const config = { api: { bodyParser: { sizeLimit: '10mb' } } }` 설정
+    - 또는 Next.js 16 App Router 방식: `export const maxDuration` + request body를 수동 파싱
+- 완료 기준:
+  - [ ] 새 API route로 디자인 JSON + HTML 저장 정상
+  - [ ] 대용량 JSON (5MB) 저장 시 에러 없음
+  - [ ] 기존 Server Action(`updateContent`)에 변경 없음
+  - [ ] admin 권한 없으면 403
+
+### T4. BS CAMP 기본 뉴스레터 템플릿 → frontend-dev
+- 파일:
+  - src/lib/email-default-template.ts (신규)
+- 의존: T2 완료 후
+- 작업:
+  - Unlayer JSON 형식의 기본 템플릿 생성:
+    - 헤더: BS CAMP 로고 텍스트 + 빨간 라인 (기존 스타일)
+    - 본문: 제목 블록 + 텍스트 블록 + 이미지 블록 + 텍스트 블록
+    - CTA: 빨간 버튼 "전체 아티클 읽기 →"
+    - 푸터: 자사몰 사관학교 정보 + **`{{UNSUBSCRIBE_URL}}` placeholder 포함 필수** (replaceUnsubscribeUrl 치환용)
+  - 600px 너비, 테두리 없음 (스티비/마켓핏랩 스타일)
+  - 이미지 width: 100% (풀와이드)
+  - 본문 좌우 패딩: 24px
+- 완료 기준:
+  - [ ] 새 콘텐츠에서 뉴스레터 탭 열면 기본 템플릿이 로드됨
+  - [ ] 기본 템플릿의 푸터에 `{{UNSUBSCRIBE_URL}}` 존재
+  - [ ] 발송 시 이메일 클라이언트에서 정상 렌더링
+  - [ ] 모바일에서도 깨지지 않음
+
+### T5. 이메일 발송 Unlayer 분기 추가 → backend-dev
+- 파일:
+  - src/app/api/admin/email/send/route.ts (기존 수정 — 최소 변경)
+- 의존: T3, T4 완료 후
+- 작업:
+  - **핵심: Unlayer exportHtml은 이미 DOCTYPE + head + body 포함한 완전한 HTML 반환**
+  - 기존 발송 로직 수정 (send/route.ts):
+    - 프론트에서 `{ html: unlayerHtml }` 형태로 보내면 → `renderEmail` 호출 스킵 → html을 fullHtml로 직접 사용
+    - **이미 `html` 필드로 직접 전달하는 경로가 없음** → 현재는 항상 `renderEmail("newsletter", { bodyHtml: html })` 호출
+    - 수정: body에 `isUnlayerHtml: true` 플래그 추가, true면 `renderEmail` 건너뛰고 html 직접 사용
+    - 수신거부: `replaceUnsubscribeUrl(fullHtml, unsubUrl)` 적용 (Unlayer HTML 안의 `{{UNSUBSCRIBE_URL}}` 치환)
+  - **기존 경로 (template/templateProps, 또는 html → renderEmail 래핑) 절대 변경 안 함**
+- 완료 기준:
+  - [ ] Unlayer HTML 발송 시 이중 래핑 안 됨 (renderEmail 스킵 확인)
+  - [ ] Unlayer HTML 발송 시 수신거부 링크 정상 치환
+  - [ ] 기존 email_summary 기반 발송 100% 정상 동작 (폴백)
+
+## 태스크 의존성
 ```
-┌─────────────────────────────────────────┐
-│  새 콘텐츠 만들기                          │
-│                                         │
-│  ┌─────────┐  ┌─────────┐              │
-│  │ 🔗       │  │ 🤖       │              │
-│  │ URL에서   │  │ AI로     │              │
-│  │ 가져오기  │  │ 작성     │              │
-│  └─────────┘  └─────────┘              │
-│  ┌─────────┐  ┌─────────┐              │
-│  │ 📄       │  │ ✍️       │              │
-│  │ 파일     │  │ 직접     │              │
-│  │ 업로드   │  │ 작성     │              │
-│  └─────────┘  └─────────┘              │
-│                                         │
-└─────────────────────────────────────────┘
+T1 (DB + 타입) ──── T3 (저장 API route 신규)
+                              │
+T2 (에디터 UI) ──── T3 연동 ──── T4 (기본 템플릿, 수신거부 포함)
+                                              │
+                                        T5 (발송 분기)
 ```
+- T1/T2 병렬 진행
+- T3는 T1 완료 후 (타입 필요)
+- T4는 T2 완료 후 (에디터에서 테스트)
+- T5는 T3+T4 완료 후 (발송 분기 + 수신거부 placeholder 검증)
 
-### 4카드 상세
+## 리스크
+| 리스크 | 영향 | 대응 |
+|--------|------|------|
+| exportHtml 이중 래핑 | 이메일 깨짐 | T5에서 isUnlayerHtml 플래그로 renderEmail 스킵 |
+| body size limit | 대형 JSON 저장 실패 | 전용 API route에서 10MB 설정 |
+| SSR 충돌 | 서버 렌더링 에러 | dynamic import + ssr: false |
+| React 19 peer dep 충돌 | 설치 실패 | --legacy-peer-deps |
+| 수신거부 placeholder 누락 | 법적 이슈 | T4에서 필수 포함, 검증 체크리스트 |
+| 기존 파이프라인 손상 | 발송 장애 | Server Action 미수정, 기존 renderEmail 경로 보존 |
 
-#### 1. URL에서 가져오기 🔗
-- 카드 클릭 → URL 입력 필드 표시
-- URL 입력 후 "가져오기" 버튼
-- 서버 API로 URL 크롤링 → 마크다운 변환
-- 크롤링된 내용으로 새 콘텐츠 생성 (draft) → 상세 페이지 이동
-- API: `POST /api/admin/content/crawl` (새로 생성)
-  - cheerio/readability로 본문 추출
-  - turndown으로 마크다운 변환
-  - title, body_md 반환
-
-#### 2. AI로 작성 🤖
-- 카드 클릭 → 주제/키워드 입력 필드 표시
-- "AI 작성" 버튼
-- Gemini Flash로 정보공유 글 생성 (content-writing 스킬 프롬프트 적용)
-- 생성된 내용으로 새 콘텐츠 생성 (draft) → 상세 페이지 이동
-- API: `POST /api/admin/content/generate` (새로 생성)
-  - body_md + email_summary 동시 생성
-  - content-writing 스킬의 구조/톤/패턴 프롬프트 내장
-
-#### 3. 파일 업로드 📄
-- 카드 클릭 → 파일 드래그&드롭 영역 표시
-- .md, .txt, .docx 지원
-- 파일 내용 읽어서 body_md에 삽입
-- 새 콘텐츠 생성 (draft) → 상세 페이지 이동
-- 프론트엔드에서 처리 (FileReader API)
-- .docx → mammoth.js로 변환 (npm 패키지 추가)
-
-#### 4. 직접 작성 ✍️
-- 카드 클릭 → 빈 콘텐츠 생성 (현재 동작과 동일) → 상세 페이지 이동
-- 가장 단순: createContent({ title: "새 콘텐츠", ... })
-
-## 파일 구조
-
-### 새 파일
-- `src/components/content/new-content-modal.tsx` — 4카드 모달 컴포넌트
-- `src/app/api/admin/content/crawl/route.ts` — URL 크롤링 API
-- `src/app/api/admin/content/generate/route.ts` — AI 글 생성 API
-
-### 수정 파일
-- `src/app/(main)/admin/content/page.tsx` — handleNewContent를 모달 열기로 변경
-
-### 패키지 추가
-- `cheerio` — HTML 파싱 (크롤링)
-- `@mozilla/readability` — 본문 추출
-- `mammoth` — .docx → HTML 변환
-
-## 기존 구조 영향 분석
-
-### 콘텐츠 파이프라인 보존 (중요!)
-- 모든 옵션의 최종 결과: `createContent({ title, body_md, status: "draft", ... })` → 상세 페이지 이동
-- 기존 편집/게시/뉴스레터 플로우에 영향 없음
-- DB 스키마 변경 없음
-- 단순히 "초기 body_md를 어떻게 채울 것인가"의 차이만 있음
-
-### content-editor-dialog.tsx
-- 이 파일은 "새 콘텐츠" 다이얼로그로 쓰이고 있었으나, 현재 page.tsx에서는 직접 사용하지 않음 (handleNewContent가 API 호출 후 라우팅)
-- 삭제하지 않고 유지 (다른 곳에서 참조될 수 있음)
-
-## 완료 기준
-- [ ] 4카드 모달이 열리고 각 카드 클릭 시 해당 UI 표시
-- [ ] "URL에서 가져오기": URL 입력 → 크롤링 → 콘텐츠 생성 → 상세 페이지
-- [ ] "AI로 작성": 주제 입력 → AI 생성 → 콘텐츠 생성 → 상세 페이지
-- [ ] "파일 업로드": 파일 선택 → 내용 읽기 → 콘텐츠 생성 → 상세 페이지
-- [ ] "직접 작성": 빈 콘텐츠 생성 → 상세 페이지 (기존 동작)
-- [ ] 기존 편집/게시/뉴스레터 플로우 정상 작동
-- [ ] `npm run build` 성공
-
-## 실행 순서
-1. 패키지 설치 (cheerio, @mozilla/readability, mammoth)
-2. new-content-modal.tsx 생성
-3. crawl API 생성
-4. generate API 생성
-5. page.tsx 수정 (handleNewContent → 모달 열기)
-6. 빌드 확인
-7. git commit & push
-
----
-
-## 리뷰 결과
-
-### 1. 기존 콘텐츠 파이프라인 충돌 여부: 충돌 없음 ✅
-
-- 4가지 옵션 모두 최종 결과가 `createContent({ title, body_md, status: "draft" })` → 상세 페이지 이동으로 수렴. 기존 편집/게시/뉴스레터 플로우에 영향 없음.
-- DB 스키마 변경 없고, `content-editor-dialog.tsx` 보존 판단도 적절.
-- `source_type`/`source_ref` 필드를 활용하면 생성 출처 추적 가능 (예: `source_type: "url"`, `source_ref: "https://..."`) — TASK에 명시되진 않았으나 기존 스키마가 이미 지원.
-
-### 2. 패키지 선택 검토
-
-#### `@mozilla/readability` — jsdom 누락 ⚠️ (블로커)
-- readability는 DOM `document` 객체를 요구함. cheerio는 jQuery-like API이지 DOM이 아님.
-- **cheerio만으로는 readability를 사용할 수 없음.** `jsdom`을 추가 설치하거나, 대안으로 `@extractus/article-extractor` (readability + jsdom 번들) 사용 필요.
-- 권장: `jsdom`을 패키지 목록에 추가하거나, cheerio + 자체 본문 추출 로직 사용.
-
-#### `cheerio` — 적절 ✅
-- 서버사이드 HTML 파싱에 적합. 가볍고 유지보수 활발.
-- jsdom보다 메모리/속도 효율적이나, readability 연동 시 결국 jsdom도 필요.
-
-#### `mammoth` — 적절하나 번들 크기 주의 ⚠️
-- .docx → HTML 변환 표준 라이브러리. 대안(docx, docx-preview)보다 서버/브라우저 양쪽 지원이 우수.
-- TASK에서 "프론트엔드에서 처리 (FileReader API)"라고 명시 → **클라이언트 번들에 포함됨.**
-- mammoth는 ~280KB (gzip)으로 Next.js 클라이언트 번들 크기에 영향. `next/dynamic`으로 lazy import 권장.
-
-#### `turndown` — 이미 설치됨 ✅
-- `package.json`에 `"turndown": "^7.2.2"` 존재. `src/lib/html-to-markdown.ts`에서 사용 중.
-- crawl API에서 `ensureMarkdown()` 재활용 가능 — 신규 변환 로직 불필요.
-
-#### 패키지 추가 최종 권장
-```
-필수: cheerio, jsdom (또는 @extractus/article-extractor), mammoth
-불필요: turndown (이미 설치), @mozilla/readability (jsdom 없이 사용 불가)
-타입: @types/jsdom (devDependencies)
-```
-
-### 3. API 설계 — 기존 패턴 일관성
-
-#### 인증 패턴: 일관 ✅
-- 기존 Route Handler 패턴 (`/api/admin/content/summarize/route.ts` 참조):
-  ```
-  createClient() → getUser() → 401
-  createServiceClient() → profiles.role → 403
-  ```
-- `crawl`, `generate` 두 API 모두 동일 패턴 적용 가능.
-
-#### 에러 응답 패턴: 일관 ✅
-- 기존: `NextResponse.json({ error: "한국어 메시지" }, { status: 4xx/5xx })`
-- 새 API도 동일 패턴 따르면 됨.
-
-#### Gemini API 호출: 중복 우려 ⚠️
-- `generate` API에서 Gemini를 호출할 때, 기존 `src/lib/gemini.ts`의 인프라를 재활용해야 함.
-- `summarize/route.ts`는 Gemini API를 **직접 fetch**하고 있어 이미 중복 존재. 새 API 추가 시 `lib/gemini.ts`에 `generateContent(prompt, config)` 범용 함수를 추출하는 것이 바람직하나, 기존 패턴 유지가 우선이면 직접 fetch도 수용 가능.
-- 모델 불일치 주의: `gemini.ts`는 `gemini-2.5-flash-preview-05-20`, `summarize`는 `gemini-2.0-flash` 사용 중. 새 API는 어느 모델을 쓸지 명시 필요.
-
-### 4. 빠진 엣지 케이스
-
-#### URL 크롤링 (crawl API)
-| 엣지 케이스 | 현재 TASK 대응 | 권장 |
-|------------|---------------|------|
-| **타임아웃** | 미언급 | fetch에 AbortController + 10초 timeout |
-| **비HTML 응답** (PDF, 이미지 등) | 미언급 | Content-Type 체크 후 에러 반환 |
-| **인코딩 문제** (EUC-KR 등) | 미언급 | charset 감지 후 UTF-8 변환 |
-| **리다이렉트 체인** | 미언급 | fetch는 기본 follow, 최대 5회 제한 |
-| **JavaScript 렌더링 페이지** (SPA) | 미언급 | cheerio 한계 명시 — 에러 메시지로 안내 |
-| **robots.txt 준수** | 미언급 | 관리자용이므로 선택적이나, 에러 시 안내 |
-| **빈 본문 추출** | 미언급 | readability 결과가 빈 경우 fallback 또는 에러 |
-| **매우 긴 페이지** | 미언급 | body_md 최대 길이 제한 (예: 50,000자) |
-
-#### AI 생성 (generate API)
-| 엣지 케이스 | 현재 TASK 대응 | 권장 |
-|------------|---------------|------|
-| **Gemini API 장애/timeout** | 미언급 | try-catch + 사용자 친화적 에러 메시지 |
-| **빈 응답/safety 필터 차단** | 미언급 | `candidates[0]` null 체크 |
-| **토큰 한도 초과** | 미언급 | maxOutputTokens 설정 + 길이 검증 |
-| **GEMINI_API_KEY 미설정** | 미언급 | 500 에러 반환 (summarize 패턴 참조) |
-
-#### 파일 업로드
-| 엣지 케이스 | 현재 TASK 대응 | 권장 |
-|------------|---------------|------|
-| **대용량 .docx** (10MB+) | 미언급 | 파일 크기 제한 (프론트 검증 5MB 권장) |
-| **손상된 파일** | 미언급 | mammoth 에러 catch + 에러 토스트 |
-| **비지원 형식 위장** (.exe→.docx) | 미언급 | MIME 타입 + 확장자 이중 검증 |
-| **.md/.txt 인코딩** | 미언급 | FileReader에 encoding 옵션 명시 |
-
-### 5. 보안 이슈
-
-#### SSRF (Server-Side Request Forgery) — 심각도: 높음 🔴
-- `crawl` API가 관리자 입력 URL을 서버에서 fetch → **SSRF 공격 벡터.**
-- 공격 시나리오:
-  - `http://169.254.169.254/latest/meta-data/` → 클라우드 메타데이터 탈취
-  - `http://localhost:5432` → 내부 서비스 스캔
-  - `http://10.0.0.x/admin` → 내부망 접근
-- **필수 방어책:**
-  1. URL 파싱 후 private IP 대역 차단 (10.x, 172.16-31.x, 192.168.x, 127.x, 169.254.x, ::1)
-  2. DNS rebinding 방어: resolve 후 IP 체크 → 해당 IP로 직접 요청
-  3. 프로토콜 제한: `http://`, `https://`만 허용 (file://, ftp://, gopher:// 차단)
-  4. 리다이렉트 시 매 hop마다 IP 재검증
-
-```typescript
-// 권장 구현 예시
-function isPrivateUrl(url: string): boolean {
-  const parsed = new URL(url);
-  const hostname = parsed.hostname;
-  if (["localhost", "127.0.0.1", "::1", "0.0.0.0"].includes(hostname)) return true;
-  if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.)/.test(hostname)) return true;
-  if (!["http:", "https:"].includes(parsed.protocol)) return true;
-  return false;
-}
-```
-
-#### 파일 업로드 보안 — 심각도: 낮음 🟢
-- 파일 처리가 프론트엔드(FileReader)에서만 수행되므로 서버 파일 업로드 취약점 없음.
-- mammoth는 매크로를 실행하지 않으므로 .docx 매크로 공격 무관.
-- 다만 mammoth 출력 HTML에 악의적 태그가 포함될 수 있으므로, turndown 변환 후 저장 시 markdown 수준에서 안전.
-
-#### Stored XSS — 심각도: 중간 🟡
-- 크롤링된 HTML → turndown → body_md 저장 → 나중에 렌더링 시 XSS 가능.
-- turndown이 `<script>` 등을 제거하지만 100% 보장은 아님.
-- **권장:** turndown 전 DOMPurify로 HTML sanitize, 또는 turndown 후 markdown에서 raw HTML 태그 제거.
-
-#### Rate Limiting — 심각도: 중간 🟡
-- crawl/generate API에 rate limit 없음. 관리자 전용이지만 토큰 탈취 시 Gemini API 과금 남용 가능.
-- 권장: 분당 10회 등 기본 rate limit 적용.
-
-### 종합 판정
-
-| 항목 | 판정 | 비고 |
-|------|------|------|
-| 파이프라인 충돌 | ✅ 안전 | 기존 플로우 영향 없음 |
-| 패키지 선택 | ⚠️ 수정필요 | jsdom 누락 (readability 의존성) |
-| API 일관성 | ✅ 양호 | 기존 패턴과 일치 |
-| 엣지 케이스 | ⚠️ 보완필요 | 타임아웃, 대용량, 빈 응답 등 |
-| 보안 | 🔴 SSRF 대응 필수 | private IP 차단 로직 필수 |
-
-**구현 진행 전 필수 조치:**
-1. 패키지 목록에 `jsdom` + `@types/jsdom` 추가 (또는 `@extractus/article-extractor`로 대체)
-2. crawl API에 SSRF 방어 함수 포함
-3. 각 API에 타임아웃 + 에러 핸들링 명시
+## 검증 (셀프 체크)
+☐ npm run build 성공
+☐ 기존 관리자 기능 안 깨졌나 (콘텐츠 목록, 기본 정보 탭, 본문 편집 탭)
+☐ **기존 email_summary 기반 테스트 발송 → 정상 (파이프라인 보호 확인)**
+☐ 새 콘텐츠 → 뉴스레터 탭 → Unlayer 에디터 로드 (SSR 에러 없음)
+☐ 블록 추가/삭제/이동 정상
+☐ 이미지 블록에 URL 입력 → 미리보기에서 표시
+☐ 이미지 직접 업로드 (2MB 이하) → 정상 표시
+☐ 저장 → 새로고침 → 디자인 복원
+☐ 대용량 디자인 JSON 저장 시 에러 없음
+☐ Unlayer 테스트 발송 → Gmail 정상 렌더링 (이중 래핑 없음)
+☐ Unlayer 발송 이메일에서 수신거부 링크 정상 동작
+☐ 기존 email_summary만 있는 콘텐츠 열면 안내 배너 + 기본 템플릿
+☐ 모바일 미리보기 정상
+☐ 기존 CTA 프리셋으로 저장한 콘텐츠 열어도 에러 없음

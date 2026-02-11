@@ -49,6 +49,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-email": "^5.2.7",
+    "react-email-editor": "^1.7.11",
     "react-hook-form": "^7.71.1",
     "react-markdown": "^10.1.0",
     "recharts": "^3.7.0",

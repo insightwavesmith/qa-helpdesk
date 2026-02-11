@@ -871,6 +871,8 @@ export interface Database {
           like_count: number;
           published_at: string | null;
           email_sent_at: string | null;
+          email_design_json: Json | null;
+          email_html: string | null;
           ai_source: string | null;
           created_at: string;
           updated_at: string;
@@ -900,6 +902,8 @@ export interface Database {
           like_count?: number;
           published_at?: string | null;
           email_sent_at?: string | null;
+          email_design_json?: Json | null;
+          email_html?: string | null;
           ai_source?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -929,6 +933,8 @@ export interface Database {
           like_count?: number;
           published_at?: string | null;
           email_sent_at?: string | null;
+          email_design_json?: Json | null;
+          email_html?: string | null;
           ai_source?: string | null;
           created_at?: string;
           updated_at?: string;

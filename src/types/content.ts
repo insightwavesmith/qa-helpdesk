@@ -20,6 +20,8 @@ export interface Content {
   email_cta_text: string | null;
   email_cta_url: string | null;
   email_sent_at: string | null;
+  email_design_json: Record<string, unknown> | null;
+  email_html: string | null;
   created_at: string;
   updated_at: string;
 }

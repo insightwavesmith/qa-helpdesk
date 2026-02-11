@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
       template,
       templateProps,
       attachments,
+      isUnlayerHtml,
     } = body as {
       target: "all" | "all_leads" | "all_students" | "all_members" | "custom";
       customEmails?: string[];
@@ -65,6 +66,7 @@ export async function POST(request: NextRequest) {
       template?: TemplateName;
       templateProps?: Record<string, string>;
       attachments?: { filename: string; url: string; size: number }[];
+      isUnlayerHtml?: boolean;
     };
 
     if (!subject) {
@@ -162,7 +164,10 @@ export async function POST(request: NextRequest) {
     const templateName = template || "newsletter";
 
     try {
-      if (template && templateProps) {
+      // Unlayer HTML: 이미 완전한 HTML이므로 renderEmail 스킵
+      if (isUnlayerHtml && html) {
+        fullHtml = html;
+      } else if (template && templateProps) {
         fullHtml = await renderEmail(template as TemplateName, {
           subject,
           ...templateProps,
