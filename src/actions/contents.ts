@@ -398,19 +398,23 @@ export async function embedAllContents() {
     return { count: 0, error: error.message };
   }
 
+  const BATCH_SIZE = 5;
   let successCount = 0;
-  for (const c of contents || []) {
-    try {
-      const embedding = await generateEmbedding(c.title + " " + c.body_md);
-      const { error: updateError } = await supabase
-        .from("contents")
-        .update({ embedding } as Record<string, unknown>)
-        .eq("id", c.id);
+  const items = contents || [];
 
-      if (!updateError) successCount++;
-    } catch (e) {
-      console.error(`embedAllContents error for ${c.id}:`, e);
-    }
+  for (let i = 0; i < items.length; i += BATCH_SIZE) {
+    const batch = items.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map(async (c) => {
+        const embedding = await generateEmbedding(c.title + " " + c.body_md);
+        const { error: updateError } = await supabase
+          .from("contents")
+          .update({ embedding } as Record<string, unknown>)
+          .eq("id", c.id);
+        if (updateError) throw updateError;
+      })
+    );
+    successCount += results.filter((r) => r.status === "fulfilled").length;
   }
 
   return { count: successCount, error: null };
