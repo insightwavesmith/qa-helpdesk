@@ -130,7 +130,7 @@ export function DashboardSidebar({
         {!collapsed && (
           <div className="flex flex-col">
             <span className="text-sm font-bold text-sidebar-accent-foreground">
-              BS CAMP
+              자사몰사관학교
             </span>
             <span className="text-[10px] text-sidebar-foreground">
               Ad Analytics

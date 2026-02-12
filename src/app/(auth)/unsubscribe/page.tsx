@@ -86,7 +86,7 @@ function UnsubscribeInner() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="w-full max-w-md bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-          <p className="text-[#F75D5D] font-bold text-xl tracking-tight">BS CAMP</p>
+          <p className="text-[#F75D5D] font-bold text-xl tracking-tight">자사몰사관학교</p>
           <div className="mt-6 w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto">
             <AlertCircle className="w-5 h-5 text-red-500" />
           </div>
@@ -110,7 +110,7 @@ function UnsubscribeInner() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="w-full max-w-md bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-          <p className="text-[#F75D5D] font-bold text-xl tracking-tight">BS CAMP</p>
+          <p className="text-[#F75D5D] font-bold text-xl tracking-tight">자사몰사관학교</p>
           <div className="mt-6 w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mx-auto">
             <CheckCircle2 className="w-5 h-5 text-green-600" />
           </div>
@@ -134,7 +134,7 @@ function UnsubscribeInner() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="w-full max-w-md bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-          <p className="text-[#F75D5D] font-bold text-xl tracking-tight">BS CAMP</p>
+          <p className="text-[#F75D5D] font-bold text-xl tracking-tight">자사몰사관학교</p>
           <div className="mt-6 w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto">
             <CheckCircle2 className="w-5 h-5 text-gray-500" />
           </div>
@@ -162,7 +162,7 @@ function UnsubscribeInner() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-        <p className="text-[#F75D5D] font-bold text-xl tracking-tight">BS CAMP</p>
+        <p className="text-[#F75D5D] font-bold text-xl tracking-tight">자사몰사관학교</p>
         <div className="mt-6 w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center mx-auto">
           <MailX className="w-5 h-5 text-orange-500" />
         </div>

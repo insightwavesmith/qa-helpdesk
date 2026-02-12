@@ -46,8 +46,8 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
         <div className="flex items-center justify-between">
           {/* 로고 */}
           <Link href="/dashboard" className="flex items-center">
-            <img src="/logo.png" alt="BS CAMP" className="w-8 h-8 rounded-lg object-cover" />
-            <span className="ml-2 text-xl font-bold text-gray-900 font-accent [word-spacing:-3px]">BS CAMP</span>
+            <img src="/logo.png" alt="자사몰사관학교" className="w-8 h-8 rounded-lg object-cover" />
+            <span className="ml-2 text-xl font-bold text-gray-900 font-accent [word-spacing:-3px]">자사몰사관학교</span>
           </Link>
           
           {/* 데스크탑 네비게이션 */}

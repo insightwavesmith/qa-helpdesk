@@ -7,8 +7,8 @@ import "./globals.css";
 const META_THEME_COLOR = "#f8f9fc";
 
 export const metadata: Metadata = {
-  title: "BS CAMP",
-  description: "BS CAMP 수강생 전용 Q&A 헬프데스크",
+  title: "자사몰사관학교",
+  description: "자사몰사관학교 수강생 전용 Q&A 헬프데스크",
 };
 
 export const viewport: Viewport = {

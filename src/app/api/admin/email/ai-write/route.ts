@@ -154,8 +154,8 @@ export async function POST(request: NextRequest) {
 
     const categoryLabel = CATEGORY_LABELS[category] || category;
     const subject = firstSectionTitle
-      ? `[BS CAMP] ${categoryLabel} - ${firstSectionTitle}`
-      : `[BS CAMP] ${categoryLabel}`;
+      ? `[자사몰사관학교] ${categoryLabel} - ${firstSectionTitle}`
+      : `[자사몰사관학교] ${categoryLabel}`;
 
     return NextResponse.json({
       subject,

@@ -518,7 +518,7 @@ const CONTENT_BASE_STYLE = `## 공통 스타일
 
 const TYPE_PROMPTS: Record<string, { system: string; userPrefix: string; emailSummaryGuide: string }> = {
   education: {
-    system: `당신은 자사몰사관학교(BS CAMP)의 메타 광고 전문 교육 콘텐츠 작성자입니다.
+    system: `당신은 자사몰사관학교의 메타 광고 전문 교육 콘텐츠 작성자입니다.
 
 ${CONTENT_BASE_STYLE}
 
@@ -538,14 +538,14 @@ ${CONTENT_BASE_STYLE}
 - 마지막에 "자세히 보기" CTA 유도 문구`,
   },
   case_study: {
-    system: `당신은 자사몰사관학교(BS CAMP)의 고객 성공사례 작성 전문가입니다.
+    system: `당신은 자사몰사관학교의 고객 성공사례 작성 전문가입니다.
 
 ${CONTENT_BASE_STYLE}
 
 ## 고객사례 구조 (필수)
 1. **한 줄 성과 요약** (예: "ROAS 450% 달성, 월 매출 3배 성장")
 2. **비포(Before)**: 기존 문제 상황, 고객 페인포인트
-3. **솔루션(Solution)**: BS CAMP에서 배운 핵심 전략
+3. **솔루션(Solution)**: 자사몰사관학교에서 배운 핵심 전략
 4. **애프터(After)**: 수치 중심 성과 (ROAS, 매출, CPA 등)
 5. **핵심 인사이트**: 다른 대표님들이 참고할 포인트
 6. **고객 한마디**: 후기 톤 인용문
@@ -558,7 +558,7 @@ ${CONTENT_BASE_STYLE}
 - "전체 사례 보기" CTA`,
   },
   webinar: {
-    system: `당신은 자사몰사관학교(BS CAMP)의 웨비나/라이브 안내 콘텐츠 작성 전문가입니다.
+    system: `당신은 자사몰사관학교의 웨비나/라이브 안내 콘텐츠 작성 전문가입니다.
 
 ${CONTENT_BASE_STYLE}
 
@@ -580,7 +580,7 @@ ${CONTENT_BASE_STYLE}
 - "지금 등록하기" CTA`,
   },
   notice: {
-    system: `당신은 자사몰사관학교(BS CAMP)의 공지사항 작성 전문가입니다.
+    system: `당신은 자사몰사관학교의 공지사항 작성 전문가입니다.
 
 ${CONTENT_BASE_STYLE}
 
@@ -598,7 +598,7 @@ ${CONTENT_BASE_STYLE}
 - "자세히 보기" CTA`,
   },
   promo: {
-    system: `당신은 자사몰사관학교(BS CAMP)의 프로모션/마케팅 콘텐츠 작성 전문가입니다.
+    system: `당신은 자사몰사관학교의 프로모션/마케팅 콘텐츠 작성 전문가입니다.
 
 ${CONTENT_BASE_STYLE}
 

@@ -1,9 +1,263 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-02-10T08:11:23.803Z",
-  "activeFeatures": [],
-  "primaryFeature": null,
-  "features": {},
+  "lastUpdated": "2026-02-12T11:51:10.988Z",
+  "activeFeatures": [
+    "login",
+    "signup",
+    "qa-helpdesk",
+    "subscribe",
+    "unsubscribe",
+    "pending",
+    "posts",
+    "dashboard",
+    "email",
+    "actions",
+    "(main)",
+    "layout",
+    "emails",
+    "og",
+    "send",
+    "ai-write",
+    "e2e",
+    "content"
+  ],
+  "primaryFeature": "login",
+  "features": {
+    "login": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T11:47:57.213Z",
+        "lastUpdated": "2026-02-12T11:47:58.400Z"
+      },
+      "lastFile": "/Users/smith/projects/qa-helpdesk/src/app/(auth)/login/page.tsx"
+    },
+    "signup": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T11:47:59.692Z",
+        "lastUpdated": "2026-02-12T11:48:00.944Z"
+      },
+      "lastFile": "/Users/smith/projects/qa-helpdesk/src/app/(auth)/signup/page.tsx"
+    },
+    "qa-helpdesk": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T11:47:59.797Z",
+        "lastUpdated": "2026-02-12T11:48:33.915Z"
+      },
+      "lastFile": "/Users/smith/projects/qa-helpdesk/src/lib/email-templates.ts"
+    },
+    "subscribe": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T11:48:02.284Z",
+        "lastUpdated": "2026-02-12T11:48:02.284Z"
+      },
+      "lastFile": "/Users/smith/projects/qa-helpdesk/src/app/(auth)/subscribe/page.tsx"
+    },
+    "unsubscribe": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T11:48:03.635Z",
+        "lastUpdated": "2026-02-12T11:49:03.614Z"
+      },
+      "lastFile": "/Users/smith/projects/qa-helpdesk/src/app/(auth)/unsubscribe/page.tsx"
+    },
+    "pending": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T11:48:04.861Z",
+        "lastUpdated": "2026-02-12T11:48:06.052Z"
+      },
+      "lastFile": "/Users/smith/projects/qa-helpdesk/src/app/(auth)/pending/page.tsx"
+    },
+    "posts": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T11:48:18.114Z",
+        "lastUpdated": "2026-02-12T11:48:18.114Z"
+      },
+      "lastFile": "/Users/smith/projects/qa-helpdesk/src/app/(main)/posts/page.tsx"
+    },
+    "dashboard": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T11:48:19.474Z",
+        "lastUpdated": "2026-02-12T11:48:38.406Z"
+      },
+      "lastFile": "/Users/smith/projects/qa-helpdesk/src/components/dashboard/MobileSidebar.tsx"
+    },
+    "email": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T11:48:21.827Z",
+        "lastUpdated": "2026-02-12T11:49:26.724Z"
+      },
+      "lastFile": "/Users/smith/projects/qa-helpdesk/src/components/email/SendConfirmModal.tsx"
+    },
+    "actions": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T11:48:23.462Z",
+        "lastUpdated": "2026-02-12T11:49:44.325Z"
+      },
+      "lastFile": "/Users/smith/projects/qa-helpdesk/src/actions/contents.ts"
+    },
+    "(main)": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T11:48:30.039Z",
+        "lastUpdated": "2026-02-12T11:48:30.039Z"
+      },
+      "lastFile": "/Users/smith/projects/qa-helpdesk/src/app/(main)/layout.tsx"
+    },
+    "layout": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T11:48:32.878Z",
+        "lastUpdated": "2026-02-12T11:48:35.139Z"
+      },
+      "lastFile": "/Users/smith/projects/qa-helpdesk/src/components/layout/student-header.tsx"
+    },
+    "emails": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T11:48:40.320Z",
+        "lastUpdated": "2026-02-12T11:49:07.886Z"
+      },
+      "lastFile": "/Users/smith/projects/qa-helpdesk/src/emails/webinar-invite.tsx"
+    },
+    "og": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T11:48:56.703Z",
+        "lastUpdated": "2026-02-12T11:48:58.001Z"
+      },
+      "lastFile": "/Users/smith/projects/qa-helpdesk/src/app/api/og/route.tsx"
+    },
+    "send": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T11:48:59.144Z",
+        "lastUpdated": "2026-02-12T11:48:59.144Z"
+      },
+      "lastFile": "/Users/smith/projects/qa-helpdesk/src/app/api/admin/email/send/route.ts"
+    },
+    "ai-write": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T11:49:00.857Z",
+        "lastUpdated": "2026-02-12T11:49:00.857Z"
+      },
+      "lastFile": "/Users/smith/projects/qa-helpdesk/src/app/api/admin/email/ai-write/route.ts"
+    },
+    "e2e": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T11:49:07.807Z",
+        "lastUpdated": "2026-02-12T11:49:08.884Z"
+      },
+      "lastFile": "/Users/smith/projects/qa-helpdesk/e2e/home.spec.ts"
+    },
+    "content": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T11:51:10.988Z",
+        "lastUpdated": "2026-02-12T11:51:10.988Z"
+      },
+      "lastFile": "/Users/smith/projects/qa-helpdesk/src/components/content/content-picker-dialog.tsx"
+    }
+  },
   "pipeline": {
     "currentPhase": 1,
     "level": "Dynamic",
@@ -12,7 +266,320 @@
   "session": {
     "startedAt": "2026-02-10T08:11:23.803Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-02-10T08:11:23.803Z"
+    "lastActivity": "2026-02-12T11:51:10.988Z"
   },
-  "history": []
+  "history": [
+    {
+      "timestamp": "2026-02-12T11:47:57.213Z",
+      "feature": "login",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:47:58.400Z",
+      "feature": "login",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:47:59.692Z",
+      "feature": "signup",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:47:59.797Z",
+      "feature": "qa-helpdesk",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:00.944Z",
+      "feature": "signup",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:01.159Z",
+      "feature": "qa-helpdesk",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:02.284Z",
+      "feature": "subscribe",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:03.000Z",
+      "feature": "qa-helpdesk",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:03.635Z",
+      "feature": "unsubscribe",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:04.861Z",
+      "feature": "pending",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:06.052Z",
+      "feature": "pending",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:07.802Z",
+      "feature": "qa-helpdesk",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:13.065Z",
+      "feature": "qa-helpdesk",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:14.951Z",
+      "feature": "qa-helpdesk",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:18.114Z",
+      "feature": "posts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:19.474Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:20.765Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:21.827Z",
+      "feature": "email",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:23.452Z",
+      "feature": "qa-helpdesk",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:23.462Z",
+      "feature": "actions",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:24.762Z",
+      "feature": "actions",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:26.133Z",
+      "feature": "qa-helpdesk",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:26.215Z",
+      "feature": "actions",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:27.537Z",
+      "feature": "actions",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:28.579Z",
+      "feature": "qa-helpdesk",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:29.015Z",
+      "feature": "actions",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:29.557Z",
+      "feature": "qa-helpdesk",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:30.039Z",
+      "feature": "(main)",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:32.878Z",
+      "feature": "layout",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:33.915Z",
+      "feature": "qa-helpdesk",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:35.139Z",
+      "feature": "layout",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:37.173Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:38.406Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:40.320Z",
+      "feature": "emails",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:41.482Z",
+      "feature": "emails",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:46.371Z",
+      "feature": "emails",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:54.102Z",
+      "feature": "emails",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:56.176Z",
+      "feature": "emails",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:56.703Z",
+      "feature": "og",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:58.001Z",
+      "feature": "og",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:48:59.144Z",
+      "feature": "send",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:49:00.338Z",
+      "feature": "emails",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:49:00.857Z",
+      "feature": "ai-write",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:49:03.614Z",
+      "feature": "unsubscribe",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:49:07.807Z",
+      "feature": "e2e",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:49:07.886Z",
+      "feature": "emails",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:49:08.884Z",
+      "feature": "e2e",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:49:14.409Z",
+      "feature": "email",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:49:20.519Z",
+      "feature": "email",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:49:26.724Z",
+      "feature": "email",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:49:44.325Z",
+      "feature": "actions",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T11:51:10.988Z",
+      "feature": "content",
+      "phase": "do",
+      "action": "updated"
+    }
+  ]
 }

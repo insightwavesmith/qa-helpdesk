@@ -26,7 +26,7 @@ interface PerformanceReportProps {
 }
 
 export default function PerformanceReport({
-  subject = "BS CAMP 성과 리포트",
+  subject = "자사몰사관학교 성과 리포트",
   roas = "254%",
   revenue = "104억",
   adSpend = "40.8억",
@@ -55,7 +55,7 @@ export default function PerformanceReport({
           <Section style={header}>
             <Text style={headerBrand}>자사몰 사관학교</Text>
             <Heading as="h1" style={headerTitle}>
-              BS CAMP
+              자사몰사관학교
             </Heading>
           </Section>
 
@@ -103,7 +103,7 @@ export default function PerformanceReport({
             <Hr style={divider} />
             <Text style={footerBrand}>자사몰 사관학교</Text>
             <Text style={footerText}>
-              본 메일은 BS CAMP에서 발송한 뉴스레터입니다.
+              본 메일은 자사몰사관학교에서 발송한 뉴스레터입니다.
               <br />
               수신을 원하지 않으시면{" "}
               <Link
@@ -115,7 +115,7 @@ export default function PerformanceReport({
               를 클릭해주세요.
             </Text>
             <Text style={footerCopyright}>
-              &copy; {new Date().getFullYear()} BS CAMP. All rights reserved.
+              &copy; {new Date().getFullYear()} 자사몰사관학교. All rights reserved.
             </Text>
           </Section>
         </Container>

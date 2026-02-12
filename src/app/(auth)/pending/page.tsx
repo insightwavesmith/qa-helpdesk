@@ -8,8 +8,8 @@ export default function PendingPage() {
         {/* 헤더 */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-3">
-            <img src="/logo.png" alt="BS CAMP" className="w-10 h-10 rounded-lg object-cover" />
-            <span className="ml-2 text-xl font-bold text-[#111827]">BS CAMP</span>
+            <img src="/logo.png" alt="자사몰사관학교" className="w-10 h-10 rounded-lg object-cover" />
+            <span className="ml-2 text-xl font-bold text-[#111827]">자사몰사관학교</span>
           </div>
           <p className="text-[#6B7280] font-medium">자사몰사관학교 헬프데스크</p>
         </div>

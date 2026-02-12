@@ -94,7 +94,7 @@ export default function ContentPickerDialog({
       );
       onImport({
         html,
-        subject: "[BS CAMP] 이번 주 콘텐츠 모음",
+        subject: "[자사몰사관학교] 이번 주 콘텐츠 모음",
       });
     } catch {
       toast.error("최신정보 생성에 실패했습니다.");

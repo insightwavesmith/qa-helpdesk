@@ -29,7 +29,7 @@ export function MobileSidebar({
         >
           <Menu className="h-5 w-5" />
         </button>
-        <span className="text-sm font-medium">BS CAMP</span>
+        <span className="text-sm font-medium">자사몰사관학교</span>
       </div>
 
       {open && (

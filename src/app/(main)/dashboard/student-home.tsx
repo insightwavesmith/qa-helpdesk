@@ -134,7 +134,7 @@ export async function StudentHome({ userName: _userName }: StudentHomeProps) {
         
         {notices.length === 0 ? (
           <div className="bg-card-bg rounded-xl border border-border-color p-6 card-hover">
-            <p className="text-text-main font-semibold text-center">BS CAMP에 오신 것을 환영합니다!</p>
+            <p className="text-text-main font-semibold text-center">자사몰사관학교에 오신 것을 환영합니다!</p>
             <p className="text-text-secondary text-center mt-1 text-sm">새로운 공지사항이 등록되면 이곳에 표시됩니다.</p>
           </div>
         ) : (

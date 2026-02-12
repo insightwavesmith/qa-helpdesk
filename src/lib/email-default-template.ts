@@ -1,4 +1,4 @@
-// BS CAMP 기본 뉴스레터 템플릿 (Unlayer JSON 형식)
+// 자사몰사관학교 기본 뉴스레터 템플릿 (Unlayer JSON 형식)
 // 600px, 테두리 없음, Pretendard 폰트, 흰색 배경
 // 스티비/마켓핏랩 스타일 — 깔끔하고 읽기 쉬운 레이아웃
 // Last verified: 2026-02-11
@@ -7,7 +7,7 @@ export const BS_CAMP_DEFAULT_TEMPLATE = {
   body: {
     id: "bs-camp-default",
     rows: [
-      // ─── Row 1: 헤더 (BS CAMP 로고 + 빨간 라인) ───
+      // ─── Row 1: 헤더 (자사몰사관학교 로고 + 빨간 라인) ───
       {
         id: "row-header",
         cells: [1],
@@ -38,7 +38,7 @@ export const BS_CAMP_DEFAULT_TEMPLATE = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 20px; line-height: 140%;"><strong><span style="color: #f75d5d; font-size: 20px; line-height: 28px;">BS CAMP</span></strong></p>',
+                  text: '<p style="font-size: 20px; line-height: 140%;"><strong><span style="color: #f75d5d; font-size: 20px; line-height: 28px;">자사몰사관학교</span></strong></p>',
                 },
               },
               {
@@ -197,7 +197,7 @@ export const BS_CAMP_DEFAULT_TEMPLATE = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 15px; line-height: 180%;"><span style="color: #333333; font-size: 15px; line-height: 27px;">안녕하세요. 자사몰 사관학교 BS CAMP입니다.</span></p>\n<p style="font-size: 15px; line-height: 180%;"><span style="color: #333333; font-size: 15px; line-height: 27px;">여기에 뉴스레터 본문 내용을 작성해주세요. 독자에게 전달하고 싶은 핵심 메시지를 간결하게 정리하면 좋습니다.</span></p>',
+                  text: '<p style="font-size: 15px; line-height: 180%;"><span style="color: #333333; font-size: 15px; line-height: 27px;">안녕하세요. 자사몰사관학교입니다.</span></p>\n<p style="font-size: 15px; line-height: 180%;"><span style="color: #333333; font-size: 15px; line-height: 27px;">여기에 뉴스레터 본문 내용을 작성해주세요. 독자에게 전달하고 싶은 핵심 메시지를 간결하게 정리하면 좋습니다.</span></p>',
                 },
               },
             ],
@@ -506,7 +506,7 @@ export const BS_CAMP_DEFAULT_TEMPLATE = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 12px; line-height: 170%;"><span style="color: #a4a4a4; font-size: 12px; line-height: 20.4px;">자사몰 사관학교</span></p>\n<p style="font-size: 12px; line-height: 170%;"><span style="color: #999999; font-size: 12px; line-height: 20.4px;">본 메일은 BS CAMP에서 발송한 뉴스레터입니다.</span></p>\n<p style="font-size: 12px; line-height: 170%;"><span style="color: #999999; font-size: 12px; line-height: 20.4px;">수신을 원하지 않으시면 <a href="{{UNSUBSCRIBE_URL}}" target="_blank" style="color: #999999; text-decoration: underline;">수신거부</a>를 클릭해주세요.</span></p>',
+                  text: '<p style="font-size: 12px; line-height: 170%;"><span style="color: #a4a4a4; font-size: 12px; line-height: 20.4px;">자사몰 사관학교</span></p>\n<p style="font-size: 12px; line-height: 170%;"><span style="color: #999999; font-size: 12px; line-height: 20.4px;">본 메일은 자사몰사관학교에서 발송한 뉴스레터입니다.</span></p>\n<p style="font-size: 12px; line-height: 170%;"><span style="color: #999999; font-size: 12px; line-height: 20.4px;">수신을 원하지 않으시면 <a href="{{UNSUBSCRIBE_URL}}" target="_blank" style="color: #999999; text-decoration: underline;">수신거부</a>를 클릭해주세요.</span></p>',
                 },
               },
               {
@@ -532,7 +532,7 @@ export const BS_CAMP_DEFAULT_TEMPLATE = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 11px; line-height: 140%;"><span style="color: #aaaaaa; font-size: 11px; line-height: 15.4px;">&copy; 2026 BS CAMP. All rights reserved.</span></p>',
+                  text: '<p style="font-size: 11px; line-height: 140%;"><span style="color: #aaaaaa; font-size: 11px; line-height: 15.4px;">&copy; 2026 자사몰사관학교. All rights reserved.</span></p>',
                 },
               },
             ],

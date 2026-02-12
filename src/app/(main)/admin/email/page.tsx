@@ -471,7 +471,7 @@ function AdminEmailPageInner() {
             <Input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="[BS CAMP] 이메일 제목"
+              placeholder="[자사몰사관학교] 이메일 제목"
             />
           </div>
 

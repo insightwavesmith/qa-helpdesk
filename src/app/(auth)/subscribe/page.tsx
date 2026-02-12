@@ -52,7 +52,7 @@ export default function SubscribePage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="w-full max-w-md bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-          <p className="text-[#F75D5D] font-bold text-xl tracking-tight">BS CAMP</p>
+          <p className="text-[#F75D5D] font-bold text-xl tracking-tight">자사몰사관학교</p>
           <div className="mt-6 w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mx-auto">
             <CheckCircle2 className="w-5 h-5 text-green-600" />
           </div>
@@ -74,7 +74,7 @@ export default function SubscribePage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-sm border border-gray-200 p-8">
         <div className="text-center">
-          <p className="text-[#F75D5D] font-bold text-xl tracking-tight">BS CAMP</p>
+          <p className="text-[#F75D5D] font-bold text-xl tracking-tight">자사몰사관학교</p>
           <div className="mt-6 w-12 h-12 rounded-full bg-[#FFF5F5] flex items-center justify-center mx-auto">
             <Mail className="w-5 h-5 text-[#F75D5D]" />
           </div>

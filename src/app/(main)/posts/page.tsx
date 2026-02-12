@@ -49,7 +49,7 @@ export default async function PostsPage({
       {/* Header */}
       <div>
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-[#1a1a2e]">BS CAMP 정보공유</h1>
+          <h1 className="text-2xl font-bold text-[#1a1a2e]">자사몰사관학교 정보공유</h1>
           {isAdmin && (
             <Button asChild size="sm" variant="ghost" className="text-[#F75D5D] hover:bg-red-50 hover:text-[#F75D5D]">
               <Link href="/posts/new">

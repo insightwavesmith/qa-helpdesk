@@ -21,10 +21,10 @@ function footerHtml(unsubscribeUrl?: string): string {
   <hr style="border:0;border-top:1px solid #eeeeee;margin:0 0 16px;" />
   <p style="color:#a4a4a4;font-size:12px;margin:0 0 8px;">자사몰 사관학교</p>
   <p style="color:#999999;font-size:12px;line-height:1.6;margin:0 0 8px;">
-    본 메일은 BS CAMP에서 발송한 뉴스레터입니다.<br />
+    본 메일은 자사몰사관학교에서 발송한 뉴스레터입니다.<br />
     수신을 원하지 않으시면 ${unsubLink}를 클릭해주세요.
   </p>
-  <p style="color:#aaaaaa;font-size:11px;margin:0;">&copy; ${year} BS CAMP. All rights reserved.</p>
+  <p style="color:#aaaaaa;font-size:11px;margin:0;">&copy; ${year} 자사몰사관학교. All rights reserved.</p>
 </div>`;
 }
 
@@ -78,7 +78,7 @@ export function newsletterTemplate({
   <div style="max-width:600px;margin:0 auto;background-color:#ffffff;border-radius:8px;overflow:hidden;">
     <!-- Header -->
     <div style="background-color:#ffffff;padding:24px 32px;text-align:center;border-bottom:2px solid #F75D5D;">
-      <p style="color:#F75D5D;font-size:20px;font-weight:700;margin:0;letter-spacing:0.5px;">BS CAMP</p>
+      <p style="color:#F75D5D;font-size:20px;font-weight:700;margin:0;letter-spacing:0.5px;">자사몰사관학교</p>
     </div>
     <!-- Body -->
     <div style="padding:32px;">
@@ -233,7 +233,7 @@ export function performanceTemplate({
     <!-- Header -->
     <div style="background-color:#1a1a1a;padding:28px 32px;text-align:center;">
       <p style="color:#E85A2A;font-size:14px;font-weight:600;margin:0 0 8px;">자사몰 사관학교</p>
-      <h1 style="color:#ffffff;font-size:18px;font-weight:600;margin:0;">BS CAMP</h1>
+      <h1 style="color:#ffffff;font-size:18px;font-weight:600;margin:0;">자사몰사관학교</h1>
     </div>
     <!-- Title -->
     <div style="padding:32px 32px 0;">
@@ -327,7 +327,7 @@ export function promoTemplate({
   <div style="max-width:600px;margin:0 auto;background-color:#ffffff;border-radius:8px;overflow:hidden;">
     <!-- Header -->
     <div style="background-color:#F75D5D;padding:24px 32px;text-align:center;">
-      <p style="color:#ffffff;font-size:14px;font-weight:600;margin:0 0 4px;letter-spacing:0.5px;">BS CAMP</p>
+      <p style="color:#ffffff;font-size:14px;font-weight:600;margin:0 0 4px;letter-spacing:0.5px;">자사몰사관학교</p>
       <p style="color:rgba(255,255,255,0.8);font-size:12px;margin:0;">\uc790\uc0ac\ubab0 \uc0ac\uad00\ud559\uad50</p>
     </div>
     <!-- Hero -->

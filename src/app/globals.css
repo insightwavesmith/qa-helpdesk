@@ -38,7 +38,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   
-  /* BS CAMP Custom Colors — light/dark aware via CSS vars */
+  /* 자사몰사관학교 Custom Colors — light/dark aware via CSS vars */
   --color-text-main: var(--foreground);
   --color-text-secondary: var(--muted-foreground);
   --color-text-muted: var(--muted-foreground);
@@ -61,11 +61,11 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* ── BS CAMP Theme (Light) ── */
+/* ── 자사몰사관학교 Theme (Light) ── */
 :root {
   --radius: 0.75rem;
 
-  /* Primary = BS CAMP Orange */
+  /* Primary = 자사몰사관학교 Orange */
   --primary: #F75D5D;
   --primary-foreground: #ffffff;
 
@@ -109,7 +109,7 @@
   --sidebar-ring: #F75D5D;
 }
 
-/* ── BS CAMP Theme (Dark) ── */
+/* ── 자사몰사관학교 Theme (Dark) ── */
 .dark {
   --background: #0f1729;
   --foreground: #e2e8f0;
@@ -155,7 +155,7 @@
   }
 }
 
-/* ── BS CAMP Custom Utilities ── */
+/* ── 자사몰사관학교 Custom Utilities ── */
 
 /* Card hover effect */
 .card-hover {

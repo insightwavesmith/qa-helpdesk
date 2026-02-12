@@ -19,7 +19,7 @@ test.describe('홈 (로그인 후)', () => {
     await page.waitForLoadState('networkidle');
     
     // 헤더 확인
-    await expect(page.getByText('BS CAMP')).toBeVisible();
+    await expect(page.getByText('자사몰사관학교')).toBeVisible();
     
     // 네비게이션 확인
     await expect(page.getByRole('link', { name: '홈' })).toBeVisible();

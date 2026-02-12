@@ -251,7 +251,7 @@ export default function NewsletterInlineEditor({
             className="py-5 px-6"
           >
             <p className="text-white text-center text-lg font-bold tracking-wide">
-              BS CAMP
+              자사몰사관학교
             </p>
           </div>
 
@@ -347,7 +347,7 @@ export default function NewsletterInlineEditor({
               자사몰 사관학교
             </p>
             <p className="text-[11px] text-gray-400 leading-relaxed mt-1">
-              본 메일은 BS CAMP에서 발송한 뉴스레터입니다.
+              본 메일은 자사몰사관학교에서 발송한 뉴스레터입니다.
               <br />
               수신을 원하지 않으시면{" "}
               <span className="underline text-gray-500 cursor-default">
@@ -356,7 +356,7 @@ export default function NewsletterInlineEditor({
               를 클릭해주세요.
             </p>
             <p className="text-[10px] text-gray-300 mt-2">
-              &copy; {new Date().getFullYear()} BS CAMP. All rights reserved.
+              &copy; {new Date().getFullYear()} 자사몰사관학교. All rights reserved.
             </p>
           </div>
         </div>

@@ -26,7 +26,7 @@ const defaultEmoji = "\u{1F4A1}";
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = req.nextUrl;
-    const title = searchParams.get("title") || "BS CAMP";
+    const title = searchParams.get("title") || "자사몰사관학교";
     const category = searchParams.get("category") || "";
     const catLabel = categoryLabels[category] || category;
     const [gradStart, gradEnd] = gradientMap[category] || defaultGradient;
@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
               display: "flex",
             }}
           >
-            BS CAMP
+            자사몰사관학교
           </div>
           <div
             style={{

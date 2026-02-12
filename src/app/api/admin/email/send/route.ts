@@ -210,7 +210,7 @@ export async function POST(request: NextRequest) {
             const recipientHtml = replaceUnsubscribeUrl(fullHtml, unsubUrl);
 
             await transporter.sendMail({
-              from: `"BS CAMP" <${process.env.SMTP_USER}>`,
+              from: `"자사몰사관학교" <${process.env.SMTP_USER}>`,
               to: recipient.email,
               subject,
               html: recipientHtml,

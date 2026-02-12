@@ -137,11 +137,11 @@ export default function AppSidebar({
               <Link href="/dashboard" className="flex items-center gap-2.5">
                 <img
                   src="/logo.png"
-                  alt="BS CAMP"
+                  alt="자사몰사관학교"
                   className="size-[22px] rounded-[4px] object-cover"
                 />
                 <span className="text-[14px] font-medium text-foreground truncate">
-                  BS CAMP
+                  자사몰사관학교
                 </span>
               </Link>
             </SidebarMenuButton>
