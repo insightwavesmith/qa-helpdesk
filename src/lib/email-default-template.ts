@@ -1440,7 +1440,7 @@ export const BS_CAMP_TEMPLATE_B = {
               },
             ],
             values: {
-              backgroundColor: "",
+              backgroundColor: "#1a1a2e",
               padding: "0px",
               border: {},
               borderRadius: "0px",
@@ -1451,7 +1451,7 @@ export const BS_CAMP_TEMPLATE_B = {
         values: {
           displayCondition: null,
           columns: false,
-          backgroundColor: "#1a1a2e",
+          backgroundColor: "",
           columnsBackgroundColor: "",
           backgroundImage: {
             url: "",

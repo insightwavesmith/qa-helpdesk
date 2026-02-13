@@ -8,7 +8,7 @@ import type { Content } from "@/types/content";
  */
 function markdownToEmailHtml(md: string, themeColor: string = "#F75D5D"): string {
   // **bold** → <strong>
-  let text = md.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  let text = md.replace(/\*\*(.+?)\*\*/g, '<strong style="color:#F75D5D;">$1</strong>');
 
   // 이미지: ![alt](url)
   text = text.replace(
@@ -36,16 +36,10 @@ function markdownToEmailHtml(md: string, themeColor: string = "#F75D5D"): string
       continue;
     }
 
-    // ### 섹션 배너 (gradient)
+    // ### 섹션 배너 (gradient — 빨간색 통일)
     const h3Match = trimmed.match(/^### (.+)/);
     if (h3Match) {
-      const gradientMap: Record<string, { start: string; end: string }> = {
-        "#F75D5D": { start: "#F75D5D", end: "#E54949" },
-        "#059669": { start: "#10B981", end: "#059669" },
-        "#F97316": { start: "#F97316", end: "#EA580C" },
-      };
-      const gc = gradientMap[themeColor] ?? { start: themeColor, end: themeColor };
-      htmlParts.push(`<div style="height:56px;line-height:56px;background:linear-gradient(135deg,${gc.start} 0%,${gc.end} 60%,transparent 60%);margin:24px 0 16px;"><span style="padding-left:32px;color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">${h3Match[1]}</span></div>`);
+      htmlParts.push(`<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);margin:24px 0 16px;"><span style="padding-left:32px;color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">${h3Match[1]}</span></div>`);
       continue;
     }
 
@@ -75,13 +69,26 @@ function markdownToEmailHtml(md: string, themeColor: string = "#F75D5D"): string
       continue;
     }
 
-    // ✅ 체크 리스트
-    if (lines.every(l => l.trim().startsWith("✅"))) {
-      const items = lines.map(l => {
-        const content = l.trim().replace(/^✅\s*/, "");
-        return `<p style="font-size:15px;line-height:180%;margin:4px 0;"><span style="color:#333;">✅ ${content}</span></p>`;
+    // ✅ 핵심 포인트 → 번호 카드 블록
+    if (lines.some(l => l.trim().startsWith("✅"))) {
+      const cardItems: { title: string; desc: string }[] = [];
+      for (const l of lines) {
+        if (l.trim().startsWith("✅")) {
+          const raw = l.trim().replace(/^✅\s*/, "");
+          const boldMatch = raw.match(/^<strong[^>]*>(.+?)<\/strong>\s*[—–\-]?\s*(.*)/);
+          cardItems.push({
+            title: boldMatch ? boldMatch[1] : raw,
+            desc: boldMatch ? (boldMatch[2] || "") : "",
+          });
+        } else if (cardItems.length > 0) {
+          cardItems[cardItems.length - 1].desc += (cardItems[cardItems.length - 1].desc ? " " : "") + l.trim();
+        }
+      }
+      const cards = cardItems.map((item, i) => {
+        const num = String(i + 1).padStart(2, "0");
+        return `<tr><td style="background:#FEF2F2;border-radius:12px;padding:20px 24px;"><table cellpadding="0" cellspacing="0"><tr><td style="vertical-align:top;padding-right:16px;"><div style="width:44px;height:44px;border-radius:10px;background:#F75D5D;color:#fff;font-size:18px;font-weight:800;text-align:center;line-height:44px;">${num}</div></td><td style="vertical-align:top;"><div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:6px;">${item.title}</div>${item.desc ? `<div style="font-size:13px;color:#6b7280;line-height:1.6;">${item.desc}</div>` : ""}</td></tr></table></td></tr>`;
       });
-      htmlParts.push(items.join("\n"));
+      htmlParts.push(`<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0 12px;margin:16px 0;">${cards.join("")}</table>`);
       continue;
     }
 
@@ -132,8 +139,7 @@ function parseBlockquote(lines: string[], themeColor: string): string {
 function parseBulletList(lines: string[], themeColor: string): string {
   const items = lines.map(l => {
     const content = l.trim().replace(/^\s*[\-•]\s*/, "");
-    const styledContent = content.replace(/<strong>(.+?)<\/strong>/g, `<strong style="color:${themeColor};">$1</strong>`);
-    return `<tr><td style="width:20px;vertical-align:top;padding:4px 0;"><div style="width:6px;height:6px;background:${themeColor};border-radius:50%;margin-top:8px;"></div></td><td style="padding:4px 0;font-size:14px;color:#374151;line-height:1.7;">${styledContent}</td></tr>`;
+    return `<tr><td style="width:20px;vertical-align:top;padding:4px 0;"><div style="width:6px;height:6px;background:${themeColor};border-radius:50%;margin-top:8px;"></div></td><td style="padding:4px 0;font-size:14px;color:#374151;line-height:1.7;">${content}</td></tr>`;
   });
 
   return `<table style="margin:16px 0;" cellpadding="0" cellspacing="0"><tbody>${items.join("")}</tbody></table>`;
@@ -189,6 +195,13 @@ export function buildDesignFromSummary(content: Content): object {
   template.body.rows = template.body.rows.filter(
     (row: { id: string }) => !PLACEHOLDER_ROW_IDS.includes(row.id)
   );
+
+  // Template B(notice): hero가 제목을 표시하므로 중복 title 행 제거
+  if (content.type === "notice") {
+    template.body.rows = template.body.rows.filter(
+      (row: { id: string }) => row.id !== "row-title"
+    );
+  }
 
   const rows = template.body.rows;
 
