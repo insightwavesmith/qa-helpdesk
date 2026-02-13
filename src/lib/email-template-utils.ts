@@ -123,9 +123,9 @@ function markdownToEmailHtml(md: string): string {
         const rows = checkItems.map((l, i) => {
           const text = l.trim().replace(/^✅\s*/, "");
           const borderBottom = i < checkItems.length - 1 ? "border-bottom:1px solid #FEE2E2;" : "";
-          return `<tr><td style="padding:14px 20px;${borderBottom}"><table cellpadding="0" cellspacing="0"><tr><td style="vertical-align:middle;padding-right:12px;"><div style="width:24px;height:24px;border-radius:6px;background:#F75D5D;text-align:center;line-height:24px;color:#fff;font-size:14px;font-weight:700;">&#10003;</div></td><td style="vertical-align:middle;font-size:14px;color:#374151;line-height:1.5;">${text}</td></tr></table></td></tr>`;
+          return `<tr><td style="padding:14px 20px;${borderBottom}"><table cellpadding="0" cellspacing="0" width="100%" style="table-layout:fixed;"><tr><td style="width:36px;vertical-align:middle;"><div style="width:20px;height:20px;border-radius:6px;background:#F75D5D;text-align:center;line-height:20px;color:#fff;font-size:12px;font-weight:700;">&#10003;</div></td><td style="vertical-align:middle;font-size:14px;color:#374151;line-height:1.5;">${text}</td></tr></table></td></tr>`;
         });
-        htmlParts.push(`<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #FECACA;border-radius:12px;overflow:hidden;margin:16px 0;">${rows.join("")}</table>`);
+        htmlParts.push(`<table width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;border:1px solid #FECACA;border-radius:12px;overflow:hidden;margin:16px 0;">${rows.join("")}</table>`);
       }
       continue;
     }
