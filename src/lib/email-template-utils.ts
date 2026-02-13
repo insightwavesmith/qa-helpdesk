@@ -14,7 +14,7 @@ function markdownToEmailHtml(md: string): string {
   text = text.replace(
     /!\[([^\]]*)\]\(([^)]+)\)/g,
     (_, alt, url) => {
-      let html = `<img src="${url}" alt="${alt}" style="max-width:100%;height:auto;border-radius:8px;" />`;
+      let html = `<img src="${url}" alt="${alt}" style="display:block;max-width:100%;height:auto;border-radius:8px;" />`;
       if (alt && alt !== "image" && alt !== "img") {
         html += `<p style="text-align:center;font-size:13px;color:#9ca3af;margin:8px 0 0;">${alt}</p>`;
       }
@@ -29,7 +29,24 @@ function markdownToEmailHtml(md: string): string {
   );
 
   // 블록 분리 (빈 줄 기준)
-  const blocks = text.split(/\n\s*\n/);
+  const rawBlocks = text.split(/\n\s*\n/);
+
+  // BUG-1 fix: 빈 줄로 분리된 연속 ✅ 블록을 하나로 합침 (번호 카드 01 고정 방지)
+  const blocks: string[] = [];
+  for (const raw of rawBlocks) {
+    const t = raw.trim();
+    if (!t) continue;
+    const isCheck = t.split("\n").every(l => l.trim().startsWith("✅"));
+    if (isCheck && blocks.length > 0) {
+      const prevLines = blocks[blocks.length - 1].split("\n");
+      if (prevLines.every(l => l.trim().startsWith("✅"))) {
+        blocks[blocks.length - 1] += "\n" + t;
+        continue;
+      }
+    }
+    blocks.push(t);
+  }
+
   const htmlParts: string[] = [];
 
   for (const block of blocks) {
@@ -100,12 +117,14 @@ function markdownToEmailHtml(md: string): string {
         });
         htmlParts.push(`<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0 12px;margin:16px 0;">${cards.join("")}</table>`);
       } else {
-        // 단순 체크 스타일
-        const items = lines.map(l => {
+        // BUG-4: 체크리스트 라인 카드 스타일
+        const checkItems = lines.filter(l => l.trim().startsWith("✅"));
+        const rows = checkItems.map((l, i) => {
           const text = l.trim().replace(/^✅\s*/, "");
-          return `<p style="font-size:15px;line-height:180%;margin:4px 0;"><span style="color:#333;">✅ ${text}</span></p>`;
+          const borderBottom = i < checkItems.length - 1 ? "border-bottom:1px solid #FEE2E2;" : "";
+          return `<tr><td style="padding:14px 20px;${borderBottom}"><table cellpadding="0" cellspacing="0"><tr><td style="vertical-align:middle;padding-right:12px;"><div style="width:24px;height:24px;border-radius:6px;background:#F75D5D;text-align:center;line-height:24px;color:#fff;font-size:14px;font-weight:700;">&#10003;</div></td><td style="vertical-align:middle;font-size:14px;color:#374151;line-height:1.5;">${text}</td></tr></table></td></tr>`;
         });
-        htmlParts.push(items.join("\n"));
+        htmlParts.push(`<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #FECACA;border-radius:12px;overflow:hidden;margin:16px 0;">${rows.join("")}</table>`);
       }
       continue;
     }
@@ -179,8 +198,14 @@ function findContentById(rows: any[], id: string): any | null {
   return null;
 }
 
-/** auto-generated 콘텐츠에서 제거할 placeholder row ID 목록 */
-const PLACEHOLDER_ROW_IDS = ["row-toc", "row-infographic", "row-quote", "row-bullet-list", "row-section-banner", "row-section-banner-2"];
+/** auto-generated 콘텐츠에서 제거할 placeholder row ID 목록 (모든 템플릿 공통) */
+const PLACEHOLDER_ROW_IDS = [
+  "row-toc", "row-infographic", "row-quote", "row-bullet-list", "row-section-banner", "row-section-banner-2",
+  // BUG-2: Template B 전용 (파서가 이미 렌더링하므로 중복 제거)
+  "row-slide-preview", "row-program-list", "row-info-block", "row-cta-outline",
+  // BUG-3: Template C 전용
+  "row-profile", "row-ba-card",
+];
 
 /**
  * email_summary만 있고 email_design_json이 없는 기존 콘텐츠에 대해
@@ -206,11 +231,29 @@ export function buildDesignFromSummary(content: Content): object {
     (row: { id: string }) => !PLACEHOLDER_ROW_IDS.includes(row.id)
   );
 
-  // Template B(notice): hero가 제목을 표시하므로 중복 title 행 제거
+  // Template B(notice): hero가 제목을 표시하므로 중복 title/hook-quote 행 제거
+  // BUG-5: hero가 subtitle로 첫 줄을 이미 표시하므로 hook-quote 행도 제거
   if (content.type === "notice") {
     template.body.rows = template.body.rows.filter(
-      (row: { id: string }) => row.id !== "row-title"
+      (row: { id: string }) => row.id !== "row-title" && row.id !== "row-hook-quote"
     );
+  }
+
+  // BUG-2/3: row-closing은 Template B/C에서만 제거 (Default/A는 유지)
+  if (content.type === "notice" || content.type === "case_study") {
+    template.body.rows = template.body.rows.filter(
+      (row: { id: string }) => row.id !== "row-closing"
+    );
+  }
+
+  // BUG-6: 로고 아래 빨간 divider 제거 (모든 템플릿 공통)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const row of template.body.rows as any[]) {
+    for (const col of row.columns || []) {
+      col.contents = (col.contents || []).filter(
+        (c: { id: string }) => c.id !== "content-divider-header"
+      );
+    }
   }
 
   const rows = template.body.rows;

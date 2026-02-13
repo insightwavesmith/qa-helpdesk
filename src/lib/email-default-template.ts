@@ -657,7 +657,7 @@ export const BS_CAMP_TEMPLATE_A = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td align="center" style="background-color:#F75D5D;border-radius:12px;width:48px;height:48px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:16px;line-height:48px;letter-spacing:-0.5px;">10+</td></tr></table></td></tr><tr><td align="center" style="padding-top:8px;font-size:13px;color:#94a3b8;letter-spacing:2px;font-weight:600;">자사몰사관학교</td></tr></table>',
+                  text: '<table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td align="center" style="background-color:#F75D5D;border-radius:12px;width:48px;height:48px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:16px;line-height:48px;letter-spacing:-0.5px;">10+</td></tr></table></td></tr><tr><td align="center" style="padding-top:8px;font-size:13px;color:#F75D5D;letter-spacing:2px;font-weight:600;">자사몰사관학교</td></tr></table>',
                 },
               },
               {
@@ -1341,7 +1341,7 @@ export const BS_CAMP_TEMPLATE_B = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td align="center" style="background-color:#F75D5D;border-radius:12px;width:48px;height:48px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:16px;line-height:48px;letter-spacing:-0.5px;">10+</td></tr></table></td></tr><tr><td align="center" style="padding-top:8px;font-size:13px;color:#94a3b8;letter-spacing:2px;font-weight:600;">자사몰사관학교</td></tr></table>',
+                  text: '<table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td align="center" style="background-color:#F75D5D;border-radius:12px;width:48px;height:48px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:16px;line-height:48px;letter-spacing:-0.5px;">10+</td></tr></table></td></tr><tr><td align="center" style="padding-top:8px;font-size:13px;color:#F75D5D;letter-spacing:2px;font-weight:600;">자사몰사관학교</td></tr></table>',
                 },
               },
               {
@@ -2283,7 +2283,7 @@ export const BS_CAMP_TEMPLATE_C = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td align="center" style="background-color:#F75D5D;border-radius:12px;width:48px;height:48px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:16px;line-height:48px;letter-spacing:-0.5px;">10+</td></tr></table></td></tr><tr><td align="center" style="padding-top:8px;font-size:13px;color:#94a3b8;letter-spacing:2px;font-weight:600;">자사몰사관학교</td></tr></table>',
+                  text: '<table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td align="center" style="background-color:#F75D5D;border-radius:12px;width:48px;height:48px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:16px;line-height:48px;letter-spacing:-0.5px;">10+</td></tr></table></td></tr><tr><td align="center" style="padding-top:8px;font-size:13px;color:#F75D5D;letter-spacing:2px;font-weight:600;">자사몰사관학교</td></tr></table>',
                 },
               },
               {
