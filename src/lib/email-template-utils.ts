@@ -36,6 +36,19 @@ function markdownToEmailHtml(md: string, themeColor: string = "#F75D5D"): string
       continue;
     }
 
+    // ### 섹션 배너 (gradient)
+    const h3Match = trimmed.match(/^### (.+)/);
+    if (h3Match) {
+      const gradientMap: Record<string, { start: string; end: string }> = {
+        "#F75D5D": { start: "#F75D5D", end: "#E54949" },
+        "#059669": { start: "#10B981", end: "#059669" },
+        "#F97316": { start: "#F97316", end: "#EA580C" },
+      };
+      const gc = gradientMap[themeColor] ?? { start: themeColor, end: themeColor };
+      htmlParts.push(`<div style="height:56px;line-height:56px;background:linear-gradient(135deg,${gc.start} 0%,${gc.end} 60%,transparent 60%);margin:24px 0 16px;"><span style="padding-left:32px;color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">${h3Match[1]}</span></div>`);
+      continue;
+    }
+
     // ## 제목
     const headingMatch = trimmed.match(/^## (.+)/);
     if (headingMatch) {
@@ -119,7 +132,8 @@ function parseBlockquote(lines: string[], themeColor: string): string {
 function parseBulletList(lines: string[], themeColor: string): string {
   const items = lines.map(l => {
     const content = l.trim().replace(/^\s*[\-•]\s*/, "");
-    return `<tr><td style="width:20px;vertical-align:top;padding:4px 0;"><div style="width:6px;height:6px;background:${themeColor};border-radius:50%;margin-top:8px;"></div></td><td style="padding:4px 0;font-size:14px;color:#374151;line-height:1.7;">${content}</td></tr>`;
+    const styledContent = content.replace(/<strong>(.+?)<\/strong>/g, `<strong style="color:${themeColor};">$1</strong>`);
+    return `<tr><td style="width:20px;vertical-align:top;padding:4px 0;"><div style="width:6px;height:6px;background:${themeColor};border-radius:50%;margin-top:8px;"></div></td><td style="padding:4px 0;font-size:14px;color:#374151;line-height:1.7;">${styledContent}</td></tr>`;
   });
 
   return `<table style="margin:16px 0;" cellpadding="0" cellspacing="0"><tbody>${items.join("")}</tbody></table>`;
@@ -142,7 +156,7 @@ function findContentById(rows: any[], id: string): any | null {
 }
 
 /** auto-generated 콘텐츠에서 제거할 placeholder row ID 목록 */
-const PLACEHOLDER_ROW_IDS = ["row-toc", "row-infographic", "row-quote", "row-bullet-list"];
+const PLACEHOLDER_ROW_IDS = ["row-toc", "row-infographic", "row-quote", "row-bullet-list", "row-section-banner", "row-section-banner-2"];
 
 /**
  * email_summary만 있고 email_design_json이 없는 기존 콘텐츠에 대해
@@ -206,6 +220,13 @@ export function buildDesignFromSummary(content: Content): object {
   const bodyText2 = findContentById(rows, "content-body-text-2");
   if (bodyText2) {
     bodyText2.values.text = "";
+  }
+
+  // 히어로 블록 — Template B 웨비나 제목/부제목 삽입
+  const heroBlock = findContentById(rows, "content-hero");
+  if (heroBlock) {
+    const subtitle = content.email_summary ? escapeHtml(content.email_summary.split("\n\n")[0].trim()) : "";
+    heroBlock.values.text = `<p style="text-align: center;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">LIVE 무료 웨비나</span></p>\n<p style="color: #ffffff; font-size: 24px; font-weight: 800; text-align: center; line-height: 140%; margin-top: 12px;">${escapeHtml(content.title)}</p>\n<p style="color: #94a3b8; font-size: 14px; text-align: center; margin-top: 4px;">${subtitle}</p>`;
   }
 
   // CTA 버튼 — 기사 URL 설정
