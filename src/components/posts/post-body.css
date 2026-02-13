@@ -38,27 +38,50 @@
   margin-bottom: 0;
 }
 
-.post-body table {
-  border-collapse: collapse;
-  margin: 16px 0;
-  border: 1px solid #eeeeee;
-  width: 100%;
-  display: block;
+.post-body .table-wrapper {
+  max-width: 90%;
+  margin: 24px auto;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 
+.post-body table {
+  border-collapse: collapse;
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
 .post-body table th {
-  background: #f9fafb;
-  padding: 12px;
+  background: #f8f9fa;
+  padding: 14px 20px;
   text-align: left;
   font-weight: 600;
-  border: 1px solid #eeeeee;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .post-body table td {
-  padding: 12px;
-  border: 1px solid #eeeeee;
+  padding: 14px 20px;
+  font-size: 14px;
+  line-height: 1.6;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.post-body table tr:last-child td {
+  border-bottom: none;
+}
+
+.post-body table tbody tr:nth-child(even) {
+  background: #fafbfc;
+}
+
+.post-body table td:first-child {
+  font-weight: 600;
 }
 
 .post-body pre {
@@ -136,15 +159,19 @@
     margin-top: 24px;
   }
 
+  .post-body .table-wrapper {
+    max-width: 100%;
+    margin: 16px 0;
+  }
+
   .post-body table {
     min-width: 480px;
   }
 
   .post-body table th,
   .post-body table td {
-    padding: 8px;
+    padding: 10px 14px;
     font-size: 13px;
-    white-space: nowrap;
   }
 
   .post-body img {

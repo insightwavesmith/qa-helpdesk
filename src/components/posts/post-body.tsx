@@ -81,7 +81,7 @@ function markdownToHtml(md: string): string {
     const bodyRows = rows.map((cols: string[]) =>
       `<tr>${cols.map((c: string) => `<td>${c}</td>`).join("")}</tr>`
     ).join("");
-    return `<table><thead><tr>${thRow}</tr></thead><tbody>${bodyRows}</tbody></table>`;
+    return `<div class="table-wrapper"><table><thead><tr>${thRow}</tr></thead><tbody>${bodyRows}</tbody></table></div>`;
   });
 
   // Paragraphs — wrap remaining lines
