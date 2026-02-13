@@ -6,20 +6,26 @@ import type { Content } from "@/types/content";
  * 지원: ##, ---, > 인용, > 💡 팁, ✅ 체크, - 불릿, | 테이블, **bold**, ![img], [link]
  * 모든 스타일은 inline (이메일 클라이언트 호환)
  */
-function markdownToEmailHtml(md: string, themeColor: string = "#F75D5D"): string {
+function markdownToEmailHtml(md: string): string {
   // **bold** → <strong>
   let text = md.replace(/\*\*(.+?)\*\*/g, '<strong style="color:#F75D5D;">$1</strong>');
 
-  // 이미지: ![alt](url)
+  // 이미지: ![alt](url) + 캡션
   text = text.replace(
     /!\[([^\]]*)\]\(([^)]+)\)/g,
-    '<img src="$2" alt="$1" style="max-width:100%;height:auto;border-radius:8px;" />'
+    (_, alt, url) => {
+      let html = `<img src="${url}" alt="${alt}" style="max-width:100%;height:auto;border-radius:8px;" />`;
+      if (alt && alt !== "image" && alt !== "img") {
+        html += `<p style="text-align:center;font-size:13px;color:#9ca3af;margin:8px 0 0;">${alt}</p>`;
+      }
+      return html;
+    }
   );
 
   // 링크: [text](url)
   text = text.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    `<a href="$2" style="color:${themeColor};text-decoration:underline;" target="_blank">$1</a>`
+    '<a href="$2" style="color:#F75D5D;text-decoration:underline;" target="_blank">$1</a>'
   );
 
   // 블록 분리 (빈 줄 기준)
@@ -39,7 +45,7 @@ function markdownToEmailHtml(md: string, themeColor: string = "#F75D5D"): string
     // ### 섹션 배너 (gradient — 빨간색 통일)
     const h3Match = trimmed.match(/^### (.+)/);
     if (h3Match) {
-      htmlParts.push(`<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);margin:24px 0 16px;"><span style="padding-left:32px;color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">${h3Match[1]}</span></div>`);
+      htmlParts.push(`<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);margin:24px 0 16px;border-radius:4px 0 0 4px;"><span style="padding-left:32px;color:#fff;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${h3Match[1]}</span></div>`);
       continue;
     }
 
@@ -59,36 +65,48 @@ function markdownToEmailHtml(md: string, themeColor: string = "#F75D5D"): string
     // 인용 블록: 모든 줄이 > 로 시작
     const lines = trimmed.split("\n");
     if (lines.every(l => l.trim().startsWith(">"))) {
-      htmlParts.push(parseBlockquote(lines, themeColor));
+      htmlParts.push(parseBlockquote(lines));
       continue;
     }
 
     // 불릿 리스트: 모든 줄이 - 또는 • 로 시작
     if (lines.every(l => /^\s*[\-•]\s/.test(l))) {
-      htmlParts.push(parseBulletList(lines, themeColor));
+      htmlParts.push(parseBulletList(lines));
       continue;
     }
 
-    // ✅ 핵심 포인트 → 번호 카드 블록
+    // ✅ 핵심 포인트 → bold 있으면 번호 카드, 없으면 단순 체크
     if (lines.some(l => l.trim().startsWith("✅"))) {
-      const cardItems: { title: string; desc: string }[] = [];
-      for (const l of lines) {
-        if (l.trim().startsWith("✅")) {
-          const raw = l.trim().replace(/^✅\s*/, "");
-          const boldMatch = raw.match(/^<strong[^>]*>(.+?)<\/strong>\s*[—–\-]?\s*(.*)/);
-          cardItems.push({
-            title: boldMatch ? boldMatch[1] : raw,
-            desc: boldMatch ? (boldMatch[2] || "") : "",
-          });
-        } else if (cardItems.length > 0) {
-          cardItems[cardItems.length - 1].desc += (cardItems[cardItems.length - 1].desc ? " " : "") + l.trim();
+      const hasBoldCard = lines.some(l => l.trim().startsWith("✅") && /<strong[^>]*>/.test(l));
+
+      if (hasBoldCard) {
+        // 번호 카드 블록
+        const cardItems: { title: string; desc: string }[] = [];
+        for (const l of lines) {
+          if (l.trim().startsWith("✅")) {
+            const raw = l.trim().replace(/^✅\s*/, "");
+            const boldMatch = raw.match(/^<strong[^>]*>(.+?)<\/strong>\s*[—–\-]?\s*(.*)/);
+            cardItems.push({
+              title: boldMatch ? boldMatch[1] : raw,
+              desc: boldMatch ? (boldMatch[2] || "") : "",
+            });
+          } else if (cardItems.length > 0) {
+            cardItems[cardItems.length - 1].desc += (cardItems[cardItems.length - 1].desc ? " " : "") + l.trim();
+          }
         }
+        const cards = cardItems.map((item, i) => {
+          const num = String(i + 1).padStart(2, "0");
+          return `<tr><td style="background:#FEF2F2;border-radius:12px;padding:20px 24px;"><table cellpadding="0" cellspacing="0"><tr><td style="vertical-align:top;padding-right:16px;"><div style="width:44px;height:44px;border-radius:10px;background:#F75D5D;color:#fff;font-size:18px;font-weight:800;text-align:center;line-height:44px;">${num}</div></td><td style="vertical-align:top;"><div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:6px;">${item.title}</div>${item.desc ? `<div style="font-size:13px;color:#6b7280;line-height:1.6;">${item.desc}</div>` : ""}</td></tr></table></td></tr>`;
+        });
+        htmlParts.push(`<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0 12px;margin:16px 0;">${cards.join("")}</table>`);
+      } else {
+        // 단순 체크 스타일
+        const items = lines.map(l => {
+          const text = l.trim().replace(/^✅\s*/, "");
+          return `<p style="font-size:15px;line-height:180%;margin:4px 0;"><span style="color:#333;">✅ ${text}</span></p>`;
+        });
+        htmlParts.push(items.join("\n"));
       }
-      const cards = cardItems.map((item, i) => {
-        const num = String(i + 1).padStart(2, "0");
-        return `<tr><td style="background:#FEF2F2;border-radius:12px;padding:20px 24px;"><table cellpadding="0" cellspacing="0"><tr><td style="vertical-align:top;padding-right:16px;"><div style="width:44px;height:44px;border-radius:10px;background:#F75D5D;color:#fff;font-size:18px;font-weight:800;text-align:center;line-height:44px;">${num}</div></td><td style="vertical-align:top;"><div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:6px;">${item.title}</div>${item.desc ? `<div style="font-size:13px;color:#6b7280;line-height:1.6;">${item.desc}</div>` : ""}</td></tr></table></td></tr>`;
-      });
-      htmlParts.push(`<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0 12px;margin:16px 0;">${cards.join("")}</table>`);
       continue;
     }
 
@@ -112,7 +130,7 @@ function parseTable(block: string): string {
   );
 
   const thRow = headers.map(h =>
-    `<th style="background:#f8f9fa;padding:12px;text-align:left;font-weight:600;font-size:13px;color:#6b7280;border-bottom:1px solid #e5e7eb;">${h}</th>`
+    `<th style="background:#FEF2F2;padding:12px;text-align:left;font-weight:600;font-size:13px;color:#6b7280;border-bottom:1px solid #e5e7eb;">${h}</th>`
   ).join("");
 
   const bodyHtml = bodyRows.map(cols => {
@@ -126,20 +144,20 @@ function parseTable(block: string): string {
 }
 
 /** > 인용 블록 → styled div (💡이면 팁 스타일) */
-function parseBlockquote(lines: string[], themeColor: string): string {
+function parseBlockquote(lines: string[]): string {
   const content = lines.map(l => l.trim().replace(/^>\s?/, "")).join("<br>");
   const isTip = content.startsWith("💡");
   const bgColor = isTip ? "#FFFBEB" : "#f8f9fc";
-  const borderColor = isTip ? "#F59E0B" : themeColor;
+  const borderColor = isTip ? "#F59E0B" : "#F75D5D";
 
   return `<div style="background:${bgColor};border-left:3px solid ${borderColor};padding:16px 20px;margin:16px 0;border-radius:0 8px 8px 0;"><p style="font-size:14px;color:#374151;line-height:1.7;font-style:italic;margin:0;">${content}</p></div>`;
 }
 
 /** - 불릿 리스트 → table 레이아웃 (이메일 호환, ::before 대체) */
-function parseBulletList(lines: string[], themeColor: string): string {
+function parseBulletList(lines: string[]): string {
   const items = lines.map(l => {
     const content = l.trim().replace(/^\s*[\-•]\s*/, "");
-    return `<tr><td style="width:20px;vertical-align:top;padding:4px 0;"><div style="width:6px;height:6px;background:${themeColor};border-radius:50%;margin-top:8px;"></div></td><td style="padding:4px 0;font-size:14px;color:#374151;line-height:1.7;">${content}</td></tr>`;
+    return `<tr><td style="width:20px;vertical-align:top;padding:4px 0;"><div style="width:6px;height:6px;background:#F75D5D;border-radius:50%;margin-top:8px;"></div></td><td style="padding:4px 0;font-size:14px;color:#374151;line-height:1.7;">${content}</td></tr>`;
   });
 
   return `<table style="margin:16px 0;" cellpadding="0" cellspacing="0"><tbody>${items.join("")}</tbody></table>`;
@@ -169,14 +187,6 @@ const PLACEHOLDER_ROW_IDS = ["row-toc", "row-infographic", "row-quote", "row-bul
  * 타입별 템플릿을 기반으로 Unlayer 디자인 JSON을 생성한다.
  */
 export function buildDesignFromSummary(content: Content): object {
-  // 타입별 테마 색상
-  const themeColors: Record<string, { primary: string }> = {
-    education: { primary: "#F75D5D" },
-    notice: { primary: "#059669" },
-    case_study: { primary: "#F97316" },
-  };
-  const colors = themeColors[content.type ?? ""] ?? { primary: "#F75D5D" };
-
   // 타입별 템플릿 선택
   const baseTemplate =
     content.type === "notice"
@@ -215,7 +225,7 @@ export function buildDesignFromSummary(content: Content): object {
   const hookQuote = findContentById(rows, "content-hook-quote");
   if (hookQuote && content.email_summary) {
     const firstLine = content.email_summary.split("\n\n")[0].trim();
-    hookQuote.values.text = `<p style="font-size: 16px; line-height: 160%; text-align: center;"><em><span style="color: ${colors.primary}; font-size: 16px; font-weight: 600;">${escapeHtml(firstLine)}</span></em></p>`;
+    hookQuote.values.text = `<p style="font-size: 16px; line-height: 160%; text-align: center;"><em><span style="color: #F75D5D; font-size: 16px; font-weight: 600;">${escapeHtml(firstLine)}</span></em></p>`;
   }
 
   // 본문 블록 — email_summary를 HTML로 변환 (훅인용구가 있으면 첫 줄 제외)
@@ -226,7 +236,7 @@ export function buildDesignFromSummary(content: Content): object {
       const idx = bodyMd.indexOf("\n\n");
       bodyMd = idx !== -1 ? bodyMd.slice(idx + 2) : "";
     }
-    bodyText1.values.text = bodyMd ? markdownToEmailHtml(bodyMd, colors.primary) : "";
+    bodyText1.values.text = bodyMd ? markdownToEmailHtml(bodyMd) : "";
   }
 
   // 본문 하단 블록 — 빈 문자열 (default 템플릿에만 존재)
@@ -242,7 +252,7 @@ export function buildDesignFromSummary(content: Content): object {
     heroBlock.values.text = `<p style="text-align: center;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">LIVE 무료 웨비나</span></p>\n<p style="color: #ffffff; font-size: 24px; font-weight: 800; text-align: center; line-height: 140%; margin-top: 12px;">${escapeHtml(content.title)}</p>\n<p style="color: #94a3b8; font-size: 14px; text-align: center; margin-top: 4px;">${subtitle}</p>`;
   }
 
-  // CTA 버튼 — 기사 URL 설정
+  // CTA 버튼 — URL + 타입별 텍스트 설정
   const ctaButton = findContentById(rows, "content-cta-button");
   if (ctaButton) {
     const articleUrl = `https://qa-helpdesk.vercel.app/posts/${content.id}`;
@@ -250,6 +260,13 @@ export function buildDesignFromSummary(content: Content): object {
       name: "web",
       values: { href: articleUrl, target: "_blank" },
     };
+    const ctaTexts: Record<string, string> = {
+      education: "전체 가이드 보기",
+      notice: "지금 신청하기",
+      case_study: "수강 후기 더보기",
+    };
+    const ctaLabel = ctaTexts[content.type ?? ""] ?? "전체 가이드 보기";
+    ctaButton.values.text = `<span style="font-size: 16px; line-height: 22.4px;"><strong>${ctaLabel} &rarr;</strong></span>`;
   }
 
   return template;

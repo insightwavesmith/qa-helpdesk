@@ -1305,7 +1305,7 @@ export const BS_CAMP_TEMPLATE_A = {
   },
 };
 
-// ─── 템플릿 B: notice 타입용 (공지/홍보형 — 초록 테마 #059669, 히어로, 일정, 프로그램 리스트) ───
+// ─── 템플릿 B: notice 타입용 (공지/홍보형 — 빨간 테마 #F75D5D, 히어로, 일정, 프로그램 리스트) ───
 export const BS_CAMP_TEMPLATE_B = {
   body: {
     ...BS_CAMP_DEFAULT_TEMPLATE.body,
@@ -1352,7 +1352,7 @@ export const BS_CAMP_TEMPLATE_B = {
                   border: {
                     borderTopWidth: "2px",
                     borderTopStyle: "solid",
-                    borderTopColor: "#059669",
+                    borderTopColor: "#F75D5D",
                   },
                   textAlign: "center",
                   containerPadding: "8px 24px 0px",
@@ -1490,8 +1490,8 @@ export const BS_CAMP_TEMPLATE_B = {
                   lineHeight: "170%",
                   linkStyle: {
                     inherit: false,
-                    linkColor: "#059669",
-                    linkHoverColor: "#047857",
+                    linkColor: "#F75D5D",
+                    linkHoverColor: "#E54949",
                     linkUnderline: false,
                     linkHoverUnderline: true,
                   },
@@ -1503,7 +1503,7 @@ export const BS_CAMP_TEMPLATE_B = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 15px; line-height: 170%;"><span style="color: #1a1a1a;">안녕하세요! <strong>대표</strong>님</span><br><a href="https://bscamp.co.kr" style="color: #059669; font-weight: 600; text-decoration: none;">자사몰사관학교</a><span style="color: #1a1a1a;">의 스미스코치입니다.</span></p>',
+                  text: '<p style="font-size: 15px; line-height: 170%;"><span style="color: #1a1a1a;">안녕하세요! <strong>대표</strong>님</span><br><a href="https://bscamp.co.kr" style="color: #F75D5D; font-weight: 600; text-decoration: none;">자사몰사관학교</a><span style="color: #1a1a1a;">의 스미스코치입니다.</span></p>',
                 },
               },
             ],
@@ -1571,7 +1571,7 @@ export const BS_CAMP_TEMPLATE_B = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 16px; line-height: 160%; text-align: center;"><em><span style="color: #059669; font-size: 16px; font-weight: 600;">여기에 훅 인용구가 들어갑니다</span></em></p>',
+                  text: '<p style="font-size: 16px; line-height: 160%; text-align: center;"><em><span style="color: #F75D5D; font-size: 16px; font-weight: 600;">여기에 훅 인용구가 들어갑니다</span></em></p>',
                 },
               },
             ],
@@ -1625,7 +1625,7 @@ export const BS_CAMP_TEMPLATE_B = {
                 values: {
                   containerPadding: "0px",
                   anchor: "",
-                  html: '<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#10B981 0%,#059669 60%,transparent 60%);"><span style="padding-left:32px;color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">강의 미리보기</span></div>',
+                  html: '<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#F75D5D 0%,#F75D5D 60%,transparent 60%);"><span style="padding-left:32px;color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">강의 미리보기</span></div>',
                   hideDesktop: false,
                   displayCondition: null,
                   _meta: { htmlID: "u_content_html_section_banner_b", htmlClassNames: "u_content_html" },
@@ -1758,8 +1758,8 @@ export const BS_CAMP_TEMPLATE_B = {
                   lineHeight: "180%",
                   linkStyle: {
                     inherit: true,
-                    linkColor: "#059669",
-                    linkHoverColor: "#047857",
+                    linkColor: "#F75D5D",
+                    linkHoverColor: "#E54949",
                     linkUnderline: true,
                     linkHoverUnderline: true,
                   },
@@ -1771,7 +1771,7 @@ export const BS_CAMP_TEMPLATE_B = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 12px;">웨비나에서 다루는 핵심 주제</p>\n<p style="font-size: 14px; line-height: 180%;"><span style="color: #F75D5D; font-weight: 600;">&#x25A0;</span> <strong style="color: #F75D5D;">퍼포먼스 마케팅 최적화</strong></p>\n<p style="font-size: 14px; line-height: 180%; padding-left: 16px;"><span style="color: #374151;">&#x2022; 자사몰 광고 데이터 성공사례</span></p>\n<p style="font-size: 14px; line-height: 180%; padding-left: 16px;"><span style="color: #374151;">&#x2022; 성과를 만드는 메타 광고 세팅법</span></p>\n<p style="font-size: 14px; line-height: 180%; margin-top: 8px;"><span style="color: #F97316; font-weight: 600;">&#x25A0;</span> <strong style="color: #F97316;">컨텐츠 제작 프로세스</strong></p>\n<p style="font-size: 14px; line-height: 180%; padding-left: 16px;"><span style="color: #374151;">&#x2022; 고객 정의 → 콘텐츠 기획 → 마켓 테스트</span></p>\n<p style="font-size: 14px; line-height: 180%; margin-top: 8px;"><span style="color: #10B981; font-weight: 600;">&#x25A0;</span> <strong style="color: #10B981;">데이터 시각화 &amp; 분석</strong></p>\n<p style="font-size: 14px; line-height: 180%; padding-left: 16px;"><span style="color: #374151;">&#x2022; 고객 데이터 흐름 파악 → 매출 전환 포인트 도출</span></p>',
+                  text: '<p style="font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 12px;">웨비나에서 다루는 핵심 주제</p>\n<p style="font-size: 14px; line-height: 180%;"><span style="color: #F75D5D; font-weight: 600;">&#x25A0;</span> <strong style="color: #F75D5D;">퍼포먼스 마케팅 최적화</strong></p>\n<p style="font-size: 14px; line-height: 180%; padding-left: 16px;"><span style="color: #374151;">&#x2022; 자사몰 광고 데이터 성공사례</span></p>\n<p style="font-size: 14px; line-height: 180%; padding-left: 16px;"><span style="color: #374151;">&#x2022; 성과를 만드는 메타 광고 세팅법</span></p>\n<p style="font-size: 14px; line-height: 180%; margin-top: 8px;"><span style="color: #F75D5D; font-weight: 600;">&#x25A0;</span> <strong style="color: #F75D5D;">컨텐츠 제작 프로세스</strong></p>\n<p style="font-size: 14px; line-height: 180%; padding-left: 16px;"><span style="color: #374151;">&#x2022; 고객 정의 → 콘텐츠 기획 → 마켓 테스트</span></p>\n<p style="font-size: 14px; line-height: 180%; margin-top: 8px;"><span style="color: #F75D5D; font-weight: 600;">&#x25A0;</span> <strong style="color: #F75D5D;">데이터 시각화 &amp; 분석</strong></p>\n<p style="font-size: 14px; line-height: 180%; padding-left: 16px;"><span style="color: #374151;">&#x2022; 고객 데이터 흐름 파악 → 매출 전환 포인트 도출</span></p>',
                 },
               },
             ],
@@ -1822,7 +1822,7 @@ export const BS_CAMP_TEMPLATE_B = {
                 values: {
                   containerPadding: "0px",
                   anchor: "",
-                  html: '<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#10B981 0%,#059669 60%,transparent 60%);"><span style="padding-left:32px;color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">웨비나 일정 안내</span></div>',
+                  html: '<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#F75D5D 0%,#F75D5D 60%,transparent 60%);"><span style="padding-left:32px;color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">웨비나 일정 안내</span></div>',
                   hideDesktop: false,
                   displayCondition: null,
                   _meta: { htmlID: "u_content_html_section_banner_2", htmlClassNames: "u_content_html" },
@@ -1885,8 +1885,8 @@ export const BS_CAMP_TEMPLATE_B = {
                   lineHeight: "180%",
                   linkStyle: {
                     inherit: true,
-                    linkColor: "#059669",
-                    linkHoverColor: "#047857",
+                    linkColor: "#F75D5D",
+                    linkHoverColor: "#E54949",
                     linkUnderline: true,
                     linkHoverUnderline: true,
                   },
@@ -1935,7 +1935,7 @@ export const BS_CAMP_TEMPLATE_B = {
         },
       },
 
-      // ─── Row 11: CTA 버튼 (초록 #059669) ───
+      // ─── Row 11: CTA 버튼 (초록 #F75D5D) ───
       {
         id: "row-cta",
         cells: [1],
@@ -1955,9 +1955,9 @@ export const BS_CAMP_TEMPLATE_B = {
                   },
                   buttonColors: {
                     color: "#ffffff",
-                    backgroundColor: "#059669",
+                    backgroundColor: "#F75D5D",
                     hoverColor: "#ffffff",
-                    hoverBackgroundColor: "#047857",
+                    hoverBackgroundColor: "#E54949",
                   },
                   size: {
                     autoWidth: false,
@@ -2098,8 +2098,8 @@ export const BS_CAMP_TEMPLATE_B = {
                   lineHeight: "180%",
                   linkStyle: {
                     inherit: false,
-                    linkColor: "#059669",
-                    linkHoverColor: "#047857",
+                    linkColor: "#F75D5D",
+                    linkHoverColor: "#E54949",
                     linkUnderline: false,
                     linkHoverUnderline: true,
                   },
@@ -2111,7 +2111,7 @@ export const BS_CAMP_TEMPLATE_B = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 14px; line-height: 180%;"><span style="color: #64748b;">더 많은 정보를 얻고 싶다면?</span><br><span style="color: #64748b;">자사몰 운영 꿀팁부터 다음 기수 소식까지, </span><a href="#" style="color: #059669; font-weight: 600; text-decoration: none;">오픈채팅</a><span style="color: #64748b;">에서 가장 먼저 확인하세요!</span></p>\n<p style="font-size: 14px; line-height: 180%; margin-top: 12px;"><span style="color: #1a1a1a;">웨비나에서 직접 뵙고 이야기 나눌 수 있기를 기대합니다.</span><br><span style="color: #1a1a1a;">감사합니다.</span></p>',
+                  text: '<p style="font-size: 14px; line-height: 180%;"><span style="color: #64748b;">더 많은 정보를 얻고 싶다면?</span><br><span style="color: #64748b;">자사몰 운영 꿀팁부터 다음 기수 소식까지, </span><a href="#" style="color: #F75D5D; font-weight: 600; text-decoration: none;">오픈채팅</a><span style="color: #64748b;">에서 가장 먼저 확인하세요!</span></p>\n<p style="font-size: 14px; line-height: 180%; margin-top: 12px;"><span style="color: #1a1a1a;">웨비나에서 직접 뵙고 이야기 나눌 수 있기를 기대합니다.</span><br><span style="color: #1a1a1a;">감사합니다.</span></p>',
                 },
               },
             ],
@@ -2167,10 +2167,10 @@ export const BS_CAMP_TEMPLATE_B = {
                     values: { href: "https://bscamp.co.kr", target: "_blank" },
                   },
                   buttonColors: {
-                    color: "#059669",
+                    color: "#F75D5D",
                     backgroundColor: "transparent",
                     hoverColor: "#ffffff",
-                    hoverBackgroundColor: "#059669",
+                    hoverBackgroundColor: "#F75D5D",
                   },
                   size: {
                     autoWidth: false,
@@ -2182,16 +2182,16 @@ export const BS_CAMP_TEMPLATE_B = {
                   border: {
                     borderTopWidth: "2px",
                     borderTopStyle: "solid",
-                    borderTopColor: "#059669",
+                    borderTopColor: "#F75D5D",
                     borderLeftWidth: "2px",
                     borderLeftStyle: "solid",
-                    borderLeftColor: "#059669",
+                    borderLeftColor: "#F75D5D",
                     borderRightWidth: "2px",
                     borderRightStyle: "solid",
-                    borderRightColor: "#059669",
+                    borderRightColor: "#F75D5D",
                     borderBottomWidth: "2px",
                     borderBottomStyle: "solid",
-                    borderBottomColor: "#059669",
+                    borderBottomColor: "#F75D5D",
                   },
                   borderRadius: "8px",
                   hideDesktop: false,
@@ -2247,7 +2247,7 @@ export const BS_CAMP_TEMPLATE_B = {
   },
 };
 
-// ─── 템플릿 C: case_study 타입용 (고객사례형 — 주황 테마 #F97316, 프로필, Before/After, 인용구, 불릿) ───
+// ─── 템플릿 C: case_study 타입용 (고객사례형 — 빨간 테마 #F75D5D, 프로필, Before/After, 인용구, 불릿) ───
 export const BS_CAMP_TEMPLATE_C = {
   body: {
     ...BS_CAMP_DEFAULT_TEMPLATE.body,
@@ -2283,7 +2283,7 @@ export const BS_CAMP_TEMPLATE_C = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td align="center" style="background-color:#F97316;border-radius:12px;width:48px;height:48px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:16px;line-height:48px;letter-spacing:-0.5px;">10+</td></tr></table></td></tr><tr><td align="center" style="padding-top:8px;font-size:13px;color:#94a3b8;letter-spacing:2px;font-weight:600;">자사몰사관학교</td></tr></table>',
+                  text: '<table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td align="center" style="background-color:#F75D5D;border-radius:12px;width:48px;height:48px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:16px;line-height:48px;letter-spacing:-0.5px;">10+</td></tr></table></td></tr><tr><td align="center" style="padding-top:8px;font-size:13px;color:#94a3b8;letter-spacing:2px;font-weight:600;">자사몰사관학교</td></tr></table>',
                 },
               },
               {
@@ -2294,7 +2294,7 @@ export const BS_CAMP_TEMPLATE_C = {
                   border: {
                     borderTopWidth: "2px",
                     borderTopStyle: "solid",
-                    borderTopColor: "#F97316",
+                    borderTopColor: "#F75D5D",
                   },
                   textAlign: "center",
                   containerPadding: "8px 24px 0px",
@@ -2361,8 +2361,8 @@ export const BS_CAMP_TEMPLATE_C = {
                   lineHeight: "170%",
                   linkStyle: {
                     inherit: false,
-                    linkColor: "#F97316",
-                    linkHoverColor: "#EA580C",
+                    linkColor: "#F75D5D",
+                    linkHoverColor: "#E54949",
                     linkUnderline: false,
                     linkHoverUnderline: true,
                   },
@@ -2374,7 +2374,7 @@ export const BS_CAMP_TEMPLATE_C = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 15px; line-height: 170%;"><span style="color: #1a1a1a;">안녕하세요! <strong>대표</strong>님</span><br><a href="https://bscamp.co.kr" style="color: #F97316; font-weight: 600; text-decoration: none;">자사몰사관학교</a><span style="color: #1a1a1a;">의 스미스코치입니다.</span></p>',
+                  text: '<p style="font-size: 15px; line-height: 170%;"><span style="color: #1a1a1a;">안녕하세요! <strong>대표</strong>님</span><br><a href="https://bscamp.co.kr" style="color: #F75D5D; font-weight: 600; text-decoration: none;">자사몰사관학교</a><span style="color: #1a1a1a;">의 스미스코치입니다.</span></p>',
                 },
               },
             ],
@@ -2445,7 +2445,7 @@ export const BS_CAMP_TEMPLATE_C = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 16px; line-height: 160%; text-align: center;"><em><span style="color: #F97316; font-size: 16px; font-weight: 600;">여기에 성과 훅 인용구가 들어갑니다</span></em></p>',
+                  text: '<p style="font-size: 16px; line-height: 160%; text-align: center;"><em><span style="color: #F75D5D; font-size: 16px; font-weight: 600;">여기에 성과 훅 인용구가 들어갑니다</span></em></p>',
                 },
               },
             ],
@@ -2516,7 +2516,7 @@ export const BS_CAMP_TEMPLATE_C = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<table width="100%" cellpadding="0" cellspacing="0"><tr><td width="80" style="vertical-align:top;"><table cellpadding="0" cellspacing="0"><tr><td style="background-color:#F97316;border-radius:50%;width:64px;height:64px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:24px;line-height:64px;">J</td></tr></table></td><td style="padding-left:16px;vertical-align:top;"><p style="margin:0;font-weight:700;font-size:16px;color:#1a1a1a;">수강생 이름</p><p style="margin:4px 0 0;font-size:13px;color:#64748b;">업종 · 기수 수료 · 지역</p></td></tr></table>',
+                  text: '<table width="100%" cellpadding="0" cellspacing="0"><tr><td width="80" style="vertical-align:top;"><table cellpadding="0" cellspacing="0"><tr><td style="background-color:#F75D5D;border-radius:50%;width:64px;height:64px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:24px;line-height:64px;">J</td></tr></table></td><td style="padding-left:16px;vertical-align:top;"><p style="margin:0;font-weight:700;font-size:16px;color:#1a1a1a;">수강생 이름</p><p style="margin:4px 0 0;font-size:13px;color:#64748b;">업종 · 기수 수료 · 지역</p></td></tr></table>',
                 },
               },
             ],
@@ -2635,7 +2635,7 @@ export const BS_CAMP_TEMPLATE_C = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="text-align:center;"><span style="font-size:12px;font-weight:700;color:#F97316;letter-spacing:1px;">AFTER</span></p><p style="text-align:center;font-size:28px;font-weight:800;color:#F97316;">₩5,200만</p><p style="text-align:center;font-size:13px;color:#64748b;">월 매출 (3개월 후)</p>',
+                  text: '<p style="text-align:center;"><span style="font-size:12px;font-weight:700;color:#F75D5D;letter-spacing:1px;">AFTER</span></p><p style="text-align:center;font-size:28px;font-weight:800;color:#F75D5D;">₩5,200만</p><p style="text-align:center;font-size:13px;color:#64748b;">월 매출 (3개월 후)</p>',
                 },
               },
             ],
@@ -2699,7 +2699,7 @@ export const BS_CAMP_TEMPLATE_C = {
                 values: {
                   containerPadding: "0px",
                   anchor: "",
-                  html: '<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#F97316 0%,#EA580C 60%,transparent 60%);"><span style="padding-left:32px;color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">INTERVIEW</span></div>',
+                  html: '<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);"><span style="padding-left:32px;color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">INTERVIEW</span></div>',
                   hideDesktop: false,
                   displayCondition: null,
                   _meta: { htmlID: "u_content_html_section_banner_c", htmlClassNames: "u_content_html" },
@@ -2785,7 +2785,7 @@ export const BS_CAMP_TEMPLATE_C = {
               border: {
                 borderLeftWidth: "3px",
                 borderLeftStyle: "solid",
-                borderLeftColor: "#F97316",
+                borderLeftColor: "#F75D5D",
               },
               borderRadius: "0px 8px 8px 0px",
               _meta: { htmlID: "u_column_quote_c", htmlClassNames: "u_column" },
@@ -2834,8 +2834,8 @@ export const BS_CAMP_TEMPLATE_C = {
                   lineHeight: "180%",
                   linkStyle: {
                     inherit: true,
-                    linkColor: "#F97316",
-                    linkHoverColor: "#EA580C",
+                    linkColor: "#F75D5D",
+                    linkHoverColor: "#E54949",
                     linkUnderline: true,
                     linkHoverUnderline: true,
                   },
@@ -2847,7 +2847,7 @@ export const BS_CAMP_TEMPLATE_C = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 12px;">핵심 변화 3가지</p>\n<p style="font-size: 14px; line-height: 180%;"><span style="color: #F97316; font-weight: 600;">&#x2022;</span> <span style="color: #374151;"><strong style="color: #F97316;">변화 포인트 1:</strong> 설명 텍스트가 들어갑니다</span></p>\n<p style="font-size: 14px; line-height: 180%;"><span style="color: #F97316; font-weight: 600;">&#x2022;</span> <span style="color: #374151;"><strong style="color: #F97316;">변화 포인트 2:</strong> 설명 텍스트가 들어갑니다</span></p>\n<p style="font-size: 14px; line-height: 180%;"><span style="color: #F97316; font-weight: 600;">&#x2022;</span> <span style="color: #374151;"><strong style="color: #F97316;">변화 포인트 3:</strong> 설명 텍스트가 들어갑니다</span></p>',
+                  text: '<p style="font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 12px;">핵심 변화 3가지</p>\n<p style="font-size: 14px; line-height: 180%;"><span style="color: #F75D5D; font-weight: 600;">&#x2022;</span> <span style="color: #374151;"><strong style="color: #F75D5D;">변화 포인트 1:</strong> 설명 텍스트가 들어갑니다</span></p>\n<p style="font-size: 14px; line-height: 180%;"><span style="color: #F75D5D; font-weight: 600;">&#x2022;</span> <span style="color: #374151;"><strong style="color: #F75D5D;">변화 포인트 2:</strong> 설명 텍스트가 들어갑니다</span></p>\n<p style="font-size: 14px; line-height: 180%;"><span style="color: #F75D5D; font-weight: 600;">&#x2022;</span> <span style="color: #374151;"><strong style="color: #F75D5D;">변화 포인트 3:</strong> 설명 텍스트가 들어갑니다</span></p>',
                 },
               },
             ],
@@ -2980,7 +2980,7 @@ export const BS_CAMP_TEMPLATE_C = {
         },
       },
 
-      // ─── Row 11: CTA 버튼 (주황 #EA580C) ───
+      // ─── Row 11: CTA 버튼 (주황 #E54949) ───
       {
         id: "row-cta",
         cells: [1],
@@ -3000,9 +3000,9 @@ export const BS_CAMP_TEMPLATE_C = {
                   },
                   buttonColors: {
                     color: "#ffffff",
-                    backgroundColor: "#F97316",
+                    backgroundColor: "#F75D5D",
                     hoverColor: "#ffffff",
-                    hoverBackgroundColor: "#EA580C",
+                    hoverBackgroundColor: "#E54949",
                   },
                   size: {
                     autoWidth: false,
@@ -3143,8 +3143,8 @@ export const BS_CAMP_TEMPLATE_C = {
                   lineHeight: "180%",
                   linkStyle: {
                     inherit: false,
-                    linkColor: "#F97316",
-                    linkHoverColor: "#EA580C",
+                    linkColor: "#F75D5D",
+                    linkHoverColor: "#E54949",
                     linkUnderline: false,
                     linkHoverUnderline: true,
                   },
