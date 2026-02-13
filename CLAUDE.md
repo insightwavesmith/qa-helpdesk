@@ -101,16 +101,8 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 **2번에서 기존 문서가 있으면 반드시 읽고, 설계 변경이 필요하면 문서부터 업데이트한다.**
 **이 순서를 건너뛰고 바로 코딩하면 리젝된다.**
 
-## 플러그인 (설치 완료 2026-02-08)
-- **Compound Engineering** (v2.30.0) — every-marketplace
-  - `/workflows:review` — 멀티 리뷰 (보안/성능/아키텍처)
-  - `/workflows:compound` — 작업 후 교훈 문서화
-  - `/workflows:plan` — 구조화된 계획
-- **Conductor** (v0.1.0) — claude-conductor
-  - `/conductor:setup` — 프로젝트 컨텍스트 설정
-  - `/conductor:new-track` — 새 작업 트랙
-  - `/conductor:implement` — 구현 실행
-  - `/conductor:status` — 상태 확인
+## 플러그인
+- **bkit** (v1.5.2) — PDCA 워크플로우, `/pdca plan {기능}`
 
 ## 작업 완료 기준
 - [ ] `npm run build` 성공
@@ -123,7 +115,7 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 - TypeScript
 - Tailwind CSS
 - Supabase (PostgreSQL + Auth)
-- TipTap (에디터)
+- MDXEditor (마크다운 WYSIWYG 에디터)
 
 ## 커밋 컨벤션
 - feat: 새 기능
