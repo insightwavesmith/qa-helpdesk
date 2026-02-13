@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BS CAMP 인포그래픽 템플릿 시스템</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #e5e7eb; font-family: 'Pretendard Variable', -apple-system, sans-serif; padding: 40px; }
+  h1 { text-align: center; color: #1e293b; margin-bottom: 8px; font-size: 24px; }
+  .subtitle { text-align: center; color: #64748b; margin-bottom: 40px; font-size: 14px; }
+  .template-section { margin-bottom: 60px; }
+  .template-label { 
+    display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 13px; 
+    font-weight: 700; color: white; margin-bottom: 16px; letter-spacing: 0.5px;
+  }
+  .template-desc { color: #64748b; font-size: 13px; margin-bottom: 16px; line-height: 1.6; }
+
+  /* ===================== SHARED ===================== */
+  .infographic {
+    width: 680px; margin: 0 auto; border-radius: 16px; overflow: hidden;
+    font-family: 'Pretendard Variable', -apple-system, sans-serif;
+  }
+  .brand-badge {
+    position: absolute; top: 16px; right: 20px; 
+    display: flex; align-items: center; gap: 6px;
+  }
+  .brand-dot { 
+    width: 24px; height: 24px; border-radius: 6px; background: #F75D5D; 
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 800; color: white;
+  }
+  .brand-name { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 1px; }
+
+  /* ===================== TYPE 1: STAT BLOCK ===================== */
+  .stat-block {
+    background: #0f172a; padding: 40px 36px 32px; position: relative;
+  }
+  .stat-block .title {
+    font-size: 22px; font-weight: 800; color: #f1f5f9; margin-bottom: 8px; letter-spacing: -0.3px;
+  }
+  .stat-block .subtitle-text {
+    font-size: 12px; color: #64748b; margin-bottom: 28px;
+  }
+  .stat-row {
+    display: flex; gap: 20px; justify-content: center;
+  }
+  .stat-item { flex: 1; text-align: center; position: relative; }
+  .stat-item::before {
+    content: ''; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -55%); width: 130px; height: 130px;
+    border-radius: 50%; z-index: 0;
+  }
+  .stat-item:nth-child(1)::before { background: radial-gradient(circle, rgba(247,93,93,0.12) 0%, transparent 70%); }
+  .stat-item:nth-child(2)::before { background: radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%); }
+  .stat-item:nth-child(3)::before { background: radial-gradient(circle, rgba(249,115,22,0.12) 0%, transparent 70%); }
+  .stat-item:nth-child(4)::before { background: radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%); }
+  .stat-number { font-size: 48px; font-weight: 800; line-height: 1.1; position: relative; z-index: 1; }
+  .stat-number.red { color: #F75D5D; }
+  .stat-number.green { color: #10B981; }
+  .stat-number.orange { color: #F97316; }
+  .stat-number.blue { color: #3B82F6; }
+  .stat-number.white { color: #f1f5f9; }
+  .stat-label { font-size: 13px; color: #94a3b8; margin-top: 8px; font-weight: 500; position: relative; z-index: 1; }
+  .stat-footer {
+    margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08);
+    font-size: 11px; color: #475569; text-align: center;
+  }
+
+  /* ===================== TYPE 2: BEFORE/AFTER ===================== */
+  .before-after {
+    background: #0f172a; padding: 40px 36px 32px; position: relative;
+  }
+  .ba-title { font-size: 22px; font-weight: 800; color: #f1f5f9; margin-bottom: 32px; text-align: center; letter-spacing: -0.3px; }
+  .ba-container { display: flex; align-items: center; gap: 16px; justify-content: center; }
+  .ba-box {
+    flex: 1; border-radius: 12px; padding: 24px 20px; text-align: center;
+  }
+  .ba-box.before { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+  .ba-box.after { background: rgba(247,93,93,0.08); border: 1px solid rgba(247,93,93,0.2); }
+  .ba-tag { 
+    display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 10px; 
+    font-weight: 700; letter-spacing: 1px; margin-bottom: 12px;
+  }
+  .ba-tag.before { background: rgba(255,255,255,0.08); color: #94a3b8; }
+  .ba-tag.after { background: rgba(247,93,93,0.15); color: #F75D5D; }
+  .ba-value { font-size: 40px; font-weight: 800; line-height: 1.2; position: relative; z-index: 1; }
+  .ba-value.dim { color: #64748b; }
+  .ba-value.highlight { color: #F75D5D; }
+  .ba-box.after::before {
+    content: ''; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); width: 160px; height: 160px;
+    background: radial-gradient(circle, rgba(247,93,93,0.08) 0%, transparent 70%);
+    border-radius: 50%; z-index: 0;
+  }
+  .ba-box { position: relative; }
+  .ba-desc { font-size: 12px; color: #94a3b8; margin-top: 6px; }
+  .ba-arrow { font-size: 28px; color: #475569; flex-shrink: 0; }
+  .ba-sub-stats {
+    display: flex; gap: 16px; margin-top: 24px; padding-top: 20px; 
+    border-top: 1px solid rgba(255,255,255,0.06); justify-content: center;
+  }
+  .ba-sub-item { text-align: center; flex: 1; }
+  .ba-sub-item { position: relative; }
+  .ba-sub-number { font-size: 24px; font-weight: 800; }
+  .ba-sub-number.green { color: #10B981; }
+  .ba-sub-number.orange { color: #F97316; }
+  .ba-sub-number.red { color: #F75D5D; }
+  .ba-sub-label { font-size: 11px; color: #64748b; margin-top: 4px; }
+
+  /* ===================== TYPE 3: GROWTH CHART ===================== */
+  .growth-chart {
+    background: #0f172a; padding: 40px 36px 32px; position: relative;
+  }
+  .gc-title { font-size: 22px; font-weight: 800; color: #f1f5f9; margin-bottom: 4px; letter-spacing: -0.3px; }
+  .gc-subtitle { font-size: 12px; color: #64748b; margin-bottom: 28px; }
+  .gc-chart { display: flex; align-items: flex-end; gap: 12px; height: 180px; padding: 0 8px; }
+  .gc-bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .gc-bar {
+    width: 100%; border-radius: 6px 6px 2px 2px; position: relative;
+    transition: height 0.3s; min-height: 8px;
+  }
+  .gc-bar-value {
+    position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; font-weight: 700; color: #e2e8f0; white-space: nowrap;
+  }
+  .gc-bar-label { font-size: 11px; color: #64748b; margin-top: 2px; }
+  .gc-highlight-box {
+    position: absolute; top: 16px; right: 20px; text-align: right;
+  }
+  .gc-highlight-number { font-size: 48px; font-weight: 800; color: #F75D5D; line-height: 1; }
+  .gc-highlight-label { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+
+  /* ===================== TYPE 4: FEATURE GRID ===================== */
+  .feature-grid {
+    background: linear-gradient(135deg, #F75D5D 0%, #E54949 100%); 
+    padding: 40px 36px 32px; position: relative;
+  }
+  .fg-title { font-size: 22px; font-weight: 800; color: white; margin-bottom: 24px; text-align: center; letter-spacing: -0.3px; }
+  .fg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .fg-card {
+    background: rgba(255,255,255,0.12); backdrop-filter: blur(8px);
+    border-radius: 12px; padding: 24px 20px; border: 1px solid rgba(255,255,255,0.15);
+  }
+  .fg-card-emoji { font-size: 24px; margin-bottom: 10px; }
+  .fg-card-title { font-size: 14px; font-weight: 700; color: white; margin-bottom: 6px; }
+  .fg-card-desc { font-size: 12px; color: rgba(255,255,255,0.7); line-height: 1.5; }
+  .fg-badge {
+    position: absolute; top: 16px; right: 20px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .fg-badge .brand-dot { background: rgba(255,255,255,0.95); color: #F75D5D; }
+  .fg-badge .brand-name { color: rgba(255,255,255,0.9); }
+
+  /* ===================== TYPE 5: COMPARISON TABLE ===================== */
+  .comparison-table {
+    background: #0f172a; padding: 40px 36px 32px; position: relative;
+  }
+  .ct-title { font-size: 22px; font-weight: 800; color: #f1f5f9; margin-bottom: 24px; text-align: center; letter-spacing: -0.3px; }
+  .ct-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .ct-table th {
+    padding: 12px 16px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+    color: #94a3b8; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .ct-table th.highlight { color: #F75D5D; text-align: center; }
+  .ct-table td {
+    padding: 14px 16px; font-size: 13px; color: #cbd5e1; 
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .ct-table td.feature { font-weight: 600; color: #e2e8f0; }
+  .ct-table td.center { text-align: center; }
+  .ct-check { color: #10B981; font-weight: 700; font-size: 16px; }
+  .ct-cross { color: #64748b; font-size: 16px; }
+  .ct-table tr:last-child td { border-bottom: none; }
+  .ct-table td.highlight-col { background: rgba(247,93,93,0.05); }
+</style>
+</head>
+<body>
+
+<h1>BS CAMP 인포그래픽 템플릿</h1>
+<p class="subtitle">데이터만 바꿔서 스크린샷 → 블로그 이미지로 사용</p>
+
+<!-- ========== TYPE 1: STAT BLOCK ========== -->
+<div class="template-section">
+  <div class="template-label" style="background:#F75D5D;">TYPE 1</div>
+  <span class="template-label" style="background:#334155;">숫자 블록 — 핵심 지표 3~4개</span>
+  <p class="template-desc">섹션 시작 시 핵심 성과 데이터 강조. 리캐치의 5.7배, 238,610건 스타일.</p>
+  
+  <div class="infographic stat-block">
+    <div class="brand-badge">
+      <div class="brand-dot">10+</div>
+      <span class="brand-name">BS CAMP</span>
+    </div>
+    <div class="title">자사몰사관학교 수강생 평균 성과</div>
+    <div class="subtitle-text">4기 수료생 기준 · 수강 전후 3개월 비교</div>
+    <div class="stat-row" style="margin-bottom:16px;">
+      <div class="stat-item">
+        <div class="stat-number red">4.2x</div>
+        <div class="stat-label">평균 ROAS</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number green">-32%</div>
+        <div class="stat-label">CPA 감소</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number orange">2.1배</div>
+        <div class="stat-label">전환율 상승</div>
+      </div>
+    </div>
+    <div class="stat-footer">베리네이처 · 알로키친 · 팔도보감 · 스틸박스 외 120+ 수강생</div>
+  </div>
+</div>
+
+<!-- ========== TYPE 2: BEFORE/AFTER ========== -->
+<div class="template-section">
+  <div class="template-label" style="background:#F97316;">TYPE 2</div>
+  <span class="template-label" style="background:#334155;">Before/After — 수강 전후 비교</span>
+  <p class="template-desc">수강생 성과 사례, 전략 적용 전후 비교에 활용.</p>
+  
+  <div class="infographic before-after">
+    <div class="brand-badge">
+      <div class="brand-dot">10+</div>
+      <span class="brand-name">BS CAMP</span>
+    </div>
+    <div class="ba-title">수강 전후 3개월 성과 비교</div>
+    <div class="ba-container">
+      <div class="ba-box before">
+        <div class="ba-tag before">BEFORE</div>
+        <div class="ba-value dim">₩800만</div>
+        <div class="ba-desc">월 매출</div>
+      </div>
+      <div class="ba-arrow">→</div>
+      <div class="ba-box after">
+        <div class="ba-tag after">AFTER</div>
+        <div class="ba-value highlight">₩5,200만</div>
+        <div class="ba-desc">월 매출 (3개월 후)</div>
+      </div>
+    </div>
+    <div class="ba-sub-stats">
+      <div class="ba-sub-item">
+        <div class="ba-sub-number green">6.5x</div>
+        <div class="ba-sub-label">매출 성장</div>
+      </div>
+      <div class="ba-sub-item">
+        <div class="ba-sub-number orange">-40%</div>
+        <div class="ba-sub-label">CPA 감소</div>
+      </div>
+      <div class="ba-sub-item">
+        <div class="ba-sub-number red">500%+</div>
+        <div class="ba-sub-label">ROAS</div>
+      </div>
+    </div>
+    <div class="stat-footer">박지영 대표 · 건강기능식품 자사몰 · 4기 수료</div>
+  </div>
+</div>
+
+<!-- ========== TYPE 3: GROWTH CHART ========== -->
+<div class="template-section">
+  <div class="template-label" style="background:#10B981;">TYPE 3</div>
+  <span class="template-label" style="background:#334155;">성장 차트 — 월별/분기별 추이</span>
+  <p class="template-desc">매출 성장, 전환율 변화 등 시계열 데이터 시각화.</p>
+  
+  <div class="infographic growth-chart">
+    <div class="gc-highlight-box">
+      <div class="gc-highlight-number">5.7배</div>
+      <div class="gc-highlight-label">연초 대비 성장</div>
+    </div>
+    <div class="gc-title">월별 매출 성장 추이</div>
+    <div class="gc-subtitle">자사몰사관학교 수강생 A사 · 수강 시작 후 6개월</div>
+    <div class="gc-chart">
+      <div class="gc-bar-group">
+        <div class="gc-bar" style="height:20px;background:#334155;">
+          <span class="gc-bar-value">₩800만</span>
+        </div>
+        <div class="gc-bar-label">1월</div>
+      </div>
+      <div class="gc-bar-group">
+        <div class="gc-bar" style="height:32px;background:#334155;">
+          <span class="gc-bar-value">₩1,200만</span>
+        </div>
+        <div class="gc-bar-label">2월</div>
+      </div>
+      <div class="gc-bar-group">
+        <div class="gc-bar" style="height:55px;background:linear-gradient(180deg,#F75D5D 0%,#E54949 100%);">
+          <span class="gc-bar-value">₩2,100만</span>
+        </div>
+        <div class="gc-bar-label">3월</div>
+      </div>
+      <div class="gc-bar-group">
+        <div class="gc-bar" style="height:85px;background:linear-gradient(180deg,#F75D5D 0%,#E54949 100%);">
+          <span class="gc-bar-value">₩3,200만</span>
+        </div>
+        <div class="gc-bar-label">4월</div>
+      </div>
+      <div class="gc-bar-group">
+        <div class="gc-bar" style="height:120px;background:linear-gradient(180deg,#F75D5D 0%,#E54949 100%);">
+          <span class="gc-bar-value">₩4,100만</span>
+        </div>
+        <div class="gc-bar-label">5월</div>
+      </div>
+      <div class="gc-bar-group">
+        <div class="gc-bar" style="height:160px;background:linear-gradient(180deg,#F75D5D 0%,#E54949 100%);">
+          <span class="gc-bar-value" style="color:#F75D5D;font-size:13px;">₩5,200만</span>
+        </div>
+        <div class="gc-bar-label" style="color:#F75D5D;font-weight:600;">6월</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== TYPE 4: FEATURE GRID ========== -->
+<div class="template-section">
+  <div class="template-label" style="background:#F75D5D;">TYPE 4</div>
+  <span class="template-label" style="background:#334155;">피처 그리드 — 주요 기능/포인트 4개</span>
+  <p class="template-desc">커리큘럼 주제, 전략 포인트, 학습 내용 소개에 활용.</p>
+  
+  <div class="infographic feature-grid">
+    <div class="fg-badge">
+      <div class="brand-dot">10+</div>
+      <span class="brand-name" style="color:rgba(255,255,255,0.6);">BS CAMP</span>
+    </div>
+    <div class="fg-title">6기 핵심 커리큘럼</div>
+    <div class="fg-grid">
+      <div class="fg-card">
+        <div class="fg-card-emoji">🟥</div>
+        <div class="fg-card-title">퍼포먼스 마케팅 최적화</div>
+        <div class="fg-card-desc">ASC 전환 전략, CPA 최적화, 리타겟팅 세분화</div>
+      </div>
+      <div class="fg-card">
+        <div class="fg-card-emoji">🟧</div>
+        <div class="fg-card-title">컨텐츠 제작 프로세스</div>
+        <div class="fg-card-desc">카탈로그 동영상, 크리에이티브 프레임워크</div>
+      </div>
+      <div class="fg-card">
+        <div class="fg-card-emoji">🟩</div>
+        <div class="fg-card-title">데이터 시각화 & 분석</div>
+        <div class="fg-card-desc">대시보드 구축, ROAS 추적, 어트리뷰션</div>
+      </div>
+      <div class="fg-card">
+        <div class="fg-card-emoji">🟦</div>
+        <div class="fg-card-title">자사몰 구조 설계</div>
+        <div class="fg-card-desc">CRM 연동, 전환 퍼널, 고객 여정 설계</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== TYPE 5: COMPARISON TABLE ========== -->
+<div class="template-section">
+  <div class="template-label" style="background:#3B82F6;">TYPE 5</div>
+  <span class="template-label" style="background:#334155;">비교 테이블 — 기능/옵션 비교</span>
+  <p class="template-desc">캠페인 유형 비교, 도구 비교, 전략 옵션 비교에 활용.</p>
+  
+  <div class="infographic comparison-table">
+    <div class="brand-badge">
+      <div class="brand-dot">10+</div>
+      <span class="brand-name">BS CAMP</span>
+    </div>
+    <div class="ct-title">수동 캠페인 vs ASC 비교</div>
+    <table class="ct-table">
+      <thead>
+        <tr>
+          <th style="width:35%;">항목</th>
+          <th class="center" style="width:30%;">수동 캠페인</th>
+          <th class="highlight center" style="width:35%;">ASC (어드밴티지+)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="feature">타겟팅</td>
+          <td class="center">수동 설정</td>
+          <td class="center highlight-col">AI 자동 최적화</td>
+        </tr>
+        <tr>
+          <td class="feature">게재 위치</td>
+          <td class="center">수동 선택</td>
+          <td class="center highlight-col">자동 배분</td>
+        </tr>
+        <tr>
+          <td class="feature">소재 최적화</td>
+          <td class="center"><span class="ct-cross">—</span></td>
+          <td class="center highlight-col"><span class="ct-check">✓</span> 자동 조합</td>
+        </tr>
+        <tr>
+          <td class="feature">평균 CPA</td>
+          <td class="center">₩15,000</td>
+          <td class="center highlight-col" style="color:#10B981;font-weight:700;">₩10,200 (-32%)</td>
+        </tr>
+        <tr>
+          <td class="feature">세팅 시간</td>
+          <td class="center">30~60분</td>
+          <td class="center highlight-col" style="color:#F75D5D;font-weight:700;">5~10분</td>
+        </tr>
+        <tr>
+          <td class="feature">학습 기간</td>
+          <td class="center">3~7일</td>
+          <td class="center highlight-col">1~3일</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</body>
+</html>

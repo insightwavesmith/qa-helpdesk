@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BS CAMP 이메일 템플릿 목업</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #e5e7eb; font-family: 'Pretendard Variable', -apple-system, sans-serif; }
+  .preview-wrapper { max-width: 700px; margin: 0 auto; padding: 40px 20px; }
+  .template-label {
+    background: #1a1a2e; color: white; padding: 16px 24px; border-radius: 12px 12px 0 0;
+    font-size: 14px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .template-label span { font-size: 20px; }
+  .email-frame {
+    background: white; border-radius: 0 0 12px 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+    margin-bottom: 60px; overflow: hidden;
+  }
+  /* Email inner styles */
+  .email-body { max-width: 600px; margin: 0 auto; padding: 0; }
+  .email-header { text-align: center; padding: 40px 32px 24px; }
+  .logo-mark {
+    width: 48px; height: 48px; border-radius: 12px; display: inline-block;
+    background: #F75D5D; color: white; font-weight: 800; font-size: 16px;
+    line-height: 48px; text-align: center; letter-spacing: -0.5px;
+  }
+  .brand-name { font-size: 13px; color: #94a3b8; margin-top: 8px; letter-spacing: 2px; font-weight: 600; }
+  .email-content { padding: 0 32px 32px; }
+  .greeting { font-size: 15px; color: #1a1a1a; line-height: 1.7; margin-bottom: 24px; }
+  .greeting a { color: #F75D5D; text-decoration: none; font-weight: 600; }
+  .hook-quote {
+    font-size: 16px; color: #F75D5D; font-weight: 600; font-style: italic;
+    text-align: center; padding: 16px 0; margin-bottom: 20px; line-height: 1.6;
+  }
+  .body-text { font-size: 15px; color: #374151; line-height: 1.8; margin-bottom: 16px; }
+  .body-text strong { color: #1a1a1a; }
+  .toc { margin: 24px 0; padding: 0; list-style: none; }
+  .toc li { font-size: 15px; color: #F75D5D; font-weight: 600; margin-bottom: 8px; cursor: pointer; }
+  .toc li:hover { text-decoration: underline; }
+  /* Section banner */
+  .section-banner {
+    position: relative; height: 56px; margin: 32px -32px 24px; overflow: hidden;
+    background: linear-gradient(135deg, #F75D5D 0%, #E54949 60%, transparent 60%);
+  }
+  .section-banner-text {
+    position: absolute; left: 32px; top: 50%; transform: translateY(-50%);
+    color: white; font-size: 14px; font-weight: 700; letter-spacing: 1px;
+  }
+  .section-banner.green { background: linear-gradient(135deg, #10B981 0%, #059669 60%, transparent 60%); }
+  .section-banner.orange { background: linear-gradient(135deg, #F97316 0%, #EA580C 60%, transparent 60%); }
+  .section-title { font-size: 20px; font-weight: 800; color: #1a1a1a; margin-bottom: 16px; line-height: 1.4; }
+  .sub-head { font-size: 15px; color: #F75D5D; font-weight: 600; text-align: center; margin-bottom: 20px; line-height: 1.6; }
+  .sub-head.green { color: #10B981; }
+  .sub-head.orange { color: #F97316; }
+  /* Image */
+  .img-block { margin: 20px 0; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
+  .img-block img { width: 100%; display: block; }
+  .img-placeholder {
+    width: 100%; height: 200px; background: #f1f3f8; display: flex;
+    align-items: center; justify-content: center; color: #94a3b8; font-size: 14px;
+  }
+  .img-caption { font-size: 12px; color: #94a3b8; text-align: center; margin-top: 8px; margin-bottom: 16px; }
+  /* Quote block */
+  .quote-block {
+    background: #f8f9fc; border-left: 3px solid #F75D5D; padding: 16px 20px;
+    margin: 20px 0; border-radius: 0 8px 8px 0;
+  }
+  .quote-block p { font-size: 14px; color: #374151; line-height: 1.7; font-style: italic; }
+  /* Bullet list */
+  .bullet-list { margin: 16px 0; padding-left: 0; list-style: none; }
+  .bullet-list li {
+    font-size: 14px; color: #374151; line-height: 1.7; margin-bottom: 8px;
+    padding-left: 20px; position: relative;
+  }
+  .bullet-list li::before {
+    content: ''; position: absolute; left: 0; top: 10px;
+    width: 6px; height: 6px; background: #F75D5D; border-radius: 50%;
+  }
+  .bullet-list li strong { color: #F75D5D; }
+  /* CTA */
+  .cta-wrapper { text-align: center; margin: 32px 0; }
+  .cta-btn {
+    display: inline-block; padding: 14px 32px; border-radius: 8px;
+    font-size: 15px; font-weight: 700; text-decoration: none; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .cta-primary { background: #F75D5D; color: white; }
+  .cta-primary:hover { background: #E54949; transform: translateY(-1px); }
+  .cta-outline { background: white; color: #374151; border: 1.5px solid #e2e8f0; }
+  .cta-outline:hover { border-color: #F75D5D; color: #F75D5D; }
+  .cta-green { background: #10B981; color: white; }
+  .cta-green:hover { background: #059669; }
+  .cta-orange { background: #F97316; color: white; }
+  .cta-orange:hover { background: #EA580C; }
+  .cta-row { display: flex; gap: 12px; justify-content: center; margin: 32px 0; flex-wrap: wrap; }
+  /* Divider */
+  .divider { border: none; border-top: 1px solid #e2e8f0; margin: 32px 0; }
+  /* Closing */
+  .closing { font-size: 14px; color: #64748b; line-height: 1.7; margin-bottom: 24px; }
+  .closing a { color: #F75D5D; text-decoration: none; font-weight: 600; }
+  .signature { font-size: 14px; color: #1a1a1a; margin-bottom: 4px; }
+  .signature a { color: #F75D5D; text-decoration: none; font-weight: 600; }
+  /* Footer */
+  .email-footer {
+    text-align: center; padding: 24px 32px; border-top: 1px solid #e2e8f0;
+    font-size: 12px; color: #94a3b8; line-height: 1.6;
+  }
+  .email-footer a { color: #94a3b8; text-decoration: underline; }
+  .self-promo { font-size: 12px; color: #94a3b8; text-align: center; margin: 24px 0 0; font-style: italic; }
+  .self-promo a { color: #F75D5D; text-decoration: none; }
+  /* Profile card */
+  .profile-card {
+    background: #f8f9fc; border-radius: 12px; padding: 24px; margin: 20px 0;
+    display: flex; gap: 20px; align-items: center;
+  }
+  .profile-avatar {
+    width: 64px; height: 64px; border-radius: 50%; background: #F75D5D;
+    color: white; font-size: 24px; font-weight: 800; display: flex;
+    align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .profile-info { flex: 1; }
+  .profile-name { font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
+  .profile-meta { font-size: 13px; color: #64748b; }
+  /* Before/After */
+  .ba-row { display: flex; gap: 16px; margin: 20px 0; }
+  .ba-card {
+    flex: 1; border-radius: 12px; padding: 20px; text-align: center;
+  }
+  .ba-before { background: #f1f3f8; border: 1px solid #e2e8f0; }
+  .ba-after { background: #FEF2F2; border: 1px solid #FECACA; }
+  .ba-label { font-size: 12px; font-weight: 700; letter-spacing: 1px; margin-bottom: 8px; }
+  .ba-before .ba-label { color: #94a3b8; }
+  .ba-after .ba-label { color: #F75D5D; }
+  .ba-number { font-size: 28px; font-weight: 800; }
+  .ba-before .ba-number { color: #64748b; }
+  .ba-after .ba-number { color: #F75D5D; }
+  .ba-desc { font-size: 12px; color: #64748b; margin-top: 4px; }
+  /* Info block */
+  .info-block {
+    background: #f8f9fc; border-radius: 12px; padding: 24px; margin: 20px 0;
+  }
+  .info-row { display: flex; margin-bottom: 12px; font-size: 14px; }
+  .info-row:last-child { margin-bottom: 0; }
+  .info-label { width: 80px; color: #64748b; font-weight: 600; flex-shrink: 0; }
+  .info-value { color: #1a1a1a; font-weight: 500; }
+  /* Dark stat block (inspired by Recatch blog) */
+  .dark-stat-block {
+    background: #1a1a2e; border-radius: 12px; padding: 32px; margin: 24px 0;
+    color: white; text-align: center;
+  }
+  .dark-stat-block .stat-headline {
+    font-size: 15px; color: #94a3b8; margin-bottom: 16px; line-height: 1.5;
+  }
+  .dark-stat-row { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .dark-stat-item { flex: 1; min-width: 120px; text-align: center; }
+  .dark-stat-number { font-size: 32px; font-weight: 800; color: #F75D5D; line-height: 1.2; }
+  .dark-stat-number.green { color: #10B981; }
+  .dark-stat-number.orange { color: #F97316; }
+  .dark-stat-label { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+  .dark-stat-block .stat-logos {
+    margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1);
+    font-size: 12px; color: #64748b;
+  }
+  /* Inline CTA link */
+  .inline-cta { color: #F75D5D; text-decoration: none; font-weight: 600; font-size: 14px; }
+  .inline-cta:hover { text-decoration: underline; }
+  .inline-cta.orange { color: #F97316; }
+  /* Section intro quote */
+  .section-intro-quote {
+    font-size: 14px; color: #64748b; font-style: italic; text-align: center;
+    margin: 0 0 20px; line-height: 1.6; padding: 0 16px;
+  }
+  /* Logo strip */
+  .logo-strip {
+    display: flex; gap: 24px; justify-content: center; align-items: center;
+    padding: 16px 0; margin: 16px 0; flex-wrap: wrap;
+  }
+  .logo-strip span {
+    font-size: 13px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px;
+  }
+  /* Hero image */
+  .hero-image {
+    margin: 0 -32px; height: 240px; display: flex; align-items: center;
+    justify-content: center; color: white; font-size: 28px; font-weight: 800;
+    text-align: center; line-height: 1.4; padding: 32px;
+    background: linear-gradient(135deg, #F75D5D 0%, #E54949 100%);
+    position: relative;
+  }
+  .hero-image.green { background: linear-gradient(135deg, #10B981 0%, #059669 100%); }
+  .hero-image .hero-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .hero-image .hero-text { position: relative; z-index: 1; }
+  .hero-badge {
+    display: inline-block; background: rgba(255,255,255,0.2); padding: 6px 14px;
+    border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 12px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================ -->
+<!-- TEMPLATE A: 정보공유형 (Education Teaser)     -->
+<!-- ============================================ -->
+<div class="preview-wrapper">
+  <div class="template-label"><span>A</span> 정보공유형 — 교육 콘텐츠 티저</div>
+  <div class="email-frame">
+    <div class="email-body">
+      <!-- Header -->
+      <div class="email-header">
+        <div class="logo-mark">10+</div>
+        <div class="brand-name">BS CAMP</div>
+      </div>
+
+      <!-- Content -->
+      <div class="email-content">
+        <p class="greeting">안녕하세요, <strong>김대표</strong>님!<br>메타 광고 전문 교육 <a href="#">자사몰사관학교</a>입니다.</p>
+
+        <p class="hook-quote">"메타 광고비는 늘었는데, ROAS는 오히려 떨어지고 있어요"</p>
+
+        <p class="body-text">익숙한 고민이시죠? 실제로 2026년 메타 광고 CPM은 전년 대비 23% 상승했습니다. 같은 예산으로 더 적은 사람에게 노출되는 시대. <strong>그런데도 ROAS 4배 이상을 유지하는 광고주들이 있습니다.</strong></p>
+
+        <p class="body-text">오늘은 그 비결을 두 가지 핵심 전략으로 정리했습니다.</p>
+
+        <ol class="toc">
+          <li>1. 어드밴티지+ 쇼핑 캠페인, 왜 지금 전환해야 하나</li>
+          <li>2. 카탈로그 광고에 동영상을 넣으면 생기는 변화</li>
+        </ol>
+
+        <!-- Section 1 -->
+        <div class="section-banner">
+          <span class="section-banner-text">INSIGHT 01</span>
+        </div>
+        <h2 class="section-title">1. 어드밴티지+ 쇼핑 캠페인, 왜 지금 전환해야 하나</h2>
+        <p class="sub-head">아직도 수동 타겟팅에 의존하고 있지는 않나요?<br>ASC 전환만으로 CPA를 32% 낮춘 사례가 있습니다.</p>
+
+        <div class="img-block">
+          <div class="img-placeholder">📊 ASC vs 수동 캠페인 성과 비교 차트</div>
+        </div>
+        <p class="img-caption">ASC 전환 전후 CPA 비교 (자사몰사관학교 수강생 평균)</p>
+
+        <p class="body-text">Meta의 머신러닝이 가장 효율적으로 작동하는 구조가 바로 ASC입니다. <strong>타겟 설정을 최소화하고, 크리에이티브와 예산에 집중하는 전략</strong>으로 바꿔야 합니다.</p>
+
+        <div class="quote-block">
+          <p>"ASC에서는 타겟을 넓게 열어두되, 크리에이티브의 다양성으로 승부해야 합니다. 소재 5개 이상, 포맷 3가지 이상이 최소 세팅입니다."<br>— 김성현, 자사몰사관학교 대표</p>
+        </div>
+
+        <ul class="bullet-list">
+          <li><strong>기존 방식:</strong> 관심사 타겟팅 + 유사 타겟 → CPA ₩15,000</li>
+          <li><strong>ASC 전환:</strong> 오픈 타겟 + 소재 7개 → CPA ₩10,200 (32% ↓)</li>
+          <li><strong>핵심:</strong> 머신러닝에 충분한 데이터와 소재를 제공하는 것</li>
+        </ul>
+
+        <!-- Section 2 -->
+        <div class="section-banner">
+          <span class="section-banner-text">INSIGHT 02</span>
+        </div>
+        <h2 class="section-title">2. 카탈로그 광고에 동영상을 넣으면 생기는 변화</h2>
+        <p class="sub-head">카탈로그 광고 = 정적 이미지?<br>이 공식은 이미 깨졌습니다.</p>
+
+        <div class="img-block">
+          <div class="img-placeholder">🎬 카탈로그 동영상 광고 예시 스크린샷</div>
+        </div>
+        <p class="img-caption">Meta 카탈로그 제품 동영상 적용 예시</p>
+
+        <p class="body-text">Meta Blueprint 최신 세미나에 따르면, 카탈로그에 제품 동영상을 추가한 광고주의 <strong>전환율이 평균 20% 상승</strong>했습니다. 특히 릴스 지면에서의 효과가 두드러집니다.</p>
+
+        <p class="body-text">구체적인 세팅 방법과 소재 제작 팁은 아래 블로그에서 확인하세요.</p>
+
+        <div class="cta-wrapper">
+          <a href="#" class="cta-btn cta-primary">전문 읽기 — 카탈로그 동영상 실전 가이드 →</a>
+        </div>
+
+        <hr class="divider">
+
+        <p class="closing">오늘은 ASC 전환과 카탈로그 동영상이라는 두 가지 무기를 소개했습니다. 메타 광고의 판이 바뀌고 있는 만큼, <strong>구조적인 변화에 먼저 적응하는 광고주가 승리합니다.</strong></p>
+
+        <p class="closing">더 깊은 실전 노하우가 궁금하시다면, 6기 모집 중인 자사몰사관학교에서 직접 배워보세요.</p>
+
+        <p class="signature">감사합니다.<br><a href="#">자사몰사관학교</a> 드림</p>
+
+        <div class="cta-row">
+          <a href="#" class="cta-btn cta-primary">6기 수강 신청 →</a>
+          <a href="#" class="cta-btn cta-outline">뉴스레터 의견 남기기</a>
+        </div>
+
+        <p class="self-promo">*이 뉴스레터는 <a href="#">BS CAMP 콘텐츠 허브</a>에서 작성되었습니다.</p>
+      </div>
+
+      <!-- Footer -->
+      <div class="email-footer">
+        자사몰사관학교 (인사이트웨이브)<br>
+        smith.kim@inwv.co<br>
+        <a href="#">수신거부</a> · <a href="#">웹사이트</a> · <a href="#">블로그</a> · <a href="#">유튜브</a>
+      </div>
+    </div>
+  </div>
+
+<!-- ============================================ -->
+<!-- TEMPLATE B: 공지/홍보형 (Webinar/Enrollment) -->
+<!-- ============================================ -->
+  <div class="template-label" style="background:#059669"><span>B</span> 공지/홍보형 — 웨비나·모집·이벤트</div>
+  <div class="email-frame">
+    <div class="email-body">
+      <!-- Header -->
+      <div class="email-header">
+        <div class="logo-mark">10+</div>
+        <div class="brand-name">BS CAMP</div>
+      </div>
+
+      <!-- Hero -->
+      <div class="hero-image">
+        <div class="hero-overlay"></div>
+        <div class="hero-text">
+          <div class="hero-badge">LIVE 무료 웨비나</div>
+          <div>메타 광고로 풀어보는<br>자사몰 마케팅 실전 사례</div>
+        </div>
+      </div>
+
+      <div class="email-content" style="padding-top:32px">
+        <p class="greeting">안녕하세요, <strong>대표</strong>님!<br>자사몰 10억+ 사관학교의 스미스 코치입니다.</p>
+
+        <p class="hook-quote">"광고비는 쓰고 있는데<br>자사몰 매출은 그대로라면"</p>
+
+        <p class="body-text">'광고 운영'보다 <strong>'광고 세팅'에 문제</strong>가 있을 수 있습니다.</p>
+
+        <p class="body-text">이번 자사몰 10억+ 사관학교 웨비나에서는 <strong>성과를 만드는 메타 광고 세팅법</strong>을 김성현 대표(자사몰 누적 매출 500억)가 직접 공개합니다.</p>
+
+        <!-- 강의 미리보기 -->
+        <div class="section-banner">
+          <span class="section-banner-text">강의 미리보기</span>
+        </div>
+
+        <p class="body-text">강의의 주요 슬라이드를 미리 공개합니다.</p>
+
+        <div class="img-block">
+          <div class="img-placeholder">📊 메타 머신러닝 작동 원리 · 컨텐츠 제작 프로세스 · 데이터분석 시각화</div>
+        </div>
+        <p class="img-caption">실제 웨비나 슬라이드 미리보기 (3장)</p>
+
+        <!-- 색상 구분 토픽 -->
+        <h3 style="font-size:16px;font-weight:700;color:#1a1a1a;margin:24px 0 12px;">웨비나에서 다루는 핵심 주제</h3>
+        <ul class="bullet-list">
+          <li style="padding-left:24px;"><span style="position:absolute;left:0;top:6px;width:12px;height:12px;background:#F75D5D;border-radius:2px;"></span><strong style="color:#F75D5D;">퍼포먼스 마케팅 최적화</strong></li>
+          <li>자사몰 광고 데이터 성공사례 (수료생 베리네이처)</li>
+          <li>2026 성과를 만드는 메타 광고 세팅법 ※ 라이브에서만 공개</li>
+        </ul>
+        <ul class="bullet-list" style="margin-top:16px;">
+          <li style="padding-left:24px;"><span style="position:absolute;left:0;top:6px;width:12px;height:12px;background:#F97316;border-radius:2px;"></span><strong style="color:#F97316;">컨텐츠 제작 프로세스</strong></li>
+          <li>고객 정의 → 콘텐츠 기획 → 마켓 테스트까지</li>
+          <li>성과를 만드는 콘텐츠는 '이렇게' 만들어진다</li>
+        </ul>
+        <ul class="bullet-list" style="margin-top:16px;">
+          <li style="padding-left:24px;"><span style="position:absolute;left:0;top:6px;width:12px;height:12px;background:#10B981;border-radius:2px;"></span><strong style="color:#10B981;">데이터 시각화 & 분석</strong></li>
+          <li>고객 데이터 흐름 파악 → 매출 전환 포인트 도출</li>
+          <li>잘하는 커머스는 왜 고객 데이터에 '미쳐' 있을까?</li>
+        </ul>
+
+        <!-- 대상 -->
+        <div class="section-banner green">
+          <span class="section-banner-text">이런 분들을 위해 준비했어요</span>
+        </div>
+
+        <ul class="bullet-list">
+          <li>자사몰을 운영 중이지만 <strong>성장이 정체돼 답답</strong>하신 분</li>
+          <li>광고는 돌리고 있지만 <strong>구조나 전략이 불안</strong>하신 분</li>
+          <li>메타 광고를 하고는 있지만 <strong>성과로 이어지지 않아</strong> 고민이신 분</li>
+          <li>수강을 고려 중이거나, 커리큘럼을 <strong>미리 체험해보고 싶은</strong> 분</li>
+        </ul>
+
+        <!-- 일정 안내 -->
+        <div class="section-banner">
+          <span class="section-banner-text">웨비나 일정 안내</span>
+        </div>
+
+        <div class="info-block">
+          <div class="info-row">
+            <span class="info-label">📅 일시</span>
+            <span class="info-value"><strong>2026년 2월 19일(수) 오후 3시 ~ 5시</strong></span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">📍 형식</span>
+            <span class="info-value">실시간 온라인 웨비나(120분) + Q&A</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">💰 참가비</span>
+            <span class="info-value" style="color:#F75D5D;font-weight:700;">무료</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">🔗 참여</span>
+            <span class="info-value"><strong>사전 신청자</strong>에게만 알림톡으로 참여 링크 전달</span>
+          </div>
+        </div>
+
+        <div class="cta-wrapper">
+          <a href="#" class="cta-btn cta-primary" style="font-size:17px;padding:16px 48px;">무료웨비나 신청 →</a>
+        </div>
+
+        <hr class="divider">
+
+        <p class="closing">더 많은 정보를 얻고 싶다면?<br>자사몰 운영 꿀팁부터 다음 기수 소식까지, <a href="#">오픈채팅</a>에서 가장 먼저 확인하세요!</p>
+
+        <div class="cta-wrapper" style="margin-top:16px;">
+          <a href="#" class="cta-btn cta-outline">자사몰 사관학교 오픈채팅 입장하기</a>
+        </div>
+
+        <p class="signature" style="margin-top:24px;">내일 웨비나에서 직접 뵙고 이야기 나눌 수 있기를 기대하겠습니다.<br>감사합니다.</p>
+      </div>
+
+      <div class="email-footer">
+        자사몰 10억+ 사관학교<br>
+        1bpluschool@inwv.co<br>
+        <a href="#">수신거부</a> · <a href="#">웹사이트</a> · <a href="#">유튜브</a> · <a href="#">인스타그램</a> · <a href="#">네이버 블로그</a>
+      </div>
+    </div>
+  </div>
+
+<!-- ============================================ -->
+<!-- TEMPLATE C: 고객사례형 (Student Success)      -->
+<!-- ============================================ -->
+  <div class="template-label" style="background:#EA580C"><span>C</span> 고객사례형 — 수강생 성과</div>
+  <div class="email-frame">
+    <div class="email-body">
+      <!-- Header -->
+      <div class="email-header">
+        <div class="logo-mark">10+</div>
+        <div class="brand-name">BS CAMP</div>
+      </div>
+
+      <div class="email-content">
+        <p class="greeting">안녕하세요, <strong>김대표</strong>님!<br>메타 광고 전문 교육 <a href="#">자사몰사관학교</a>입니다.</p>
+
+        <p class="hook-quote" style="color:#F97316;">"월 매출 800만 원이던 자사몰이,<br>3개월 만에 5,200만 원이 되었습니다"</p>
+
+        <p class="body-text">수강 전에는 광고비만 태우고 있었던 브랜드가, <strong>자사몰사관학교 4기 수료 후 어떻게 변했는지</strong> 직접 이야기를 들어보았습니다.</p>
+
+        <!-- Profile Card -->
+        <div class="profile-card">
+          <div class="profile-avatar">J</div>
+          <div class="profile-info">
+            <div class="profile-name">박지영 대표</div>
+            <div class="profile-meta">건강기능식품 자사몰 · 4기 수료 · 서울</div>
+          </div>
+        </div>
+
+        <!-- Before / After -->
+        <div class="ba-row">
+          <div class="ba-card ba-before">
+            <div class="ba-label">BEFORE</div>
+            <div class="ba-number">₩800만</div>
+            <div class="ba-desc">월 매출</div>
+          </div>
+          <div class="ba-card ba-after">
+            <div class="ba-label">AFTER</div>
+            <div class="ba-number">₩5,200만</div>
+            <div class="ba-desc">월 매출 (3개월 후)</div>
+          </div>
+        </div>
+
+        <div class="section-banner orange">
+          <span class="section-banner-text">INTERVIEW</span>
+        </div>
+
+        <div class="quote-block" style="border-color:#F97316;">
+          <p>"처음에는 광고비 100만 원도 무서웠어요. 그런데 사관학교에서 ROAS 계산법을 배우고 나니, 500만 원을 넣어도 수익이 나는 구조가 보이기 시작했습니다."</p>
+        </div>
+
+        <div class="quote-block" style="border-color:#F97316;">
+          <p>"가장 큰 변화는 <strong>광고 소재에 대한 시각</strong>이에요. 예전에는 '예쁜 사진'만 올렸는데, 지금은 후킹-혜택-CTA 구조로 만들어요. 클릭률이 2배 넘게 올랐습니다."</p>
+        </div>
+
+        <h3 style="font-size:16px;font-weight:700;color:#1a1a1a;margin:24px 0 12px;">핵심 변화 3가지</h3>
+        <ul class="bullet-list">
+          <li><strong>광고 구조 전환:</strong> 수동 타겟 → ASC로 전환, CPA 40% 감소</li>
+          <li><strong>소재 체계화:</strong> 월 소재 3개 → 15개, 후킹-혜택-CTA 공식 적용</li>
+          <li><strong>리타겟팅 세분화:</strong> 장바구니·조회·구매 단계별 맞춤 소재 운영</li>
+        </ul>
+
+        <div class="img-block">
+          <div class="img-placeholder" style="height:160px;">📈 매출 성장 그래프 (월별 추이)</div>
+        </div>
+        <p class="img-caption">박지영 대표 자사몰 월 매출 추이 (수강 전후 6개월)</p>
+
+        <div class="cta-wrapper">
+          <a href="#" class="cta-btn cta-orange">성공 사례 더 보기 →</a>
+        </div>
+
+        <hr class="divider">
+
+        <p class="body-text">박지영 대표처럼 <strong>실전에서 바로 적용 가능한 메타 광고 전략</strong>을 배우고 싶다면, 현재 모집 중인 6기에 합류하세요.</p>
+
+        <div class="cta-row">
+          <a href="#" class="cta-btn cta-primary">6기 수강 신청 →</a>
+          <a href="#" class="cta-btn cta-outline">커리큘럼 살펴보기</a>
+        </div>
+
+        <p class="self-promo">*이 뉴스레터는 <a href="#">BS CAMP 콘텐츠 허브</a>에서 작성되었습니다.</p>
+      </div>
+
+      <div class="email-footer">
+        자사몰사관학교 (인사이트웨이브)<br>
+        smith.kim@inwv.co<br>
+        <a href="#">수신거부</a> · <a href="#">웹사이트</a> · <a href="#">블로그</a> · <a href="#">유튜브</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
