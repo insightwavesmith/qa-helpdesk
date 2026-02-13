@@ -938,7 +938,7 @@ export const BS_CAMP_TEMPLATE_A = {
                 values: {
                   containerPadding: "0px",
                   anchor: "",
-                  html: '<div style="height:56px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);position:relative;"><span style="position:absolute;left:32px;top:50%;transform:translateY(-50%);color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">INSIGHT 01</span></div>',
+                  html: '<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);"><span style="padding-left:32px;color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">INSIGHT 01</span></div>',
                   hideDesktop: false,
                   displayCondition: null,
                   _meta: { htmlID: "u_content_html_section_banner", htmlClassNames: "u_content_html" },
@@ -1684,7 +1684,7 @@ export const BS_CAMP_TEMPLATE_B = {
                 values: {
                   containerPadding: "0px",
                   anchor: "",
-                  html: '<div style="height:56px;background:linear-gradient(135deg,#10B981 0%,#059669 60%,transparent 60%);position:relative;"><span style="position:absolute;left:32px;top:50%;transform:translateY(-50%);color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">강의 미리보기</span></div>',
+                  html: '<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#10B981 0%,#059669 60%,transparent 60%);"><span style="padding-left:32px;color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">강의 미리보기</span></div>',
                   hideDesktop: false,
                   displayCondition: null,
                   _meta: { htmlID: "u_content_html_section_banner_b", htmlClassNames: "u_content_html" },
@@ -1881,7 +1881,7 @@ export const BS_CAMP_TEMPLATE_B = {
                 values: {
                   containerPadding: "0px",
                   anchor: "",
-                  html: '<div style="height:56px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);position:relative;"><span style="position:absolute;left:32px;top:50%;transform:translateY(-50%);color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">웨비나 일정 안내</span></div>',
+                  html: '<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#10B981 0%,#059669 60%,transparent 60%);"><span style="padding-left:32px;color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">웨비나 일정 안내</span></div>',
                   hideDesktop: false,
                   displayCondition: null,
                   _meta: { htmlID: "u_content_html_section_banner_2", htmlClassNames: "u_content_html" },
@@ -2758,7 +2758,7 @@ export const BS_CAMP_TEMPLATE_C = {
                 values: {
                   containerPadding: "0px",
                   anchor: "",
-                  html: '<div style="height:56px;background:linear-gradient(135deg,#F97316 0%,#EA580C 60%,transparent 60%);position:relative;"><span style="position:absolute;left:32px;top:50%;transform:translateY(-50%);color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">INTERVIEW</span></div>',
+                  html: '<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#F97316 0%,#EA580C 60%,transparent 60%);"><span style="padding-left:32px;color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">INTERVIEW</span></div>',
                   hideDesktop: false,
                   displayCondition: null,
                   _meta: { htmlID: "u_content_html_section_banner_c", htmlClassNames: "u_content_html" },
