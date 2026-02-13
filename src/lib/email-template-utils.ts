@@ -1,4 +1,4 @@
-import { BS_CAMP_DEFAULT_TEMPLATE } from "@/lib/email-default-template";
+import { BS_CAMP_DEFAULT_TEMPLATE, BS_CAMP_TEMPLATE_A, BS_CAMP_TEMPLATE_B, BS_CAMP_TEMPLATE_C } from "@/lib/email-default-template";
 import type { Content } from "@/types/content";
 
 /**
@@ -53,10 +53,18 @@ function findContentById(rows: any[], id: string): any | null {
  * BS_CAMP_DEFAULT_TEMPLATE을 기반으로 Unlayer 디자인 JSON을 생성한다.
  */
 export function buildDesignFromSummary(content: Content): object {
+  // 타입별 템플릿 선택
+  const baseTemplate =
+    content.type === "notice"
+      ? BS_CAMP_TEMPLATE_B
+      : content.type === "case_study"
+        ? BS_CAMP_TEMPLATE_C
+        : content.type === "education"
+          ? BS_CAMP_TEMPLATE_A
+          : BS_CAMP_DEFAULT_TEMPLATE;
+
   // deep copy
-  const template = JSON.parse(
-    JSON.stringify(BS_CAMP_DEFAULT_TEMPLATE)
-  );
+  const template = JSON.parse(JSON.stringify(baseTemplate));
 
   const rows = template.body.rows;
 
@@ -66,13 +74,25 @@ export function buildDesignFromSummary(content: Content): object {
     titleBlock.values.text = `<h1 style="font-size: 22px; line-height: 150%;"><strong><span style="color: #1a1a1a; font-size: 22px; line-height: 33px;">${escapeHtml(content.title)}</span></strong></h1>`;
   }
 
-  // 본문 상단 블록 — email_summary를 HTML로 변환
-  const bodyText1 = findContentById(rows, "content-body-text-1");
-  if (bodyText1 && content.email_summary) {
-    bodyText1.values.text = markdownToEmailHtml(content.email_summary);
+  // 훅 인용구 블록 — email_summary 첫 번째 줄 사용
+  const hookQuote = findContentById(rows, "content-hook-quote");
+  if (hookQuote && content.email_summary) {
+    const firstLine = content.email_summary.split("\n\n")[0].trim();
+    hookQuote.values.text = `<p style="font-size: 16px; line-height: 160%; text-align: center;"><em><span style="color: #F75D5D; font-size: 16px;">${escapeHtml(firstLine)}</span></em></p>`;
   }
 
-  // 본문 하단 블록 — 빈 문자열
+  // 본문 상단 블록 — email_summary를 HTML로 변환 (education이면 첫 줄 제외)
+  const bodyText1 = findContentById(rows, "content-body-text-1");
+  if (bodyText1 && content.email_summary) {
+    let bodyMd = content.email_summary;
+    if (content.type === "education") {
+      const idx = bodyMd.indexOf("\n\n");
+      bodyMd = idx !== -1 ? bodyMd.slice(idx + 2) : "";
+    }
+    bodyText1.values.text = bodyMd ? markdownToEmailHtml(bodyMd) : "";
+  }
+
+  // 본문 하단 블록 — 빈 문자열 (default 템플릿에만 존재)
   const bodyText2 = findContentById(rows, "content-body-text-2");
   if (bodyText2) {
     bodyText2.values.text = "";
