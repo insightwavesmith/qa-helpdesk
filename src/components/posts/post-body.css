@@ -42,6 +42,10 @@
   border-collapse: collapse;
   margin: 16px 0;
   border: 1px solid #eeeeee;
+  width: 100%;
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .post-body table th {
@@ -112,4 +116,43 @@
 .post-body strong {
   font-weight: 700;
   color: #1a1a2e;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .post-body {
+    font-size: 15px;
+    line-height: 1.75;
+  }
+
+  .post-body h2 {
+    font-size: 20px;
+    margin-top: 36px;
+    padding-top: 16px;
+  }
+
+  .post-body h3 {
+    font-size: 17px;
+    margin-top: 24px;
+  }
+
+  .post-body table {
+    min-width: 480px;
+  }
+
+  .post-body table th,
+  .post-body table td {
+    padding: 8px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .post-body img {
+    margin: 12px 0;
+  }
+
+  .post-body blockquote {
+    padding: 12px;
+    margin: 12px 0;
+  }
 }
