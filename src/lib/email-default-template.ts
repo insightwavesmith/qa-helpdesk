@@ -197,7 +197,7 @@ export const BS_CAMP_DEFAULT_TEMPLATE = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 15px; line-height: 180%;"><span style="color: #333333; font-size: 15px; line-height: 27px;">안녕하세요. 자사몰사관학교입니다.</span></p>\n<p style="font-size: 15px; line-height: 180%;"><span style="color: #333333; font-size: 15px; line-height: 27px;">여기에 뉴스레터 본문 내용을 작성해주세요. 독자에게 전달하고 싶은 핵심 메시지를 간결하게 정리하면 좋습니다.</span></p>',
+                  text: '<p style="font-size: 15px; line-height: 180%;"><span style="color: #333333; font-size: 15px; line-height: 27px;">안녕하세요! <strong>대표</strong>님 <a href="https://bscamp.co.kr" style="color:#F75D5D;font-weight:600;text-decoration:none;">자사몰사관학교</a>의 스미스코치입니다.</span></p>\n<p style="font-size: 15px; line-height: 180%;"><span style="color: #333333; font-size: 15px; line-height: 27px;">여기에 뉴스레터 본문 내용을 작성해주세요. 독자에게 전달하고 싶은 핵심 메시지를 간결하게 정리하면 좋습니다.</span></p>',
                 },
               },
             ],
@@ -626,7 +626,7 @@ export const BS_CAMP_TEMPLATE_A = {
   body: {
     ...BS_CAMP_DEFAULT_TEMPLATE.body,
     rows: [
-      // ─── Row 1: 헤더 (로고 마크 48x48 + BS CAMP + 빨간 라인) ───
+      // ─── Row 1: 헤더 (로고 마크 48x48 + 자사몰사관학교 + 빨간 라인) ───
       {
         id: "row-header",
         cells: [1],
@@ -657,7 +657,7 @@ export const BS_CAMP_TEMPLATE_A = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td align="center" style="background-color:#F75D5D;border-radius:12px;width:48px;height:48px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:16px;line-height:48px;letter-spacing:-0.5px;">10+</td></tr></table></td></tr><tr><td align="center" style="padding-top:8px;font-size:13px;color:#94a3b8;letter-spacing:2px;font-weight:600;">BS CAMP</td></tr></table>',
+                  text: '<table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td align="center" style="background-color:#F75D5D;border-radius:12px;width:48px;height:48px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:16px;line-height:48px;letter-spacing:-0.5px;">10+</td></tr></table></td></tr><tr><td align="center" style="padding-top:8px;font-size:13px;color:#94a3b8;letter-spacing:2px;font-weight:600;">자사몰사관학교</td></tr></table>',
                 },
               },
               {
@@ -748,7 +748,7 @@ export const BS_CAMP_TEMPLATE_A = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 15px; line-height: 170%;"><span style="color: #1a1a1a;">안녕하세요, <strong>대표</strong>님!</span><br><span style="color: #1a1a1a;">메타 광고 전문 교육 </span><a href="https://bscamp.co.kr" style="color: #F75D5D; font-weight: 600; text-decoration: none;">자사몰사관학교</a><span style="color: #1a1a1a;">입니다.</span></p>',
+                  text: '<p style="font-size: 15px; line-height: 170%;"><span style="color: #1a1a1a;">안녕하세요! <strong>대표</strong>님</span><br><a href="https://bscamp.co.kr" style="color: #F75D5D; font-weight: 600; text-decoration: none;">자사몰사관학교</a><span style="color: #1a1a1a;">의 스미스코치입니다.</span></p>',
                 },
               },
             ],
@@ -924,66 +924,7 @@ export const BS_CAMP_TEMPLATE_A = {
         },
       },
 
-      // ─── Row 6: 섹션 배너 (사선 그라데이션 — HTML 블록) ───
-      {
-        id: "row-section-banner",
-        cells: [1],
-        columns: [
-          {
-            id: "col-section-banner",
-            contents: [
-              {
-                id: "content-section-banner",
-                type: "html",
-                values: {
-                  containerPadding: "0px",
-                  anchor: "",
-                  html: '<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);"><span style="padding-left:32px;color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">INSIGHT 01</span></div>',
-                  hideDesktop: false,
-                  displayCondition: null,
-                  _meta: { htmlID: "u_content_html_section_banner", htmlClassNames: "u_content_html" },
-                  selectable: true,
-                  draggable: true,
-                  duplicatable: true,
-                  deletable: true,
-                  hideable: true,
-                },
-              },
-            ],
-            values: {
-              backgroundColor: "",
-              padding: "0px",
-              border: {},
-              borderRadius: "0px",
-              _meta: { htmlID: "u_column_section_banner", htmlClassNames: "u_column" },
-            },
-          },
-        ],
-        values: {
-          displayCondition: null,
-          columns: false,
-          backgroundColor: "#ffffff",
-          columnsBackgroundColor: "",
-          backgroundImage: {
-            url: "",
-            fullWidth: true,
-            repeat: "no-repeat",
-            size: "custom",
-            position: "center",
-          },
-          padding: "0px",
-          anchor: "",
-          hideDesktop: false,
-          _meta: { htmlID: "u_row_section_banner", htmlClassNames: "u_row" },
-          selectable: true,
-          draggable: true,
-          duplicatable: true,
-          deletable: true,
-          hideable: true,
-        },
-      },
-
-      // ─── Row 7: 본문 텍스트 (기존 default 재사용) ───
+      // ─── Row 6: 본문 텍스트 (기존 default 재사용) ───
       BS_CAMP_DEFAULT_TEMPLATE.body.rows[2],
 
       // ─── Row 8: 인포그래픽 이미지 영역 (placeholder) ───
@@ -1400,7 +1341,7 @@ export const BS_CAMP_TEMPLATE_B = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td align="center" style="background-color:#059669;border-radius:12px;width:48px;height:48px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:16px;line-height:48px;letter-spacing:-0.5px;">10+</td></tr></table></td></tr><tr><td align="center" style="padding-top:8px;font-size:13px;color:#94a3b8;letter-spacing:2px;font-weight:600;">BS CAMP</td></tr></table>',
+                  text: '<table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td align="center" style="background-color:#059669;border-radius:12px;width:48px;height:48px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:16px;line-height:48px;letter-spacing:-0.5px;">10+</td></tr></table></td></tr><tr><td align="center" style="padding-top:8px;font-size:13px;color:#94a3b8;letter-spacing:2px;font-weight:600;">자사몰사관학교</td></tr></table>',
                 },
               },
               {
@@ -1562,7 +1503,7 @@ export const BS_CAMP_TEMPLATE_B = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 15px; line-height: 170%;"><span style="color: #1a1a1a;">안녕하세요, <strong>대표</strong>님!</span><br><span style="color: #1a1a1a;">자사몰 10억+ 사관학교의 스미스 코치입니다.</span></p>',
+                  text: '<p style="font-size: 15px; line-height: 170%;"><span style="color: #1a1a1a;">안녕하세요! <strong>대표</strong>님</span><br><a href="https://bscamp.co.kr" style="color: #059669; font-weight: 600; text-decoration: none;">자사몰사관학교</a><span style="color: #1a1a1a;">의 스미스코치입니다.</span></p>',
                 },
               },
             ],
@@ -2342,7 +2283,7 @@ export const BS_CAMP_TEMPLATE_C = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td align="center" style="background-color:#F97316;border-radius:12px;width:48px;height:48px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:16px;line-height:48px;letter-spacing:-0.5px;">10+</td></tr></table></td></tr><tr><td align="center" style="padding-top:8px;font-size:13px;color:#94a3b8;letter-spacing:2px;font-weight:600;">BS CAMP</td></tr></table>',
+                  text: '<table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td align="center" style="background-color:#F97316;border-radius:12px;width:48px;height:48px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:16px;line-height:48px;letter-spacing:-0.5px;">10+</td></tr></table></td></tr><tr><td align="center" style="padding-top:8px;font-size:13px;color:#94a3b8;letter-spacing:2px;font-weight:600;">자사몰사관학교</td></tr></table>',
                 },
               },
               {
@@ -2433,7 +2374,7 @@ export const BS_CAMP_TEMPLATE_C = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 15px; line-height: 170%;"><span style="color: #1a1a1a;">안녕하세요, <strong>대표</strong>님!</span><br><span style="color: #1a1a1a;">메타 광고 전문 교육 </span><a href="https://bscamp.co.kr" style="color: #F97316; font-weight: 600; text-decoration: none;">자사몰사관학교</a><span style="color: #1a1a1a;">입니다.</span></p>',
+                  text: '<p style="font-size: 15px; line-height: 170%;"><span style="color: #1a1a1a;">안녕하세요! <strong>대표</strong>님</span><br><a href="https://bscamp.co.kr" style="color: #F97316; font-weight: 600; text-decoration: none;">자사몰사관학교</a><span style="color: #1a1a1a;">의 스미스코치입니다.</span></p>',
                 },
               },
             ],

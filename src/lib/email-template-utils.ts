@@ -181,7 +181,7 @@ export function buildDesignFromSummary(content: Content): object {
   // 제목 블록
   const titleBlock = findContentById(rows, "content-title");
   if (titleBlock) {
-    titleBlock.values.text = `<h1 style="font-size: 22px; line-height: 150%;"><strong><span style="color: #1a1a1a; font-size: 22px; line-height: 33px;">${escapeHtml(content.title)}</span></strong></h1>`;
+    titleBlock.values.text = `<h1 style="font-size: 22px; line-height: 150%; text-align: center;"><strong><span style="color: #1a1a1a; font-size: 22px; line-height: 33px;">${escapeHtml(content.title)}</span></strong></h1>`;
   }
 
   // 훅 인용구 블록 — email_summary 첫 번째 줄 사용, 타입별 색상 적용
