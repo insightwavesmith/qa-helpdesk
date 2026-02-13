@@ -32,15 +32,16 @@ function markdownToEmailHtml(md: string): string {
   const rawBlocks = text.split(/\n\s*\n/);
 
   // BUG-1 fix: 빈 줄로 분리된 연속 ✅ 블록을 하나로 합침 (번호 카드 01 고정 방지)
+  // ✅ 블록은 "✅ **bold**\n설명줄" 구조이므로 첫 줄만 ✅ 시작 여부로 판단
   const blocks: string[] = [];
   for (const raw of rawBlocks) {
     const t = raw.trim();
     if (!t) continue;
-    const isCheck = t.split("\n").every(l => l.trim().startsWith("✅"));
+    const isCheck = t.split("\n")[0].trim().startsWith("✅");
     if (isCheck && blocks.length > 0) {
-      const prevLines = blocks[blocks.length - 1].split("\n");
-      if (prevLines.every(l => l.trim().startsWith("✅"))) {
-        blocks[blocks.length - 1] += "\n" + t;
+      const prevFirst = blocks[blocks.length - 1].split("\n")[0].trim();
+      if (prevFirst.startsWith("✅")) {
+        blocks[blocks.length - 1] += "\n\n" + t;
         continue;
       }
     }
