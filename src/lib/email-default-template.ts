@@ -580,9 +580,9 @@ export const BS_CAMP_DEFAULT_TEMPLATE = {
       contentVerticalAlign: "center",
       contentWidth: "600px",
       fontFamily: {
-        label: "Pretendard",
-        value: "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-        url: "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css",
+        label: "Pretendard Variable",
+        value: "'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        url: "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
         defaultFont: true,
       },
       textColor: "#333333",
@@ -924,7 +924,7 @@ export const BS_CAMP_TEMPLATE_A = {
         },
       },
 
-      // ─── Row 6: 섹션 배너 (빨간 단색 배경 + 흰색 텍스트) ───
+      // ─── Row 6: 섹션 배너 (사선 그라데이션 — HTML 블록) ───
       {
         id: "row-section-banner",
         cells: [1],
@@ -934,28 +934,19 @@ export const BS_CAMP_TEMPLATE_A = {
             contents: [
               {
                 id: "content-section-banner",
-                type: "text",
+                type: "html",
                 values: {
-                  containerPadding: "16px 32px",
+                  containerPadding: "0px",
                   anchor: "",
-                  textAlign: "left",
-                  lineHeight: "140%",
-                  linkStyle: {
-                    inherit: true,
-                    linkColor: "#ffffff",
-                    linkHoverColor: "#ffffff",
-                    linkUnderline: false,
-                    linkHoverUnderline: false,
-                  },
+                  html: '<div style="height:56px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);position:relative;"><span style="position:absolute;left:32px;top:50%;transform:translateY(-50%);color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">INSIGHT 01</span></div>',
                   hideDesktop: false,
                   displayCondition: null,
-                  _meta: { htmlID: "u_content_text_section_banner", htmlClassNames: "u_content_text" },
+                  _meta: { htmlID: "u_content_html_section_banner", htmlClassNames: "u_content_html" },
                   selectable: true,
                   draggable: true,
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 14px; line-height: 140%;"><strong><span style="color: #ffffff; font-size: 14px; letter-spacing: 1px;">INSIGHT 01</span></strong></p>',
                 },
               },
             ],
@@ -971,7 +962,7 @@ export const BS_CAMP_TEMPLATE_A = {
         values: {
           displayCondition: null,
           columns: false,
-          backgroundColor: "#F75D5D",
+          backgroundColor: "#ffffff",
           columnsBackgroundColor: "",
           backgroundImage: {
             url: "",
@@ -1679,7 +1670,7 @@ export const BS_CAMP_TEMPLATE_B = {
       // ─── Row 5: 본문 텍스트 (기존 default) ───
       BS_CAMP_DEFAULT_TEMPLATE.body.rows[2],
 
-      // ─── Row 6: 섹션 배너 (초록 단색 — 강의 미리보기) ───
+      // ─── Row 6: 섹션 배너 (초록 그라데이션 — HTML 블록) ───
       {
         id: "row-section-banner",
         cells: [1],
@@ -1689,28 +1680,19 @@ export const BS_CAMP_TEMPLATE_B = {
             contents: [
               {
                 id: "content-section-banner",
-                type: "text",
+                type: "html",
                 values: {
-                  containerPadding: "16px 32px",
+                  containerPadding: "0px",
                   anchor: "",
-                  textAlign: "left",
-                  lineHeight: "140%",
-                  linkStyle: {
-                    inherit: true,
-                    linkColor: "#ffffff",
-                    linkHoverColor: "#ffffff",
-                    linkUnderline: false,
-                    linkHoverUnderline: false,
-                  },
+                  html: '<div style="height:56px;background:linear-gradient(135deg,#10B981 0%,#059669 60%,transparent 60%);position:relative;"><span style="position:absolute;left:32px;top:50%;transform:translateY(-50%);color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">강의 미리보기</span></div>',
                   hideDesktop: false,
                   displayCondition: null,
-                  _meta: { htmlID: "u_content_text_section_banner_b", htmlClassNames: "u_content_text" },
+                  _meta: { htmlID: "u_content_html_section_banner_b", htmlClassNames: "u_content_html" },
                   selectable: true,
                   draggable: true,
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 14px; line-height: 140%;"><strong><span style="color: #ffffff; font-size: 14px; letter-spacing: 1px;">강의 미리보기</span></strong></p>',
                 },
               },
             ],
@@ -1726,7 +1708,7 @@ export const BS_CAMP_TEMPLATE_B = {
         values: {
           displayCondition: null,
           columns: false,
-          backgroundColor: "#059669",
+          backgroundColor: "#ffffff",
           columnsBackgroundColor: "",
           backgroundImage: {
             url: "",
@@ -1885,7 +1867,7 @@ export const BS_CAMP_TEMPLATE_B = {
         },
       },
 
-      // ─── Row 9: 섹션 배너 (초록 — 웨비나 일정 안내) ───
+      // ─── Row 9: 섹션 배너 (빨간 그라데이션 — 웨비나 일정 안내 — HTML 블록) ───
       {
         id: "row-section-banner-2",
         cells: [1],
@@ -1895,28 +1877,19 @@ export const BS_CAMP_TEMPLATE_B = {
             contents: [
               {
                 id: "content-section-banner-2",
-                type: "text",
+                type: "html",
                 values: {
-                  containerPadding: "16px 32px",
+                  containerPadding: "0px",
                   anchor: "",
-                  textAlign: "left",
-                  lineHeight: "140%",
-                  linkStyle: {
-                    inherit: true,
-                    linkColor: "#ffffff",
-                    linkHoverColor: "#ffffff",
-                    linkUnderline: false,
-                    linkHoverUnderline: false,
-                  },
+                  html: '<div style="height:56px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);position:relative;"><span style="position:absolute;left:32px;top:50%;transform:translateY(-50%);color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">웨비나 일정 안내</span></div>',
                   hideDesktop: false,
                   displayCondition: null,
-                  _meta: { htmlID: "u_content_text_section_banner_2", htmlClassNames: "u_content_text" },
+                  _meta: { htmlID: "u_content_html_section_banner_2", htmlClassNames: "u_content_html" },
                   selectable: true,
                   draggable: true,
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 14px; line-height: 140%;"><strong><span style="color: #ffffff; font-size: 14px; letter-spacing: 1px;">웨비나 일정 안내</span></strong></p>',
                 },
               },
             ],
@@ -1932,7 +1905,7 @@ export const BS_CAMP_TEMPLATE_B = {
         values: {
           displayCondition: null,
           columns: false,
-          backgroundColor: "#F75D5D",
+          backgroundColor: "#ffffff",
           columnsBackgroundColor: "",
           backgroundImage: {
             url: "",
@@ -2726,21 +2699,21 @@ export const BS_CAMP_TEMPLATE_C = {
               },
             ],
             values: {
-              backgroundColor: "#FFF7ED",
+              backgroundColor: "#FEF2F2",
               padding: "0px",
               border: {
                 borderTopWidth: "1px",
                 borderTopStyle: "solid",
-                borderTopColor: "#FED7AA",
+                borderTopColor: "#FECACA",
                 borderBottomWidth: "1px",
                 borderBottomStyle: "solid",
-                borderBottomColor: "#FED7AA",
+                borderBottomColor: "#FECACA",
                 borderLeftWidth: "1px",
                 borderLeftStyle: "solid",
-                borderLeftColor: "#FED7AA",
+                borderLeftColor: "#FECACA",
                 borderRightWidth: "1px",
                 borderRightStyle: "solid",
-                borderRightColor: "#FED7AA",
+                borderRightColor: "#FECACA",
               },
               borderRadius: "12px",
               _meta: { htmlID: "u_column_ba_after", htmlClassNames: "u_column" },
@@ -2771,7 +2744,7 @@ export const BS_CAMP_TEMPLATE_C = {
         },
       },
 
-      // ─── Row 7: 섹션 배너 (주황 — INTERVIEW) ───
+      // ─── Row 7: 섹션 배너 (주황 그라데이션 — HTML 블록) ───
       {
         id: "row-section-banner",
         cells: [1],
@@ -2781,28 +2754,19 @@ export const BS_CAMP_TEMPLATE_C = {
             contents: [
               {
                 id: "content-section-banner",
-                type: "text",
+                type: "html",
                 values: {
-                  containerPadding: "16px 32px",
+                  containerPadding: "0px",
                   anchor: "",
-                  textAlign: "left",
-                  lineHeight: "140%",
-                  linkStyle: {
-                    inherit: true,
-                    linkColor: "#ffffff",
-                    linkHoverColor: "#ffffff",
-                    linkUnderline: false,
-                    linkHoverUnderline: false,
-                  },
+                  html: '<div style="height:56px;background:linear-gradient(135deg,#F97316 0%,#EA580C 60%,transparent 60%);position:relative;"><span style="position:absolute;left:32px;top:50%;transform:translateY(-50%);color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">INTERVIEW</span></div>',
                   hideDesktop: false,
                   displayCondition: null,
-                  _meta: { htmlID: "u_content_text_section_banner_c", htmlClassNames: "u_content_text" },
+                  _meta: { htmlID: "u_content_html_section_banner_c", htmlClassNames: "u_content_html" },
                   selectable: true,
                   draggable: true,
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 14px; line-height: 140%;"><strong><span style="color: #ffffff; font-size: 14px; letter-spacing: 1px;">INTERVIEW</span></strong></p>',
                 },
               },
             ],
@@ -2818,7 +2782,7 @@ export const BS_CAMP_TEMPLATE_C = {
         values: {
           displayCondition: null,
           columns: false,
-          backgroundColor: "#F97316",
+          backgroundColor: "#ffffff",
           columnsBackgroundColor: "",
           backgroundImage: {
             url: "",

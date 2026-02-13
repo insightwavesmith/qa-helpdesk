@@ -1,37 +1,68 @@
-# TASK: 정보공유 페이지 테이블 CSS 개선
+# TASK: 뉴스레터 템플릿 목업 일치 수정
 
 ## 배경
-정보공유(posts) 페이지의 마크다운 테이블이 읽기 불편함.
-- 컬럼 너비가 글자량에 비례해서 들쭉날쭉
-- 좌우 여백 부족, 답답함
-- 표가 화면 꽉 채워서 가독성 저하
-- 헤더와 데이터 행의 시각적 위계 구분 약함
+email-mockup-all.html 목업과 실제 Unlayer 템플릿 렌더링이 다름.
+폰트, 도형, 색상, 여백 등이 불일치.
 
-## 레퍼런스 분석 결과
-- **마켓핏랩**: 비교표를 이미지로 제작, HTML 테이블 미사용
-- **리캐치**: 표 대신 다이어그램/인포그래픽 이미지 사용
-- **공통점**: 깔끔한 여백, 명확한 시각적 위계, 중앙 정렬
+## 목업 기준 (public/email-mockup-all.html)
+- 폰트: Pretendard Variable (웹폰트 @import)
+- section-banner: linear-gradient(135deg) 사선 그라데이션
+- Before/After 카드: border-radius 12px, ba-before(#f1f3f8), ba-after(#FEF2F2 + #FECACA)
+- 프로필 카드: border-radius 12px, 회색배경 #f8f9fc
+- CTA 버튼: border-radius 8px
+- quote-block: border-left 3px solid + border-radius 0 8px 8px 0
+- bullet-list: ::before pseudo-element로 색상 도트
+- 전반적으로 border-radius가 많이 사용됨 (8~12px)
 
-## 수정 대상
+## Unlayer 제약사항
+- Unlayer는 CSS gradient를 직접 지원하지 않음
+- Unlayer에서 가능한 것: 단색 배경, 이미지, HTML 블록
+- 해결: gradient가 필요한 section-banner는 HTML 블록으로 구현
 
-### 파일: 정보공유 페이지의 마크다운 렌더러 CSS
-MDXEditor 또는 마크다운 렌더링 컴포넌트의 테이블 스타일을 찾아서 수정.
-- `src/` 내 `prose`, `markdown`, `mdx`, `table` 관련 CSS/컴포넌트 확인
-- globals.css 또는 Tailwind prose 설정
+## 수정 사항
 
-### 수정 내용
+### 1. 폰트 통일
+모든 템플릿(A/B/C)에서 Pretendard 폰트 적용.
+- body values에 fontFamily 추가: "'Pretendard Variable', -apple-system, 'Segoe UI', sans-serif"
+- 또는 Unlayer의 body.values.fontFamily 설정
 
-1. **표 전체**: `max-width: 90%` + `margin: 0 auto` (중앙 정렬, 좌우 여백 확보)
-2. **셀 padding**: `padding: 14px 20px` (현재보다 넉넉하게)
-3. **헤더 행**: 배경색 `#f8f9fa`, `font-weight: 600`, `font-size: 13px`, `text-transform: uppercase`, `letter-spacing: 0.05em`, `color: #6b7280`
-4. **데이터 행**: `font-size: 14px` 통일, `line-height: 1.6`
-5. **데이터 행 첫 열**: `font-weight: 600` (구분 강조)
-6. **짝수 행**: 배경색 `#fafbfc` (zebra stripe)
-7. **테두리**: 외곽 `border: 1px solid #e5e7eb`, 내부는 하단 `border-bottom` 만
-8. **모바일**: 기존 `overflow-x: auto` 유지
+### 2. Section Banner → HTML 블록
+현재 단색 배경 → 목업처럼 gradient 사선 배경으로 변경.
+Unlayer에서 type: "html" 블록으로 교체:
+```html
+<div style="height:56px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);position:relative;">
+  <span style="position:absolute;left:32px;top:50%;transform:translateY(-50%);color:white;font-size:14px;font-weight:700;letter-spacing:1px;">INSIGHT 01</span>
+</div>
+```
+Template B: #10B981→#059669, Template C: #F97316→#EA580C
 
-## 검증 기준
-1. `npm run build` 성공
-2. 정보공유 페이지에서 테이블이 있는 콘텐츠 확인 (case_study QA 글에 테이블 있음)
-3. 데스크톱에서 표가 중앙 정렬 + 여백 확보
-4. 모바일에서 가로 스크롤 정상 동작
+### 3. Before/After 카드 (Template C)
+현재 Unlayer 2컬럼 → HTML 블록으로 교체해서 목업과 동일하게:
+- border-radius 12px
+- ba-before: background #f1f3f8, border 1px solid #e2e8f0
+- ba-after: background #FEF2F2, border 1px solid #FECACA
+- 숫자: font-size 28px, font-weight 800
+
+### 4. 프로필 카드 (Template C)
+- border-radius 12px
+- background: #f8f9fc
+- 아바타: 64px 원형, 주황 배경
+
+### 5. Quote Block
+- border-left: 3px solid (테마색)
+- border-radius: 0 8px 8px 0
+- background: #f8f9fc
+
+### 6. CTA 버튼
+- border-radius: 8px (현재와 비교 확인)
+- 패딩: 14px 32px
+
+### 7. Bullet List
+- 빨간/초록/주황 도트 (현재 HTML 텍스트 → 스타일 확인)
+
+## 파일
+- `src/lib/email-default-template.ts` — Template A/B/C JSON 수정
+
+## 검증
+1. npm run build 성공
+2. 각 템플릿 Unlayer 에디터에서 목업과 시각적 일치 확인
