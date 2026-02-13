@@ -9,6 +9,16 @@ const META_THEME_COLOR = "#f8f9fc";
 export const metadata: Metadata = {
   title: "자사몰사관학교",
   description: "자사몰사관학교 수강생 전용 Q&A 헬프데스크",
+  icons: {
+    icon: [
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-48x48.png", sizes: "48x48", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
