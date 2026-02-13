@@ -50,9 +50,17 @@ function findContentById(rows: any[], id: string): any | null {
 
 /**
  * email_summary만 있고 email_design_json이 없는 기존 콘텐츠에 대해
- * BS_CAMP_DEFAULT_TEMPLATE을 기반으로 Unlayer 디자인 JSON을 생성한다.
+ * 타입별 템플릿을 기반으로 Unlayer 디자인 JSON을 생성한다.
  */
 export function buildDesignFromSummary(content: Content): object {
+  // 타입별 테마 색상
+  const themeColors: Record<string, { primary: string }> = {
+    education: { primary: "#F75D5D" },
+    notice: { primary: "#059669" },
+    case_study: { primary: "#F97316" },
+  };
+  const colors = themeColors[content.type ?? ""] ?? { primary: "#F75D5D" };
+
   // 타입별 템플릿 선택
   const baseTemplate =
     content.type === "notice"
@@ -74,18 +82,18 @@ export function buildDesignFromSummary(content: Content): object {
     titleBlock.values.text = `<h1 style="font-size: 22px; line-height: 150%;"><strong><span style="color: #1a1a1a; font-size: 22px; line-height: 33px;">${escapeHtml(content.title)}</span></strong></h1>`;
   }
 
-  // 훅 인용구 블록 — email_summary 첫 번째 줄 사용
+  // 훅 인용구 블록 — email_summary 첫 번째 줄 사용, 타입별 색상 적용
   const hookQuote = findContentById(rows, "content-hook-quote");
   if (hookQuote && content.email_summary) {
     const firstLine = content.email_summary.split("\n\n")[0].trim();
-    hookQuote.values.text = `<p style="font-size: 16px; line-height: 160%; text-align: center;"><em><span style="color: #F75D5D; font-size: 16px;">${escapeHtml(firstLine)}</span></em></p>`;
+    hookQuote.values.text = `<p style="font-size: 16px; line-height: 160%; text-align: center;"><em><span style="color: ${colors.primary}; font-size: 16px; font-weight: 600;">${escapeHtml(firstLine)}</span></em></p>`;
   }
 
-  // 본문 상단 블록 — email_summary를 HTML로 변환 (education이면 첫 줄 제외)
+  // 본문 상단 블록 — email_summary를 HTML로 변환 (훅인용구가 있으면 첫 줄 제외)
   const bodyText1 = findContentById(rows, "content-body-text-1");
   if (bodyText1 && content.email_summary) {
     let bodyMd = content.email_summary;
-    if (content.type === "education") {
+    if (hookQuote) {
       const idx = bodyMd.indexOf("\n\n");
       bodyMd = idx !== -1 ? bodyMd.slice(idx + 2) : "";
     }

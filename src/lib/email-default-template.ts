@@ -621,18 +621,174 @@ export const BS_CAMP_DEFAULT_TEMPLATE = {
   },
 };
 
-// ─── 템플릿 A: education 타입용 (훅 인용구 + 클로징 텍스트 포함) ───
+// ─── 템플릿 A: education 타입용 (정보공유형 — 로고마크, 인사말, 훅인용구, 목차, 섹션배너, 인용블록, 불릿리스트) ───
 export const BS_CAMP_TEMPLATE_A = {
   body: {
     ...BS_CAMP_DEFAULT_TEMPLATE.body,
     rows: [
-      // row-header: 그대로
-      BS_CAMP_DEFAULT_TEMPLATE.body.rows[0],
+      // ─── Row 1: 헤더 (로고 마크 48x48 + BS CAMP + 빨간 라인) ───
+      {
+        id: "row-header",
+        cells: [1],
+        columns: [
+          {
+            id: "col-header",
+            contents: [
+              {
+                id: "content-logo",
+                type: "text",
+                values: {
+                  containerPadding: "32px 24px 8px",
+                  anchor: "",
+                  textAlign: "center",
+                  lineHeight: "140%",
+                  linkStyle: {
+                    inherit: true,
+                    linkColor: "#0000ee",
+                    linkHoverColor: "#0000ee",
+                    linkUnderline: true,
+                    linkHoverUnderline: true,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_logo", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td align="center" style="background-color:#F75D5D;border-radius:12px;width:48px;height:48px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:16px;line-height:48px;letter-spacing:-0.5px;">10+</td></tr></table></td></tr><tr><td align="center" style="padding-top:8px;font-size:13px;color:#94a3b8;letter-spacing:2px;font-weight:600;">BS CAMP</td></tr></table>',
+                },
+              },
+              {
+                id: "content-divider-header",
+                type: "divider",
+                values: {
+                  width: "100%",
+                  border: {
+                    borderTopWidth: "2px",
+                    borderTopStyle: "solid",
+                    borderTopColor: "#F75D5D",
+                  },
+                  textAlign: "center",
+                  containerPadding: "8px 24px 0px",
+                  anchor: "",
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_divider_header", htmlClassNames: "u_content_divider" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_header", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_header", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
 
-      // row-title: 그대로
+      // ─── Row 2: 인사말 블록 ───
+      {
+        id: "row-greeting",
+        cells: [1],
+        columns: [
+          {
+            id: "col-greeting",
+            contents: [
+              {
+                id: "content-greeting",
+                type: "text",
+                values: {
+                  containerPadding: "24px 24px 8px",
+                  anchor: "",
+                  textAlign: "left",
+                  lineHeight: "170%",
+                  linkStyle: {
+                    inherit: false,
+                    linkColor: "#F75D5D",
+                    linkHoverColor: "#E54949",
+                    linkUnderline: false,
+                    linkHoverUnderline: true,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_greeting", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 15px; line-height: 170%;"><span style="color: #1a1a1a;">안녕하세요, <strong>대표</strong>님!</span><br><span style="color: #1a1a1a;">메타 광고 전문 교육 </span><a href="https://bscamp.co.kr" style="color: #F75D5D; font-weight: 600; text-decoration: none;">자사몰사관학교</a><span style="color: #1a1a1a;">입니다.</span></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_greeting", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_greeting", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 3: 제목 (기존 default 재사용) ───
       BS_CAMP_DEFAULT_TEMPLATE.body.rows[1],
 
-      // ─── row-hook-quote: 빨간 이탤릭 센터 텍스트 (NEW) ───
+      // ─── Row 4: 훅 인용구 (빨간 이탤릭 센터) ───
       {
         id: "row-hook-quote",
         cells: [1],
@@ -644,7 +800,7 @@ export const BS_CAMP_TEMPLATE_A = {
                 id: "content-hook-quote",
                 type: "text",
                 values: {
-                  containerPadding: "16px 24px",
+                  containerPadding: "8px 24px 16px",
                   anchor: "",
                   textAlign: "center",
                   lineHeight: "160%",
@@ -663,7 +819,7 @@ export const BS_CAMP_TEMPLATE_A = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 16px; line-height: 160%; text-align: center;"><em><span style="color: #F75D5D; font-size: 16px;">여기에 훅 인용구가 들어갑니다</span></em></p>',
+                  text: '<p style="font-size: 16px; line-height: 160%; text-align: center;"><em><span style="color: #F75D5D; font-size: 16px; font-weight: 600;">여기에 훅 인용구가 들어갑니다</span></em></p>',
                 },
               },
             ],
@@ -700,16 +856,450 @@ export const BS_CAMP_TEMPLATE_A = {
         },
       },
 
-      // row-body-text-1: 그대로
+      // ─── Row 5: 목차 (TOC) ───
+      {
+        id: "row-toc",
+        cells: [1],
+        columns: [
+          {
+            id: "col-toc",
+            contents: [
+              {
+                id: "content-toc",
+                type: "text",
+                values: {
+                  containerPadding: "8px 24px 16px",
+                  anchor: "",
+                  textAlign: "left",
+                  lineHeight: "180%",
+                  linkStyle: {
+                    inherit: false,
+                    linkColor: "#F75D5D",
+                    linkHoverColor: "#E54949",
+                    linkUnderline: false,
+                    linkHoverUnderline: true,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_toc", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 15px; line-height: 180%;"><span style="color: #F75D5D; font-weight: 600;">1. 첫 번째 핵심 주제</span></p>\n<p style="font-size: 15px; line-height: 180%;"><span style="color: #F75D5D; font-weight: 600;">2. 두 번째 핵심 주제</span></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_toc", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_toc", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 6: 섹션 배너 (빨간 단색 배경 + 흰색 텍스트) ───
+      {
+        id: "row-section-banner",
+        cells: [1],
+        columns: [
+          {
+            id: "col-section-banner",
+            contents: [
+              {
+                id: "content-section-banner",
+                type: "text",
+                values: {
+                  containerPadding: "16px 32px",
+                  anchor: "",
+                  textAlign: "left",
+                  lineHeight: "140%",
+                  linkStyle: {
+                    inherit: true,
+                    linkColor: "#ffffff",
+                    linkHoverColor: "#ffffff",
+                    linkUnderline: false,
+                    linkHoverUnderline: false,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_section_banner", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 14px; line-height: 140%;"><strong><span style="color: #ffffff; font-size: 14px; letter-spacing: 1px;">INSIGHT 01</span></strong></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_section_banner", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#F75D5D",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_section_banner", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 7: 본문 텍스트 (기존 default 재사용) ───
       BS_CAMP_DEFAULT_TEMPLATE.body.rows[2],
 
-      // row-image: 그대로
-      BS_CAMP_DEFAULT_TEMPLATE.body.rows[3],
+      // ─── Row 8: 인포그래픽 이미지 영역 (placeholder) ───
+      {
+        id: "row-infographic",
+        cells: [1],
+        columns: [
+          {
+            id: "col-infographic",
+            contents: [
+              {
+                id: "content-infographic",
+                type: "image",
+                values: {
+                  containerPadding: "16px 24px",
+                  anchor: "",
+                  src: {
+                    url: "https://via.placeholder.com/536x200/f1f3f8/94a3b8?text=%F0%9F%93%8A+%EC%9D%B8%ED%8F%AC%EA%B7%B8%EB%9E%98%ED%94%BD",
+                    width: 536,
+                    height: 200,
+                  },
+                  textAlign: "center",
+                  altText: "인포그래픽 이미지",
+                  action: {
+                    name: "web",
+                    values: { href: "", target: "_blank" },
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_image_infographic", htmlClassNames: "u_content_image" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  fullWidth: false,
+                },
+              },
+              {
+                id: "content-img-caption",
+                type: "text",
+                values: {
+                  containerPadding: "0px 24px 8px",
+                  anchor: "",
+                  textAlign: "center",
+                  lineHeight: "140%",
+                  linkStyle: {
+                    inherit: true,
+                    linkColor: "#0000ee",
+                    linkHoverColor: "#0000ee",
+                    linkUnderline: true,
+                    linkHoverUnderline: true,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_img_caption", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 12px; line-height: 140%;"><span style="color: #94a3b8;">이미지 캡션이 들어갑니다</span></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_infographic", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_infographic", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
 
-      // row-cta: 그대로
+      // ─── Row 9: 인용 블록 (왼쪽 빨간 보더 3px) ───
+      {
+        id: "row-quote",
+        cells: [1],
+        columns: [
+          {
+            id: "col-quote",
+            contents: [
+              {
+                id: "content-quote-block",
+                type: "text",
+                values: {
+                  containerPadding: "16px 20px",
+                  anchor: "",
+                  textAlign: "left",
+                  lineHeight: "170%",
+                  linkStyle: {
+                    inherit: true,
+                    linkColor: "#0000ee",
+                    linkHoverColor: "#0000ee",
+                    linkUnderline: true,
+                    linkHoverUnderline: true,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_quote_block", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 14px; line-height: 170%; font-style: italic;"><span style="color: #374151;">"여기에 전문가 인용구가 들어갑니다. 핵심 인사이트를 강조하는 문장입니다."</span></p>\n<p style="font-size: 13px; line-height: 170%;"><span style="color: #64748b;">— 김성현, 자사몰사관학교 대표</span></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "#f8f9fc",
+              padding: "0px",
+              border: {
+                borderLeftWidth: "3px",
+                borderLeftStyle: "solid",
+                borderLeftColor: "#F75D5D",
+              },
+              borderRadius: "0px 8px 8px 0px",
+              _meta: { htmlID: "u_column_quote", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "8px 24px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_quote", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 10: 불릿 리스트 (빨간 도트) ───
+      {
+        id: "row-bullet-list",
+        cells: [1],
+        columns: [
+          {
+            id: "col-bullet-list",
+            contents: [
+              {
+                id: "content-bullet-list",
+                type: "text",
+                values: {
+                  containerPadding: "8px 24px 16px",
+                  anchor: "",
+                  textAlign: "left",
+                  lineHeight: "180%",
+                  linkStyle: {
+                    inherit: true,
+                    linkColor: "#F75D5D",
+                    linkHoverColor: "#E54949",
+                    linkUnderline: true,
+                    linkHoverUnderline: true,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_bullet_list", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 14px; line-height: 180%;"><span style="color: #F75D5D; font-weight: 600;">&#x2022;</span> <span style="color: #374151;"><strong style="color: #F75D5D;">핵심 포인트 1:</strong> 설명 텍스트가 들어갑니다</span></p>\n<p style="font-size: 14px; line-height: 180%;"><span style="color: #F75D5D; font-weight: 600;">&#x2022;</span> <span style="color: #374151;"><strong style="color: #F75D5D;">핵심 포인트 2:</strong> 설명 텍스트가 들어갑니다</span></p>\n<p style="font-size: 14px; line-height: 180%;"><span style="color: #F75D5D; font-weight: 600;">&#x2022;</span> <span style="color: #374151;"><strong style="color: #F75D5D;">핵심 포인트 3:</strong> 설명 텍스트가 들어갑니다</span></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_bullet_list", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_bullet_list", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 11: CTA 버튼 (기존 default 재사용) ───
       BS_CAMP_DEFAULT_TEMPLATE.body.rows[5],
 
-      // ─── row-closing: 클로징 텍스트 (NEW) ───
+      // ─── Row 12: 구분선 ───
+      {
+        id: "row-divider",
+        cells: [1],
+        columns: [
+          {
+            id: "col-divider",
+            contents: [
+              {
+                id: "content-divider-body",
+                type: "divider",
+                values: {
+                  width: "100%",
+                  border: {
+                    borderTopWidth: "1px",
+                    borderTopStyle: "solid",
+                    borderTopColor: "#e2e8f0",
+                  },
+                  textAlign: "center",
+                  containerPadding: "16px 24px",
+                  anchor: "",
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_divider_body", htmlClassNames: "u_content_divider" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_divider", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_divider", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 13: 클로징 텍스트 ───
       {
         id: "row-closing",
         cells: [1],
@@ -723,13 +1313,13 @@ export const BS_CAMP_TEMPLATE_A = {
                 values: {
                   containerPadding: "16px 24px",
                   anchor: "",
-                  textAlign: "center",
+                  textAlign: "left",
                   lineHeight: "180%",
                   linkStyle: {
-                    inherit: true,
-                    linkColor: "#0000ee",
-                    linkHoverColor: "#0000ee",
-                    linkUnderline: true,
+                    inherit: false,
+                    linkColor: "#F75D5D",
+                    linkHoverColor: "#E54949",
+                    linkUnderline: false,
                     linkHoverUnderline: true,
                   },
                   hideDesktop: false,
@@ -740,7 +1330,7 @@ export const BS_CAMP_TEMPLATE_A = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 14px; line-height: 180%;"><span style="color: #64748b;">자사몰사관학교에서 더 많은 실전 노하우를 만나보세요.</span></p>',
+                  text: '<p style="font-size: 14px; line-height: 180%;"><span style="color: #64748b;">더 깊은 실전 노하우가 궁금하시다면, 자사몰사관학교에서 직접 배워보세요.</span></p>\n<p style="font-size: 14px; line-height: 180%; margin-top: 12px;"><span style="color: #1a1a1a;">감사합니다.</span><br><a href="https://bscamp.co.kr" style="color: #F75D5D; font-weight: 600; text-decoration: none;">자사몰사관학교</a> <span style="color: #1a1a1a;">드림</span></p>',
                 },
               },
             ],
@@ -777,24 +1367,112 @@ export const BS_CAMP_TEMPLATE_A = {
         },
       },
 
-      // row-footer: 그대로
+      // ─── Row 14: 푸터 (기존 default 재사용) ───
       BS_CAMP_DEFAULT_TEMPLATE.body.rows[6],
     ],
   },
 };
 
-// ─── 템플릿 B: notice 타입용 (공지/홍보형 — 히어로 + 정보 블록 + 아웃라인 CTA) ───
+// ─── 템플릿 B: notice 타입용 (공지/홍보형 — 초록 테마 #059669, 히어로, 일정, 프로그램 리스트) ───
 export const BS_CAMP_TEMPLATE_B = {
   body: {
     ...BS_CAMP_DEFAULT_TEMPLATE.body,
     rows: [
-      // row-header: 그대로
-      BS_CAMP_DEFAULT_TEMPLATE.body.rows[0],
+      // ─── Row 0: 헤더 (로고 마크 + 브랜드명 + 초록 라인) ───
+      {
+        id: "row-header",
+        cells: [1],
+        columns: [
+          {
+            id: "col-header",
+            contents: [
+              {
+                id: "content-logo",
+                type: "text",
+                values: {
+                  containerPadding: "32px 24px 8px",
+                  anchor: "",
+                  textAlign: "center",
+                  lineHeight: "140%",
+                  linkStyle: {
+                    inherit: true,
+                    linkColor: "#0000ee",
+                    linkHoverColor: "#0000ee",
+                    linkUnderline: true,
+                    linkHoverUnderline: true,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_logo", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td align="center" style="background-color:#059669;border-radius:12px;width:48px;height:48px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:16px;line-height:48px;letter-spacing:-0.5px;">10+</td></tr></table></td></tr><tr><td align="center" style="padding-top:8px;font-size:13px;color:#94a3b8;letter-spacing:2px;font-weight:600;">BS CAMP</td></tr></table>',
+                },
+              },
+              {
+                id: "content-divider-header",
+                type: "divider",
+                values: {
+                  width: "100%",
+                  border: {
+                    borderTopWidth: "2px",
+                    borderTopStyle: "solid",
+                    borderTopColor: "#059669",
+                  },
+                  textAlign: "center",
+                  containerPadding: "8px 24px 0px",
+                  anchor: "",
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_divider_header", htmlClassNames: "u_content_divider" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_header", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_header", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
 
-      // row-title: 그대로
+      // ─── Row 1: 제목 (기존 default) ───
       BS_CAMP_DEFAULT_TEMPLATE.body.rows[1],
 
-      // ─── row-hero: 다크 배경 히어로 텍스트 (NEW) ───
+      // ─── Row 2: 히어로 (다크 배경 + 뱃지 + 이벤트명) ───
       {
         id: "row-hero",
         cells: [1],
@@ -806,16 +1484,16 @@ export const BS_CAMP_TEMPLATE_B = {
                 id: "content-hero",
                 type: "text",
                 values: {
-                  containerPadding: "40px 24px",
+                  containerPadding: "48px 32px",
                   anchor: "",
                   textAlign: "center",
                   lineHeight: "150%",
                   linkStyle: {
                     inherit: true,
-                    linkColor: "#0000ee",
-                    linkHoverColor: "#0000ee",
-                    linkUnderline: true,
-                    linkHoverUnderline: true,
+                    linkColor: "#ffffff",
+                    linkHoverColor: "#ffffff",
+                    linkUnderline: false,
+                    linkHoverUnderline: false,
                   },
                   hideDesktop: false,
                   displayCondition: null,
@@ -825,7 +1503,7 @@ export const BS_CAMP_TEMPLATE_B = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="color: #ffffff; font-size: 20px; font-weight: 700; text-align: center; line-height: 150%;">웨비나 제목이 들어갑니다</p><p style="color: #94a3b8; font-size: 14px; text-align: center;">부제목</p>',
+                  text: '<p style="text-align: center;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">LIVE 무료 웨비나</span></p>\n<p style="color: #ffffff; font-size: 24px; font-weight: 800; text-align: center; line-height: 140%; margin-top: 12px;">웨비나 제목이 들어갑니다</p>\n<p style="color: #94a3b8; font-size: 14px; text-align: center; margin-top: 4px;">부제목이 들어갑니다</p>',
                 },
               },
             ],
@@ -862,10 +1540,420 @@ export const BS_CAMP_TEMPLATE_B = {
         },
       },
 
-      // row-body-text-1: 그대로
+      // ─── Row 3: 인사말 블록 ───
+      {
+        id: "row-greeting",
+        cells: [1],
+        columns: [
+          {
+            id: "col-greeting",
+            contents: [
+              {
+                id: "content-greeting",
+                type: "text",
+                values: {
+                  containerPadding: "24px 24px 8px",
+                  anchor: "",
+                  textAlign: "left",
+                  lineHeight: "170%",
+                  linkStyle: {
+                    inherit: false,
+                    linkColor: "#059669",
+                    linkHoverColor: "#047857",
+                    linkUnderline: false,
+                    linkHoverUnderline: true,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_greeting_b", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 15px; line-height: 170%;"><span style="color: #1a1a1a;">안녕하세요, <strong>대표</strong>님!</span><br><span style="color: #1a1a1a;">자사몰 10억+ 사관학교의 스미스 코치입니다.</span></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_greeting_b", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_greeting_b", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 4: 훅 인용구 ───
+      {
+        id: "row-hook-quote",
+        cells: [1],
+        columns: [
+          {
+            id: "col-hook-quote",
+            contents: [
+              {
+                id: "content-hook-quote",
+                type: "text",
+                values: {
+                  containerPadding: "8px 24px 16px",
+                  anchor: "",
+                  textAlign: "center",
+                  lineHeight: "160%",
+                  linkStyle: {
+                    inherit: true,
+                    linkColor: "#0000ee",
+                    linkHoverColor: "#0000ee",
+                    linkUnderline: true,
+                    linkHoverUnderline: true,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_hook_quote_b", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 16px; line-height: 160%; text-align: center;"><em><span style="color: #059669; font-size: 16px; font-weight: 600;">여기에 훅 인용구가 들어갑니다</span></em></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_hook_quote_b", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_hook_quote_b", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 5: 본문 텍스트 (기존 default) ───
       BS_CAMP_DEFAULT_TEMPLATE.body.rows[2],
 
-      // ─── row-info-block: 정보 테이블 블록 (NEW) ───
+      // ─── Row 6: 섹션 배너 (초록 단색 — 강의 미리보기) ───
+      {
+        id: "row-section-banner",
+        cells: [1],
+        columns: [
+          {
+            id: "col-section-banner",
+            contents: [
+              {
+                id: "content-section-banner",
+                type: "text",
+                values: {
+                  containerPadding: "16px 32px",
+                  anchor: "",
+                  textAlign: "left",
+                  lineHeight: "140%",
+                  linkStyle: {
+                    inherit: true,
+                    linkColor: "#ffffff",
+                    linkHoverColor: "#ffffff",
+                    linkUnderline: false,
+                    linkHoverUnderline: false,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_section_banner_b", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 14px; line-height: 140%;"><strong><span style="color: #ffffff; font-size: 14px; letter-spacing: 1px;">강의 미리보기</span></strong></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_section_banner_b", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#059669",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_section_banner_b", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 7: 슬라이드 미리보기 이미지 ───
+      {
+        id: "row-slide-preview",
+        cells: [1],
+        columns: [
+          {
+            id: "col-slide-preview",
+            contents: [
+              {
+                id: "content-slide-preview",
+                type: "image",
+                values: {
+                  containerPadding: "16px 24px",
+                  anchor: "",
+                  src: {
+                    url: "https://via.placeholder.com/536x200/f1f3f8/94a3b8?text=%F0%9F%93%8A+%EC%8A%AC%EB%9D%BC%EC%9D%B4%EB%93%9C+%EB%AF%B8%EB%A6%AC%EB%B3%B4%EA%B8%B0",
+                    width: 536,
+                    height: 200,
+                  },
+                  textAlign: "center",
+                  altText: "강의 슬라이드 미리보기",
+                  action: {
+                    name: "web",
+                    values: { href: "", target: "_blank" },
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_image_slide", htmlClassNames: "u_content_image" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  fullWidth: false,
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_slide_preview", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_slide_preview", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 8: 프로그램/커리큘럼 리스트 (색상 코딩 주제) ───
+      {
+        id: "row-program-list",
+        cells: [1],
+        columns: [
+          {
+            id: "col-program-list",
+            contents: [
+              {
+                id: "content-program-list",
+                type: "text",
+                values: {
+                  containerPadding: "16px 24px",
+                  anchor: "",
+                  textAlign: "left",
+                  lineHeight: "180%",
+                  linkStyle: {
+                    inherit: true,
+                    linkColor: "#059669",
+                    linkHoverColor: "#047857",
+                    linkUnderline: true,
+                    linkHoverUnderline: true,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_program_list", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 12px;">웨비나에서 다루는 핵심 주제</p>\n<p style="font-size: 14px; line-height: 180%;"><span style="color: #F75D5D; font-weight: 600;">&#x25A0;</span> <strong style="color: #F75D5D;">퍼포먼스 마케팅 최적화</strong></p>\n<p style="font-size: 14px; line-height: 180%; padding-left: 16px;"><span style="color: #374151;">&#x2022; 자사몰 광고 데이터 성공사례</span></p>\n<p style="font-size: 14px; line-height: 180%; padding-left: 16px;"><span style="color: #374151;">&#x2022; 성과를 만드는 메타 광고 세팅법</span></p>\n<p style="font-size: 14px; line-height: 180%; margin-top: 8px;"><span style="color: #F97316; font-weight: 600;">&#x25A0;</span> <strong style="color: #F97316;">컨텐츠 제작 프로세스</strong></p>\n<p style="font-size: 14px; line-height: 180%; padding-left: 16px;"><span style="color: #374151;">&#x2022; 고객 정의 → 콘텐츠 기획 → 마켓 테스트</span></p>\n<p style="font-size: 14px; line-height: 180%; margin-top: 8px;"><span style="color: #10B981; font-weight: 600;">&#x25A0;</span> <strong style="color: #10B981;">데이터 시각화 &amp; 분석</strong></p>\n<p style="font-size: 14px; line-height: 180%; padding-left: 16px;"><span style="color: #374151;">&#x2022; 고객 데이터 흐름 파악 → 매출 전환 포인트 도출</span></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_program_list", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_program_list", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 9: 섹션 배너 (초록 — 웨비나 일정 안내) ───
+      {
+        id: "row-section-banner-2",
+        cells: [1],
+        columns: [
+          {
+            id: "col-section-banner-2",
+            contents: [
+              {
+                id: "content-section-banner-2",
+                type: "text",
+                values: {
+                  containerPadding: "16px 32px",
+                  anchor: "",
+                  textAlign: "left",
+                  lineHeight: "140%",
+                  linkStyle: {
+                    inherit: true,
+                    linkColor: "#ffffff",
+                    linkHoverColor: "#ffffff",
+                    linkUnderline: false,
+                    linkHoverUnderline: false,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_section_banner_2", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 14px; line-height: 140%;"><strong><span style="color: #ffffff; font-size: 14px; letter-spacing: 1px;">웨비나 일정 안내</span></strong></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_section_banner_2", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#F75D5D",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_section_banner_2", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 10: 일정 정보 블록 ───
       {
         id: "row-info-block",
         cells: [1],
@@ -883,8 +1971,8 @@ export const BS_CAMP_TEMPLATE_B = {
                   lineHeight: "180%",
                   linkStyle: {
                     inherit: true,
-                    linkColor: "#F75D5D",
-                    linkHoverColor: "#E54949",
+                    linkColor: "#059669",
+                    linkHoverColor: "#047857",
                     linkUnderline: true,
                     linkHoverUnderline: true,
                   },
@@ -896,7 +1984,7 @@ export const BS_CAMP_TEMPLATE_B = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<table style="width:100%; border-collapse: collapse; font-size: 14px; line-height: 180%; color: #333333;"><tr><td style="padding: 8px 4px; width: 30px;">📅</td><td style="padding: 8px 4px; font-weight: 600; width: 70px;">일시</td><td style="padding: 8px 4px;">2026년 2월 20일 (금) 오후 7시</td></tr><tr><td style="padding: 8px 4px;">💻</td><td style="padding: 8px 4px; font-weight: 600;">형식</td><td style="padding: 8px 4px;">온라인 Zoom 웨비나</td></tr><tr><td style="padding: 8px 4px;">💰</td><td style="padding: 8px 4px; font-weight: 600;">참가비</td><td style="padding: 8px 4px;">무료</td></tr><tr><td style="padding: 8px 4px;">👥</td><td style="padding: 8px 4px; font-weight: 600;">참여</td><td style="padding: 8px 4px;">선착순 100명</td></tr></table>',
+                  text: '<table style="width:100%; border-collapse: collapse; font-size: 14px; line-height: 180%; color: #333333;"><tr><td style="padding: 8px 4px; width: 30px;">📅</td><td style="padding: 8px 4px; font-weight: 600; width: 70px;">일시</td><td style="padding: 8px 4px;"><strong>2026년 2월 19일(수) 오후 3시 ~ 5시</strong></td></tr><tr><td style="padding: 8px 4px;">📍</td><td style="padding: 8px 4px; font-weight: 600;">형식</td><td style="padding: 8px 4px;">실시간 온라인 웨비나(120분) + Q&amp;A</td></tr><tr><td style="padding: 8px 4px;">💰</td><td style="padding: 8px 4px; font-weight: 600;">참가비</td><td style="padding: 8px 4px;"><span style="color:#F75D5D;font-weight:700;">무료</span></td></tr><tr><td style="padding: 8px 4px;">🔗</td><td style="padding: 8px 4px; font-weight: 600;">참여</td><td style="padding: 8px 4px;"><strong>사전 신청자</strong>에게만 알림톡으로 참여 링크 전달</td></tr></table>',
                 },
               },
             ],
@@ -933,7 +2021,7 @@ export const BS_CAMP_TEMPLATE_B = {
         },
       },
 
-      // ─── row-cta: 더 큰 CTA 버튼 ───
+      // ─── Row 11: CTA 버튼 (초록 #059669) ───
       {
         id: "row-cta",
         cells: [1],
@@ -953,9 +2041,9 @@ export const BS_CAMP_TEMPLATE_B = {
                   },
                   buttonColors: {
                     color: "#ffffff",
-                    backgroundColor: "#F75D5D",
+                    backgroundColor: "#059669",
                     hoverColor: "#ffffff",
-                    hoverBackgroundColor: "#E54949",
+                    hoverBackgroundColor: "#047857",
                   },
                   size: {
                     autoWidth: false,
@@ -968,13 +2056,13 @@ export const BS_CAMP_TEMPLATE_B = {
                   borderRadius: "8px",
                   hideDesktop: false,
                   displayCondition: null,
-                  _meta: { htmlID: "u_content_button_cta", htmlClassNames: "u_content_button" },
+                  _meta: { htmlID: "u_content_button_cta_b", htmlClassNames: "u_content_button" },
                   selectable: true,
                   draggable: true,
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<span style="font-size: 17px; line-height: 23.8px;"><strong>지금 신청하기 &rarr;</strong></span>',
+                  text: '<span style="font-size: 17px; line-height: 23.8px;"><strong>무료웨비나 신청 &rarr;</strong></span>',
                   calculatedWidth: 552,
                   calculatedHeight: 55,
                 },
@@ -985,7 +2073,7 @@ export const BS_CAMP_TEMPLATE_B = {
               padding: "0px",
               border: {},
               borderRadius: "0px",
-              _meta: { htmlID: "u_column_cta", htmlClassNames: "u_column" },
+              _meta: { htmlID: "u_column_cta_b", htmlClassNames: "u_column" },
             },
           },
         ],
@@ -1004,7 +2092,7 @@ export const BS_CAMP_TEMPLATE_B = {
           padding: "0px",
           anchor: "",
           hideDesktop: false,
-          _meta: { htmlID: "u_row_cta", htmlClassNames: "u_row" },
+          _meta: { htmlID: "u_row_cta_b", htmlClassNames: "u_row" },
           selectable: true,
           draggable: true,
           duplicatable: true,
@@ -1013,7 +2101,140 @@ export const BS_CAMP_TEMPLATE_B = {
         },
       },
 
-      // ─── row-cta-outline: 아웃라인 버튼 (NEW) ───
+      // ─── Row 12: 구분선 ───
+      {
+        id: "row-divider",
+        cells: [1],
+        columns: [
+          {
+            id: "col-divider",
+            contents: [
+              {
+                id: "content-divider-body",
+                type: "divider",
+                values: {
+                  width: "100%",
+                  border: {
+                    borderTopWidth: "1px",
+                    borderTopStyle: "solid",
+                    borderTopColor: "#e2e8f0",
+                  },
+                  textAlign: "center",
+                  containerPadding: "16px 24px",
+                  anchor: "",
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_divider_body_b", htmlClassNames: "u_content_divider" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_divider_b", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_divider_b", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 13: 클로징 텍스트 ───
+      {
+        id: "row-closing",
+        cells: [1],
+        columns: [
+          {
+            id: "col-closing",
+            contents: [
+              {
+                id: "content-closing",
+                type: "text",
+                values: {
+                  containerPadding: "16px 24px",
+                  anchor: "",
+                  textAlign: "left",
+                  lineHeight: "180%",
+                  linkStyle: {
+                    inherit: false,
+                    linkColor: "#059669",
+                    linkHoverColor: "#047857",
+                    linkUnderline: false,
+                    linkHoverUnderline: true,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_closing_b", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 14px; line-height: 180%;"><span style="color: #64748b;">더 많은 정보를 얻고 싶다면?</span><br><span style="color: #64748b;">자사몰 운영 꿀팁부터 다음 기수 소식까지, </span><a href="#" style="color: #059669; font-weight: 600; text-decoration: none;">오픈채팅</a><span style="color: #64748b;">에서 가장 먼저 확인하세요!</span></p>\n<p style="font-size: 14px; line-height: 180%; margin-top: 12px;"><span style="color: #1a1a1a;">웨비나에서 직접 뵙고 이야기 나눌 수 있기를 기대합니다.</span><br><span style="color: #1a1a1a;">감사합니다.</span></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_closing_b", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_closing_b", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 14: 아웃라인 CTA (오픈채팅 입장) ───
       {
         id: "row-cta-outline",
         cells: [1],
@@ -1032,10 +2253,10 @@ export const BS_CAMP_TEMPLATE_B = {
                     values: { href: "https://bscamp.co.kr", target: "_blank" },
                   },
                   buttonColors: {
-                    color: "#F75D5D",
+                    color: "#059669",
                     backgroundColor: "transparent",
                     hoverColor: "#ffffff",
-                    hoverBackgroundColor: "#F75D5D",
+                    hoverBackgroundColor: "#059669",
                   },
                   size: {
                     autoWidth: false,
@@ -1047,27 +2268,27 @@ export const BS_CAMP_TEMPLATE_B = {
                   border: {
                     borderTopWidth: "2px",
                     borderTopStyle: "solid",
-                    borderTopColor: "#F75D5D",
+                    borderTopColor: "#059669",
                     borderLeftWidth: "2px",
                     borderLeftStyle: "solid",
-                    borderLeftColor: "#F75D5D",
+                    borderLeftColor: "#059669",
                     borderRightWidth: "2px",
                     borderRightStyle: "solid",
-                    borderRightColor: "#F75D5D",
+                    borderRightColor: "#059669",
                     borderBottomWidth: "2px",
                     borderBottomStyle: "solid",
-                    borderBottomColor: "#F75D5D",
+                    borderBottomColor: "#059669",
                   },
                   borderRadius: "8px",
                   hideDesktop: false,
                   displayCondition: null,
-                  _meta: { htmlID: "u_content_button_cta_outline", htmlClassNames: "u_content_button" },
+                  _meta: { htmlID: "u_content_button_cta_outline_b", htmlClassNames: "u_content_button" },
                   selectable: true,
                   draggable: true,
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<span style="font-size: 15px; line-height: 21px;"><strong>자세히 알아보기</strong></span>',
+                  text: '<span style="font-size: 15px; line-height: 21px;"><strong>자사몰 사관학교 오픈채팅 입장하기</strong></span>',
                   calculatedWidth: 552,
                   calculatedHeight: 49,
                 },
@@ -1078,7 +2299,7 @@ export const BS_CAMP_TEMPLATE_B = {
               padding: "0px",
               border: {},
               borderRadius: "0px",
-              _meta: { htmlID: "u_column_cta_outline", htmlClassNames: "u_column" },
+              _meta: { htmlID: "u_column_cta_outline_b", htmlClassNames: "u_column" },
             },
           },
         ],
@@ -1097,7 +2318,7 @@ export const BS_CAMP_TEMPLATE_B = {
           padding: "0px",
           anchor: "",
           hideDesktop: false,
-          _meta: { htmlID: "u_row_cta_outline", htmlClassNames: "u_row" },
+          _meta: { htmlID: "u_row_cta_outline_b", htmlClassNames: "u_row" },
           selectable: true,
           draggable: true,
           duplicatable: true,
@@ -1106,27 +2327,251 @@ export const BS_CAMP_TEMPLATE_B = {
         },
       },
 
-      // row-closing: A와 동일
-      BS_CAMP_TEMPLATE_A.body.rows[6],
-
-      // row-footer: 그대로
+      // ─── Row 15: 푸터 (기존 default) ───
       BS_CAMP_DEFAULT_TEMPLATE.body.rows[6],
     ],
   },
 };
 
-// ─── 템플릿 C: case_study 타입용 (고객사례형, 브랜드 컬러 #F97316 주황) ───
+// ─── 템플릿 C: case_study 타입용 (고객사례형 — 주황 테마 #F97316, 프로필, Before/After, 인용구, 불릿) ───
 export const BS_CAMP_TEMPLATE_C = {
   body: {
     ...BS_CAMP_DEFAULT_TEMPLATE.body,
     rows: [
-      // row-header: 그대로
-      BS_CAMP_DEFAULT_TEMPLATE.body.rows[0],
+      // ─── Row 0: 헤더 (로고 마크 + 브랜드명 + 주황 라인) ───
+      {
+        id: "row-header",
+        cells: [1],
+        columns: [
+          {
+            id: "col-header",
+            contents: [
+              {
+                id: "content-logo",
+                type: "text",
+                values: {
+                  containerPadding: "32px 24px 8px",
+                  anchor: "",
+                  textAlign: "center",
+                  lineHeight: "140%",
+                  linkStyle: {
+                    inherit: true,
+                    linkColor: "#0000ee",
+                    linkHoverColor: "#0000ee",
+                    linkUnderline: true,
+                    linkHoverUnderline: true,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_logo", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td align="center" style="background-color:#F97316;border-radius:12px;width:48px;height:48px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:16px;line-height:48px;letter-spacing:-0.5px;">10+</td></tr></table></td></tr><tr><td align="center" style="padding-top:8px;font-size:13px;color:#94a3b8;letter-spacing:2px;font-weight:600;">BS CAMP</td></tr></table>',
+                },
+              },
+              {
+                id: "content-divider-header",
+                type: "divider",
+                values: {
+                  width: "100%",
+                  border: {
+                    borderTopWidth: "2px",
+                    borderTopStyle: "solid",
+                    borderTopColor: "#F97316",
+                  },
+                  textAlign: "center",
+                  containerPadding: "8px 24px 0px",
+                  anchor: "",
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_divider_header", htmlClassNames: "u_content_divider" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_header", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_header", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
 
-      // row-title: 그대로
+      // ─── Row 1: 인사말 블록 ───
+      {
+        id: "row-greeting",
+        cells: [1],
+        columns: [
+          {
+            id: "col-greeting",
+            contents: [
+              {
+                id: "content-greeting",
+                type: "text",
+                values: {
+                  containerPadding: "24px 24px 8px",
+                  anchor: "",
+                  textAlign: "left",
+                  lineHeight: "170%",
+                  linkStyle: {
+                    inherit: false,
+                    linkColor: "#F97316",
+                    linkHoverColor: "#EA580C",
+                    linkUnderline: false,
+                    linkHoverUnderline: true,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_greeting_c", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 15px; line-height: 170%;"><span style="color: #1a1a1a;">안녕하세요, <strong>대표</strong>님!</span><br><span style="color: #1a1a1a;">메타 광고 전문 교육 </span><a href="https://bscamp.co.kr" style="color: #F97316; font-weight: 600; text-decoration: none;">자사몰사관학교</a><span style="color: #1a1a1a;">입니다.</span></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_greeting_c", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_greeting_c", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 2: 제목 (기존 default) ───
       BS_CAMP_DEFAULT_TEMPLATE.body.rows[1],
 
-      // ─── row-profile: 프로필 카드 (NEW) ───
+      // ─── Row 3: 훅 인용구 (주황) ───
+      {
+        id: "row-hook-quote",
+        cells: [1],
+        columns: [
+          {
+            id: "col-hook-quote",
+            contents: [
+              {
+                id: "content-hook-quote",
+                type: "text",
+                values: {
+                  containerPadding: "8px 24px 16px",
+                  anchor: "",
+                  textAlign: "center",
+                  lineHeight: "160%",
+                  linkStyle: {
+                    inherit: true,
+                    linkColor: "#0000ee",
+                    linkHoverColor: "#0000ee",
+                    linkUnderline: true,
+                    linkHoverUnderline: true,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_hook_quote_c", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 16px; line-height: 160%; text-align: center;"><em><span style="color: #F97316; font-size: 16px; font-weight: 600;">여기에 성과 훅 인용구가 들어갑니다</span></em></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_hook_quote_c", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_hook_quote_c", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 4: 본문 텍스트 (기존 default) ───
+      BS_CAMP_DEFAULT_TEMPLATE.body.rows[2],
+
+      // ─── Row 5: 프로필 카드 ───
       {
         id: "row-profile",
         cells: [1],
@@ -1138,7 +2583,7 @@ export const BS_CAMP_TEMPLATE_C = {
                 id: "content-profile",
                 type: "text",
                 values: {
-                  containerPadding: "16px 24px",
+                  containerPadding: "20px 24px",
                   anchor: "",
                   textAlign: "left",
                   lineHeight: "140%",
@@ -1157,15 +2602,15 @@ export const BS_CAMP_TEMPLATE_C = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<table width="100%" cellpadding="0" cellspacing="0"><tr><td width="80" style="vertical-align:top;"><img src="https://placehold.co/64x64/e2e8f0/64748b?text=Photo" style="border-radius:50%;width:64px;height:64px;" /></td><td style="padding-left:16px;vertical-align:top;"><p style="margin:0;font-weight:700;font-size:16px;color:#1a1a1a;">수강생 이름</p><p style="margin:4px 0 0;font-size:13px;color:#64748b;">업종 · 기간</p></td></tr></table>',
+                  text: '<table width="100%" cellpadding="0" cellspacing="0"><tr><td width="80" style="vertical-align:top;"><table cellpadding="0" cellspacing="0"><tr><td style="background-color:#F97316;border-radius:50%;width:64px;height:64px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:800;font-size:24px;line-height:64px;">J</td></tr></table></td><td style="padding-left:16px;vertical-align:top;"><p style="margin:0;font-weight:700;font-size:16px;color:#1a1a1a;">수강생 이름</p><p style="margin:4px 0 0;font-size:13px;color:#64748b;">업종 · 기수 수료 · 지역</p></td></tr></table>',
                 },
               },
             ],
             values: {
-              backgroundColor: "",
+              backgroundColor: "#f8f9fc",
               padding: "0px",
               border: {},
-              borderRadius: "0px",
+              borderRadius: "12px",
               _meta: { htmlID: "u_column_profile", htmlClassNames: "u_column" },
             },
           },
@@ -1182,7 +2627,7 @@ export const BS_CAMP_TEMPLATE_C = {
             size: "custom",
             position: "center",
           },
-          padding: "0px",
+          padding: "8px 24px",
           anchor: "",
           hideDesktop: false,
           _meta: { htmlID: "u_row_profile", htmlClassNames: "u_row" },
@@ -1194,7 +2639,7 @@ export const BS_CAMP_TEMPLATE_C = {
         },
       },
 
-      // ─── row-ba-card: Before/After 2컬럼 카드 (NEW) ───
+      // ─── Row 6: Before/After 2컬럼 카드 ───
       {
         id: "row-ba-card",
         cells: [1, 1],
@@ -1276,26 +2721,26 @@ export const BS_CAMP_TEMPLATE_C = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="text-align:center;"><span style="font-size:12px;font-weight:700;color:#F97316;letter-spacing:1px;">AFTER</span></p><p style="text-align:center;font-size:28px;font-weight:800;color:#F97316;">₩5,200만</p><p style="text-align:center;font-size:13px;color:#64748b;">월 매출</p>',
+                  text: '<p style="text-align:center;"><span style="font-size:12px;font-weight:700;color:#F97316;letter-spacing:1px;">AFTER</span></p><p style="text-align:center;font-size:28px;font-weight:800;color:#F97316;">₩5,200만</p><p style="text-align:center;font-size:13px;color:#64748b;">월 매출 (3개월 후)</p>',
                 },
               },
             ],
             values: {
-              backgroundColor: "#FEF2F2",
+              backgroundColor: "#FFF7ED",
               padding: "0px",
               border: {
                 borderTopWidth: "1px",
                 borderTopStyle: "solid",
-                borderTopColor: "#FECACA",
+                borderTopColor: "#FED7AA",
                 borderBottomWidth: "1px",
                 borderBottomStyle: "solid",
-                borderBottomColor: "#FECACA",
+                borderBottomColor: "#FED7AA",
                 borderLeftWidth: "1px",
                 borderLeftStyle: "solid",
-                borderLeftColor: "#FECACA",
+                borderLeftColor: "#FED7AA",
                 borderRightWidth: "1px",
                 borderRightStyle: "solid",
-                borderRightColor: "#FECACA",
+                borderRightColor: "#FED7AA",
               },
               borderRadius: "12px",
               _meta: { htmlID: "u_column_ba_after", htmlClassNames: "u_column" },
@@ -1326,10 +2771,311 @@ export const BS_CAMP_TEMPLATE_C = {
         },
       },
 
-      // row-body-text-1: 그대로
-      BS_CAMP_DEFAULT_TEMPLATE.body.rows[2],
+      // ─── Row 7: 섹션 배너 (주황 — INTERVIEW) ───
+      {
+        id: "row-section-banner",
+        cells: [1],
+        columns: [
+          {
+            id: "col-section-banner",
+            contents: [
+              {
+                id: "content-section-banner",
+                type: "text",
+                values: {
+                  containerPadding: "16px 32px",
+                  anchor: "",
+                  textAlign: "left",
+                  lineHeight: "140%",
+                  linkStyle: {
+                    inherit: true,
+                    linkColor: "#ffffff",
+                    linkHoverColor: "#ffffff",
+                    linkUnderline: false,
+                    linkHoverUnderline: false,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_section_banner_c", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 14px; line-height: 140%;"><strong><span style="color: #ffffff; font-size: 14px; letter-spacing: 1px;">INTERVIEW</span></strong></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_section_banner_c", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#F97316",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_section_banner_c", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
 
-      // ─── row-cta: CTA 버튼 (주황색 #F97316) ───
+      // ─── Row 8: 고객 인용구 (주황 보더) ───
+      {
+        id: "row-quote",
+        cells: [1],
+        columns: [
+          {
+            id: "col-quote",
+            contents: [
+              {
+                id: "content-quote-block",
+                type: "text",
+                values: {
+                  containerPadding: "16px 20px",
+                  anchor: "",
+                  textAlign: "left",
+                  lineHeight: "170%",
+                  linkStyle: {
+                    inherit: true,
+                    linkColor: "#0000ee",
+                    linkHoverColor: "#0000ee",
+                    linkUnderline: true,
+                    linkHoverUnderline: true,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_quote_block_c", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 14px; line-height: 170%; font-style: italic;"><span style="color: #374151;">"수강 전후 경험을 이야기하는 고객 인용구가 들어갑니다. 실제 변화를 체감한 생생한 목소리입니다."</span></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "#f8f9fc",
+              padding: "0px",
+              border: {
+                borderLeftWidth: "3px",
+                borderLeftStyle: "solid",
+                borderLeftColor: "#F97316",
+              },
+              borderRadius: "0px 8px 8px 0px",
+              _meta: { htmlID: "u_column_quote_c", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "8px 24px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_quote_c", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 9: 핵심 변화 불릿 리스트 (주황 도트) ───
+      {
+        id: "row-bullet-list",
+        cells: [1],
+        columns: [
+          {
+            id: "col-bullet-list",
+            contents: [
+              {
+                id: "content-bullet-list",
+                type: "text",
+                values: {
+                  containerPadding: "16px 24px",
+                  anchor: "",
+                  textAlign: "left",
+                  lineHeight: "180%",
+                  linkStyle: {
+                    inherit: true,
+                    linkColor: "#F97316",
+                    linkHoverColor: "#EA580C",
+                    linkUnderline: true,
+                    linkHoverUnderline: true,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_bullet_list_c", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 12px;">핵심 변화 3가지</p>\n<p style="font-size: 14px; line-height: 180%;"><span style="color: #F97316; font-weight: 600;">&#x2022;</span> <span style="color: #374151;"><strong style="color: #F97316;">변화 포인트 1:</strong> 설명 텍스트가 들어갑니다</span></p>\n<p style="font-size: 14px; line-height: 180%;"><span style="color: #F97316; font-weight: 600;">&#x2022;</span> <span style="color: #374151;"><strong style="color: #F97316;">변화 포인트 2:</strong> 설명 텍스트가 들어갑니다</span></p>\n<p style="font-size: 14px; line-height: 180%;"><span style="color: #F97316; font-weight: 600;">&#x2022;</span> <span style="color: #374151;"><strong style="color: #F97316;">변화 포인트 3:</strong> 설명 텍스트가 들어갑니다</span></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_bullet_list_c", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_bullet_list_c", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 10: 인포그래픽 이미지 (매출 그래프) ───
+      {
+        id: "row-infographic",
+        cells: [1],
+        columns: [
+          {
+            id: "col-infographic",
+            contents: [
+              {
+                id: "content-infographic",
+                type: "image",
+                values: {
+                  containerPadding: "16px 24px",
+                  anchor: "",
+                  src: {
+                    url: "https://via.placeholder.com/536x160/f1f3f8/94a3b8?text=%F0%9F%93%88+%EB%A7%A4%EC%B6%9C+%EC%84%B1%EC%9E%A5+%EA%B7%B8%EB%9E%98%ED%94%84",
+                    width: 536,
+                    height: 160,
+                  },
+                  textAlign: "center",
+                  altText: "매출 성장 그래프",
+                  action: {
+                    name: "web",
+                    values: { href: "", target: "_blank" },
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_image_infographic_c", htmlClassNames: "u_content_image" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  fullWidth: false,
+                },
+              },
+              {
+                id: "content-img-caption",
+                type: "text",
+                values: {
+                  containerPadding: "0px 24px 8px",
+                  anchor: "",
+                  textAlign: "center",
+                  lineHeight: "140%",
+                  linkStyle: {
+                    inherit: true,
+                    linkColor: "#0000ee",
+                    linkHoverColor: "#0000ee",
+                    linkUnderline: true,
+                    linkHoverUnderline: true,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_img_caption_c", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 12px; line-height: 140%;"><span style="color: #94a3b8;">월 매출 추이 (수강 전후 6개월)</span></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_infographic_c", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_infographic_c", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 11: CTA 버튼 (주황 #EA580C) ───
       {
         id: "row-cta",
         cells: [1],
@@ -1370,7 +3116,7 @@ export const BS_CAMP_TEMPLATE_C = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<span style="font-size: 16px; line-height: 22.4px;"><strong>전체 아티클 읽기 &rarr;</strong></span>',
+                  text: '<span style="font-size: 16px; line-height: 22.4px;"><strong>성공 사례 더 보기 &rarr;</strong></span>',
                   calculatedWidth: 552,
                   calculatedHeight: 50,
                 },
@@ -1409,10 +3155,140 @@ export const BS_CAMP_TEMPLATE_C = {
         },
       },
 
-      // row-closing: A와 동일
-      BS_CAMP_TEMPLATE_A.body.rows[6],
+      // ─── Row 12: 구분선 ───
+      {
+        id: "row-divider",
+        cells: [1],
+        columns: [
+          {
+            id: "col-divider",
+            contents: [
+              {
+                id: "content-divider-body",
+                type: "divider",
+                values: {
+                  width: "100%",
+                  border: {
+                    borderTopWidth: "1px",
+                    borderTopStyle: "solid",
+                    borderTopColor: "#e2e8f0",
+                  },
+                  textAlign: "center",
+                  containerPadding: "16px 24px",
+                  anchor: "",
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_divider_body_c", htmlClassNames: "u_content_divider" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_divider_c", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_divider_c", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
 
-      // row-footer: 그대로
+      // ─── Row 13: 클로징 텍스트 ───
+      {
+        id: "row-closing",
+        cells: [1],
+        columns: [
+          {
+            id: "col-closing",
+            contents: [
+              {
+                id: "content-closing",
+                type: "text",
+                values: {
+                  containerPadding: "16px 24px",
+                  anchor: "",
+                  textAlign: "left",
+                  lineHeight: "180%",
+                  linkStyle: {
+                    inherit: false,
+                    linkColor: "#F97316",
+                    linkHoverColor: "#EA580C",
+                    linkUnderline: false,
+                    linkHoverUnderline: true,
+                  },
+                  hideDesktop: false,
+                  displayCondition: null,
+                  _meta: { htmlID: "u_content_text_closing_c", htmlClassNames: "u_content_text" },
+                  selectable: true,
+                  draggable: true,
+                  duplicatable: true,
+                  deletable: true,
+                  hideable: true,
+                  text: '<p style="font-size: 15px; line-height: 180%;"><span style="color: #374151;">실전에서 바로 적용 가능한 메타 광고 전략을 배우고 싶다면, 현재 모집 중인 기수에 합류하세요.</span></p>',
+                },
+              },
+            ],
+            values: {
+              backgroundColor: "",
+              padding: "0px",
+              border: {},
+              borderRadius: "0px",
+              _meta: { htmlID: "u_column_closing_c", htmlClassNames: "u_column" },
+            },
+          },
+        ],
+        values: {
+          displayCondition: null,
+          columns: false,
+          backgroundColor: "#ffffff",
+          columnsBackgroundColor: "",
+          backgroundImage: {
+            url: "",
+            fullWidth: true,
+            repeat: "no-repeat",
+            size: "custom",
+            position: "center",
+          },
+          padding: "0px",
+          anchor: "",
+          hideDesktop: false,
+          _meta: { htmlID: "u_row_closing_c", htmlClassNames: "u_row" },
+          selectable: true,
+          draggable: true,
+          duplicatable: true,
+          deletable: true,
+          hideable: true,
+        },
+      },
+
+      // ─── Row 14: 푸터 (기존 default) ───
       BS_CAMP_DEFAULT_TEMPLATE.body.rows[6],
     ],
   },
