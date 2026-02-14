@@ -325,7 +325,7 @@ export function buildDesignFromSummary(content: Content): object {
   const heroBlock = findContentById(rows, "content-hero");
   if (heroBlock) {
     const subtitle = content.email_summary ? escapeHtml(content.email_summary.split("\n\n")[0].trim()) : "";
-    heroBlock.values.text = `<p style="text-align: center;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">LIVE 무료 웨비나</span></p>\n<p style="color: #F75D5D; font-size: 24px; font-weight: 800; text-align: center; line-height: 140%; margin-top: 12px;">${escapeHtml(content.title)}</p>\n<p style="color: #94a3b8; font-size: 14px; text-align: center; margin-top: 4px;">${subtitle}</p>`;
+    heroBlock.values.text = `<p style="text-align: center;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">LIVE 무료 웨비나</span></p>\n<p style="color: #ffffff; font-size: 24px; font-weight: 800; text-align: center; line-height: 140%; margin-top: 12px;">${escapeHtml(content.title)}</p>\n<p style="color: rgba(255,255,255,0.8); font-size: 14px; text-align: center; margin-top: 4px;">${subtitle}</p>`;
   }
 
   // CTA 버튼 — URL + 타입별 텍스트 설정
