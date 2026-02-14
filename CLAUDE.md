@@ -101,6 +101,35 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 **2번에서 기존 문서가 있으면 반드시 읽고, 설계 변경이 필요하면 문서부터 업데이트한다.**
 **이 순서를 건너뛰고 바로 코딩하면 리젝된다.**
 
+## Plan Mode
+- settings.json에 `defaultMode: "plan"` 설정됨
+- Leader는 TASK.md 받으면 **먼저 Plan Mode로 코드 탐색** → 계획 수립 → 승인 후 구현
+- Shift+Tab으로 Normal/Plan/Delegate 전환
+
+## Skills (자동 로드)
+`.claude/skills/`에 프로젝트 스킬 등록됨. 관련 작업 시 자동 참조:
+- `nextjs-supabase.md` — App Router + Supabase 패턴
+- `design-system.md` — 색상/폰트/반응형 규칙
+- `email-parser.md` — 뉴스레터 BANNER_MAP + 파서 규칙
+- `webapp-testing.md` — Playwright 브라우저 QA
+
+## Git Worktree (병렬 작업 시)
+팀원 간 파일 충돌 방지. 같은 파일 수정이 예상되면 worktree 사용:
+```bash
+# 팀원별 worktree 생성
+git worktree add ../qa-helpdesk-frontend feature/frontend
+git worktree add ../qa-helpdesk-backend feature/backend
+# 작업 완료 후 머지
+git merge feature/frontend
+git worktree remove ../qa-helpdesk-frontend
+```
+
+## Hooks (자동 실행)
+- **PreToolUse**: main 브랜치 경고 + claude -p 차단
+- **TaskCompleted**: tsc 타입 체크 + lint 체크 + 모찌 알림 (OpenClaw webhook)
+- **TeammateIdle**: 다음 태스크 자동 배정 (idle 방지)
+- **Stop**: 컨텍스트 체크
+
 ## 플러그인
 - **bkit** (v1.5.2) — PDCA 워크플로우, `/pdca plan {기능}`
 
@@ -109,6 +138,7 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 - [ ] lint 에러 0개
 - [ ] 타입 에러 0개
 - [ ] 기존 기능 깨지지 않음 확인
+- [ ] Playwright 스크린샷 QA (데스크탑 + 모바일)
 
 ## 기술 스택
 - Next.js 15 (App Router)
@@ -116,6 +146,7 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 - Tailwind CSS
 - Supabase (PostgreSQL + Auth)
 - MDXEditor (마크다운 WYSIWYG 에디터)
+- Playwright (브라우저 QA)
 
 ## 커밋 컨벤션
 - feat: 새 기능

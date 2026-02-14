@@ -5,7 +5,8 @@
       "Edit",
       "Write",
       "Bash(*)"
-    ]
+    ],
+    "defaultMode": "plan"
   },
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
@@ -52,6 +53,27 @@
             "type": "command",
             "command": "cd /Users/smith/projects/qa-helpdesk && npx tsc --noEmit --quiet 2>&1 | tail -5; if [ $? -ne 0 ]; then echo '{\"block\": true, \"message\": \"TypeScript 에러 있음. 수정 후 다시 완료 처리하세요.\"}' >&2; exit 2; fi",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "cd /Users/smith/projects/qa-helpdesk && npx next lint --quiet 2>&1 | tail -5; EXIT=$?; if [ $EXIT -ne 0 ]; then echo 'Lint 경고/에러 발견. 확인 필요.' >&2; fi",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "curl -s -X POST http://127.0.0.1:18789/hooks -H 'Authorization: Bearer mz-hook-Kx9mP4vR7nWqZj2026' -H 'Content-Type: application/json' -d '{\"event\":\"task-completed\",\"source\":\"agent-team\"}' || true",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '다음 미완료 태스크를 확인하고 작업을 계속하세요. 모든 태스크가 완료되었으면 팀 리더에게 보고하세요.' >&2; exit 2",
+            "timeout": 5
           }
         ]
       }
