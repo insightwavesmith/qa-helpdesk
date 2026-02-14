@@ -1,6 +1,24 @@
 import { BS_CAMP_DEFAULT_TEMPLATE, BS_CAMP_TEMPLATE_A, BS_CAMP_TEMPLATE_B, BS_CAMP_TEMPLATE_C } from "@/lib/email-default-template";
 import type { Content } from "@/types/content";
 
+const BANNER_BASE_URL = "https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners";
+
+const BANNER_MAP: Record<string, string> = {
+  "INSIGHT": "banner-insight",
+  "INSIGHT 01": "banner-insight-01",
+  "INSIGHT 02": "banner-insight-02",
+  "INSIGHT 03": "banner-insight-03",
+  "KEY POINT": "banner-key-point",
+  "CHECKLIST": "banner-checklist",
+  "강의 미리보기": "banner-preview",
+  "핵심 주제": "banner-topics",
+  "이런 분들을 위해": "banner-target",
+  "웨비나 일정": "banner-schedule",
+  "INTERVIEW": "banner-interview",
+  "핵심 변화": "banner-change",
+  "성과": "banner-results",
+};
+
 /**
  * 마크다운 → 이메일 호환 HTML 변환
  * 지원: ##, ---, > 인용, > 💡 팁, ✅ 체크, - 불릿, | 테이블, **bold**, ![img], [link]
@@ -60,10 +78,17 @@ function markdownToEmailHtml(md: string): string {
       continue;
     }
 
-    // ### 섹션 배너 (gradient — 빨간색 통일)
+    // ### 섹션 배너 (이미지 or CSS gradient fallback)
     const h3Match = trimmed.match(/^### (.+)/);
     if (h3Match) {
-      htmlParts.push(`<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);margin:24px 0 16px;border-radius:4px 0 0 4px;"><span style="padding-left:32px;color:#fff;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${h3Match[1]}</span></div>`);
+      const bannerKey = h3Match[1].trim();
+      const bannerFile = BANNER_MAP[bannerKey];
+      if (bannerFile) {
+        htmlParts.push(`<img src="${BANNER_BASE_URL}/${bannerFile}.png" alt="${bannerKey}" style="display:block;width:100%;max-width:536px;height:auto;border-radius:6px 6px 0 0;margin:24px 0 0;" />`);
+      } else {
+        // fallback: CSS gradient (매핑에 없는 경우)
+        htmlParts.push(`<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);margin:24px 0 16px;border-radius:4px 0 0 4px;"><span style="padding-left:32px;color:#fff;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${bannerKey}</span></div>`);
+      }
       continue;
     }
 
