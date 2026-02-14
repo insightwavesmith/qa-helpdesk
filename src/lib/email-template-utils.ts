@@ -84,11 +84,18 @@ function markdownToEmailHtml(md: string): string {
       const bannerKey = h3Match[1].trim();
       const bannerFile = BANNER_MAP[bannerKey];
       if (bannerFile) {
-        htmlParts.push(`<img src="${BANNER_BASE_URL}/${bannerFile}.png" alt="${bannerKey}" style="display:block;width:100%;max-width:536px;height:auto;border-radius:6px 6px 0 0;margin:24px 0 0;" />`);
+        htmlParts.push(`<img src="${BANNER_BASE_URL}/${bannerFile}.png" alt="${bannerKey}" style="display:block;width:100%;height:auto;border-radius:6px 6px 0 0;margin:24px 0 0;" />`);
       } else {
         // fallback: CSS gradient (매핑에 없는 경우)
-        htmlParts.push(`<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);margin:24px 0 16px;border-radius:4px 0 0 4px;"><span style="padding-left:32px;color:#fff;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${bannerKey}</span></div>`);
+        htmlParts.push(`<div style="height:80px;line-height:80px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);margin:24px 0 16px;border-radius:4px 0 0 4px;"><span style="padding-left:32px;color:#fff;font-size:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${bannerKey}</span></div>`);
       }
+      continue;
+    }
+
+    // #### 서브타이틀 (성과 섹션 등)
+    const h4Match = trimmed.match(/^#### (.+)/);
+    if (h4Match) {
+      htmlParts.push(`<div style="margin:16px 0 8px;padding:12px 16px;background:#FFF5F5;border-left:4px solid #F75D5D;"><span style="font-size:15px;font-weight:800;color:#F75D5D;">${h4Match[1]}</span></div>`);
       continue;
     }
 
@@ -230,7 +237,7 @@ const PLACEHOLDER_ROW_IDS = [
   // BUG-2: Template B 전용 (파서가 이미 렌더링하므로 중복 제거)
   "row-slide-preview", "row-program-list", "row-info-block", "row-cta-outline",
   // BUG-3: Template C 전용
-  "row-profile", "row-ba-card",
+  "row-student-profile", "row-ba-card",
 ];
 
 /**
@@ -318,7 +325,7 @@ export function buildDesignFromSummary(content: Content): object {
   const heroBlock = findContentById(rows, "content-hero");
   if (heroBlock) {
     const subtitle = content.email_summary ? escapeHtml(content.email_summary.split("\n\n")[0].trim()) : "";
-    heroBlock.values.text = `<p style="text-align: center;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">LIVE 무료 웨비나</span></p>\n<p style="color: #ffffff; font-size: 24px; font-weight: 800; text-align: center; line-height: 140%; margin-top: 12px;">${escapeHtml(content.title)}</p>\n<p style="color: #94a3b8; font-size: 14px; text-align: center; margin-top: 4px;">${subtitle}</p>`;
+    heroBlock.values.text = `<p style="text-align: center;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">LIVE 무료 웨비나</span></p>\n<p style="color: #F75D5D; font-size: 24px; font-weight: 800; text-align: center; line-height: 140%; margin-top: 12px;">${escapeHtml(content.title)}</p>\n<p style="color: #94a3b8; font-size: 14px; text-align: center; margin-top: 4px;">${subtitle}</p>`;
   }
 
   // CTA 버튼 — URL + 타입별 텍스트 설정

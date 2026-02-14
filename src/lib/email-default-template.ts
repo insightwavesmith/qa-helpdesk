@@ -1,7 +1,75 @@
 // 자사몰사관학교 기본 뉴스레터 템플릿 (Unlayer JSON 형식)
 // 600px, 테두리 없음, Pretendard 폰트, 흰색 배경
 // 스티비/마켓핏랩 스타일 — 깔끔하고 읽기 쉬운 레이아웃
-// Last verified: 2026-02-11
+// Last verified: 2026-02-14
+
+// 스미스 코치 프로필 카드 (모든 템플릿 공통, CTA 위에 삽입)
+const SMITH_PROFILE_ROW = {
+  id: "row-profile",
+  cells: [1],
+  columns: [
+    {
+      id: "col-profile-coach",
+      contents: [
+        {
+          id: "content-profile-coach",
+          type: "text",
+          values: {
+            containerPadding: "0px 24px",
+            anchor: "",
+            textAlign: "left",
+            lineHeight: "160%",
+            linkStyle: {
+              inherit: true,
+              linkColor: "#0000ee",
+              linkHoverColor: "#0000ee",
+              linkUnderline: true,
+              linkHoverUnderline: true,
+            },
+            hideDesktop: false,
+            displayCondition: null,
+            _meta: { htmlID: "u_content_text_profile_coach", htmlClassNames: "u_content_text" },
+            selectable: true,
+            draggable: true,
+            duplicatable: true,
+            deletable: true,
+            hideable: true,
+            text: '<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td style="padding:24px 0;border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;"><table cellpadding="0" cellspacing="0"><tr><td width="100" style="vertical-align:top;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/profile-smith.png" alt="스미스" style="width:80px;height:80px;border-radius:50%;display:block;" /></td><td style="vertical-align:top;"><p style="margin:0;font-weight:800;font-size:16px;color:#1a1a1a;">스미스 <span style="font-weight:600;font-size:13px;color:#F75D5D;">자사몰사관학교 코치</span></p><p style="margin:6px 0 0;font-size:13px;color:#64748b;line-height:160%;">메타파트너 / 메타공식 프로페셔널<br>스킨스쿨 / 재미어트 Co-founder<br>수강생 자사몰매출 450억+</p></td></tr></table></td></tr></table>',
+          },
+        },
+      ],
+      values: {
+        backgroundColor: "",
+        padding: "0px",
+        border: {},
+        borderRadius: "0px",
+        _meta: { htmlID: "u_column_profile_coach", htmlClassNames: "u_column" },
+      },
+    },
+  ],
+  values: {
+    displayCondition: null,
+    columns: false,
+    backgroundColor: "#ffffff",
+    columnsBackgroundColor: "",
+    backgroundImage: {
+      url: "",
+      fullWidth: true,
+      repeat: "no-repeat",
+      size: "custom",
+      position: "center",
+    },
+    padding: "0px",
+    anchor: "",
+    hideDesktop: false,
+    _meta: { htmlID: "u_row_profile_coach", htmlClassNames: "u_row" },
+    selectable: true,
+    draggable: true,
+    duplicatable: true,
+    deletable: true,
+    hideable: true,
+  },
+};
 
 export const BS_CAMP_DEFAULT_TEMPLATE = {
   body: {
@@ -349,7 +417,10 @@ export const BS_CAMP_DEFAULT_TEMPLATE = {
         },
       },
 
-      // ─── Row 6: CTA 버튼 ───
+      // ─── Row 6: 스미스 코치 프로필 ───
+      SMITH_PROFILE_ROW,
+
+      // ─── Row 7: CTA 버튼 ───
       {
         id: "row-cta",
         cells: [1],
@@ -1117,8 +1188,11 @@ export const BS_CAMP_TEMPLATE_A = {
         },
       },
 
-      // ─── Row 11: CTA 버튼 (기존 default 재사용) ───
-      BS_CAMP_DEFAULT_TEMPLATE.body.rows[5],
+      // ─── Row 11: 스미스 코치 프로필 ───
+      SMITH_PROFILE_ROW,
+
+      // ─── Row 12: CTA 버튼 (기존 default 재사용) ───
+      BS_CAMP_DEFAULT_TEMPLATE.body.rows[6],
 
       // ─── Row 12: 구분선 ───
       {
@@ -1253,8 +1327,8 @@ export const BS_CAMP_TEMPLATE_A = {
         },
       },
 
-      // ─── Row 14: 푸터 (기존 default 재사용) ───
-      BS_CAMP_DEFAULT_TEMPLATE.body.rows[6],
+      // ─── Row 15: 푸터 (기존 default 재사용) ───
+      BS_CAMP_DEFAULT_TEMPLATE.body.rows[7],
     ],
   },
 };
@@ -1366,7 +1440,7 @@ export const BS_CAMP_TEMPLATE_B = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="text-align: center;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">LIVE 무료 웨비나</span></p>\n<p style="color: #ffffff; font-size: 24px; font-weight: 800; text-align: center; line-height: 140%; margin-top: 12px;">웨비나 제목이 들어갑니다</p>\n<p style="color: #94a3b8; font-size: 14px; text-align: center; margin-top: 4px;">부제목이 들어갑니다</p>',
+                  text: '<p style="text-align: center;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">LIVE 무료 웨비나</span></p>\n<p style="color: #F75D5D; font-size: 24px; font-weight: 800; text-align: center; line-height: 140%; margin-top: 12px;">웨비나 제목이 들어갑니다</p>\n<p style="color: #94a3b8; font-size: 14px; text-align: center; margin-top: 4px;">부제목이 들어갑니다</p>',
                 },
               },
             ],
@@ -1556,7 +1630,7 @@ export const BS_CAMP_TEMPLATE_B = {
                 values: {
                   containerPadding: "0px",
                   anchor: "",
-                  html: '<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#F75D5D 0%,#F75D5D 60%,transparent 60%);"><span style="padding-left:32px;color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">강의 미리보기</span></div>',
+                  html: '<img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-preview.png" alt="강의 미리보기" style="display:block;width:100%;height:auto;border-radius:6px 6px 0 0;" />',
                   hideDesktop: false,
                   displayCondition: null,
                   _meta: { htmlID: "u_content_html_section_banner_b", htmlClassNames: "u_content_html" },
@@ -1616,7 +1690,7 @@ export const BS_CAMP_TEMPLATE_B = {
                   containerPadding: "16px 24px",
                   anchor: "",
                   src: {
-                    url: "https://via.placeholder.com/536x200/f1f3f8/94a3b8?text=%F0%9F%93%8A+%EC%8A%AC%EB%9D%BC%EC%9D%B4%EB%93%9C+%EB%AF%B8%EB%A6%AC%EB%B3%B4%EA%B8%B0",
+                    url: "https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/webinar-placeholder.png",
                     width: 536,
                     height: 200,
                   },
@@ -1753,7 +1827,7 @@ export const BS_CAMP_TEMPLATE_B = {
                 values: {
                   containerPadding: "0px",
                   anchor: "",
-                  html: '<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#F75D5D 0%,#F75D5D 60%,transparent 60%);"><span style="padding-left:32px;color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">웨비나 일정 안내</span></div>',
+                  html: '<img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-schedule.png" alt="웨비나 일정 안내" style="display:block;width:100%;height:auto;border-radius:6px 6px 0 0;" />',
                   hideDesktop: false,
                   displayCondition: null,
                   _meta: { htmlID: "u_content_html_section_banner_2", htmlClassNames: "u_content_html" },
@@ -1866,7 +1940,10 @@ export const BS_CAMP_TEMPLATE_B = {
         },
       },
 
-      // ─── Row 11: CTA 버튼 (초록 #F75D5D) ───
+      // ─── Row 11: 스미스 코치 프로필 ───
+      SMITH_PROFILE_ROW,
+
+      // ─── Row 12: CTA 버튼 (#F75D5D) ───
       {
         id: "row-cta",
         cells: [1],
@@ -2172,8 +2249,8 @@ export const BS_CAMP_TEMPLATE_B = {
         },
       },
 
-      // ─── Row 15: 푸터 (기존 default) ───
-      BS_CAMP_DEFAULT_TEMPLATE.body.rows[6],
+      // ─── Row 16: 푸터 (기존 default) ───
+      BS_CAMP_DEFAULT_TEMPLATE.body.rows[7],
     ],
   },
 };
@@ -2393,9 +2470,9 @@ export const BS_CAMP_TEMPLATE_C = {
       // ─── Row 4: 본문 텍스트 (기존 default) ───
       BS_CAMP_DEFAULT_TEMPLATE.body.rows[2],
 
-      // ─── Row 5: 프로필 카드 ───
+      // ─── Row 5: 수강생 프로필 카드 ───
       {
-        id: "row-profile",
+        id: "row-student-profile",
         cells: [1],
         columns: [
           {
@@ -2607,7 +2684,7 @@ export const BS_CAMP_TEMPLATE_C = {
                 values: {
                   containerPadding: "0px",
                   anchor: "",
-                  html: '<div style="height:56px;line-height:56px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);"><span style="padding-left:32px;color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">INTERVIEW</span></div>',
+                  html: '<img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-interview.png" alt="INTERVIEW" style="display:block;width:100%;height:auto;border-radius:6px 6px 0 0;" />',
                   hideDesktop: false,
                   displayCondition: null,
                   _meta: { htmlID: "u_content_html_section_banner_c", htmlClassNames: "u_content_html" },
@@ -2888,7 +2965,10 @@ export const BS_CAMP_TEMPLATE_C = {
         },
       },
 
-      // ─── Row 11: CTA 버튼 (주황 #E54949) ───
+      // ─── Row 11: 스미스 코치 프로필 ───
+      SMITH_PROFILE_ROW,
+
+      // ─── Row 12: CTA 버튼 (#F75D5D) ───
       {
         id: "row-cta",
         cells: [1],
@@ -3101,8 +3181,8 @@ export const BS_CAMP_TEMPLATE_C = {
         },
       },
 
-      // ─── Row 14: 푸터 (기존 default) ───
-      BS_CAMP_DEFAULT_TEMPLATE.body.rows[6],
+      // ─── Row 15: 푸터 (기존 default) ───
+      BS_CAMP_DEFAULT_TEMPLATE.body.rows[7],
     ],
   },
 };
