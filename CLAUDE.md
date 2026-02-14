@@ -106,6 +106,13 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 - Leader는 TASK.md 받으면 **먼저 Plan Mode로 코드 탐색** → 계획 수립 → 승인 후 구현
 - Shift+Tab으로 Normal/Plan/Delegate 전환
 
+## 브라우저 QA (Chrome 확장)
+- Claude Code Chrome 확장 설치됨. 에이전트팀이 직접 브라우저 QA 가능.
+- 구현 완료 후 Chrome으로 localhost:3000 열어서 스크린샷 찍고 UI 검증할 것.
+- 데스크탑(1920px) + 모바일(375px) 두 가지 뷰포트 확인 필수.
+- 목업/디자인과 비교 → 차이점 발견 시 직접 수정.
+- 콘솔 에러 확인.
+
 ## Skills (자동 로드)
 `.claude/skills/`에 프로젝트 스킬 등록됨. 관련 작업 시 자동 참조:
 - `nextjs-supabase.md` — App Router + Supabase 패턴
