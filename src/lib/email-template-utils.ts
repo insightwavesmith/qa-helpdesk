@@ -82,12 +82,15 @@ function markdownToEmailHtml(md: string): string {
     const h3Match = trimmed.match(/^### (.+)/);
     if (h3Match) {
       const bannerKey = h3Match[1].trim();
-      const bannerFile = BANNER_MAP[bannerKey];
+      const matchedKey = Object.keys(BANNER_MAP)
+        .filter(key => bannerKey.includes(key))
+        .sort((a, b) => b.length - a.length)[0];
+      const bannerFile = matchedKey ? BANNER_MAP[matchedKey] : undefined;
       if (bannerFile) {
-        htmlParts.push(`<img src="${BANNER_BASE_URL}/${bannerFile}.png" alt="${bannerKey}" style="display:block;width:100%;height:auto;border-radius:6px 6px 0 0;margin:24px 0 0;" />`);
+        htmlParts.push(`<img src="${BANNER_BASE_URL}/${bannerFile}.png" alt="${bannerKey}" style="display:block;width:100%;max-width:600px;height:auto;border-radius:6px 6px 0 0;margin:24px 0 0;" />`);
       } else {
         // fallback: CSS gradient (매핑에 없는 경우)
-        htmlParts.push(`<div style="height:80px;line-height:80px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);margin:24px 0 16px;border-radius:4px 0 0 4px;"><span style="padding-left:32px;color:#fff;font-size:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${bannerKey}</span></div>`);
+        htmlParts.push(`<div style="max-width:600px;height:80px;line-height:80px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);margin:24px 0 16px;border-radius:4px 0 0 4px;"><span style="padding-left:32px;color:#fff;font-size:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${bannerKey}</span></div>`);
       }
       continue;
     }
@@ -155,7 +158,7 @@ function markdownToEmailHtml(md: string): string {
         const rows = checkItems.map((l, i) => {
           const text = l.trim().replace(/^✅\s*/, "");
           const borderBottom = i < checkItems.length - 1 ? "border-bottom:1px solid #FEE2E2;" : "";
-          return `<tr><td style="padding:14px 20px;${borderBottom}"><div style="font-size:14px;color:#374151;line-height:1.5;"><span style="display:inline-block;width:16px;height:16px;border-radius:4px;background:#F75D5D;text-align:center;line-height:16px;color:#fff;font-size:10px;font-weight:700;vertical-align:middle;margin-right:8px;">&#10003;</span>${text}</div></td></tr>`;
+          return `<tr><td style="padding:14px 20px;${borderBottom}"><div style="font-size:14px;color:#374151;line-height:1.5;"><span style="display:inline-block;width:16px;border-radius:4px;background:#F75D5D;text-align:center;padding:3px 0;line-height:1;color:#fff;font-size:10px;font-weight:700;vertical-align:middle;margin-right:8px;">&#10003;</span>${text}</div></td></tr>`;
         });
         htmlParts.push(`<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #FECACA;border-radius:12px;overflow:hidden;margin:16px 0;">${rows.join("")}</table>`);
       }
