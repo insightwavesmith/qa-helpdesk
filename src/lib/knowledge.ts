@@ -1,7 +1,9 @@
 // KnowledgeService — Opus 4.6 단일 모델 기반 지식 서비스
 // Consumer별 RAG 파라미터로 QA/콘텐츠/정보공유 통합
+// 주의: rag.ts가 이 파일을 import하므로, rag.ts import 금지 (순환 의존성)
 
-import { searchRelevantChunks } from "@/lib/rag";
+import { generateEmbedding } from "@/lib/gemini";
+import { createServiceClient } from "@/lib/supabase/server";
 
 // ─── 타입 정의 ────────────────────────────────────────────
 
@@ -110,6 +112,44 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
   },
 };
 
+// ─── 인라인 RAG 검색 (순환 의존성 방지) ──────────────────
+
+interface ChunkResult {
+  id: string;
+  lecture_name: string;
+  week: string;
+  chunk_index: number;
+  content: string;
+  similarity: number;
+  source_type?: string;
+  metadata?: Record<string, unknown> | null;
+}
+
+async function searchChunks(
+  queryText: string,
+  limit: number,
+  threshold: number,
+  sourceTypes?: string[] | null
+): Promise<ChunkResult[]> {
+  const supabase = createServiceClient();
+  const embedding = await generateEmbedding(queryText);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.rpc as any)("match_lecture_chunks", {
+    query_embedding: embedding,
+    match_threshold: threshold,
+    match_count: limit,
+    filter_source_types: sourceTypes || null,
+  });
+
+  if (error) {
+    console.error("[KnowledgeService] Vector search error:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
 // ─── KnowledgeService ─────────────────────────────────────
 
 const MODEL = "claude-opus-4-6";
@@ -141,9 +181,10 @@ export async function generate(
   const tokenBudget = request.tokenBudget ?? config.tokenBudget;
   const temperature = request.temperature ?? config.temperature;
   const systemPrompt = request.systemPromptOverride ?? config.systemPrompt;
+  const sourceTypes = request.sourceTypes ?? config.sourceTypes;
 
-  // 1. RAG 검색
-  const chunks = await searchRelevantChunks(request.query, limit, threshold);
+  // 1. RAG 검색 (인라인 — rag.ts 순환 의존성 방지)
+  const chunks = await searchChunks(request.query, limit, threshold, sourceTypes);
 
   // 2. 컨텍스트 조합
   let contextText = "";
