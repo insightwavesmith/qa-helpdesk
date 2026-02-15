@@ -9,7 +9,6 @@ export async function getQuestions({
   pageSize = 10,
   categoryId,
   search,
-  status,
   tab = "all",
   authorId,
 }: {

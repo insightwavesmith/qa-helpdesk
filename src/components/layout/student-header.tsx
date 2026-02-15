@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Settings, Menu, X } from "lucide-react";
 import { useState } from "react";
@@ -46,7 +47,7 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
         <div className="flex items-center justify-between">
           {/* 로고 */}
           <Link href="/dashboard" className="flex items-center">
-            <img src="/logo.png" alt="자사몰사관학교" className="w-8 h-8 rounded-lg object-cover" />
+            <Image src="/logo.png" alt="자사몰사관학교" width={32} height={32} className="rounded-lg object-cover" />
             <span className="ml-2 text-xl font-bold text-gray-900 font-accent [word-spacing:-3px]">자사몰사관학교</span>
           </Link>
           

@@ -33,7 +33,7 @@ interface StudentHomeProps {
   userName: string;
 }
 
-export async function StudentHome({ userName: _userName }: StudentHomeProps) {
+export async function StudentHome({}: StudentHomeProps) {
   let notices: Awaited<ReturnType<typeof getNotices>>["data"] = [];
   let recentQuestions: Awaited<ReturnType<typeof getQuestions>>["data"] = [];
   let latestPosts: Awaited<ReturnType<typeof getPosts>>["data"] = [];

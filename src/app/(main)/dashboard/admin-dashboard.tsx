@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import {
   MessageCircleQuestion,
@@ -160,9 +161,11 @@ export async function AdminDashboard() {
               <Link key={p.id as string} href={`/posts/${p.id}`} className="group block">
                 <div className="flex items-center gap-3 py-2 -mx-2 px-2 rounded-[6px] transition-colors duration-150 hover:bg-accent">
                   {(p.thumbnail_url as string) ? (
-                    <img
+                    <Image
                       src={p.thumbnail_url as string}
                       alt=""
+                      width={48}
+                      height={48}
                       className="h-12 w-12 rounded-md object-cover shrink-0"
                     />
                   ) : (

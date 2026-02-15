@@ -43,15 +43,6 @@ import AiWriteDialog from "@/components/email/ai-write-dialog";
 import ContentPickerDialog from "@/components/content/content-picker-dialog";
 import { getContentAsEmailHtml, updateContentEmailSentAt } from "@/actions/contents";
 
-const TipTapEditor = dynamic(() => import("@/components/email/tiptap-editor"), {
-  ssr: false,
-  loading: () => (
-    <div className="h-[460px] rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center text-sm text-gray-400">
-      에디터 로딩 중...
-    </div>
-  ),
-});
-
 const EmailSplitEditor = dynamic(
   () => import("@/components/email/email-split-editor"),
   {

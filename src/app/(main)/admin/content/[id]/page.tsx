@@ -71,12 +71,13 @@ export default function ContentDetailPage() {
       setContent(data as Content);
     } catch {
       router.push("/admin/content");
+    } finally {
+      setLoading(false);
     }
   }, [contentId, router]);
 
   useEffect(() => {
-    setLoading(true);
-    loadContent().finally(() => setLoading(false));
+    loadContent();
   }, [loadContent]);
 
   const refreshContent = useCallback(() => {

@@ -9,7 +9,7 @@ interface HeaderProps {
   userRole?: string;
 }
 
-export function Header({ userName: _userName, userRole: _userRole }: HeaderProps) {
+export function Header({}: HeaderProps) {
   return (
     <header className="flex h-[45px] shrink-0 items-center justify-between gap-2 transition-[width,height] duration-150 ease-in-out group-has-data-[collapsible=icon]/sidebar-wrapper:h-[40px]">
       <div className="flex items-center gap-1.5 px-3">

@@ -55,7 +55,6 @@ interface SidebarProps {
 export function DashboardSidebar({
   userRole = "member",
   userName = "사용자",
-  userEmail: _userEmail,
   pendingAnswersCount = 0,
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);

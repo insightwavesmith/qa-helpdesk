@@ -1,4 +1,4 @@
-import { Bot, User, CheckCircle, ThumbsUp, Shield, Sparkles } from "lucide-react";
+import { Bot, User, CheckCircle, ThumbsUp, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { SourceReferences } from "@/components/questions/SourceReferences";
 

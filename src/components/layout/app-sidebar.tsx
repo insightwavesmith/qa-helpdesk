@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
@@ -135,10 +136,12 @@ export default function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href="/dashboard" className="flex items-center gap-2.5">
-                <img
+                <Image
                   src="/logo.png"
                   alt="자사몰사관학교"
-                  className="size-[22px] rounded-[4px] object-cover"
+                  width={22}
+                  height={22}
+                  className="rounded-[4px] object-cover"
                 />
                 <span className="text-[14px] font-medium text-foreground truncate">
                   자사몰사관학교

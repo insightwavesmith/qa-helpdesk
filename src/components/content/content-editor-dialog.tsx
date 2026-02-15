@@ -63,6 +63,7 @@ export default function ContentEditorDialog({
       setTagsInput("");
       setStatus("draft");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [content?.id]);
 
   const handleStatusChange = (newStatus: string) => {

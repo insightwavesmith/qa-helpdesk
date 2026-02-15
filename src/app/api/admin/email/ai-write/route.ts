@@ -118,10 +118,6 @@ export async function POST(request: NextRequest) {
     const introFn = TONE_INTROS[toneKey] || TONE_INTROS.educational;
     const intro = introFn(topicLabel);
 
-    let contentHtml: string;
-    let sources: string[] = [];
-    let firstSectionTitle: string;
-
     // Query contents from DB
     let query = svc
       .from("contents")
@@ -144,13 +140,13 @@ export async function POST(request: NextRequest) {
     }));
 
     const selected = sections.slice(0, MAX_SECTIONS);
-    sources = [...new Set(selected.map((s) => s.source))];
-    firstSectionTitle = selected[0]?.title || "";
+    const sources = [...new Set(selected.map((s) => s.source))];
+    const firstSectionTitle = selected[0]?.title || "";
 
     const title = firstSectionTitle
       ? `${CATEGORY_LABELS[category] || category} - ${firstSectionTitle}`
       : CATEGORY_LABELS[category] || category;
-    contentHtml = buildNewsletterHtml(title, intro, selected);
+    const contentHtml = buildNewsletterHtml(title, intro, selected);
 
     const categoryLabel = CATEGORY_LABELS[category] || category;
     const subject = firstSectionTitle

@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import NextImage from "next/image";
 import { Image as ImageIcon, Eye, Calendar, Mail, Upload, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { updateContent } from "@/actions/contents";
@@ -90,9 +91,11 @@ export default function DetailSidebar({
             썸네일
           </p>
           {content.thumbnail_url ? (
-            <img
+            <NextImage
               src={content.thumbnail_url}
               alt="썸네일"
+              width={240}
+              height={135}
               className="w-full aspect-video object-cover rounded-md border border-gray-200"
             />
           ) : (

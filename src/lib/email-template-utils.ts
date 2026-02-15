@@ -259,7 +259,6 @@ export function buildDesignFromSummary(content: Content): object {
   const template = JSON.parse(JSON.stringify(baseTemplate));
 
   // placeholder 행 제거 (auto-generated에서는 본문 블록에 전부 렌더링)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   template.body.rows = template.body.rows.filter(
     (row: { id: string }) => !PLACEHOLDER_ROW_IDS.includes(row.id)
   );

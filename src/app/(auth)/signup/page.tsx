@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/client";
 import { updateBusinessCertUrl } from "@/actions/auth";
+import Image from "next/image";
 import { Loader2, Upload, FileCheck } from "lucide-react";
 
 export default function SignupPage() {
@@ -113,7 +114,7 @@ export default function SignupPage() {
         {/* 헤더 */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-3">
-            <img src="/logo.png" alt="자사몰사관학교" className="w-10 h-10 rounded-lg object-cover" />
+            <Image src="/logo.png" alt="자사몰사관학교" width={40} height={40} className="rounded-lg object-cover" />
             <span className="ml-2 text-xl font-bold text-[#111827]">자사몰사관학교</span>
           </div>
           <p className="text-[#6B7280] font-medium">자사몰사관학교 헬프데스크</p>

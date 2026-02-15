@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 interface PostData {
   id: string;
@@ -58,11 +59,12 @@ function CategoryBadge({ category }: { category: string }) {
 
 function Thumbnail({ title, category, thumbnailUrl }: { title: string; category: string; thumbnailUrl?: string | null }) {
   return (
-    <img
+    <Image
       src={thumbnailUrl || `/api/og?title=${encodeURIComponent(title)}&category=${encodeURIComponent(category)}`}
       alt={title}
+      width={640}
+      height={360}
       className="w-full aspect-video object-cover"
-      loading="lazy"
     />
   );
 }
