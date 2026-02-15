@@ -2,6 +2,7 @@
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { generateEmbedding } from "@/lib/gemini";
+import { generate as ksGenerate, type ConsumerType } from "@/lib/knowledge";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -620,54 +621,58 @@ ${CONTENT_BASE_STYLE}
   },
 };
 
+// 콘텐츠 타입 → KnowledgeService Consumer 매핑
+const CONTENT_TO_CONSUMER: Record<string, ConsumerType> = {
+  education: "education",
+  case_study: "education",
+  webinar: "webinar",
+  notice: "education",
+  promo: "promo",
+};
+
+// emailSummaryGuide에 추가할 배너키 안내 (BANNER_MAP 키 13개)
+const BANNER_KEYS_GUIDE = `
+
+### 배너키 안내
+이메일 요약의 각 섹션에 아래 배너키를 ### 헤딩으로 사용하세요. 반드시 2~4개 이상 포함:
+INSIGHT, INSIGHT 01, INSIGHT 02, INSIGHT 03, KEY POINT, CHECKLIST, 강의 미리보기, 핵심 주제, 이런 분들을 위해, 웨비나 일정, INTERVIEW, 핵심 변화, 성과
+
+### 구조 예시
+### INSIGHT
+핵심 인사이트 내용...
+
+### KEY POINT
+핵심 포인트 내용...
+
+### CHECKLIST
+✅ 체크항목 1
+✅ 체크항목 2`;
+
 export async function generateContentWithAI(
   topic: string,
   type: string = "education"
 ): Promise<{ title: string; bodyMd: string; emailSummary: string } | { error: string }> {
   await requireAdmin();
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return { error: "ANTHROPIC_API_KEY가 설정되지 않았습니다." };
-  }
-
   const typePrompt = TYPE_PROMPTS[type] || TYPE_PROMPTS.education;
+  const consumerType = CONTENT_TO_CONSUMER[type] || "education";
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 8192,
-        system: typePrompt.system,
-        messages: [
-          {
-            role: "user",
-            content: `${typePrompt.userPrefix}: ${topic}
+    const query = `${typePrompt.userPrefix}: ${topic}
 
 본문 작성 후, 아래 구분자 다음에 이메일 요약(email_summary)도 함께 작성해주세요.
 
 ---EMAIL_SUMMARY---
 
-${typePrompt.emailSummaryGuide}`,
-          },
-        ],
-      }),
+${typePrompt.emailSummaryGuide}${BANNER_KEYS_GUIDE}`;
+
+    const result = await ksGenerate({
+      query,
+      consumerType,
+      systemPromptOverride: typePrompt.system,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Claude API error:", errorText);
-      return { error: `AI 생성 실패: ${response.status}` };
-    }
-
-    const data = await response.json();
-    const text: string = data.content?.[0]?.text || "";
+    const text = result.content;
 
     if (!text.trim()) {
       return { error: "AI가 콘텐츠를 생성하지 못했습니다." };
