@@ -2,7 +2,9 @@
 // 질문에 대해 강의 자료 기반 AI 답변 생성
 
 import { createServiceClient } from "@/lib/supabase/server";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- 롤백 안전망: P1b 전까지 유지
 import { generateEmbedding, generateAnswer } from "@/lib/gemini";
+import { generate as ksGenerate } from "@/lib/knowledge";
 
 interface LectureChunk {
   id: string;
@@ -11,6 +13,8 @@ interface LectureChunk {
   chunk_index: number;
   content: string;
   similarity: number;
+  source_type?: string;
+  metadata?: Record<string, unknown> | null;
 }
 
 interface SourceRef {
@@ -26,19 +30,21 @@ interface SourceRef {
 export async function searchRelevantChunks(
   questionText: string,
   limit: number = 5,
-  threshold: number = 0.5
+  threshold: number = 0.5,
+  sourceTypes?: string[]
 ): Promise<LectureChunk[]> {
   const supabase = createServiceClient();
-  
+
   // 질문 임베딩 생성
   const embedding = await generateEmbedding(questionText);
-  
+
   // 벡터 유사도 검색 (RPC 함수 호출)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase.rpc as any)("match_lecture_chunks", {
     query_embedding: embedding,
     match_threshold: threshold,
     match_count: limit,
+    filter_source_types: sourceTypes || null,
   });
   
   if (error) {
@@ -58,39 +64,17 @@ export async function generateRAGAnswer(
 ): Promise<{ answer: string; sourceRefs: SourceRef[] } | null> {
   try {
     const questionText = `${questionTitle}\n\n${questionContent}`;
-    
-    // 1. 관련 강의 청크 검색
-    const chunks = await searchRelevantChunks(questionText, 5, 0.4);
-    
-    if (chunks.length === 0) {
-      // 청크가 없어도 일반 답변 시도
-      const answer = await generateAnswer(questionText, [
-        "강의 자료에서 직접적으로 관련된 내용을 찾지 못했습니다. 일반적인 메타 광고 지식을 바탕으로 답변드립니다.",
-      ]);
-      return {
-        answer,
-        sourceRefs: [],
-      };
-    }
-    
-    // 2. 청크 컨텐츠 추출
-    const contextTexts = chunks.map(
-      (chunk) =>
-        `[${chunk.lecture_name} - ${chunk.week}]\n${chunk.content}`
-    );
-    
-    // 3. AI 답변 생성
-    const answer = await generateAnswer(questionText, contextTexts);
-    
-    // 4. 출처 참조 정보 생성
-    const sourceRefs: SourceRef[] = chunks.map((chunk) => ({
-      lecture_name: chunk.lecture_name,
-      week: chunk.week,
-      chunk_index: chunk.chunk_index,
-      similarity: Math.round(chunk.similarity * 100) / 100,
-    }));
-    
-    return { answer, sourceRefs };
+
+    // KnowledgeService (Opus 4.6) 위임
+    const result = await ksGenerate({
+      query: questionText,
+      consumerType: "qa",
+    });
+
+    return {
+      answer: result.content,
+      sourceRefs: result.sourceRefs,
+    };
   } catch (error) {
     console.error("RAG answer generation error:", error);
     return null;

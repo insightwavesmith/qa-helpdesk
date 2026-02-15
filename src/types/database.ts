@@ -341,6 +341,8 @@ export interface Database {
           content: string;
           embedding: string | null;
           created_at: string;
+          source_type: string;
+          metadata: Record<string, unknown> | null;
         };
         Insert: {
           id?: string;
@@ -350,6 +352,8 @@ export interface Database {
           content: string;
           embedding?: string | null;
           created_at?: string;
+          source_type?: string;
+          metadata?: Record<string, unknown> | null;
         };
         Update: {
           id?: string;
@@ -359,6 +363,8 @@ export interface Database {
           content?: string;
           embedding?: string | null;
           created_at?: string;
+          source_type?: string;
+          metadata?: Record<string, unknown> | null;
         };
         Relationships: [];
       };
