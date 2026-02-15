@@ -1,7 +1,7 @@
 // Gemini API 유틸리티 (임베딩 + 생성)
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const EMBEDDING_MODEL = "text-embedding-004";
+const EMBEDDING_MODEL = "gemini-embedding-001";
 const GENERATION_MODEL = "gemini-2.5-flash-preview-05-20";
 
 if (!GEMINI_API_KEY) {
@@ -10,7 +10,7 @@ if (!GEMINI_API_KEY) {
 
 /**
  * 텍스트를 벡터 임베딩으로 변환
- * Gemini text-embedding-004 사용 (768차원)
+ * Gemini gemini-embedding-001 사용 (768차원, outputDimensionality 지정)
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
   if (!GEMINI_API_KEY) {
@@ -24,6 +24,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
       body: JSON.stringify({
         model: `models/${EMBEDDING_MODEL}`,
         content: { parts: [{ text }] },
+        outputDimensionality: 768,
       }),
     }
   );
