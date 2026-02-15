@@ -1,163 +1,148 @@
-# TASK.md — 전체 코드 리뷰
-> 2026-02-15 | qa-helpdesk 프로젝트 전체 코드 품질 점검 및 개선
+# TASK.md — 이메일 템플릿 로고/인사말 수정
+> 2026-02-15 | Smith님 피드백: 로고 배경색 통일 + 인사말 텍스트 삭제
 
 ## 목표
-프로젝트 전체 코드베이스(219 파일, ~33,700 줄)를 리뷰하여 버그, 보안 취약점, 성능 이슈, 데드코드를 식별하고 수정한다.
-- lint 에러 3개 → 0개
-- lint 경고 19개 → 최소화
-- 보안/성능 이슈 식별 및 수정
-- 데드코드/미사용 import 정리
+1. 로고 이미지를 v4(투명 배경)로 교체하여 이메일 배경(#ffffff)과 자연스럽게 통일
+2. "안녕하세요! 대표님 자사몰사관학교의 스미스코치입니다." 인사말 블록(row-greeting) 완전 삭제
+3. buildDesignFromSummary에서 greeting 관련 로직 제거
 
 ## 레퍼런스
-- CLAUDE.md: 프로젝트 규칙, 디자인 시스템, PDCA 워크플로우
-- `.claude/skills/`: 프로젝트별 스킬 4개 (nextjs-supabase, design-system, email-parser, webapp-testing)
+- Smith님 스크린샷: 로고 빨간 배경이 이메일 흰 배경과 불일치, 인사말 텍스트 불필요
+- 새 로고 v4: `https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v4.png` (503x132, 투명배경 + 10+ 빨간마크 + 자사몰사관학교 검정텍스트)
 
 ## 현재 코드
 
-### 알려진 lint 에러 3건
+### 로고 (email-default-template.ts — 4곳)
 ```ts
-// 1. setState in useEffect — 무한 렌더 위험
-// src/app/(main)/admin/content/[id]/page.tsx:78
-useEffect(() => {
-  setState(value); // ← error: cascading renders
-}, [dep]);
-
-// 2-3. let → const
-// src/app/api/admin/email/ai-write/route.ts:148,153
-let firstSectionTitle = "..."; // ← error: never reassigned
-let contentHtml = "...";       // ← error: never reassigned
+// 라인 109, 708, 1372, 2294 — 4개 템플릿 전부 동일
+text: '<p style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v3.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:64px;width:auto;" /></p>',
 ```
 
-### 알려진 lint 경고 (주요)
-```
-# 미사용 변수
-src/components/questions/AnswerCard.tsx:1  'Sparkles' is defined but never used
-src/lib/diagnosis/engine.ts:15  '_belowAvg' is assigned but never used
+### 인사말 row-greeting (email-default-template.ts — 3곳)
+```ts
+// Template A: 라인 745~807 (row-greeting, id="row-greeting")
+// Template B: 라인 1482~1539 (row-greeting, id="row-greeting")
+// Template C: 라인 2333~2390 (row-greeting, id="row-greeting")
+// Default 템플릿: 인사말이 content-body-text-1 안에 포함 (별도 row 없음)
 
-# 불필요한 eslint-disable
-src/lib/email-template-utils.ts:230  Unused eslint-disable directive
-
-# <img> → <Image> (next/image 권장, 총 4곳)
-src/app/(main)/admin/content/page.tsx:49
-src/components/posts/post-card.tsx:61
-src/components/posts/post-hero.tsx:9
-```
-
-### 프로젝트 구조
-```
-src/
-├── app/
-│   ├── (auth)/        — 로그인/회원가입
-│   ├── (main)/        — 메인 레이아웃 (admin, posts, protractor, settings 등)
-│   ├── api/           — API 라우트 (admin, cron, diagnose, protractor 등)
-│   └── layout.tsx
-├── actions/           — Server Actions (contents.ts 698줄)
-├── components/        — UI 컴포넌트
-├── hooks/             — Custom hooks
-├── lib/               — 유틸리티 (email, supabase, protractor 등)
-├── types/             — 타입 정의
-└── middleware.ts      — Supabase Auth 세션
+// Template A 예시 (B/C도 구조 동일):
+{
+  id: "row-greeting",
+  cells: [1],
+  columns: [{
+    id: "col-greeting",
+    contents: [{
+      id: "content-greeting",
+      type: "text",
+      values: {
+        text: '<p style="font-size: 15px; line-height: 170%;"><span style="color: #1a1a1a;">안녕하세요! <strong>대표</strong>님</span><br><a href="https://bscamp.co.kr" style="color: #F75D5D;">자사몰사관학교</a><span>의 스미스코치입니다.</span></p>',
+      },
+    }],
+    // ... column values
+  }],
+  // ... row values
+}
 ```
 
-### 주요 파일 크기
-```
-3,108줄  src/lib/email-default-template.ts   (Unlayer JSON 템플릿)
-1,093줄  src/types/database.ts               (Supabase 타입)
-  838줄  src/app/(main)/admin/email/page.tsx  (이메일 관리 페이지)
-  698줄  src/actions/contents.ts              (Server Actions)
-  499줄  src/components/email/tiptap-editor.tsx (에디터 — MDXEditor로 교체됨, 데드코드 가능성)
-  349줄  src/lib/email-templates.ts           (이전 템플릿 — 데드코드 가능성)
-  325줄  src/lib/email-template-utils.ts      (현재 사용 파서)
+### Default 템플릿 인사말 (email-default-template.ts — 라인 245)
+```ts
+// Default 템플릿의 content-body-text-1에 인사말이 포함돼 있음
+text: '<p style="font-size: 15px; line-height: 180%;"><span style="color: #333333;">안녕하세요! <strong>대표</strong>님 <a href="https://bscamp.co.kr" style="color:#F75D5D;">자사몰사관학교</a>의 스미스코치입니다.</span></p>\n<p style="font-size: 15px; line-height: 180%;"><span style="color: #333333;">여기에 뉴스레터 본문 내용을 작성해주세요...</span></p>',
 ```
 
-### 기술 스택
-- Next.js 15 (App Router) + TypeScript + Tailwind CSS
-- Supabase (PostgreSQL + Auth + RLS)
-- MDXEditor (마크다운 WYSIWYG)
-- Unlayer (이메일 에디터)
+### buildDesignFromSummary (email-template-utils.ts)
+```ts
+// 라인 301~314 — hookQuote와 bodyText1에서 greeting 고려
+const hookQuote = findContentById(rows, "content-hook-quote");
+if (hookQuote && content.email_summary) {
+  const firstLine = content.email_summary.split("\n\n")[0].trim();
+  hookQuote.values.text = `<p ...>${escapeHtml(firstLine)}</p>`;
+}
+
+const bodyText1 = findContentById(rows, "content-body-text-1");
+if (bodyText1 && content.email_summary) {
+  let bodyMd = content.email_summary;
+  if (hookQuote) {
+    const idx = bodyMd.indexOf("\n\n");
+    bodyMd = idx !== -1 ? bodyMd.slice(idx + 2) : "";
+  }
+  bodyText1.values.text = bodyMd ? markdownToEmailHtml(bodyMd) : "";
+}
+```
+※ greeting 행이 삭제되면 content-greeting이 없어지므로 별도 코드 영향 없음.
+※ Default 템플릿의 content-body-text-1 인사말은 buildDesignFromSummary에서 email_summary로 덮어씌워지므로 auto-generated에서는 무관. 단, Unlayer 에디터에서 직접 편집 시에는 기본값으로 보이므로 placeholder 텍스트로 교체 필요.
 
 ## 제약
-- `npm run build` 성공 상태 유지 (현재 성공)
-- `npx tsc --noEmit` 에러 0 유지 (현재 0)
-- 기존 기능 깨뜨리지 않기 — 리팩토링은 동작 보존 필수
-- UI 텍스트 한국어 유지
-- email-default-template.ts는 Unlayer JSON 구조라 대폭 변경 지양
-- Supabase RLS 정책 건드리지 않기
+- email-template-utils.ts의 `markdownToEmailHtml`, `buildDesignFromSummary` 핵심 로직 변경 금지
+- 기존 배너 이미지(BANNER_MAP), 프로필 카드(SMITH_PROFILE_ROW), CTA 버튼 건드리지 않음
+- PLACEHOLDER_ROW_IDS 배열에 "row-greeting" 추가하지 않음 (행 자체를 템플릿에서 삭제)
 
 ## 태스크
 
-### T1. lint 에러 수정 (3건) → code-reviewer
-- 파일:
-  - `src/app/(main)/admin/content/[id]/page.tsx` (line 78)
-  - `src/app/api/admin/email/ai-write/route.ts` (lines 148, 153)
+### T1. 로고 이미지 v3→v4 교체 → frontend-dev
+- 파일: `app/src/lib/email-default-template.ts`
 - 의존: 없음
 - 완료 기준:
-  - [ ] page.tsx: useEffect 안 setState → useEffect 밖 또는 조건부로 이동 (무한 렌더 방지)
-  - [ ] ai-write/route.ts: `let firstSectionTitle` → `const firstSectionTitle`
-  - [ ] ai-write/route.ts: `let contentHtml` → `const contentHtml`
-  - [ ] `npx eslint src/ 2>&1 | grep "error"` → 0건
+  - [ ] `logo-email-v3.png` → `logo-email-v4.png` URL 교체 (4곳: 라인 109, 708, 1372, 2294)
+  - [ ] height `64px` → `48px` (투명 배경이라 여백 불필요, 시각적 크기 유지)
+  - [ ] 4개 템플릿(Default/A/B/C) 전부 동일하게 변경
 
-### T2. lint 경고 정리 → code-reviewer
-- 파일:
-  - `src/components/questions/AnswerCard.tsx` (미사용 import)
-  - `src/lib/diagnosis/engine.ts` (미사용 변수)
-  - `src/lib/email-template-utils.ts` (불필요 eslint-disable)
-  - `src/app/(main)/admin/content/page.tsx` (img → Image)
-  - `src/components/posts/post-card.tsx` (img → Image)
-  - `src/components/posts/post-hero.tsx` (img → Image)
-- 의존: T1 완료 후
+### T2. 인사말 블록 삭제 → frontend-dev
+- 파일: `app/src/lib/email-default-template.ts`
+- 의존: 없음 (T1과 병렬 가능하지만 같은 파일이므로 순차)
 - 완료 기준:
-  - [ ] 미사용 import/변수 제거
-  - [ ] 불필요 eslint-disable 제거
-  - [ ] `<img>` → `next/image` `<Image>` 교체 (외부 URL이면 next.config에 domains 추가)
-  - [ ] lint 경고 수 19 → 10 이하
+  - [ ] Template A: `row-greeting` 전체 삭제 (라인 745~807 구간)
+  - [ ] Template B: `row-greeting` 전체 삭제 (라인 1482~1539 구간)
+  - [ ] Template C: `row-greeting` 전체 삭제 (라인 2333~2390 구간)
+  - [ ] Default 템플릿: `content-body-text-1`의 인사말 텍스트를 placeholder로 교체
+    - Before: "안녕하세요! 대표님 자사몰사관학교의 스미스코치입니다. / 여기에 뉴스레터 본문 내용을..."
+    - After: "여기에 뉴스레터 본문 내용을 작성해주세요."
 
-### T3. 데드코드 탐색 및 제거 → code-reviewer
-- 파일 (의심 대상):
-  - `src/components/email/tiptap-editor.tsx` (499줄 — MDXEditor로 교체됨)
-  - `src/lib/email-templates.ts` (349줄 — email-default-template.ts로 교체 가능)
-  - 전체 `src/` 내 미사용 export/함수
-- 의존: T2 완료 후
+### T3. 체크리스트 모바일 반응형 수정 → frontend-dev
+- 파일: `app/src/lib/email-template-utils.ts`
+- 의존: T1, T2 완료 후 (같은 파일은 아니지만 순차 안전)
 - 완료 기준:
-  - [ ] tiptap-editor.tsx가 어디서도 import되지 않으면 삭제
-  - [ ] email-templates.ts가 어디서도 import되지 않으면 삭제
-  - [ ] `grep -r "from.*tiptap-editor" src/` → 0건이면 삭제 확정
-  - [ ] `grep -r "from.*email-templates" src/` → 0건이면 삭제 확정
-  - [ ] 삭제한 파일 목록 기록
+  - [ ] BUG-4 체크리스트(bold 없는 ✅): `table-layout:fixed` 제거 + 내부 테이블 제거
+  - [ ] 체크 아이콘을 `<td width="36">` 고정 대신 인라인 처리
+  - [ ] 번호 카드(bold 있는 ✅): `width:44px` 고정 → `width` 속성 제거, `min-width:44px` 사용
+  - [ ] 모바일(375px 뷰포트)에서 텍스트 밀림 없이 정상 렌더링
+  - [ ] Gmail 모바일 앱에서 테스트
 
-### T4. 보안 점검 → code-reviewer
-- 파일: 전체 `src/app/api/` + `src/actions/` + `src/middleware.ts`
-- 의존: 없음 (T1~T3과 병렬 가능)
-- 완료 기준:
-  - [ ] 모든 admin API에 `requireAdmin()` 또는 동등한 인증 체크 있음
-  - [ ] 사용자 입력이 SQL/HTML에 들어가는 곳에 이스케이프 처리 확인
-  - [ ] 환경변수가 클라이언트에 노출되지 않음 확인 (`NEXT_PUBLIC_` 외)
-  - [ ] RLS가 우회되는 곳 없음 확인 (service role 사용처 검토)
-  - [ ] 발견된 이슈 + 수정 내용 주석으로 기록
+현재 코드 (BUG-4 체크리스트, 라인 153~160):
+```ts
+// 문제: table-layout:fixed + width:36px가 모바일에서 텍스트 밀림 유발
+const rows = checkItems.map((l, i) => {
+  const text = l.trim().replace(/^✅\s*/, "");
+  const borderBottom = i < checkItems.length - 1 ? "border-bottom:1px solid #FEE2E2;" : "";
+  return `<tr><td style="padding:14px 20px;${borderBottom}"><table cellpadding="0" cellspacing="0" width="100%" style="table-layout:fixed;"><tr><td style="width:36px;vertical-align:middle;"><div style="width:20px;height:20px;...">&#10003;</div></td><td style="vertical-align:middle;...">${text}</td></tr></table></td></tr>`;
+});
+htmlParts.push(`<table width="100%" ... style="table-layout:fixed;border:1px solid #FECACA;...">${rows.join("")}</table>`);
+```
 
-### T5. 코드 품질 리뷰 보고서 → code-reviewer
-- 파일: `docs/04-report/code-review-2026-02-15.report.md` (신규 생성)
-- 의존: T1~T4 완료 후
-- 완료 기준:
-  - [ ] 수정 항목 요약 (파일, 변경 내용, 이유)
-  - [ ] 남은 경고/이슈 목록 (수정 불가 또는 추후 대응)
-  - [ ] 아키텍처 개선 제안 (있다면)
-  - [ ] 성능 우려 사항 (큰 파일, 비효율 패턴 등)
+수정 방향: 
+- 외부 테이블: `table-layout:fixed` 제거 → `table-layout:auto`
+- 내부 중첩 테이블 제거 → 단일 `<td>` 안에 체크 아이콘 + 텍스트를 인라인으로
+- 또는: `<td style="width:28px;min-width:28px;">` + 아이콘 크기 축소(20→16px)
 
 ## 엣지 케이스
-
 | 상황 | 기대 동작 |
 |------|-----------|
-| tiptap-editor.tsx가 동적 import로 사용 중 | 삭제하지 않고 보고서에 기록 |
-| `<img>`가 외부 URL(supabase storage 등)을 참조 | next.config.ts images.remotePatterns에 도메인 추가 후 `<Image>` 교체 |
-| useEffect setState 수정 시 기존 동작 변경 | 기존 동작 유지하면서 lint 에러만 해결 (예: 별도 변수 + 조건부 업데이트) |
-| admin API에 인증 누락 발견 | 즉시 수정 (requireAdmin 추가) + 보고서에 기록 |
-| server action에 escapeHtml 중복 정의 | 공통 유틸로 추출 (email-template-utils.ts와 contents.ts 모두 escapeHtml 있음) |
+| Unlayer에서 기존 콘텐츠 열기 | greeting row 없이 로고 → 훅인용구/본문 바로 연결 |
+| buildDesignFromSummary 자동 생성 | greeting이 없으므로 로고 → hookQuote → body 순서 |
+| Default 템플릿으로 새 콘텐츠 생성 | 인사말 없이 placeholder 텍스트만 표시 |
+| 이메일 클라이언트(Gmail/Outlook) | 투명 배경 로고가 흰 배경 위에 자연스럽게 표시 |
+
+## 리뷰 보고서
+- 보고서 파일: docs/review/2026-02-15-email-logo-greeting.html
+- 리뷰 일시: 2026-02-15 13:37
+- 변경 유형: UI/UX
+- 피드백 요약: 에이전트팀 리뷰 완료. Before/After HTML 목업 포함. 로고 v3→v4 + 인사말 삭제 2건. Default 템플릿은 텍스트만 제거, A/B/C는 row 삭제로 구분 이해됨. 엣지 케이스 3건 확인.
+- 반영 여부: 반영함
 
 ## 검증
-☐ 터미널에서 `npx tsc --noEmit` 실행 → 에러 출력 0줄
-☐ 터미널에서 `npx eslint src/ 2>&1 | grep "error"` 실행 → 0건 출력
-☐ 터미널에서 `npm run build` 실행 → "✓ Compiled successfully" 메시지 확인
-☐ `cat docs/04-report/code-review-2026-02-15.report.md` 실행 → 파일 내용 출력 (수정 요약 + 남은 이슈 + 제안 포함 확인)
-☐ `npx eslint src/ 2>&1 | grep "warning" | wc -l` 실행 → 10 이하 확인
-☐ `grep -r "from.*tiptap-editor" src/ | wc -l` 실행 → 0이면 `ls src/components/email/tiptap-editor.tsx` 에서 "No such file" 확인
+☐ npm run build 성공
+☐ 기존 배너/프로필카드/CTA 렌더링 정상
+☐ 로고 확인: 4개 템플릿 Unlayer 에디터에서 로고가 투명 배경으로 표시
+☐ 인사말 확인: Template A/B/C에서 greeting row 없음
+☐ 테스트 이메일 3건 발송 → Gmail에서 로고가 배경과 자연스럽게 통일
+☐ 테스트 이메일에서 "스미스코치입니다" 텍스트 안 보임

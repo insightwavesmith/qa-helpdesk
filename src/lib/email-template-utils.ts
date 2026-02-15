@@ -146,18 +146,18 @@ function markdownToEmailHtml(md: string): string {
         }
         const cards = cardItems.map((item, i) => {
           const num = String(i + 1).padStart(2, "0");
-          return `<tr><td style="background:#FEF2F2;border-radius:12px;padding:20px 24px;"><table cellpadding="0" cellspacing="0"><tr><td style="vertical-align:top;padding-right:16px;"><div style="width:44px;height:44px;border-radius:10px;background:#F75D5D;color:#fff;font-size:18px;font-weight:800;text-align:center;line-height:44px;">${num}</div></td><td style="vertical-align:top;"><div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:6px;">${item.title}</div>${item.desc ? `<div style="font-size:13px;color:#6b7280;line-height:1.6;">${item.desc}</div>` : ""}</td></tr></table></td></tr>`;
+          return `<tr><td style="background:#FEF2F2;border-radius:12px;padding:20px 24px;"><table cellpadding="0" cellspacing="0"><tr><td style="vertical-align:top;padding-right:16px;"><div style="min-width:44px;height:44px;border-radius:10px;background:#F75D5D;color:#fff;font-size:18px;font-weight:800;text-align:center;line-height:44px;">${num}</div></td><td style="vertical-align:top;"><div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:6px;">${item.title}</div>${item.desc ? `<div style="font-size:13px;color:#6b7280;line-height:1.6;">${item.desc}</div>` : ""}</td></tr></table></td></tr>`;
         });
         htmlParts.push(`<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0 12px;margin:16px 0;">${cards.join("")}</table>`);
       } else {
-        // BUG-4: 체크리스트 라인 카드 스타일
+        // BUG-4: 체크리스트 라인 카드 스타일 (모바일 반응형)
         const checkItems = lines.filter(l => l.trim().startsWith("✅"));
         const rows = checkItems.map((l, i) => {
           const text = l.trim().replace(/^✅\s*/, "");
           const borderBottom = i < checkItems.length - 1 ? "border-bottom:1px solid #FEE2E2;" : "";
-          return `<tr><td style="padding:14px 20px;${borderBottom}"><table cellpadding="0" cellspacing="0" width="100%" style="table-layout:fixed;"><tr><td style="width:36px;vertical-align:middle;"><div style="width:20px;height:20px;border-radius:6px;background:#F75D5D;text-align:center;line-height:20px;color:#fff;font-size:12px;font-weight:700;">&#10003;</div></td><td style="vertical-align:middle;font-size:14px;color:#374151;line-height:1.5;">${text}</td></tr></table></td></tr>`;
+          return `<tr><td style="padding:14px 20px;${borderBottom}"><div style="font-size:14px;color:#374151;line-height:1.5;"><span style="display:inline-block;width:16px;height:16px;border-radius:4px;background:#F75D5D;text-align:center;line-height:16px;color:#fff;font-size:10px;font-weight:700;vertical-align:middle;margin-right:8px;">&#10003;</span>${text}</div></td></tr>`;
         });
-        htmlParts.push(`<table width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;border:1px solid #FECACA;border-radius:12px;overflow:hidden;margin:16px 0;">${rows.join("")}</table>`);
+        htmlParts.push(`<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #FECACA;border-radius:12px;overflow:hidden;margin:16px 0;">${rows.join("")}</table>`);
       }
       continue;
     }

@@ -106,7 +106,7 @@ export const BS_CAMP_DEFAULT_TEMPLATE = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v3.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:64px;width:auto;" /></p>',
+                  text: '<p style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v4.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:48px;width:auto;" /></p>',
                 },
               },
             ],
@@ -242,7 +242,7 @@ export const BS_CAMP_DEFAULT_TEMPLATE = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="font-size: 15px; line-height: 180%;"><span style="color: #333333; font-size: 15px; line-height: 27px;">안녕하세요! <strong>대표</strong>님 <a href="https://bscamp.co.kr" style="color:#F75D5D;font-weight:600;text-decoration:none;">자사몰사관학교</a>의 스미스코치입니다.</span></p>\n<p style="font-size: 15px; line-height: 180%;"><span style="color: #333333; font-size: 15px; line-height: 27px;">여기에 뉴스레터 본문 내용을 작성해주세요. 독자에게 전달하고 싶은 핵심 메시지를 간결하게 정리하면 좋습니다.</span></p>',
+                  text: '<p style="font-size: 15px; line-height: 180%;"><span style="color: #333333; font-size: 15px; line-height: 27px;">여기에 뉴스레터 본문 내용을 작성해주세요.</span></p>',
                 },
               },
             ],
@@ -705,7 +705,7 @@ export const BS_CAMP_TEMPLATE_A = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v3.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:64px;width:auto;" /></p>',
+                  text: '<p style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v4.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:48px;width:auto;" /></p>',
                 },
               },
             ],
@@ -742,75 +742,7 @@ export const BS_CAMP_TEMPLATE_A = {
         },
       },
 
-      // ─── Row 2: 인사말 블록 ───
-      {
-        id: "row-greeting",
-        cells: [1],
-        columns: [
-          {
-            id: "col-greeting",
-            contents: [
-              {
-                id: "content-greeting",
-                type: "text",
-                values: {
-                  containerPadding: "24px 24px 8px",
-                  anchor: "",
-                  textAlign: "left",
-                  lineHeight: "170%",
-                  linkStyle: {
-                    inherit: false,
-                    linkColor: "#F75D5D",
-                    linkHoverColor: "#E54949",
-                    linkUnderline: false,
-                    linkHoverUnderline: true,
-                  },
-                  hideDesktop: false,
-                  displayCondition: null,
-                  _meta: { htmlID: "u_content_text_greeting", htmlClassNames: "u_content_text" },
-                  selectable: true,
-                  draggable: true,
-                  duplicatable: true,
-                  deletable: true,
-                  hideable: true,
-                  text: '<p style="font-size: 15px; line-height: 170%;"><span style="color: #1a1a1a;">안녕하세요! <strong>대표</strong>님</span><br><a href="https://bscamp.co.kr" style="color: #F75D5D; font-weight: 600; text-decoration: none;">자사몰사관학교</a><span style="color: #1a1a1a;">의 스미스코치입니다.</span></p>',
-                },
-              },
-            ],
-            values: {
-              backgroundColor: "",
-              padding: "0px",
-              border: {},
-              borderRadius: "0px",
-              _meta: { htmlID: "u_column_greeting", htmlClassNames: "u_column" },
-            },
-          },
-        ],
-        values: {
-          displayCondition: null,
-          columns: false,
-          backgroundColor: "#ffffff",
-          columnsBackgroundColor: "",
-          backgroundImage: {
-            url: "",
-            fullWidth: true,
-            repeat: "no-repeat",
-            size: "custom",
-            position: "center",
-          },
-          padding: "0px",
-          anchor: "",
-          hideDesktop: false,
-          _meta: { htmlID: "u_row_greeting", htmlClassNames: "u_row" },
-          selectable: true,
-          draggable: true,
-          duplicatable: true,
-          deletable: true,
-          hideable: true,
-        },
-      },
-
-      // ─── Row 3: 제목 (기존 default 재사용) ───
+      // ─── Row 2: 제목 (기존 default 재사용) ───
       BS_CAMP_DEFAULT_TEMPLATE.body.rows[1],
 
       // ─── Row 4: 훅 인용구 (빨간 이탤릭 센터) ───
@@ -1369,7 +1301,7 @@ export const BS_CAMP_TEMPLATE_B = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v3.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:64px;width:auto;" /></p>',
+                  text: '<p style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v4.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:48px;width:auto;" /></p>',
                 },
               },
             ],
@@ -1477,75 +1409,7 @@ export const BS_CAMP_TEMPLATE_B = {
         },
       },
 
-      // ─── Row 3: 인사말 블록 ───
-      {
-        id: "row-greeting",
-        cells: [1],
-        columns: [
-          {
-            id: "col-greeting",
-            contents: [
-              {
-                id: "content-greeting",
-                type: "text",
-                values: {
-                  containerPadding: "24px 24px 8px",
-                  anchor: "",
-                  textAlign: "left",
-                  lineHeight: "170%",
-                  linkStyle: {
-                    inherit: false,
-                    linkColor: "#F75D5D",
-                    linkHoverColor: "#E54949",
-                    linkUnderline: false,
-                    linkHoverUnderline: true,
-                  },
-                  hideDesktop: false,
-                  displayCondition: null,
-                  _meta: { htmlID: "u_content_text_greeting_b", htmlClassNames: "u_content_text" },
-                  selectable: true,
-                  draggable: true,
-                  duplicatable: true,
-                  deletable: true,
-                  hideable: true,
-                  text: '<p style="font-size: 15px; line-height: 170%;"><span style="color: #1a1a1a;">안녕하세요! <strong>대표</strong>님</span><br><a href="https://bscamp.co.kr" style="color: #F75D5D; font-weight: 600; text-decoration: none;">자사몰사관학교</a><span style="color: #1a1a1a;">의 스미스코치입니다.</span></p>',
-                },
-              },
-            ],
-            values: {
-              backgroundColor: "",
-              padding: "0px",
-              border: {},
-              borderRadius: "0px",
-              _meta: { htmlID: "u_column_greeting_b", htmlClassNames: "u_column" },
-            },
-          },
-        ],
-        values: {
-          displayCondition: null,
-          columns: false,
-          backgroundColor: "#ffffff",
-          columnsBackgroundColor: "",
-          backgroundImage: {
-            url: "",
-            fullWidth: true,
-            repeat: "no-repeat",
-            size: "custom",
-            position: "center",
-          },
-          padding: "0px",
-          anchor: "",
-          hideDesktop: false,
-          _meta: { htmlID: "u_row_greeting_b", htmlClassNames: "u_row" },
-          selectable: true,
-          draggable: true,
-          duplicatable: true,
-          deletable: true,
-          hideable: true,
-        },
-      },
-
-      // ─── Row 4: 훅 인용구 ───
+      // ─── Row 3: 훅 인용구 ───
       {
         id: "row-hook-quote",
         cells: [1],
@@ -2291,7 +2155,7 @@ export const BS_CAMP_TEMPLATE_C = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v3.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:64px;width:auto;" /></p>',
+                  text: '<p style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v4.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:48px;width:auto;" /></p>',
                 },
               },
             ],
@@ -2328,75 +2192,7 @@ export const BS_CAMP_TEMPLATE_C = {
         },
       },
 
-      // ─── Row 1: 인사말 블록 ───
-      {
-        id: "row-greeting",
-        cells: [1],
-        columns: [
-          {
-            id: "col-greeting",
-            contents: [
-              {
-                id: "content-greeting",
-                type: "text",
-                values: {
-                  containerPadding: "24px 24px 8px",
-                  anchor: "",
-                  textAlign: "left",
-                  lineHeight: "170%",
-                  linkStyle: {
-                    inherit: false,
-                    linkColor: "#F75D5D",
-                    linkHoverColor: "#E54949",
-                    linkUnderline: false,
-                    linkHoverUnderline: true,
-                  },
-                  hideDesktop: false,
-                  displayCondition: null,
-                  _meta: { htmlID: "u_content_text_greeting_c", htmlClassNames: "u_content_text" },
-                  selectable: true,
-                  draggable: true,
-                  duplicatable: true,
-                  deletable: true,
-                  hideable: true,
-                  text: '<p style="font-size: 15px; line-height: 170%;"><span style="color: #1a1a1a;">안녕하세요! <strong>대표</strong>님</span><br><a href="https://bscamp.co.kr" style="color: #F75D5D; font-weight: 600; text-decoration: none;">자사몰사관학교</a><span style="color: #1a1a1a;">의 스미스코치입니다.</span></p>',
-                },
-              },
-            ],
-            values: {
-              backgroundColor: "",
-              padding: "0px",
-              border: {},
-              borderRadius: "0px",
-              _meta: { htmlID: "u_column_greeting_c", htmlClassNames: "u_column" },
-            },
-          },
-        ],
-        values: {
-          displayCondition: null,
-          columns: false,
-          backgroundColor: "#ffffff",
-          columnsBackgroundColor: "",
-          backgroundImage: {
-            url: "",
-            fullWidth: true,
-            repeat: "no-repeat",
-            size: "custom",
-            position: "center",
-          },
-          padding: "0px",
-          anchor: "",
-          hideDesktop: false,
-          _meta: { htmlID: "u_row_greeting_c", htmlClassNames: "u_row" },
-          selectable: true,
-          draggable: true,
-          duplicatable: true,
-          deletable: true,
-          hideable: true,
-        },
-      },
-
-      // ─── Row 2: 제목 (기존 default) ───
+      // ─── Row 1: 제목 (기존 default) ───
       BS_CAMP_DEFAULT_TEMPLATE.body.rows[1],
 
       // ─── Row 3: 훅 인용구 (주황) ───
