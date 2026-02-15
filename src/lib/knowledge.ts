@@ -154,7 +154,7 @@ async function searchChunks(
 
 const MODEL = "claude-opus-4-6";
 const API_URL = "https://api.anthropic.com/v1/messages";
-const TIMEOUT_MS = 30_000;
+const TIMEOUT_MS = 55_000;
 
 function getApiKey(): string {
   const key = process.env.ANTHROPIC_API_KEY;
@@ -248,7 +248,7 @@ export async function generate(
     return { content, sourceRefs, tokensUsed, model: MODEL };
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
-      throw new Error("AI 응답 시간 초과 (30초)");
+      throw new Error("AI 응답 시간 초과 (55초)");
     }
     throw error;
   } finally {

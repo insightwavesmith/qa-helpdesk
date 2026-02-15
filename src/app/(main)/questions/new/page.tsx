@@ -1,3 +1,6 @@
+// Vercel Pro: 최대 60초 함수 실행 허용 (AI 답변 생성)
+export const maxDuration = 60;
+
 import { redirect } from "next/navigation";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getCategories } from "@/actions/questions";
