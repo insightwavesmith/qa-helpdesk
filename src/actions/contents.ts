@@ -720,20 +720,14 @@ ${currentText}
 export async function generateContentWithAI(
   topic: string,
   type: string = "education"
-): Promise<{ title: string; bodyMd: string; emailSummary: string } | { error: string }> {
+): Promise<{ title: string; bodyMd: string } | { error: string }> {
   await requireAdmin();
 
   const typePrompt = TYPE_PROMPTS[type] || TYPE_PROMPTS.education;
   const consumerType = CONTENT_TO_CONSUMER[type] || "education";
 
   try {
-    const query = `${typePrompt.userPrefix}: ${topic}
-
-본문 작성 후, 아래 구분자 다음에 이메일 요약(email_summary)도 함께 작성해주세요.
-
----EMAIL_SUMMARY---
-
-${typePrompt.emailSummaryGuide}${BANNER_KEYS_GUIDE}`;
+    const query = `${typePrompt.userPrefix}: ${topic}`;
 
     const result = await ksGenerate({
       query,
@@ -747,16 +741,10 @@ ${typePrompt.emailSummaryGuide}${BANNER_KEYS_GUIDE}`;
       return { error: "AI가 콘텐츠를 생성하지 못했습니다." };
     }
 
-    // 본문과 email_summary 분리
-    const separator = "---EMAIL_SUMMARY---";
-    const parts = text.split(separator);
-    const mainContent = parts[0].trim();
-    const emailSummary = parts.length > 1 ? parts[1].trim() : "";
-
     // 첫 줄(# 제목)을 title로, 나머지를 bodyMd로 분리
-    const lines = mainContent.split("\n");
+    const lines = text.trim().split("\n");
     let title = topic;
-    let bodyMd = mainContent;
+    let bodyMd = text.trim();
 
     const firstLine = lines[0].trim();
     if (firstLine.startsWith("# ")) {
@@ -764,7 +752,7 @@ ${typePrompt.emailSummaryGuide}${BANNER_KEYS_GUIDE}`;
       bodyMd = lines.slice(1).join("\n").trim();
     }
 
-    return { title, bodyMd, emailSummary };
+    return { title, bodyMd };
   } catch (e) {
     console.error("generateContentWithAI error:", e);
     return { error: e instanceof Error ? e.message : "AI 콘텐츠 생성 실패" };
