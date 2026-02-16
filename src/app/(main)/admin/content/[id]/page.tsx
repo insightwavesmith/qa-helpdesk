@@ -8,6 +8,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getContentById } from "@/actions/contents";
+import AiEditPanel from "@/components/content/ai-edit-panel";
 import type { Content } from "@/types/content";
 
 const PostEditPanel = dynamic(
@@ -152,7 +153,13 @@ export default function ContentDetailPage() {
         {/* 정보공유 탭 */}
         <TabsContent value="post" className="mt-4">
           <div className="flex gap-6">
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 space-y-4">
+              <AiEditPanel
+                contentId={content.id}
+                bodyMd={content.body_md}
+                emailSummary={content.email_summary}
+                onApplied={refreshContent}
+              />
               <PostEditPanel
                 contentId={content.id}
                 initialBodyMd={content.body_md}

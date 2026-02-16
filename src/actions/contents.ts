@@ -648,6 +648,75 @@ INSIGHT, INSIGHT 01, INSIGHT 02, INSIGHT 03, KEY POINT, CHECKLIST, 강의 미리
 ✅ 체크항목 1
 ✅ 체크항목 2`;
 
+export async function reviseContentWithAI(
+  contentId: string,
+  target: "body_md" | "email_summary",
+  instruction: string
+): Promise<{ revised: string } | { error: string }> {
+  const svc = await requireAdmin();
+
+  if (!instruction.trim()) {
+    return { error: "수정 지시를 입력해주세요." };
+  }
+
+  // 1. 현재 콘텐츠 조회
+  const { data: content, error: fetchError } = await svc
+    .from("contents")
+    .select("body_md, email_summary, type")
+    .eq("id", contentId)
+    .single();
+
+  if (fetchError || !content) {
+    return { error: fetchError?.message || "콘텐츠를 찾을 수 없습니다." };
+  }
+
+  const currentText =
+    target === "body_md" ? content.body_md : content.email_summary;
+
+  if (!currentText) {
+    return {
+      error:
+        target === "email_summary"
+          ? "이메일 요약이 없습니다. 먼저 생성해주세요."
+          : "본문이 없습니다.",
+    };
+  }
+
+  // 2. KS 호출: limit:0으로 RAG 검색 스킵 (수정에는 기존 텍스트만 필요)
+  try {
+    const consumerType =
+      target === "body_md"
+        ? (CONTENT_TO_CONSUMER[content.type || "education"] || "education")
+        : "newsletter";
+
+    const result = await ksGenerate({
+      query: `다음 텍스트를 수정해주세요.
+
+## 수정 지시
+${instruction}
+
+## 현재 텍스트
+${currentText}
+
+수정된 전체 텍스트만 출력하세요. 설명이나 주석 없이 텍스트만.`,
+      consumerType,
+      limit: 0,
+      systemPromptOverride: `당신은 자사몰사관학교의 콘텐츠 편집자입니다.
+지시에 따라 텍스트를 수정하되, 원문의 핵심 내용과 구조는 유지하세요.
+마크다운 형식을 유지하세요.`,
+      contentId,
+    });
+
+    return { revised: result.content };
+  } catch (e) {
+    console.error("reviseContentWithAI error:", e);
+    if (e instanceof Error && e.message.includes("시간 초과")) {
+      return { error: "수정 요청 시간이 초과되었습니다. 다시 시도해주세요." };
+    }
+    return { error: e instanceof Error ? e.message : "AI 수정 요청 실패" };
+  }
+}
+
 export async function generateContentWithAI(
   topic: string,
   type: string = "education"

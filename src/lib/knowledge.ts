@@ -31,6 +31,8 @@ export interface KnowledgeRequest {
   tokenBudget?: number;
   temperature?: number;
   systemPromptOverride?: string;
+  questionId?: string;
+  contentId?: string;
 }
 
 export interface SourceRef {
@@ -173,6 +175,7 @@ function truncateToTokenBudget(text: string, budget: number): string {
 export async function generate(
   request: KnowledgeRequest
 ): Promise<KnowledgeResponse> {
+  const startTime = Date.now();
   const apiKey = getApiKey();
   const config = CONSUMER_CONFIGS[request.consumerType];
 
@@ -244,6 +247,22 @@ export async function generate(
       chunk_index: c.chunk_index,
       similarity: Math.round(c.similarity * 100) / 100,
     }));
+
+    // fire-and-forget: 로깅 실패해도 KS 응답은 정상 반환
+    const svc = createServiceClient();
+    Promise.resolve(
+      svc.from("knowledge_usage").insert({
+        consumer_type: request.consumerType,
+        source_types: sourceTypes ? (sourceTypes as string[]) : [],
+        input_tokens: data.usage?.input_tokens || 0,
+        output_tokens: data.usage?.output_tokens || 0,
+        total_tokens: tokensUsed,
+        model: MODEL,
+        question_id: request.questionId || null,
+        content_id: request.contentId || null,
+        duration_ms: Date.now() - startTime,
+      })
+    ).catch((err) => console.error("[KS] Usage log failed:", err));
 
     return { content, sourceRefs, tokensUsed, model: MODEL };
   } catch (error) {

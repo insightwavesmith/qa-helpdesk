@@ -743,6 +743,63 @@ export interface Database {
         };
         Relationships: [];
       };
+      knowledge_usage: {
+        Row: {
+          id: string;
+          consumer_type: string;
+          source_types: string[] | null;
+          input_tokens: number;
+          output_tokens: number;
+          total_tokens: number;
+          model: string;
+          question_id: string | null;
+          content_id: string | null;
+          duration_ms: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          consumer_type: string;
+          source_types?: string[] | null;
+          input_tokens?: number;
+          output_tokens?: number;
+          total_tokens?: number;
+          model?: string;
+          question_id?: string | null;
+          content_id?: string | null;
+          duration_ms?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          consumer_type?: string;
+          source_types?: string[] | null;
+          input_tokens?: number;
+          output_tokens?: number;
+          total_tokens?: number;
+          model?: string;
+          question_id?: string | null;
+          content_id?: string | null;
+          duration_ms?: number | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_usage_content_id_fkey";
+            columns: ["content_id"];
+            isOneToOne: false;
+            referencedRelation: "contents";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "knowledge_usage_question_id_fkey";
+            columns: ["question_id"];
+            isOneToOne: false;
+            referencedRelation: "questions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       leads: {
         Row: {
           id: string;
