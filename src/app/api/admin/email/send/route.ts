@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
       templateProps,
       attachments,
       isUnlayerHtml,
+      contentId,
     } = body as {
       target: "all" | "all_leads" | "all_students" | "all_members" | "custom";
       customEmails?: string[];
@@ -67,6 +68,7 @@ export async function POST(request: NextRequest) {
       templateProps?: Record<string, string>;
       attachments?: { filename: string; url: string; size: number }[];
       isUnlayerHtml?: boolean;
+      contentId?: string;
     };
 
     if (!subject) {
@@ -194,6 +196,35 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
       || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://bscamp.kr");
 
+    // 추적 URL base
+    const trackBaseUrl = process.env.NEXT_PUBLIC_SITE_URL
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://qa-helpdesk.vercel.app");
+
+    // CTA 버튼 href를 추적 URL로 감싸기 (수신거부 링크는 제외)
+    function wrapCtaLinks(htmlStr: string, sendId: string): string {
+      // <a href="..."> 에서 수신거부/unsubscribe 관련 URL은 제외
+      return htmlStr.replace(
+        /<a\s([^>]*?)href="([^"]+)"([^>]*?)>/gi,
+        (match, before, href, after) => {
+          // 수신거부 관련 URL은 wrapping 하지 않음
+          if (
+            href.includes("unsubscribe") ||
+            href.includes("수신거부") ||
+            href.includes("mailto:")
+          ) {
+            return match;
+          }
+          const trackUrl = `${trackBaseUrl}/api/email/track?t=click&sid=${sendId}&url=${encodeURIComponent(href)}`;
+          return `<a ${before}href="${trackUrl}"${after}>`;
+        }
+      );
+    }
+
+    // 추적 pixel HTML
+    function trackingPixel(sendId: string): string {
+      return `<img src="${trackBaseUrl}/api/email/track?t=open&sid=${sendId}" width="1" height="1" alt="" style="display:none;" />`;
+    }
+
     // 배치 발송
     let sent = 0;
     let failed = 0;
@@ -205,10 +236,45 @@ export async function POST(request: NextRequest) {
       const results = await Promise.allSettled(
         batch.map(async (recipient) => {
           try {
-            // 수신자별 수신거부 URL 삽입
-            const unsubUrl = makeUnsubscribeUrl(baseUrl, recipient.email);
-            const recipientHtml = replaceUnsubscribeUrl(fullHtml, unsubUrl);
+            // 1. email_sends INSERT (먼저 ID 확보)
+            // content_id는 마이그레이션으로 추가되는 컬럼 (타입 미반영)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const insertPayload: any = {
+              recipient_email: recipient.email,
+              recipient_type: recipient.type,
+              subject,
+              template: templateName,
+              status: "pending",
+            };
+            if (contentId) insertPayload.content_id = contentId;
 
+            const { data: sendRecord, error: insertError } = await svc
+              .from("email_sends")
+              .insert(insertPayload)
+              .select("id")
+              .single();
+
+            if (insertError || !sendRecord) {
+              throw new Error(insertError?.message || "email_sends INSERT 실패");
+            }
+
+            const sendId = sendRecord.id as string;
+
+            // 2. 수신자별 수신거부 URL 삽입
+            const unsubUrl = makeUnsubscribeUrl(baseUrl, recipient.email);
+            let recipientHtml = replaceUnsubscribeUrl(fullHtml, unsubUrl);
+
+            // 3. CTA 링크 추적 wrapping (수신거부 제외)
+            recipientHtml = wrapCtaLinks(recipientHtml, sendId);
+
+            // 4. 추적 pixel 삽입 (</body> 앞 또는 맨 끝)
+            if (recipientHtml.includes("</body>")) {
+              recipientHtml = recipientHtml.replace("</body>", `${trackingPixel(sendId)}</body>`);
+            } else {
+              recipientHtml += trackingPixel(sendId);
+            }
+
+            // 5. 메일 발송
             await transporter.sendMail({
               from: `"자사몰사관학교" <${process.env.SMTP_USER}>`,
               to: recipient.email,
@@ -222,28 +288,29 @@ export async function POST(request: NextRequest) {
               }),
             });
 
-            await svc.from("email_sends").insert({
-              recipient_email: recipient.email,
-              recipient_type: recipient.type,
-              subject,
-              template: templateName,
-              status: "sent",
-              sent_at: new Date().toISOString(),
-            });
+            // 6. 발송 성공 → status 업데이트
+            await svc
+              .from("email_sends")
+              .update({ status: "sent", sent_at: new Date().toISOString() })
+              .eq("id", sendId);
 
             return { success: true };
           } catch (err) {
             const errorMessage =
               err instanceof Error ? err.message : "알 수 없는 오류";
 
-            await svc.from("email_sends").insert({
+            // 에러 레코드 저장 (실패 시에도 무시)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const errorPayload: any = {
               recipient_email: recipient.email,
               recipient_type: recipient.type,
               subject,
               template: templateName,
               status: "failed",
               error_message: errorMessage,
-            });
+            };
+            if (contentId) errorPayload.content_id = contentId;
+            try { await svc.from("email_sends").insert(errorPayload); } catch { /* ignore */ }
 
             return { success: false, email: recipient.email, error: errorMessage };
           }
