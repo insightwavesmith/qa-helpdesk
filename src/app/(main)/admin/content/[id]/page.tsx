@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getContentById } from "@/actions/contents";
+import { getContentById, generateEmailSummary } from "@/actions/contents";
 import AiEditPanel from "@/components/content/ai-edit-panel";
 import type { Content } from "@/types/content";
 
@@ -61,6 +63,7 @@ export default function ContentDetailPage() {
   const [content, setContent] = useState<Content | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("post");
+  const [generatingNewsletter, setGeneratingNewsletter] = useState(false);
 
   const loadContent = useCallback(async () => {
     try {
@@ -84,6 +87,24 @@ export default function ContentDetailPage() {
   const refreshContent = useCallback(() => {
     loadContent();
   }, [loadContent]);
+
+  const handleGenerateNewsletter = useCallback(async () => {
+    if (!content) return;
+    setGeneratingNewsletter(true);
+    try {
+      const result = await generateEmailSummary(content.id);
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("뉴스레터가 생성되었습니다.");
+      loadContent();
+    } catch {
+      toast.error("뉴스레터 생성에 실패했습니다.");
+    } finally {
+      setGeneratingNewsletter(false);
+    }
+  }, [content, loadContent]);
 
   if (loading) {
     return (
@@ -179,6 +200,26 @@ export default function ContentDetailPage() {
         {/* 뉴스레터 탭 */}
         <TabsContent value="newsletter" className="mt-4">
           <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500">
+                {content.email_summary
+                  ? "뉴스레터가 생성되어 있습니다. 아래에서 편집하거나 재생성할 수 있습니다."
+                  : "본문을 기반으로 뉴스레터를 생성합니다."}
+              </p>
+              <Button
+                onClick={handleGenerateNewsletter}
+                disabled={generatingNewsletter}
+                variant={content.email_summary ? "outline" : "default"}
+                className={content.email_summary ? "" : "bg-[#F75D5D] hover:bg-[#E54949]"}
+              >
+                {generatingNewsletter ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-2" />
+                )}
+                {content.email_summary ? "뉴스레터 재생성" : "뉴스레터 생성"}
+              </Button>
+            </div>
             <AiEditPanel
               contentId={content.id}
               bodyMd={content.body_md}
