@@ -65,6 +65,15 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/smith/projects/qa-helpdesk/.claude/scripts/validate-features.sh"
+          }
+        ]
       }
     ],
     "TeammateIdle": [

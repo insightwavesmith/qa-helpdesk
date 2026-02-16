@@ -239,10 +239,11 @@ export default function AdminContentPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[40%]">제목</TableHead>
+                      <TableHead className="w-[35%]">제목</TableHead>
                       <TableHead>유형</TableHead>
                       <TableHead>정보공유</TableHead>
                       <TableHead>뉴스레터</TableHead>
+                      <TableHead className="text-right">조회수</TableHead>
                       <TableHead className="text-right">작성일</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -285,6 +286,9 @@ export default function AdminContentPage() {
                             ) : (
                               <span className="text-[12px] text-gray-400">미발송</span>
                             )}
+                          </TableCell>
+                          <TableCell className="text-right text-[13px] text-gray-500 tabular-nums">
+                            {(item.view_count ?? 0).toLocaleString()}
                           </TableCell>
                           <TableCell className="text-right text-[13px] text-gray-500">
                             {new Date(item.created_at).toLocaleDateString("ko-KR", {

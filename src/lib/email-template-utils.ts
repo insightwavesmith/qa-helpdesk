@@ -250,7 +250,7 @@ const PLACEHOLDER_ROW_IDS = [
 export function buildDesignFromSummary(content: Content): object {
   // 타입별 템플릿 선택
   const baseTemplate =
-    content.type === "notice"
+    content.type === "notice" || content.type === "webinar"
       ? BS_CAMP_TEMPLATE_B
       : content.type === "case_study"
         ? BS_CAMP_TEMPLATE_C

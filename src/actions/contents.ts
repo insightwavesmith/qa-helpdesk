@@ -648,6 +648,116 @@ INSIGHT, INSIGHT 01, INSIGHT 02, INSIGHT 03, KEY POINT, CHECKLIST, 강의 미리
 ✅ 체크항목 1
 ✅ 체크항목 2`;
 
+// 타입별 뉴스레터 배너키 필수 조합
+const BANNER_KEYS_BY_TYPE: Record<string, string> = {
+  education: `필수 배너키 조합 (반드시 아래 순서대로 ### 헤딩으로 포함):
+### INSIGHT 01 — 핵심 인사이트 1
+### INSIGHT 02 — 핵심 인사이트 2
+### INSIGHT 03 — 핵심 인사이트 3
+### KEY POINT — 핵심 포인트 정리
+### CHECKLIST — 실행 체크리스트 (✅ 항목)`,
+  case_study: `필수 배너키 조합 (반드시 아래 순서대로 ### 헤딩으로 포함):
+### 성과 — 핵심 성과 수치 (ROAS, 매출 등 볼드)
+### INSIGHT 01 — 인사이트 1
+### INSIGHT 02 — 인사이트 2
+### INSIGHT 03 — 인사이트 3
+### 핵심 변화 — 비포→애프터 변화
+### CHECKLIST — 실행 체크리스트 (✅ 항목)
+### KEY POINT — 핵심 포인트`,
+  webinar: `필수 배너키 조합 (반드시 아래 순서대로 ### 헤딩으로 포함):
+### INSIGHT — 웨비나 핵심 인사이트
+### 웨비나 일정 — 날짜, 시간, 플랫폼
+### 핵심 주제 — 다룰 주제 3~5개
+### 이런 분들을 위해 — 대상 청중 설명
+### 성과 — 기대 효과 또는 이전 성과
+### CHECKLIST — 참여 전 체크리스트 (✅ 항목)
+### KEY POINT — 핵심 포인트`,
+};
+
+export async function generateEmailSummary(
+  contentId: string
+): Promise<{ emailSummary: string } | { error: string }> {
+  const svc = await requireAdmin();
+
+  // 1. content 조회
+  const { data: content, error: fetchError } = await svc
+    .from("contents")
+    .select("body_md, type")
+    .eq("id", contentId)
+    .single();
+
+  if (fetchError || !content) {
+    return { error: fetchError?.message || "콘텐츠를 찾을 수 없습니다." };
+  }
+
+  if (!content.body_md || !content.body_md.trim()) {
+    return { error: "본문이 없습니다." };
+  }
+
+  const contentType = content.type || "education";
+  const bannerGuide = BANNER_KEYS_BY_TYPE[contentType] || BANNER_KEYS_BY_TYPE.education;
+
+  // 2. KS 호출 (limit:0 → RAG 검색 스킵, body_md를 컨텍스트로 직접 전달)
+  try {
+    const result = await ksGenerate({
+      query: `다음 본문을 기반으로 뉴스레터 이메일 요약을 작성해주세요.
+
+## 본문
+${content.body_md}
+
+## 작성 규칙
+- 800~1000자 분량
+- ~해요 체 사용
+- 마크다운 형식 유지
+- 각 섹션은 ### 배너키 형식의 헤딩으로 시작
+
+${bannerGuide}
+
+### 구조 예시
+### INSIGHT 01
+핵심 인사이트 내용...
+
+### KEY POINT
+핵심 포인트 내용...
+
+### CHECKLIST
+✅ 체크항목 1
+✅ 체크항목 2`,
+      consumerType: "newsletter",
+      limit: 0,
+      systemPromptOverride: `당신은 자사몰사관학교의 뉴스레터 전문 작성자입니다.
+본문 내용을 기반으로 이메일 뉴스레터 요약을 작성합니다.
+지정된 배너키를 ### 헤딩으로 반드시 포함하세요.
+~해요 체를 사용하고, 핵심 수치는 **볼드**로 강조하세요.`,
+      contentId,
+    });
+
+    const emailSummary = result.content.trim();
+
+    if (!emailSummary) {
+      return { error: "AI가 뉴스레터를 생성하지 못했습니다." };
+    }
+
+    // 3. DB 업데이트
+    const { error: updateError } = await svc
+      .from("contents")
+      .update({ email_summary: emailSummary, updated_at: new Date().toISOString() })
+      .eq("id", contentId);
+
+    if (updateError) {
+      return { error: updateError.message };
+    }
+
+    return { emailSummary };
+  } catch (e) {
+    console.error("generateEmailSummary error:", e);
+    if (e instanceof Error && e.message.includes("시간 초과")) {
+      return { error: "시간 초과. 다시 시도해주세요." };
+    }
+    return { error: e instanceof Error ? e.message : "뉴스레터 생성 실패" };
+  }
+}
+
 export async function reviseContentWithAI(
   contentId: string,
   target: "body_md" | "email_summary",
@@ -720,20 +830,14 @@ ${currentText}
 export async function generateContentWithAI(
   topic: string,
   type: string = "education"
-): Promise<{ title: string; bodyMd: string; emailSummary: string } | { error: string }> {
+): Promise<{ title: string; bodyMd: string } | { error: string }> {
   await requireAdmin();
 
   const typePrompt = TYPE_PROMPTS[type] || TYPE_PROMPTS.education;
   const consumerType = CONTENT_TO_CONSUMER[type] || "education";
 
   try {
-    const query = `${typePrompt.userPrefix}: ${topic}
-
-본문 작성 후, 아래 구분자 다음에 이메일 요약(email_summary)도 함께 작성해주세요.
-
----EMAIL_SUMMARY---
-
-${typePrompt.emailSummaryGuide}${BANNER_KEYS_GUIDE}`;
+    const query = `${typePrompt.userPrefix}: ${topic}`;
 
     const result = await ksGenerate({
       query,
@@ -747,16 +851,10 @@ ${typePrompt.emailSummaryGuide}${BANNER_KEYS_GUIDE}`;
       return { error: "AI가 콘텐츠를 생성하지 못했습니다." };
     }
 
-    // 본문과 email_summary 분리
-    const separator = "---EMAIL_SUMMARY---";
-    const parts = text.split(separator);
-    const mainContent = parts[0].trim();
-    const emailSummary = parts.length > 1 ? parts[1].trim() : "";
-
     // 첫 줄(# 제목)을 title로, 나머지를 bodyMd로 분리
-    const lines = mainContent.split("\n");
+    const lines = text.trim().split("\n");
     let title = topic;
-    let bodyMd = mainContent;
+    let bodyMd = text.trim();
 
     const firstLine = lines[0].trim();
     if (firstLine.startsWith("# ")) {
@@ -764,7 +862,7 @@ ${typePrompt.emailSummaryGuide}${BANNER_KEYS_GUIDE}`;
       bodyMd = lines.slice(1).join("\n").trim();
     }
 
-    return { title, bodyMd, emailSummary };
+    return { title, bodyMd };
   } catch (e) {
     console.error("generateContentWithAI error:", e);
     return { error: e instanceof Error ? e.message : "AI 콘텐츠 생성 실패" };

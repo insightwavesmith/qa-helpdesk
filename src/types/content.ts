@@ -24,6 +24,7 @@ export interface Content {
   email_sent_at: string | null;
   email_design_json: Record<string, unknown> | null;
   email_html: string | null;
+  view_count: number;
   created_at: string;
   updated_at: string;
 }

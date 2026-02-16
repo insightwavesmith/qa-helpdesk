@@ -165,7 +165,7 @@ export default function NewContentModal({
         setLoading(false);
         return;
       }
-      await handleCreate(result.title, result.bodyMd, "ai", topicInput.trim(), result.emailSummary);
+      await handleCreate(result.title, result.bodyMd, "ai", topicInput.trim());
     } catch {
       toast.error("AI 생성에 실패했습니다.");
       setLoading(false);
