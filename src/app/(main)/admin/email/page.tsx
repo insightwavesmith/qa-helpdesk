@@ -73,6 +73,8 @@ interface EmailSendRecord {
   sent_at: string | null;
   created_at: string;
   recipient_email: string;
+  opened_at: string | null;
+  clicked_at: string | null;
 }
 
 const TARGET_LABELS: Record<TargetGroup, string> = {
@@ -136,7 +138,7 @@ function AdminEmailPageInner() {
     const supabase = createClient();
     const { data } = await supabase
       .from("email_sends")
-      .select("id, subject, recipient_type, status, sent_at, created_at, recipient_email")
+      .select("id, subject, recipient_type, status, sent_at, created_at, recipient_email, opened_at, clicked_at")
       .order("created_at", { ascending: false })
       .limit(50);
     setHistory((data as EmailSendRecord[]) || []);
@@ -298,7 +300,7 @@ function AdminEmailPageInner() {
 
   // 발송 이력을 subject별로 그룹핑
   const groupedHistory = history.reduce<
-    Record<string, { subject: string; type: string; sent: number; failed: number; created_at: string }>
+    Record<string, { subject: string; type: string; sent: number; failed: number; opens: number; clicks: number; created_at: string }>
   >((acc, record) => {
     const key = `${record.subject}_${record.created_at.slice(0, 16)}`;
     if (!acc[key]) {
@@ -307,11 +309,15 @@ function AdminEmailPageInner() {
         type: record.recipient_type,
         sent: 0,
         failed: 0,
+        opens: 0,
+        clicks: 0,
         created_at: record.created_at,
       };
     }
     if (record.status === "sent") acc[key].sent++;
     else acc[key].failed++;
+    if (record.opened_at) acc[key].opens++;
+    if (record.clicked_at) acc[key].clicks++;
     return acc;
   }, {});
 
@@ -689,7 +695,9 @@ function AdminEmailPageInner() {
                 <TableRow>
                   <TableHead>제목</TableHead>
                   <TableHead>대상</TableHead>
-                  <TableHead className="text-right">성공</TableHead>
+                  <TableHead className="text-right">발송</TableHead>
+                  <TableHead className="text-right">열람</TableHead>
+                  <TableHead className="text-right">클릭</TableHead>
                   <TableHead className="text-right">실패</TableHead>
                   <TableHead className="text-right">발송일</TableHead>
                 </TableRow>
@@ -705,10 +713,16 @@ function AdminEmailPageInner() {
                         {group.type}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right text-green-600">
+                    <TableCell className="text-right text-green-600 tabular-nums">
                       {group.sent}
                     </TableCell>
-                    <TableCell className="text-right text-red-500">
+                    <TableCell className="text-right text-blue-600 tabular-nums">
+                      {group.opens}
+                    </TableCell>
+                    <TableCell className="text-right text-purple-600 tabular-nums">
+                      {group.clicks}
+                    </TableCell>
+                    <TableCell className="text-right text-red-500 tabular-nums">
                       {group.failed}
                     </TableCell>
                     <TableCell className="text-right text-[13px] text-gray-500">
