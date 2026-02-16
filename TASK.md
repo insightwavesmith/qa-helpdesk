@@ -7,6 +7,8 @@
 
 1. **AI 수정 요청**: 콘텐츠 상세에서 본문/email_summary에 대해 Opus한테 수정 지시 → 수정본 반환 → 확인 후 저장
 2. **KS 비용 로깅**: KnowledgeService 호출마다 토큰 사용량 DB 기록 (월별 집계 가능)
+3. **MDXEditor 코드블록 지원**: codeBlockPlugin 미적용으로 코드블록 포함 콘텐츠 잘림 → 플러그인 추가
+4. **뉴스레터 탭 AI 수정**: AI 수정 패널이 정보공유 탭에만 존재 → 뉴스레터 탭에도 추가
 
 ## 제약
 
@@ -14,7 +16,7 @@
 - `generateEmbedding()` 수정 금지
 - `email-renderer.ts`, `email-template-utils.ts` 수정 금지
 - 기존 API 라우트 시그니처 유지 (하위 호환)
-- Vercel `maxDuration: 60` 제한 준수
+- Vercel `maxDuration: 300` (모찌가 이미 적용 완료)
 - 새 npm 패키지 추가 금지
 
 ## 태스크
@@ -274,6 +276,119 @@ knowledge_usage: 없음 (T2에서 신규 생성)
 3. T1: 55초 타임아웃 — 5000자+ 본문도 충분할 것으로 예상, 모니터링 후 조정
 4. T2: RLS 정책 — knowledge_usage에 ENABLE ROW LEVEL SECURITY 추가 권장
 
+### T3. MDXEditor codeBlockPlugin 추가 → frontend-dev
+
+**문제:** `mdx-editor-wrapper.tsx`에 `codeBlockPlugin`이 없어서 코드블록(``` ```)이 포함된 콘텐츠가 잘림.
+
+**파일:**
+- `src/components/content/mdx-editor-wrapper.tsx` (수정)
+
+**작업:**
+1. `@mdxeditor/editor`에서 `codeBlockPlugin` import 추가
+2. plugins 배열에 `codeBlockPlugin()` 추가
+3. 코드블록이 포함된 콘텐츠에서 전체 내용이 정상 렌더링되는지 확인
+
+**현재 코드 (plugins 배열):**
+```tsx
+plugins={[
+  headingsPlugin(),
+  listsPlugin(),
+  quotePlugin(),
+  thematicBreakPlugin(),
+  linkPlugin(),
+  linkDialogPlugin(),
+  imagePlugin({ imageUploadHandler }),
+  tablePlugin(),
+  markdownShortcutPlugin(),
+  toolbarPlugin({ ... }),
+]}
+```
+
+**수정 후:**
+```tsx
+import { ..., codeBlockPlugin } from "@mdxeditor/editor";
+
+plugins={[
+  headingsPlugin(),
+  listsPlugin(),
+  quotePlugin(),
+  thematicBreakPlugin(),
+  linkPlugin(),
+  linkDialogPlugin(),
+  imagePlugin({ imageUploadHandler }),
+  tablePlugin(),
+  codeBlockPlugin(),          // ← 추가
+  markdownShortcutPlugin(),
+  toolbarPlugin({ ... }),
+]}
+```
+
+### T4. 뉴스레터 탭 AI 수정 패널 추가 → frontend-dev
+
+**문제:** `AiEditPanel`이 "정보공유" 탭에만 있고, "뉴스레터" 탭에는 없음.
+
+**파일:**
+- `src/app/(main)/admin/content/[id]/page.tsx` (수정)
+
+**작업:**
+1. 뉴스레터 `TabsContent` 안에 `AiEditPanel` 추가
+2. 뉴스레터 탭에서는 대상이 `email_summary`만 필요할 수 있으므로, 기본 대상을 `email_summary`로 설정하는 prop 추가 검토
+3. `NewsletterEditPanel` 위에 배치
+
+**현재 코드:**
+```tsx
+<TabsContent value="newsletter" className="mt-4">
+  <NewsletterEditPanel
+    content={content}
+    onContentUpdate={refreshContent}
+  />
+</TabsContent>
+```
+
+**수정 후:**
+```tsx
+<TabsContent value="newsletter" className="mt-4">
+  <div className="space-y-4">
+    <AiEditPanel
+      contentId={content.id}
+      bodyMd={content.body_md}
+      emailSummary={content.email_summary}
+      onApplied={refreshContent}
+      defaultTarget="email_summary"
+    />
+    <NewsletterEditPanel
+      content={content}
+      onContentUpdate={refreshContent}
+    />
+  </div>
+</TabsContent>
+```
+
+**AiEditPanel 수정:**
+- `defaultTarget` prop 추가 (optional, 기본값 `"body_md"`)
+- `useState` 초기값을 `defaultTarget ?? "body_md"`로 변경
+
+### T5. Vercel maxDuration 300s 적용 (완료 — 모찌 직접)
+
+이미 적용 완료:
+- `src/app/(main)/questions/new/page.tsx`: maxDuration 60→300
+- `src/lib/knowledge.ts`: TIMEOUT_MS 55_000→280_000
+- `src/app/api/admin/content/summarize/route.ts`: maxDuration 300 추가
+
+## 추가 검증 (T3, T4)
+
+### T3 MDXEditor codeBlockPlugin
+- [ ] 코드블록이 포함된 콘텐츠 → 정보공유 탭 → 본문 전체 렌더링 확인 (잘리지 않음)
+- [ ] 코드블록 없는 기존 콘텐츠 → 기존과 동일하게 정상 동작
+- [ ] `npm run build` 에러 0건
+
+### T4 뉴스레터 AI 수정 패널
+- [ ] `/admin/content/[id]` → 뉴스레터 탭 → "AI 수정 요청" 토글 표시 확인
+- [ ] 기본 대상이 "이메일 요약"으로 선택되어 있음
+- [ ] 수정 지시 입력 → 수정 요청 → 결과 미리보기 → 적용 → NewsletterEditPanel 갱신
+- [ ] 정보공유 탭의 AiEditPanel도 기존과 동일 동작 (regression 없음)
+- [ ] `npm run build` 에러 0건
+
 ## 레퍼런스
 
 - v3.1 아키텍처: `~/.openclaw/workspace/projects/mozzi-reports/public/reports/2026-02-15-content-pipeline-v3.1.html`
@@ -281,3 +396,5 @@ knowledge_usage: 없음 (T2에서 신규 생성)
 - 콘텐츠 액션: `src/actions/contents.ts` (generateContentWithAI, TYPE_PROMPTS)
 - PostEditPanel: `src/components/content/post-edit-panel.tsx` (MDXEditor + 자동저장)
 - NewsletterEditPanel: `src/components/content/newsletter-edit-panel.tsx` (Unlayer 에디터)
+- MDXEditorWrapper: `src/components/content/mdx-editor-wrapper.tsx` (플러그인 설정)
+- AiEditPanel: `src/components/content/ai-edit-panel.tsx` (AI 수정 요청 UI)

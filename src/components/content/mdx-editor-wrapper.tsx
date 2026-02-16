@@ -10,6 +10,7 @@ import {
   linkDialogPlugin,
   imagePlugin,
   tablePlugin,
+  codeBlockPlugin,
   markdownShortcutPlugin,
   toolbarPlugin,
   BoldItalicUnderlineToggles,
@@ -77,6 +78,7 @@ export default function MDXEditorWrapper({
           linkDialogPlugin(),
           imagePlugin({ imageUploadHandler }),
           tablePlugin(),
+          codeBlockPlugin(),
           markdownShortcutPlugin(),
           toolbarPlugin({
             toolbarContents: () => (

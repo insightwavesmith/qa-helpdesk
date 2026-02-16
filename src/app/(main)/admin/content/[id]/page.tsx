@@ -178,10 +178,19 @@ export default function ContentDetailPage() {
 
         {/* 뉴스레터 탭 */}
         <TabsContent value="newsletter" className="mt-4">
-          <NewsletterEditPanel
-            content={content}
-            onContentUpdate={refreshContent}
-          />
+          <div className="space-y-4">
+            <AiEditPanel
+              contentId={content.id}
+              bodyMd={content.body_md}
+              emailSummary={content.email_summary}
+              onApplied={refreshContent}
+              defaultTarget="email_summary"
+            />
+            <NewsletterEditPanel
+              content={content}
+              onContentUpdate={refreshContent}
+            />
+          </div>
         </TabsContent>
 
         {/* 설정 탭 */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useId } from "react";
 import { ChevronDown, ChevronRight, Loader2, Sparkles, Check, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +13,7 @@ interface AiEditPanelProps {
   bodyMd: string;
   emailSummary: string | null;
   onApplied: () => void;
+  defaultTarget?: "body_md" | "email_summary";
 }
 
 export default function AiEditPanel({
@@ -20,9 +21,11 @@ export default function AiEditPanel({
   bodyMd,
   emailSummary,
   onApplied,
+  defaultTarget = "body_md",
 }: AiEditPanelProps) {
+  const radioName = useId();
   const [open, setOpen] = useState(false);
-  const [target, setTarget] = useState<"body_md" | "email_summary">("body_md");
+  const [target, setTarget] = useState<"body_md" | "email_summary">(defaultTarget);
   const [instruction, setInstruction] = useState("");
   const [loading, setLoading] = useState(false);
   const [revised, setRevised] = useState<string | null>(null);
@@ -99,7 +102,7 @@ export default function AiEditPanel({
               <label className="flex items-center gap-1.5 text-sm cursor-pointer">
                 <input
                   type="radio"
-                  name="ai-edit-target"
+                  name={radioName}
                   checked={target === "body_md"}
                   onChange={() => setTarget("body_md")}
                   className="accent-[#F75D5D]"
@@ -109,7 +112,7 @@ export default function AiEditPanel({
               <label className="flex items-center gap-1.5 text-sm cursor-pointer">
                 <input
                   type="radio"
-                  name="ai-edit-target"
+                  name={radioName}
                   checked={target === "email_summary"}
                   onChange={() => setTarget("email_summary")}
                   className="accent-[#F75D5D]"
