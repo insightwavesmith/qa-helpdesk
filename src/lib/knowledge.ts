@@ -156,7 +156,7 @@ async function searchChunks(
 
 const MODEL = "claude-opus-4-6";
 const API_URL = "https://api.anthropic.com/v1/messages";
-const TIMEOUT_MS = 55_000;
+const TIMEOUT_MS = 280_000; // Vercel Pro maxDuration=300s, 여유 20s
 
 function getApiKey(): string {
   const key = process.env.ANTHROPIC_API_KEY;
