@@ -2,8 +2,7 @@
 // 질문에 대해 강의 자료 기반 AI 답변 생성
 
 import { createServiceClient } from "@/lib/supabase/server";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- 롤백 안전망: P1b 전까지 유지
-import { generateEmbedding, generateAnswer } from "@/lib/gemini";
+import { generateEmbedding } from "@/lib/gemini";
 import { generate as ksGenerate } from "@/lib/knowledge";
 
 interface LectureChunk {
