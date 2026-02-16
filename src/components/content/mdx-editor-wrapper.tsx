@@ -11,6 +11,7 @@ import {
   imagePlugin,
   tablePlugin,
   codeBlockPlugin,
+  codeMirrorPlugin,
   markdownShortcutPlugin,
   toolbarPlugin,
   BoldItalicUnderlineToggles,
@@ -79,6 +80,16 @@ export default function MDXEditorWrapper({
           imagePlugin({ imageUploadHandler }),
           tablePlugin(),
           codeBlockPlugin(),
+          codeMirrorPlugin({
+            codeBlockLanguages: {
+              js: "JavaScript",
+              javascript: "JavaScript",
+              ts: "TypeScript",
+              html: "HTML",
+              css: "CSS",
+              "": "Plain Text",
+            },
+          }),
           markdownShortcutPlugin(),
           toolbarPlugin({
             toolbarContents: () => (

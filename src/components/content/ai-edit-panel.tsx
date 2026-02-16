@@ -122,7 +122,12 @@ export default function AiEditPanel({
             </div>
           </div>
 
-          {/* 경고: email_summary가 없을 때 */}
+          {/* 경고: 대상 텍스트가 없을 때 */}
+          {target === "body_md" && !bodyMd && (
+            <p className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-md">
+              본문이 없습니다.
+            </p>
+          )}
           {target === "email_summary" && !emailSummary && (
             <p className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-md">
               이메일 요약이 없습니다. 먼저 생성해주세요.
@@ -147,7 +152,7 @@ export default function AiEditPanel({
           <Button
             size="sm"
             onClick={handleRequest}
-            disabled={loading || !instruction.trim() || (target === "email_summary" && !emailSummary)}
+            disabled={loading || !instruction.trim() || (target === "body_md" && !bodyMd) || (target === "email_summary" && !emailSummary)}
             className="bg-[#F75D5D] hover:bg-[#E54949] gap-1.5"
           >
             {loading ? (
