@@ -447,7 +447,7 @@ export function createTitleRow(title: string): object {
 export function createHookRow(text: string): object {
   return makeTextRow(
     "hook-quote",
-    `<p style="font-size:16px;line-height:160%;text-align:center;"><em><span style="color:#F75D5D;font-size:16px;font-weight:600;">${escapeHtml(text)}</span></em></p>`,
+    `<p style="font-size:16px;line-height:160%;text-align:center;"><em><span style="color:#F75D5D;font-size:16px;font-weight:600;">${markdownBold(escapeHtml(text))}</span></em></p>`,
     "8px 24px 16px",
   );
 }
@@ -470,7 +470,7 @@ export function createIntroRow(html: string): object {
 export function createGreetingRow(): object {
   return makeTextRow(
     "greeting",
-    '<p style="font-size:15px;line-height:180%;"><span style="color:#333;font-size:15px;line-height:27px;">안녕하세요 대표님,<br>자사몰사관학교입니다.</span></p>',
+    '<p style="font-size:15px;line-height:180%;"><span style="color:#333;font-size:15px;line-height:27px;">안녕하세요 <strong style="color:#F75D5D;">대표님</strong>,<br><strong style="color:#F75D5D;">자사몰사관학교</strong>의 스미스코치입니다.</span></p>',
     "24px 24px 8px",
   );
 }
@@ -482,7 +482,7 @@ export function createGreetingRow(): object {
 export function createEmotionHookRow(text: string): object {
   return makeTextRow(
     "emotion-hook",
-    `<p style="font-size:15px;line-height:180%;text-align:center;"><strong><em><span style="color:#333;font-size:15px;">${escapeHtml(text)}</span></em></strong></p>`,
+    `<p style="font-size:15px;line-height:180%;text-align:center;"><strong><em><span style="color:#333;font-size:15px;">${markdownBold(escapeHtml(text))}</span></em></strong></p>`,
     "8px 24px 16px",
   );
 }

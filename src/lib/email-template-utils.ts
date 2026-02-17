@@ -3,8 +3,8 @@ import type { Content } from "@/types/content";
 import { getSectionType, type SectionFields, type InsightFields, type NumberedCardsFields, type ChecklistFields, type BulletListFields, type ScheduleTableFields, type BATablesFields, type InterviewFields, type ImagePlaceholderFields } from "./newsletter-section-types";
 import {
   ROW_LOGO, ROW_DIVIDER, ROW_PROFILE, ROW_FOOTER,
-  createHeroRow, createTitleRow, createHookRow,
-  createGreetingRow, createEmotionHookRow,
+  createHeroRow, createTitleRow, createHookRow, createIntroRow, createClosingRow,
+  createGreetingRow, createEmotionHookRow, createStudentQuoteRow,
   createCtaRow, createFarewellRow,
   createSectionContentRows,
 } from "./newsletter-row-templates";
@@ -846,6 +846,74 @@ function parseBulletList(lines: string[]): string {
   return `<table style="margin:16px 0;" cellpadding="0" cellspacing="0"><tbody>${items.join("")}</tbody></table>`;
 }
 
+// ─── hookLine 분리 헬퍼 (G1, G2, G5, G6) ───
+
+/**
+ * hookLine을 hook/intro/studentQuote로 분리.
+ * - 일반: 첫 번째 단락 = hook, 나머지 = intro
+ * - case_study: 첫 번째 단락 = hook, 중간 = intro(배경), > 인용 = studentQuote
+ */
+function splitHookAndIntro(hookLine: string, contentType: string): {
+  hook: string;
+  intro: string;
+  studentQuote?: { text: string; source: string };
+} {
+  const paragraphs = hookLine.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
+
+  if (contentType === "case_study") {
+    const quoteIdx = paragraphs.findIndex(p => p.startsWith(">"));
+    const hook = paragraphs[0] || "";
+    let studentQuote: { text: string; source: string } | undefined;
+    const endIdx = quoteIdx > 0 ? quoteIdx : paragraphs.length;
+
+    if (quoteIdx > 0) {
+      const quoteBlock = paragraphs[quoteIdx];
+      const quoteLines = quoteBlock.split("\n").map(l => l.replace(/^>\s*/, "").trim());
+      const sourceLine = quoteLines.find(l => /^[—–\-]+\s/.test(l));
+      const textLines = quoteLines.filter(l => !/^[—–\-]+\s/.test(l));
+      studentQuote = {
+        text: textLines.join(" ").replace(/^[""\u201C]|[""\u201D]$/g, ""),
+        source: sourceLine?.replace(/^[—–\-]+\s*/, "") || "수강생",
+      };
+    }
+
+    return { hook, intro: paragraphs.slice(1, endIdx).join("\n\n"), studentQuote };
+  }
+
+  return { hook: paragraphs[0] || "", intro: paragraphs.slice(1).join("\n\n") };
+}
+
+// ─── 마감 텍스트 추출 헬퍼 (G9) ───
+
+/**
+ * 마지막 섹션의 trailing 텍스트를 closing으로 추출.
+ * 섹션 패턴(✅, >, |, ##, 01., **, -, •) 뒤에 남은 일반 텍스트를 분리.
+ */
+function extractClosingText(sections: SummarySection[]): string {
+  if (sections.length === 0) return "";
+  const last = sections[sections.length - 1];
+  const lines = last.content.split("\n");
+
+  let lastPatternIdx = -1;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const t = lines[i].trim();
+    if (!t) continue;
+    if (/^[✅>|#]|^\d{1,2}\.\s|^\*\*|^[-•]\s/.test(t)) {
+      lastPatternIdx = i;
+      break;
+    }
+  }
+
+  if (lastPatternIdx >= 0 && lastPatternIdx < lines.length - 1) {
+    const closing = lines.slice(lastPatternIdx + 1).join("\n").trim();
+    if (closing) {
+      last.content = lines.slice(0, lastPatternIdx + 1).join("\n").trim();
+      return closing;
+    }
+  }
+  return "";
+}
+
 /**
  * email_summary만 있고 email_design_json이 없는 기존 콘텐츠에 대해
  * 타입별 템플릿을 기반으로 Unlayer 디자인 JSON을 생성한다.
@@ -870,7 +938,10 @@ export function buildDesignFromSummary(content: Content): object {
   const parsed = parseSummaryToSections(content.email_summary ?? "");
   const sorted = sortSectionsByTemplate(parsed.sections, contentType);
 
-  // ─── 2. 동적 섹션 row 생성 (새 파이프라인) ───
+  // ─── 2. 마감 텍스트 추출 (G9: 마지막 섹션의 trailing text) ───
+  const closingText = extractClosingText(sorted);
+
+  // ─── 3. 동적 섹션 row 생성 (새 파이프라인) ───
   const sectionRows: object[] = [];
   for (const section of sorted) {
     const sf = parseSectionFields(section.key, section.content);
@@ -882,26 +953,9 @@ export function buildDesignFromSummary(content: Content): object {
     }
   }
 
-  // ─── 3. 템플릿별 레이아웃 조립 ───
+  // ─── 4. 템플릿별 레이아웃 조립 ───
   const rows: object[] = [ROW_LOGO];
 
-  if (contentType === "notice" || contentType === "webinar") {
-    // Webinar/Notice: hero (빨간 배경 + 제목 + 부제목)
-    rows.push(createHeroRow(content.title, parsed.hookLine));
-  } else if (contentType === "case_study") {
-    // Case Study: 인사말 + 감정 후킹
-    rows.push(createGreetingRow());
-    if (parsed.hookLine) rows.push(createEmotionHookRow(parsed.hookLine));
-  } else {
-    // Education (default): 제목 + 훅 인용구
-    rows.push(createTitleRow(content.title));
-    if (parsed.hookLine) rows.push(createHookRow(parsed.hookLine));
-  }
-
-  // 동적 섹션
-  rows.push(...sectionRows);
-
-  // 푸터: 공통
   const ctaTexts: Record<string, string> = {
     education: "전체 가이드 보기",
     notice: "지금 신청하기",
@@ -911,11 +965,47 @@ export function buildDesignFromSummary(content: Content): object {
   const ctaText = ctaTexts[contentType] ?? "전체 가이드 보기";
   const ctaColor = contentType === "case_study" ? "#22C55E" : "#F75D5D";
 
-  rows.push(ROW_DIVIDER);
-  rows.push(ROW_PROFILE);
-  rows.push(createCtaRow(ctaText, articleUrl, ctaColor));
-  rows.push(createFarewellRow());
-  rows.push(ROW_FOOTER);
+  if (contentType === "notice" || contentType === "webinar") {
+    // Webinar/Notice: Hero(title+1st para) → IntroBody → Divider → Sections → Closing → Divider → Profile → CTA → Footer
+    const { hook: wHook, intro: wIntro } = splitHookAndIntro(parsed.hookLine, contentType);
+    rows.push(createHeroRow(content.title, wHook));
+    if (wIntro) rows.push(createIntroRow(wIntro));
+    rows.push(ROW_DIVIDER);
+    rows.push(...sectionRows);
+    if (closingText) rows.push(createClosingRow(closingText));
+    rows.push(ROW_DIVIDER);
+    rows.push(ROW_PROFILE);
+    rows.push(createCtaRow(ctaText, articleUrl, ctaColor));
+    // G8: farewell 제거 (골드 스탠다드에 없음)
+    rows.push(ROW_FOOTER);
+  } else if (contentType === "case_study") {
+    // Case Study: Greeting → Title → EmotionHook → Background → StudentQuote → Divider → Sections → CTA(green) → Footer
+    rows.push(createGreetingRow());
+    rows.push(createTitleRow(content.title));
+    const { hook: csHook, intro: csIntro, studentQuote } = splitHookAndIntro(parsed.hookLine, contentType);
+    if (csHook) rows.push(createEmotionHookRow(csHook));
+    if (csIntro) rows.push(createIntroRow(csIntro));
+    if (studentQuote) rows.push(createStudentQuoteRow(studentQuote.text, studentQuote.source));
+    rows.push(ROW_DIVIDER);
+    rows.push(...sectionRows);
+    rows.push(createCtaRow(ctaText, articleUrl, ctaColor));
+    // G7: profile, farewell, divider 제거
+    rows.push(ROW_FOOTER);
+  } else {
+    // Education (default): Title → Hook(1st para) → IntroBody → Divider → Sections → Closing → Divider → Profile → CTA → Farewell → Footer
+    rows.push(createTitleRow(content.title));
+    const { hook, intro } = splitHookAndIntro(parsed.hookLine, contentType);
+    if (hook) rows.push(createHookRow(hook));
+    if (intro) rows.push(createIntroRow(intro));
+    rows.push(ROW_DIVIDER);
+    rows.push(...sectionRows);
+    if (closingText) rows.push(createClosingRow(closingText));
+    rows.push(ROW_DIVIDER);
+    rows.push(ROW_PROFILE);
+    rows.push(createCtaRow(ctaText, articleUrl, ctaColor));
+    rows.push(createFarewellRow());
+    rows.push(ROW_FOOTER);
+  }
 
   template.body.rows = rows;
   return template;
