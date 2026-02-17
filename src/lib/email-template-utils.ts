@@ -653,8 +653,8 @@ export function validateBannerKeys(
  * 모든 스타일은 inline (이메일 클라이언트 호환)
  */
 function markdownToEmailHtml(md: string): string {
-  // **bold** → <strong>
-  let text = md.replace(/\*\*(.+?)\*\*/g, '<strong style="color:#F75D5D;">$1</strong>');
+  // **bold** → <strong> ([\s\S]+? — 줄바꿈 포함 매칭)
+  let text = md.replace(/\*\*([\s\S]+?)\*\*/g, '<strong style="color:#F75D5D;">$1</strong>');
 
   // 이미지: ![alt](url) + 캡션
   text = text.replace(

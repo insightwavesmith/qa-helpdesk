@@ -124,7 +124,13 @@ function makeImageRow(id: string, src: string, alt: string): object {
  * @param text - 변환할 텍스트
  */
 function markdownBold(text: string): string {
-  return text.replace(/\*\*(.+?)\*\*/g, '<strong style="color:#F75D5D;">$1</strong>');
+  // [\s\S]+? — 줄바꿈 포함 매칭 (AI가 ** 안에 줄바꿈 넣는 경우 대응)
+  return text.replace(/\*\*([\s\S]+?)\*\*/g, '<strong style="color:#F75D5D;">$1</strong>');
+}
+
+/** 줄바꿈을 <br>로 변환 (이메일 HTML에서 \n은 무시되므로 필수) */
+function nlToBr(text: string): string {
+  return text.replace(/\n/g, "<br>");
 }
 
 /**
@@ -148,7 +154,7 @@ function escapeHtml(str: string): string {
  */
 export function createInsightRows(fields: InsightFields): object[] {
   const subtitleHtml = `<div style="font-size:17px;font-weight:700;margin-bottom:8px">${markdownBold(escapeHtml(fields.subtitle))}</div>`;
-  const bodyHtml = markdownBold(escapeHtml(fields.body));
+  const bodyHtml = nlToBr(markdownBold(escapeHtml(fields.body)));
   const rows: object[] = [
     makeTextRow("insight-body", `${subtitleHtml}${bodyHtml}`),
   ];
@@ -185,7 +191,7 @@ export function createNumberedCardsRow(fields: NumberedCardsFields): object[] {
           </td>
           <td style="vertical-align:top">
             <div style="font-weight:700;font-size:15px;margin-bottom:2px">${markdownBold(escapeHtml(item.title))}</div>
-            <div style="font-size:13px;color:#666;line-height:1.5">${markdownBold(escapeHtml(item.desc))}</div>
+            <div style="font-size:13px;color:#666;line-height:1.5">${nlToBr(markdownBold(escapeHtml(item.desc)))}</div>
           </td>
         </tr>
       </table>
@@ -316,7 +322,7 @@ export function createBATablesRow(fields: BATablesFields): object[] {
  */
 export function createInterviewQuotesRow(fields: InterviewFields): object[] {
   const quotesHtml = fields.quotes.map((quote) => {
-    const textHtml = markdownBold(escapeHtml(quote.text));
+    const textHtml = nlToBr(markdownBold(escapeHtml(quote.text)));
     return `<div style="border-left:3px solid #F75D5D;background:#f8f9fc;border-radius:0 8px 8px 0;padding:16px 20px;font-style:italic;font-size:14px;color:#555;line-height:1.6;margin-bottom:10px">
   "${textHtml}"
   <div style="font-style:normal;font-size:12px;color:#999;margin-top:6px">&mdash; ${escapeHtml(quote.source)}</div>
