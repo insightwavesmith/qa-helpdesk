@@ -147,7 +147,7 @@ function escapeHtml(str: string): string {
  * - row 2 (optional): 팁박스 (fields.tip이 있을 때만)
  */
 export function createInsightRows(fields: InsightFields): object[] {
-  const subtitleHtml = `<div style="font-size:17px;font-weight:700;margin-bottom:8px">${escapeHtml(fields.subtitle)}</div>`;
+  const subtitleHtml = `<div style="font-size:17px;font-weight:700;margin-bottom:8px">${markdownBold(escapeHtml(fields.subtitle))}</div>`;
   const bodyHtml = markdownBold(escapeHtml(fields.body));
   const rows: object[] = [
     makeTextRow("insight-body", `${subtitleHtml}${bodyHtml}`),
@@ -181,10 +181,10 @@ export function createNumberedCardsRow(fields: NumberedCardsFields): object[] {
       <table cellpadding="0" cellspacing="0">
         <tr>
           <td style="vertical-align:top;width:48px">
-            <div style="width:36px;height:36px;border-radius:50%;background:#F75D5D;color:#fff;font-size:13px;font-weight:700;text-align:center;line-height:36px">${num}</div>
+            <div style="width:36px;height:36px;border-radius:50%;background:#F75D5D;color:#fff;font-size:16px;font-weight:700;text-align:center;line-height:36px">${num}</div>
           </td>
           <td style="vertical-align:top">
-            <div style="font-weight:700;font-size:15px;margin-bottom:2px">${escapeHtml(item.title)}</div>
+            <div style="font-weight:700;font-size:15px;margin-bottom:2px">${markdownBold(escapeHtml(item.title))}</div>
             <div style="font-size:13px;color:#666;line-height:1.5">${markdownBold(escapeHtml(item.desc))}</div>
           </td>
         </tr>
@@ -209,7 +209,7 @@ export function createChecklistRow(fields: ChecklistFields): object[] {
     <td style="padding:10px 0;${borderBottom}font-size:14px">
       <table cellpadding="0" cellspacing="0">
         <tr>
-          <td style="width:28px;vertical-align:middle;color:#F75D5D;font-size:18px">&#10003;</td>
+          <td style="width:28px;vertical-align:middle"><div style="width:20px;height:20px;border-radius:50%;background:#F75D5D;text-align:center;line-height:20px;color:#fff;font-size:11px;font-weight:700">&#10003;</div></td>
           <td style="vertical-align:middle">${markdownBold(escapeHtml(item))}</td>
         </tr>
       </table>
@@ -250,9 +250,22 @@ export function createBulletListRow(fields: BulletListFields): object[] {
  * 핑크 헤더(bg:#FFF0F0) + fields.rows 순회, markdownBold 적용.
  */
 export function createScheduleTableRow(fields: ScheduleTableFields): object[] {
+  const SCHEDULE_EMOJIS: Record<string, string> = {
+    "일시": "\u{1F4C5}",
+    "형식": "\u{1F534}",
+    "참가비": "\u{1F44D}",
+    "참여": "\u{1F517}",
+  };
+
   const tableRows = fields.rows.map((row) => {
+    // 라벨에 이모지가 아직 없으면 자동 삽입
+    const rawLabel = escapeHtml(row.label);
+    const emojiPrefix = Object.entries(SCHEDULE_EMOJIS).find(([keyword]) => row.label.includes(keyword));
+    const labelHtml = emojiPrefix && !row.label.match(/[\u{1F000}-\u{1FFFF}]/u)
+      ? `${emojiPrefix[1]} ${markdownBold(rawLabel)}`
+      : markdownBold(rawLabel);
     return `<tr>
-    <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-weight:600;white-space:nowrap;width:80px">${escapeHtml(row.label)}</td>
+    <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-weight:600;white-space:nowrap;width:80px">${labelHtml}</td>
     <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0">${markdownBold(escapeHtml(row.value))}</td>
   </tr>`;
   }).join("");
@@ -278,7 +291,7 @@ export function createBATablesRow(fields: BATablesFields): object[] {
       return `<tr>
     <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #eee">${escapeHtml(row.metric)}</td>
     <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #eee">${escapeHtml(row.before)}</td>
-    <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #eee;color:#F75D5D;font-weight:700">${escapeHtml(row.after)}</td>
+    <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #eee;color:#F75D5D;font-weight:700">${markdownBold(escapeHtml(row.after))}</td>
   </tr>`;
     }).join("");
 
@@ -304,7 +317,7 @@ export function createBATablesRow(fields: BATablesFields): object[] {
 export function createInterviewQuotesRow(fields: InterviewFields): object[] {
   const quotesHtml = fields.quotes.map((quote) => {
     const textHtml = markdownBold(escapeHtml(quote.text));
-    return `<div style="background:#f5f5f5;border-radius:6px;padding:16px 20px;font-style:italic;font-size:14px;color:#555;line-height:1.6;margin-bottom:10px">
+    return `<div style="border-left:3px solid #F75D5D;background:#f8f9fc;border-radius:0 8px 8px 0;padding:16px 20px;font-style:italic;font-size:14px;color:#555;line-height:1.6;margin-bottom:10px">
   "${textHtml}"
   <div style="font-style:normal;font-size:12px;color:#999;margin-top:6px">&mdash; ${escapeHtml(quote.source)}</div>
 </div>`;
@@ -320,7 +333,7 @@ export function createInterviewQuotesRow(fields: InterviewFields): object[] {
 export function createImagePlaceholderRow(fields: ImagePlaceholderFields): object[] {
   let html = `<div style="background:#f9f6f2;border-radius:8px;padding:32px 20px;text-align:center">
   <div style="width:60px;height:60px;border-radius:50%;background:rgba(247,93,93,.15);display:inline-block;text-align:center;line-height:60px;font-size:28px;color:#F75D5D;margin:0 auto">&#9654;</div>
-  <div style="color:#F75D5D;font-size:13px;font-weight:600;margin-top:10px">${escapeHtml(fields.caption)}</div>
+  <div style="color:#F75D5D;font-size:13px;font-weight:600;margin-top:10px">${markdownBold(escapeHtml(fields.caption))}</div>
   <div style="font-size:11px;color:#999;margin-top:2px">밑줄 친 이미지를 교체해주세요</div>
 </div>`;
 
@@ -572,7 +585,7 @@ export const ROW_PROFILE: object = {
  * @param text - 버튼 텍스트
  * @param url - 클릭 시 이동할 URL
  */
-export function createCtaRow(text: string, url: string): object {
+export function createCtaRow(text: string, url: string, bgColor = "#F75D5D"): object {
   return {
     id: "row-cta",
     cells: [1],
@@ -587,9 +600,9 @@ export function createCtaRow(text: string, url: string): object {
           href: { name: "web", values: { href: url, target: "_blank" } },
           buttonColors: {
             color: "#ffffff",
-            backgroundColor: "#F75D5D",
+            backgroundColor: bgColor,
             hoverColor: "#ffffff",
-            hoverBackgroundColor: "#E54949",
+            hoverBackgroundColor: bgColor === "#F75D5D" ? "#E54949" : bgColor,
           },
           size: { autoWidth: false, width: "100%" },
           textAlign: "center",

@@ -1,297 +1,251 @@
-# TASK: 뉴스레터 Unlayer Custom Tool + 자동 생성 파이프라인
+# TASK.md — 뉴스레터 골드 스탠다드 100% 재현
 
 ## 목표
+골드 스탠다드 이메일 3종(Template A/B/C)과 100% 동일한 출력.
+**두 문제 동시 해결**: (1) AI 프롬프트 → 톤/구조/문장 품질, (2) 렌더링 → 세부 디자인.
+100% 완료될 때까지 수정. Custom Tool(registerTool) 필요하면 재작성.
 
-레이어0(knowledge base)에서 정보를 뽑아 3종 템플릿에 **형식에 맞게 자동 생성**.
-Unlayer Custom Tool로 목업 100% 재현. AI 출력이 틀리면 자동 재시도(최대 3번).
+## 제약
+- Custom Tool이 필요하면 `unlayer.registerTool()` 사용
+- `npm run build` 반드시 성공
+- 마크다운(`**`, `##` 등)이 최종 HTML에 그대로 노출되면 실패
+- email-samples-v7.html 목업과 시각적 일치 필수
+- 기존 파일 구조(parseSectionFields → createSectionContentRows 파이프라인) 유지
+- TEMPLATE_KEY_ORDER 순서 변경 금지 (이미 올바름)
 
-## 핵심 원칙
+## 태스크
 
-1. **"템플릿 자체는 변경 없이 그대로 나와야 한다"** — 목업 = 결과물
-2. **Custom Tool** — text+HTML 대신 Unlayer 네이티브 편집 가능 도구
-3. **자동 재시도** — 파서 검증 실패 시 Opus 4.6 최대 3번 호출해서 자동 수정
+### T1. AI 프롬프트 전면 재작성 → frontend-dev
+**파일:** `src/actions/contents.ts` (BANNER_KEYS_BY_TYPE + generateEmailSummary 프롬프트)
 
-## 레퍼런스 (반드시 참조)
+**현재 문제:**
+- systemPromptOverride가 너무 짧아 톤/구조 지정 부족
+- 각 섹션의 **구체적 문장 스타일** 미지정 (후킹 문구, 코치 톤, 숫자 기반 설득)
+- Template B에서 잘못된 배너키 생성
 
-1. **골드 스탠다드 목업**: `newsletter-reference/email-samples-v7.html`
-2. **디자인 스펙 + 목업 PDF**: `newsletter-reference/newsletter-design-spec-v5.pdf`
-3. **Gmail 레퍼런스 원본**: `newsletter-reference/template-a-education.png`, `template-b-webinar.png`, `template-c-casestudy.pdf`
-4. **현재 코드**: `src/lib/email-template-utils.ts`, `src/actions/contents.ts`
-5. **Unlayer Custom Tool 문서**: https://examples.unlayer.com/custom_tools/react-custom-tool/
-6. **기존 아키텍처 TASK**: https://mozzi-reports.vercel.app/reports/task/2026-02-17-newsletter-pipeline-redesign.html
+**수정 내용:**
+systemPromptOverride를 template별로 분리하고, 골드 스탠다드의 톤/구조를 few-shot으로 포함:
 
-## 아키텍처
-
+**Template A (education) 프롬프트 규칙:**
 ```
-[레이어0: Knowledge Base]
-        ↓ body_md
-[AI 생성 (Opus 4.6)]
-   프롬프트: 템플릿별 구조화된 JSON 형식 강제
-   few-shot 예시 포함
-        ↓ 구조화된 JSON (email_summary)
-[파서 검증]
-   필수 필드 체크 + 형식 검증
-   FAIL → 에러 메시지 포함해서 AI 재호출 (최대 3번)
-   3번 다 실패 → 텍스트 블록 fallback + 경고
-        ↓ validated SectionData
-[Custom Tool 매핑]
-   templateType별 고정 Custom Tool 순서
-   SectionData → Custom Tool values로 바인딩
-        ↓ Unlayer Design JSON
-[Unlayer 에디터]
-   Custom Tool 드래그앤드롭 편집 가능
-   각 필드 개별 수정 가능 (HTML 안 만져도 됨)
-        ↓ exportHtml()
-[이메일 발송]
+- 후킹: 빨간색 감정 자극 인용문 1줄 (예: "전환 추적이 안 되면, 메타 AI는 눈을 감고 광고하는 거예요.")
+- 본문 서두: 문제 제기 → 수치("광고비 100만 원을 쓰는데 전환이 3건밖에") → "~때문이에요" 코치 톤
+- INSIGHT: 소제목(질문형 "왜 X가 필요한가요?") + 핵심 개념 설명 + **키워드** 빨간볼드 + > 💡 실제 사례(수치 "42% 증가")
+- KEY POINT: 정확히 3개, "= 등호" 패턴 제목 ("Pixel 베이스 코드 = 모든 페이지에 설치") + 1-2줄 실전 설명
+- CHECKLIST: 5개 질문형 ("~있나요?", "~하나요?")
+- 마무리: 긴급성 수치("하나라도 빠졌다면, 지금 광고비의 30%가 허공에 사라지고 있는 거예요.")
+- 톤: 해요체, 코치, 짧은 문장, 구체적 수치, 비유 사용
 ```
 
-### 데이터 흐름 (templateType별)
+**Template B (webinar) 프롬프트 규칙:**
+```
+- 후킹: 고객 통점 질문 ("열심히 하는데 왜 성과가 안 나올까?")
+- 본문: 2-3줄 공감 → **"정확하게"**가 핵심 → 누적 매출 수치로 권위
+- 핵심 주제: 정확히 3개, 구체적 방법론 제목 + 실전 설명
+- 이런 분들: 4개, "~하신 대표님", "~없는 분" 페르소나 형식
+- 웨비나 일정: 일시(**빨간볼드**), 형식(온라인+분수), 참가비(**무료** 빨간볼드), 참여방법
+- 마무리: "정원이 마감되기 전에 신청하세요" + "실전 인사이트를 가져가실 수 있어요"
+```
 
+**Template C (case_study) 프롬프트 규칙:**
 ```
-education:  body_md → AI → { hook, intro, insight:{subtitle,body,tip}, keypoint:[{title,desc}×3], checklist:[string×5], closing }
-webinar:    body_md → AI → { hero_subtitle, intro, preview:{image,caption}, topics:[{title,desc}×3], targets:[string×4], schedule:[{label,value}×4], nudge }
-case_study: body_md → AI → { greeting, title_keyword, emotion_hook, background, student_quote, results:{tables×2}, interview:[{quote,method}×2], changes:[{title,before,after}×3] }
+- 인사말: "안녕하세요 대표님, 자사몰사관학교입니다."
+- 성과 텍스트: Before→After 수치 강조 ("**월매출 1억 → 10억**", "**2천만 원 → 2억 원**으로 10배")
+- 성과 테이블: 지표/Before/After (4-6행)
+- INTERVIEW: 수강생 직접 인용 2-3개, 구체적 방법 + 감정
+- 핵심 변화: 3개, 제목 + Before→After 비교
+- 마무리: "현장에서 바로 적용할 수 있는" 실전 강조
 ```
+
+**BANNER_KEYS_BY_TYPE 수정:**
+- webinar에서 INSIGHT/KEY POINT/CHECKLIST 제거 → 강의 미리보기/핵심 주제/이런 분들을 위해/웨비나 일정만
+
+**validateBannerKeys 수정:**
+- webinar의 expected를 `["강의 미리보기", "핵심 주제", "이런 분들을 위해", "웨비나 일정"]`으로 변경
+
+### T2. Row 템플릿 렌더링 개선 → frontend-dev
+**파일:** `src/lib/newsletter-row-templates.ts`
+
+**현재 문제 (createSectionContentRows):**
+- KEY POINT 번호 배지가 사각형(border-radius:10px) → 원형(border-radius:50%) 필요
+- CHECKLIST 체크 아이콘이 작음/네모 → 빨간 원형 배경 + 흰 체크마크 필요
+- 💡 팁 박스(INSIGHT 내부)가 없음
+- 이런 분들: 불릿 텍스트 색상이 일반(#374151) → 빨간 강조 필요
+- 웨비나 일정: 이모지 칼럼이 없음 (📅 🔴 👍 🔗)
+- INTERVIEW: 인용 스타일 미비
+- 핵심 변화: Before/After 카드 레이아웃 미비
+- 성과 테이블: After 열 빨간 강조 없음
+
+**수정 상세:**
+
+1. **KEY POINT / 핵심 주제 번호 배지:**
+   - 현재: `border-radius:10px` (사각 라운드)
+   - 수정: `width:36px; height:36px; border-radius:50%; background:#F75D5D; color:#fff; font-weight:700; text-align:center; line-height:36px; font-size:16px`
+
+2. **INSIGHT 팁 박스:**
+   - 기존 insight 섹션 row에 tip 필드가 있으면 노란 배경 박스 추가
+   - `background:#FFFBEB; border-left:4px solid #F59E0B; padding:14px 18px; border-radius:0 8px 8px 0; margin-top:12px`
+   - 💡 이모지 접두사
+
+3. **CHECKLIST:**
+   - 빨간 원형 배경(20x20) + 흰색 체크마크(✓)
+   - 항목 간 `border-bottom:1px solid #f0f0f0` 구분선
+   - 질문형 텍스트 (#374151)
+
+4. **이런 분들을 위해:**
+   - 빨간 불릿(6x6 원형 #F75D5D)
+   - 텍스트에 `**키워드**` 있으면 빨간 볼드 변환
+
+5. **웨비나 일정:**
+   - 3열 테이블: 이모지(📅/🔴/👍/🔗) | 라벨(일시/형식/참가비/참여) | 값
+   - 값에 `**텍스트**` 있으면 빨간 볼드 변환
+   - 행 간 `border-bottom:1px solid #f0f0f0`
+
+6. **성과 테이블:**
+   - 헤더 행: `background:#FEF2F2`
+   - After 열: `color:#F75D5D; font-weight:700`
+
+7. **INTERVIEW 인용:**
+   - `border-left:3px solid #F75D5D; padding:16px 20px; background:#f8f9fc; border-radius:0 8px 8px 0`
+   - 인용 텍스트 이탤릭
+   - 화자: `— 출처` 작은 회색 텍스트
+
+8. **핵심 변화:**
+   - 번호 배지 + 제목(볼드) + Before(회색)→After(빨간 볼드) 레이아웃
+
+### T3. 마크다운→HTML 변환기 보강 → frontend-dev
+**파일:** `src/lib/newsletter-row-templates.ts` 또는 유틸 함수
+
+모든 섹션의 body/desc 텍스트에서:
+- `**텍스트**` → `<b style="color:#F75D5D">텍스트</b>` 변환
+- 마크다운이 그대로 노출되면 안 됨 (현재 일부 섹션에서 미변환)
+
+### T4. Template B 배너키 매핑 수정 → frontend-dev
+**파일:** `src/lib/email-template-utils.ts`
+
+- `validateBannerKeys` webinar expected: `["강의 미리보기", "핵심 주제", "이런 분들을 위해", "웨비나 일정"]`
+- TEMPLATE_KEY_ORDER webinar에서 "INSIGHT", "KEY POINT", "CHECKLIST" 제거 (이미 webinar 전용 키만 남기기)
+
+### T5. Case Study CTA 색상 수정 → frontend-dev
+**파일:** `src/lib/email-template-utils.ts` (createCtaRow 또는 buildDesignFromSummary)
+
+- case_study의 CTA 버튼: `background:#22C55E` (초록), 텍스트 "성공사례 보러가기 →"
+- education/webinar는 기존 `#F75D5D` (빨간) 유지
 
 ## 현재 코드
 
-### email-template-utils.ts (624줄)
-주요 함수:
-- `parseSummaryToSections(md)` → `{ hookLine, sections[] }` (L50)
-- `sortSectionsByTemplate(sections, type)` → 배너키 순서 정렬 (L84)
-- `createBannerImageRow(bannerKey, slug)` → 배너 이미지 row (L128)
-- `createContentTextRow(section, slug)` → **단일 텍스트 블록** (L206) ← 교체 대상
-- `createSectionRows(section)` → 배너+텍스트 2개 row (L241)
-- `buildDesignFromSummary(content)` → 전체 빌드 (L507)
-- `markdownToEmailHtml(md)` → 마크다운→HTML 변환 (L282)
-
-### contents.ts — generateEmailSummary (L700)
+### src/lib/newsletter-section-types.ts (전체 107줄)
 ```ts
-// 현재: 자유 형식 마크다운으로 email_summary 생성
-// AI에게 "### 배너키" 형식으로 쓰라고 하지만, 본문 구조는 자유형
-const result = await ksGenerate({
-  query: `다음 본문을 기반으로 뉴스레터 이메일 요약을 작성해주세요...`,
-  systemPromptOverride: `당신은 자사몰사관학교의 뉴스레터 전문 작성자입니다...`,
-});
-// 배너키 검증 후 저장, email_design_json = null로 초기화
-```
+export interface InsightFields { subtitle: string; body: string; tip?: string; }
+export interface NumberedCardsFields { items: NumberedCardItem[]; } // [{title, desc}]
+export interface ChecklistFields { items: string[]; }
+export interface BulletListFields { items: string[]; }
+export interface ScheduleTableFields { rows: ScheduleRow[]; } // [{label, value}]
+export interface BATablesFields { tables: BATable[]; } // [{title, rows:[{metric,before,after}]}]
+export interface InterviewFields { quotes: InterviewQuote[]; } // [{text, source}]
+export interface ImagePlaceholderFields { caption: string; tags?: string; }
 
-### BANNER_MAP (L6)
-```ts
-const BANNER_MAP: Record<string, string> = {
-  "INSIGHT": "banner-insight", "KEY POINT": "banner-key-point",
-  "CHECKLIST": "banner-checklist", "강의 미리보기": "banner-preview",
-  "핵심 주제": "banner-topics", "이런 분들을 위해": "banner-target",
-  "웨비나 일정": "banner-schedule", "INTERVIEW": "banner-interview",
-  "핵심 변화": "banner-change", "성과": "banner-results",
+export const BANNER_KEY_TO_SECTION_TYPE: Record<string, SectionFields["type"]> = {
+  "INSIGHT": "insight", "KEY POINT": "numbered-cards", "CHECKLIST": "checklist",
+  "강의 미리보기": "image-placeholder", "핵심 주제": "numbered-cards",
+  "이런 분들을 위해": "bullet-list", "웨비나 일정": "schedule-table",
+  "INTERVIEW": "interview-quotes", "핵심 변화": "numbered-cards", "성과": "before-after-tables",
 };
 ```
 
-## 태스크 (7건)
-
-### T0. 섹션 필드 스키마 정의
-
-→ backend-dev · 의존: 없음
-
-파일: `src/lib/newsletter-section-types.ts` (신규)
-
-- 템플릿별 구조화된 데이터 타입 정의 (AI 출력 = 이 형식)
+### src/actions/contents.ts generateEmailSummary (L725-820)
 ```ts
-// education
-interface InsightSection { subtitle: string; body: string; tip?: string; }
-interface KeyPointSection { items: { title: string; desc: string }[]; }  // 3개
-interface ChecklistSection { items: string[]; }  // 5개
-
-// webinar
-interface PreviewSection { image_url?: string; caption: string; tags: string; }
-interface TopicsSection { items: { title: string; desc: string }[]; }  // 3개
-interface TargetsSection { items: string[]; }  // 4개
-interface ScheduleSection { rows: { emoji: string; label: string; value: string }[]; }  // 4개
-
-// case_study
-interface ResultsSection { tables: { title: string; rows: { metric: string; before: string; after: string }[] }[]; }  // 2 테이블
-interface InterviewSection { quotes: { text: string; method_keyword: string }[]; }  // 2개
-interface ChangesSection { items: { title: string; before: string; after: string }[]; }  // 3개
-
-// 공통 wrapper
-interface NewsletterData {
-  templateType: 'education' | 'webinar' | 'case_study';
-  sections: Record<string, SectionData>;
+export async function generateEmailSummary(contentId: string) {
+  // 1. requireAdmin() → content.body_md, content.type 조회
+  // 2. BANNER_KEYS_BY_TYPE[contentType] 포맷 가이드 가져오기
+  // 3. ksGenerate({ query: 본문+작성규칙+bannerGuide, systemPromptOverride: ... })
+  // 4. DB update: email_summary=result, email_design_json=null
+  // 5. validateBannerKeys() → warnings 반환
 }
 ```
-- 각 타입에 Zod 스키마 추가 (런타임 검증용)
 
-### T1. Unlayer Custom Tool 8종 구현
-
-→ frontend-dev · 의존: T0
-
-파일: `src/lib/newsletter-custom-tools.ts` (신규), `public/newsletter-tools.js` (번들)
-
-8종 Custom Tool 등록:
-1. **insight-section**: 소제목(input) + 본문(textarea, `**볼드**`→빨간볼드) + 팁박스(textarea)
-2. **numbered-cards**: 카드 3개 (각: 제목 input + 설명 textarea). 빨간 원형 번호배지 01/02/03
-3. **checklist-section**: 체크아이템 5개 (각: input). ✅ 빨간체크 + 구분선
-4. **bullet-list**: 불릿 4개 (각: textarea, `**키워드**`→빨간볼드). 빨간 dot
-5. **schedule-table**: 행 4개 (각: 이모지 input + 라벨 input + 값 input). 핑크헤더
-6. **ba-tables**: 테이블 2개 (각: 제목 + 행 3개 {지표,before,after}). After=빨간볼드
-7. **interview-quotes**: 인용 2개 (각: 인용문 textarea + 방법론키워드 input). 회색배경
-8. **image-placeholder**: 이미지 URL input + 캡션 input + 재생버튼 오버레이
-
-각 Tool 구현:
-- `renderer.Viewer`: React 컴포넌트 (email-samples-v7.html 디자인 100% 재현)
-- `renderer.exporters.email`: `ReactDOMServer.renderToStaticMarkup()` (inline style, table 기반)
-- `options`: 각 필드를 Unlayer 속성 에디터에서 편집 가능하게 등록
-- `values`: 기본값 (placeholder 텍스트)
-
-번들: Webpack → `public/newsletter-tools.js` → EmailEditor `customJS` 옵션으로 로드
-
-### T2. parseSummaryToSections → JSON 파서로 교체
-
-→ backend-dev · 의존: T0
-
-파일: `src/lib/email-template-utils.ts`
-
-- 기존 `parseSummaryToSections` (마크다운 파싱) → 구조화된 JSON 파싱으로 교체
-- AI가 JSON으로 출력 → `JSON.parse` + Zod 스키마 검증
-- 검증 실패 시 구체적 에러 메시지 반환 (어느 필드가 틀렸는지)
-- **관대한 파싱 fallback**: JSON 파싱 실패 시 기존 마크다운 파싱으로 fallback
-- 마크다운 파싱도 실패 시 전체를 단일 텍스트 블록으로
-
-### T3. AI 프롬프트 개선 + 자동 재시도
-
-→ backend-dev · 의존: T0, T2
-
-파일: `src/actions/contents.ts`, `src/lib/newsletter-prompts.ts` (신규)
-
-- 프롬프트를 별도 파일로 분리 (`newsletter-prompts.ts`)
-- **템플릿별 프롬프트 + few-shot 예시** (정확한 JSON 형식):
-```
-당신은 자사몰사관학교의 뉴스레터 작성자입니다.
-반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트 없이 JSON만.
-
-[education 예시]
-{
-  "hook": "디지털 마케팅의 핵심, 데이터를 읽는 눈을 키워보세요",
-  "intro": "오늘은 Pixel과 CAPI에 대해...",
-  "insight": {
-    "subtitle": "Pixel + CAPI, 왜 둘 다 필요한가요?",
-    "body": "Pixel만으로는 **전환 데이터의 40~60%**가 누락됩니다...",
-    "tip": "실제로 CAPI를 도입한 자사몰사관학교 6기 수강생은 전환 추적 정확도를 92%까지 끌어올렸어요."
-  },
-  "keypoint": [
-    {"title": "Pixel + CAPI 동시 설치", "desc": "서버 + 브라우저 양쪽에서..."},
-    ...
-  ],
-  ...
-}
-```
-- **자동 재시도 로직 (최대 3번)**:
+### validateBannerKeys (L625-647)
 ```ts
-for (let attempt = 1; attempt <= 3; attempt++) {
-  const result = await ksGenerate({ ... });
-  const parsed = parseAndValidate(result.content, contentType);
-  if (parsed.success) return parsed.data;
-  // 실패 시: 에러 메시지를 포함해서 재호출
-  retryPrompt = `이전 응답이 형식 오류입니다: ${parsed.errors.join(', ')}. 다시 작성해주세요.`;
-}
-// 3번 다 실패 → fallback (텍스트 블록) + 경고
+// webinar expected가 잘못됨 (INSIGHT/KEY POINT/CHECKLIST 포함):
+const expectedByType = {
+  education: ["INSIGHT", "KEY POINT", "CHECKLIST"],
+  webinar: ["웨비나 일정", "INSIGHT", "KEY POINT", "CHECKLIST", "이런 분들을 위해"], // ← 수정 필요
+  case_study: ["성과", "INTERVIEW", "핵심 변화"],
+};
 ```
 
-### T4. buildDesignFromSummary → Custom Tool 기반 재구현
+### email-template-utils.ts 핵심 함수 체인
+```ts
+// 1. parseSummaryToSections(md) → {hookLine, sections[{key, content}]}
+// 2. sortSectionsByTemplate(sections, type) → TEMPLATE_KEY_ORDER 순서 정렬
+// 3. parseSectionFields(key, content) → SectionFields | null
+// 4. createSectionContentRows(key, sf) → Unlayer row[] (row-templates에서 import)
+// 5. fallback: createSectionRows(section) → 배너이미지 + markdownToEmailHtml
+// 6. buildDesignFromSummary(content) → 로고→히어로→섹션→프로필→CTA→푸터
 
-→ backend-dev · 의존: T0, T1, T2
-
-파일: `src/lib/email-template-utils.ts`
-
-- 파싱된 JSON → 템플릿별 Custom Tool row 순서로 Unlayer Design JSON 생성
-- 각 Custom Tool의 values에 파싱된 데이터 바인딩
-- 최종 구조:
+// markdownToEmailHtml: **bold** → <strong style="color:#F75D5D"> (구현됨)
+// 문제: createSectionContentRows 경로에서는 markdownToEmailHtml 안 타는 섹션 있음 → T3
 ```
-education:  logo → title → hook → intro → banner-insight + insight-section → banner-keypoint + numbered-cards → banner-checklist + checklist-section → closing → profile → cta → footer
-webinar:    logo → hero → intro → banner-preview + image-placeholder → banner-topics + numbered-cards → banner-targets + bullet-list → banner-schedule + schedule-table → nudge → profile → cta → footer
-case_study: logo → greeting → title → emotion-hook → background → student-quote → banner-results + ba-tables → banner-interview + interview-quotes → banner-changes + numbered-cards → cta → footer
-```
-- 기존 email_design_json 있는 콘텐츠 → 그대로 로드 (하위 호환)
-
-### T5. 공통 row + EmailEditor 설정
-
-→ frontend-dev · 의존: T1
-
-파일: `src/components/content/newsletter-edit-panel.tsx`, `src/lib/newsletter-row-templates.ts` (신규)
-
-- 공통 row JSON 정의 (logo, hero, title, hook, profile, cta, footer 등 13종)
-- EmailEditor에 `customJS` 옵션 추가 (Custom Tool 로드)
-- 에디터 설정: Custom Tool이 도구 패널에 표시되도록 등록
-- 탬플릿별 도구 필터링: education은 insight/keypoint/checklist만, webinar는 preview/topics/targets/schedule만 등
-
-### T6. 에러 핸들링 UI + 재시도 표시
-
-→ frontend-dev · 의존: T3, T4
-
-파일: `src/components/content/newsletter-edit-panel.tsx`
-
-- email_summary NULL → "AI 뉴스레터를 먼저 생성해주세요"
-- 재시도 진행 표시: "AI 형식 검증 중... (시도 2/3)"
-- 3번 실패 fallback → "형식 자동 수정 실패. 텍스트 블록으로 표시됩니다." 경고
-- "뉴스레터 재생성" → design_json 초기화 확인 다이얼로그
-- 배너키 검증 경고 → 에디터 상단 경고 배너
-
-### T7. Webpack 번들 + 배포 설정
-
-→ frontend-dev · 의존: T1
-
-파일: `webpack.newsletter-tools.config.js` (신규), `package.json`
-
-- Custom Tool 코드 번들 설정 (Webpack)
-- `unlayer.React` 외부 참조 (번들 크기 최소화)
-- `npm run build:newsletter-tools` 스크립트 추가
-- `public/newsletter-tools.js` 출력
-- Next.js 빌드와 통합 (빌드 시 자동 번들)
 
 ## 엣지 케이스
 
-| 상황 | 기대 동작 |
-|------|-----------|
-| AI가 JSON 대신 마크다운 출력 | 마크다운 파서 fallback → 텍스트 블록 |
-| AI가 필수 필드 누락 (예: keypoint 2개만) | Zod 검증 실패 → 재시도. 3번 실패 → fallback |
-| AI가 금지 배너키 생성 | validateBannerKeys 경고 + 해당 섹션 스킵 |
-| email_summary NULL | "AI 뉴스레터를 먼저 생성해주세요" + 에디터 비활성 |
-| 기존 email_design_json 있음 | 그대로 로드 (하위 호환) |
-| AI 재생성 후 | email_design_json = null → 새 빌드 |
-| Custom Tool JS 로드 실패 | 기존 text 블록 fallback + 콘솔 경고 |
-| 같은 배너키 중복 | 첫 번째만 사용, 나머지 무시 |
-| 빈 필드 값 | placeholder 기본값 표시 |
+| # | 시나리오 | 입력 | 기대 결과 |
+|---|---------|------|----------|
+| E1 | AI가 배너키 잘못 생성 | webinar인데 "INSIGHT" 생성 | validateBannerKeys 경고, fallback 텍스트 블록 |
+| E2 | INTERVIEW 섹션 AI 미생성 | case_study인데 INTERVIEW 누락 | 프롬프트 필수 지시로 해결, 배너키 존재 확인 |
+| E3 | email_summary 빈 문자열 | body_md 짧거나 AI 실패 | hookLine="", sections=[], 로고+CTA만 표시 |
+| E4 | 중첩 볼드 마크다운 | `**A**와 **B**가 중요` | 두 키워드 모두 빨간 볼드 변환 |
+| E5 | 테이블 셀 특수문자 | `ROAS 1.8→3.1` (→ 포함) | 파서 정상, 렌더링 OK |
 
-## 제약
+## 검증 기준
 
-- **레이아웃 = email-samples-v7.html 100%**: Custom Tool viewer/exporter가 이 디자인 그대로
-- 기존 email_design_json 하위 호환 필수
-- BANNER_MAP 키 매핑 유지, 배너 이미지 URL 동일
-- Custom Tool은 `unlayer.React` 재사용 (별도 React 번들 X)
-- markdownToEmailHtml() 유지 (fallback용)
+### Template A 체크리스트
+- [ ] 제목 아래 빨간 후킹 인용문
+- [ ] INSIGHT: 소제목 + 본문 + 노란 💡 팁 박스(사례+수치)
+- [ ] KEY POINT: 빨간 원형 번호(01/02/03) + 볼드 제목 + 설명
+- [ ] CHECKLIST: 빨간 원형 체크 아이콘 + 질문형 항목 + 구분선
+- [ ] `**키워드**` → 빨간 볼드 렌더링 (마크다운 노출 X)
+- [ ] 마무리 긴급성 수치 문구
+- [ ] 프로필 카드 + CTA(빨간) + 푸터
 
-## 검증
+### Template B 체크리스트
+- [ ] 히어로 배너: "LIVE 무료 웨비나" 뱃지 + 제목 + 부제목
+- [ ] 강의 미리보기: 플레이 버튼 이미지
+- [ ] 핵심 주제: 빨간 원형 번호(01/02/03) + 제목 + 설명 (INSIGHT 배너 아님!)
+- [ ] 이런 분들: 빨간 불릿 + 페르소나
+- [ ] 웨비나 일정: 이모지 + 구조화 테이블 + 빨간 볼드(일시/참가비)
+- [ ] CTA: "지금 신청하기 →" (빨간)
 
-- [ ] npm run build 성공
-- [ ] npm run build:newsletter-tools 성공 (Custom Tool 번들)
-- [ ] education → INSIGHT(소제목+본문+팁박스) + KEY POINT(카드3) + CHECKLIST(✅5) 목업과 동일
-- [ ] webinar → 히어로 + 강의미리보기 + 핵심주제(카드3) + 이런분들(불릿4) + 일정(테이블4행) 목업과 동일
-- [ ] case_study → 인사말 + 감정후킹 + 성과(B/A 테이블2) + INTERVIEW(인용2) + 핵심변화(카드3) + CTA 목업과 동일
-- [ ] Unlayer 에디터에서 Custom Tool 필드 개별 편집 가능 (HTML 안 만져도 됨)
-- [ ] AI 형식 오류 시 자동 재시도 3번 동작 확인
-- [ ] 3번 실패 → 텍스트 블록 fallback + 경고 UI 표시
-- [ ] 기존 email_design_json 있는 콘텐츠 정상 로드
-- [ ] 테스트 발송 → Gmail에서 email-samples-v7.html과 동일 렌더링
-- [ ] 완료 보고서 HTML 작성 → `~/projects/mozzi-reports/public/reports/release/`에 저장
-- [ ] `node scripts/build-index.js` → `git add -A && git commit && git push origin main` (Vercel 자동배포)
+### Template C 체크리스트
+- [ ] 히어로 배너 없이 "안녕하세요 대표님" 인사말
+- [ ] 성과: Before/After 테이블 (After=빨간볼드)
+- [ ] INTERVIEW: 인용 박스 스타일 (좌측 빨간 보더)
+- [ ] 핵심 변화: 3개 Before→After (번호+제목+비교)
+- [ ] CTA: 초록 "성공사례 보러가기 →" (#22C55E)
+
+### 공통
+- [ ] `npm run build` 성공
+- [ ] 마크다운 그대로 노출 없음
+- [ ] 모바일 뷰 깨지지 않음
+- [ ] email-samples-v7.html 목업과 시각적 일치
+
+## 레퍼런스
+- `newsletter-reference/email-samples-v7.html` — 3종 목업 (필수)
+- `newsletter-reference/newsletter-design-spec-v5.pdf` — 디자인 스펙
+- `newsletter-reference/template-a-education.png` — Gmail 실제 렌더링 (교육)
+- `newsletter-reference/template-b-webinar.png` — Gmail 실제 렌더링 (웨비나)
+- `newsletter-reference/template-c-casestudy.pdf` — 고객사례 참고
+
+## 완료 보고
+- mozzi-reports에 릴리즈 보고서 HTML 작성 + git push
+- 체크리스트 전항목 PASS 확인
+
+## 리뷰 결과
+Smith님 직접 QA 후 피드백: "기존의 템플릿처럼 쓰지 않았다. 문장구사, 정리 자체가 안되어 있다."
+→ 골드 스탠다드 3종(Gmail 스크린샷)과 비교 → AI 프롬프트 + 렌더링 동시 수정 지시.
+"100프로 완료될때까지 수정하고 커스텀 툴이 필요하면 재작하라고 해" — Smith님 승인 완료.
 
 ## 리뷰 보고서
-
-보고서 파일: mozzi-reports/public/reports/review/2026-02-17-newsletter-unlayer-template-v2.html
-리뷰 일시: 2026-02-17 17:15
-
-- HIGH 리스크 2건: T1(Unlayer Custom Tool 8종), T4(buildDesign 재구현)
-- MEDIUM 리스크 3건: T2(파서), T3(AI프롬프트+재시도), T5(에디터설정)
-- 핵심 결정: text+HTML 대신 Custom Tool 방향으로 전환 (Smith님 결정)
-- 자동 재시도 3번 추가 (Smith님 결정)
-- 프롬프트 JSON 형식 강제 + few-shot 예시 필수
+Smith님 직접 검수로 리뷰 대체 (Gmail 실제 렌더링 확인 + 골드 스탠다드 3종 비교).
+보고서 파일: mozzi-reports/public/reports/review/2026-02-17-newsletter-unlayer-template-v2.html (이전 라운드)
+이전 릴리즈 보고서: mozzi-reports/public/reports/release/2026-02-17-newsletter-custom-tool.html

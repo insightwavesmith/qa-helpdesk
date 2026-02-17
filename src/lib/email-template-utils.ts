@@ -32,9 +32,9 @@ const BANNER_MAP: Record<string, string> = {
 // AI가 영문/한글 어느 쪽이든 생성 가능하므로 동의어를 같은 위치에 배치
 const TEMPLATE_KEY_ORDER: Record<string, string[]> = {
   education: ["INSIGHT", "KEY POINT", "CHECKLIST"],
-  // webinar: 강의 미리보기/INSIGHT(앞) → 핵심 주제/KEY POINT(중간) → CHECKLIST → 이런 분들을 위해 → 웨비나 일정(뒤)
-  webinar: ["강의 미리보기", "INSIGHT", "핵심 주제", "KEY POINT", "CHECKLIST", "이런 분들을 위해", "웨비나 일정"],
-  notice: ["강의 미리보기", "INSIGHT", "핵심 주제", "KEY POINT", "CHECKLIST", "이런 분들을 위해", "웨비나 일정"],
+  // webinar: 강의 미리보기 → 핵심 주제 → 이런 분들을 위해 → 웨비나 일정
+  webinar: ["강의 미리보기", "핵심 주제", "이런 분들을 위해", "웨비나 일정"],
+  notice: ["강의 미리보기", "핵심 주제", "이런 분들을 위해", "웨비나 일정"],
   case_study: ["성과", "INTERVIEW", "핵심 변화"],
 };
 
@@ -633,8 +633,8 @@ export function validateBannerKeys(
 
   const expectedByType: Record<string, string[]> = {
     education: ["INSIGHT", "KEY POINT", "CHECKLIST"],
-    webinar: ["웨비나 일정", "INSIGHT", "KEY POINT", "CHECKLIST", "이런 분들을 위해"],
-    notice: ["웨비나 일정", "INSIGHT", "KEY POINT", "CHECKLIST", "이런 분들을 위해"],
+    webinar: ["강의 미리보기", "핵심 주제", "이런 분들을 위해", "웨비나 일정"],
+    notice: ["강의 미리보기", "핵심 주제", "이런 분들을 위해", "웨비나 일정"],
     case_study: ["성과", "INTERVIEW", "핵심 변화"],
   };
 
@@ -906,13 +906,14 @@ export function buildDesignFromSummary(content: Content): object {
     education: "전체 가이드 보기",
     notice: "지금 신청하기",
     webinar: "지금 신청하기",
-    case_study: "수강 후기 더보기",
+    case_study: "성공사례 보러가기",
   };
   const ctaText = ctaTexts[contentType] ?? "전체 가이드 보기";
+  const ctaColor = contentType === "case_study" ? "#22C55E" : "#F75D5D";
 
   rows.push(ROW_DIVIDER);
   rows.push(ROW_PROFILE);
-  rows.push(createCtaRow(ctaText, articleUrl));
+  rows.push(createCtaRow(ctaText, articleUrl, ctaColor));
   rows.push(createFarewellRow());
   rows.push(ROW_FOOTER);
 
