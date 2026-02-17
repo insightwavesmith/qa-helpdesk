@@ -3,7 +3,8 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { generateEmbedding } from "@/lib/gemini";
 import { generate as ksGenerate, type ConsumerType } from "@/lib/knowledge";
-import { validateBannerKeys } from "@/lib/email-template-utils";
+import { validateBannerKeys, parseSummaryToSections } from "@/lib/email-template-utils";
+import { parseAIResponse, convertJsonToEmailSummary } from "@/lib/newsletter-schemas";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -704,6 +705,46 @@ const BANNER_KEYS_BY_TYPE: Record<string, string> = {
 03. 제목 | Before→After 비교 설명`,
 };
 
+/** 3회 실패 폴백: 순서 기반 배너키 리매핑 */
+function fallbackRemapBannerKeys(rawText: string, contentType: string): string | null {
+  const expectedKeys: Record<string, string[]> = {
+    education: ["INSIGHT", "KEY POINT", "CHECKLIST"],
+    webinar: ["강의 미리보기", "핵심 주제", "이런 분들을 위해", "웨비나 일정"],
+    case_study: ["성과", "INTERVIEW", "핵심 변화"],
+  };
+
+  const keys = expectedKeys[contentType];
+  if (!keys) return null;
+
+  // JSON 코드블록이 있으면 유효한 JSON인지 확인 — 유효 JSON이면 마크다운 리매핑 불가
+  const jsonMatch = rawText.match(/```(?:json|JSON)?\s*\n?([\s\S]*?)```/i);
+  if (jsonMatch) {
+    try {
+      JSON.parse(jsonMatch[1].trim());
+      return null;
+    } catch {
+      // JSON 파싱 실패 → 아래에서 마크다운으로 시도
+    }
+  }
+
+  const parsed = parseSummaryToSections(rawText);
+  if (parsed.sections.length === 0) return null;
+
+  // 섹션을 순서대로 기대 배너키로 강제 교체
+  const remapped = parsed.sections.slice(0, keys.length).map((section, i) => ({
+    ...section,
+    key: keys[i],
+  }));
+
+  // 마크다운 재조립
+  const parts: string[] = [];
+  if (parsed.hookLine) parts.push(parsed.hookLine);
+  for (const section of remapped) {
+    parts.push(`### ${section.key}\n${section.content}`);
+  }
+  return parts.join("\n\n");
+}
+
 export async function generateEmailSummary(
   contentId: string
 ): Promise<
@@ -728,161 +769,268 @@ export async function generateEmailSummary(
   }
 
   const contentType = content.type || "education";
-  const bannerGuide = BANNER_KEYS_BY_TYPE[contentType] || BANNER_KEYS_BY_TYPE.education;
-
-  // template별 systemPromptOverride
+  // template별 systemPromptOverride (JSON 생성기)
   const systemPrompts: Record<string, string> = {
-    education: `당신은 자사몰사관학교의 뉴스레터 전문 작성자입니다.
+    education: `당신은 자사몰사관학교의 education 뉴스레터 JSON 생성기입니다.
+응답은 반드시 \`\`\`json으로 시작하고 \`\`\`으로 끝나는 하나의 코드블록이어야 합니다.
+JSON 앞뒤에 어떤 설명도 추가하지 마세요.
 
 ## 톤/스타일
 - ~해요 체, 코치 톤, 짧은 문장 위주
 - 구체적 수치, 비유 적극 사용
 - 핵심 키워드는 **볼드**로 강조
 
-## 구조 (반드시 이 순서):
-1. 후킹 인용문 1줄 (빨간색 감정 자극 — 예: "전환 추적이 안 되면, 메타 AI는 눈을 감고 광고하는 거예요.")
-2. 본문 서두: 문제 제기 → 수치("광고비 100만 원을 쓰는데 전환이 3건밖에") → "~때문이에요" 코치 톤
-3. ### INSIGHT: ## 소제목(질문형 "왜 X가 필요한가요?") + 핵심 개념 설명 + **키워드** 빨간볼드 + > 💡 실제 사례(수치 "42% 증가")
-4. ### KEY POINT: 정확히 3개, "= 등호" 패턴 제목 ("Pixel 베이스 코드 = 모든 페이지에 설치") + 1-2줄 실전 설명
-5. ### CHECKLIST: 5개 질문형 ("~있나요?", "~하나요?")
-6. 마무리 텍스트는 마지막 ### 섹션의 내용 바로 뒤에 빈 줄 하나 두고 작성하세요.
-### 헤딩 없이 일반 텍스트로 작성합니다. 긴급성 수치("하나라도 빠졌다면, 지금 광고비의 30%가 허공에 사라지고 있는 거예요.")
+## JSON 스키마
+{
+  "hook": "감정 자극 후킹 한 줄 (빨간색 인용문 스타일)",
+  "intro": "문제 제기 + 수치 기반 도입부 2-3문장, ~해요 체",
+  "insight": {
+    "subtitle": "질문형 소제목 (왜 X가 필요한가요?)",
+    "body": "핵심 개념 설명, **강조키워드** 포함",
+    "tipBox": "실제 사례 + 구체적 수치 (💡 제외, 변환 시 자동 추가)"
+  },
+  "keyPoint": {
+    "items": [{ "title": "= 등호 패턴 제목", "desc": "1-2줄 실전 설명" }] // 2-4개
+  },
+  "checklist": {
+    "items": ["질문형 체크항목 (~있나요?, ~하나요?)"] // 3-7개
+  },
+  "closing": "긴급성 수치 포함 마감 텍스트"
+}
 
-## 배너키 규칙
-- 반드시 지정된 배너키만 ### 헤딩으로 사용
-- 지정 외 ### 헤딩 생성 시 실패`,
-    webinar: `## 중요: 당신은 웨비나 뉴스레터만 작성합니다.
-다음 4개 배너키만 ### 헤딩으로 사용하세요: 강의 미리보기, 핵심 주제, 이런 분들을 위해, 웨비나 일정.
-이 4개 외에 다른 ### 헤딩은 어떤 것이든 절대 생성하지 마세요. 영문 ### 헤딩도 금지입니다.
+## 예시
+\`\`\`json
+{
+  "hook": "전환 추적이 안 되면, 메타 AI는 눈을 감고 광고하는 거예요.",
+  "intro": "광고비 100만 원을 쓰는데 전환이 3건밖에 안 잡힌다면, 그건 광고의 문제가 아니라 **전환 추적**의 문제예요. 데이터 없이는 최적화도 없어요.",
+  "insight": {
+    "subtitle": "왜 전환 추적이 필요한가요?",
+    "body": "메타 광고의 핵심은 **픽셀 데이터**예요. 전환 추적 없이는 AI 최적화가 작동하지 않아요. 쉽게 말해, **네비게이션 없이 운전하는 것**과 같아요.",
+    "tipBox": "전환 추적 설정 후 평균 전환율 42% 증가 (자사몰사관학교 수강생 평균)"
+  },
+  "keyPoint": {
+    "items": [
+      { "title": "Pixel 베이스 코드 = 모든 페이지에 설치", "desc": "홈, 상품, 결제 완료까지 빠짐없이 심어야 AI가 학습해요." },
+      { "title": "맞춤 전환 = 구매 완료에 설정", "desc": "장바구니가 아닌 결제 완료를 기준으로 설정해야 ROAS가 정확해요." },
+      { "title": "전환 API = 서버 레벨 추적", "desc": "iOS 14.5 이후 브라우저 추적의 한계를 서버 연동으로 보완해요." }
+    ]
+  },
+  "checklist": {
+    "items": [
+      "메타 픽셀이 모든 페이지에 설치되어 있나요?",
+      "맞춤 전환이 구매 완료로 설정되어 있나요?",
+      "전환 API가 연동되어 있나요?",
+      "이벤트 테스트 도구로 확인해 보셨나요?",
+      "최근 7일간 전환 데이터가 정상 수집되고 있나요?"
+    ]
+  },
+  "closing": "하나라도 빠졌다면, 지금 광고비의 30%가 허공에 사라지고 있는 거예요."
+}
+\`\`\``,
+    webinar: `당신은 자사몰사관학교의 웨비나 뉴스레터 JSON 생성기입니다.
+응답은 반드시 \`\`\`json으로 시작하고 \`\`\`으로 끝나는 하나의 코드블록이어야 합니다.
+JSON 앞뒤에 어떤 설명도 추가하지 마세요.
 
 ## 톤/스타일
 - ~해요 체, 공감→솔루션→권위 구조
 - 짧은 문장, 구체적 수치로 설득
 - 핵심 키워드는 **볼드**로 강조
 
-## 구조 (반드시 이 순서):
-1. 후킹: 고객 통점 질문 ("열심히 하는데 왜 성과가 안 나올까?")
-2. 본문: 2-3줄 공감 → **"정확하게"**가 핵심 → 누적 매출 수치로 권위
-3. ### 강의 미리보기: 강의 슬라이드 미리보기 + 태그(예: 메타 마케팅 · 콘텐츠 제작 · 데이터 분석 슬라이드)
-4. ### 핵심 주제: 정확히 3개, 구체적 방법론 제목 + 실전 설명
-5. ### 이런 분들을 위해: 4개, "~하신 대표님", "~없는 분" 페르소나 형식, 키워드 **볼드**
-6. ### 웨비나 일정: 마크다운 테이블 형식으로 4행 (📅 일시 | **날짜시간**, 🔴 형식 | 실시간 온라인 **웨비나**, 👍 참가비 | **무료**, 🔗 참여 | 안내)
-7. 마무리 텍스트는 마지막 ### 섹션의 내용 바로 뒤에 빈 줄 하나 두고 작성하세요.
-### 헤딩 없이 일반 텍스트로 작성합니다. ("정원이 마감되기 전에 신청하세요" + "실전 인사이트를 가져가실 수 있어요")
+## JSON 스키마
+{
+  "hook": "고객 통점 질문 한 줄",
+  "intro": "공감 → 솔루션 → 권위(누적 매출 수치) 2-3문장, ~해요 체",
+  "lecturePreview": {
+    "tags": ["키워드1", "키워드2", "키워드3"]
+  },
+  "coreTopics": {
+    "items": [{ "title": "구체적 방법론 제목", "desc": "실전 설명" }]
+  },
+  "targetAudience": {
+    "items": ["~하신 대표님 / ~없는 분 페르소나, **키워드** 볼드"]
+  },
+  "schedule": {
+    "date": "날짜/시간 (볼드 미포함, 변환 시 자동 추가)",
+    "format": "형식 설명 (**웨비나** 볼드 포함 가능)",
+    "fee": "참가비 (볼드 미포함, 변환 시 자동 추가)",
+    "participation": "참여 안내"
+  },
+  "closing": "마감 긴급성 + 실전 인사이트 강조"
+}
 
-## 허용된 ### 헤딩 (이 4개만 사용):
-### 강의 미리보기 / ### 핵심 주제 / ### 이런 분들을 위해 / ### 웨비나 일정
-위 목록에 없는 ### 헤딩을 생성하면 실패로 간주됩니다.`,
-    case_study: `## 중요: 당신은 고객사례 뉴스레터만 작성합니다.
-다음 3개 배너키만 ### 헤딩으로 사용하세요: 성과, INTERVIEW, 핵심 변화.
-이 3개 외에 다른 ### 헤딩은 어떤 것이든 절대 생성하지 마세요. 영문 ### 헤딩도 이 3개만 허용됩니다.
+## 예시
+\`\`\`json
+{
+  "hook": "열심히 하는데 왜 성과가 안 나올까요?",
+  "intro": "매출이 정체된 건 노력이 부족해서가 아니에요. **정확하게** 해야 할 걸 모르기 때문이에요. 누적 매출 50억 원을 만든 실전 노하우를 공개합니다.",
+  "lecturePreview": {
+    "tags": ["메타 마케팅", "콘텐츠 제작", "데이터 분석"]
+  },
+  "coreTopics": {
+    "items": [
+      { "title": "메타 광고 3단계 퍼널 설계법", "desc": "인지→관심→구매로 이어지는 자동화 광고 구조를 만들어요." },
+      { "title": "전환율 2배 올리는 상세페이지 공식", "desc": "고객이 스크롤을 멈추는 3가지 요소를 배워요." },
+      { "title": "ROAS 300% 달성하는 리타겟팅 전략", "desc": "이탈 고객을 다시 데려오는 실전 세팅을 알려드려요." }
+    ]
+  },
+  "targetAudience": {
+    "items": [
+      "광고를 돌려봤지만 **ROAS가 100%**도 안 나오시는 대표님",
+      "상세페이지 전환율이 **1% 미만**이신 분",
+      "메타 광고 세팅을 **혼자서** 해보고 싶으신 대표님",
+      "매출 정체기를 **돌파**하고 싶으신 분"
+    ]
+  },
+  "schedule": {
+    "date": "2월 25일(화) 오후 8시",
+    "format": "실시간 온라인 **웨비나**",
+    "fee": "무료",
+    "participation": "사전 신청 후 Zoom 링크 발송"
+  },
+  "closing": "정원이 마감되기 전에 신청하세요. 현장에서 바로 적용할 수 있는 실전 인사이트를 가져가실 수 있어요."
+}
+\`\`\``,
+    case_study: `당신은 자사몰사관학교의 고객사례 뉴스레터 JSON 생성기입니다.
+응답은 반드시 \`\`\`json으로 시작하고 \`\`\`으로 끝나는 하나의 코드블록이어야 합니다.
+JSON 앞뒤에 어떤 설명도 추가하지 마세요.
 
 ## 톤/스타일
 - ~해요 체, 스토리텔링 + 수치 기반 설득
 - 수강생 직접 인용으로 생생함 부여
 - 핵심 수치는 **볼드**로 강조
 
-## 구조 (반드시 이 순서):
-1. 인사말: "안녕하세요 대표님, 자사몰사관학교입니다."
-2. 제목 소개 + 감정 후킹 ("광고를 끄면 매출이 사라지고, 켜면 적자가 나는 무한 루프였어요.")
-3. 배경: 짧은 before 스토리 (월 매출 X에서 올라가지 못한 브랜드)
-4. ### 성과: #### 소제목(자사몰 매출, 광고 효율 등) + Before/After 테이블(| 지표 | Before | After |)
-5. ### INTERVIEW: 수강생 직접 인용 2-3개 (> "인용문" + > — 수강생 X님), 구체적 방법 + 감정 포함. 이 섹션이 없으면 출력이 실패로 간주됩니다.
-6. ### 핵심 변화: 정확히 3개, 제목 + Before→After 비교 설명
-7. 마무리: "현장에서 바로 적용할 수 있는" 실전 강조
+## JSON 스키마
+{
+  "emotionHook": "감정 자극 한 줄 (고객의 Before 고통)",
+  "background": "짧은 before 스토리 2-3문장",
+  "studentQuote": "수강생 직접 인용 한 문장 (따옴표 미포함, 변환 시 자동 추가)",
+  "performance": {
+    "tables": [{
+      "title": "테이블 소제목 (자사몰 매출, 광고 효율 등)",
+      "rows": [{ "metric": "지표명", "before": "이전 수치", "after": "이후 수치 (볼드 미포함, 변환 시 자동 추가)" }]
+    }]
+  },
+  "interview": {
+    "quotes": [{ "text": "수강생 직접 인용 (따옴표 미포함)", "author": "수강생 X님" }]
+  },
+  "coreChanges": {
+    "items": [{ "title": "변화 제목", "desc": "Before→After 비교 설명" }]
+  }
+}
 
-## 허용된 ### 헤딩 (이 3개만 사용):
-### 성과 / ### INTERVIEW / ### 핵심 변화
-위 목록에 없는 ### 헤딩을 생성하면 실패로 간주됩니다.`,
+## 예시
+\`\`\`json
+{
+  "emotionHook": "광고를 끄면 매출이 사라지고, 켜면 적자가 나는 무한 루프였어요.",
+  "background": "월 매출 500만 원에서 더 이상 올라가지 못하던 브랜드. 광고비만 늘어나고 수익은 제자리걸음이었어요.",
+  "studentQuote": "처음엔 반신반의했는데, 2주 만에 ROAS가 3배가 됐어요. 이게 진짜 되는구나 싶었죠.",
+  "performance": {
+    "tables": [
+      {
+        "title": "자사몰 매출",
+        "rows": [
+          { "metric": "월 매출", "before": "500만 원", "after": "2,300만 원" },
+          { "metric": "전환율", "before": "0.8%", "after": "3.2%" }
+        ]
+      },
+      {
+        "title": "광고 효율",
+        "rows": [
+          { "metric": "ROAS", "before": "120%", "after": "380%" },
+          { "metric": "CPA", "before": "35,000원", "after": "12,000원" }
+        ]
+      }
+    ]
+  },
+  "interview": {
+    "quotes": [
+      { "text": "메타 광고 세팅을 처음부터 다시 배웠어요. 체계적으로 배우니까 광고비 낭비가 확 줄었어요.", "author": "수강생 A님" },
+      { "text": "상세페이지를 바꾸고 나서 전환율이 바로 올랐어요. 데이터를 보면서 수정하니까 확신이 생겼어요.", "author": "수강생 B님" }
+    ]
+  },
+  "coreChanges": {
+    "items": [
+      { "title": "광고 구조 전면 재설계", "desc": "무분별한 광고 → 3단계 퍼널 구조로 전환" },
+      { "title": "상세페이지 전환율 최적화", "desc": "평균 체류시간 30초 → 2분으로 4배 증가" },
+      { "title": "데이터 기반 의사결정 체계 구축", "desc": "감으로 하던 광고 → 주간 리포트 기반 운영으로 전환" }
+    ]
+  }
+}
+\`\`\``,
   };
   const systemPromptOverride = systemPrompts[contentType] || systemPrompts.education;
 
-  // 2. 타입별 허용 키 목록 (query에서 금지키를 언급하지 않기 위해)
-  const allowedKeysLabel: Record<string, string> = {
-    education: "INSIGHT, KEY POINT, CHECKLIST",
-    webinar: "강의 미리보기, 핵심 주제, 이런 분들을 위해, 웨비나 일정",
-    notice: "강의 미리보기, 핵심 주제, 이런 분들을 위해, 웨비나 일정",
-    case_study: "성과, INTERVIEW, 핵심 변화",
-  };
-  const allowedKeys = allowedKeysLabel[contentType] || allowedKeysLabel.education;
-
-  // 3. KS 호출 (limit:0 → RAG 검색 스킵, body_md를 컨텍스트로 직접 전달)
+  // 2. KS 호출 (limit:0 → RAG 검색 스킵, body_md를 컨텍스트로 직접 전달)
   const MAX_RETRIES = 3;
-  let lastEmailSummary = "";
-  let lastValidation: { valid: boolean; missing: string[]; forbidden: string[] } | null = null;
+  let lastRawResponse = "";
+  let lastParseError = "";
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      // 재시도 시 이전 실패 피드백을 query에 추가
+      // 재시도 시 이전 Zod 에러를 query에 포함
       let retryFeedback = "";
-      if (attempt > 1 && lastValidation) {
-        const parts: string[] = [];
-        if (lastValidation.forbidden.length > 0) {
-          parts.push(`금지된 ### 헤딩 발견: ${lastValidation.forbidden.join(", ")}. 이것들을 절대 사용하지 마세요.`);
-        }
-        if (lastValidation.missing.length > 0) {
-          parts.push(`누락된 ### 헤딩: ${lastValidation.missing.join(", ")}. 반드시 포함하세요.`);
-        }
-        retryFeedback = `\n\n## ⚠️ 이전 생성이 실패했습니다 (${attempt - 1}회차)\n${parts.join("\n")}\n이번에는 반드시 허용된 배너키만 사용하세요: ${allowedKeys}`;
+      if (attempt > 1 && lastParseError) {
+        retryFeedback = `\n\n## ⚠️ 이전 생성이 실패했습니다 (${attempt - 1}회차)\n${lastParseError}\n이번에는 반드시 올바른 JSON 구조로 응답해주세요.`;
       }
 
       const result = await ksGenerate({
-        query: `다음 본문을 기반으로 뉴스레터 이메일 요약을 작성해주세요.
+        query: `다음 본문을 기반으로 뉴스레터 이메일 요약을 JSON으로 생성해주세요.
 
 ## 본문
 ${content.body_md}
 
-## 작성 규칙
-- 800~1000자 분량
+## 규칙
 - ~해요 체 사용
-- 마크다운 형식 유지
-- 각 섹션은 ### 배너키 형식의 헤딩으로 시작
-
-## 허용된 ### 배너키 (이것만 사용, 다른 ### 헤딩 절대 금지)
-${allowedKeys}
-
-## 필수 포맷
-${bannerGuide}${retryFeedback}`,
+- 핵심 키워드는 **볼드**로 강조
+- 구체적 수치 적극 사용
+- 반드시 \`\`\`json 코드블록으로 출력${retryFeedback}`,
         consumerType: "newsletter",
         limit: 0,
         systemPromptOverride,
         contentId,
       });
 
-      const emailSummary = result.content.trim();
+      const rawResponse = result.content.trim();
 
-      if (!emailSummary) {
+      if (!rawResponse) {
         return { error: "AI가 뉴스레터를 생성하지 못했습니다." };
       }
 
-      // 배너키 검증
-      const validation = validateBannerKeys(emailSummary, contentType);
+      // JSON 파싱 + Zod 검증
+      const parseResult = parseAIResponse(rawResponse, contentType);
 
-      if (validation.valid) {
-        // 검증 통과 → DB 업데이트 후 반환
-        const { error: updateError } = await svc
-          .from("contents")
-          .update({
-            email_summary: emailSummary,
-            email_design_json: null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", contentId);
+      if (parseResult.success) {
+        // JSON → 마크다운 변환
+        const emailSummary = convertJsonToEmailSummary(parseResult.data, contentType);
 
-        if (updateError) {
-          return { error: updateError.message };
+        // 배너키 검증 (safety check)
+        const validation = validateBannerKeys(emailSummary, contentType);
+        if (validation.valid) {
+          const { error: updateError } = await svc
+            .from("contents")
+            .update({
+              email_summary: emailSummary,
+              email_design_json: null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", contentId);
+
+          if (updateError) {
+            return { error: updateError.message };
+          }
+
+          return { emailSummary };
         }
 
-        return { emailSummary };
+        // 변환 후 배너키 검증 실패 (이론적으로 불가능하지만 safety)
+        console.warn(`[generateEmailSummary] attempt ${attempt}/${MAX_RETRIES} 변환 후 배너키 검증 실패:`, validation);
+        lastParseError = `변환 후 배너키 검증 실패: missing=${validation.missing.join(",")}, forbidden=${validation.forbidden.join(",")}`;
+        lastRawResponse = rawResponse;
+      } else {
+        console.warn(`[generateEmailSummary] attempt ${attempt}/${MAX_RETRIES} JSON 파싱 실패:`, parseResult.error);
+        lastParseError = parseResult.error;
+        lastRawResponse = rawResponse;
       }
-
-      // 검증 실패 → 재시도 준비
-      console.warn(`[generateEmailSummary] attempt ${attempt}/${MAX_RETRIES} failed validation:`, {
-        missing: validation.missing,
-        forbidden: validation.forbidden,
-      });
-      lastEmailSummary = emailSummary;
-      lastValidation = validation;
 
     } catch (e) {
       console.error("generateEmailSummary error:", e);
@@ -893,24 +1041,51 @@ ${bannerGuide}${retryFeedback}`,
     }
   }
 
-  // MAX_RETRIES 소진 → 마지막 결과라도 저장 + 경고 반환
-  const { error: updateError } = await svc
-    .from("contents")
-    .update({
-      email_summary: lastEmailSummary,
-      email_design_json: null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", contentId);
+  // MAX_RETRIES 소진 → 폴백: 순서 기반 배너키 리매핑
+  if (lastRawResponse) {
+    const remapped = fallbackRemapBannerKeys(lastRawResponse, contentType);
+    if (remapped) {
+      const validation = validateBannerKeys(remapped, contentType);
+      const { error: updateError } = await svc
+        .from("contents")
+        .update({
+          email_summary: remapped,
+          email_design_json: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", contentId);
 
-  if (updateError) {
-    return { error: updateError.message };
+      if (updateError) {
+        return { error: updateError.message };
+      }
+
+      return {
+        emailSummary: remapped,
+        warnings: validation.valid ? undefined : { missing: validation.missing, forbidden: validation.forbidden },
+      };
+    }
+
+    // 리매핑도 실패 → 마지막 원본 저장
+    const { error: updateError } = await svc
+      .from("contents")
+      .update({
+        email_summary: lastRawResponse,
+        email_design_json: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", contentId);
+
+    if (updateError) {
+      return { error: updateError.message };
+    }
+
+    return {
+      emailSummary: lastRawResponse,
+      warnings: { missing: [], forbidden: [] },
+    };
   }
 
-  return {
-    emailSummary: lastEmailSummary,
-    warnings: lastValidation ? { missing: lastValidation.missing, forbidden: lastValidation.forbidden } : undefined,
-  };
+  return { error: "뉴스레터 생성 실패: 응답을 받지 못했습니다." };
 }
 
 export async function reviseContentWithAI(
