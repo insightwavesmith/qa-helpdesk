@@ -90,12 +90,26 @@ export default function ContentDetailPage() {
 
   const handleGenerateNewsletter = useCallback(async () => {
     if (!content) return;
+    // 재생성 시 기존 디자인 초기화 확인
+    if (content.email_summary) {
+      if (!confirm("기존 뉴스레터 디자인이 초기화됩니다. 계속하시겠습니까?")) return;
+    }
     setGeneratingNewsletter(true);
     try {
       const result = await generateEmailSummary(content.id);
       if ("error" in result) {
         toast.error(result.error);
         return;
+      }
+      // 배너키 검증 경고 표시
+      if ("warnings" in result && result.warnings) {
+        const { missing, forbidden } = result.warnings;
+        if (missing.length > 0) {
+          toast.warning(`누락된 배너키: ${missing.join(", ")}`);
+        }
+        if (forbidden.length > 0) {
+          toast.warning(`인식 불가 배너키: ${forbidden.join(", ")}`);
+        }
       }
       toast.success("뉴스레터가 생성되었습니다.");
       loadContent();

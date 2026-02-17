@@ -19,6 +19,214 @@ const BANNER_MAP: Record<string, string> = {
   "성과": "banner-results",
 };
 
+// ─── T1: parseSummaryToSections ───
+
+export interface SummarySection {
+  key: string;
+  content: string;
+}
+
+export interface ParsedSummary {
+  hookLine: string;
+  sections: SummarySection[];
+}
+
+/**
+ * email_summary 마크다운을 ### 배너키 기준으로 분리.
+ * 첫 번째 ### 이전 텍스트는 hookLine으로 반환.
+ * ### 없으면 전체를 단일 섹션으로 반환 (graceful degradation).
+ */
+export function parseSummaryToSections(md: string): ParsedSummary {
+  if (!md || !md.trim()) {
+    return { hookLine: "", sections: [] };
+  }
+
+  const parts = md.split(/^### /m);
+  const hookLine = parts[0].trim();
+
+  if (parts.length <= 1) {
+    return {
+      hookLine: "",
+      sections: [{ key: "", content: md.trim() }],
+    };
+  }
+
+  const sections: SummarySection[] = [];
+  for (let i = 1; i < parts.length; i++) {
+    const lines = parts[i].split("\n");
+    const key = lines[0].trim();
+    const content = lines.slice(1).join("\n").trim();
+    if (key) {
+      sections.push({ key, content });
+    }
+  }
+
+  return { hookLine, sections };
+}
+
+// ─── T2: createSectionRows ───
+
+/** 배너키 → slug 변환 (BANNER_MAP 값 기반, 없으면 lowercase 변환) */
+function slugify(key: string): string {
+  const matchedKey = Object.keys(BANNER_MAP)
+    .filter(k => key.includes(k))
+    .sort((a, b) => b.length - a.length)[0];
+  if (matchedKey) {
+    return BANNER_MAP[matchedKey].replace("banner-", "");
+  }
+  return key.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "unknown";
+}
+
+/** 배너 이미지 row (Unlayer image type) 또는 CSS gradient fallback (text type) */
+function createBannerImageRow(bannerKey: string, slug: string): object {
+  const matchedKey = Object.keys(BANNER_MAP)
+    .filter(key => bannerKey.includes(key))
+    .sort((a, b) => b.length - a.length)[0];
+  const bannerFile = matchedKey ? BANNER_MAP[matchedKey] : undefined;
+
+  if (bannerFile) {
+    return {
+      id: `row-banner-${slug}`,
+      cells: [1],
+      columns: [{
+        id: `col-banner-${slug}`,
+        contents: [{
+          id: `content-banner-${slug}`,
+          type: "image",
+          values: {
+            containerPadding: "24px 24px 0px",
+            anchor: "",
+            src: { url: `${BANNER_BASE_URL}/${bannerFile}.png`, width: 600, height: 120 },
+            textAlign: "center",
+            altText: bannerKey,
+            action: { name: "web", values: { href: "", target: "_blank" } },
+            hideDesktop: false,
+            displayCondition: null,
+            _meta: { htmlID: `u_content_banner_${slug}`, htmlClassNames: "u_content_image" },
+            selectable: true, draggable: true, duplicatable: true, deletable: true, hideable: true,
+            fullWidth: false,
+          },
+        }],
+        values: {
+          backgroundColor: "", padding: "0px", border: {}, borderRadius: "0px",
+          _meta: { htmlID: `u_column_banner_${slug}`, htmlClassNames: "u_column" },
+        },
+      }],
+      values: {
+        displayCondition: null, columns: false, backgroundColor: "#ffffff", columnsBackgroundColor: "",
+        backgroundImage: { url: "", fullWidth: true, repeat: "no-repeat", size: "custom", position: "center" },
+        padding: "0px", anchor: "", hideDesktop: false,
+        _meta: { htmlID: `u_row_banner_${slug}`, htmlClassNames: "u_row" },
+        selectable: true, draggable: true, duplicatable: true, deletable: true, hideable: true,
+      },
+    };
+  }
+
+  // CSS gradient fallback
+  return {
+    id: `row-banner-${slug}`,
+    cells: [1],
+    columns: [{
+      id: `col-banner-${slug}`,
+      contents: [{
+        id: `content-banner-${slug}`,
+        type: "text",
+        values: {
+          containerPadding: "24px 24px 0px", anchor: "", textAlign: "left", lineHeight: "140%",
+          linkStyle: { inherit: true, linkColor: "#0000ee", linkHoverColor: "#0000ee", linkUnderline: true, linkHoverUnderline: true },
+          hideDesktop: false, displayCondition: null,
+          _meta: { htmlID: `u_content_banner_${slug}`, htmlClassNames: "u_content_text" },
+          selectable: true, draggable: true, duplicatable: true, deletable: true, hideable: true,
+          text: `<div style="max-width:600px;height:80px;line-height:80px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);border-radius:4px 0 0 4px;"><span style="padding-left:32px;color:#fff;font-size:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${bannerKey}</span></div>`,
+        },
+      }],
+      values: {
+        backgroundColor: "", padding: "0px", border: {}, borderRadius: "0px",
+        _meta: { htmlID: `u_column_banner_${slug}`, htmlClassNames: "u_column" },
+      },
+    }],
+    values: {
+      displayCondition: null, columns: false, backgroundColor: "#ffffff", columnsBackgroundColor: "",
+      backgroundImage: { url: "", fullWidth: true, repeat: "no-repeat", size: "custom", position: "center" },
+      padding: "0px", anchor: "", hideDesktop: false,
+      _meta: { htmlID: `u_row_banner_${slug}`, htmlClassNames: "u_row" },
+      selectable: true, draggable: true, duplicatable: true, deletable: true, hideable: true,
+    },
+  };
+}
+
+/** 콘텐츠 텍스트 row (Unlayer text type) */
+function createContentTextRow(section: SummarySection, slug: string): object {
+  const html = section.content ? markdownToEmailHtml(section.content) : "";
+  return {
+    id: `row-content-${slug}`,
+    cells: [1],
+    columns: [{
+      id: `col-content-${slug}`,
+      contents: [{
+        id: `content-text-${slug}`,
+        type: "text",
+        values: {
+          containerPadding: "16px 24px", anchor: "", textAlign: "left", lineHeight: "180%",
+          linkStyle: { inherit: true, linkColor: "#F75D5D", linkHoverColor: "#E54949", linkUnderline: true, linkHoverUnderline: true },
+          hideDesktop: false, displayCondition: null,
+          _meta: { htmlID: `u_content_text_${slug}`, htmlClassNames: "u_content_text" },
+          selectable: true, draggable: true, duplicatable: true, deletable: true, hideable: true,
+          text: html,
+        },
+      }],
+      values: {
+        backgroundColor: "", padding: "0px", border: {}, borderRadius: "0px",
+        _meta: { htmlID: `u_column_content_${slug}`, htmlClassNames: "u_column" },
+      },
+    }],
+    values: {
+      displayCondition: null, columns: false, backgroundColor: "#ffffff", columnsBackgroundColor: "",
+      backgroundImage: { url: "", fullWidth: true, repeat: "no-repeat", size: "custom", position: "center" },
+      padding: "0px", anchor: "", hideDesktop: false,
+      _meta: { htmlID: `u_row_content_${slug}`, htmlClassNames: "u_row" },
+      selectable: true, draggable: true, duplicatable: true, deletable: true, hideable: true,
+    },
+  };
+}
+
+/** 하나의 섹션 → 배너 row + 콘텐츠 row (2개 독립 row) 반환 */
+function createSectionRows(section: SummarySection): object[] {
+  const slug = slugify(section.key);
+  const rows: object[] = [];
+  if (section.key) {
+    rows.push(createBannerImageRow(section.key, slug));
+  }
+  rows.push(createContentTextRow(section, slug));
+  return rows;
+}
+
+// ─── T4: validateBannerKeys ───
+
+/** email_summary의 배너키를 타입별 기대값과 비교 검증 */
+export function validateBannerKeys(
+  summary: string,
+  contentType: string
+): { valid: boolean; missing: string[]; forbidden: string[] } {
+  const keyMatches = summary.match(/^### (.+)/gm) || [];
+  const foundKeys = keyMatches.map(m => m.replace(/^### /, "").trim());
+
+  const expectedByType: Record<string, string[]> = {
+    education: ["INSIGHT", "KEY POINT", "CHECKLIST"],
+    webinar: ["웨비나 일정", "INSIGHT", "KEY POINT", "CHECKLIST", "이런 분들을 위해"],
+    notice: ["웨비나 일정", "INSIGHT", "KEY POINT", "CHECKLIST", "이런 분들을 위해"],
+    case_study: ["성과", "INTERVIEW", "핵심 변화"],
+  };
+
+  const expected = expectedByType[contentType] || expectedByType.education;
+  const bannerMapKeys = Object.keys(BANNER_MAP);
+
+  const missing = expected.filter(k => !foundKeys.some(f => f.includes(k)));
+  const forbidden = foundKeys.filter(k => !bannerMapKeys.some(mapKey => k.includes(mapKey)));
+
+  return { valid: missing.length === 0 && forbidden.length === 0, missing, forbidden };
+}
+
 /**
  * 마크다운 → 이메일 호환 HTML 변환
  * 지원: ##, ---, > 인용, > 💡 팁, ✅ 체크, - 불릿, | 테이블, **bold**, ![img], [link]
@@ -237,6 +445,8 @@ function findContentById(rows: any[], id: string): any | null {
 /** auto-generated 콘텐츠에서 제거할 placeholder row ID 목록 (모든 템플릿 공통) */
 const PLACEHOLDER_ROW_IDS = [
   "row-toc", "row-infographic", "row-quote", "row-bullet-list", "row-section-banner", "row-section-banner-2",
+  // 동적 row로 대체되는 본문 블록
+  "row-body-text-1", "row-body-text-2",
   // BUG-2: Template B 전용 (파서가 이미 렌더링하므로 중복 제거)
   "row-slide-preview", "row-program-list", "row-info-block", "row-cta-outline",
   // BUG-3: Template C 전용
@@ -306,23 +516,6 @@ export function buildDesignFromSummary(content: Content): object {
     hookQuote.values.text = `<p style="font-size: 16px; line-height: 160%; text-align: center;"><em><span style="color: #F75D5D; font-size: 16px; font-weight: 600;">${escapeHtml(firstLine)}</span></em></p>`;
   }
 
-  // 본문 블록 — email_summary를 HTML로 변환 (훅인용구가 있으면 첫 줄 제외)
-  const bodyText1 = findContentById(rows, "content-body-text-1");
-  if (bodyText1 && content.email_summary) {
-    let bodyMd = content.email_summary;
-    if (hookQuote) {
-      const idx = bodyMd.indexOf("\n\n");
-      bodyMd = idx !== -1 ? bodyMd.slice(idx + 2) : "";
-    }
-    bodyText1.values.text = bodyMd ? markdownToEmailHtml(bodyMd) : "";
-  }
-
-  // 본문 하단 블록 — 빈 문자열 (default 템플릿에만 존재)
-  const bodyText2 = findContentById(rows, "content-body-text-2");
-  if (bodyText2) {
-    bodyText2.values.text = "";
-  }
-
   // 히어로 블록 — Template B 웨비나 제목/부제목 삽입
   const heroBlock = findContentById(rows, "content-hero");
   if (heroBlock) {
@@ -345,6 +538,30 @@ export function buildDesignFromSummary(content: Content): object {
     };
     const ctaLabel = ctaTexts[content.type ?? ""] ?? "전체 가이드 보기";
     ctaButton.values.text = `<span style="font-size: 16px; line-height: 22.4px;"><strong>${ctaLabel} &rarr;</strong></span>`;
+  }
+
+  // ─── T3: 동적 섹션 row 생성 (배너키별 독립 row) ───
+  if (content.email_summary) {
+    const parsed = parseSummaryToSections(content.email_summary);
+    const dynamicRows: object[] = [];
+    for (const section of parsed.sections) {
+      dynamicRows.push(...createSectionRows(section));
+    }
+
+    const HEADER_IDS = new Set(["row-header", "row-hero", "row-title", "row-hook-quote"]);
+    const FOOTER_IDS = new Set(["row-profile", "row-cta", "row-closing", "row-cta-outline", "row-footer"]);
+
+    const headerRows: object[] = [];
+    const footerRows: object[] = [];
+    for (const row of template.body.rows as { id: string }[]) {
+      if (HEADER_IDS.has(row.id)) {
+        headerRows.push(row);
+      } else if (FOOTER_IDS.has(row.id)) {
+        footerRows.push(row);
+      }
+    }
+
+    template.body.rows = [...headerRows, ...dynamicRows, ...footerRows];
   }
 
   return template;

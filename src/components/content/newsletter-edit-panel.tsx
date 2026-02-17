@@ -18,8 +18,11 @@ import {
   TestTube,
   Save,
   Info,
+  AlertTriangle,
+  Mail,
 } from "lucide-react";
 import { updateContentEmailSentAt } from "@/actions/contents";
+import { validateBannerKeys } from "@/lib/email-template-utils";
 import { toast } from "sonner";
 import type { Content } from "@/types/content";
 import type { UnlayerEditorHandle } from "@/components/admin/unlayer-editor";
@@ -77,6 +80,11 @@ export default function NewsletterEditPanel({
 
   // 기존 email_summary만 있고 Unlayer 데이터 없는 경우 안내
   const hasLegacySummary = !content.email_design_json && !!content.email_summary;
+
+  // 배너키 검증 (email_summary가 있을 때만)
+  const bannerWarnings = content.email_summary
+    ? validateBannerKeys(content.email_summary, content.type ?? "education")
+    : null;
 
   useEffect(() => {
     fetch("/api/admin/email/recipients")
@@ -198,8 +206,39 @@ export default function NewsletterEditPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [target, emailSubject, content.id, onContentUpdate]);
 
+  // email_summary가 없으면 안내 메시지만 표시
+  if (!content.email_summary) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-gray-200 bg-gray-50 py-16">
+        <Mail className="size-8 text-gray-300" />
+        <p className="text-sm text-gray-500">
+          AI 뉴스레터를 먼저 생성해주세요.
+        </p>
+        <p className="text-xs text-gray-400">
+          위의 &quot;뉴스레터 생성&quot; 버튼을 클릭하면 본문 기반으로 자동 생성됩니다.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
+      {/* 배너키 검증 경고 */}
+      {bannerWarnings && !bannerWarnings.valid && (
+        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
+          <AlertTriangle className="size-4 text-red-500 mt-0.5 shrink-0" />
+          <div className="text-sm text-red-700">
+            <p className="font-medium">배너키 검증 경고</p>
+            {bannerWarnings.missing.length > 0 && (
+              <p>누락: {bannerWarnings.missing.join(", ")}</p>
+            )}
+            {bannerWarnings.forbidden.length > 0 && (
+              <p>인식 불가: {bannerWarnings.forbidden.join(", ")}</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 기존 텍스트 뉴스레터 안내 배너 */}
       {hasLegacySummary && (
         <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3">

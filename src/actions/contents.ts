@@ -3,6 +3,7 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { generateEmbedding } from "@/lib/gemini";
 import { generate as ksGenerate, type ConsumerType } from "@/lib/knowledge";
+import { validateBannerKeys } from "@/lib/email-template-utils";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -699,7 +700,10 @@ const BANNER_KEYS_BY_TYPE: Record<string, string> = {
 
 export async function generateEmailSummary(
   contentId: string
-): Promise<{ emailSummary: string } | { error: string }> {
+): Promise<
+  | { emailSummary: string; warnings?: { missing: string[]; forbidden: string[] } }
+  | { error: string }
+> {
   const svc = await requireAdmin();
 
   // 1. content 조회
@@ -756,14 +760,29 @@ ${bannerGuide}`,
       return { error: "AI가 뉴스레터를 생성하지 못했습니다." };
     }
 
-    // 3. DB 업데이트
+    // 3. 배너키 검증
+    const validation = validateBannerKeys(emailSummary, contentType);
+
+    // 4. DB 업데이트 (email_design_json = null로 초기화하여 새 summary 반영)
     const { error: updateError } = await svc
       .from("contents")
-      .update({ email_summary: emailSummary, updated_at: new Date().toISOString() })
+      .update({
+        email_summary: emailSummary,
+        email_design_json: null,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", contentId);
 
     if (updateError) {
       return { error: updateError.message };
+    }
+
+    // 금지/누락 배너키가 있어도 저장은 하되 경고 반환
+    if (!validation.valid) {
+      return {
+        emailSummary,
+        warnings: { missing: validation.missing, forbidden: validation.forbidden },
+      };
     }
 
     return { emailSummary };
