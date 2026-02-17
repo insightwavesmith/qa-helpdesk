@@ -1,5 +1,13 @@
 import { BS_CAMP_DEFAULT_TEMPLATE, BS_CAMP_TEMPLATE_A, BS_CAMP_TEMPLATE_B, BS_CAMP_TEMPLATE_C } from "@/lib/email-default-template";
 import type { Content } from "@/types/content";
+import { getSectionType, type SectionFields, type InsightFields, type NumberedCardsFields, type ChecklistFields, type BulletListFields, type ScheduleTableFields, type BATablesFields, type InterviewFields, type ImagePlaceholderFields } from "./newsletter-section-types";
+import {
+  ROW_LOGO, ROW_DIVIDER, ROW_PROFILE, ROW_FOOTER,
+  createHeroRow, createTitleRow, createHookRow,
+  createGreetingRow, createEmotionHookRow,
+  createCtaRow, createFarewellRow,
+  createSectionContentRows,
+} from "./newsletter-row-templates";
 
 const BANNER_BASE_URL = "https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners";
 
@@ -73,6 +81,371 @@ export function parseSummaryToSections(md: string): ParsedSummary {
   }
 
   return { hookLine, sections };
+}
+
+// ─── T2: parseSectionFields ───
+
+/**
+ * 배너키와 raw content 문자열을 받아서 구조화된 SectionFields를 반환.
+ * 파싱 실패 또는 빈 content → null (graceful degradation).
+ */
+export function parseSectionFields(bannerKey: string, content: string): SectionFields | null {
+  if (!content || !content.trim()) return null;
+
+  const sectionType = getSectionType(bannerKey);
+  if (!sectionType) return null;
+
+  switch (sectionType) {
+    case "insight":
+      return parseInsight(content);
+    case "numbered-cards":
+      return parseNumberedCards(content);
+    case "checklist":
+      return parseChecklist(content);
+    case "bullet-list":
+      return parseBulletListFields(content);
+    case "schedule-table":
+      return parseScheduleTable(content);
+    case "before-after-tables":
+      return parseBATables(content);
+    case "interview-quotes":
+      return parseInterview(content);
+    case "image-placeholder":
+      return parseImagePlaceholder(content);
+    default:
+      return null;
+  }
+}
+
+// ─── parseSectionFields 내부 파서 ───
+
+function parseInsight(content: string): SectionFields | null {
+  const lines = content.split("\n");
+  let subtitle = "";
+  const bodyLines: string[] = [];
+  let tip: string | undefined;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    // ## 소제목
+    if (trimmed.startsWith("## ")) {
+      subtitle = trimmed.replace(/^## /, "").trim();
+      continue;
+    }
+    // > 💡 ... 팁 블록 (> 제거, 💡 유지)
+    if (trimmed.startsWith(">") && trimmed.includes("💡")) {
+      tip = trimmed.replace(/^>\s*/, "").trim();
+      continue;
+    }
+    // 일반 > 인용도 팁으로 처리 (💡 없어도)
+    if (trimmed.startsWith(">") && !tip) {
+      tip = trimmed.replace(/^>\s*/, "").trim();
+      continue;
+    }
+    bodyLines.push(line);
+  }
+
+  const body = bodyLines.join("\n").trim();
+
+  // ## 없으면 첫 줄을 subtitle, 나머지를 body로
+  if (!subtitle && body) {
+    const allLines = body.split("\n");
+    subtitle = allLines[0].trim();
+    const restBody = allLines.slice(1).join("\n").trim();
+    const fields: InsightFields = { subtitle, body: restBody };
+    if (tip) fields.tip = tip;
+    return { type: "insight", fields };
+  }
+
+  if (!subtitle && !body) return null;
+
+  const fields: InsightFields = { subtitle, body };
+  if (tip) fields.tip = tip;
+  return { type: "insight", fields };
+}
+
+function parseNumberedCards(content: string): SectionFields | null {
+  const items: { title: string; desc: string }[] = [];
+  const lines = content.split("\n");
+
+  // 패턴1: `01. 제목 | 설명`
+  const pattern1 = /^\d{1,2}\.\s+(.+?)\s*\|\s*(.+)/;
+  // 패턴2: `✅ **제목** — 설명` (—, --, -) 구분
+  const pattern2 = /^✅\s*\*\*(.+?)\*\*\s*[—–\-]+\s*(.*)/;
+  // 패턴3 처리용: `**제목**` 단독 줄
+  const pattern3Title = /^\*\*(.+?)\*\*\s*$/;
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (!trimmed) continue;
+
+    // 패턴1
+    const m1 = trimmed.match(pattern1);
+    if (m1) {
+      items.push({ title: m1[1].trim(), desc: m1[2].trim() });
+      continue;
+    }
+
+    // 패턴2
+    const m2 = trimmed.match(pattern2);
+    if (m2) {
+      items.push({ title: m2[1].trim(), desc: m2[2]?.trim() || "" });
+      continue;
+    }
+
+    // 패턴3: **제목** 단독 줄 + 다음 줄이 설명
+    const m3 = trimmed.match(pattern3Title);
+    if (m3) {
+      const nextLine = (i + 1 < lines.length) ? lines[i + 1].trim() : "";
+      // 다음 줄이 비어있지 않고 패턴1/2/3이 아니면 설명으로 간주
+      if (nextLine && !pattern1.test(nextLine) && !pattern2.test(nextLine) && !pattern3Title.test(nextLine)) {
+        items.push({ title: m3[1].trim(), desc: nextLine });
+        i++; // 다음 줄 스킵
+      } else {
+        items.push({ title: m3[1].trim(), desc: "" });
+      }
+      continue;
+    }
+  }
+
+  if (items.length === 0) return null;
+
+  const fields: NumberedCardsFields = { items };
+  return { type: "numbered-cards", fields };
+}
+
+function parseChecklist(content: string): SectionFields | null {
+  const items: string[] = [];
+  const lines = content.split("\n");
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("✅")) {
+      const text = trimmed.replace(/^✅\s*/, "").trim();
+      if (text) items.push(text);
+    }
+  }
+
+  if (items.length === 0) return null;
+  const fields: ChecklistFields = { items };
+  return { type: "checklist", fields };
+}
+
+function parseBulletListFields(content: string): SectionFields | null {
+  const items: string[] = [];
+  const lines = content.split("\n");
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const match = trimmed.match(/^[\-•]\s+(.*)/);
+    if (match) {
+      const text = match[1].trim();
+      if (text) items.push(text);
+    }
+  }
+
+  if (items.length === 0) return null;
+  const fields: BulletListFields = { items };
+  return { type: "bullet-list", fields };
+}
+
+function parseScheduleTable(content: string): SectionFields | null {
+  const rows: { label: string; value: string }[] = [];
+  const lines = content.split("\n");
+
+  // 마크다운 테이블 형식: | 라벨 | 내용 |
+  const hasTable = lines.some(l => /^\|.+\|/.test(l.trim()));
+
+  if (hasTable) {
+    for (const line of lines) {
+      const trimmed = line.trim();
+      // 구분선 스킵
+      if (/^\|[-:\s|]+\|$/.test(trimmed)) continue;
+      // 헤더 행 스킵 (항목 | 내용 형태)
+      if (/^\|\s*항목\s*\|/.test(trimmed)) continue;
+
+      const cells = trimmed.split("|").map(c => c.trim()).filter(Boolean);
+      if (cells.length >= 2) {
+        rows.push({ label: cells[0], value: cells[1] });
+      }
+    }
+  } else {
+    // non-table fallback: 이모지 라벨: 내용
+    const emojiLinePattern = /^(.+?)[:：]\s*(.+)/;
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const match = trimmed.match(emojiLinePattern);
+      if (match) {
+        rows.push({ label: match[1].trim(), value: match[2].trim() });
+      }
+    }
+  }
+
+  if (rows.length === 0) return null;
+  const fields: ScheduleTableFields = { rows };
+  return { type: "schedule-table", fields };
+}
+
+function parseBATables(content: string): SectionFields | null {
+  const tables: { title: string; rows: { metric: string; before: string; after: string }[] }[] = [];
+  let currentTitle = "";
+  let currentRows: { metric: string; before: string; after: string }[] = [];
+  let inTable = false;
+
+  const lines = content.split("\n");
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // #### 소제목 → 새 테이블 시작
+    const titleMatch = trimmed.match(/^####\s+(.+)/);
+    if (titleMatch) {
+      // 이전 테이블 저장
+      if (currentTitle && currentRows.length > 0) {
+        tables.push({ title: currentTitle, rows: [...currentRows] });
+      }
+      currentTitle = titleMatch[1].trim();
+      currentRows = [];
+      inTable = false;
+      continue;
+    }
+
+    // 구분선 행 → 테이블 시작 마커
+    if (/^\|[-:\s|]+\|$/.test(trimmed)) {
+      inTable = true;
+      continue;
+    }
+
+    // 헤더 행 스킵 (지표 | Before | After)
+    if (/^\|\s*지표\s*\|/.test(trimmed)) {
+      continue;
+    }
+
+    // 테이블 데이터 행
+    if (inTable && /^\|.+\|/.test(trimmed)) {
+      const cells = trimmed.split("|").map(c => c.trim()).filter(Boolean);
+      if (cells.length >= 3) {
+        currentRows.push({
+          metric: cells[0],
+          before: cells[1],
+          after: cells[2],
+        });
+      }
+      continue;
+    }
+
+    // 테이블이 아닌 행이 나오면 테이블 종료
+    if (inTable && !trimmed.startsWith("|")) {
+      inTable = false;
+    }
+  }
+
+  // 마지막 테이블 저장
+  if (currentTitle && currentRows.length > 0) {
+    tables.push({ title: currentTitle, rows: currentRows });
+  }
+
+  // 제목 없이 테이블만 있는 경우 (fallback)
+  if (tables.length === 0 && currentRows.length > 0) {
+    tables.push({ title: "", rows: currentRows });
+  }
+
+  if (tables.length === 0) return null;
+  const fields: BATablesFields = { tables };
+  return { type: "before-after-tables", fields };
+}
+
+function parseInterview(content: string): SectionFields | null {
+  const quotes: { text: string; source: string }[] = [];
+  const lines = content.split("\n");
+
+  let currentQuoteLines: string[] = [];
+  let currentSource = "";
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    if (trimmed.startsWith(">")) {
+      const raw = trimmed.replace(/^>\s*/, "").trim();
+
+      // > — 출처 (소스 줄)
+      if (raw.match(/^[—–\-]+\s+/)) {
+        currentSource = raw.replace(/^[—–\-]+\s+/, "").trim();
+        // 현재 인용문이 있으면 저장
+        if (currentQuoteLines.length > 0) {
+          const text = currentQuoteLines.join(" ").replace(/^[""]|[""]$/g, "").trim();
+          quotes.push({ text, source: currentSource });
+          currentQuoteLines = [];
+          currentSource = "";
+        }
+        continue;
+      }
+
+      // > "인용문" — 출처 (한 줄에 모두)
+      const inlineMatch = raw.match(/^[""](.+?)[""][  ]*[—–\-]+\s*(.+)/);
+      if (inlineMatch) {
+        quotes.push({ text: inlineMatch[1].trim(), source: inlineMatch[2].trim() });
+        currentQuoteLines = [];
+        continue;
+      }
+
+      // 일반 인용 줄
+      currentQuoteLines.push(raw);
+    } else {
+      // > 블록 밖 — 이전 인용문 저장 (소스 없이)
+      if (currentQuoteLines.length > 0) {
+        const text = currentQuoteLines.join(" ").replace(/^[""]|[""]$/g, "").trim();
+        if (text) {
+          quotes.push({ text, source: currentSource });
+        }
+        currentQuoteLines = [];
+        currentSource = "";
+      }
+    }
+  }
+
+  // 마지막 인용문 저장
+  if (currentQuoteLines.length > 0) {
+    const text = currentQuoteLines.join(" ").replace(/^[""]|[""]$/g, "").trim();
+    if (text) {
+      quotes.push({ text, source: currentSource });
+    }
+  }
+
+  if (quotes.length === 0) return null;
+  const fields: InterviewFields = { quotes };
+  return { type: "interview-quotes", fields };
+}
+
+function parseImagePlaceholder(content: string): SectionFields | null {
+  const lines = content.split("\n").map(l => l.trim()).filter(Boolean);
+  if (lines.length === 0) return null;
+
+  let caption = "";
+  let tags: string | undefined;
+
+  for (const line of lines) {
+    // 태그 라인: · 구분자 포함
+    if (line.includes("·")) {
+      tags = line;
+      continue;
+    }
+    // 첫 번째 의미 있는 텍스트를 caption으로
+    if (!caption) {
+      caption = line;
+    }
+  }
+
+  // caption이 없으면 첫 줄 사용
+  if (!caption && lines.length > 0) {
+    caption = lines[0];
+  }
+
+  if (!caption) return null;
+  const fields: ImagePlaceholderFields = { caption };
+  if (tags) fields.tags = tags;
+  return { type: "image-placeholder", fields };
 }
 
 /**
@@ -474,144 +847,76 @@ function parseBulletList(lines: string[]): string {
 }
 
 /**
- * content의 id로 템플릿 내 블록을 찾아 교체하는 헬퍼.
- * rows → columns → contents 순회하며 id 매칭.
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function findContentById(rows: any[], id: string): any | null {
-  for (const row of rows) {
-    for (const col of row.columns || []) {
-      for (const content of col.contents || []) {
-        if (content.id === id) return content;
-      }
-    }
-  }
-  return null;
-}
-
-/** auto-generated 콘텐츠에서 제거할 placeholder row ID 목록 (모든 템플릿 공통) */
-const PLACEHOLDER_ROW_IDS = [
-  "row-toc", "row-infographic", "row-quote", "row-bullet-list", "row-section-banner", "row-section-banner-2",
-  // 동적 row로 대체되는 본문 블록
-  "row-body-text-1", "row-body-text-2",
-  // BUG-2: Template B 전용 (파서가 이미 렌더링하므로 중복 제거)
-  "row-slide-preview", "row-program-list", "row-info-block", "row-cta-outline",
-  // BUG-3: Template C 전용
-  "row-student-profile", "row-ba-card",
-];
-
-/**
  * email_summary만 있고 email_design_json이 없는 기존 콘텐츠에 대해
  * 타입별 템플릿을 기반으로 Unlayer 디자인 JSON을 생성한다.
+ * T3: 고정 Row 템플릿 기반 재구현 (parseSectionFields → createSectionContentRows 파이프라인)
  */
 export function buildDesignFromSummary(content: Content): object {
-  // 타입별 템플릿 선택
+  const contentType = content.type ?? "education";
+  const articleUrl = `https://qa-helpdesk.vercel.app/posts/${content.id}`;
+
+  // Base template shell (counters, body.values, schemaVersion 등)
   const baseTemplate =
-    content.type === "notice" || content.type === "webinar"
+    contentType === "notice" || contentType === "webinar"
       ? BS_CAMP_TEMPLATE_B
-      : content.type === "case_study"
+      : contentType === "case_study"
         ? BS_CAMP_TEMPLATE_C
-        : content.type === "education"
+        : contentType === "education"
           ? BS_CAMP_TEMPLATE_A
           : BS_CAMP_DEFAULT_TEMPLATE;
-
-  // deep copy
   const template = JSON.parse(JSON.stringify(baseTemplate));
 
-  // placeholder 행 제거 (auto-generated에서는 본문 블록에 전부 렌더링)
-  template.body.rows = template.body.rows.filter(
-    (row: { id: string }) => !PLACEHOLDER_ROW_IDS.includes(row.id)
-  );
+  // ─── 1. 파싱: email_summary → 섹션 분리 → 구조화된 필드 ───
+  const parsed = parseSummaryToSections(content.email_summary ?? "");
+  const sorted = sortSectionsByTemplate(parsed.sections, contentType);
 
-  // Template B(notice): hero가 제목을 표시하므로 중복 title/hook-quote 행 제거
-  // BUG-5: hero가 subtitle로 첫 줄을 이미 표시하므로 hook-quote 행도 제거
-  if (content.type === "notice") {
-    template.body.rows = template.body.rows.filter(
-      (row: { id: string }) => row.id !== "row-title" && row.id !== "row-hook-quote"
-    );
-  }
-
-  // BUG-2/3: row-closing은 Template B/C에서만 제거 (Default/A는 유지)
-  if (content.type === "notice" || content.type === "case_study") {
-    template.body.rows = template.body.rows.filter(
-      (row: { id: string }) => row.id !== "row-closing"
-    );
-  }
-
-  // BUG-6: 로고 아래 빨간 divider 제거 (모든 템플릿 공통)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for (const row of template.body.rows as any[]) {
-    for (const col of row.columns || []) {
-      col.contents = (col.contents || []).filter(
-        (c: { id: string }) => c.id !== "content-divider-header"
-      );
+  // ─── 2. 동적 섹션 row 생성 (새 파이프라인) ───
+  const sectionRows: object[] = [];
+  for (const section of sorted) {
+    const sf = parseSectionFields(section.key, section.content);
+    if (sf) {
+      sectionRows.push(...createSectionContentRows(section.key, sf));
+    } else if (section.key) {
+      // fallback: 기존 방식 (배너 이미지 + 마크다운→HTML 텍스트 블록)
+      sectionRows.push(...createSectionRows(section));
     }
   }
 
-  const rows = template.body.rows;
+  // ─── 3. 템플릿별 레이아웃 조립 ───
+  const rows: object[] = [ROW_LOGO];
 
-  // 제목 블록
-  const titleBlock = findContentById(rows, "content-title");
-  if (titleBlock) {
-    titleBlock.values.text = `<h1 style="font-size: 22px; line-height: 150%; text-align: center;"><strong><span style="color: #1a1a1a; font-size: 22px; line-height: 33px;">${escapeHtml(content.title)}</span></strong></h1>`;
+  if (contentType === "notice" || contentType === "webinar") {
+    // Webinar/Notice: hero (빨간 배경 + 제목 + 부제목)
+    rows.push(createHeroRow(content.title, parsed.hookLine));
+  } else if (contentType === "case_study") {
+    // Case Study: 인사말 + 감정 후킹
+    rows.push(createGreetingRow());
+    if (parsed.hookLine) rows.push(createEmotionHookRow(parsed.hookLine));
+  } else {
+    // Education (default): 제목 + 훅 인용구
+    rows.push(createTitleRow(content.title));
+    if (parsed.hookLine) rows.push(createHookRow(parsed.hookLine));
   }
 
-  // 훅 인용구 블록 — email_summary 첫 번째 줄 사용, 타입별 색상 적용
-  const hookQuote = findContentById(rows, "content-hook-quote");
-  if (hookQuote && content.email_summary) {
-    const firstLine = content.email_summary.split("\n\n")[0].trim();
-    hookQuote.values.text = `<p style="font-size: 16px; line-height: 160%; text-align: center;"><em><span style="color: #F75D5D; font-size: 16px; font-weight: 600;">${escapeHtml(firstLine)}</span></em></p>`;
-  }
+  // 동적 섹션
+  rows.push(...sectionRows);
 
-  // 히어로 블록 — Template B 웨비나 제목/부제목 삽입
-  const heroBlock = findContentById(rows, "content-hero");
-  if (heroBlock) {
-    const subtitle = content.email_summary ? escapeHtml(content.email_summary.split("\n\n")[0].trim()) : "";
-    heroBlock.values.text = `<p style="text-align: center;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">LIVE 무료 웨비나</span></p>\n<p style="color: #ffffff; font-size: 24px; font-weight: 800; text-align: center; line-height: 140%; margin-top: 12px;">${escapeHtml(content.title)}</p>\n<p style="color: rgba(255,255,255,0.8); font-size: 14px; text-align: center; margin-top: 4px;">${subtitle}</p>`;
-  }
+  // 푸터: 공통
+  const ctaTexts: Record<string, string> = {
+    education: "전체 가이드 보기",
+    notice: "지금 신청하기",
+    webinar: "지금 신청하기",
+    case_study: "수강 후기 더보기",
+  };
+  const ctaText = ctaTexts[contentType] ?? "전체 가이드 보기";
 
-  // CTA 버튼 — URL + 타입별 텍스트 설정
-  const ctaButton = findContentById(rows, "content-cta-button");
-  if (ctaButton) {
-    const articleUrl = `https://qa-helpdesk.vercel.app/posts/${content.id}`;
-    ctaButton.values.href = {
-      name: "web",
-      values: { href: articleUrl, target: "_blank" },
-    };
-    const ctaTexts: Record<string, string> = {
-      education: "전체 가이드 보기",
-      notice: "지금 신청하기",
-      case_study: "수강 후기 더보기",
-    };
-    const ctaLabel = ctaTexts[content.type ?? ""] ?? "전체 가이드 보기";
-    ctaButton.values.text = `<span style="font-size: 16px; line-height: 22.4px;"><strong>${ctaLabel} &rarr;</strong></span>`;
-  }
+  rows.push(ROW_DIVIDER);
+  rows.push(ROW_PROFILE);
+  rows.push(createCtaRow(ctaText, articleUrl));
+  rows.push(createFarewellRow());
+  rows.push(ROW_FOOTER);
 
-  // ─── T3: 동적 섹션 row 생성 (배너키별 독립 row, 템플릿 순서 강제) ───
-  if (content.email_summary) {
-    const parsed = parseSummaryToSections(content.email_summary);
-    const sorted = sortSectionsByTemplate(parsed.sections, content.type ?? "education");
-    const dynamicRows: object[] = [];
-    for (const section of sorted) {
-      dynamicRows.push(...createSectionRows(section));
-    }
-
-    const HEADER_IDS = new Set(["row-header", "row-hero", "row-title", "row-hook-quote"]);
-    const FOOTER_IDS = new Set(["row-profile", "row-cta", "row-closing", "row-cta-outline", "row-footer"]);
-
-    const headerRows: object[] = [];
-    const footerRows: object[] = [];
-    for (const row of template.body.rows as { id: string }[]) {
-      if (HEADER_IDS.has(row.id)) {
-        headerRows.push(row);
-      } else if (FOOTER_IDS.has(row.id)) {
-        footerRows.push(row);
-      }
-    }
-
-    template.body.rows = [...headerRows, ...dynamicRows, ...footerRows];
-  }
-
+  template.body.rows = rows;
   return template;
 }
 

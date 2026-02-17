@@ -72,11 +72,18 @@ export default function NewsletterEditPanel({
   const [editorReady, setEditorReady] = useState(false);
 
   // 기존 디자인 JSON이 있으면 로드, email_summary만 있으면 자동 주입, 없으면 기본 템플릿
-  const initialDesign = content.email_design_json
-    ? (content.email_design_json as object)
-    : content.email_summary
-      ? buildDesignFromSummary(content)
-      : defaultTemplate;
+  let initialDesign: object | null = defaultTemplate;
+  let designBuildFailed = false;
+  if (content.email_design_json) {
+    initialDesign = content.email_design_json as object;
+  } else if (content.email_summary) {
+    try {
+      initialDesign = buildDesignFromSummary(content);
+    } catch (e) {
+      console.error("뉴스레터 디자인 빌드 실패:", e);
+      designBuildFailed = true;
+    }
+  }
 
   // 기존 email_summary만 있고 Unlayer 데이터 없는 경우 안내
   const hasLegacySummary = !content.email_design_json && !!content.email_summary;
@@ -236,6 +243,16 @@ export default function NewsletterEditPanel({
               <p>인식 불가: {bannerWarnings.forbidden.join(", ")}</p>
             )}
           </div>
+        </div>
+      )}
+
+      {/* 디자인 빌드 실패 경고 */}
+      {designBuildFailed && (
+        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
+          <AlertTriangle className="size-4 text-red-500 mt-0.5 shrink-0" />
+          <p className="text-sm text-red-700">
+            뉴스레터 디자인 생성에 실패했습니다. 기본 템플릿이 로드되었습니다.
+          </p>
         </div>
       )}
 
