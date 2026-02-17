@@ -19,6 +19,17 @@ const BANNER_MAP: Record<string, string> = {
   "성과": "banner-results",
 };
 
+// ─── 템플릿별 배너키 순서 (Gmail 실제 발송 순서 기준) ───
+// partial match: 섹션 key.includes(orderKey) 방향으로 매칭
+// AI가 영문/한글 어느 쪽이든 생성 가능하므로 동의어를 같은 위치에 배치
+const TEMPLATE_KEY_ORDER: Record<string, string[]> = {
+  education: ["INSIGHT", "KEY POINT", "CHECKLIST"],
+  // webinar: 강의 미리보기/INSIGHT(앞) → 핵심 주제/KEY POINT(중간) → CHECKLIST → 이런 분들을 위해 → 웨비나 일정(뒤)
+  webinar: ["강의 미리보기", "INSIGHT", "핵심 주제", "KEY POINT", "CHECKLIST", "이런 분들을 위해", "웨비나 일정"],
+  notice: ["강의 미리보기", "INSIGHT", "핵심 주제", "KEY POINT", "CHECKLIST", "이런 분들을 위해", "웨비나 일정"],
+  case_study: ["성과", "INTERVIEW", "핵심 변화"],
+};
+
 // ─── T1: parseSummaryToSections ───
 
 export interface SummarySection {
@@ -62,6 +73,42 @@ export function parseSummaryToSections(md: string): ParsedSummary {
   }
 
   return { hookLine, sections };
+}
+
+/**
+ * 섹션을 TEMPLATE_KEY_ORDER에 정의된 순서로 정렬.
+ * - partial match: section.key.includes(orderKey) 방향
+ * - 매칭된 섹션은 정의된 순서, 매칭 안 된 섹션은 끝에 원래 순서대로 배치
+ * - contentType이 null/undefined이면 education 기본값 사용
+ */
+export function sortSectionsByTemplate(
+  sections: SummarySection[],
+  contentType: string
+): SummarySection[] {
+  if (sections.length === 0) return [];
+
+  const order = TEMPLATE_KEY_ORDER[contentType] ?? TEMPLATE_KEY_ORDER.education;
+
+  const matched: (SummarySection | null)[] = new Array(order.length).fill(null);
+  const unmatched: SummarySection[] = [];
+
+  for (const section of sections) {
+    // 순서 배열에서 첫 번째 매칭 위치를 찾되, 이미 점유된 슬롯은 건너뜀
+    let placed = false;
+    for (let i = 0; i < order.length; i++) {
+      if (matched[i] === null && section.key.includes(order[i])) {
+        matched[i] = section;
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      unmatched.push(section);
+    }
+  }
+
+  const sorted = matched.filter((s): s is SummarySection => s !== null);
+  return [...sorted, ...unmatched];
 }
 
 // ─── T2: createSectionRows ───
@@ -540,11 +587,12 @@ export function buildDesignFromSummary(content: Content): object {
     ctaButton.values.text = `<span style="font-size: 16px; line-height: 22.4px;"><strong>${ctaLabel} &rarr;</strong></span>`;
   }
 
-  // ─── T3: 동적 섹션 row 생성 (배너키별 독립 row) ───
+  // ─── T3: 동적 섹션 row 생성 (배너키별 독립 row, 템플릿 순서 강제) ───
   if (content.email_summary) {
     const parsed = parseSummaryToSections(content.email_summary);
+    const sorted = sortSectionsByTemplate(parsed.sections, content.type ?? "education");
     const dynamicRows: object[] = [];
-    for (const section of parsed.sections) {
+    for (const section of sorted) {
       dynamicRows.push(...createSectionRows(section));
     }
 

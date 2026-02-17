@@ -61,22 +61,8 @@
           },
           {
             "type": "command",
-            "command": "~/.claude/scripts/check-context.sh",
-            "timeout": 10
-          },
-          {
-            "type": "command",
             "command": "curl -s -X POST http://127.0.0.1:18789/hooks -H 'Authorization: Bearer mz-hook-Kx9mP4vR7nWqZj2026' -H 'Content-Type: application/json' -d '{\"event\":\"task-completed\",\"source\":\"agent-team\"}' || true",
             "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Users/smith/projects/qa-helpdesk/.claude/scripts/validate-features.sh"
           }
         ]
       }
@@ -87,11 +73,6 @@
           {
             "type": "command",
             "command": "echo '다음 미완료 태스크를 확인하고 작업을 계속하세요. 모든 태스크가 완료되었으면 팀 리더에게 보고하세요.' >&2; exit 2",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "curl -s -X POST http://127.0.0.1:18789/hooks -H 'Authorization: Bearer mz-hook-Kx9mP4vR7nWqZj2026' -H 'Content-Type: application/json' -d '{\"event\":\"teammate-idle\",\"source\":\"agent-team\"}' || true",
             "timeout": 5
           }
         ]

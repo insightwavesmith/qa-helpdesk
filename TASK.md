@@ -1,400 +1,120 @@
-# TASK: P2 — AI 수정 요청 + 비용 로깅
-
-> 2026-02-16 | v3.1 KnowledgeService P2
-> P0+P1a+P1b+T7 완료 기반. KS Consumer 활용 + 운영 도구.
+# TASK.md — 뉴스레터 배너키 순서 강제 (핫픽스)
+> 2026-02-17 | 동적 row 생성 시 템플릿별 배너키 순서가 AI 생성 순서에 의존하여 규칙 위반
 
 ## 목표
-
-1. **AI 수정 요청**: 콘텐츠 상세에서 본문/email_summary에 대해 Opus한테 수정 지시 → 수정본 반환 → 확인 후 저장
-2. **KS 비용 로깅**: KnowledgeService 호출마다 토큰 사용량 DB 기록 (월별 집계 가능)
-3. **MDXEditor 코드블록 지원**: codeBlockPlugin 미적용으로 코드블록 포함 콘텐츠 잘림 → 플러그인 추가
-4. **뉴스레터 탭 AI 수정**: AI 수정 패널이 정보공유 탭에만 존재 → 뉴스레터 탭에도 추가
-
-## 제약
-
-- KnowledgeService(`knowledge.ts`) 핵심 로직(generate 함수의 검색+생성 흐름) 변경 금지
-- `generateEmbedding()` 수정 금지
-- `email-renderer.ts`, `email-template-utils.ts` 수정 금지
-- 기존 API 라우트 시그니처 유지 (하위 호환)
-- Vercel `maxDuration: 300` (모찌가 이미 적용 완료)
-- 새 npm 패키지 추가 금지
-
-## 태스크
-
-### T1. AI 수정 요청 기능 → frontend-dev + backend-dev
-
-**파일:**
-- `src/components/content/ai-edit-panel.tsx` (신규 — AI 수정 요청 UI)
-- `src/app/(main)/admin/content/[id]/page.tsx` (수정 — AI 수정 패널 추가)
-- `src/actions/contents.ts` (수정 — reviseContentWithAI 액션 추가)
-
-**UI 위치:** 콘텐츠 상세 → 정보공유 탭 → PostEditPanel 위에 접이식 패널
-
-**UI 구조:**
-```
-[✨ AI 수정 요청] ← 접이식 토글 버튼
-┌─────────────────────────────────────────┐
-│ 대상: (●) 본문  (○) 이메일 요약          │
-│                                         │
-│ ┌─────────────────────────────────────┐ │
-│ │ 수정 지시 입력                       │ │
-│ │ (예: "도입부 더 강하게 써줘")         │ │
-│ │ (예: "배너키 INSIGHT, KEY POINT 넣어")│ │
-│ └─────────────────────────────────────┘ │
-│                                         │
-│           [수정 요청하기]                 │
-│                                         │
-│ ── 수정 결과 (diff 하이라이트) ──         │
-│ ┌─────────────────────────────────────┐ │
-│ │ 수정된 본문 미리보기 (마크다운)       │ │
-│ └─────────────────────────────────────┘ │
-│                                         │
-│     [적용하기]     [다시 요청]            │
-└─────────────────────────────────────────┘
-```
-
-**작업:**
-1. `ai-edit-panel.tsx`: 수정 대상 선택(본문/이메일요약) + textarea + 요청 버튼
-2. 요청 → `reviseContentWithAI` server action 호출
-3. 결과: 수정된 텍스트를 미리보기 영역에 표시
-4. "적용하기" → `updateContent()`로 DB 저장 + PostEditPanel 갱신
-5. "다시 요청" → textarea 유지한 채 재요청
-
-**Server Action (`reviseContentWithAI`):**
-```ts
-// src/actions/contents.ts에 추가
-export async function reviseContentWithAI(
-  contentId: string,
-  target: "body_md" | "email_summary",
-  instruction: string
-): Promise<{ revised: string } | { error: string }> {
-  await requireAdmin();
-  // 1. 현재 콘텐츠 조회
-  // 2. KS 호출: 기존 텍스트 + 수정 지시 → Opus가 수정본 생성
-  // 3. 수정본 반환 (DB 저장 안 함 — 사용자가 "적용" 눌러야 저장)
-}
-```
-
-**KS 호출 방식:**
-```ts
-const result = await generate({
-  query: `다음 텍스트를 수정해주세요.
-
-## 수정 지시
-${instruction}
-
-## 현재 텍스트
-${currentText}
-
-수정된 전체 텍스트만 출력하세요. 설명이나 주석 없이 텍스트만.`,
-  consumerType: target === "body_md" ? "education" : "newsletter",
-  systemPromptOverride: `당신은 자사몰사관학교의 콘텐츠 편집자입니다. 
-지시에 따라 텍스트를 수정하되, 원문의 핵심 내용과 구조는 유지하세요.
-마크다운 형식을 유지하세요.`,
-});
-```
-
-### T2. KS 비용 로깅 → backend-dev
-
-**파일:**
-- `src/lib/knowledge.ts` (수정 — generate 함수에 로깅 추가)
-- Supabase SQL (knowledge_usage 테이블 생성)
-
-**DB 테이블 `knowledge_usage` (신규):**
-```sql
-CREATE TABLE knowledge_usage (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  consumer_type text NOT NULL,
-  source_types text[] DEFAULT '{}',
-  input_tokens integer NOT NULL DEFAULT 0,
-  output_tokens integer NOT NULL DEFAULT 0,
-  total_tokens integer NOT NULL DEFAULT 0,
-  model text NOT NULL DEFAULT 'claude-opus-4-6',
-  question_id uuid REFERENCES questions(id) ON DELETE SET NULL,
-  content_id uuid REFERENCES contents(id) ON DELETE SET NULL,
-  duration_ms integer,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE INDEX idx_knowledge_usage_created ON knowledge_usage(created_at DESC);
-CREATE INDEX idx_knowledge_usage_consumer ON knowledge_usage(consumer_type);
-```
-
-**작업:**
-1. `generate()` 함수 시작에 `const startTime = Date.now()` 추가
-2. return 직전에 fire-and-forget INSERT (에러 무시 — `catch` 로 console.error만)
-3. `data.usage.input_tokens`, `data.usage.output_tokens` 분리 저장
-4. KnowledgeRequest에 `questionId?`, `contentId?` optional 필드 추가
-
-**로깅 삽입 위치 (L248, return 직전):**
-```ts
-// fire-and-forget: 로깅 실패해도 KS 응답은 정상 반환
-const supabase = createServiceClient();
-supabase.from("knowledge_usage").insert({
-  consumer_type: request.consumerType,
-  source_types: effectiveSourceTypes,
-  input_tokens: data.usage?.input_tokens || 0,
-  output_tokens: data.usage?.output_tokens || 0,
-  total_tokens: tokensUsed,
-  model: MODEL,
-  question_id: request.questionId || null,
-  content_id: request.contentId || null,
-  duration_ms: Date.now() - startTime,
-}).then(() => {}).catch(err => console.error("[KS] Usage log failed:", err));
-
-return { content, sourceRefs, tokensUsed, model: MODEL };
-```
-
-**KnowledgeRequest 확장:**
-```ts
-export interface KnowledgeRequest {
-  // ... 기존 필드 전부 유지
-  questionId?: string;  // QA Consumer에서 전달
-  contentId?: string;   // 콘텐츠 Consumer에서 전달
-}
-```
-
-## 현재 코드
-
-### `src/lib/knowledge.ts` — generate 함수 (L173~258)
-```ts
-export async function generate(
-  request: KnowledgeRequest
-): Promise<KnowledgeResponse> {
-  const config = CONSUMER_CONFIGS[request.consumerType];
-  const limit = request.limit ?? config.limit;
-  const threshold = request.threshold ?? config.threshold;
-  const tokenBudget = request.tokenBudget ?? config.tokenBudget;
-  const temperature = request.temperature ?? config.temperature;
-  const sourceTypes = request.sourceTypes ?? config.sourceTypes;
-  const systemPrompt = request.systemPromptOverride ?? config.systemPrompt;
-
-  // 1. 쿼리 임베딩
-  const embedding = await generateEmbedding(request.query);
-  // 2. 벡터 검색
-  const chunks = await searchChunks(embedding, { limit, threshold, sourceTypes });
-  // 3. 컨텍스트 조합
-  const combined = chunks.map(c => `[${c.lecture_name} - ${c.week}]\n${c.content}`).join("\n\n---\n\n");
-  const contextText = truncateToTokenBudget(combined, tokenBudget);
-  // 4. Anthropic API 호출 (Opus 4.6)
-  const response = await fetch("https://api.anthropic.com/v1/messages", { ... });
-  const data = await response.json();
-  const content: string = data.content?.[0]?.text || "";
-  const tokensUsed: number = (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0);
-  return { content, sourceRefs, tokensUsed, model: MODEL };
-}
-```
-
-### `src/actions/contents.ts` — generateContentWithAI (L651~700)
-```ts
-export async function generateContentWithAI(
-  topic: string, type: string = "education"
-): Promise<{ title: string; bodyMd: string; emailSummary: string } | { error: string }> {
-  await requireAdmin();
-  const typePrompt = TYPE_PROMPTS[type] || TYPE_PROMPTS.education;
-  const consumerType = CONTENT_TO_CONSUMER[type] || "education";
-  const result = await generate({ query, consumerType, systemPromptOverride: typePrompt.system });
-  // ---EMAIL_SUMMARY--- 구분자로 본문/요약 분리
-  return { title, bodyMd, emailSummary };
-}
-```
-
-### `src/components/content/post-edit-panel.tsx` (L1~40)
-```ts
-interface PostEditPanelProps {
-  contentId: string;
-  initialBodyMd: string;
-  status: string;
-  onSaved?: () => void;
-  onStatusChange?: () => void;
-}
-// MDXEditor WYSIWYG + 자동저장(5초) + 발행 버튼
-```
-
-### `src/app/(main)/admin/content/[id]/page.tsx` — 탭 구조
-```tsx
-<Tabs value={activeTab} onValueChange={setActiveTab}>
-  <TabsTrigger value="post">정보공유</TabsTrigger>
-  <TabsTrigger value="newsletter">뉴스레터</TabsTrigger>
-  <TabsTrigger value="settings">설정</TabsTrigger>
-  <TabsContent value="post">
-    <PostEditPanel ... />      ← 여기 위에 AI 수정 패널 추가
-    <DetailSidebar ... />
-  </TabsContent>
-  <TabsContent value="newsletter">
-    <NewsletterEditPanel ... />
-  </TabsContent>
-</Tabs>
-```
-
-### DB 현황
-```
-contents: body_md(text), email_summary(text), type(text), status(text)
-knowledge_usage: 없음 (T2에서 신규 생성)
-```
-
-## 엣지 케이스
-
-| # | 시나리오 | 입력 | 기대 동작 |
-|---|---------|------|----------|
-| 1 | 빈 수정 지시 | instruction="" | "수정 지시를 입력해주세요" 안내, 요청 차단 |
-| 2 | 매우 긴 본문 수정 | body_md 5000자+ | KS tokenBudget으로 자동 제한, 정상 처리 |
-| 3 | email_summary NULL 상태에서 수정 요청 | 대상=email_summary, 값 없음 | "이메일 요약이 없습니다. 먼저 생성해주세요" 안내 |
-| 4 | KS 타임아웃 (55초) | Opus 응답 지연 | "수정 요청 시간이 초과되었습니다. 다시 시도해주세요" 에러 표시 |
-| 5 | knowledge_usage INSERT 실패 | DB 연결 에러 | 로깅 실패해도 KS 응답 정상 반환 (fire-and-forget) |
-| 6 | "적용하기" 후 에디터 동기화 | 수정본 적용 | PostEditPanel의 MDXEditor 내용 갱신 + dirty 상태 리셋 |
-| 7 | 연속 수정 요청 | 첫 번째 결과 보기 전 재요청 | 버튼 disabled + 로딩 상태, 이전 요청 무시 |
-
-## 검증
-
-### T1 AI 수정 요청
-- [ ] `/admin/content/[id]` → 정보공유 탭 → "AI 수정 요청" 토글 열기
-- [ ] 대상 "본문" 선택 → 수정 지시 "도입부를 더 강하게 써줘" 입력 → "수정 요청하기" 클릭
-- [ ] 로딩 표시 → 수정된 본문 미리보기에 표시됨
-- [ ] "적용하기" 클릭 → PostEditPanel(MDXEditor)에 수정본 반영 + DB 저장됨
-- [ ] 대상 "이메일 요약" 선택 → "배너키 INSIGHT, KEY POINT 넣어서 다시 써줘" → 수정본에 ### INSIGHT 등 포함 확인
-- [ ] "다시 요청" → 같은 지시로 재요청 → 다른 수정본 반환
-- [ ] email_summary NULL일 때 → 안내 메시지 표시
-- [ ] `npm run build` 에러 0건
-
-### T2 비용 로깅
-- [ ] QA 질문 AI 답변 생성 → `knowledge_usage` 테이블에 1행 INSERT 확인
-- [ ] `consumer_type = 'qa'`, `input_tokens > 0`, `output_tokens > 0`, `duration_ms > 0` 확인
-- [ ] T1에서 AI 수정 요청 → `knowledge_usage`에 기록 확인
-- [ ] `SELECT consumer_type, SUM(total_tokens), COUNT(*) FROM knowledge_usage GROUP BY consumer_type` → 정상 집계
-- [ ] KS 호출 후 응답 속도에 로깅으로 인한 지연 없음 (fire-and-forget)
-- [ ] `npx tsc --noEmit` 에러 0건
-- [ ] `npm run build` 에러 0건
-
-## 리뷰 보고서
-
-보고서 파일: docs/review/2026-02-16-p2-ai-edit-logging.html (8,088 bytes)
-
-**리뷰 피드백 4건:**
-1. T1: RAG 컨텍스트 불필요 — 스타일 수정에 임베딩+벡터검색 낭비 → limit:0 또는 경량 함수 분리 검토
-2. T1: MDXEditor 동기화 — refreshContent()→prop 변경→useEffect 리셋 확인 필요
-3. T1: 55초 타임아웃 — 5000자+ 본문도 충분할 것으로 예상, 모니터링 후 조정
-4. T2: RLS 정책 — knowledge_usage에 ENABLE ROW LEVEL SECURITY 추가 권장
-
-### T3. MDXEditor codeBlockPlugin 추가 → frontend-dev
-
-**문제:** `mdx-editor-wrapper.tsx`에 `codeBlockPlugin`이 없어서 코드블록(``` ```)이 포함된 콘텐츠가 잘림.
-
-**파일:**
-- `src/components/content/mdx-editor-wrapper.tsx` (수정)
-
-**작업:**
-1. `@mdxeditor/editor`에서 `codeBlockPlugin` import 추가
-2. plugins 배열에 `codeBlockPlugin()` 추가
-3. 코드블록이 포함된 콘텐츠에서 전체 내용이 정상 렌더링되는지 확인
-
-**현재 코드 (plugins 배열):**
-```tsx
-plugins={[
-  headingsPlugin(),
-  listsPlugin(),
-  quotePlugin(),
-  thematicBreakPlugin(),
-  linkPlugin(),
-  linkDialogPlugin(),
-  imagePlugin({ imageUploadHandler }),
-  tablePlugin(),
-  markdownShortcutPlugin(),
-  toolbarPlugin({ ... }),
-]}
-```
-
-**수정 후:**
-```tsx
-import { ..., codeBlockPlugin } from "@mdxeditor/editor";
-
-plugins={[
-  headingsPlugin(),
-  listsPlugin(),
-  quotePlugin(),
-  thematicBreakPlugin(),
-  linkPlugin(),
-  linkDialogPlugin(),
-  imagePlugin({ imageUploadHandler }),
-  tablePlugin(),
-  codeBlockPlugin(),          // ← 추가
-  markdownShortcutPlugin(),
-  toolbarPlugin({ ... }),
-]}
-```
-
-### T4. 뉴스레터 탭 AI 수정 패널 추가 → frontend-dev
-
-**문제:** `AiEditPanel`이 "정보공유" 탭에만 있고, "뉴스레터" 탭에는 없음.
-
-**파일:**
-- `src/app/(main)/admin/content/[id]/page.tsx` (수정)
-
-**작업:**
-1. 뉴스레터 `TabsContent` 안에 `AiEditPanel` 추가
-2. 뉴스레터 탭에서는 대상이 `email_summary`만 필요할 수 있으므로, 기본 대상을 `email_summary`로 설정하는 prop 추가 검토
-3. `NewsletterEditPanel` 위에 배치
-
-**현재 코드:**
-```tsx
-<TabsContent value="newsletter" className="mt-4">
-  <NewsletterEditPanel
-    content={content}
-    onContentUpdate={refreshContent}
-  />
-</TabsContent>
-```
-
-**수정 후:**
-```tsx
-<TabsContent value="newsletter" className="mt-4">
-  <div className="space-y-4">
-    <AiEditPanel
-      contentId={content.id}
-      bodyMd={content.body_md}
-      emailSummary={content.email_summary}
-      onApplied={refreshContent}
-      defaultTarget="email_summary"
-    />
-    <NewsletterEditPanel
-      content={content}
-      onContentUpdate={refreshContent}
-    />
-  </div>
-</TabsContent>
-```
-
-**AiEditPanel 수정:**
-- `defaultTarget` prop 추가 (optional, 기본값 `"body_md"`)
-- `useState` 초기값을 `defaultTarget ?? "body_md"`로 변경
-
-### T5. Vercel maxDuration 300s 적용 (완료 — 모찌 직접)
-
-이미 적용 완료:
-- `src/app/(main)/questions/new/page.tsx`: maxDuration 60→300
-- `src/lib/knowledge.ts`: TIMEOUT_MS 55_000→280_000
-- `src/app/api/admin/content/summarize/route.ts`: maxDuration 300 추가
-
-## 추가 검증 (T3, T4)
-
-### T3 MDXEditor codeBlockPlugin
-- [ ] 코드블록이 포함된 콘텐츠 → 정보공유 탭 → 본문 전체 렌더링 확인 (잘리지 않음)
-- [ ] 코드블록 없는 기존 콘텐츠 → 기존과 동일하게 정상 동작
-- [ ] `npm run build` 에러 0건
-
-### T4 뉴스레터 AI 수정 패널
-- [ ] `/admin/content/[id]` → 뉴스레터 탭 → "AI 수정 요청" 토글 표시 확인
-- [ ] 기본 대상이 "이메일 요약"으로 선택되어 있음
-- [ ] 수정 지시 입력 → 수정 요청 → 결과 미리보기 → 적용 → NewsletterEditPanel 갱신
-- [ ] 정보공유 탭의 AiEditPanel도 기존과 동일 동작 (regression 없음)
-- [ ] `npm run build` 에러 0건
+- `buildDesignFromSummary`에서 템플릿별 배너키 순서를 하드코딩하여, AI가 어떤 순서로 email_summary를 생성하든 정해진 순서로 정렬
+- 3개 템플릿 모두 적용: education(A), webinar/notice(B), case_study(C)
 
 ## 레퍼런스
+- 기존 Gmail 뉴스레터 (Template B 웨비나): 강의 미리보기 → 핵심 주제 → 이런 분들을 위해 → 웨비나 일정
+- BANNER_MAP 키: email-template-utils.ts 상단
+- 리뷰 보고서(잘못된 순서 기록됨): mozzi-reports review/2026-02-17-newsletter-template-examples.html
 
-- v3.1 아키텍처: `~/.openclaw/workspace/projects/mozzi-reports/public/reports/2026-02-15-content-pipeline-v3.1.html`
-- KnowledgeService: `src/lib/knowledge.ts` (ConsumerType, CONSUMER_CONFIGS, generate)
-- 콘텐츠 액션: `src/actions/contents.ts` (generateContentWithAI, TYPE_PROMPTS)
-- PostEditPanel: `src/components/content/post-edit-panel.tsx` (MDXEditor + 자동저장)
-- NewsletterEditPanel: `src/components/content/newsletter-edit-panel.tsx` (Unlayer 에디터)
-- MDXEditorWrapper: `src/components/content/mdx-editor-wrapper.tsx` (플러그인 설정)
-- AiEditPanel: `src/components/content/ai-edit-panel.tsx` (AI 수정 요청 UI)
+## 현재 코드
+```ts
+// src/lib/email-template-utils.ts — buildDesignFromSummary() T3 섹션 (약 240행~)
+// 현재: parsed.sections 순서 그대로 dynamicRows 생성 → AI 생성 순서에 의존
+if (content.email_summary) {
+    const parsed = parseSummaryToSections(content.email_summary);
+    const dynamicRows: object[] = [];
+    for (const section of parsed.sections) {
+      dynamicRows.push(...createSectionRows(section));
+    }
+    // ... headerRows + dynamicRows + footerRows 조합
+}
+```
+
+```ts
+// BANNER_MAP 키 (현재)
+const BANNER_MAP: Record<string, string> = {
+  "INSIGHT": "banner-insight",
+  "INSIGHT 01": "banner-insight-01", "INSIGHT 02": "banner-insight-02", "INSIGHT 03": "banner-insight-03",
+  "KEY POINT": "banner-key-point",
+  "CHECKLIST": "banner-checklist",
+  "강의 미리보기": "banner-preview",
+  "핵심 주제": "banner-topics",
+  "이런 분들을 위해": "banner-target",
+  "웨비나 일정": "banner-schedule",
+  "INTERVIEW": "banner-interview",
+  "핵심 변화": "banner-change",
+  "성과": "banner-results",
+};
+```
+
+```ts
+// validateBannerKeys — 웨비나 기대 키 (현재, 참고용)
+const expectedByType: Record<string, string[]> = {
+    education: ["INSIGHT", "KEY POINT", "CHECKLIST"],
+    webinar: ["웨비나 일정", "INSIGHT", "KEY POINT", "CHECKLIST", "이런 분들을 위해"],
+    notice: ["웨비나 일정", "INSIGHT", "KEY POINT", "CHECKLIST", "이런 분들을 위해"],
+    case_study: ["성과", "INTERVIEW", "핵심 변화"],
+};
+```
+
+## 제약
+- `parseSummaryToSections`, `createSectionRows`, `createBannerImageRow` 함수는 수정하지 않는다 (정상 동작 중)
+- BANNER_MAP 자체는 수정하지 않는다
+- `markdownToEmailHtml` 함수는 수정하지 않는다
+- 배너키 매칭은 기존 `slugify`처럼 partial match (includes) 기반으로 한다
+
+## 태스크
+### T1. 템플릿별 배너키 순서 맵 정의 + 섹션 정렬 로직 → frontend-dev
+- 파일: `src/lib/email-template-utils.ts`
+- 의존: 없음
+- 완료 기준:
+  - [ ] `TEMPLATE_KEY_ORDER` 상수 추가 — 3개 템플릿별 배너키 순서 배열:
+    ```ts
+    // 순서 기준: 기존 Gmail 실제 발송 순서 (강의 미리보기→핵심 주제→이런 분들을 위해→웨비나 일정)
+    // AI가 영문 키를 생성할 수 있으므로 Korean+English 모두 포함, 같은 위치에 배치
+    const TEMPLATE_KEY_ORDER: Record<string, string[]> = {
+      education: ["INSIGHT", "KEY POINT", "CHECKLIST"],
+      webinar: ["강의 미리보기", "INSIGHT", "핵심 주제", "KEY POINT", "CHECKLIST", "이런 분들을 위해", "웨비나 일정"],
+      notice: ["강의 미리보기", "INSIGHT", "핵심 주제", "KEY POINT", "CHECKLIST", "이런 분들을 위해", "웨비나 일정"],
+      case_study: ["성과", "INTERVIEW", "핵심 변화"],
+    };
+    ```
+    - webinar: 강의 미리보기/INSIGHT(앞) → 핵심 주제/KEY POINT(중간) → CHECKLIST → 이런 분들을 위해 → 웨비나 일정(뒤) — 기존 Gmail 순서 기준
+    - AI가 "INSIGHT" 생성 시 "강의 미리보기" 위치에, "KEY POINT" 생성 시 "핵심 주제" 위치에 배치
+    - ⚠️ 리뷰 지적(R1): AI 프롬프트는 "웨비나 일정→INSIGHT→KEY POINT→CHECKLIST→이런 분들을 위해" 순서로 생성하지만, 이 핫픽스에서 정렬 강제하므로 AI 순서 무시됨
+  - [ ] `sortSectionsByTemplate(sections: SummarySection[], contentType: string): SummarySection[]` 함수 추가:
+    - TEMPLATE_KEY_ORDER에서 해당 타입의 순서 배열을 가져온다
+    - 각 섹션의 key를 순서 배열과 partial match (includes)로 매칭
+    - 매칭된 섹션은 정의된 순서대로, 매칭 안 된 섹션은 끝에 원래 순서대로 배치
+  - [ ] `buildDesignFromSummary` T3 섹션에서 `parsed.sections`를 `sortSectionsByTemplate`로 정렬 후 dynamicRows 생성:
+    ```ts
+    const sorted = sortSectionsByTemplate(parsed.sections, content.type ?? "education");
+    const dynamicRows: object[] = [];
+    for (const section of sorted) {
+      dynamicRows.push(...createSectionRows(section));
+    }
+    ```
+  - [ ] export: `sortSectionsByTemplate`을 export (테스트 가능성 확보)
+
+## 엣지 케이스
+| 상황 | 기대 동작 |
+|------|-----------|
+| AI가 "핵심 주제" 대신 "KEY POINT" 생성 | 같은 위치(2번째)에 배치 |
+| AI가 "웨비나 일정 안내" (BANNER_MAP: "웨비나 일정") 생성 | partial match로 마지막 위치에 배치 |
+| 순서 맵에 없는 배너키 (예: "INSIGHT 01") | 정렬된 섹션 뒤에 원래 순서대로 배치 |
+| content.type이 null/undefined | education 순서 기본값 사용 |
+| 섹션이 0개 | 빈 배열 반환, 에러 없음 |
+| AI가 순서 맵의 일부 키만 생성 | 있는 키만 정의된 순서로, 없는 키는 무시 |
+
+## 리뷰 보고서
+- 보고서 파일: mozzi-reports/public/reports/review/2026-02-17-banner-key-order-fix.html
+- 리뷰 일시: 2026-02-17 15:11
+- 변경 유형: 백엔드 구조
+- 피드백 요약:
+  - C1(CRITICAL): webinar 순서 맵에 INSIGHT, CHECKLIST 누락 → 반영함 (TEMPLATE_KEY_ORDER에 추가)
+  - C1 순서 제안(R1): 웨비나 일정을 맨 앞으로 → 미반영 (Gmail 레퍼런스 기준 웨비나 일정은 마지막)
+  - R2: notice를 education과 동일하게 → 미반영 (notice도 webinar와 같은 배너키 사용)
+  - R3(권장): partial match 방향 주석 → 반영 예정
+  - R4(장기): 3곳 배너키 정의 통합 → 이번 범위 밖, 후속 태스크로
+- 반영 여부: C1 핵심 지적(키 누락) 반영, 순서는 Gmail 레퍼런스 기준 유지
+
+## 검증
+☐ npm run build 성공
+☐ 기존 기능 안 깨짐 (parseSummaryToSections, createSectionRows 미수정)
+☐ 웨비나 콘텐츠: 뉴스레터 재생성 → Unlayer에서 배너 순서 확인 (강의 미리보기 or KEY POINT → 이런 분들을 위해 → 웨비나 일정)
+☐ 교육 콘텐츠: 뉴스레터 재생성 → INSIGHT → KEY POINT → CHECKLIST 순서
+☐ 고객사례 콘텐츠: 뉴스레터 재생성 → 성과 → INTERVIEW → 핵심 변화 순서
