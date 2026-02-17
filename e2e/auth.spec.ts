@@ -6,7 +6,7 @@ test.describe('인증', () => {
     await page.waitForLoadState('networkidle');
     
     // 로고 확인
-    await expect(page.getByText('자사몰사관학교')).toBeVisible();
+    await expect(page.getByText('자사몰사관학교', { exact: true })).toBeVisible();
     
     // 폼 요소 확인 - placeholder로도 확인
     await expect(page.locator('input[type="email"]')).toBeVisible();
@@ -33,7 +33,7 @@ test.describe('인증', () => {
     await page.goto('/signup');
     await page.waitForLoadState('networkidle');
     
-    await expect(page.getByText('회원가입')).toBeVisible();
+    await expect(page.getByRole('heading', { name: '회원가입' })).toBeVisible();
     await expect(page.getByText('수강생 정보를 입력해주세요')).toBeVisible();
   });
 

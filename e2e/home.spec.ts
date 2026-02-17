@@ -39,6 +39,6 @@ test.describe('홈 (로그인 후)', () => {
     await page.getByRole('link', { name: 'Q&A' }).click();
     
     await expect(page).toHaveURL(/\/questions/, { timeout: 10000 });
-    await expect(page.getByText('전체 질문')).toBeVisible();
+    await expect(page.getByRole('heading', { name: '질문 게시판' })).toBeVisible();
   });
 });

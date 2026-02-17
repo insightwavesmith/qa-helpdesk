@@ -17,16 +17,16 @@ test.describe('Q&A', () => {
     await page.waitForLoadState('networkidle');
     
     // 검색바 확인
-    await expect(page.getByPlaceholder('질문 검색하기')).toBeVisible();
-    
+    await expect(page.getByPlaceholder('질문 검색...')).toBeVisible();
+
     // 탭 확인 - 텍스트로 찾기
-    await expect(page.getByText('전체 질문')).toBeVisible();
-    await expect(page.getByText('내 질문')).toBeVisible();
-    
-    // 카테고리 섹션 확인
-    await expect(page.getByText('카테고리')).toBeVisible();
-    
-    // 플로팅 버튼 확인
+    await expect(page.getByRole('tab', { name: '전체' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: '내 질문' })).toBeVisible();
+
+    // 페이지 제목 확인
+    await expect(page.getByRole('heading', { name: '질문 게시판' })).toBeVisible();
+
+    // 새 질문 버튼 확인
     await expect(page.locator('a[href="/questions/new"]')).toBeVisible();
   });
 
