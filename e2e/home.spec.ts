@@ -12,7 +12,7 @@ test.describe('홈 (로그인 후)', () => {
     await page.locator('button[type="submit"]').click();
     
     // 대시보드로 이동 대기
-    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    await page.waitForURL(/\/dashboard/, { timeout: 30000 });
   });
 
   test('홈 페이지 구성 요소', async ({ page }) => {

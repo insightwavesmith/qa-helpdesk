@@ -9,7 +9,7 @@ export default defineConfig({
   reporter: 'html',
   
   use: {
-    baseURL: process.env.BASE_URL || 'https://bscamp.vercel.app',
+    baseURL: process.env.BASE_URL || 'https://qa-helpdesk.vercel.app',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },

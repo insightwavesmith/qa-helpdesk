@@ -28,7 +28,7 @@ jobs:
       - name: Run Playwright tests
         run: npx playwright test
         env:
-          BASE_URL: https://bscamp.vercel.app
+          BASE_URL: https://qa-helpdesk.vercel.app
       
       - uses: actions/upload-artifact@v4
         if: always()

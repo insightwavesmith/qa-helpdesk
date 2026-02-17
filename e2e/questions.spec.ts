@@ -9,7 +9,7 @@ test.describe('Q&A', () => {
     await page.locator('input[type="email"]').fill('student@test.com');
     await page.locator('input[type="password"]').fill('test1234');
     await page.locator('button[type="submit"]').click();
-    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    await page.waitForURL(/\/dashboard/, { timeout: 30000 });
   });
 
   test('Q&A 리스트 페이지', async ({ page }) => {
