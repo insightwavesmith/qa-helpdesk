@@ -631,24 +631,6 @@ const CONTENT_TO_CONSUMER: Record<string, ConsumerType> = {
   promo: "promo",
 };
 
-// emailSummaryGuide에 추가할 배너키 안내 (BANNER_MAP 키 13개)
-const BANNER_KEYS_GUIDE = `
-
-### 배너키 안내
-이메일 요약의 각 섹션에 아래 배너키를 ### 헤딩으로 사용하세요. 반드시 2~4개 이상 포함:
-INSIGHT, INSIGHT 01, INSIGHT 02, INSIGHT 03, KEY POINT, CHECKLIST, 강의 미리보기, 핵심 주제, 이런 분들을 위해, 웨비나 일정, INTERVIEW, 핵심 변화, 성과
-
-### 구조 예시
-### INSIGHT
-핵심 인사이트 내용...
-
-### KEY POINT
-핵심 포인트 내용...
-
-### CHECKLIST
-✅ 체크항목 1
-✅ 체크항목 2`;
-
 // 타입별 뉴스레터 배너키 필수 조합
 const BANNER_KEYS_BY_TYPE: Record<string, string> = {
   education: `필수 배너키 (반드시 아래 순서·포맷대로 ### 헤딩 사용, 이 목록 외 배너키 생성 금지):
@@ -769,7 +751,9 @@ export async function generateEmailSummary(
 ## 배너키 규칙
 - 반드시 지정된 배너키만 ### 헤딩으로 사용
 - 지정 외 ### 헤딩 생성 시 실패`,
-    webinar: `당신은 자사몰사관학교의 웨비나 홍보 뉴스레터 작성자입니다.
+    webinar: `## 중요: 당신은 웨비나 뉴스레터만 작성합니다.
+다음 4개 배너키만 ### 헤딩으로 사용하세요: 강의 미리보기, 핵심 주제, 이런 분들을 위해, 웨비나 일정.
+이 4개 외에 다른 ### 헤딩은 어떤 것이든 절대 생성하지 마세요. 영문 ### 헤딩도 금지입니다.
 
 ## 톤/스타일
 - ~해요 체, 공감→솔루션→권위 구조
@@ -786,11 +770,12 @@ export async function generateEmailSummary(
 7. 마무리 텍스트는 마지막 ### 섹션의 내용 바로 뒤에 빈 줄 하나 두고 작성하세요.
 ### 헤딩 없이 일반 텍스트로 작성합니다. ("정원이 마감되기 전에 신청하세요" + "실전 인사이트를 가져가실 수 있어요")
 
-## 배너키 규칙 (중요!)
-- 웨비나 전용 배너키: 강의 미리보기, 핵심 주제, 이런 분들을 위해, 웨비나 일정 — 이 4개만 사용
-- INSIGHT, KEY POINT, CHECKLIST는 교육용 배너키이므로 절대 사용 금지
-- 위 4개 배너키를 모두 빠짐없이 생성하세요`,
-    case_study: `당신은 자사몰사관학교의 성공사례 뉴스레터 작성자입니다.
+## 허용된 ### 헤딩 (이 4개만 사용):
+### 강의 미리보기 / ### 핵심 주제 / ### 이런 분들을 위해 / ### 웨비나 일정
+위 목록에 없는 ### 헤딩을 생성하면 실패로 간주됩니다.`,
+    case_study: `## 중요: 당신은 고객사례 뉴스레터만 작성합니다.
+다음 3개 배너키만 ### 헤딩으로 사용하세요: 성과, INTERVIEW, 핵심 변화.
+이 3개 외에 다른 ### 헤딩은 어떤 것이든 절대 생성하지 마세요. 영문 ### 헤딩도 이 3개만 허용됩니다.
 
 ## 톤/스타일
 - ~해요 체, 스토리텔링 + 수치 기반 설득
@@ -802,21 +787,47 @@ export async function generateEmailSummary(
 2. 제목 소개 + 감정 후킹 ("광고를 끄면 매출이 사라지고, 켜면 적자가 나는 무한 루프였어요.")
 3. 배경: 짧은 before 스토리 (월 매출 X에서 올라가지 못한 브랜드)
 4. ### 성과: #### 소제목(자사몰 매출, 광고 효율 등) + Before/After 테이블(| 지표 | Before | After |)
-5. ### INTERVIEW: 수강생 직접 인용 2-3개 (> "인용문" + > — 수강생 X님), 구체적 방법 + 감정 포함
+5. ### INTERVIEW: 수강생 직접 인용 2-3개 (> "인용문" + > — 수강생 X님), 구체적 방법 + 감정 포함. 이 섹션이 없으면 출력이 실패로 간주됩니다.
 6. ### 핵심 변화: 정확히 3개, 제목 + Before→After 비교 설명
 7. 마무리: "현장에서 바로 적용할 수 있는" 실전 강조
 
-## 배너키 규칙 (중요!)
-- 성과, INTERVIEW, 핵심 변화 — 이 3개 배너키를 반드시 모두 생성하세요
-- 특히 ### INTERVIEW 섹션은 필수입니다. ### INTERVIEW 섹션이 없으면 출력이 실패로 간주됩니다. 반드시 2-3개의 수강생 인용을 포함하세요
-- 위 3개 외 다른 ### 헤딩은 절대 생성 금지`,
+## 허용된 ### 헤딩 (이 3개만 사용):
+### 성과 / ### INTERVIEW / ### 핵심 변화
+위 목록에 없는 ### 헤딩을 생성하면 실패로 간주됩니다.`,
   };
   const systemPromptOverride = systemPrompts[contentType] || systemPrompts.education;
 
-  // 2. KS 호출 (limit:0 → RAG 검색 스킵, body_md를 컨텍스트로 직접 전달)
-  try {
-    const result = await ksGenerate({
-      query: `다음 본문을 기반으로 뉴스레터 이메일 요약을 작성해주세요.
+  // 2. 타입별 허용 키 목록 (query에서 금지키를 언급하지 않기 위해)
+  const allowedKeysLabel: Record<string, string> = {
+    education: "INSIGHT, KEY POINT, CHECKLIST",
+    webinar: "강의 미리보기, 핵심 주제, 이런 분들을 위해, 웨비나 일정",
+    notice: "강의 미리보기, 핵심 주제, 이런 분들을 위해, 웨비나 일정",
+    case_study: "성과, INTERVIEW, 핵심 변화",
+  };
+  const allowedKeys = allowedKeysLabel[contentType] || allowedKeysLabel.education;
+
+  // 3. KS 호출 (limit:0 → RAG 검색 스킵, body_md를 컨텍스트로 직접 전달)
+  const MAX_RETRIES = 3;
+  let lastEmailSummary = "";
+  let lastValidation: { valid: boolean; missing: string[]; forbidden: string[] } | null = null;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      // 재시도 시 이전 실패 피드백을 query에 추가
+      let retryFeedback = "";
+      if (attempt > 1 && lastValidation) {
+        const parts: string[] = [];
+        if (lastValidation.forbidden.length > 0) {
+          parts.push(`금지된 ### 헤딩 발견: ${lastValidation.forbidden.join(", ")}. 이것들을 절대 사용하지 마세요.`);
+        }
+        if (lastValidation.missing.length > 0) {
+          parts.push(`누락된 ### 헤딩: ${lastValidation.missing.join(", ")}. 반드시 포함하세요.`);
+        }
+        retryFeedback = `\n\n## ⚠️ 이전 생성이 실패했습니다 (${attempt - 1}회차)\n${parts.join("\n")}\n이번에는 반드시 허용된 배너키만 사용하세요: ${allowedKeys}`;
+      }
+
+      const result = await ksGenerate({
+        query: `다음 본문을 기반으로 뉴스레터 이메일 요약을 작성해주세요.
 
 ## 본문
 ${content.body_md}
@@ -827,58 +838,79 @@ ${content.body_md}
 - 마크다운 형식 유지
 - 각 섹션은 ### 배너키 형식의 헤딩으로 시작
 
-## 절대 규칙
-- 반드시 아래 지정된 배너키만 ### 헤딩으로 사용하세요
-- 아래 목록에 없는 ### 헤딩은 절대 생성 금지 (INSIGHT 01, INSIGHT 02, INSIGHT 03 등 변형 금지)
-- 배너키 순서를 반드시 준수하세요
-- 모든 배너키 섹션을 빠짐없이 생성하세요 (누락 금지)
+## 허용된 ### 배너키 (이것만 사용, 다른 ### 헤딩 절대 금지)
+${allowedKeys}
 
-${bannerGuide}`,
-      consumerType: "newsletter",
-      limit: 0,
-      systemPromptOverride,
-      contentId,
-    });
+## 필수 포맷
+${bannerGuide}${retryFeedback}`,
+        consumerType: "newsletter",
+        limit: 0,
+        systemPromptOverride,
+        contentId,
+      });
 
-    const emailSummary = result.content.trim();
+      const emailSummary = result.content.trim();
 
-    if (!emailSummary) {
-      return { error: "AI가 뉴스레터를 생성하지 못했습니다." };
+      if (!emailSummary) {
+        return { error: "AI가 뉴스레터를 생성하지 못했습니다." };
+      }
+
+      // 배너키 검증
+      const validation = validateBannerKeys(emailSummary, contentType);
+
+      if (validation.valid) {
+        // 검증 통과 → DB 업데이트 후 반환
+        const { error: updateError } = await svc
+          .from("contents")
+          .update({
+            email_summary: emailSummary,
+            email_design_json: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", contentId);
+
+        if (updateError) {
+          return { error: updateError.message };
+        }
+
+        return { emailSummary };
+      }
+
+      // 검증 실패 → 재시도 준비
+      console.warn(`[generateEmailSummary] attempt ${attempt}/${MAX_RETRIES} failed validation:`, {
+        missing: validation.missing,
+        forbidden: validation.forbidden,
+      });
+      lastEmailSummary = emailSummary;
+      lastValidation = validation;
+
+    } catch (e) {
+      console.error("generateEmailSummary error:", e);
+      if (e instanceof Error && e.message.includes("시간 초과")) {
+        return { error: "시간 초과. 다시 시도해주세요." };
+      }
+      return { error: e instanceof Error ? e.message : "뉴스레터 생성 실패" };
     }
-
-    // 3. 배너키 검증
-    const validation = validateBannerKeys(emailSummary, contentType);
-
-    // 4. DB 업데이트 (email_design_json = null로 초기화하여 새 summary 반영)
-    const { error: updateError } = await svc
-      .from("contents")
-      .update({
-        email_summary: emailSummary,
-        email_design_json: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", contentId);
-
-    if (updateError) {
-      return { error: updateError.message };
-    }
-
-    // 금지/누락 배너키가 있어도 저장은 하되 경고 반환
-    if (!validation.valid) {
-      return {
-        emailSummary,
-        warnings: { missing: validation.missing, forbidden: validation.forbidden },
-      };
-    }
-
-    return { emailSummary };
-  } catch (e) {
-    console.error("generateEmailSummary error:", e);
-    if (e instanceof Error && e.message.includes("시간 초과")) {
-      return { error: "시간 초과. 다시 시도해주세요." };
-    }
-    return { error: e instanceof Error ? e.message : "뉴스레터 생성 실패" };
   }
+
+  // MAX_RETRIES 소진 → 마지막 결과라도 저장 + 경고 반환
+  const { error: updateError } = await svc
+    .from("contents")
+    .update({
+      email_summary: lastEmailSummary,
+      email_design_json: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", contentId);
+
+  if (updateError) {
+    return { error: updateError.message };
+  }
+
+  return {
+    emailSummary: lastEmailSummary,
+    warnings: lastValidation ? { missing: lastValidation.missing, forbidden: lastValidation.forbidden } : undefined,
+  };
 }
 
 export async function reviseContentWithAI(
