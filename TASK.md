@@ -1,313 +1,177 @@
-# TASK: 뉴스레터 AI 출력 구조화 — Structured JSON Output
+# TASK: 뉴스레터 목업 일치도 개선 (v8 → Gmail 렌더링)
 
 ## 목표
-AI에게 배너키 선택권을 제거하고, 코드가 content_type별 고정 JSON 구조를 정의 → AI는 각 슬롯의 텍스트만 채움 → Zod 스키마로 검증 → 실패 시 자동 재시도 3회 → JSON→마크다운 변환 → 기존 row template 렌더링.
+목업 v8과 Gmail 실제 렌더링의 유사도를 60% → 90%+로 개선.
+핵심: 배너를 PNG→CSS-only로, row 여백 축소, 텍스트 폭 제어.
 
 ## 제약
-- newsletter-row-templates.ts는 수정 최소화 (기존 렌더링 유지)
-- parseSummaryToSections(), createSectionContentRows() 기존 인터페이스 유지
-- email_summary DB 컬럼에는 변환된 마크다운 저장 (하위 호환)
-- AI 1회 호출로 전체 JSON 생성 (섹션별 분리 호출 금지 — 비용)
-- webinar/case_study 프롬프트에 education 용어(INSIGHT, KEY POINT, CHECKLIST) 절대 미포함
+- Gmail 호환: `linear-gradient`, `border-radius`, `max-width on div` 사용 금지. `<table>` 기반만.
+- Unlayer JSON 구조 유지: type="text" row의 values 구조 변경 없음.
+- 기존 로직(parseSummaryToSections, validateBannerKeys, structured JSON) 변경 없음.
+- npm run build 통과 필수.
+
+## 수정 대상 파일
+- `src/lib/newsletter-row-templates.ts` — T1, T2, T3, T4, T5, T6
+- `src/lib/email-template-utils.ts` — T1 (buildDesignFromSummary 배너 관련 확인)
 
 ## 현재 코드
 
-### src/actions/contents.ts — generateEmailSummary (L707-900)
-```typescript
-export async function generateEmailSummary(contentId: string) {
-  // L731: bannerGuide = BANNER_KEYS_BY_TYPE[contentType]
-  // L733-797: systemPrompts = { education: "...", webinar: "...", case_study: "..." }
-  // L798: systemPromptOverride = systemPrompts[contentType]
-  // L830-848: ksGenerate({ query: "...", consumerType: "newsletter", systemPromptOverride })
-  // L857-880: validateBannerKeys → 실패 시 재시도 (MAX_RETRIES=3)
-  // 문제: AI가 자유 마크다운 생성 → education 배너키 bias로 webinar/case_study 키 생성 실패
+### `src/lib/newsletter-row-templates.ts` — createBannerRow (L363-382)
+```ts
+export function createBannerRow(bannerKey: string): object {
+  const matchedKey = Object.keys(BANNER_MAP)
+    .filter(k => bannerKey.includes(k))
+    .sort((a, b) => b.length - a.length)[0];
+  const bannerFile = matchedKey ? BANNER_MAP[matchedKey] : undefined;
+  if (bannerFile) {
+    const slug = bannerFile.replace("banner-", "");
+    return makeImageRow(`banner-${slug}`, `${BANNER_BASE_URL}/${bannerFile}.png`, bannerKey);
+  }
+  // CSS gradient fallback
+  const slug = bannerKey.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "unknown";
+  return makeTextRow(`banner-${slug}`,
+    `<div style="max-width:600px;height:80px;line-height:80px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);border-radius:4px 0 0 4px;"><span style="padding-left:32px;color:#fff;font-size:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${escapeHtml(bannerKey)}</span></div>`,
+    "24px 24px 0px");
 }
 ```
 
-### src/lib/email-template-utils.ts — validateBannerKeys (L624-648)
-```typescript
-export function validateBannerKeys(summary: string, contentType: string) {
-  const keyMatches = summary.match(/^### (.+)/gm) || [];
-  const foundKeys = keyMatches.map(m => m.replace(/^### /, "").trim());
-  const expectedByType = {
-    education: ["INSIGHT", "KEY POINT", "CHECKLIST"],
-    webinar: ["강의 미리보기", "핵심 주제", "이런 분들을 위해", "웨비나 일정"],
-    case_study: ["성과", "INTERVIEW", "핵심 변화"],
-  };
-  // missing = expected에 있지만 found에 없는 키
-  // forbidden = found에 있지만 BANNER_MAP에 없는 키
-}
+### `src/lib/newsletter-row-templates.ts` — makeTextRow (L41)
+```ts
+function makeTextRow(id: string, html: string, padding = "16px 32px"): object {
 ```
 
-### src/lib/email-template-utils.ts — parseSummaryToSections (주요 로직)
-```typescript
-// ### 헤딩으로 split → { bannerKey: string, content: string }[] 반환
-// createSectionContentRows가 이 배열을 받아 Unlayer row JSON 생성
+### `src/lib/newsletter-row-templates.ts` — createInterviewQuotesRow (L330)
+```ts
+return `<div style="border-left:3px solid #F75D5D;background:#f8f9fc;border-radius:0 8px 8px 0;padding:16px 20px;font-style:italic;font-size:14px;color:#555;line-height:1.6;margin-bottom:10px">
+```
+
+### `src/lib/newsletter-row-templates.ts` — hookLine row (L470)
+```ts
+`<p style="font-size:16px;line-height:160%;text-align:center;"><em><span style="color:#F75D5D;font-size:16px;font-weight:600;">${markdownBold(escapeHtml(text))}</span></em></p>`,
+```
+
+### `src/lib/newsletter-row-templates.ts` — createCtaRow (L614)
+```ts
+export function createCtaRow(text: string, url: string, bgColor = "#F75D5D"): object {
 ```
 
 ## 태스크
 
-### T1. Zod 스키마 정의 → frontend-dev
-파일: `src/lib/newsletter-schemas.ts` (신규)
+### T1. 배너 PNG → CSS-only 테이블 배너 전환 → frontend-dev (HIGH)
+**파일**: `src/lib/newsletter-row-templates.ts` — `createBannerRow()`
 
-**Education 스키마:**
-```typescript
-const EducationOutputSchema = z.object({
-  hook: z.string(), // 감정 후킹 한 줄
-  intro: z.string(), // 도입부 2-3문장
-  insight: z.object({
-    subtitle: z.string(), // 질문형 소제목
-    body: z.string(), // **강조키워드** 포함
-    tipBox: z.string(), // 💡 실제 사례 수치
-  }),
-  keyPoint: z.object({
-    items: z.array(z.object({ title: z.string(), desc: z.string() })).min(2).max(4),
-  }),
-  checklist: z.object({
-    items: z.array(z.string()).min(3).max(7),
-  }),
-  closing: z.string(), // 마감 텍스트
-});
+**문제**: 현재 600x120px PNG 풀폭 배너. 목업은 max-width ~66%(400px), 좌정렬, 60px 높이.
+**수정**: `makeImageRow` 호출 제거 → `makeTextRow`로 table 기반 CSS-only 배너 생성.
+
+```html
+<table cellpadding="0" cellspacing="0" style="width:66%;">
+  <tr>
+    <td style="background-color:#F75D5D;padding:16px 24px;color:#ffffff;font-size:16px;font-weight:700;letter-spacing:1px;">
+      INSIGHT
+    </td>
+  </tr>
+</table>
 ```
 
-**Webinar 스키마:**
-```typescript
-const WebinarOutputSchema = z.object({
-  hook: z.string(),
-  intro: z.string(),
-  lecturePreview: z.object({ tags: z.array(z.string()).min(2) }),
-  coreTopics: z.object({
-    items: z.array(z.object({ title: z.string(), desc: z.string() })).min(2).max(4),
-  }),
-  targetAudience: z.object({
-    items: z.array(z.string()).min(3).max(5),
-  }),
-  schedule: z.object({
-    date: z.string(), format: z.string(), fee: z.string(), participation: z.string(),
-  }),
-  closing: z.string(),
-});
+- BANNER_MAP은 slug 생성용으로 유지, PNG URL 참조 제거
+- `makeImageRow` 대신 `makeTextRow`에 위 HTML 삽입
+- containerPadding: `"16px 24px 0px"`
+- 완료 기준:
+  - [ ] 모든 13개 배너키가 CSS-only table 배너로 렌더됨
+  - [ ] PNG `<img>` 태그 없음 (배너 한정)
+  - [ ] Gmail에서 solid red 배경 + 흰 텍스트 정상 표시
+  - [ ] 배너 폭이 전체의 약 66% (좌정렬)
+
+### T2. row 간 여백 축소 → frontend-dev (MEDIUM)
+**파일**: `src/lib/newsletter-row-templates.ts` — 각 함수의 `makeTextRow` 호출부
+
+**문제**: 기본 padding `"16px 32px"`이 넉넉해서 목업 대비 늘어진 느낌.
+**수정**: 콘텐츠 row들의 padding을 명시적으로 줄이기.
+
+변경 목록:
+- `createNumberedCardsRow()` 반환: padding `"4px 24px 0px"`
+- `createChecklistCardsRow()` 반환: padding `"4px 24px 0px"`
+- `createBulletListRow()` 반환: padding `"4px 24px"`
+- `createInterviewQuotesRow()` 반환: padding `"4px 24px"`
+- `createImagePlaceholderRow()` 반환: padding `"8px 24px"`
+- 일반 본문 text row: `createSectionContentRows()` 내 subtitle/body makeTextRow 호출에 `"8px 24px"` 명시
+
+- 완료 기준:
+  - [ ] 카드/체크리스트/불릿/인용 row padding이 축소됨
+  - [ ] 배너→본문 간격이 이전보다 타이트함
+  - [ ] Unlayer 에디터에서 정상 렌더
+
+### T3. 인용 블록 배경색 수정 → frontend-dev (LOW)
+**파일**: `src/lib/newsletter-row-templates.ts` — `createInterviewQuotesRow()` (L330)
+
+**수정**: `background:#f8f9fc` → `background:#f5f5f5`
+- 완료 기준:
+  - [ ] 인용 블록 배경이 `#f5f5f5`
+
+### T4. hookLine/감정후킹 텍스트 폭 제어 → frontend-dev (MEDIUM)
+**파일**: `src/lib/newsletter-row-templates.ts` — hookLine 생성부 (L470 부근)
+
+**문제**: hookLine이 600px 풀폭으로 퍼짐. 목업은 max-width ~420px 중앙정렬.
+**수정**: `<p>` 대신 `<table align="center" width="420">` 래핑.
+
+```html
+<table align="center" cellpadding="0" cellspacing="0" style="max-width:420px;" width="420">
+  <tr><td style="text-align:center;font-size:16px;line-height:160%;">
+    <em><span style="color:#F75D5D;font-weight:600;">텍스트</span></em>
+  </td></tr>
+</table>
 ```
 
-**Case Study 스키마:**
-```typescript
-const CaseStudyOutputSchema = z.object({
-  greeting: z.string().optional().default("안녕하세요 대표님, 자사몰사관학교입니다."),
-  emotionHook: z.string(),
-  background: z.string(),
-  studentQuote: z.string(),
-  performance: z.object({
-    tables: z.array(z.object({
-      title: z.string(),
-      rows: z.array(z.object({ metric: z.string(), before: z.string(), after: z.string() })),
-    })),
-  }),
-  interview: z.object({
-    quotes: z.array(z.object({ text: z.string(), author: z.string() })).min(2).max(4),
-  }),
-  coreChanges: z.object({
-    items: z.array(z.object({ title: z.string(), desc: z.string() })).min(2).max(4),
-  }),
-});
-```
+- `createHookLineRow()` (교육/고객사례 hookLine italic)
+- `createHookQuestionRow()` (웨비나 hookQuestion bold)
+- `createEmotionHookRow()` 있다면 동일 적용
 
-**export:** `getSchemaByType(contentType: string)` + `parseAIResponse(raw: string, contentType: string): SafeParseResult`
+- 완료 기준:
+  - [ ] hookLine 텍스트가 420px 중앙 정렬
+  - [ ] Gmail에서 줄바꿈이 자연스러움
 
-### T2. AI 프롬프트 재설계 → frontend-dev
-파일: `src/actions/contents.ts` — generateEmailSummary 수정
+### T5. 본문 텍스트 좌우 패딩 통일 → frontend-dev (MEDIUM)
+**파일**: `src/lib/newsletter-row-templates.ts` — 각 `makeTextRow` 호출부
 
-1. BANNER_KEYS_BY_TYPE 마크다운 가이드 → JSON 스키마 설명 + few-shot 예시로 교체
-2. systemPromptOverride에 JSON 출력 강제 + "응답 전체가 하나의 JSON 코드블록. JSON 앞뒤에 설명 텍스트 추가 금지."
-3. 각 타입별 완전한 JSON few-shot 예시 1개씩 포함 (리뷰 HIGH 반영)
-4. 프롬프트 구조:
-```
-시스템: 당신은 {type} 뉴스레터 JSON 생성기입니다.
-응답은 반드시 ```json으로 시작하고 ```으로 끝나는 하나의 코드블록이어야 합니다.
-JSON 앞뒤에 어떤 설명도 추가하지 마세요.
-{타입별 JSON 스키마 설명}
-예시: {완전한 JSON 예시}
-유저: {body_md}
-```
-5. webinar 프롬프트에 INSIGHT/KEY POINT/CHECKLIST 단어 0회 등장
-6. case_study 프롬프트에 INSIGHT/KEY POINT/CHECKLIST 단어 0회 등장
+**문제**: 기본 좌우 padding 32px. 목업은 24px.
+**수정**: 본문 콘텐츠 row들의 padding 좌우를 24px로 통일.
+- subtitle/body text row: `"12px 24px"`
+- INSIGHT/핵심 주제 등 섹션 본문 row: `"12px 24px"`
 
-### T3. JSON 파서 + 재시도 로직 수정 → frontend-dev
-파일: `src/actions/contents.ts` — generateEmailSummary 내부
+- 완료 기준:
+  - [ ] 본문 텍스트 좌우 여백이 24px로 통일
 
-1. AI 응답에서 JSON 코드블록 추출 — 정규식: `/```(?:json|JSON)?\s*\n?([\s\S]*?)```/` (대소문자 무시)
-2. `parseAIResponse(raw, contentType)` 호출 → Zod 검증
-3. 실패 시 Zod 에러 메시지를 재시도 프롬프트에 포함
-4. 3회 실패 → 순서 기반 배너키 리매핑 폴백 (리뷰 HIGH 반영):
-   - 기존 마크다운 파서로 섹션 추출
-   - webinar: 순서대로 강의 미리보기/핵심 주제/이런 분들을 위해/웨비나 일정으로 키 강제 교체
-   - case_study: 순서대로 성과/INTERVIEW/핵심 변화로 키 강제 교체
-   - education: 순서대로 INSIGHT/KEY POINT/CHECKLIST로 키 강제 교체
-5. 성공 시 → T4의 `convertJsonToEmailSummary()` 호출
+### T6. CTA 버튼 fullWidth + 스타일 확인 → frontend-dev (LOW)
+**파일**: `src/lib/newsletter-row-templates.ts` — `createCtaRow()` (L614)
 
-### T4. JSON → 마크다운 변환 → frontend-dev
-파일: `src/lib/newsletter-schemas.ts` — 신규 함수
+**확인/수정**:
+- Unlayer button values에 `fullWidth: true` 확인 (없으면 추가)
+- `borderRadius: "8px"` 확인
+- `padding: "14px"` 확인
+- 목업 기준: 풀폭, 라운드 8px, padding 14px
 
-```typescript
-export function convertJsonToEmailSummary(data: any, contentType: string): string
-```
-
-변환 규칙 (기존 파서 정규식 호환 — 리뷰 HIGH 반영):
-
-education 변환:
-```
-{hook}
-
-{intro}
-
-### INSIGHT
-## {subtitle}
-{body}
-> 💡 {tipBox}
-
-### KEY POINT
-01. {items[0].title} | {items[0].desc}
-02. {items[1].title} | {items[1].desc}
-03. {items[2].title} | {items[2].desc}
-
-### CHECKLIST
-✅ {items[0]}
-✅ {items[1]}
-...
-
-{closing}
-```
-
-webinar 변환:
-```
-{hook}
-
-{intro}
-
-### 강의 미리보기
-{tags 쉼표 join} 슬라이드
-
-### 핵심 주제
-01. {items[0].title} | {items[0].desc}
-02. {items[1].title} | {items[1].desc}
-03. {items[2].title} | {items[2].desc}
-
-### 이런 분들을 위해
-- {items[0]}
-- {items[1]}
-...
-
-### 웨비나 일정
-| 항목 | 내용 |
-| --- | --- |
-| 📅 일시 | **{date}** |
-| 🔴 형식 | {format} |
-| 👍 참가비 | **{fee}** |
-| 🔗 참여 | {participation} |
-
-{closing}
-```
-
-case_study 변환:
-```
-{greeting}
-
-{emotionHook}
-
-{background}
-
-> "{studentQuote}"
-
-### 성과
-#### {tables[0].title}
-| 지표 | Before | After |
-| --- | --- | --- |
-| {rows[0].metric} | {rows[0].before} | **{rows[0].after}** |
-...
-
-### INTERVIEW
-> "{quotes[0].text}"
-> — {quotes[0].author}
-...
-
-### 핵심 변화
-01. {items[0].title} | {items[0].desc}
-...
-```
-
-파서 호환 핵심:
-- `parseSummaryToSections()`: `md.split(/^### /m)` → hookLine + sections
-- `parseInsight()`: `## ` 줄 = subtitle, `> 💡` = tipBox, 나머지 = body
-- `parseNumberedCards()`: `/^(\d+)\.\s*(.+?)\s*\|\s*(.+)/` 패턴
-- `parseChecklist()`: `/^[✅☑]\s*(.+)/` 패턴
-- `parseInterview()`: `/^>\s*"(.+)"/ + /^>\s*—\s*(.+)/` 패턴
-- `parseBulletListFields()`: `/^[-•]\s+(.+)/` 패턴
-- `parseScheduleTable()`: `| key | value |` 테이블 파싱
-
-검증: 변환 결과가 기존 `parseSummaryToSections()` + `validateBannerKeys()` 통과
-
-### T5. 통합 빌드 + QA → frontend-dev
-1. npm run build 성공
-2. git push origin main
-3. Vercel 배포 완료 후 3종 뉴스레터 재생성
-4. DB에서 email_summary ### 헤딩 확인
-5. Gmail 렌더링 vs email-samples-v7.html 비교
-6. mozzi-reports 릴리즈 보고서 발행
-
-## 검증
-- [T1] `npm run build` 실행 → 타입 에러 0개
-- [T1] newsletter-schemas.ts에서 `EducationOutputSchema.parse({...유효JSON...})` → 에러 없이 통과
-- [T1] newsletter-schemas.ts에서 `WebinarOutputSchema.parse({...필드누락...})` → ZodError throw
-- [T2] contents.ts grep "INSIGHT" → education systemPrompt에만 존재, webinar/case_study에 0회
-- [T3] AI 응답이 잘못된 JSON일 때 → console.warn에 attempt 2/3 로그 출력 + Zod 에러 메시지 포함
-- [T3] 3회 실패 → 기존 마크다운 폴백으로 email_summary 저장
-- [T4] `convertJsonToEmailSummary(validEducationJson, "education")` → `validateBannerKeys(result, "education").valid === true`
-- [T4] `convertJsonToEmailSummary(validWebinarJson, "webinar")` → `validateBannerKeys(result, "webinar").valid === true`
-- [T4] `convertJsonToEmailSummary(validCaseStudyJson, "case_study")` → `validateBannerKeys(result, "case_study").valid === true`
-- [T5] 3종 뉴스레터 재생성 → DB email_summary의 ### 헤딩이 각 타입 expectedKeys와 100% 일치
-- [T5] `npm run build` 최종 성공
+- 완료 기준:
+  - [ ] CTA 버튼 fullWidth: true
+  - [ ] borderRadius: "8px"
 
 ## 엣지 케이스
-- 시나리오1: AI가 JSON 대신 마크다운 출력 — json 블록 추출 실패하면 재시도 프롬프트에 json으로 시작하라고 추가, 3회 실패시 순서 기반 키 리매핑 폴백
-- 시나리오2: AI JSON에 필수 필드 누락 — Zod safeParse 실패하면 에러 메시지를 재시도 프롬프트에 포함
-- 시나리오3: AI JSON에 예상 외 추가 필드 — Zod strict 사용하지 않고 strip으로 무시
-- 시나리오4: body_md가 비어있거나 너무 짧음 — 기존 early return 로직 유지
-- 시나리오5: ksGenerate 타임아웃 — 기존 catch 로직 유지
-
-## 변경 파일
-- `src/lib/newsletter-schemas.ts` (신규) — T1, T4
-- `src/actions/contents.ts` (수정) — T2, T3
-
-## 변경하지 않는 파일
-- `src/lib/newsletter-row-templates.ts` (기존 row template 유지)
-- `src/lib/email-template-utils.ts`의 parseSummaryToSections, createSectionContentRows (기존 렌더링)
+1. **배너키가 BANNER_MAP에 없는 경우**: CSS-only 배너의 fallback slug 생성이 정상 작동해야 함
+2. **hookLine이 빈 문자열인 경우**: table 래핑이 빈 td를 만들지 않아야 함 (기존 null 체크 유지)
+3. **매우 긴 배너 텍스트** (예: "웨비나 일정 안내"): 66% 폭에서 줄바꿈 없이 한 줄 표시 확인. 넘치면 font-size 14px로 축소 가능.
+4. **Unlayer 에디터 호환**: CSS-only 배너가 Unlayer 에디터 프리뷰에서도 정상 보이는지 확인 (makeTextRow의 text HTML이 에디터에서 렌더됨)
 
 ## 레퍼런스
+- 목업 v8: https://mozzi-reports.vercel.app/reports/task/2026-02-18-newsletter-mockup-v8.html
+- 디자인 스펙 v7: https://mozzi-reports.vercel.app/reports/task/2026-02-18-newsletter-detail-fix.html
 - 골드 스탠다드 목업: `newsletter-reference/email-samples-v7.html`
-- 디자인 스펙: `newsletter-reference/newsletter-design-spec-v5.pdf`
-- 이전 리뷰 보고서: `https://mozzi-reports.vercel.app/reports/review/2026-02-17-newsletter-unlayer-template-v2.html`
 
-## 리뷰 결과
-
-보고서 파일: mozzi-reports/public/reports/review/2026-02-17-newsletter-structured-json.html
-URL: https://mozzi-reports.vercel.app/reports/review/2026-02-17-newsletter-structured-json.html
-
-HIGH 3건 반영:
-1. T2 few-shot: 각 타입별 완전한 JSON 예시 1개씩 프롬프트에 포함 → 반영 완료
-2. T3 폴백 키 리매핑: 3회 실패 시 순서 기반 배너키 강제 매핑 → T3에 추가
-3. T4 변환 포맷: 기존 파서 정규식과 일치하는 마크다운 포맷 → T4에 명시
-
-MEDIUM 3건:
-- T1 lecturePreview caption: 기본값 "강의 슬라이드 미리보기" 자동 생성
-- T3 JSON 추출: 대소문자 무시 정규식 사용
-- 타임아웃: maxDuration은 현행 60초 유지 (1회 호출 기준, 재시도는 별도 API 호출)
+## 검증
+- [ ] `npm run build` 성공
+- [ ] Unlayer 에디터에서 교육/웨비나/고객사례 3종 뉴스레터 탭 정상 렌더
+- [ ] Gmail 테스트 발송 → 목업 v8과 비교 유사도 90%+
+- [ ] 배너가 CSS-only table로 렌더 (PNG img 태그 없음)
+- [ ] 카드/체크리스트 row 간격이 이전보다 타이트
 
 ## 리뷰 보고서
-보고서 파일: mozzi-reports/public/reports/review/2026-02-17-newsletter-structured-json.html
-리뷰 결론: 아키텍처 방향 승인. HIGH 3건(few-shot 예시, 폴백 리매핑, 변환 포맷 명시) 반영 완료.
-
-## 완료 조건
-- [ ] npm run build 성공
-- [ ] 3종 배너키 100% 정확 (DB 검증)
-- [ ] Gmail 렌더링 95%+ 골드 스탠다드 유사도
-- [ ] 자동 재시도 로직 동작 확인
-- [ ] mozzi-reports 릴리즈 보고서 발행 + git push
+보고서 파일: mozzi-reports/public/reports/review/2026-02-18-newsletter-mockup-alignment.html
+에이전트팀 리뷰 예정 — 리뷰 완료 후 이 섹션에 피드백 기록.

@@ -497,52 +497,8 @@ function slugify(key: string): string {
   return key.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "unknown";
 }
 
-/** 배너 이미지 row (Unlayer image type) 또는 CSS gradient fallback (text type) */
+/** T1: CSS-only table 배너 row (Gmail 호환, PNG 제거) */
 function createBannerImageRow(bannerKey: string, slug: string): object {
-  const matchedKey = Object.keys(BANNER_MAP)
-    .filter(key => bannerKey.includes(key))
-    .sort((a, b) => b.length - a.length)[0];
-  const bannerFile = matchedKey ? BANNER_MAP[matchedKey] : undefined;
-
-  if (bannerFile) {
-    return {
-      id: `row-banner-${slug}`,
-      cells: [1],
-      columns: [{
-        id: `col-banner-${slug}`,
-        contents: [{
-          id: `content-banner-${slug}`,
-          type: "image",
-          values: {
-            containerPadding: "24px 24px 0px",
-            anchor: "",
-            src: { url: `${BANNER_BASE_URL}/${bannerFile}.png`, width: 600, height: 120 },
-            textAlign: "center",
-            altText: bannerKey,
-            action: { name: "web", values: { href: "", target: "_blank" } },
-            hideDesktop: false,
-            displayCondition: null,
-            _meta: { htmlID: `u_content_banner_${slug}`, htmlClassNames: "u_content_image" },
-            selectable: true, draggable: true, duplicatable: true, deletable: true, hideable: true,
-            fullWidth: false,
-          },
-        }],
-        values: {
-          backgroundColor: "", padding: "0px", border: {}, borderRadius: "0px",
-          _meta: { htmlID: `u_column_banner_${slug}`, htmlClassNames: "u_column" },
-        },
-      }],
-      values: {
-        displayCondition: null, columns: false, backgroundColor: "#ffffff", columnsBackgroundColor: "",
-        backgroundImage: { url: "", fullWidth: true, repeat: "no-repeat", size: "custom", position: "center" },
-        padding: "0px", anchor: "", hideDesktop: false,
-        _meta: { htmlID: `u_row_banner_${slug}`, htmlClassNames: "u_row" },
-        selectable: true, draggable: true, duplicatable: true, deletable: true, hideable: true,
-      },
-    };
-  }
-
-  // CSS gradient fallback
   return {
     id: `row-banner-${slug}`,
     cells: [1],
@@ -552,12 +508,12 @@ function createBannerImageRow(bannerKey: string, slug: string): object {
         id: `content-banner-${slug}`,
         type: "text",
         values: {
-          containerPadding: "24px 24px 0px", anchor: "", textAlign: "left", lineHeight: "140%",
+          containerPadding: "16px 24px 0px", anchor: "", textAlign: "left", lineHeight: "140%",
           linkStyle: { inherit: true, linkColor: "#0000ee", linkHoverColor: "#0000ee", linkUnderline: true, linkHoverUnderline: true },
           hideDesktop: false, displayCondition: null,
           _meta: { htmlID: `u_content_banner_${slug}`, htmlClassNames: "u_content_text" },
           selectable: true, draggable: true, duplicatable: true, deletable: true, hideable: true,
-          text: `<div style="max-width:600px;height:80px;line-height:80px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);border-radius:4px 0 0 4px;"><span style="padding-left:32px;color:#fff;font-size:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${bannerKey}</span></div>`,
+          text: `<table cellpadding="0" cellspacing="0" style="width:66%;"><tr><td style="background-color:#F75D5D;padding:16px 24px;color:#ffffff;font-size:16px;font-weight:700;letter-spacing:1px;">${bannerKey}</td></tr></table>`,
         },
       }],
       values: {
@@ -706,20 +662,11 @@ function markdownToEmailHtml(md: string): string {
       continue;
     }
 
-    // ### 섹션 배너 (이미지 or CSS gradient fallback)
+    // T1: ### 섹션 배너 — CSS-only table (Gmail 호환, PNG 제거)
     const h3Match = trimmed.match(/^### (.+)/);
     if (h3Match) {
       const bannerKey = h3Match[1].trim();
-      const matchedKey = Object.keys(BANNER_MAP)
-        .filter(key => bannerKey.includes(key))
-        .sort((a, b) => b.length - a.length)[0];
-      const bannerFile = matchedKey ? BANNER_MAP[matchedKey] : undefined;
-      if (bannerFile) {
-        htmlParts.push(`<img src="${BANNER_BASE_URL}/${bannerFile}.png" alt="${bannerKey}" style="display:block;width:100%;max-width:600px;height:auto;border-radius:6px 6px 0 0;margin:24px 0 0;" />`);
-      } else {
-        // fallback: CSS gradient (매핑에 없는 경우)
-        htmlParts.push(`<div style="max-width:600px;height:80px;line-height:80px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);margin:24px 0 16px;border-radius:4px 0 0 4px;"><span style="padding-left:32px;color:#fff;font-size:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${bannerKey}</span></div>`);
-      }
+      htmlParts.push(`<table cellpadding="0" cellspacing="0" style="width:66%;margin:24px 0 0;"><tr><td style="background-color:#F75D5D;padding:16px 24px;color:#ffffff;font-size:16px;font-weight:700;letter-spacing:1px;">${bannerKey}</td></tr></table>`);
       continue;
     }
 

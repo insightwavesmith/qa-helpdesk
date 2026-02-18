@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>BS CAMP 뉴스레터 디자인 스펙 & AI 작성 가이드 v5</title>
+<style>
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard',-apple-system,sans-serif;background:#e8e8e8;color:#333;font-size:13.5px;line-height:1.65}
+.page{max-width:940px;margin:36px auto;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.08);overflow:hidden;page-break-after:always}
+/* Header */
+.ph{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:40px 52px 32px}
+.ph .pn{font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.35);margin-bottom:8px;text-transform:uppercase}
+.ph h1{font-size:26px;font-weight:800;line-height:1.3;margin-bottom:6px}
+.ph .sub{font-size:13px;color:rgba(255,255,255,.6)}
+.badge{display:inline-block;background:#F75D5D;color:#fff;padding:3px 12px;border-radius:16px;font-size:10px;font-weight:700;margin-bottom:10px}
+/* Body */
+.pb{padding:36px 52px 48px}
+h2{font-size:19px;font-weight:800;color:#1a1a2e;margin:32px 0 12px;padding-bottom:6px;border-bottom:2px solid #F75D5D}
+h2:first-child{margin-top:0}
+h3{font-size:15px;font-weight:700;color:#333;margin:22px 0 8px}
+/* Spec/AI/Example boxes */
+.S{background:#FFF7ED;border-left:4px solid #F97316;border-radius:0 6px 6px 0;padding:14px 18px;margin:10px 0;font-size:13px}
+.A{background:#EFF6FF;border-left:4px solid #3B82F6;border-radius:0 6px 6px 0;padding:14px 18px;margin:10px 0;font-size:13px}
+.E{background:#F0FDF4;border-left:4px solid #22C55E;border-radius:0 6px 6px 0;padding:14px 18px;margin:10px 0;font-size:13px}
+pre{background:#1e1e2e;color:#cdd6f4;padding:12px;border-radius:5px;font-size:11.5px;line-height:1.5;overflow-x:auto;margin:8px 0;white-space:pre-wrap}
+code{background:#f1f5f9;padding:1px 4px;border-radius:3px;font-size:11.5px;color:#e11d48}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+th{background:#1a1a2e;color:#fff;padding:8px 12px;text-align:left;font-weight:600}
+td{padding:8px 12px;border-bottom:1px solid #eee}
+tr:nth-child(even){background:#f9f9fb}
+.fl{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:8px 0}
+.fi{background:#f0f0f5;padding:3px 10px;border-radius:4px;font-size:11px}
+.fh{background:#F75D5D;color:#fff;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600}
+.fa{color:#999;font-size:10px}
+hr{border:0;border-top:1px solid #eee;margin:20px 0}
+/* Number badge */
+.nb{background:#F75D5D;color:#fff;width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-right:10px}
+.cr{display:flex;align-items:flex-start;padding:10px 0;border-bottom:1px solid #f0f0f0}
+.cr:last-child{border-bottom:0}
+.tt{font-weight:700;font-size:13.5px;margin-bottom:2px}
+.ds{font-size:12.5px;color:#666}
+/* Check item */
+.ci{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0}
+.ci:last-child{border-bottom:0}
+.ck{color:#F75D5D;font-size:16px;margin-right:8px}
+/* Tip box */
+.tip{background:#FFF8E7;border-left:4px solid #FDBA74;border-radius:0 6px 6px 0;padding:12px 16px;margin:8px 0;font-size:12.5px}
+/* Banner img */
+.bimg{display:block;max-width:280px;margin:8px 0;border-radius:6px}
+.cap{font-size:11px;color:#888;margin-top:2px}
+/* Quote */
+.qt{background:#f5f5f5;border-radius:6px;padding:14px 18px;margin:8px 0;font-style:italic;font-size:13px;color:#555}
+.qt .src{font-style:normal;font-size:11px;color:#999;margin-top:4px}
+/* Hero mockup */
+.hero-a{text-align:center;padding:28px 20px;margin:8px 0}
+.hero-b{background:linear-gradient(135deg,#F75D5D,#e04444);border-radius:8px;padding:32px 20px;text-align:center;margin:8px 0;color:#fff}
+.hero-b .pill{display:inline-block;background:rgba(255,255,255,.2);padding:2px 12px;border-radius:12px;font-size:10px;font-weight:700;margin-bottom:8px}
+.hero-c{text-align:center;margin:8px 0}
+.hero-c .btn-logo{display:inline-block;background:#F75D5D;color:#fff;padding:8px 20px;border-radius:20px;font-size:12px;font-weight:700}
+/* CTA */
+.cta{display:block;background:#F75D5D;color:#fff;text-align:center;padding:14px;border-radius:6px;font-size:15px;font-weight:700;margin:12px 0;text-decoration:none}
+/* Profile */
+.prof{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #eee;border-radius:8px;margin:10px 0}
+.prof img{width:48px;height:48px;border-radius:50%;background:#ddd}
+.prof .name{font-weight:700;font-size:14px}
+.prof .role{color:#F75D5D;font-size:12px}
+.prof .info{font-size:11px;color:#888}
+/* Table for schedule */
+.sched td:first-child{white-space:nowrap;font-weight:600;width:80px}
+/* Before/After table */
+.ba th{text-align:center}
+.ba td{text-align:center}
+.ba .af{color:#F75D5D;font-weight:700}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE 1: 표지 + 공통 디자인 시스템
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="page">
+<div class="ph" style="text-align:center;padding:56px 52px">
+  <div class="badge">DESIGN SPEC v5.0</div>
+  <h1>BS CAMP 뉴스레터<br>디자인 스펙 & AI 작성 가이드</h1>
+  <p class="sub">3종 템플릿 · 11개 섹션 · AI 콘텐츠 생성 규칙 · 개발팀 구현 명세</p>
+  <div style="display:flex;justify-content:center;gap:16px;margin-top:20px">
+    <div style="background:rgba(255,255,255,.1);padding:10px 20px;border-radius:8px;text-align:center">
+      <div style="font-size:20px;font-weight:800">A</div>
+      <div style="font-size:10px;opacity:.6">정보공유</div>
+    </div>
+    <div style="background:rgba(255,255,255,.1);padding:10px 20px;border-radius:8px;text-align:center">
+      <div style="font-size:20px;font-weight:800">B</div>
+      <div style="font-size:10px;opacity:.6">웨비나</div>
+    </div>
+    <div style="background:rgba(255,255,255,.1);padding:10px 20px;border-radius:8px;text-align:center">
+      <div style="font-size:20px;font-weight:800">C</div>
+      <div style="font-size:10px;opacity:.6">성공사례</div>
+    </div>
+  </div>
+</div>
+<div class="pb">
+<h2>공통 디자인 시스템</h2>
+
+<h3>레이아웃 기본값</h3>
+<table>
+<tr><th>속성</th><th>값</th><th>비고</th></tr>
+<tr><td>최대 너비</td><td><code>600px</code></td><td>이메일 표준</td></tr>
+<tr><td>배경색</td><td><code>#f5f5f5</code></td><td>외부 배경</td></tr>
+<tr><td>콘텐츠 배경</td><td><code>#ffffff</code></td><td>내부 카드</td></tr>
+<tr><td>좌우 패딩</td><td><code>32px</code></td><td>본문 영역</td></tr>
+<tr><td>섹션 간격</td><td><code>28px</code></td><td>섹션 사이 margin</td></tr>
+</table>
+
+<h3>타이포그래피</h3>
+<table>
+<tr><th>요소</th><th>폰트</th><th>크기</th><th>굵기</th><th>색상</th></tr>
+<tr><td>본문</td><td>Pretendard</td><td>15px</td><td>400</td><td>#333</td></tr>
+<tr><td>제목 (H1)</td><td>Pretendard</td><td>22px</td><td>800</td><td>#1a1a2e</td></tr>
+<tr><td>소제목 (H2)</td><td>Pretendard</td><td>17px</td><td>700</td><td>#333</td></tr>
+<tr><td>카드 제목</td><td>Pretendard</td><td>15px</td><td>700</td><td>#333</td></tr>
+<tr><td>캡션</td><td>Pretendard</td><td>13px</td><td>400</td><td>#888</td></tr>
+</table>
+
+<h3>색상 팔레트</h3>
+<table>
+<tr><th>용도</th><th>색상</th><th>HEX</th></tr>
+<tr><td>포인트 (배너, CTA, 강조)</td><td style="background:#F75D5D;color:#fff">■</td><td><code>#F75D5D</code></td></tr>
+<tr><td>텍스트 강조 (밑줄)</td><td style="background:#F75D5D;color:#fff">■</td><td><code>#F75D5D</code></td></tr>
+<tr><td>번호 배지</td><td style="background:#F75D5D;color:#fff">■</td><td><code>#F75D5D</code></td></tr>
+<tr><td>팁 박스 배경</td><td style="background:#FFF8E7">■</td><td><code>#FFF8E7</code></td></tr>
+<tr><td>팁 박스 보더</td><td style="background:#FDBA74">■</td><td><code>#FDBA74</code></td></tr>
+<tr><td>인용 박스 배경</td><td style="background:#f5f5f5">■</td><td><code>#f5f5f5</code></td></tr>
+<tr><td>구분선</td><td style="background:#eee">■</td><td><code>#eeeeee</code></td></tr>
+</table>
+
+<h3>공통 컴포넌트</h3>
+
+<p><b>로고 헤더 (Template A/B)</b></p>
+<div class="S"><b>🎨 SPEC</b><br>
+로고 이미지(v4): <code>logo-email-v4.png</code> (503×132px, height 48px)<br>
+10+ 마크(빨간) + 자사몰사관학교(검정), 투명 배경, 중앙 정렬</div>
+
+<p><b>로고 헤더 (Template C — 성공사례)</b></p>
+<div class="S"><b>🎨 SPEC</b><br>
+빨간 버튼형: <code>#F75D5D</code> 배경, 흰 쇼핑백 아이콘 + "자사몰사관학교" 흰 텍스트<br>
+pill 형태 (border-radius: 20px), 중앙 정렬</div>
+
+<p><b>프로필 카드</b></p>
+<div class="prof">
+  <div style="width:48px;height:48px;border-radius:50%;background:#ddd"></div>
+  <div>
+    <div class="name">스미스 <span class="role">자사몰사관학교 코치</span></div>
+    <div class="info">메타파트너 / 메타공식 프로페셔널<br>스킨스쿨 / 제이카드 Co-founder<br>수강생 자사몰매출 450억+</div>
+  </div>
+</div>
+<div class="S"><b>🎨 SPEC</b><br>
+원형사진 48×48 + 우측 텍스트 · 이름 14px bold + 역할 #F75D5D 12px · 경력 11px #888</div>
+
+<p><b>푸터</b></p>
+<div class="S"><b>🎨 SPEC</b><br>
+배경 <code>#f5f5f5</code>, 중앙정렬, 13px #888<br>
+"자사몰 사관학교" + 뉴스레터 안내 + 수신거부 링크 + © 2026</div>
+
+<hr>
+<h3>3종 템플릿 비교</h3>
+<table>
+<tr><th>항목</th><th>A. 정보공유</th><th>B. 웨비나</th><th>C. 성공사례</th></tr>
+<tr><td>히어로</td><td>없음 (제목+인용구)</td><td>빨간그라데이션 배너<br>"LIVE 무료 웨비나"</td><td>없음 (인사말 시작)</td></tr>
+<tr><td>배지</td><td>BS CAMP INSIGHT</td><td>LIVE 무료 웨비나</td><td>SUCCESS STORY</td></tr>
+<tr><td>로고</td><td>흰배경+이미지</td><td>흰배경+이미지</td><td>빨간버튼형</td></tr>
+<tr><td>시작</td><td>로고→제목→인용구</td><td>로고→히어로배너</td><td>로고→"안녕하세요 대표님"</td></tr>
+<tr><td>CTA</td><td>"전체 가이드 보기"</td><td>"지금 신청하기"</td><td>없음</td></tr>
+<tr><td>톤</td><td>전문 코치 (교육적)</td><td>긴급/기대감</td><td>감정적 스토리텔링</td></tr>
+<tr><td>프로필</td><td>있음 (CTA 위)</td><td>있음 (CTA 위)</td><td>없음 (인사말에서 소개)</td></tr>
+<tr><td>배너 섹션</td><td>INSIGHT<br>KEY POINT<br>CHECKLIST</td><td>강의 미리보기<br>핵심 주제<br>이런 분들을 위해<br>웨비나 일정</td><td>성과<br>INTERVIEW<br>핵심 변화</td></tr>
+</table>
+
+</div></div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE 2: Template A — 정보공유 (Education)
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="page">
+<div class="ph">
+  <div class="pn">PAGE 2 OF 7</div>
+  <div class="badge">TEMPLATE A</div>
+  <h1>정보공유 (Education)</h1>
+  <p class="sub">레퍼런스: "Pixel과 Conversions API 완전정복"</p>
+</div>
+<div class="pb">
+
+<h2>섹션 플로우</h2>
+<div class="fl">
+<span class="fi">로고</span><span class="fa">→</span>
+<span class="fi">제목</span><span class="fa">→</span>
+<span class="fi">인용구(훅)</span><span class="fa">→</span>
+<span class="fi">도입</span><span class="fa">→</span>
+<span class="fh">INSIGHT</span><span class="fa">→</span>
+<span class="fh">KEY POINT</span><span class="fa">→</span>
+<span class="fh">CHECKLIST</span><span class="fa">→</span>
+<span class="fi">마무리</span><span class="fa">→</span>
+<span class="fi">프로필</span><span class="fa">→</span>
+<span class="fh">CTA</span><span class="fa">→</span>
+<span class="fi">인사말</span><span class="fa">→</span>
+<span class="fi">푸터</span>
+</div>
+
+<hr>
+<h3>1. 제목</h3>
+<div class="hero-a">
+  <div style="font-size:22px;font-weight:800;color:#1a1a2e">Pixel과 Conversions API 완전정복</div>
+</div>
+<div class="S"><b>🎨 SPEC</b><br>22px, bold 800, #1a1a2e, 중앙정렬</div>
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## title
+Pixel과 Conversions API 완전정복</pre>
+• 10~25자 · 주제 핵심을 한 문장으로 · 전문 교육 톤</div>
+
+<h3>2. 인용구 (훅)</h3>
+<div style="text-align:center;color:#F75D5D;font-size:14px;font-style:italic;padding:8px 0">
+"전환 추적이 안 되면, 메타 AI는 눈을 감고 광고하는 거예요."
+</div>
+<div class="S"><b>🎨 SPEC</b><br>#F75D5D, 14px, italic, 중앙정렬, 따옴표 감싸기</div>
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## hook_quote
+"전환 추적이 안 되면, 메타 AI는 눈을 감고 광고하는 거예요."</pre>
+• 한 문장 20~40자 · 독자 고민/위기감 · 따옴표 필수 · 빨간색 표시</div>
+<div class="E"><b>✅ EXAMPLE</b><br>"전환 추적이 안 되면, 메타 AI는 눈을 감고 광고하는 거예요."</div>
+
+<h3>3. 도입 텍스트</h3>
+<div class="S"><b>🎨 SPEC</b><br>15px, #333, 행간1.7, 좌측정렬 · 핵심 키워드 <span style="color:#F75D5D;font-weight:700">빨간볼드</span> 강조</div>
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## intro
+광고비 100만 원을 쓰는데 전환이 3건밖에 안 잡힌다면?
+실제론 10건인데 7건이 누락되고 있을 수 있어요. **Pixel(픽셀)**과 **CAPI(전환 API)** 셋팅이 빠져있기 때문이에요.</pre>
+• 2~3문단, 60~120자 · 문제제기 → 원인 지목 · **볼드** = 빨간색 강조 변환</div>
+
+<hr>
+
+<h3>4. INSIGHT ★</h3>
+<img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-insight.png" class="bimg">
+<div class="cap">banner-insight.png</div>
+
+<div class="S"><b>🎨 SPEC</b><br>
+• <b>배너:</b> <code>banner-insight.png</code> (빨간리본, "INSIGHT" 흰글)<br>
+• <b>소제목:</b> 17px bold, #333, 질문형<br>
+• <b>본문:</b> 15px, 행간1.7, 핵심단어 <b style="color:#F75D5D">빨간볼드</b><br>
+• <b>💡 팁박스:</b> 배경 <code>#FFF8E7</code>, 좌측보더 4px <code>#FDBA74</code>, 💡 이모지 접두어, 실제사례 수치 포함</div>
+
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## insight_subtitle
+Pixel + CAPI, 왜 둘 다 필요한가요?
+
+## insight_body
+Pixel(픽셀)은 **고객의 행동을 추적하는 눈**이에요.
+웹사이트 방문, 장바구니 담기, 구매까지 모든 행동을 메타에 알려주는 코드예요.
+
+문제는 **iOS 14.5 이후 브라우저 추적이 30~40% 막힌다**는 거예요.
+CAPI(전환 API)는 이 문제의 해결책이에요. 브라우저가 아닌 **서버에서 직접** 전환 데이터를 메타로 보내기 때문에 차단되지 않아요.
+
+## insight_tip
+💡 실제 사례: Pixel만 쓰던 쇼핑몰이 CAPI를 추가 연동한 후, 잡히는 전환 수가 42% 증가했어요. 광고비는 그대로인데 ROAS가 1.8 → 3.1로 올랐습니다.</pre>
+<b>규칙:</b><br>
+• 소제목: 질문형, 10~20자<br>
+• 본문: 3~5문단, 150~300자 · <code>**텍스트**</code> = 빨간볼드 강조 (최대 3개)<br>
+• 팁: 💡 접두어 필수 · 실제 수치 포함 · 50~100자 · "실제 사례:" 패턴</div>
+
+<div class="E"><b>✅ EXAMPLE (팁박스)</b>
+<div class="tip">💡 실제 사례: Pixel만 쓰던 쇼핑몰이 CAPI를 추가 연동한 후, 잡히는 전환 수가 42% 증가했어요. 광고비는 그대로인데 ROAS가 1.8 → 3.1로 올랐습니다.</div>
+</div>
+
+</div></div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE 3: Template A 하단 — KEY POINT + CHECKLIST
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="page">
+<div class="ph">
+  <div class="pn">PAGE 3 OF 7</div>
+  <div class="badge">TEMPLATE A</div>
+  <h1>정보공유 — KEY POINT & CHECKLIST</h1>
+</div>
+<div class="pb">
+
+<h3>5. KEY POINT ★</h3>
+<img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-key-point.png" class="bimg">
+<div class="cap">banner-key-point.png</div>
+
+<div class="S"><b>🎨 SPEC</b><br>
+• <b>배너:</b> <code>banner-key-point.png</code><br>
+• <b>레이아웃:</b> 3개 번호카드 세로 나열<br>
+• <b>번호배지:</b> <code>#F75D5D</code> 원형 40×40, 흰 숫자 (01/02/03)<br>
+• <b>카드 제목:</b> 15px bold<br>
+• <b>카드 설명:</b> 13px #666, 30~60자</div>
+
+<div style="border:1px solid #eee;border-radius:6px;padding:14px;margin:10px 0">
+<div class="cr"><div class="nb">01</div><div><div class="tt">Pixel 베이스 코드 = 모든 페이지에 설치</div><div class="ds">메인 페이지만 달면 안 돼요. 상품 상세, 장바구니, 결제 완료 페이지 전부에 들어가야 해요.</div></div></div>
+<div class="cr"><div class="nb">02</div><div><div class="tt">CAPI 이중 추적 = 2026년 기본 세팅</div><div class="ds">Shopify는 앱 하나로, 카페24는 플러그인으로 연동할 수 있어요. 설정 난이도가 높지 않아요.</div></div></div>
+<div class="cr"><div class="nb">03</div><div><div class="tt">EMQ(이벤트 매칭 품질) 8점 이상이 목표</div><div class="ds">이메일, 전화번호 같은 고객 정보를 전환 이벤트에 포함하면 EMQ 점수가 올라가요.</div></div></div>
+</div>
+
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## keypoint_01_title
+Pixel 베이스 코드 = 모든 페이지에 설치
+
+## keypoint_01_desc
+메인 페이지만 달면 안 돼요. 상품 상세, 장바구니, 결제 완료 페이지 전부에 들어가야 해요.
+
+## keypoint_02_title / keypoint_02_desc
+## keypoint_03_title / keypoint_03_desc</pre>
+<b>규칙:</b><br>
+• 반드시 3개 · 제목 10~25자 · 설명 30~60자<br>
+• 제목: "A = B" 공식형 또는 핵심 요약형<br>
+• 설명: 구체적 방법/도구 언급 · 마지막 항목에 빨간강조 수치 포함 권장</div>
+
+<hr>
+
+<h3>6. CHECKLIST ★</h3>
+<img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-checklist.png" class="bimg">
+<div class="cap">banner-checklist.png</div>
+
+<div class="S"><b>🎨 SPEC</b><br>
+• <b>배너:</b> <code>banner-checklist.png</code><br>
+• <b>레이아웃:</b> 체크마크 리스트, 항목 간 구분선(<code>#eee</code>)<br>
+• <b>체크 아이콘:</b> <code>#F75D5D</code> 원형 체크마크 (✓)<br>
+• <b>텍스트:</b> 15px, #333, 질문형 ("~있나요?", "~하나요?")</div>
+
+<div style="border:1px solid #eee;border-radius:6px;padding:14px;margin:10px 0">
+<div class="ci"><span class="ck">✅</span> Pixel 베이스 코드가 전체 페이지에 설치되어 있나요?</div>
+<div class="ci"><span class="ck">✅</span> 구매·장바구니·결제시작 이벤트가 정상 발화하나요?</div>
+<div class="ci"><span class="ck">✅</span> CAPI가 연동되어 서버 사이드 추적이 작동하나요?</div>
+<div class="ci"><span class="ck">✅</span> EMQ 점수가 8 이상인가요?</div>
+<div class="ci"><span class="ck">✅</span> 이벤트 중복 제거(Deduplication)가 설정되어 있나요?</div>
+</div>
+
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## checklist
+- Pixel 베이스 코드가 전체 페이지에 설치되어 있나요?
+- 구매·장바구니·결제시작 이벤트가 정상 발화하나요?
+- CAPI가 연동되어 서버 사이드 추적이 작동하나요?
+- EMQ 점수가 8 이상인가요?
+- 이벤트 중복 제거(Deduplication)가 설정되어 있나요?</pre>
+<b>규칙:</b><br>
+• 4~6개 · 질문형 필수 ("~있나요?", "~하나요?")<br>
+• KEY POINT 내용을 실행 확인 관점으로 변환<br>
+• 각 항목 15~30자</div>
+
+<hr>
+
+<h3>7. 마무리 텍스트</h3>
+<div class="S"><b>🎨 SPEC</b><br>15px, #333, 중앙정렬 · 위기감 + 행동유도 · 2문장</div>
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## closing
+하나라도 빠져있다면, 지금 광고비의 30%가 허공에 사라지고 있는 거예요.
+전체 세팅 가이드에서 단계별로 확인해보세요.</pre>
+• 2문장 · 1문장: 못하면 생기는 손해(수치 포함) · 2문장: CTA로 유도</div>
+
+<h3>8. CTA 버튼</h3>
+<div class="cta">전체 가이드 보기 →</div>
+<div class="S"><b>🎨 SPEC</b><br>배경 <code>#F75D5D</code>, 흰텍스트, 16px bold, border-radius 6px, 풀너비, 중앙정렬, → 화살표 포함</div>
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## cta_text
+전체 가이드 보기
+
+## cta_url
+(관리자가 수동 입력)</pre>
+• "전체 가이드 보기" / "지금 확인하기" 등 5~10자 · → 화살표 자동 추가</div>
+
+<h3>9. 하단 인사말</h3>
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## farewell
+더 깊은 실전 노하우가 궁금하시다면, 자사몰사관학교에서 직접 배워보세요.
+
+감사합니다.
+**자사몰사관학교** 드림</pre>
+• 1문장 행동유도 + "감사합니다" + 브랜드명 서명 · "자사몰사관학교" = 빨간링크</div>
+
+</div></div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE 4: Template B — 웨비나 홍보 (Webinar) 상단
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="page">
+<div class="ph">
+  <div class="pn">PAGE 4 OF 7</div>
+  <div class="badge">TEMPLATE B</div>
+  <h1>웨비나 홍보 (Webinar) — 상단</h1>
+  <p class="sub">레퍼런스: "메타 광고, 열심히 하는데 왜 성과가 안 나올까?"</p>
+</div>
+<div class="pb">
+
+<h2>섹션 플로우</h2>
+<div class="fl">
+<span class="fi">로고</span><span class="fa">→</span>
+<span class="fh">히어로배너</span><span class="fa">→</span>
+<span class="fi">도입</span><span class="fa">→</span>
+<span class="fh">강의미리보기</span><span class="fa">→</span>
+<span class="fh">핵심주제</span><span class="fa">→</span>
+<span class="fh">이런분들을위해</span><span class="fa">→</span>
+<span class="fh">웨비나일정</span><span class="fa">→</span>
+<span class="fi">넛지</span><span class="fa">→</span>
+<span class="fi">프로필</span><span class="fa">→</span>
+<span class="fh">CTA</span><span class="fa">→</span>
+<span class="fi">푸터</span>
+</div>
+
+<hr>
+
+<h3>1. 히어로 배너 ★</h3>
+<div class="hero-b">
+  <div class="pill">🔴 LIVE 무료 웨비나</div>
+  <div style="font-size:20px;font-weight:800;line-height:1.4">메타 광고, 열심히 하는데<br>왜 성과가 안 나올까?</div>
+  <div style="font-size:12px;margin-top:8px;opacity:.8">메타 광고, 세팅 하나 바꿨을 뿐인데 ROAS가 2배?</div>
+</div>
+<div class="S"><b>🎨 SPEC</b><br>
+• <b>배경:</b> 그라데이션 <code>#F75D5D → #e04444</code>, border-radius 8px<br>
+• <b>배지:</b> "LIVE 무료 웨비나" 반투명 pill (rgba(255,255,255,.2)), 10px bold<br>
+• <b>제목:</b> 22px bold 흰색, 중앙<br>
+• <b>부제:</b> 14px 흰색 opacity .8<br>
+• <b>높이:</b> ~220px, 패딩 40px 32px</div>
+
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## hero_title
+메타 광고, 열심히 하는데 왜 성과가 안 나올까?
+
+## hero_subtitle
+메타 광고, 세팅 하나 바꿨을 뿐인데 ROAS가 2배?</pre>
+<b>규칙:</b><br>
+• 제목: 질문형 20~30자, 독자 고민 직접 언급<br>
+• 부제: 기대감/결과 암시 15~25자</div>
+
+<h3>2. 도입 텍스트</h3>
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## intro
+메타 광고, 세팅 하나 바꿨을 뿐인데 ROAS가 2배?
+"열심히"가 아니라 **"정확하게"** 하는 게 핵심이에요.
+자사몰사관학교 대표 김성현이 **자사몰 누적 매출 500억**의 실전 세팅법을 **웨비나**에서 직접 공개합니다.</pre>
+• 2~3문단 · 핵심키워드 **볼드**(빨간강조) · 공감→전환→기대</div>
+
+<hr>
+
+<h3>3. 강의 미리보기 ★</h3>
+<img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-preview.png" class="bimg">
+<div class="cap">banner-preview.png</div>
+
+<div style="background:#f9f6f2;border-radius:8px;padding:20px;text-align:center;margin:10px 0">
+  <div style="width:60px;height:60px;border-radius:50%;background:rgba(247,93,93,.15);display:inline-flex;align-items:center;justify-content:center;font-size:24px">▶</div>
+  <div style="color:#F75D5D;font-size:13px;font-weight:600;margin-top:8px">강의 슬라이드 미리보기</div>
+  <div style="font-size:11px;color:#999;margin-top:2px">밑줄 친 이미지를 교체해주세요</div>
+</div>
+
+<div class="S"><b>🎨 SPEC</b><br>
+• <b>배너:</b> <code>banner-preview.png</code><br>
+• <b>이미지:</b> 16:9 비율 placeholder, 직원이 슬라이드 교체<br>
+• <b>재생버튼:</b> 원형 60×60, <code>rgba(247,93,93,.15)</code> 배경, ▶ 아이콘<br>
+• <b>캡션:</b> #F75D5D 13px bold + #999 11px 부가설명</div>
+
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## preview_caption
+📺 웨비나에서 공개될 실전 광고 세팅 화면
+
+## preview_tags
+메타 마케팅 · 콘텐츠 제작 · 데이터 분석 슬라이드</pre>
+• 캡션: 1문장 15~25자, 📺 이모지 · 이미지는 AI가 생성하지 않음 (직원 교체)</div>
+
+<h3>4. 핵심 주제 ★</h3>
+<img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-topics.png" class="bimg">
+<div class="cap">banner-topics.png</div>
+<div class="S"><b>🎨 SPEC</b> — Template A의 KEY POINT와 <b>동일 구조</b> (배너 + 01/02/03 카드)</div>
+
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## topic_01_title / topic_01_desc
+## topic_02_title / topic_02_desc
+## topic_03_title / topic_03_desc</pre>
+• KEY POINT 규칙 동일 (3개, 제목 10~20자, 설명 30~60자)<br>
+• 단, 웨비나에서 다룰 내용 위주 · 기대감+구체성</div>
+
+<div class="E"><b>✅ EXAMPLE</b><br>
+01 메타 광고 세팅 진단법 — 지금 내 광고 계정, 제대로 셋팅되어 있는지 10분 안에 체크하는 방법.<br>
+02 ROAS를 올리는 캠페인 구조 — ASC+쇼핑 캠페인 실험비서, CBO vs ABO 선택 기준까지.<br>
+03 데이터 기반 의사결정 — 광고비를 늘려야 할 때와 줄여야 할 때를 구분하는 기준.</div>
+
+</div></div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE 5: Template B — 웨비나 홍보 하단
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="page">
+<div class="ph">
+  <div class="pn">PAGE 5 OF 7</div>
+  <div class="badge">TEMPLATE B</div>
+  <h1>웨비나 홍보 — 하단 섹션</h1>
+</div>
+<div class="pb">
+
+<h3>5. 이런 분들을 위해 ★</h3>
+<img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-target.png" class="bimg">
+<div class="cap">banner-target.png</div>
+
+<div style="border:1px solid #eee;border-radius:6px;padding:14px 18px;margin:10px 0">
+  <div style="padding:6px 0;border-bottom:1px solid #f0f0f0"><span style="color:#F75D5D;font-weight:700">•</span> 자사몰 <b style="color:#F75D5D">매출이 정체</b>되어 돌파구가 필요하신 대표님</div>
+  <div style="padding:6px 0;border-bottom:1px solid #f0f0f0"><span style="color:#F75D5D;font-weight:700">•</span> 광고비는 쓰는데 <b style="color:#F75D5D">수익이 남는 건지 확신</b>이 없는 분</div>
+  <div style="padding:6px 0;border-bottom:1px solid #f0f0f0"><span style="color:#F75D5D;font-weight:700">•</span> 메타 광고를 직접 운영하지만 <b style="color:#F75D5D">체계적인 방법론</b>이 없는 분</div>
+  <div style="padding:6px 0"><span style="color:#F75D5D;font-weight:700">•</span> 다음 기수 수강을 고민 중이라 <b style="color:#F75D5D">커리큘럼을 먼저 체험</b>하고 싶은 분</div>
+</div>
+
+<div class="S"><b>🎨 SPEC</b><br>
+• <b>배너:</b> <code>banner-target.png</code><br>
+• <b>불릿:</b> <code>#F75D5D</code> 굵은 점(•)<br>
+• <b>텍스트:</b> 15px, 핵심 키워드 <b style="color:#F75D5D">빨간볼드</b><br>
+• <b>항목 수:</b> 3~5개 · 항목 간 구분선</div>
+
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## target_list
+- 자사몰 **매출이 정체**되어 돌파구가 필요하신 대표님
+- 광고비는 쓰는데 **수익이 남는 건지 확신**이 없는 분
+- 메타 광고를 직접 운영하지만 **체계적인 방법론**이 없는 분
+- 다음 기수 수강을 고민 중이라 **커리큘럼을 먼저 체험**하고 싶은 분</pre>
+<b>규칙:</b><br>
+• 3~5개 · 페르소나 기반 (대표님/마케터/수강 고민자)<br>
+• 각 항목 20~35자 · **볼드** = 빨간강조 · 핵심 키워드 1개씩</div>
+
+<hr>
+
+<h3>6. 웨비나 일정 안내 ★</h3>
+<img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-schedule.png" class="bimg">
+<div class="cap">banner-schedule.png</div>
+
+<table class="sched" style="margin:10px 0">
+<tr style="background:#FFF0F0"><th>항목</th><th>내용</th></tr>
+<tr><td>📅 일시</td><td><b style="color:#F75D5D">2026년 2월 19일(수) 오후 3시 ~ 5시</b></td></tr>
+<tr><td>🔴 형식</td><td>실시간 온라인 <b style="color:#F75D5D">웨비나</b>(120분) + 실시간 Q&A</td></tr>
+<tr><td>👍 참가비</td><td><b style="color:#F75D5D">무료</b></td></tr>
+<tr><td>🔗 참여</td><td>사전 신청자에게 알림톡으로 참여 링크를 전달해 드려요</td></tr>
+</table>
+
+<div class="S"><b>🎨 SPEC</b><br>
+• <b>배너:</b> <code>banner-schedule.png</code><br>
+• <b>테이블:</b> 2열 (이모지+라벨 | 내용), 헤더행 연핑크 <code>#FFF0F0</code><br>
+• <b>라벨:</b> bold, 이모지 접두어 필수<br>
+• <b>일시/무료:</b> <code>#F75D5D</code> 강조<br>
+• <b>항목 수:</b> 4~5개 (일시/형식/참가비/참여 필수)</div>
+
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## schedule
+| 📅 일시 | 2026년 2월 19일(수) 오후 3시 ~ 5시 |
+| 🔴 형식 | 실시간 온라인 **웨비나**(120분) + 실시간 Q&A |
+| 👍 참가비 | **무료** |
+| 🔗 참여 | 사전 신청자에게 알림톡으로 참여 링크를 전달해 드려요 |</pre>
+<b>규칙:</b><br>
+• 4행 필수 (일시/형식/참가비/참여) · 이모지 접두어 필수<br>
+• 일시: 날짜+요일+시간 풀표기 · 참가비: "무료" 강조<br>
+• **볼드** = 빨간강조</div>
+
+<hr>
+
+<h3>7. 넛지 문구</h3>
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## nudge
+정원이 마감되기 전에 신청하세요.
+현장에서 바로 적용할 수 있는 실전 인사이트를 가져가실 수 있어요.</pre>
+• 2문장 · 긴급성("마감 전") + 가치("실전 인사이트")</div>
+
+<h3>8. CTA 버튼</h3>
+<div class="cta">지금 신청하기 →</div>
+<div class="S"><b>🎨 SPEC</b> — Template A CTA와 동일 구조, 텍스트만 "지금 신청하기"</div>
+
+</div></div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE 6: Template C — 성공사례 (Case Study) 상단
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="page">
+<div class="ph">
+  <div class="pn">PAGE 6 OF 7</div>
+  <div class="badge">TEMPLATE C</div>
+  <h1>성공사례 (Case Study) — 상단</h1>
+  <p class="sub">레퍼런스: "수강생 A 매출 3배 성장 사례"</p>
+</div>
+<div class="pb">
+
+<h2>섹션 플로우</h2>
+<div class="fl">
+<span class="fh" style="background:#22C55E">로고(버튼)</span><span class="fa">→</span>
+<span class="fi">인사말</span><span class="fa">→</span>
+<span class="fi">제목</span><span class="fa">→</span>
+<span class="fh" style="background:#22C55E">감정후킹</span><span class="fa">→</span>
+<span class="fi">배경설명</span><span class="fa">→</span>
+<span class="fi">수강생인용</span><span class="fa">→</span>
+<span class="fh">성과</span><span class="fa">→</span>
+<span class="fh">INTERVIEW</span><span class="fa">→</span>
+<span class="fh">핵심변화</span><span class="fa">→</span>
+<span class="fi">푸터</span>
+</div>
+<p style="font-size:12px;color:#888;margin-top:4px">⚠️ CTA 버튼 없음 · 프로필 카드 없음 (인사말에서 소개)</p>
+
+<hr>
+
+<h3>1. 로고 (버튼형)</h3>
+<div class="hero-c"><div class="btn-logo">🛍️ 자사몰사관학교</div></div>
+<div class="S"><b>🎨 SPEC</b><br>
+빨간 pill 형태: <code>#F75D5D</code> 배경, 흰텍스트, 쇼핑백 아이콘, border-radius 20px, 중앙정렬<br>
+⚠️ Template A/B와 다름!</div>
+
+<h3>2. 인사말</h3>
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## greeting
+안녕하세요 대표님,
+**자사몰사관학교**의 스미스코치입니다.</pre>
+• "안녕하세요 대표님" 고정 · 브랜드명 볼드(빨간링크) · 2줄</div>
+
+<h3>3. 제목</h3>
+<div class="S"><b>🎨 SPEC</b><br>22px bold, #1a1a2e, 중앙정렬 · 키워드 빨간밑줄</div>
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## title
+수강생 A 매출 3배 성장 **사례** — 자사몰사관학교 6기</pre>
+• 핵심 수치 포함 · 기수 정보 · <code>**텍스트**</code> = 빨간밑줄</div>
+
+<h3>4. 감정 후킹 인용 ★</h3>
+<div style="text-align:center;color:#F75D5D;font-size:15px;font-style:italic;padding:12px 0">
+"광고를 끄면 매출이 사라지고, 켜면 적자가 나는 무한 루프였어요."
+</div>
+<div class="S"><b>🎨 SPEC</b><br>
+<code>#F75D5D</code>, 15px, italic, 중앙정렬 · 수강생의 수강 전 고민 직접 인용</div>
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## emotion_hook
+"광고를 끄면 매출이 사라지고, 켜면 적자가 나는 무한 루프였어요."</pre>
+• 수강생 목소리로 작성 · 1문장 20~40자 · 고통/좌절 감정 · 따옴표 필수</div>
+
+<h3>5. 배경 설명 (Before)</h3>
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## background
+자사몰 2년 차, 월 매출 1,000만 원에서 도무지 올라가지 못했던 브랜드.
+자사몰사관학교 6기 수료 **3개월 만에 월 매출 3,200만 원**을 달성한 실제 이야기입니다.</pre>
+• 2문장 · Before 상황 + After 핵심 수치 · **볼드** = 빨간강조</div>
+
+<h3>6. 수강생 인용 박스</h3>
+<div class="qt">
+"예전엔 광고가 안 되면 소재를 바꿔보고, 그래도 안 되면 예산을 올렸어요. 전략이 아니라 기도였죠."
+<div class="src">— 수강생 A님</div>
+</div>
+<div class="S"><b>🎨 SPEC</b><br>
+배경 <code>#f5f5f5</code>, border-radius 6px, 패딩 14px 18px<br>
+이탤릭 13px #555 · 출처 11px #999 · "— 수강생 A님" 패턴</div>
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## student_quote_before
+"예전엔 광고가 안 되면 소재를 바꿔보고, 그래도 안 되면 예산을 올렸어요. 전략이 아니라 기도였죠."</pre>
+• 수강 전 문제 인식 · 1~2문장 30~60자 · 구체적 행동 묘사 · 따옴표 필수</div>
+
+</div></div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE 7: Template C — 성공사례 하단
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="page">
+<div class="ph">
+  <div class="pn">PAGE 7 OF 7</div>
+  <div class="badge">TEMPLATE C</div>
+  <h1>성공사례 — 성과 · INTERVIEW · 핵심변화</h1>
+</div>
+<div class="pb">
+
+<h3>7. 성과 ★</h3>
+<img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-results.png" class="bimg">
+<div class="cap">banner-results.png</div>
+
+<div class="S"><b>🎨 SPEC</b><br>
+• <b>배너:</b> <code>banner-results.png</code> (빨간리본, "성과")<br>
+• <b>테이블:</b> 3열 (지표 | Before | After)<br>
+• <b>소제목:</b> <code>#F75D5D</code> 볼드 ("자사몰 매출", "광고 효율")<br>
+• <b>After 수치:</b> <code>#F75D5D</code> 볼드 강조<br>
+• <b>테이블 2개:</b> 자사몰 매출 + 광고 효율 분리</div>
+
+<p style="color:#F75D5D;font-weight:700;margin-top:12px">자사몰 매출</p>
+<table class="ba">
+<tr><th>지표</th><th>Before</th><th>After</th></tr>
+<tr><td>월 매출</td><td>1,000만 원</td><td class="af">3,200만 원</td></tr>
+<tr><td>전환율</td><td>1.2%</td><td class="af">3.8%</td></tr>
+</table>
+
+<p style="color:#F75D5D;font-weight:700;margin-top:12px">광고 효율</p>
+<table class="ba">
+<tr><th>지표</th><th>Before</th><th>After</th></tr>
+<tr><td>ROAS</td><td>1.8배</td><td class="af">4.2배</td></tr>
+<tr><td>CPA</td><td>28,000원</td><td class="af">12,000원</td></tr>
+</table>
+
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## results_table_1_title
+자사몰 매출
+
+## results_table_1
+| 지표 | Before | After |
+| 월 매출 | 1,000만 원 | **3,200만 원** |
+| 전환율 | 1.2% | **3.8%** |
+
+## results_table_2_title
+광고 효율
+
+## results_table_2
+| 지표 | Before | After |
+| ROAS | 1.8배 | **4.2배** |
+| CPA | 28,000원 | **12,000원** |</pre>
+<b>규칙:</b><br>
+• 테이블 2개 (매출 + 효율) · 각 2~3행<br>
+• After 수치 **볼드**(빨간강조) · 수치 변화 극적으로<br>
+• 지표: 월매출/전환율/ROAS/CPA/광고비 등</div>
+
+<hr>
+
+<h3>8. INTERVIEW ★</h3>
+<img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-interview.png" class="bimg">
+<div class="cap">banner-interview.png</div>
+
+<div class="qt">
+"ROAS 계산법을 제대로 배우고 나니까, 광고비 500만 원을 넣어도 수익이 나는 구조가 처음으로 보였어요. 그 전엔 100만 원도 무서웠거든요."
+<div class="src">— 수강생 A님</div>
+</div>
+<div class="qt">
+"소재를 만드는 방식 자체가 달라졌어요. 예쁜 사진 → <b style="color:#F75D5D">후킹·혜택·CTA 구조</b>로 바꿨더니 클릭률이 1.2%에서 2.8%로 올랐어요."
+<div class="src">— 수강생 A님</div>
+</div>
+
+<div class="S"><b>🎨 SPEC</b><br>
+• <b>배너:</b> <code>banner-interview.png</code><br>
+• <b>인용카드:</b> 2개, 연회색 배경 <code>#f5f5f5</code><br>
+• <b>방법론 키워드:</b> <code>#F75D5D</code> 볼드<br>
+• <b>출처:</b> "— 수강생 A님"</div>
+
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## interview_1
+"ROAS 계산법을 제대로 배우고 나니까, 광고비 500만 원을 넣어도 수익이 나는 구조가 처음으로 보였어요."
+
+## interview_2
+"소재를 만드는 방식 자체가 달라졌어요. 예쁜 사진 → **후킹·혜택·CTA 구조**로 바꿨더니 클릭률이 1.2%에서 2.8%로 올랐어요."</pre>
+<b>규칙:</b><br>
+• 인용 2개 · 각 40~80자<br>
+• 1번: 마인드셋/인식 변화 · 2번: 구체적 방법론 + 수치 결과<br>
+• **볼드** = 방법론 키워드 빨간강조 · 따옴표 필수</div>
+
+<hr>
+
+<h3>9. 핵심 변화 ★</h3>
+<img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-change.png" class="bimg">
+<div class="cap">banner-change.png</div>
+
+<div style="border:1px solid #eee;border-radius:6px;padding:14px;margin:10px 0">
+<div class="cr"><div class="nb">01</div><div><div class="tt">타겟 전략: 감에서 데이터로</div><div class="ds">관심사 타겟만 쓰던 방식에서, 유사 타겟 + 리타겟 조합으로 전환. 신규 유입과 재방문 전환을 동시에 잡았어요.</div></div></div>
+<div class="cr"><div class="nb">02</div><div><div class="tt">소재 운영: 주 2회 A/B 테스트 체계화</div><div class="ds">"이번 소재 느낌이 좋아요" → "이 소재 CTR이 2.8%니까 예산 배분 높여요"로 의사결정 기준이 바뀌었어요.</div></div></div>
+<div class="cr"><div class="nb">03</div><div><div class="tt">데이터 추적: CAPI 완전 연동</div><div class="ds">Pixel만 쓸 때 전환 데이터 30% 누락 → CAPI 이중 추적으로 메타 AI 최적화 극대화. EMQ 9점 달성.</div></div></div>
+</div>
+
+<div class="S"><b>🎨 SPEC</b><br>
+• <b>배너:</b> <code>banner-change.png</code><br>
+• <b>레이아웃:</b> KEY POINT와 동일 (01/02/03 카드)<br>
+• <b>특이점:</b> Before→After 화살표(→) 패턴, 구체적 수치 변화</div>
+
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## change_01_title / change_01_desc
+## change_02_title / change_02_desc
+## change_03_title / change_03_desc</pre>
+<b>규칙:</b><br>
+• 3개 · 제목: "분야: 변화 요약" 패턴 (10~20자)<br>
+• 설명: Before→After 서술, 구체적 수치 포함, 40~80자<br>
+• 1=타겟/전략 · 2=소재/운영 · 3=데이터/추적 (교육 포인트 기반)</div>
+
+<div class="E"><b>✅ EXAMPLE</b><br>
+01 타겟 전략: 감에서 데이터로 — 관심사 타겟만 쓰던 방식에서, 유사 타겟 + 리타겟 조합으로 전환.<br>
+02 소재 운영: 주 2회 A/B 테스트 체계화 — "느낌 좋아요" → "CTR 2.8%니까 예산 배분"으로 변화.<br>
+03 데이터 추적: CAPI 완전 연동 — Pixel만 쓸 때 30% 누락 → CAPI 이중 추적, EMQ 9점.</div>
+
+<h3>10. CTA 버튼</h3>
+<a class="cta" href="#" style="background:#22C55E;display:block;margin:12px 0;background:#22C55E;color:#fff;text-align:center;padding:14px;border-radius:6px;font-size:15px;font-weight:700;text-decoration:none">성공사례 보러가기 →</a>
+<div class="S"><b>🎨 SPEC</b><br>배경 <code>#22C55E</code>(그린), 흰텍스트, 16px bold, 풀너비<br>⚠️ Template A/B(빨간)와 다른 색상!</div>
+<div class="A"><b>🤖 AI GUIDE</b>
+<pre>## cta_text
+성공사례 보러가기
+
+## cta_url
+(관리자가 수동 입력)</pre>
+• "성공사례 보러가기" / "수강 상담 신청하기" 등</div>
+
+</div></div>
+
+
+</body>
+</html>

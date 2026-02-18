@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>뉴스레터 샘플 3종 — v5 렌더링</title>
+<style>
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard',-apple-system,sans-serif;background:#e0e0e0;color:#333;font-size:15px;line-height:1.7}
+.label{text-align:center;padding:32px 0 12px;font-size:13px;font-weight:700;color:#888;letter-spacing:2px;text-transform:uppercase}
+.label span{background:#F75D5D;color:#fff;padding:3px 12px;border-radius:12px;font-size:11px;margin-left:8px}
+
+/* Email container */
+.email{max-width:600px;margin:0 auto 40px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.08);page-break-after:always}
+.pad{padding:0 32px}
+
+/* Logo */
+.logo{text-align:center;padding:28px 0 20px}
+.logo img{height:48px}
+.logo-btn{text-align:center;padding:28px 0 20px}
+.logo-btn span{display:inline-block;background:#F75D5D;color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:700}
+
+/* Title */
+.title{text-align:center;padding:8px 32px 4px;font-size:22px;font-weight:800;color:#1a1a2e;line-height:1.4}
+
+/* Hook quote */
+.hook{text-align:center;color:#F75D5D;font-size:14px;font-style:italic;padding:12px 32px 16px}
+
+/* Hero banner (webinar) */
+.hero{background:linear-gradient(135deg,#F75D5D 0%,#e04444 100%);border-radius:8px;margin:8px 32px;padding:36px 24px;text-align:center;color:#fff}
+.hero .pill{display:inline-block;background:rgba(255,255,255,.2);padding:3px 14px;border-radius:14px;font-size:11px;font-weight:700;margin-bottom:10px}
+.hero h2{font-size:22px;font-weight:800;line-height:1.4;margin:0}
+.hero .sub{font-size:13px;margin-top:8px;opacity:.8}
+
+/* Body text */
+.body{padding:16px 32px;font-size:15px;line-height:1.7;color:#333}
+.body b,.body strong{color:#F75D5D}
+.body u{text-decoration-color:#F75D5D;text-decoration-thickness:2px}
+
+/* Banner image */
+.banner{display:block;width:100%;margin:0;padding:0}
+.banner-wrap{padding:0 32px;margin:8px 0}
+.banner-wrap img{width:100%;display:block;border-radius:0}
+
+/* Numbered cards */
+.cards{padding:0 32px 8px}
+.card{display:flex;align-items:flex-start;padding:14px 0;border-bottom:1px solid #f0f0f0}
+.card:last-child{border-bottom:0}
+.card .num{background:#F75D5D;color:#fff;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;margin-right:12px;margin-top:2px}
+.card .ct{font-weight:700;font-size:15px;margin-bottom:2px}
+.card .cd{font-size:13px;color:#666;line-height:1.5}
+
+/* Checklist */
+.checklist{padding:0 32px 8px}
+.check-item{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:14px}
+.check-item:last-child{border-bottom:0}
+.check-item .icon{color:#F75D5D;font-size:18px;margin-right:10px;flex-shrink:0}
+
+/* Tip box */
+.tipbox{margin:8px 32px 16px;background:#FFF8E7;border-left:4px solid #FDBA74;border-radius:0 6px 6px 0;padding:14px 18px;font-size:13.5px;line-height:1.6;color:#555}
+.tipbox b,.tipbox strong{color:#F75D5D}
+
+/* Bullet list */
+.bullets{padding:0 32px 8px}
+.bullet{padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:14px;line-height:1.6}
+.bullet:last-child{border-bottom:0}
+.bullet .dot{color:#F75D5D;font-weight:700;margin-right:6px}
+.bullet b,.bullet strong{color:#F75D5D}
+
+/* Schedule table */
+.sched-table{margin:8px 32px 16px;border-collapse:collapse;width:calc(100% - 64px);font-size:14px}
+.sched-table th{background:#FFF0F0;padding:8px 12px;text-align:left;font-size:13px;font-weight:600;color:#666}
+.sched-table td{padding:10px 12px;border-bottom:1px solid #f0f0f0}
+.sched-table td:first-child{font-weight:600;white-space:nowrap;width:80px}
+.sched-table b,.sched-table strong{color:#F75D5D}
+
+/* Quote box */
+.quotebox{margin:8px 32px;background:#f5f5f5;border-radius:6px;padding:16px 20px;font-style:italic;font-size:14px;color:#555;line-height:1.6}
+.quotebox .src{font-style:normal;font-size:12px;color:#999;margin-top:6px}
+.quotebox b,.quotebox strong{color:#F75D5D;font-style:normal}
+
+/* Before/After table */
+.ba-table{margin:8px 32px;width:calc(100% - 64px);border-collapse:collapse;font-size:14px}
+.ba-table th{background:#1a1a2e;color:#fff;padding:8px 12px;text-align:center;font-size:13px}
+.ba-table td{padding:8px 12px;text-align:center;border-bottom:1px solid #eee}
+.ba-table .af{color:#F75D5D;font-weight:700}
+.ba-label{padding:4px 32px;margin-top:12px;font-weight:700;color:#F75D5D;font-size:14px}
+
+/* Profile */
+.profile{display:flex;align-items:center;gap:12px;padding:20px 32px}
+.profile .photo{width:52px;height:52px;border-radius:50%;background:#ddd;flex-shrink:0;overflow:hidden}
+.profile .photo img{width:100%;height:100%;object-fit:cover}
+.profile .name{font-weight:700;font-size:15px}
+.profile .role{color:#F75D5D;font-size:12px;font-weight:600}
+.profile .info{font-size:11px;color:#888;line-height:1.4}
+
+/* CTA */
+.cta{display:block;margin:16px 32px 20px;background:#F75D5D;color:#fff;text-align:center;padding:16px;border-radius:6px;font-size:16px;font-weight:700;text-decoration:none}
+
+/* Farewell */
+.farewell{padding:12px 32px 16px;font-size:14px;color:#555;line-height:1.6}
+.farewell b,.farewell strong{color:#F75D5D}
+
+/* Divider */
+.divider{border:0;border-top:1px solid #eee;margin:16px 32px}
+
+/* Footer */
+.footer{background:#f5f5f5;text-align:center;padding:20px 32px;font-size:12px;color:#999;line-height:1.6}
+.footer b{color:#666}
+
+/* Preview placeholder */
+.preview-area{margin:8px 32px;background:#f9f6f2;border-radius:8px;padding:32px 20px;text-align:center}
+.preview-area .play{width:60px;height:60px;border-radius:50%;background:rgba(247,93,93,.15);display:inline-flex;align-items:center;justify-content:center;font-size:28px;color:#F75D5D}
+.preview-area .pcap{color:#F75D5D;font-size:13px;font-weight:600;margin-top:10px}
+.preview-area .psub{font-size:11px;color:#999;margin-top:2px}
+.preview-tags{text-align:center;padding:4px 32px 12px;font-size:12px;color:#999}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     SAMPLE A: 정보공유 — Pixel과 Conversions API
+     ═══════════════════════════════════════════════════ -->
+<div class="label">SAMPLE A <span>정보공유 (Education)</span></div>
+<div class="email">
+  <!-- Logo -->
+  <div class="logo">
+    <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v4.png" alt="자사몰사관학교">
+  </div>
+
+  <!-- Title -->
+  <div class="title">Pixel과 Conversions API 완전정복</div>
+
+  <!-- Hook -->
+  <div class="hook">"전환 추적이 안 되면, 메타 AI는 눈을 감고 광고하는 거예요."</div>
+
+  <!-- Intro -->
+  <div class="body">
+    광고비 100만 원을 쓰는데 전환이 3건밖에 안 잡힌다면?<br>
+    실제론 10건인데 7건이 누락되고 있을 수 있어요. <b>Pixel(픽셀)</b>과 <b>CAPI(전환 API)</b> 세팅이 빠져있기 때문이에요.
+  </div>
+
+  <hr class="divider">
+
+  <!-- INSIGHT banner -->
+  <div class="banner-wrap">
+    <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-insight.png" alt="INSIGHT">
+  </div>
+
+  <!-- INSIGHT content -->
+  <div class="body" style="padding-top:8px">
+    <div style="font-size:17px;font-weight:700;margin-bottom:8px">Pixel + CAPI, 왜 둘 다 필요한가요?</div>
+    Pixel(픽셀)은 <u>고객의 행동을 추적하는 눈</u>이에요. 웹사이트 방문, 장바구니 담기, 구매까지 모든 행동을 메타에 알려주는 코드예요.<br><br>
+    문제는 <u>iOS 14.5 이후 브라우저 추적이 30~40% 막힌다</u>는 거예요.<br>
+    CAPI(전환 API)는 이 문제의 해결책이에요. 브라우저가 아닌 <u>서버에서 직접</u> 전환 데이터를 메타로 보내기 때문에 차단되지 않아요.
+  </div>
+
+  <!-- Tip box -->
+  <div class="tipbox">
+    💡 실제 사례: Pixel만 쓰던 쇼핑몰이 CAPI를 추가 연동한 후, 잡히는 전환 수가 <b>42% 증가</b>했어요. 광고비는 그대로인데 ROAS가 1.8 → 3.1로 올랐습니다.
+  </div>
+
+  <!-- KEY POINT banner -->
+  <div class="banner-wrap">
+    <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-key-point.png" alt="KEY POINT">
+  </div>
+
+  <!-- KEY POINT cards -->
+  <div class="cards">
+    <div class="card"><div class="num">01</div><div><div class="ct">Pixel 베이스 코드 = 모든 페이지에 설치</div><div class="cd">메인 페이지만 달면 안 돼요. 상품 상세, 장바구니, 결제 완료 페이지 전부에 들어가야 해요. 이벤트별 코드도 따로 설정해야 해요.</div></div></div>
+    <div class="card"><div class="num">02</div><div><div class="ct">CAPI 이중 추적 = 2026년 기본 세팅</div><div class="cd">Shopify는 앱 하나로, 카페24는 플러그인으로 연동할 수 있어요. 설정 난이도가 높지 않아요.</div></div></div>
+    <div class="card"><div class="num">03</div><div><div class="ct">EMQ(이벤트 매칭 품질) 8점 이상이 목표</div><div class="cd">이메일, 전화번호 같은 고객 정보를 전환 이벤트에 포함하면 EMQ 점수가 올라가요. <b>8점 이상이면 메타 AI 최적화가 제대로 작동합니다.</b></div></div></div>
+  </div>
+
+  <!-- CHECKLIST banner -->
+  <div class="banner-wrap">
+    <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-checklist.png" alt="CHECKLIST">
+  </div>
+
+  <!-- CHECKLIST items -->
+  <div class="checklist">
+    <div class="check-item"><span class="icon">✅</span> Pixel 베이스 코드가 전체 페이지에 설치되어 있나요?</div>
+    <div class="check-item"><span class="icon">✅</span> 구매·장바구니·결제시작 이벤트가 정상 발화하나요?</div>
+    <div class="check-item"><span class="icon">✅</span> CAPI가 연동되어 서버 사이드 추적이 작동하나요?</div>
+    <div class="check-item"><span class="icon">✅</span> EMQ 점수가 8 이상인가요?</div>
+    <div class="check-item"><span class="icon">✅</span> 이벤트 중복 제거(Deduplication)가 설정되어 있나요?</div>
+  </div>
+
+  <!-- Closing -->
+  <div class="body" style="text-align:center;padding-top:16px">
+    하나라도 빠져있다면, 지금 광고비의 30%가 허공에 사라지고 있는 거예요.<br>
+    전체 세팅 가이드에서 단계별로 확인해보세요.
+  </div>
+
+  <hr class="divider">
+
+  <!-- Profile -->
+  <div class="profile">
+    <div class="photo"></div>
+    <div>
+      <div class="name">스미스 <span class="role">자사몰사관학교 코치</span></div>
+      <div class="info">메타파트너 / 메타공식 프로페셔널<br>스킨스쿨 / 제이카드 Co-founder<br>수강생 자사몰매출 450억+</div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <a class="cta" href="#">전체 가이드 보기 →</a>
+
+  <!-- Farewell -->
+  <div class="farewell">
+    더 깊은 실전 노하우가 궁금하시다면, 자사몰사관학교에서 직접 배워보세요.<br><br>
+    감사합니다.<br>
+    <b>자사몰사관학교</b> 드림
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <b>자사몰 사관학교</b><br>
+    본 메일은 자사몰사관학교에서 발송한 뉴스레터입니다.<br>
+    수신을 원하지 않으시면 <a href="#" style="color:#F75D5D">수신거부</a>를 클릭해주세요.<br>
+    © 2026 자사몰사관학교. All rights reserved.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SAMPLE B: 웨비나 홍보 — 메타 광고
+     ═══════════════════════════════════════════════════ -->
+<div class="label">SAMPLE B <span>웨비나 홍보 (Webinar)</span></div>
+<div class="email">
+  <!-- Logo -->
+  <div class="logo">
+    <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v4.png" alt="자사몰사관학교">
+  </div>
+
+  <!-- Hero Banner -->
+  <div class="hero">
+    <div class="pill">🔴 LIVE 무료 웨비나</div>
+    <h2>메타 광고, 열심히 하는데<br>왜 성과가 안 나올까?</h2>
+    <div class="sub">메타 광고, 세팅 하나 바꿨을 뿐인데 ROAS가 2배?</div>
+  </div>
+
+  <!-- Intro -->
+  <div class="body">
+    메타 광고, 세팅 하나 바꿨을 뿐인데 ROAS가 2배?<br>
+    "열심히"가 아니라 <b>"정확하게"</b> 하는 게 핵심이에요.<br>
+    자사몰사관학교 대표 김성현이 <b>자사몰 누적 매출 500억</b>의 실전 세팅법을 <b>웨비나</b>에서 직접 공개합니다.
+  </div>
+
+  <hr class="divider">
+
+  <!-- 강의 미리보기 banner -->
+  <div class="banner-wrap">
+    <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-preview.png" alt="강의 미리보기">
+  </div>
+
+  <!-- Preview area -->
+  <div class="preview-area">
+    <div class="play">▶</div>
+    <div class="pcap">강의 슬라이드 미리보기</div>
+    <div class="psub">밑줄 친 이미지를 교체해주세요</div>
+  </div>
+  <div class="preview-tags">메타 마케팅 · 콘텐츠 제작 · 데이터 분석 슬라이드</div>
+
+  <!-- 핵심 주제 banner -->
+  <div class="banner-wrap">
+    <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-topics.png" alt="핵심 주제">
+  </div>
+
+  <!-- 핵심 주제 cards -->
+  <div class="cards">
+    <div class="card"><div class="num">01</div><div><div class="ct">메타 광고 세팅 진단법</div><div class="cd">지금 내 광고 계정, 제대로 세팅되어 있는지 10분 안에 체크하는 방법. Pixel·CAPI·EMQ 점수까지 직접 확인합니다.</div></div></div>
+    <div class="card"><div class="num">02</div><div><div class="ct">ROAS를 올리는 캠페인 구조</div><div class="cd">ASC(어드밴티지+ 쇼핑 캠페인) 설정부터, CBO vs ABO 선택 기준까지. 성과를 만드는 실전 캠페인 구조를 공개합니다.</div></div></div>
+    <div class="card"><div class="num">03</div><div><div class="ct">데이터 기반 의사결정</div><div class="cd">광고비를 늘려야 할 때와 줄여야 할 때를 구분하는 기준. 매출 전환 포인트를 데이터로 잡는 방법.</div></div></div>
+  </div>
+
+  <!-- 이런 분들을 위해 banner -->
+  <div class="banner-wrap">
+    <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-target.png" alt="이런 분들을 위해">
+  </div>
+
+  <!-- Bullet list -->
+  <div class="bullets">
+    <div class="bullet"><span class="dot">•</span> 자사몰 <b>매출이 정체</b>되어 돌파구가 필요하신 대표님</div>
+    <div class="bullet"><span class="dot">•</span> 광고비는 쓰는데 <b>수익이 남는 건지 확신</b>이 없는 분</div>
+    <div class="bullet"><span class="dot">•</span> 메타 광고를 직접 운영하지만 <b>체계적인 방법론</b>이 없는 분</div>
+    <div class="bullet"><span class="dot">•</span> 다음 기수 수강을 고민 중이라 <b>커리큘럼을 먼저 체험</b>하고 싶은 분</div>
+  </div>
+
+  <!-- 웨비나 일정 banner -->
+  <div class="banner-wrap">
+    <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-schedule.png" alt="웨비나 일정 안내">
+  </div>
+
+  <!-- Schedule table -->
+  <table class="sched-table">
+    <tr><th>항목</th><th>내용</th></tr>
+    <tr><td>📅 일시</td><td><b>2026년 2월 19일(수) 오후 3시 ~ 5시</b></td></tr>
+    <tr><td>🔴 형식</td><td>실시간 온라인 <b>웨비나</b>(120분) + 실시간 Q&A</td></tr>
+    <tr><td>👍 참가비</td><td><b>무료</b></td></tr>
+    <tr><td>🔗 참여</td><td>사전 신청자에게 알림톡으로 참여 링크를 전달해 드려요</td></tr>
+  </table>
+
+  <!-- Nudge -->
+  <div class="body" style="text-align:center;padding-top:16px">
+    정원이 마감되기 전에 신청하세요.<br>
+    현장에서 바로 적용할 수 있는 실전 인사이트를 가져가실 수 있어요.
+  </div>
+
+  <hr class="divider">
+
+  <!-- Profile -->
+  <div class="profile">
+    <div class="photo"></div>
+    <div>
+      <div class="name">스미스 <span class="role">자사몰사관학교 코치</span></div>
+      <div class="info">메타파트너 / 메타공식 프로페셔널<br>스킨스쿨 / 제이카드 Co-founder<br>수강생 자사몰매출 450억+</div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <a class="cta" href="#">지금 신청하기 →</a>
+
+  <!-- Footer -->
+  <div class="footer">
+    <b>자사몰 사관학교</b><br>
+    본 메일은 자사몰사관학교에서 발송한 뉴스레터입니다.<br>
+    수신을 원하지 않으시면 <a href="#" style="color:#F75D5D">수신거부</a>를 클릭해주세요.<br>
+    © 2026 자사몰사관학교. All rights reserved.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SAMPLE C: 성공사례 — 수강생 A 매출 3배
+     ═══════════════════════════════════════════════════ -->
+<div class="label">SAMPLE C <span>성공사례 (Case Study)</span></div>
+<div class="email">
+  <!-- Logo (button type) -->
+  <div class="logo-btn"><span>🛍️ 자사몰사관학교</span></div>
+
+  <!-- Greeting -->
+  <div class="body">
+    안녕하세요 <b>대표님</b>,<br>
+    <b>자사몰사관학교</b>의 스미스코치입니다.
+  </div>
+
+  <!-- Title -->
+  <div class="title">수강생 A 매출 3배 성장 <u>사례</u><br>— 자사몰사관학교 6기</div>
+
+  <!-- Emotion hook -->
+  <div class="hook" style="font-size:15px;padding-top:16px;padding-bottom:20px">
+    "광고를 끄면 매출이 사라지고, 켜면 적자가 나는 무한 루프였어요."
+  </div>
+
+  <!-- Background -->
+  <div class="body" style="text-align:center">
+    자사몰 2년 차, 월 매출 1,000만 원에서 도무지 올라가지 못했던 브랜드.<br>
+    자사몰사관학교 6기 수료 <b>3개월 만에 월 매출 3,200만 원</b>을 달성한 실제 이야기입니다.
+  </div>
+
+  <!-- Student quote -->
+  <div class="quotebox">
+    "예전엔 광고가 안 되면 소재를 바꿔보고, 그래도 안 되면 예산을 올렸어요. 전략이 아니라 기도였죠."
+    <div class="src">— 수강생 A님</div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 성과 banner -->
+  <div class="banner-wrap">
+    <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-results.png" alt="성과">
+  </div>
+
+  <!-- Results tables -->
+  <div class="ba-label">자사몰 매출</div>
+  <table class="ba-table">
+    <tr><th>지표</th><th>Before</th><th>After</th></tr>
+    <tr><td>월 매출</td><td>1,000만 원</td><td class="af">3,200만 원</td></tr>
+    <tr><td>전환율</td><td>1.2%</td><td class="af">3.8%</td></tr>
+  </table>
+
+  <div class="ba-label">광고 효율</div>
+  <table class="ba-table">
+    <tr><th>지표</th><th>Before</th><th>After</th></tr>
+    <tr><td>ROAS</td><td>1.8배</td><td class="af">4.2배</td></tr>
+    <tr><td>CPA</td><td>28,000원</td><td class="af">12,000원</td></tr>
+  </table>
+
+  <!-- INTERVIEW banner -->
+  <div class="banner-wrap" style="margin-top:20px">
+    <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-interview.png" alt="INTERVIEW">
+  </div>
+
+  <!-- Interview quotes -->
+  <div class="quotebox">
+    "ROAS 계산법을 제대로 배우고 나니까, 광고비 500만 원을 넣어도 수익이 나는 구조가 처음으로 보였어요. 그 전엔 100만 원도 무서웠거든요."
+    <div class="src">— 수강생 A님</div>
+  </div>
+  <div class="quotebox" style="margin-top:10px">
+    "소재를 만드는 방식 자체가 달라졌어요. 예쁜 사진 → <b>후킹·혜택·CTA 구조</b>로 바꿨더니 클릭률이 1.2%에서 2.8%로 올랐어요."
+    <div class="src">— 수강생 A님</div>
+  </div>
+
+  <!-- 핵심 변화 banner -->
+  <div class="banner-wrap" style="margin-top:20px">
+    <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-change.png" alt="핵심 변화">
+  </div>
+
+  <!-- Change cards -->
+  <div class="cards">
+    <div class="card"><div class="num">01</div><div><div class="ct">타겟 전략: 감에서 데이터로</div><div class="cd">관심사 타겟만 쓰던 방식에서, 유사 타겟 + 리타겟 조합으로 전환. 신규 유입과 재방문 전환을 동시에 잡았어요.</div></div></div>
+    <div class="card"><div class="num">02</div><div><div class="ct">소재 운영: 주 2회 A/B 테스트 체계화</div><div class="cd">"이번 소재 느낌이 좋아요" → "이 소재 CTR이 2.8%니까 예산 배분 높여요"로 의사결정 기준이 바뀌었어요.</div></div></div>
+    <div class="card"><div class="num">03</div><div><div class="ct">데이터 추적: CAPI 완전 연동</div><div class="cd">Pixel만 쓸 때 전환 데이터 30% 누락 → CAPI 이중 추적으로 메타 AI 최적화 극대화. EMQ 9점 달성.</div></div></div>
+  </div>
+
+  <!-- Footer (no CTA, no profile for case study) -->
+  <div class="footer">
+    <b>자사몰 사관학교</b><br>
+    본 메일은 자사몰사관학교에서 발송한 뉴스레터입니다.<br>
+    수신을 원하지 않으시면 <a href="#" style="color:#F75D5D">수신거부</a>를 클릭해주세요.<br>
+    © 2026 자사몰사관학교. All rights reserved.
+  </div>
+</div>
+
+</body>
+</html>

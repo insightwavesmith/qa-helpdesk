@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>코드 리뷰: 뉴스레터 Structured JSON Output | 2026-02-17</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Pretendard', -apple-system, sans-serif; background: #f8f9fa; color: #1a1a2e; line-height: 1.7; }
+  .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+
+  /* Header */
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #fff; padding: 48px 40px; border-radius: 16px; margin-bottom: 32px; }
+  .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .header .subtitle { font-size: 15px; color: #a0aec0; }
+  .meta { display: flex; gap: 24px; margin-top: 20px; font-size: 13px; color: #cbd5e0; }
+  .meta span { display: flex; align-items: center; gap: 6px; }
+
+  /* Badges */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+  .badge-pass { background: #d4edda; color: #155724; }
+  .badge-warn { background: #fff3cd; color: #856404; }
+  .badge-fail { background: #f8d7da; color: #721c24; }
+  .badge-info { background: #d1ecf1; color: #0c5460; }
+
+  /* Executive Summary */
+  .exec-summary { background: #fff; border-radius: 12px; padding: 32px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .exec-summary h2 { font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #1a1a2e; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .summary-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; text-align: center; }
+  .summary-card .label { font-size: 13px; color: #718096; margin-bottom: 8px; }
+  .summary-card .value { font-size: 18px; font-weight: 700; }
+
+  /* Section */
+  .section { background: #fff; border-radius: 12px; padding: 32px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .section h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+  .section .section-desc { font-size: 14px; color: #718096; margin-bottom: 20px; }
+  .section h3 { font-size: 16px; font-weight: 600; margin: 20px 0 10px; color: #2d3748; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th { background: #f7fafc; text-align: left; padding: 10px 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; }
+  td { padding: 10px 12px; border-bottom: 1px solid #edf2f7; vertical-align: top; }
+  tr:hover td { background: #f7fafc; }
+  .col-status { width: 100px; text-align: center; }
+  .col-file { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: #718096; }
+
+  /* Code */
+  code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #e53e3e; }
+  pre { background: #1a1a2e; color: #e2e8f0; padding: 20px; border-radius: 10px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 12px 0; }
+  pre code { background: none; color: inherit; padding: 0; }
+
+  /* Alert boxes */
+  .alert { padding: 16px 20px; border-radius: 10px; margin: 16px 0; font-size: 14px; }
+  .alert-danger { background: #fff5f5; border-left: 4px solid #F75D5D; }
+  .alert-warning { background: #fffbeb; border-left: 4px solid #f59e0b; }
+  .alert-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+  .alert-success { background: #f0fdf4; border-left: 4px solid #22c55e; }
+  .alert strong { display: block; margin-bottom: 4px; }
+
+  /* Checklist */
+  .checklist { list-style: none; padding: 0; }
+  .checklist li { padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; display: flex; align-items: flex-start; gap: 8px; }
+  .checklist li::before { content: ''; display: inline-block; width: 18px; height: 18px; border: 2px solid #cbd5e0; border-radius: 4px; flex-shrink: 0; margin-top: 2px; }
+  .checklist li.checked::before { background: #22c55e; border-color: #22c55e; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3E%3C/svg%3E"); background-size: 12px; background-repeat: no-repeat; background-position: center; }
+
+  /* Recommendation table */
+  .rec-table td:first-child { font-weight: 600; white-space: nowrap; width: 60px; }
+  .rec-table .priority-high { color: #F75D5D; }
+  .rec-table .priority-med { color: #f59e0b; }
+  .rec-table .priority-low { color: #3b82f6; }
+
+  /* Footer */
+  .footer { text-align: center; padding: 32px; color: #a0aec0; font-size: 12px; }
+  .footer a { color: #F75D5D; text-decoration: none; }
+
+  /* Accent color */
+  .accent { color: #F75D5D; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>코드 리뷰: 뉴스레터 Structured JSON Output</h1>
+    <div class="subtitle">TASK.md T1~T4 기존 코드 호환성 사전 리뷰</div>
+    <div class="meta">
+      <span>2026-02-17</span>
+      <span>리뷰어: Claude Agent Team</span>
+      <span>대상: TASK.md (뉴스레터 AI 출력 구조화)</span>
+    </div>
+  </div>
+
+  <!-- Executive Summary -->
+  <div class="exec-summary">
+    <h2>Executive Summary</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="label">T1: Zod 스키마 호환성</div>
+        <div class="value"><span class="badge badge-warn">WARN</span></div>
+        <div style="font-size:12px;color:#718096;margin-top:8px;">필드명 불일치 3건</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">T2: 프롬프트 구조</div>
+        <div class="value"><span class="badge badge-warn">WARN</span></div>
+        <div style="font-size:12px;color:#718096;margin-top:8px;">JSON 추출 fallback 미명시</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">T3: 재시도 로직</div>
+        <div class="value"><span class="badge badge-fail">FAIL</span></div>
+        <div style="font-size:12px;color:#718096;margin-top:8px;">폴백 시 데이터 오염 위험</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">T4: 변환 함수</div>
+        <div class="value"><span class="badge badge-pass">PASS</span></div>
+        <div style="font-size:12px;color:#718096;margin-top:8px;">조건부 통과 (포맷 준수 시)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- T1: Zod Schema -->
+  <div class="section">
+    <h2><span class="badge badge-warn">WARN</span> T1. Zod 스키마 — 기존 인터페이스 호환성</h2>
+    <div class="section-desc">TASK.md에 정의된 Zod 스키마 필드가 <code>newsletter-section-types.ts</code>의 기존 인터페이스와 호환되는지 검증</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Zod 스키마 필드</th>
+          <th>기존 인터페이스 필드</th>
+          <th>파일:라인</th>
+          <th class="col-status">상태</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>insight.tipBox</code> <span class="badge badge-info">string</span></td>
+          <td><code>InsightFields.tip</code> <span class="badge badge-info">string?</span></td>
+          <td class="col-file">newsletter-section-types.ts:11</td>
+          <td class="col-status"><span class="badge badge-warn">MISMATCH</span></td>
+        </tr>
+        <tr>
+          <td><code>interview.quotes[].author</code></td>
+          <td><code>InterviewQuote.source</code></td>
+          <td class="col-file">newsletter-section-types.ts:56</td>
+          <td class="col-status"><span class="badge badge-warn">MISMATCH</span></td>
+        </tr>
+        <tr>
+          <td><code>lecturePreview.tags</code> <span class="badge badge-info">string[]</span></td>
+          <td><code>ImagePlaceholderFields.tags</code> <span class="badge badge-info">string?</span></td>
+          <td class="col-file">newsletter-section-types.ts:65</td>
+          <td class="col-status"><span class="badge badge-warn">TYPE DIFF</span></td>
+        </tr>
+        <tr>
+          <td><code>schedule.{date,format,fee,participation}</code></td>
+          <td><code>ScheduleTableFields.rows: ScheduleRow[]</code></td>
+          <td class="col-file">newsletter-section-types.ts:36</td>
+          <td class="col-status"><span class="badge badge-warn">STRUCT DIFF</span></td>
+        </tr>
+        <tr>
+          <td><code>performance.tables[].rows[].metric/before/after</code></td>
+          <td><code>BATableRow.metric/before/after</code></td>
+          <td class="col-file">newsletter-section-types.ts:40-42</td>
+          <td class="col-status"><span class="badge badge-pass">OK</span></td>
+        </tr>
+        <tr>
+          <td><code>keyPoint.items[].title/desc</code></td>
+          <td><code>NumberedCardItem.title/desc</code></td>
+          <td class="col-file">newsletter-section-types.ts:14-15</td>
+          <td class="col-status"><span class="badge badge-pass">OK</span></td>
+        </tr>
+        <tr>
+          <td><code>checklist.items: string[]</code></td>
+          <td><code>ChecklistFields.items: string[]</code></td>
+          <td class="col-file">newsletter-section-types.ts:24</td>
+          <td class="col-status"><span class="badge badge-pass">OK</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-warning">
+      <strong>영향 범위</strong>
+      T4의 <code>convertJsonToEmailSummary()</code>가 JSON→마크다운 변환만 담당하므로, 필드명 차이는 변환 함수 내부에서 매핑하면 해결됩니다. 그러나 향후 JSON→SectionFields 직접 변환 경로를 추가할 경우, 이 3건의 불일치가 런타임 버그를 유발합니다.
+    </div>
+
+    <h3>권고사항</h3>
+    <ul class="checklist">
+      <li>Zod 스키마 필드명을 기존 인터페이스에 맞출 것: <code>tipBox → tip</code>, <code>author → source</code></li>
+      <li><code>lecturePreview.tags</code>를 <code>z.string()</code>으로 변경하거나, 변환 시 <code>.join(" · ")</code> 명시</li>
+      <li><code>schedule</code>의 4개 고정 필드 → <code>ScheduleRow[]</code> 변환 로직을 T4에 명시 (<code>[{label:"📅 일시", value: date}, ...]</code>)</li>
+    </ul>
+  </div>
+
+  <!-- T2: Prompt Structure -->
+  <div class="section">
+    <h2><span class="badge badge-warn">WARN</span> T2. AI 프롬프트 구조 — JSON 출력 보장</h2>
+    <div class="section-desc">프롬프트 재설계가 안정적인 JSON 출력을 보장할 수 있는지, 교차오염 규칙이 준수되는지 검증</div>
+
+    <h3>교차오염 검증 (education 용어 격리)</h3>
+    <div class="alert alert-success">
+      <strong>PASS</strong>
+      각 타입별 스키마 필드명이 완전히 분리되어 있어 교차오염 위험 없음:
+      <br>- Education: <code>insight</code>, <code>keyPoint</code>, <code>checklist</code>
+      <br>- Webinar: <code>lecturePreview</code>, <code>coreTopics</code>, <code>targetAudience</code>, <code>schedule</code>
+      <br>- Case Study: <code>performance</code>, <code>interview</code>, <code>coreChanges</code>
+    </div>
+
+    <h3>JSON 출력 안정성</h3>
+    <div class="alert alert-warning">
+      <strong>리스크: <code>```json</code> 블록 추출 실패 가능</strong>
+      LLM은 JSON 앞뒤에 설명 텍스트를 추가하는 경우가 빈번합니다. TASK.md는 <code>```json ... ```</code> 블록 추출만 명시했으나, 다음 fallback이 필요합니다:
+      <br>1. 정규식 <code>/```json\s*([\s\S]*?)```/</code>으로 추출 시도
+      <br>2. 실패 시 전체 응답에 <code>JSON.parse()</code> 직접 시도
+      <br>3. 실패 시 응답에서 <code>{</code>~<code>}</code> 범위 추출 후 <code>JSON.parse()</code> 시도
+    </div>
+
+    <h3>"notice" 타입 매핑 누락</h3>
+    <div class="alert alert-warning">
+      <strong>누락: <code>getSchemaByType("notice")</code> 미정의</strong>
+      기존 코드에서 <code>notice</code>는 <code>webinar</code>와 동일한 배너키를 사용합니다 (<code>validateBannerKeys</code>:637, <code>TEMPLATE_KEY_ORDER</code>:37). <code>getSchemaByType</code>에서 <code>notice → WebinarOutputSchema</code> 폴백이 필요합니다.
+    </div>
+
+    <h3>기존 ksGenerate 인터페이스 호환</h3>
+    <div class="alert alert-success">
+      <strong>PASS</strong>
+      <code>systemPromptOverride</code>를 JSON 생성기 프롬프트로 교체해도 <code>ksGenerate()</code> 호출 시그니처 변경 없음. <code>query</code>, <code>consumerType: "newsletter"</code>, <code>limit: 0</code> 구조 유지.
+    </div>
+  </div>
+
+  <!-- T3: Retry Logic -->
+  <div class="section">
+    <h2><span class="badge badge-fail">FAIL</span> T3. 재시도 로직 — 폴백 전략 결함</h2>
+    <div class="section-desc">새 JSON 기반 재시도 로직이 기존 <code>generateEmailSummary</code> 구조와 호환되는지, 폴백 시나리오가 안전한지 검증</div>
+
+    <h3>구조 호환성</h3>
+    <div class="alert alert-success">
+      <strong>PASS</strong>
+      기존 <code>for (attempt 1..3)</code> 루프 구조를 그대로 유지하면서 내부 검증 로직만 교체. return 타입도 <code>{ emailSummary } | { error }</code>로 동일.
+    </div>
+
+    <h3>Zod 에러 → 재시도 피드백</h3>
+    <div class="alert alert-success">
+      <strong>PASS</strong>
+      기존: <code>forbidden/missing</code> 배너키 메시지 → 새: Zod 에러 메시지. 둘 다 <code>retryFeedback</code> 문자열로 <code>query</code>에 추가되므로 인터페이스 변경 없음.
+    </div>
+
+    <h3>폴백 시 데이터 오염 (치명적)</h3>
+    <div class="alert alert-danger">
+      <strong>CRITICAL: 3회 실패 시 email_summary에 깨진 JSON 저장</strong>
+      현재 코드(L896-904)는 <code>lastEmailSummary</code>를 무조건 DB에 저장합니다. 새 프롬프트가 JSON 출력을 요구하므로, 3회 모두 Zod 검증 실패 시 <code>lastEmailSummary</code>에는 부분 JSON 또는 깨진 JSON이 들어갑니다.
+    </div>
+
+    <p style="margin-top: 12px;">이 깨진 JSON이 <code>email_summary</code>에 저장되면:</p>
+
+    <pre><code>// parseSummaryToSections이 ### 헤딩을 찾지 못함
+parseSummaryToSections('{"hook":"...", "insight": {...}}')
+→ { hookLine: "", sections: [{ key: "", content: '{"hook":"...' }] }
+// → 전체가 단일 무키 섹션 → 렌더링 깨짐</code></pre>
+
+    <h3>권고: 안전한 폴백 전략</h3>
+    <table>
+      <thead>
+        <tr><th>옵션</th><th>설명</th><th>권장</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>A</strong></td>
+          <td>3회 실패 시 기존 마크다운 프롬프트로 4번째 호출 (폴백 전용)</td>
+          <td><span class="badge badge-pass">권장</span></td>
+        </tr>
+        <tr>
+          <td><strong>B</strong></td>
+          <td>3회 실패 시 DB 저장하지 않고 <code>{ error: "JSON 변환 실패" }</code> 반환</td>
+          <td><span class="badge badge-info">대안</span></td>
+        </tr>
+        <tr>
+          <td><strong>C</strong></td>
+          <td>마지막 raw JSON에서 가능한 필드만 추출하여 부분 변환 후 저장</td>
+          <td><span class="badge badge-warn">비권장</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- T4: Conversion Function -->
+  <div class="section">
+    <h2><span class="badge badge-pass">PASS</span> T4. 변환 함수 — validateBannerKeys 통과</h2>
+    <div class="section-desc"><code>convertJsonToEmailSummary()</code> 출력이 <code>validateBannerKeys()</code>와 <code>parseSectionFields()</code>를 통과하는지 검증</div>
+
+    <h3>배너키 매칭 검증</h3>
+    <table>
+      <thead>
+        <tr><th>타입</th><th>변환 출력 헤딩</th><th>expectedByType</th><th>상태</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>education</td>
+          <td><code>### INSIGHT</code>, <code>### KEY POINT</code>, <code>### CHECKLIST</code></td>
+          <td>["INSIGHT", "KEY POINT", "CHECKLIST"]</td>
+          <td><span class="badge badge-pass">일치</span></td>
+        </tr>
+        <tr>
+          <td>webinar</td>
+          <td><code>### 강의 미리보기</code>, <code>### 핵심 주제</code>, <code>### 이런 분들을 위해</code>, <code>### 웨비나 일정</code></td>
+          <td>["강의 미리보기", "핵심 주제", "이런 분들을 위해", "웨비나 일정"]</td>
+          <td><span class="badge badge-pass">일치</span></td>
+        </tr>
+        <tr>
+          <td>case_study</td>
+          <td><code>### 성과</code>, <code>### INTERVIEW</code>, <code>### 핵심 변화</code></td>
+          <td>["성과", "INTERVIEW", "핵심 변화"]</td>
+          <td><span class="badge badge-pass">일치</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>parseSectionFields 파싱 호환 — 포맷 요구사항</h3>
+    <p style="font-size:14px;color:#4a5568;margin-bottom:12px;">변환된 마크다운이 기존 파서(<code>email-template-utils.ts:92-118</code>)에 의해 올바르게 구조화되려면, 각 섹션 내용이 다음 포맷을 준수해야 합니다:</p>
+
+    <table>
+      <thead>
+        <tr><th>배너키</th><th>파서 함수</th><th>필수 포맷</th><th>근거</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>INSIGHT</code></td>
+          <td><code>parseInsight()</code></td>
+          <td><code>## subtitle</code> (##로 시작) + 본문 + <code>> 💡 tip</code></td>
+          <td>L131: <code>trimmed.startsWith("## ")</code></td>
+        </tr>
+        <tr>
+          <td><code>KEY POINT</code></td>
+          <td><code>parseNumberedCards()</code></td>
+          <td><code>01. title | desc</code> 패턴</td>
+          <td>L172: <code>/^\d{1,2}\.\s+(.+?)\s*\|\s*(.+)/</code></td>
+        </tr>
+        <tr>
+          <td><code>CHECKLIST</code></td>
+          <td><code>parseChecklist()</code></td>
+          <td><code>✅ item</code> (✅으로 시작)</td>
+          <td>L223: <code>trimmed.startsWith("✅")</code></td>
+        </tr>
+        <tr>
+          <td><code>강의 미리보기</code></td>
+          <td><code>parseImagePlaceholder()</code></td>
+          <td>caption 텍스트 + 태그</td>
+          <td>caption 필드 필수</td>
+        </tr>
+        <tr>
+          <td><code>핵심 주제</code></td>
+          <td><code>parseNumberedCards()</code></td>
+          <td><code>01. title | desc</code> 패턴</td>
+          <td>parseInsight와 동일</td>
+        </tr>
+        <tr>
+          <td><code>이런 분들을 위해</code></td>
+          <td><code>parseBulletListFields()</code></td>
+          <td><code>- item</code> 또는 <code>• item</code></td>
+          <td>L240: <code>/^[\-•]\s+(.*)/</code></td>
+        </tr>
+        <tr>
+          <td><code>웨비나 일정</code></td>
+          <td><code>parseScheduleTable()</code></td>
+          <td><code>| label | value |</code> 마크다운 테이블</td>
+          <td>L257: <code>/^\|.+\|/</code></td>
+        </tr>
+        <tr>
+          <td><code>INTERVIEW</code></td>
+          <td><code>parseInterview()</code></td>
+          <td><code>> "인용문"</code> + <code>> — 출처</code></td>
+          <td>인용 블록 파싱</td>
+        </tr>
+        <tr>
+          <td><code>성과</code></td>
+          <td><code>parseBATables()</code></td>
+          <td><code>#### 소제목</code> + <code>| 지표 | Before | After |</code></td>
+          <td>BA 테이블 파싱</td>
+        </tr>
+        <tr>
+          <td><code>핵심 변화</code></td>
+          <td><code>parseNumberedCards()</code></td>
+          <td><code>01. title | desc</code> 패턴</td>
+          <td>KEY POINT와 동일</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-info">
+      <strong>결론</strong>
+      TASK.md의 변환 규칙(L148-151)이 위 포맷을 정확히 준수하고 있습니다. 구현 시 각 섹션별 마크다운 포맷이 정확히 일치하는지 유닛 테스트로 검증할 것을 권고합니다.
+    </div>
+  </div>
+
+  <!-- T5: Risks & Dependencies -->
+  <div class="section">
+    <h2><span class="badge badge-fail">4건</span> 누락된 리스크 및 의존성</h2>
+    <div class="section-desc">TASK.md에 명시되지 않았으나 구현 시 문제를 일으킬 수 있는 항목</div>
+
+    <div class="alert alert-danger">
+      <strong>R1. BANNER_MAP 이중 정의 — 동기화 부채</strong>
+      <code>email-template-utils.ts:14</code> (13개 키)와 <code>newsletter-row-templates.ts:20</code> (10개 키)에 각각 모듈-프라이빗 <code>BANNER_MAP</code>이 존재합니다. <code>INSIGHT 01/02/03</code>이 <code>row-templates</code>에 없습니다. 현재 T1-T4에서 이 variant 키를 사용하지 않으므로 직접적 문제는 아니나, 향후 INSIGHT를 분할하려면 동기화가 필요합니다.
+    </div>
+
+    <div class="alert alert-danger">
+      <strong>R2. case_study greeting 중복 렌더링 위험</strong>
+      <code>CaseStudyOutputSchema.greeting</code>이 <code>z.string().optional().default("안녕하세요 대표님, 자사몰사관학교입니다.")</code>로 정의되어 있습니다. 변환 시 이 값이 <code>hookLine</code> 앞부분에 들어가는데, <code>buildDesignFromSummary</code>가 case_study일 때 별도로 <code>createGreetingRow()</code>를 추가하면 인사말이 2번 렌더링됩니다.
+      <br><br>
+      <strong>권고:</strong> <code>greeting</code> 필드를 스키마에서 제거하거나, <code>convertJsonToEmailSummary</code>에서 case_study일 때 hookLine에 greeting을 포함하지 않도록 처리.
+    </div>
+
+    <div class="alert alert-warning">
+      <strong>R3. WebinarOutputSchema.lecturePreview에 caption 필드 없음</strong>
+      기존 <code>ImagePlaceholderFields</code>는 <code>caption: string</code>이 필수인데, Zod 스키마의 <code>lecturePreview</code>에는 <code>tags: string[]</code>만 있습니다. <code>parseSectionFields</code> → <code>parseImagePlaceholder</code>가 caption 없이 동작할 수 있는지 확인 필요합니다.
+      <br><br>
+      <strong>권고:</strong> <code>lecturePreview</code>에 <code>caption: z.string()</code> 필드 추가 또는 변환 시 기본값 생성.
+    </div>
+
+    <div class="alert alert-warning">
+      <strong>R4. AI 비용 — 최악 3회 호출 (동일 body_md)</strong>
+      재시도 시 매번 전체 body_md를 포함한 프롬프트가 전송됩니다. body_md가 긴 콘텐츠(4000자+)의 경우 토큰 비용이 3배로 증가합니다. TASK.md의 "AI 1회 호출" 제약과 재시도 3회 사이의 트레이드오프를 인지할 것.
+    </div>
+  </div>
+
+  <!-- Recommendations -->
+  <div class="section">
+    <h2>권고사항 요약</h2>
+
+    <table class="rec-table">
+      <thead>
+        <tr><th>우선순위</th><th>항목</th><th>설명</th><th>대상 태스크</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="priority-high">P0</td>
+          <td>폴백 안전장치</td>
+          <td>3회 실패 시 깨진 JSON을 <code>email_summary</code>에 저장하지 않도록 폴백 전략 추가 (옵션 A 권장: 마크다운 프롬프트 재호출)</td>
+          <td>T3</td>
+        </tr>
+        <tr>
+          <td class="priority-high">P0</td>
+          <td>greeting 중복 방지</td>
+          <td><code>CaseStudyOutputSchema</code>에서 <code>greeting</code> 제거 또는 변환 시 hookLine 제외</td>
+          <td>T1, T4</td>
+        </tr>
+        <tr>
+          <td class="priority-med">P1</td>
+          <td>필드명 통일</td>
+          <td>Zod: <code>tipBox→tip</code>, <code>author→source</code> 이름 변경</td>
+          <td>T1</td>
+        </tr>
+        <tr>
+          <td class="priority-med">P1</td>
+          <td>JSON 추출 fallback</td>
+          <td><code>```json```</code> 추출 실패 시 <code>JSON.parse</code> → <code>{...}</code> 범위 추출 순서로 fallback 체인</td>
+          <td>T3</td>
+        </tr>
+        <tr>
+          <td class="priority-med">P1</td>
+          <td>notice 타입 매핑</td>
+          <td><code>getSchemaByType("notice")</code> → <code>WebinarOutputSchema</code> 폴백 추가</td>
+          <td>T1</td>
+        </tr>
+        <tr>
+          <td class="priority-med">P1</td>
+          <td>lecturePreview caption</td>
+          <td>Zod 스키마에 <code>caption</code> 필드 추가 또는 변환 시 기본값 생성</td>
+          <td>T1, T4</td>
+        </tr>
+        <tr>
+          <td class="priority-low">P2</td>
+          <td>BANNER_MAP 통합</td>
+          <td>두 파일의 BANNER_MAP을 공유 모듈로 추출하여 동기화 부채 해소</td>
+          <td>별도</td>
+        </tr>
+        <tr>
+          <td class="priority-low">P2</td>
+          <td>tags 타입 통일</td>
+          <td><code>lecturePreview.tags: string[]</code> → 변환 시 <code>.join(" · ")</code> 로직 명시 또는 Zod를 <code>z.string()</code>으로 변경</td>
+          <td>T1, T4</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Reference Files -->
+  <div class="section">
+    <h2>참조 파일 목록</h2>
+    <table>
+      <thead>
+        <tr><th>파일</th><th>역할</th><th>변경 여부</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-file">src/lib/newsletter-section-types.ts</td><td>섹션 필드 인터페이스 (T0 계약)</td><td><span class="badge badge-info">읽기 전용</span></td></tr>
+        <tr><td class="col-file">src/lib/email-template-utils.ts</td><td>parseSummaryToSections, parseSectionFields, validateBannerKeys</td><td><span class="badge badge-info">읽기 전용</span></td></tr>
+        <tr><td class="col-file">src/lib/newsletter-row-templates.ts</td><td>createSectionContentRows, BANNER_MAP (10개)</td><td><span class="badge badge-info">읽기 전용</span></td></tr>
+        <tr><td class="col-file">src/actions/contents.ts</td><td>generateEmailSummary (L707-914)</td><td><span class="badge badge-warn">T2, T3 수정</span></td></tr>
+        <tr><td class="col-file">src/lib/newsletter-schemas.ts</td><td>Zod 스키마 + 변환 함수</td><td><span class="badge badge-pass">신규 생성</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>Generated by Claude Agent Team &middot; QA Helpdesk Project</p>
+    <p style="margin-top:4px;">Source: <a href="#">TASK.md</a> &middot; 이전 리뷰: <a href="https://mozzi-reports.vercel.app/reports/review/2026-02-17-newsletter-unlayer-template-v2.html">newsletter-unlayer-template-v2</a></p>
+  </div>
+
+</div>
+</body>
+</html>

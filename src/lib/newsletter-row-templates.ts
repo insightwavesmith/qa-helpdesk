@@ -156,7 +156,7 @@ export function createInsightRows(fields: InsightFields): object[] {
   const subtitleHtml = `<div style="font-size:17px;font-weight:700;margin-bottom:8px">${markdownBold(escapeHtml(fields.subtitle))}</div>`;
   const bodyHtml = nlToBr(markdownBold(escapeHtml(fields.body)));
   const rows: object[] = [
-    makeTextRow("insight-body", `${subtitleHtml}${bodyHtml}`),
+    makeTextRow("insight-body", `${subtitleHtml}${bodyHtml}`, "12px 24px"),
   ];
 
   if (fields.tip) {
@@ -165,6 +165,7 @@ export function createInsightRows(fields: InsightFields): object[] {
       makeTextRow(
         "insight-tip",
         `<div style="background:#FFF8E7;border-left:4px solid #FDBA74;border-radius:0 6px 6px 0;padding:14px 18px;font-size:13.5px;line-height:1.6;color:#555">\n  ${tipHtml}\n</div>`,
+        "12px 24px",
       ),
     );
   }
@@ -199,7 +200,7 @@ export function createNumberedCardsRow(fields: NumberedCardsFields): object[] {
   }).join("");
 
   const html = `<table width="100%" cellpadding="0" cellspacing="0" style="padding:0 0 8px;">${cards}</table>`;
-  return [makeTextRow("numbered-cards", html)];
+  return [makeTextRow("numbered-cards", html, "4px 24px 0px")];
 }
 
 /**
@@ -226,7 +227,7 @@ export function createChecklistRow(fields: ChecklistFields): object[] {
   }).join("");
 
   const html = `<table width="100%" cellpadding="0" cellspacing="0" style="padding:0 0 8px;">${cards}</table>`;
-  return [makeTextRow("checklist", html)];
+  return [makeTextRow("checklist", html, "4px 24px 0px")];
 }
 
 /**
@@ -250,7 +251,7 @@ export function createBulletListRow(fields: BulletListFields): object[] {
   }).join("");
 
   const html = `<table width="100%" cellpadding="0" cellspacing="0" style="padding:0 0 8px">${bulletRows}</table>`;
-  return [makeTextRow("bullet-list", html)];
+  return [makeTextRow("bullet-list", html, "4px 24px")];
 }
 
 /**
@@ -327,13 +328,13 @@ export function createBATablesRow(fields: BATablesFields): object[] {
 export function createInterviewQuotesRow(fields: InterviewFields): object[] {
   const quotesHtml = fields.quotes.map((quote) => {
     const textHtml = nlToBr(markdownBold(escapeHtml(quote.text)));
-    return `<div style="border-left:3px solid #F75D5D;background:#f8f9fc;border-radius:0 8px 8px 0;padding:16px 20px;font-style:italic;font-size:14px;color:#555;line-height:1.6;margin-bottom:10px">
+    return `<div style="border-left:3px solid #F75D5D;background:#f5f5f5;border-radius:0 8px 8px 0;padding:16px 20px;font-style:italic;font-size:14px;color:#555;line-height:1.6;margin-bottom:10px">
   "${textHtml}"
   <div style="font-style:normal;font-size:12px;color:#999;margin-top:6px">&mdash; ${escapeHtml(quote.source)}</div>
 </div>`;
   }).join("\n");
 
-  return [makeTextRow("interview-quotes", quotesHtml)];
+  return [makeTextRow("interview-quotes", quotesHtml, "4px 24px")];
 }
 
 /**
@@ -351,7 +352,7 @@ export function createImagePlaceholderRow(fields: ImagePlaceholderFields): objec
     html += `\n<div style="text-align:center;padding:4px 0 12px;font-size:12px;color:#999">${escapeHtml(fields.tags)}</div>`;
   }
 
-  return [makeTextRow("image-placeholder", html)];
+  return [makeTextRow("image-placeholder", html, "8px 24px")];
 }
 
 // ─── 5) 공통 Row 팩토리 ───
@@ -361,23 +362,19 @@ export function createImagePlaceholderRow(fields: ImagePlaceholderFields): objec
  * @param bannerKey - 배너키 (예: "INSIGHT", "KEY POINT")
  */
 export function createBannerRow(bannerKey: string): object {
-  // partial match: 긴 키부터 매칭
+  // partial match: 긴 키부터 매칭 (slug 생성용)
   const matchedKey = Object.keys(BANNER_MAP)
     .filter(k => bannerKey.includes(k))
     .sort((a, b) => b.length - a.length)[0];
-  const bannerFile = matchedKey ? BANNER_MAP[matchedKey] : undefined;
+  const slug = matchedKey
+    ? BANNER_MAP[matchedKey].replace("banner-", "")
+    : bannerKey.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "unknown";
 
-  if (bannerFile) {
-    const slug = bannerFile.replace("banner-", "");
-    return makeImageRow(`banner-${slug}`, `${BANNER_BASE_URL}/${bannerFile}.png`, bannerKey);
-  }
-
-  // CSS gradient fallback
-  const slug = bannerKey.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "unknown";
+  // T1: CSS-only table 배너 (Gmail 호환, PNG 제거)
   return makeTextRow(
     `banner-${slug}`,
-    `<div style="max-width:600px;height:80px;line-height:80px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);border-radius:4px 0 0 4px;"><span style="padding-left:32px;color:#fff;font-size:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${escapeHtml(bannerKey)}</span></div>`,
-    "24px 24px 0px",
+    `<table cellpadding="0" cellspacing="0" style="width:66%;"><tr><td style="background-color:#F75D5D;padding:16px 24px;color:#ffffff;font-size:16px;font-weight:700;letter-spacing:1px;">${escapeHtml(bannerKey)}</td></tr></table>`,
+    "16px 24px 0px",
   );
 }
 
@@ -401,7 +398,7 @@ export const ROW_LOGO: object = makeTextRow(
 export function createHookQuestionRow(text: string): object {
   return makeTextRow(
     "hook-question",
-    `<p style="font-size:18px;font-weight:700;color:#1a1a1a;text-align:center;line-height:160%;max-width:420px;margin:0 auto;">${nlToBr(markdownBold(escapeHtml(text)))}</p>`,
+    `<table align="center" cellpadding="0" cellspacing="0" style="max-width:420px;" width="420"><tr><td style="text-align:center;font-size:18px;font-weight:700;color:#1a1a1a;line-height:160%;">${nlToBr(markdownBold(escapeHtml(text)))}</td></tr></table>`,
     "24px 32px 8px",
   );
 }
@@ -467,7 +464,7 @@ export function createTitleRow(title: string): object {
 export function createHookRow(text: string): object {
   return makeTextRow(
     "hook-quote",
-    `<p style="font-size:16px;line-height:160%;text-align:center;"><em><span style="color:#F75D5D;font-size:16px;font-weight:600;">${markdownBold(escapeHtml(text))}</span></em></p>`,
+    `<table align="center" cellpadding="0" cellspacing="0" style="max-width:420px;" width="420"><tr><td style="text-align:center;font-size:16px;line-height:160%;"><em><span style="color:#F75D5D;font-weight:600;">${markdownBold(escapeHtml(text))}</span></em></td></tr></table>`,
     "8px 24px 16px",
   );
 }
@@ -502,7 +499,7 @@ export function createGreetingRow(): object {
 export function createEmotionHookRow(text: string): object {
   return makeTextRow(
     "emotion-hook",
-    `<p style="font-size:15px;line-height:180%;text-align:center;max-width:400px;margin:0 auto;"><strong><em><span style="color:#333;font-size:15px;">${nlToBr(markdownBold(escapeHtml(text)))}</span></em></strong></p>`,
+    `<table align="center" cellpadding="0" cellspacing="0" style="max-width:420px;" width="420"><tr><td style="text-align:center;font-size:15px;line-height:180%;"><strong><em><span style="color:#333;font-size:15px;">${nlToBr(markdownBold(escapeHtml(text)))}</span></em></strong></td></tr></table>`,
     "8px 24px 16px",
   );
 }
@@ -633,9 +630,10 @@ export function createCtaRow(text: string, url: string, bgColor = "#F75D5D"): ob
           size: { autoWidth: false, width: "100%" },
           textAlign: "center",
           lineHeight: "140%",
-          padding: "14px 32px",
+          padding: "14px",
           border: {},
           borderRadius: "8px",
+          fullWidth: true,
           hideDesktop: false,
           displayCondition: null,
           _meta: { htmlID: "u_content_button_cta", htmlClassNames: "u_content_button" },
