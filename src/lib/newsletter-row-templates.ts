@@ -415,7 +415,7 @@ export function createHookQuestionRow(text: string): object {
 }
 
 export function createHeroRow(title: string, subtitle: string, badgeText = "LIVE 무료 웨비나"): object {
-  const whiteLogoUrl = "https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-white.png";
+  const whiteLogoUrl = "https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-white-v4.png";
   const subtitleHtml = subtitle
     ? `<p style="color:rgba(255,255,255,0.8);font-size:14px;text-align:center;margin-top:4px;">${escapeHtml(subtitle)}</p>`
     : "";
