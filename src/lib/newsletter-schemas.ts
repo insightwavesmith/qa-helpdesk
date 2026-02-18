@@ -43,6 +43,12 @@ export const WebinarOutputSchema = z.object({
 export const CaseStudyOutputSchema = z.object({
   greeting: z.string().optional().default("안녕하세요 대표님, 자사몰사관학교입니다."),
   emotionHook: z.string(),
+  studentInfo: z.object({
+    name: z.string(),
+    brand: z.string().optional(),
+    industry: z.string().optional(),
+    period: z.string().optional(),
+  }).optional(),
   background: z.string(),
   studentQuote: z.string(),
   performance: z.object({
@@ -224,6 +230,17 @@ function convertCaseStudy(d: CaseStudyOutput): string {
   // hookLine — greeting 미포함 (buildDesignFromSummary가 createGreetingRow() 하드코딩)
   lines.push(d.emotionHook);
   lines.push("");
+
+  // studentInfo (optional) — 📋 마커로 전달, buildDesignFromSummary에서 파싱
+  if (d.studentInfo) {
+    const infoParts = [`수강생: ${d.studentInfo.name}`];
+    if (d.studentInfo.brand) infoParts.push(`브랜드: ${d.studentInfo.brand}`);
+    if (d.studentInfo.industry) infoParts.push(`업종: ${d.studentInfo.industry}`);
+    if (d.studentInfo.period) infoParts.push(`수강: ${d.studentInfo.period}`);
+    lines.push(`📋 ${infoParts.join(" | ")}`);
+    lines.push("");
+  }
+
   lines.push(d.background);
   lines.push("");
   lines.push(`> "${d.studentQuote}"`);

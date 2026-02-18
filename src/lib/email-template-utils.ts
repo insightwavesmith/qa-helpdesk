@@ -4,8 +4,8 @@ import { getSectionType, type SectionFields, type InsightFields, type NumberedCa
 import {
   ROW_LOGO, ROW_DIVIDER, ROW_PROFILE, ROW_FOOTER,
   createHeroRow, createHookQuestionRow, createTitleRow, createHookRow, createIntroRow, createClosingRow,
-  createEmotionHookRow, createStudentQuoteRow,
-  createCtaRow, createCategoryBadgeRow,
+  createEmotionHookRow, createStudentQuoteRow, createStudentInfoRow,
+  createCtaRow,
   createSectionContentRows,
 } from "./newsletter-row-templates";
 
@@ -804,6 +804,7 @@ function splitHookAndIntro(hookLine: string, contentType: string): {
   hook: string;
   intro: string;
   studentQuote?: { text: string; source: string };
+  studentInfo?: { name: string; brand?: string; industry?: string; period?: string };
 } {
   const paragraphs = hookLine.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
 
@@ -811,6 +812,27 @@ function splitHookAndIntro(hookLine: string, contentType: string): {
     const quoteIdx = paragraphs.findIndex(p => p.startsWith(">"));
     const hook = paragraphs[0] || "";
     let studentQuote: { text: string; source: string } | undefined;
+    let studentInfo: { name: string; brand?: string; industry?: string; period?: string } | undefined;
+
+    // 📋 수강생 정보 파싱
+    const infoIdx = paragraphs.findIndex(p => p.startsWith("📋"));
+    if (infoIdx >= 0) {
+      const infoParts = paragraphs[infoIdx].replace(/^📋\s*/, "").split("|").map(s => s.trim());
+      const info: Record<string, string> = {};
+      for (const part of infoParts) {
+        const [key, ...vals] = part.split(":");
+        if (key && vals.length) info[key.trim()] = vals.join(":").trim();
+      }
+      if (info["수강생"]) {
+        studentInfo = {
+          name: info["수강생"],
+          brand: info["브랜드"],
+          industry: info["업종"],
+          period: info["수강"],
+        };
+      }
+    }
+
     const endIdx = quoteIdx > 0 ? quoteIdx : paragraphs.length;
 
     if (quoteIdx > 0) {
@@ -824,7 +846,9 @@ function splitHookAndIntro(hookLine: string, contentType: string): {
       };
     }
 
-    return { hook, intro: paragraphs.slice(1, endIdx).join("\n\n"), studentQuote };
+    // intro에서 📋 라인 제외
+    const introParas = paragraphs.slice(1, endIdx).filter((_, i) => i + 1 !== infoIdx);
+    return { hook, intro: introParas.join("\n\n"), studentQuote, studentInfo };
   }
 
   return { hook: paragraphs[0] || "", intro: paragraphs.slice(1).join("\n\n") };
@@ -927,11 +951,11 @@ export function buildDesignFromSummary(content: Content): object {
     // G8: farewell 제거 (골드 스탠다드에 없음)
     rows.push(ROW_FOOTER);
   } else if (contentType === "case_study") {
-    // Case Study: Badge → Title → EmotionHook → Background → StudentQuote → Divider → Sections → CTA → Footer
-    rows.push(createCategoryBadgeRow("수강생 사례"));
-    rows.push(createTitleRow(content.title));
-    const { hook: csHook, intro: csIntro, studentQuote } = splitHookAndIntro(parsed.hookLine, contentType);
+    // Case Study: Hero(수강생 사례) → EmotionHook → StudentInfo → Background → StudentQuote → Divider → Sections → CTA → Footer
+    rows.push(createHeroRow(content.title, "", "수강생 사례"));
+    const { hook: csHook, intro: csIntro, studentQuote, studentInfo } = splitHookAndIntro(parsed.hookLine, contentType);
     if (csHook) rows.push(createEmotionHookRow(csHook));
+    if (studentInfo) rows.push(createStudentInfoRow(studentInfo.name, studentInfo.brand, studentInfo.industry, studentInfo.period));
     if (csIntro) rows.push(createIntroRow(csIntro));
     if (studentQuote) rows.push(createStudentQuoteRow(studentQuote.text, studentQuote.source));
     rows.push(ROW_DIVIDER);
@@ -940,9 +964,8 @@ export function buildDesignFromSummary(content: Content): object {
     // G7: profile, farewell, divider 제거
     rows.push(ROW_FOOTER);
   } else {
-    // Education (default): Badge → Title → Hook(1st para) → IntroBody → Divider → Sections → Closing → Divider → Profile → CTA → Farewell → Footer
-    rows.push(createCategoryBadgeRow("BS CAMP INSIGHT"));
-    rows.push(createTitleRow(content.title));
+    // Education (default): Hero(정보공유) → Hook → IntroBody → Divider → Sections → Closing → Divider → Profile → CTA → Footer
+    rows.push(createHeroRow(content.title, "", "정보공유"));
     const { hook, intro } = splitHookAndIntro(parsed.hookLine, contentType);
     if (hook) rows.push(createHookRow(hook));
     if (intro) rows.push(createIntroRow(intro));

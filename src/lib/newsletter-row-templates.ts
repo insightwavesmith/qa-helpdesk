@@ -153,10 +153,10 @@ function escapeHtml(str: string): string {
  * - row 2 (optional): 팁박스 (fields.tip이 있을 때만)
  */
 export function createInsightRows(fields: InsightFields): object[] {
-  const subtitleHtml = `<div style="font-size:17px;font-weight:700;margin-bottom:8px">${markdownBold(escapeHtml(fields.subtitle))}</div>`;
+  const subtitleHtml = `<div style="font-size:17px;font-weight:700;margin-bottom:10px;line-height:1.5;">${markdownBold(escapeHtml(fields.subtitle))}</div>`;
   const bodyHtml = nlToBr(markdownBold(escapeHtml(fields.body)));
   const rows: object[] = [
-    makeTextRow("insight-body", `${subtitleHtml}${bodyHtml}`, "16px 24px"),
+    makeTextRow("insight-body", `${subtitleHtml}<div style="line-height:190%;">${bodyHtml}</div>`, "16px 24px 20px"),
   ];
 
   if (fields.tip) {
@@ -187,12 +187,12 @@ export function createNumberedCardsRow(fields: NumberedCardsFields): object[] {
     return `<tr><td>
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF5F5;border-left:3px solid #F75D5D;border-radius:0 8px 8px 0;">
     <tr>
-      <td style="width:38px;padding:14px 0 14px 16px;vertical-align:top;">
-        <table cellpadding="0" cellspacing="0" width="28" style="min-width:28px;"><tr><td width="28" height="28" bgcolor="#F75D5D" align="center" valign="middle" style="width:28px;height:28px;border-radius:50%;background-color:#F75D5D;color:#ffffff;font-size:13px;font-weight:700;text-align:center;vertical-align:middle;mso-line-height-rule:exactly;line-height:28px;">${num}</td></tr></table>
+      <td width="44" style="width:44px;padding:14px 0 14px 14px;vertical-align:top;">
+        <div style="width:28px;height:28px;border-radius:50%;background-color:#F75D5D;color:#ffffff;font-size:13px;font-weight:700;text-align:center;line-height:28px;mso-line-height-rule:exactly;">${num}</div>
       </td>
-      <td style="padding:14px 16px 14px 10px;vertical-align:top;">
-        <div style="font-weight:700;font-size:15px;margin-bottom:2px;">${markdownBold(escapeHtml(item.title))}</div>
-        <div style="font-size:13px;color:#666;line-height:1.5;">${nlToBr(markdownBold(escapeHtml(item.desc)))}</div>
+      <td style="padding:14px 16px 14px 6px;vertical-align:top;">
+        <div style="font-weight:700;font-size:15px;margin-bottom:4px;line-height:1.5;">${markdownBold(escapeHtml(item.title))}</div>
+        <div style="font-size:13px;color:#666;line-height:1.7;">${nlToBr(markdownBold(escapeHtml(item.desc)))}</div>
       </td>
     </tr>
   </table>
@@ -213,12 +213,12 @@ export function createChecklistRow(fields: ChecklistFields): object[] {
       ? `<tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>`
       : "";
     return `<tr><td>
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF5F5;border-left:3px solid #F75D5D;border-radius:0 8px 8px 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #f0f0f0;">
     <tr>
-      <td style="width:38px;padding:10px 0 10px 16px;vertical-align:middle;">
-        <table cellpadding="0" cellspacing="0" width="20" style="min-width:20px;"><tr><td width="20" height="20" bgcolor="#F75D5D" align="center" valign="middle" style="width:20px;height:20px;border-radius:50%;background-color:#F75D5D;color:#ffffff;font-size:11px;font-weight:700;text-align:center;vertical-align:middle;mso-line-height-rule:exactly;line-height:20px;">&#10003;</td></tr></table>
+      <td width="40" style="width:40px;padding:12px 0 12px 16px;vertical-align:middle;">
+        <div style="width:22px;height:22px;border-radius:50%;background-color:#F75D5D;color:#ffffff;font-size:12px;font-weight:700;text-align:center;line-height:22px;mso-line-height-rule:exactly;">&#10003;</div>
       </td>
-      <td style="padding:10px 16px 10px 10px;vertical-align:middle;font-size:14px;">
+      <td style="padding:12px 16px 12px 8px;vertical-align:middle;font-size:14px;line-height:1.6;">
         ${markdownBold(escapeHtml(item))}
       </td>
     </tr>
@@ -239,7 +239,7 @@ export function createBulletListRow(fields: BulletListFields): object[] {
     const isLast = i === fields.items.length - 1;
     const borderBottom = isLast ? "" : "border-bottom:1px solid #f0f0f0;";
     return `<tr>
-    <td style="padding:8px 0;${borderBottom}font-size:14px;line-height:1.6">
+    <td style="padding:10px 0;${borderBottom}font-size:14px;line-height:1.7">
       <table cellpadding="0" cellspacing="0">
         <tr>
           <td style="width:20px;vertical-align:top;color:#F75D5D;font-weight:700">&bull;</td>
@@ -251,7 +251,7 @@ export function createBulletListRow(fields: BulletListFields): object[] {
   }).join("");
 
   const html = `<table width="100%" cellpadding="0" cellspacing="0" style="padding:0 0 8px">${bulletRows}</table>`;
-  return [makeTextRow("bullet-list", html, "4px 24px")];
+  return [makeTextRow("bullet-list", html, "4px 24px 8px")];
 }
 
 /**
@@ -328,13 +328,13 @@ export function createBATablesRow(fields: BATablesFields): object[] {
 export function createInterviewQuotesRow(fields: InterviewFields): object[] {
   const quotesHtml = fields.quotes.map((quote) => {
     const textHtml = nlToBr(markdownBold(escapeHtml(quote.text)));
-    return `<div style="border-left:3px solid #F75D5D;background:#f5f5f5;border-radius:0 8px 8px 0;padding:16px 20px;font-style:italic;font-size:14px;color:#555;line-height:1.6;margin-bottom:10px">
+    return `<div style="border-left:3px solid #F75D5D;background:#f5f5f5;border-radius:0 8px 8px 0;padding:18px 20px;font-style:italic;font-size:14px;color:#555;line-height:1.8;margin-bottom:14px">
   "${textHtml}"
-  <div style="font-style:normal;font-size:12px;color:#999;margin-top:6px">&mdash; ${escapeHtml(quote.source)}</div>
+  <div style="font-style:normal;font-size:12px;color:#999;margin-top:8px">&mdash; ${escapeHtml(quote.source)}</div>
 </div>`;
   }).join("\n");
 
-  return [makeTextRow("interview-quotes", quotesHtml, "4px 24px")];
+  return [makeTextRow("interview-quotes", quotesHtml, "8px 24px")];
 }
 
 /**
@@ -343,7 +343,7 @@ export function createInterviewQuotesRow(fields: InterviewFields): object[] {
  */
 export function createImagePlaceholderRow(fields: ImagePlaceholderFields): object[] {
   let html = `<div style="background:#f9f6f2;border-radius:8px;padding:32px 20px;text-align:center">
-  <table cellpadding="0" cellspacing="0" width="60" align="center" style="margin:0 auto;"><tr><td width="60" height="60" bgcolor="#FDEAEA" align="center" valign="middle" style="width:60px;height:60px;border-radius:50%;background-color:#FDEAEA;color:#F75D5D;font-size:28px;text-align:center;vertical-align:middle;">&#9654;</td></tr></table>
+  <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="text-align:center;"><div style="display:inline-block;width:60px;height:60px;border-radius:50%;background-color:#FDEAEA;color:#F75D5D;font-size:28px;text-align:center;line-height:60px;mso-line-height-rule:exactly;">&#9654;</div></td></tr></table>
   <div style="color:#F75D5D;font-size:13px;font-weight:600;margin-top:10px">${markdownBold(escapeHtml(fields.caption))}</div>
   <div style="font-size:11px;color:#999;margin-top:2px">밑줄 친 이미지를 교체해주세요</div>
 </div>`;
@@ -390,10 +390,10 @@ export function createCategoryBadgeRow(label: string): object {
   );
 }
 
-/** 로고 이미지 row (자사몰사관학교 로고, 중앙 정렬, height:72px) */
+/** 로고 이미지 row (자사몰사관학교 로고, 중앙 정렬, width:220px) */
 export const ROW_LOGO: object = makeTextRow(
   "logo",
-  '<table align="center" cellpadding="0" cellspacing="0" width="100%"><tr><td align="center" style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v5-wide.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:72px;width:auto;" /></td></tr></table>',
+  '<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v5-wide.png" alt="자사몰사관학교" style="display:block;margin:0 auto;width:220px;height:auto;" /></td></tr></table>',
   "24px 24px 16px",
 );
 
@@ -410,16 +410,16 @@ export const ROW_LOGO: object = makeTextRow(
 export function createHookQuestionRow(text: string): object {
   return makeTextRow(
     "hook-question",
-    `<table align="center" cellpadding="0" cellspacing="0" style="max-width:420px;" width="420"><tr><td style="text-align:center;font-size:18px;font-weight:700;color:#1a1a1a;line-height:160%;">${nlToBr(markdownBold(escapeHtml(text)))}</td></tr></table>`,
-    "24px 32px 8px",
+    `<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="text-align:center;font-size:18px;font-weight:700;color:#1a1a1a;line-height:170%;">${nlToBr(markdownBold(escapeHtml(text)))}</td></tr></table>`,
+    "24px 32px 12px",
   );
 }
 
-export function createHeroRow(title: string, subtitle: string): object {
+export function createHeroRow(title: string, subtitle: string, badgeText = "LIVE 무료 웨비나"): object {
   const subtitleHtml = subtitle
     ? `\n<p style="color:rgba(255,255,255,0.8);font-size:14px;text-align:center;margin-top:4px;">${escapeHtml(subtitle)}</p>`
     : "";
-  const heroHtml = `<p style="text-align:center;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">LIVE 무료 웨비나</span></p>\n<p style="color:#ffffff;font-size:22px;font-weight:800;text-align:center;line-height:140%;margin-top:12px;">${escapeHtml(title)}</p>${subtitleHtml}`;
+  const heroHtml = `<p style="text-align:center;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">${escapeHtml(badgeText)}</span></p>\n<p style="color:#ffffff;font-size:22px;font-weight:800;text-align:center;line-height:150%;margin-top:12px;">${escapeHtml(title)}</p>${subtitleHtml}`;
 
   return {
     id: "row-hero",
@@ -464,8 +464,8 @@ export function createHeroRow(title: string, subtitle: string): object {
 export function createTitleRow(title: string): object {
   return makeTextRow(
     "title",
-    `<table align="center" cellpadding="0" cellspacing="0" width="100%"><tr><td align="center" style="text-align:center;font-size:20px;line-height:140%;font-weight:700;color:#1a1a1a;padding:0;">${escapeHtml(title)}</td></tr></table>`,
-    "24px 24px 8px",
+    `<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="text-align:center;font-size:20px;line-height:150%;font-weight:700;color:#1a1a1a;padding:0;">${escapeHtml(title)}</td></tr></table>`,
+    "24px 24px 12px",
   );
 }
 
@@ -476,8 +476,8 @@ export function createTitleRow(title: string): object {
 export function createHookRow(text: string): object {
   return makeTextRow(
     "hook-quote",
-    `<table align="center" cellpadding="0" cellspacing="0" style="max-width:420px;" width="420"><tr><td style="text-align:center;font-size:14px;line-height:160%;"><em><span style="color:#F75D5D;font-weight:600;">${markdownBold(escapeHtml(text))}</span></em></td></tr></table>`,
-    "8px 24px 16px",
+    `<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="text-align:center;font-size:14px;line-height:170%;"><em><span style="color:#F75D5D;font-weight:600;">${markdownBold(escapeHtml(text))}</span></em></td></tr></table>`,
+    "8px 32px 16px",
   );
 }
 
@@ -488,9 +488,33 @@ export function createHookRow(text: string): object {
 export function createIntroRow(html: string): object {
   return makeTextRow(
     "intro",
-    `<p style="font-size:15px;line-height:170%;margin:0;"><span style="color:#333;font-size:15px;">${markdownBold(escapeHtml(html))}</span></p>`,
-    "8px 24px",
+    `<p style="font-size:15px;line-height:190%;margin:0;"><span style="color:#333;font-size:15px;">${markdownBold(escapeHtml(html))}</span></p>`,
+    "8px 24px 16px",
   );
+}
+
+/**
+ * 수강생 정보 카드 row (성과공유 전용).
+ * @param name - 수강생 이름 (예: "A님")
+ * @param brand - 브랜드명 (선택)
+ * @param industry - 업종 (선택)
+ * @param period - 수강 기간 (선택)
+ */
+export function createStudentInfoRow(name: string, brand?: string, industry?: string, period?: string): object {
+  const infoRows: string[] = [];
+  if (brand) infoRows.push(`<tr><td style="font-size:12px;color:#999;padding-right:12px;padding-top:6px;white-space:nowrap;vertical-align:top;">브랜드</td><td style="font-size:14px;color:#333;padding-top:6px;line-height:1.5;">${escapeHtml(brand)}</td></tr>`);
+  if (industry) infoRows.push(`<tr><td style="font-size:12px;color:#999;padding-right:12px;padding-top:6px;white-space:nowrap;vertical-align:top;">업종</td><td style="font-size:14px;color:#333;padding-top:6px;line-height:1.5;">${escapeHtml(industry)}</td></tr>`);
+  if (period) infoRows.push(`<tr><td style="font-size:12px;color:#999;padding-right:12px;padding-top:6px;white-space:nowrap;vertical-align:top;">수강 기간</td><td style="font-size:14px;color:#333;padding-top:6px;line-height:1.5;">${escapeHtml(period)}</td></tr>`);
+
+  const html = `<table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF5F5;border-left:3px solid #F75D5D;border-radius:0 8px 8px 0;">
+  <tr><td style="padding:16px 20px;">
+    <table cellpadding="0" cellspacing="0">
+      <tr><td style="font-size:12px;color:#999;padding-right:12px;white-space:nowrap;vertical-align:top;">수강생</td><td style="font-size:15px;font-weight:700;color:#1a1a1a;line-height:1.5;">${escapeHtml(name)}</td></tr>
+      ${infoRows.join("\n      ")}
+    </table>
+  </td></tr>
+</table>`;
+  return makeTextRow("student-info", html, "12px 24px 16px");
 }
 
 /**
@@ -511,8 +535,8 @@ export function createGreetingRow(): object {
 export function createEmotionHookRow(text: string): object {
   return makeTextRow(
     "emotion-hook",
-    `<table align="center" cellpadding="0" cellspacing="0" style="max-width:420px;" width="420"><tr><td style="text-align:center;font-size:15px;line-height:180%;"><strong><em><span style="color:#333;font-size:15px;">${nlToBr(markdownBold(escapeHtml(text)))}</span></em></strong></td></tr></table>`,
-    "8px 24px 16px",
+    `<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="text-align:center;font-size:15px;line-height:190%;"><strong><em><span style="color:#333;font-size:15px;">${nlToBr(markdownBold(escapeHtml(text)))}</span></em></strong></td></tr></table>`,
+    "8px 32px 20px",
   );
 }
 
@@ -524,11 +548,11 @@ export function createEmotionHookRow(text: string): object {
 export function createStudentQuoteRow(text: string, source: string): object {
   return makeTextRow(
     "student-quote",
-    `<div style="background:#f5f5f5;border-radius:6px;padding:16px 20px;font-style:italic;font-size:14px;color:#555;line-height:1.6">
+    `<div style="background:#f5f5f5;border-radius:6px;padding:18px 20px;font-style:italic;font-size:14px;color:#555;line-height:1.8">
   "${markdownBold(escapeHtml(text))}"
-  <div style="font-style:normal;font-size:12px;color:#999;margin-top:6px">&mdash; ${escapeHtml(source)}</div>
+  <div style="font-style:normal;font-size:12px;color:#999;margin-top:8px">&mdash; ${escapeHtml(source)}</div>
 </div>`,
-    "16px 24px",
+    "16px 24px 20px",
   );
 }
 
@@ -539,8 +563,8 @@ export function createStudentQuoteRow(text: string, source: string): object {
 export function createClosingRow(html: string): object {
   return makeTextRow(
     "closing",
-    `<table align="center" cellpadding="0" cellspacing="0" style="max-width:400px;" width="400"><tr><td align="center" style="text-align:center;font-size:14px;line-height:180%;color:#64748b;">${nlToBr(markdownBold(escapeHtml(html)))}</td></tr></table>`,
-    "16px 24px",
+    `<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="text-align:center;font-size:14px;line-height:190%;color:#64748b;">${nlToBr(markdownBold(escapeHtml(html)))}</td></tr></table>`,
+    "20px 32px",
   );
 }
 
