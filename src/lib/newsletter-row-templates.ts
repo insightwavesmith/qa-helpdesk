@@ -415,12 +415,13 @@ export function createHookQuestionRow(text: string): object {
 }
 
 export function createHeroRow(title: string, subtitle: string, badgeText = "LIVE 무료 웨비나"): object {
-  const whiteLogoUrl = "https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-white-v4.png";
+  const logoMarkUrl = "https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-10plus-white.png";
   const subtitleHtml = subtitle
     ? `<p style="color:rgba(255,255,255,0.8);font-size:14px;text-align:center;margin-top:4px;">${escapeHtml(subtitle)}</p>`
     : "";
-  // 빨간 배경 히어로 안에 흰색 로고 + 배지 + 제목
-  const heroHtml = `<p style="text-align:center;margin:0 0 16px;"><img src="${whiteLogoUrl}" alt="자사몰사관학교" style="width:160px;height:auto;display:inline-block;" /></p>
+  // 빨간 배경 히어로: 10+마크(이미지) + 자사몰사관학교(텍스트) + 배지 + 제목
+  const heroHtml = `<p style="text-align:center;margin:0 0 4px;"><img src="${logoMarkUrl}" alt="10+" style="width:48px;height:auto;display:inline-block;vertical-align:middle;" /></p>
+<p style="text-align:center;margin:0 0 16px;color:#ffffff;font-size:16px;font-weight:700;letter-spacing:1px;">자사몰사관학교</p>
 <p style="text-align:center;margin:0;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">${escapeHtml(badgeText)}</span></p>
 <p style="color:#ffffff;font-size:22px;font-weight:800;text-align:center;line-height:150%;margin-top:12px;">${escapeHtml(title)}</p>
 ${subtitleHtml}`;
