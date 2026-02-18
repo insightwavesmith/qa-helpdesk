@@ -422,7 +422,7 @@ export function createHeroRow(title: string, subtitle: string, badgeText = "LIVE
   // C안: 10+마크 좌측정렬 + 자사몰사관학교 10 하단 맞춤
   const heroHtml = `<table cellpadding="0" cellspacing="0" style="margin-bottom:16px;"><tr>
     <td style="vertical-align:bottom;padding-right:6px;"><img src="${logoMarkUrl}" alt="10+" style="width:24px;height:auto;display:block;" /></td>
-    <td style="vertical-align:bottom;color:rgba(255,255,255,0.85);font-size:12px;font-weight:700;letter-spacing:1px;line-height:1;padding-bottom:2px;">자사몰사관학교</td>
+    <td style="vertical-align:bottom;color:rgba(255,255,255,0.85);font-size:12px;font-weight:700;letter-spacing:1px;line-height:1;padding-bottom:5px;">자사몰사관학교</td>
   </tr></table>
 <p style="text-align:center;margin:0;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">${escapeHtml(badgeText)}</span></p>
 <p style="color:#ffffff;font-size:22px;font-weight:800;text-align:center;line-height:150%;margin-top:12px;">${escapeHtml(title)}</p>
