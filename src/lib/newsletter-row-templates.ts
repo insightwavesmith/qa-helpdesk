@@ -373,8 +373,8 @@ export function createBannerRow(bannerKey: string): object {
   // T1: CSS-only table 배너 (Gmail 호환, PNG 제거)
   return makeTextRow(
     `banner-${slug}`,
-    `<table cellpadding="0" cellspacing="0" style="width:66%;"><tr><td style="background-color:#F75D5D;padding:16px 24px;color:#ffffff;font-size:16px;font-weight:700;letter-spacing:1px;">${escapeHtml(bannerKey)}</td></tr></table>`,
-    "16px 24px 0px",
+    `<table cellpadding="0" cellspacing="0" style="width:66%;"><tr><td style="background-color:#F75D5D;height:52px;padding:0 24px;color:#ffffff;font-size:16px;font-weight:700;letter-spacing:1px;line-height:52px;">${escapeHtml(bannerKey)}</td></tr></table>`,
+    "24px 24px 0px",
   );
 }
 
@@ -452,8 +452,8 @@ export function createHeroRow(title: string, subtitle: string): object {
 export function createTitleRow(title: string): object {
   return makeTextRow(
     "title",
-    `<h1 style="font-size:22px;line-height:150%;text-align:center;"><strong><span style="color:#1a1a1a;font-size:22px;line-height:33px;">${escapeHtml(title)}</span></strong></h1>`,
-    "32px 24px 8px",
+    `<h1 style="font-size:20px;line-height:140%;text-align:center;margin:0;"><strong><span style="color:#1a1a1a;font-size:20px;">${escapeHtml(title)}</span></strong></h1>`,
+    "24px 24px 8px",
   );
 }
 
@@ -464,7 +464,7 @@ export function createTitleRow(title: string): object {
 export function createHookRow(text: string): object {
   return makeTextRow(
     "hook-quote",
-    `<table align="center" cellpadding="0" cellspacing="0" style="max-width:420px;" width="420"><tr><td style="text-align:center;font-size:16px;line-height:160%;"><em><span style="color:#F75D5D;font-weight:600;">${markdownBold(escapeHtml(text))}</span></em></td></tr></table>`,
+    `<table align="center" cellpadding="0" cellspacing="0" style="max-width:420px;" width="420"><tr><td style="text-align:center;font-size:14px;line-height:160%;"><em><span style="color:#F75D5D;font-weight:600;">${markdownBold(escapeHtml(text))}</span></em></td></tr></table>`,
     "8px 24px 16px",
   );
 }
@@ -476,8 +476,8 @@ export function createHookRow(text: string): object {
 export function createIntroRow(html: string): object {
   return makeTextRow(
     "intro",
-    `<p style="font-size:15px;line-height:180%;"><span style="color:#333;font-size:15px;line-height:27px;">${markdownBold(escapeHtml(html))}</span></p>`,
-    "16px 24px",
+    `<p style="font-size:14px;line-height:170%;margin:0;"><span style="color:#333;font-size:14px;">${markdownBold(escapeHtml(html))}</span></p>`,
+    "8px 24px",
   );
 }
 

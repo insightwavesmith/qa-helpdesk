@@ -77,10 +77,10 @@ export function createCtaRow(text: string, url: string, bgColor = "#F75D5D"): ob
 - `makeImageRow` 대신 `makeTextRow`에 위 HTML 삽입
 - containerPadding: `"16px 24px 0px"`
 - 완료 기준:
-  - [ ] 모든 13개 배너키가 CSS-only table 배너로 렌더됨
-  - [ ] PNG `<img>` 태그 없음 (배너 한정)
-  - [ ] Gmail에서 solid red 배경 + 흰 텍스트 정상 표시
-  - [ ] 배너 폭이 전체의 약 66% (좌정렬)
+  - [x] 모든 13개 배너키가 CSS-only table 배너로 렌더됨
+  - [x] PNG `<img>` 태그 없음 (배너 한정)
+  - [x] Gmail에서 solid red 배경 + 흰 텍스트 정상 표시
+  - [x] 배너 폭이 전체의 약 66% (좌정렬)
 
 ### T2. row 간 여백 축소 → frontend-dev (MEDIUM)
 **파일**: `src/lib/newsletter-row-templates.ts` — 각 함수의 `makeTextRow` 호출부
@@ -97,16 +97,16 @@ export function createCtaRow(text: string, url: string, bgColor = "#F75D5D"): ob
 - 일반 본문 text row: `createSectionContentRows()` 내 subtitle/body makeTextRow 호출에 `"8px 24px"` 명시
 
 - 완료 기준:
-  - [ ] 카드/체크리스트/불릿/인용 row padding이 축소됨
-  - [ ] 배너→본문 간격이 이전보다 타이트함
-  - [ ] Unlayer 에디터에서 정상 렌더
+  - [x] 카드/체크리스트/불릿/인용 row padding이 축소됨
+  - [x] 배너→본문 간격이 이전보다 타이트함
+  - [x] Unlayer 에디터에서 정상 렌더
 
 ### T3. 인용 블록 배경색 수정 → frontend-dev (LOW)
 **파일**: `src/lib/newsletter-row-templates.ts` — `createInterviewQuotesRow()` (L330)
 
 **수정**: `background:#f8f9fc` → `background:#f5f5f5`
 - 완료 기준:
-  - [ ] 인용 블록 배경이 `#f5f5f5`
+  - [x] 인용 블록 배경이 `#f5f5f5`
 
 ### T4. hookLine/감정후킹 텍스트 폭 제어 → frontend-dev (MEDIUM)
 **파일**: `src/lib/newsletter-row-templates.ts` — hookLine 생성부 (L470 부근)
@@ -127,8 +127,8 @@ export function createCtaRow(text: string, url: string, bgColor = "#F75D5D"): ob
 - `createEmotionHookRow()` 있다면 동일 적용
 
 - 완료 기준:
-  - [ ] hookLine 텍스트가 420px 중앙 정렬
-  - [ ] Gmail에서 줄바꿈이 자연스러움
+  - [x] hookLine 텍스트가 420px 중앙 정렬
+  - [x] Gmail에서 줄바꿈이 자연스러움
 
 ### T5. 본문 텍스트 좌우 패딩 통일 → frontend-dev (MEDIUM)
 **파일**: `src/lib/newsletter-row-templates.ts` — 각 `makeTextRow` 호출부
@@ -139,7 +139,7 @@ export function createCtaRow(text: string, url: string, bgColor = "#F75D5D"): ob
 - INSIGHT/핵심 주제 등 섹션 본문 row: `"12px 24px"`
 
 - 완료 기준:
-  - [ ] 본문 텍스트 좌우 여백이 24px로 통일
+  - [x] 본문 텍스트 좌우 여백이 24px로 통일
 
 ### T6. CTA 버튼 fullWidth + 스타일 확인 → frontend-dev (LOW)
 **파일**: `src/lib/newsletter-row-templates.ts` — `createCtaRow()` (L614)
@@ -151,8 +151,8 @@ export function createCtaRow(text: string, url: string, bgColor = "#F75D5D"): ob
 - 목업 기준: 풀폭, 라운드 8px, padding 14px
 
 - 완료 기준:
-  - [ ] CTA 버튼 fullWidth: true
-  - [ ] borderRadius: "8px"
+  - [x] CTA 버튼 fullWidth: true
+  - [x] borderRadius: "8px"
 
 ## 엣지 케이스
 1. **배너키가 BANNER_MAP에 없는 경우**: CSS-only 배너의 fallback slug 생성이 정상 작동해야 함
