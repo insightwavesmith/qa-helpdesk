@@ -370,12 +370,12 @@ export function createBannerRow(bannerKey: string): object {
     ? BANNER_MAP[matchedKey].replace("banner-", "")
     : bannerKey.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "unknown";
 
-  // 개선_03: PNG 이미지 배너 (대각선 컷 디자인) — 모바일 풀너비
+  // 개선_03: PNG 이미지 배너 (대각선 컷 디자인) — PC 400px, 모바일 풀너비
   const imgFile = matchedKey ? BANNER_MAP[matchedKey] : `banner-${slug}`;
   const imgUrl = `${BANNER_BASE_URL}/${imgFile}.png`;
   return makeTextRow(
     `banner-${slug}`,
-    `<img src="${imgUrl}" width="100%" alt="${escapeHtml(bannerKey)}" style="display:block;width:100%;height:auto;border:0;" />`,
+    `<img src="${imgUrl}" width="400" alt="${escapeHtml(bannerKey)}" style="display:block;width:100%;max-width:400px;height:auto;border:0;" />`,
     "20px 16px 0px",
   );
 }
