@@ -156,7 +156,7 @@ export function createInsightRows(fields: InsightFields): object[] {
   const subtitleHtml = `<div style="font-size:17px;font-weight:700;margin-bottom:8px">${markdownBold(escapeHtml(fields.subtitle))}</div>`;
   const bodyHtml = nlToBr(markdownBold(escapeHtml(fields.body)));
   const rows: object[] = [
-    makeTextRow("insight-body", `${subtitleHtml}${bodyHtml}`, "12px 24px"),
+    makeTextRow("insight-body", `${subtitleHtml}${bodyHtml}`, "16px 24px"),
   ];
 
   if (fields.tip) {
@@ -182,13 +182,13 @@ export function createNumberedCardsRow(fields: NumberedCardsFields): object[] {
   const cards = fields.items.map((item, i) => {
     const num = String(i + 1).padStart(2, "0");
     const spacer = i < fields.items.length - 1
-      ? `<tr><td style="height:8px;font-size:0;line-height:0;">&nbsp;</td></tr>`
+      ? `<tr><td style="height:14px;font-size:0;line-height:0;">&nbsp;</td></tr>`
       : "";
     return `<tr><td>
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF5F5;border-left:3px solid #F75D5D;border-radius:0 8px 8px 0;">
     <tr>
       <td style="width:38px;padding:14px 0 14px 16px;vertical-align:top;">
-        <div style="width:28px;height:28px;border-radius:50%;background:#F75D5D;color:#fff;font-size:13px;font-weight:700;text-align:center;line-height:28px;">${num}</div>
+        <table cellpadding="0" cellspacing="0" width="28" style="min-width:28px;"><tr><td width="28" height="28" bgcolor="#F75D5D" align="center" valign="middle" style="width:28px;height:28px;border-radius:50%;background-color:#F75D5D;color:#ffffff;font-size:13px;font-weight:700;text-align:center;vertical-align:middle;mso-line-height-rule:exactly;line-height:28px;">${num}</td></tr></table>
       </td>
       <td style="padding:14px 16px 14px 10px;vertical-align:top;">
         <div style="font-weight:700;font-size:15px;margin-bottom:2px;">${markdownBold(escapeHtml(item.title))}</div>
@@ -200,7 +200,7 @@ export function createNumberedCardsRow(fields: NumberedCardsFields): object[] {
   }).join("");
 
   const html = `<table width="100%" cellpadding="0" cellspacing="0" style="padding:0 0 8px;">${cards}</table>`;
-  return [makeTextRow("numbered-cards", html, "4px 24px 0px")];
+  return [makeTextRow("numbered-cards", html, "8px 24px 4px")];
 }
 
 /**
@@ -210,13 +210,13 @@ export function createNumberedCardsRow(fields: NumberedCardsFields): object[] {
 export function createChecklistRow(fields: ChecklistFields): object[] {
   const cards = fields.items.map((item, i) => {
     const spacer = i < fields.items.length - 1
-      ? `<tr><td style="height:6px;font-size:0;line-height:0;">&nbsp;</td></tr>`
+      ? `<tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>`
       : "";
     return `<tr><td>
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF5F5;border-left:3px solid #F75D5D;border-radius:0 8px 8px 0;">
     <tr>
       <td style="width:38px;padding:10px 0 10px 16px;vertical-align:middle;">
-        <div style="width:20px;height:20px;border-radius:50%;background:#F75D5D;text-align:center;line-height:20px;color:#fff;font-size:11px;font-weight:700;">&#10003;</div>
+        <table cellpadding="0" cellspacing="0" width="20" style="min-width:20px;"><tr><td width="20" height="20" bgcolor="#F75D5D" align="center" valign="middle" style="width:20px;height:20px;border-radius:50%;background-color:#F75D5D;color:#ffffff;font-size:11px;font-weight:700;text-align:center;vertical-align:middle;mso-line-height-rule:exactly;line-height:20px;">&#10003;</td></tr></table>
       </td>
       <td style="padding:10px 16px 10px 10px;vertical-align:middle;font-size:14px;">
         ${markdownBold(escapeHtml(item))}
@@ -227,7 +227,7 @@ export function createChecklistRow(fields: ChecklistFields): object[] {
   }).join("");
 
   const html = `<table width="100%" cellpadding="0" cellspacing="0" style="padding:0 0 8px;">${cards}</table>`;
-  return [makeTextRow("checklist", html, "4px 24px 0px")];
+  return [makeTextRow("checklist", html, "8px 24px 4px")];
 }
 
 /**
@@ -343,7 +343,7 @@ export function createInterviewQuotesRow(fields: InterviewFields): object[] {
  */
 export function createImagePlaceholderRow(fields: ImagePlaceholderFields): object[] {
   let html = `<div style="background:#f9f6f2;border-radius:8px;padding:32px 20px;text-align:center">
-  <div style="width:60px;height:60px;border-radius:50%;background:rgba(247,93,93,.15);display:inline-block;text-align:center;line-height:60px;font-size:28px;color:#F75D5D;margin:0 auto">&#9654;</div>
+  <table cellpadding="0" cellspacing="0" width="60" align="center" style="margin:0 auto;"><tr><td width="60" height="60" bgcolor="#FDEAEA" align="center" valign="middle" style="width:60px;height:60px;border-radius:50%;background-color:#FDEAEA;color:#F75D5D;font-size:28px;text-align:center;vertical-align:middle;">&#9654;</td></tr></table>
   <div style="color:#F75D5D;font-size:13px;font-weight:600;margin-top:10px">${markdownBold(escapeHtml(fields.caption))}</div>
   <div style="font-size:11px;color:#999;margin-top:2px">밑줄 친 이미지를 교체해주세요</div>
 </div>`;
@@ -378,10 +378,22 @@ export function createBannerRow(bannerKey: string): object {
   );
 }
 
-/** 로고 이미지 row (자사몰사관학교 로고, 중앙 정렬, height:48px) */
+/**
+ * 카테고리 뱃지 row (빨간 pill 뱃지, 중앙 정렬).
+ * @param label - 뱃지 텍스트 (예: "정보공유", "수강생 사례")
+ */
+export function createCategoryBadgeRow(label: string): object {
+  return makeTextRow(
+    "category-badge",
+    `<table align="center" cellpadding="0" cellspacing="0"><tr><td align="center" bgcolor="#F75D5D" style="background-color:#F75D5D;color:#ffffff;font-size:12px;font-weight:700;padding:6px 18px;border-radius:20px;letter-spacing:1px;">${escapeHtml(label)}</td></tr></table>`,
+    "0px 24px 12px",
+  );
+}
+
+/** 로고 이미지 row (자사몰사관학교 로고, 중앙 정렬, height:72px) */
 export const ROW_LOGO: object = makeTextRow(
   "logo",
-  '<p style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v5-wide.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:48px;width:auto;" /></p>',
+  '<table align="center" cellpadding="0" cellspacing="0" width="100%"><tr><td align="center" style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v5-wide.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:72px;width:auto;" /></td></tr></table>',
   "24px 24px 16px",
 );
 
@@ -452,7 +464,7 @@ export function createHeroRow(title: string, subtitle: string): object {
 export function createTitleRow(title: string): object {
   return makeTextRow(
     "title",
-    `<h1 style="font-size:20px;line-height:140%;text-align:center;margin:0;"><strong><span style="color:#1a1a1a;font-size:20px;">${escapeHtml(title)}</span></strong></h1>`,
+    `<table align="center" cellpadding="0" cellspacing="0" width="100%"><tr><td align="center" style="text-align:center;font-size:20px;line-height:140%;font-weight:700;color:#1a1a1a;padding:0;">${escapeHtml(title)}</td></tr></table>`,
     "24px 24px 8px",
   );
 }
@@ -527,7 +539,7 @@ export function createStudentQuoteRow(text: string, source: string): object {
 export function createClosingRow(html: string): object {
   return makeTextRow(
     "closing",
-    `<p style="font-size:14px;line-height:180%;text-align:center;max-width:400px;margin:0 auto;"><span style="color:#64748b;">${nlToBr(markdownBold(escapeHtml(html)))}</span></p>`,
+    `<table align="center" cellpadding="0" cellspacing="0" style="max-width:400px;" width="400"><tr><td align="center" style="text-align:center;font-size:14px;line-height:180%;color:#64748b;">${nlToBr(markdownBold(escapeHtml(html)))}</td></tr></table>`,
     "16px 24px",
   );
 }

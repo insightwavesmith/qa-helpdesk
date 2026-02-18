@@ -5,7 +5,7 @@ import {
   ROW_LOGO, ROW_DIVIDER, ROW_PROFILE, ROW_FOOTER,
   createHeroRow, createHookQuestionRow, createTitleRow, createHookRow, createIntroRow, createClosingRow,
   createEmotionHookRow, createStudentQuoteRow,
-  createCtaRow,
+  createCtaRow, createCategoryBadgeRow,
   createSectionContentRows,
 } from "./newsletter-row-templates";
 
@@ -927,7 +927,8 @@ export function buildDesignFromSummary(content: Content): object {
     // G8: farewell 제거 (골드 스탠다드에 없음)
     rows.push(ROW_FOOTER);
   } else if (contentType === "case_study") {
-    // Case Study: Title → EmotionHook → Background → StudentQuote → Divider → Sections → CTA → Footer
+    // Case Study: Badge → Title → EmotionHook → Background → StudentQuote → Divider → Sections → CTA → Footer
+    rows.push(createCategoryBadgeRow("수강생 사례"));
     rows.push(createTitleRow(content.title));
     const { hook: csHook, intro: csIntro, studentQuote } = splitHookAndIntro(parsed.hookLine, contentType);
     if (csHook) rows.push(createEmotionHookRow(csHook));
@@ -939,7 +940,8 @@ export function buildDesignFromSummary(content: Content): object {
     // G7: profile, farewell, divider 제거
     rows.push(ROW_FOOTER);
   } else {
-    // Education (default): Title → Hook(1st para) → IntroBody → Divider → Sections → Closing → Divider → Profile → CTA → Farewell → Footer
+    // Education (default): Badge → Title → Hook(1st para) → IntroBody → Divider → Sections → Closing → Divider → Profile → CTA → Farewell → Footer
+    rows.push(createCategoryBadgeRow("BS CAMP INSIGHT"));
     rows.push(createTitleRow(content.title));
     const { hook, intro } = splitHookAndIntro(parsed.hookLine, contentType);
     if (hook) rows.push(createHookRow(hook));
