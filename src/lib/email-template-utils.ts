@@ -925,7 +925,7 @@ export function buildDesignFromSummary(content: Content): object {
   }
 
   // ─── 4. 템플릿별 레이아웃 조립 ───
-  const rows: object[] = [ROW_LOGO];
+  const rows: object[] = [];  // 로고는 히어로에 통합 (R13)
 
   const ctaTexts: Record<string, string> = {
     education: "전체 가이드 보기",
@@ -957,11 +957,12 @@ export function buildDesignFromSummary(content: Content): object {
     if (csHook) rows.push(createEmotionHookRow(csHook));
     if (studentInfo) rows.push(createStudentInfoRow(studentInfo.name, studentInfo.brand, studentInfo.industry, studentInfo.period));
     if (csIntro) rows.push(createIntroRow(csIntro));
-    if (studentQuote) rows.push(createStudentQuoteRow(studentQuote.text, studentQuote.source));
+    // studentQuote 삭제 — INTERVIEW 섹션과 겹침 (R12)
     rows.push(ROW_DIVIDER);
     rows.push(...sectionRows);
+    rows.push(ROW_DIVIDER);
+    rows.push(ROW_PROFILE);
     rows.push(createCtaRow(ctaText, articleUrl, ctaColor));
-    // G7: profile, farewell, divider 제거
     rows.push(ROW_FOOTER);
   } else {
     // Education (default): Hero(정보공유) → Hook → IntroBody → Divider → Sections → Closing → Divider → Profile → CTA → Footer

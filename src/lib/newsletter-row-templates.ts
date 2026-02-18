@@ -187,12 +187,10 @@ export function createNumberedCardsRow(fields: NumberedCardsFields): object[] {
     return `<tr><td>
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF5F5;border-left:3px solid #F75D5D;border-radius:0 8px 8px 0;">
     <tr>
-      <td width="56" style="width:56px;padding:16px 0 16px 14px;vertical-align:top;">
-        <img src="${BANNER_BASE_URL}/circle-${num}.png" width="38" height="38" alt="${num}" style="display:block;width:38px;height:38px;border:0;" />
-      </td>
-      <td style="padding:16px 16px 16px 8px;vertical-align:top;">
-        <div style="font-weight:800;font-size:16px;margin-bottom:6px;line-height:1.5;color:#1a1a1a;">${markdownBold(escapeHtml(item.title))}</div>
-        <div style="font-size:14px;color:#555;line-height:1.7;">${nlToBr(markdownBold(escapeHtml(item.desc)))}</div>
+      <td style="padding:14px 16px;">
+        <div style="font-size:13px;font-weight:800;color:#F75D5D;margin-bottom:4px;">${num}</div>
+        <div style="font-weight:700;font-size:15px;margin-bottom:4px;line-height:1.5;color:#1a1a1a;">${markdownBold(escapeHtml(item.title))}</div>
+        <div style="font-size:13.5px;color:#555;line-height:1.7;">${nlToBr(markdownBold(escapeHtml(item.desc)))}</div>
       </td>
     </tr>
   </table>
@@ -208,17 +206,16 @@ export function createNumberedCardsRow(fields: NumberedCardsFields): object[] {
  * fields.items 배열 순회, 마지막 항목은 border-bottom 없음.
  */
 export function createChecklistRow(fields: ChecklistFields): object[] {
-  const cards = fields.items.map((item, i) => {
-    const spacer = i < fields.items.length - 1
+  const limitedItems = fields.items.slice(0, 4);
+  const cards = limitedItems.map((item, i) => {
+    const spacer = i < limitedItems.length - 1
       ? `<tr><td style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr>`
       : "";
     return `<tr><td>
   <table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #f0f0f0;">
     <tr>
-      <td width="48" style="width:48px;padding:14px 0 14px 16px;vertical-align:middle;">
-        <img src="${BANNER_BASE_URL}/circle-check.png" width="30" height="30" alt="✓" style="display:block;width:30px;height:30px;border:0;" />
-      </td>
-      <td style="padding:14px 16px 14px 8px;vertical-align:middle;font-size:15px;font-weight:600;line-height:1.6;color:#1a1a1a;">
+      <td width="30" style="width:30px;padding:12px 0 12px 14px;vertical-align:top;font-size:16px;line-height:1.5;">✅</td>
+      <td style="padding:12px 14px 12px 4px;vertical-align:top;font-size:14px;font-weight:600;line-height:1.6;color:#1a1a1a;">
         ${markdownBold(escapeHtml(item))}
       </td>
     </tr>
@@ -418,10 +415,15 @@ export function createHookQuestionRow(text: string): object {
 }
 
 export function createHeroRow(title: string, subtitle: string, badgeText = "LIVE 무료 웨비나"): object {
+  const whiteLogoUrl = "https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-white.png";
   const subtitleHtml = subtitle
-    ? `\n<p style="color:rgba(255,255,255,0.8);font-size:14px;text-align:center;margin-top:4px;">${escapeHtml(subtitle)}</p>`
+    ? `<p style="color:rgba(255,255,255,0.8);font-size:14px;text-align:center;margin-top:4px;">${escapeHtml(subtitle)}</p>`
     : "";
-  const heroHtml = `<p style="text-align:center;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">${escapeHtml(badgeText)}</span></p>\n<p style="color:#ffffff;font-size:22px;font-weight:800;text-align:center;line-height:150%;margin-top:12px;">${escapeHtml(title)}</p>${subtitleHtml}`;
+  // 빨간 배경 히어로 안에 흰색 로고 + 배지 + 제목
+  const heroHtml = `<p style="text-align:center;margin:0 0 16px;"><img src="${whiteLogoUrl}" alt="자사몰사관학교" style="width:160px;height:auto;display:inline-block;" /></p>
+<p style="text-align:center;margin:0;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">${escapeHtml(badgeText)}</span></p>
+<p style="color:#ffffff;font-size:22px;font-weight:800;text-align:center;line-height:150%;margin-top:12px;">${escapeHtml(title)}</p>
+${subtitleHtml}`;
 
   return {
     id: "row-hero",
@@ -432,7 +434,7 @@ export function createHeroRow(title: string, subtitle: string, badgeText = "LIVE
         id: "content-hero",
         type: "text",
         values: {
-          containerPadding: "40px 32px",
+          containerPadding: "32px 32px 40px",
           anchor: "",
           textAlign: "center",
           lineHeight: "150%",
@@ -478,8 +480,8 @@ export function createTitleRow(title: string): object {
 export function createHookRow(text: string): object {
   return makeTextRow(
     "hook-quote",
-    `<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="text-align:center;font-size:14px;line-height:170%;"><em><span style="color:#F75D5D;font-weight:600;">${markdownBold(escapeHtml(text))}</span></em></td></tr></table>`,
-    "8px 32px 16px",
+    `<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="text-align:center;font-size:18px;line-height:180%;color:#333;font-style:italic;">"${markdownBold(escapeHtml(text))}"</td></tr></table>`,
+    "16px 32px 16px",
   );
 }
 
@@ -504,18 +506,14 @@ export function createIntroRow(html: string): object {
  */
 export function createStudentInfoRow(name: string, brand?: string, industry?: string, period?: string): object {
   const detailRows: string[] = [];
-  if (industry) detailRows.push(`<tr><td style="padding:8px 0;border-bottom:1px solid #FFE0E0;"><table cellpadding="0" cellspacing="0" width="100%"><tr><td width="80" style="font-size:12px;color:#C0392B;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;vertical-align:middle;">업종</td><td style="font-size:14px;color:#333;font-weight:500;vertical-align:middle;">${escapeHtml(industry)}</td></tr></table></td></tr>`);
-  if (brand) detailRows.push(`<tr><td style="padding:8px 0;border-bottom:1px solid #FFE0E0;"><table cellpadding="0" cellspacing="0" width="100%"><tr><td width="80" style="font-size:12px;color:#C0392B;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;vertical-align:middle;">브랜드</td><td style="font-size:14px;color:#333;font-weight:500;vertical-align:middle;">${escapeHtml(brand)}</td></tr></table></td></tr>`);
-  if (period) detailRows.push(`<tr><td style="padding:8px 0;"><table cellpadding="0" cellspacing="0" width="100%"><tr><td width="80" style="font-size:12px;color:#C0392B;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;vertical-align:middle;">수강</td><td style="font-size:14px;color:#333;font-weight:500;vertical-align:middle;">${escapeHtml(period)}</td></tr></table></td></tr>`);
+  if (industry) detailRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#999;letter-spacing:0.5px;width:60px;vertical-align:top;">업종</td><td style="padding:6px 0;font-size:14px;color:#333;">${escapeHtml(industry)}</td></tr>`);
+  if (brand) detailRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#999;letter-spacing:0.5px;width:60px;vertical-align:top;">브랜드</td><td style="padding:6px 0;font-size:14px;color:#333;">${escapeHtml(brand)}</td></tr>`);
+  if (period) detailRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#999;letter-spacing:0.5px;width:60px;vertical-align:top;">수강</td><td style="padding:6px 0;font-size:14px;color:#333;">${escapeHtml(period)}</td></tr>`);
 
-  const html = `<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:2px solid #F75D5D;border-radius:12px;">
-  <tr><td style="background:#F75D5D;padding:14px 20px;border-radius:10px 10px 0 0;">
-    <table cellpadding="0" cellspacing="0" width="100%"><tr>
-      <td style="font-size:18px;font-weight:800;color:#ffffff;letter-spacing:0.5px;">${escapeHtml(name)}</td>
-      <td align="right" style="font-size:12px;color:rgba(255,255,255,0.8);font-weight:600;">STUDENT PROFILE</td>
-    </tr></table>
-  </td></tr>
-  <tr><td style="padding:12px 20px 16px;">
+  const html = `<table width="100%" cellpadding="0" cellspacing="0" style="background:#FAFAFA;border-left:4px solid #F75D5D;border-radius:0 8px 8px 0;">
+  <tr><td style="padding:20px 24px;">
+    <div style="font-size:11px;font-weight:700;color:#F75D5D;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">STUDENT PROFILE</div>
+    <div style="font-size:20px;font-weight:800;color:#1a1a1a;margin-bottom:12px;">${escapeHtml(name)}</div>
     <table cellpadding="0" cellspacing="0" width="100%">
       ${detailRows.join("\n      ")}
     </table>
@@ -523,6 +521,7 @@ export function createStudentInfoRow(name: string, brand?: string, industry?: st
 </table>`;
   return makeTextRow("student-info", html, "16px 24px 20px");
 }
+
 
 /**
  * 성공사례 인사말 row ("안녕하세요 대표님").
@@ -542,8 +541,8 @@ export function createGreetingRow(): object {
 export function createEmotionHookRow(text: string): object {
   return makeTextRow(
     "emotion-hook",
-    `<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="text-align:center;font-size:15px;line-height:190%;"><strong><em><span style="color:#333;font-size:15px;">${nlToBr(markdownBold(escapeHtml(text)))}</span></em></strong></td></tr></table>`,
-    "8px 32px 20px",
+    `<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="text-align:center;font-size:18px;line-height:180%;color:#333;font-style:italic;">"${nlToBr(markdownBold(escapeHtml(text)))}"</td></tr></table>`,
+    "16px 32px 20px",
   );
 }
 
@@ -570,8 +569,8 @@ export function createStudentQuoteRow(text: string, source: string): object {
 export function createClosingRow(html: string): object {
   return makeTextRow(
     "closing",
-    `<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="text-align:center;font-size:14px;line-height:190%;color:#64748b;">${nlToBr(markdownBold(escapeHtml(html)))}</td></tr></table>`,
-    "20px 32px",
+    `<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="text-align:center;font-size:14px;line-height:190%;color:#333;">${nlToBr(markdownBold(escapeHtml(html)))}</td></tr></table>`,
+    "16px 32px 20px",
   );
 }
 
