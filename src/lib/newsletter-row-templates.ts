@@ -164,7 +164,7 @@ export function createInsightRows(fields: InsightFields): object[] {
     rows.push(
       makeTextRow(
         "insight-tip",
-        `<div style="background:#FFF8E7;border-left:4px solid #FDBA74;border-radius:0 6px 6px 0;padding:14px 18px;font-size:13.5px;line-height:1.6;color:#555">\n  ${tipHtml}\n</div>`,
+        `<div style="background:#FFF5F5;border-left:3px solid #F75D5D;border-radius:0 6px 6px 0;padding:14px 18px;font-size:13.5px;line-height:1.6;color:#555">\n  ${tipHtml}\n</div>`,
         "12px 24px",
       ),
     );
@@ -373,7 +373,7 @@ export function createBannerRow(bannerKey: string): object {
   // T1: CSS-only table 배너 (Gmail 호환, PNG 제거)
   return makeTextRow(
     `banner-${slug}`,
-    `<table cellpadding="0" cellspacing="0" style="width:66%;"><tr><td style="background-color:#F75D5D;height:52px;padding:0 24px;color:#ffffff;font-size:16px;font-weight:700;letter-spacing:1px;line-height:52px;">${escapeHtml(bannerKey)}</td></tr></table>`,
+    `<table cellpadding="0" cellspacing="0" style="max-width:400px;" width="400"><tr><td style="background-color:#F75D5D;height:60px;padding:0 24px;color:#ffffff;font-size:16px;font-weight:700;letter-spacing:1px;line-height:60px;border-radius:4px 0 0 4px;">${escapeHtml(bannerKey)}</td></tr></table>`,
     "24px 24px 0px",
   );
 }
@@ -407,7 +407,7 @@ export function createHeroRow(title: string, subtitle: string): object {
   const subtitleHtml = subtitle
     ? `\n<p style="color:rgba(255,255,255,0.8);font-size:14px;text-align:center;margin-top:4px;">${escapeHtml(subtitle)}</p>`
     : "";
-  const heroHtml = `<p style="text-align:center;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">LIVE 무료 웨비나</span></p>\n<p style="color:#ffffff;font-size:24px;font-weight:800;text-align:center;line-height:140%;margin-top:12px;">${escapeHtml(title)}</p>${subtitleHtml}`;
+  const heroHtml = `<p style="text-align:center;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">LIVE 무료 웨비나</span></p>\n<p style="color:#ffffff;font-size:22px;font-weight:800;text-align:center;line-height:140%;margin-top:12px;">${escapeHtml(title)}</p>${subtitleHtml}`;
 
   return {
     id: "row-hero",
@@ -418,7 +418,7 @@ export function createHeroRow(title: string, subtitle: string): object {
         id: "content-hero",
         type: "text",
         values: {
-          containerPadding: "80px 32px",
+          containerPadding: "40px 32px",
           anchor: "",
           textAlign: "center",
           lineHeight: "150%",
@@ -476,7 +476,7 @@ export function createHookRow(text: string): object {
 export function createIntroRow(html: string): object {
   return makeTextRow(
     "intro",
-    `<p style="font-size:14px;line-height:170%;margin:0;"><span style="color:#333;font-size:14px;">${markdownBold(escapeHtml(html))}</span></p>`,
+    `<p style="font-size:15px;line-height:170%;margin:0;"><span style="color:#333;font-size:15px;">${markdownBold(escapeHtml(html))}</span></p>`,
     "8px 24px",
   );
 }
@@ -586,7 +586,7 @@ export const ROW_PROFILE: object = {
         displayCondition: null,
         _meta: { htmlID: "u_content_text_profile_coach", htmlClassNames: "u_content_text" },
         selectable: true, draggable: true, duplicatable: true, deletable: true, hideable: true,
-        text: '<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td style="padding:24px 0;border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;"><table cellpadding="0" cellspacing="0"><tr><td width="100" style="vertical-align:top;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/profile-smith.png" alt="스미스" style="width:80px;height:80px;border-radius:50%;display:block;" /></td><td style="vertical-align:top;"><p style="margin:0;font-weight:800;font-size:16px;color:#1a1a1a;">스미스 <span style="font-weight:600;font-size:13px;color:#F75D5D;">자사몰사관학교 코치</span></p><p style="margin:6px 0 0;font-size:13px;color:#64748b;line-height:160%;">메타파트너 / 메타공식 프로페셔널<br>스킨스쿨 / 재미어트 Co-founder<br>수강생 자사몰매출 450억+</p></td></tr></table></td></tr></table>',
+        text: '<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td style="padding:24px 0;border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;"><table cellpadding="0" cellspacing="0"><tr><td width="80" style="vertical-align:top;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/profile-smith.png" alt="스미스" style="width:60px;height:60px;border-radius:50%;display:block;" /></td><td style="vertical-align:top;"><p style="margin:0;font-weight:800;font-size:16px;color:#1a1a1a;">스미스 <span style="font-weight:600;font-size:13px;color:#F75D5D;">자사몰사관학교 코치</span></p><p style="margin:6px 0 0;font-size:13px;color:#64748b;line-height:160%;">메타파트너 / 메타공식 프로페셔널<br>스킨스쿨 / 재미어트 Co-founder<br>수강생 자사몰매출 450억+</p></td></tr></table></td></tr></table>',
       },
     }],
     values: {
@@ -730,7 +730,7 @@ export const ROW_FOOTER: object = {
     },
   }],
   values: {
-    displayCondition: null, columns: false, backgroundColor: "#f7f7f7", columnsBackgroundColor: "",
+    displayCondition: null, columns: false, backgroundColor: "#f5f5f5", columnsBackgroundColor: "",
     backgroundImage: { url: "", fullWidth: true, repeat: "no-repeat", size: "custom", position: "center" },
     padding: "0px", anchor: "", hideDesktop: false,
     _meta: { htmlID: "u_row_footer", htmlClassNames: "u_row" },

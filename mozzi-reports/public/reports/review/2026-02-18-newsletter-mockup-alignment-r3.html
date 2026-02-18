@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>코드 리뷰: 뉴스레터 목업 v8 일치 Round 3 | 2026-02-18</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Pretendard', -apple-system, sans-serif; background: #f8f9fa; color: #1a1a2e; line-height: 1.7; }
+  .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+
+  /* Header */
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #fff; padding: 48px 40px; border-radius: 16px; margin-bottom: 32px; }
+  .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .header .subtitle { font-size: 15px; color: #a0aec0; }
+  .meta { display: flex; gap: 24px; margin-top: 20px; font-size: 13px; color: #cbd5e0; flex-wrap: wrap; }
+  .meta span { display: flex; align-items: center; gap: 6px; }
+
+  /* Badges */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+  .badge-pass { background: #d4edda; color: #155724; }
+  .badge-warn { background: #fff3cd; color: #856404; }
+  .badge-fail { background: #f8d7da; color: #721c24; }
+  .badge-info { background: #d1ecf1; color: #0c5460; }
+  .badge-pending { background: #e2e8f0; color: #4a5568; }
+
+  /* Executive Summary */
+  .exec-summary { background: #fff; border-radius: 12px; padding: 32px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .exec-summary h2 { font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #1a1a2e; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+  .summary-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; text-align: center; }
+  .summary-card .label { font-size: 13px; color: #718096; margin-bottom: 8px; }
+  .summary-card .value { font-size: 18px; font-weight: 700; }
+  .summary-card .value.fail { color: #F75D5D; }
+  .summary-card .value.pass { color: #22c55e; }
+  .summary-card .value.pending { color: #718096; }
+
+  /* Section */
+  .section { background: #fff; border-radius: 12px; padding: 32px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .section h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+  .section .section-desc { font-size: 14px; color: #718096; margin-bottom: 20px; }
+  .section h3 { font-size: 16px; font-weight: 600; margin: 20px 0 10px; color: #2d3748; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th { background: #f7fafc; text-align: left; padding: 10px 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; }
+  td { padding: 10px 12px; border-bottom: 1px solid #edf2f7; vertical-align: top; }
+  tr:hover td { background: #f7fafc; }
+  .col-status { width: 100px; text-align: center; }
+
+  /* Code */
+  code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #e53e3e; }
+  pre { background: #1a1a2e; color: #e2e8f0; padding: 20px; border-radius: 10px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 12px 0; }
+  pre code { background: none; color: inherit; padding: 0; }
+  .diff-old { color: #f87171; }
+  .diff-new { color: #4ade80; }
+
+  /* Alert boxes */
+  .alert { padding: 16px 20px; border-radius: 10px; margin: 16px 0; font-size: 14px; }
+  .alert-danger { background: #fff5f5; border-left: 4px solid #F75D5D; }
+  .alert-warning { background: #fffbeb; border-left: 4px solid #f59e0b; }
+  .alert-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+  .alert-success { background: #f0fdf4; border-left: 4px solid #22c55e; }
+  .alert strong { display: block; margin-bottom: 4px; }
+
+  /* Task item */
+  .task-item { border: 1px solid #e2e8f0; border-radius: 10px; padding: 24px; margin-bottom: 16px; }
+  .task-item.not-done { border-left: 4px solid #F75D5D; }
+  .task-item.done { border-left: 4px solid #22c55e; }
+  .task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .task-header h3 { margin: 0; font-size: 16px; }
+  .task-location { font-size: 13px; color: #718096; margin-bottom: 12px; font-family: 'SF Mono', 'Fira Code', monospace; }
+  .task-detail { margin-top: 8px; }
+  .task-detail table { margin: 8px 0; }
+  .task-detail th { font-size: 13px; }
+  .task-detail td { font-size: 13px; }
+
+  /* Footer */
+  .footer { text-align: center; padding: 32px; color: #a0aec0; font-size: 12px; }
+  .footer a { color: #F75D5D; text-decoration: none; }
+  .accent { color: #F75D5D; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ===== Header ===== -->
+<div class="header">
+  <h1>뉴스레터 목업 v8 일치 리뷰 (Round 3)</h1>
+  <div class="subtitle">TASK.md T1~T7 변경사항 vs 실제 코드 비교 분석</div>
+  <div class="meta">
+    <span>📅 2026-02-18</span>
+    <span>📄 newsletter-row-templates.ts</span>
+    <span>🔍 리뷰어: Claude (에이전트팀)</span>
+    <span><span class="badge badge-fail">미착수 7/7</span></span>
+  </div>
+</div>
+
+<!-- ===== Executive Summary ===== -->
+<div class="exec-summary">
+  <h2>📊 종합 요약</h2>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="label">전체 태스크</div>
+      <div class="value">7건</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">완료</div>
+      <div class="value pass">0건</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">미착수</div>
+      <div class="value fail">7건</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">목업 일치율</div>
+      <div class="value fail">0%</div>
+    </div>
+  </div>
+
+  <div class="alert alert-danger" style="margin-top:20px;">
+    <strong>결론: T1~T7 전부 미구현 상태</strong>
+    <code>src/lib/newsletter-row-templates.ts</code>의 현재 코드가 TASK.md "현재 코드" 섹션과 100% 동일합니다.
+    7건의 변경사항이 아직 하나도 적용되지 않았습니다. 목업 v8과의 일치를 위해 전체 구현이 필요합니다.
+  </div>
+</div>
+
+<!-- ===== T1 ===== -->
+<div class="section">
+  <h2>태스크별 상세 리뷰</h2>
+  <p class="section-desc">각 태스크의 TASK.md 요구사항 vs 현재 코드 비교</p>
+
+  <div class="task-item not-done">
+    <div class="task-header">
+      <h3>T1. 팁박스 색상 → 핑크 통일</h3>
+      <span class="badge badge-fail">미구현</span>
+    </div>
+    <div class="task-location">createInsightRows() — 라인 167</div>
+    <div class="task-detail">
+      <table>
+        <tr><th>속성</th><th>TASK 요구값</th><th>현재 코드값</th><th>일치</th></tr>
+        <tr>
+          <td><code>background</code></td>
+          <td><code>#FFF5F5</code> (핑크)</td>
+          <td><code>#FFF8E7</code> (옐로)</td>
+          <td class="col-status"><span class="badge badge-fail">불일치</span></td>
+        </tr>
+        <tr>
+          <td><code>border-left</code></td>
+          <td><code>3px solid #F75D5D</code></td>
+          <td><code>4px solid #FDBA74</code></td>
+          <td class="col-status"><span class="badge badge-fail">불일치</span></td>
+        </tr>
+      </table>
+      <pre><code><span class="diff-old">- background:#FFF8E7;border-left:4px solid #FDBA74;</span>
+<span class="diff-new">+ background:#FFF5F5;border-left:3px solid #F75D5D;</span></code></pre>
+    </div>
+  </div>
+
+  <!-- T2 -->
+  <div class="task-item not-done">
+    <div class="task-header">
+      <h3>T2. CSS 배너 크기 조정</h3>
+      <span class="badge badge-fail">미구현</span>
+    </div>
+    <div class="task-location">createBannerRow() — 라인 376</div>
+    <div class="task-detail">
+      <table>
+        <tr><th>속성</th><th>TASK 요구값</th><th>현재 코드값</th><th>일치</th></tr>
+        <tr>
+          <td><code>table width</code></td>
+          <td><code>max-width:400px</code> + <code>width="400"</code></td>
+          <td><code>width:66%</code></td>
+          <td class="col-status"><span class="badge badge-fail">불일치</span></td>
+        </tr>
+        <tr>
+          <td><code>td height</code></td>
+          <td><code>60px</code></td>
+          <td><code>52px</code></td>
+          <td class="col-status"><span class="badge badge-fail">불일치</span></td>
+        </tr>
+        <tr>
+          <td><code>line-height</code></td>
+          <td><code>60px</code></td>
+          <td><code>52px</code></td>
+          <td class="col-status"><span class="badge badge-fail">불일치</span></td>
+        </tr>
+        <tr>
+          <td><code>border-radius</code></td>
+          <td><code>4px 0 0 4px</code></td>
+          <td>(없음)</td>
+          <td class="col-status"><span class="badge badge-fail">누락</span></td>
+        </tr>
+      </table>
+      <pre><code><span class="diff-old">- &lt;table ... style="width:66%;"&gt;&lt;tr&gt;&lt;td style="...height:52px;...line-height:52px;"&gt;</span>
+<span class="diff-new">+ &lt;table ... style="max-width:400px;" width="400"&gt;&lt;tr&gt;&lt;td style="...height:60px;...line-height:60px;border-radius:4px 0 0 4px;"&gt;</span></code></pre>
+      <div class="alert alert-warning">
+        <strong>엣지 케이스 주의</strong>
+        Gmail Android에서 <code>border-radius</code>가 무시됨 (기능 문제 없음).
+        Outlook에서 <code>max-width</code> 미지원 → <code>width="400"</code> HTML 속성으로 대응 필수.
+      </div>
+    </div>
+  </div>
+
+  <!-- T3 -->
+  <div class="task-item not-done">
+    <div class="task-header">
+      <h3>T3. 히어로 패딩 축소</h3>
+      <span class="badge badge-fail">미구현</span>
+    </div>
+    <div class="task-location">createHeroRow() — 라인 421</div>
+    <div class="task-detail">
+      <table>
+        <tr><th>속성</th><th>TASK 요구값</th><th>현재 코드값</th><th>일치</th></tr>
+        <tr>
+          <td><code>containerPadding</code></td>
+          <td><code>"40px 32px"</code></td>
+          <td><code>"80px 32px"</code></td>
+          <td class="col-status"><span class="badge badge-fail">불일치</span></td>
+        </tr>
+      </table>
+      <pre><code><span class="diff-old">- containerPadding: "80px 32px",</span>
+<span class="diff-new">+ containerPadding: "40px 32px",</span></code></pre>
+    </div>
+  </div>
+
+  <!-- T4 -->
+  <div class="task-item not-done">
+    <div class="task-header">
+      <h3>T4. 히어로 타이틀 폰트 축소</h3>
+      <span class="badge badge-fail">미구현</span>
+    </div>
+    <div class="task-location">createHeroRow() — 라인 410</div>
+    <div class="task-detail">
+      <table>
+        <tr><th>속성</th><th>TASK 요구값</th><th>현재 코드값</th><th>일치</th></tr>
+        <tr>
+          <td><code>font-size</code> (히어로 타이틀)</td>
+          <td><code>22px</code></td>
+          <td><code>24px</code></td>
+          <td class="col-status"><span class="badge badge-fail">불일치</span></td>
+        </tr>
+      </table>
+      <pre><code><span class="diff-old">- font-size:24px;font-weight:800;</span>
+<span class="diff-new">+ font-size:22px;font-weight:800;</span></code></pre>
+    </div>
+  </div>
+
+  <!-- T5 -->
+  <div class="task-item not-done">
+    <div class="task-header">
+      <h3>T5. 프로필 사진 축소</h3>
+      <span class="badge badge-fail">미구현</span>
+    </div>
+    <div class="task-location">ROW_PROFILE 상수 — 라인 589</div>
+    <div class="task-detail">
+      <table>
+        <tr><th>속성</th><th>TASK 요구값</th><th>현재 코드값</th><th>일치</th></tr>
+        <tr>
+          <td><code>img width/height</code></td>
+          <td><code>60px × 60px</code></td>
+          <td><code>80px × 80px</code></td>
+          <td class="col-status"><span class="badge badge-fail">불일치</span></td>
+        </tr>
+        <tr>
+          <td><code>td width</code></td>
+          <td><code>"80"</code></td>
+          <td><code>"100"</code></td>
+          <td class="col-status"><span class="badge badge-fail">불일치</span></td>
+        </tr>
+      </table>
+      <pre><code><span class="diff-old">- width:80px;height:80px;  ...  td width="100"</span>
+<span class="diff-new">+ width:60px;height:60px;  ...  td width="80"</span></code></pre>
+    </div>
+  </div>
+
+  <!-- T6 -->
+  <div class="task-item not-done">
+    <div class="task-header">
+      <h3>T6. 인트로 텍스트 크기</h3>
+      <span class="badge badge-fail">미구현</span>
+    </div>
+    <div class="task-location">createIntroRow() — 라인 479</div>
+    <div class="task-detail">
+      <table>
+        <tr><th>속성</th><th>TASK 요구값</th><th>현재 코드값</th><th>일치</th></tr>
+        <tr>
+          <td><code>font-size</code> (p 태그)</td>
+          <td><code>15px</code></td>
+          <td><code>14px</code></td>
+          <td class="col-status"><span class="badge badge-fail">불일치</span></td>
+        </tr>
+        <tr>
+          <td><code>font-size</code> (span 태그)</td>
+          <td><code>15px</code></td>
+          <td><code>14px</code></td>
+          <td class="col-status"><span class="badge badge-fail">불일치</span></td>
+        </tr>
+      </table>
+      <pre><code><span class="diff-old">- &lt;p style="font-size:14px;..."&gt;&lt;span style="...font-size:14px;"&gt;</span>
+<span class="diff-new">+ &lt;p style="font-size:15px;..."&gt;&lt;span style="...font-size:15px;"&gt;</span></code></pre>
+      <div class="alert alert-info">
+        <strong>주의: 두 군데 모두 수정 필요</strong>
+        <code>&lt;p&gt;</code> 태그와 <code>&lt;span&gt;</code> 태그 양쪽에 font-size가 지정되어 있으므로 둘 다 14px → 15px로 변경해야 합니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- T7 -->
+  <div class="task-item not-done">
+    <div class="task-header">
+      <h3>T7. 푸터 배경색</h3>
+      <span class="badge badge-fail">미구현</span>
+    </div>
+    <div class="task-location">ROW_FOOTER 상수 — 라인 733</div>
+    <div class="task-detail">
+      <table>
+        <tr><th>속성</th><th>TASK 요구값</th><th>현재 코드값</th><th>일치</th></tr>
+        <tr>
+          <td><code>backgroundColor</code></td>
+          <td><code>#f5f5f5</code></td>
+          <td><code>#f7f7f7</code></td>
+          <td class="col-status"><span class="badge badge-fail">불일치</span></td>
+        </tr>
+      </table>
+      <pre><code><span class="diff-old">- backgroundColor: "#f7f7f7",</span>
+<span class="diff-new">+ backgroundColor: "#f5f5f5",</span></code></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Summary Table ===== -->
+<div class="section">
+  <h2>📋 전체 일치 매트릭스</h2>
+  <table>
+    <tr>
+      <th>태스크</th>
+      <th>대상</th>
+      <th>변경 포인트</th>
+      <th>난이도</th>
+      <th>상태</th>
+    </tr>
+    <tr>
+      <td><strong>T1</strong></td>
+      <td>팁박스 색상</td>
+      <td>background + border-left (2개 속성)</td>
+      <td><span class="badge badge-info">낮음</span></td>
+      <td class="col-status"><span class="badge badge-fail">미구현</span></td>
+    </tr>
+    <tr>
+      <td><strong>T2</strong></td>
+      <td>CSS 배너</td>
+      <td>width + height + line-height + border-radius (4개 속성)</td>
+      <td><span class="badge badge-warn">중간</span></td>
+      <td class="col-status"><span class="badge badge-fail">미구현</span></td>
+    </tr>
+    <tr>
+      <td><strong>T3</strong></td>
+      <td>히어로 패딩</td>
+      <td>containerPadding (1개 속성)</td>
+      <td><span class="badge badge-info">낮음</span></td>
+      <td class="col-status"><span class="badge badge-fail">미구현</span></td>
+    </tr>
+    <tr>
+      <td><strong>T4</strong></td>
+      <td>히어로 타이틀</td>
+      <td>font-size (1개 속성)</td>
+      <td><span class="badge badge-info">낮음</span></td>
+      <td class="col-status"><span class="badge badge-fail">미구현</span></td>
+    </tr>
+    <tr>
+      <td><strong>T5</strong></td>
+      <td>프로필 사진</td>
+      <td>img width/height + td width (3개 속성)</td>
+      <td><span class="badge badge-info">낮음</span></td>
+      <td class="col-status"><span class="badge badge-fail">미구현</span></td>
+    </tr>
+    <tr>
+      <td><strong>T6</strong></td>
+      <td>인트로 텍스트</td>
+      <td>font-size × 2 (2개 속성)</td>
+      <td><span class="badge badge-info">낮음</span></td>
+      <td class="col-status"><span class="badge badge-fail">미구현</span></td>
+    </tr>
+    <tr>
+      <td><strong>T7</strong></td>
+      <td>푸터 배경색</td>
+      <td>backgroundColor (1개 속성)</td>
+      <td><span class="badge badge-info">낮음</span></td>
+      <td class="col-status"><span class="badge badge-fail">미구현</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ===== Risk & Recommendation ===== -->
+<div class="section">
+  <h2>⚠️ 리스크 & 권고사항</h2>
+
+  <div class="alert alert-danger">
+    <strong>리스크: T2 배너 — Gmail/Outlook 호환성</strong>
+    <code>max-width</code>는 Outlook에서 미지원. 반드시 <code>width="400"</code> HTML 속성을 함께 추가할 것.
+    <code>border-radius</code>는 Gmail Android에서 무시됨 — 기능 이슈 아님, 수용 가능.
+  </div>
+
+  <div class="alert alert-info">
+    <strong>권고: 한 번에 7건 모두 적용 후 빌드 검증</strong>
+    모든 변경이 <code>newsletter-row-templates.ts</code> 1개 파일 내 독립적 위치에 있으므로,
+    7건 일괄 적용 → <code>npm run build</code> → Gmail QA 3종(교육/웨비나/고객사례) 순서를 권고합니다.
+  </div>
+
+  <div class="alert alert-warning">
+    <strong>주의: T6 createIntroRow 두 군데</strong>
+    <code>&lt;p&gt;</code>의 font-size와 <code>&lt;span&gt;</code>의 font-size가 모두 14px로 되어 있음.
+    하나만 바꾸면 브라우저별 렌더링 불일치가 발생할 수 있으므로 반드시 두 군데 모두 15px로 변경.
+  </div>
+</div>
+
+<!-- ===== Next Steps ===== -->
+<div class="section">
+  <h2>🚀 다음 단계</h2>
+  <ol style="padding-left:20px; font-size:15px; line-height:2;">
+    <li>T1~T7 코드 수정 (파일 1개, 약 14개 속성값 변경)</li>
+    <li><code>npm run build</code> 성공 확인</li>
+    <li>Unlayer 에디터에서 3종 뉴스레터 생성 → Gmail 테스트 발송</li>
+    <li>Gmail 렌더링 스크린샷 vs 목업 v8 비교</li>
+    <li>목업 일치율 99% 이상 확인 후 Round 3 완료</li>
+  </ol>
+</div>
+
+<!-- ===== Footer ===== -->
+<div class="footer">
+  <p>자사몰사관학교 에이전트팀 코드 리뷰 — 2026-02-18</p>
+  <p style="margin-top:4px;">대상 파일: <code>src/lib/newsletter-row-templates.ts</code> (780 lines)</p>
+  <p style="margin-top:4px;">레퍼런스: <a href="https://mozzi-reports.vercel.app/reports/task/2026-02-18-newsletter-mockup-v8.html">목업 v8</a></p>
+</div>
+
+</div>
+</body>
+</html>

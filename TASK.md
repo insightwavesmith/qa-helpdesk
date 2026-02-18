@@ -1,177 +1,131 @@
-# TASK: 뉴스레터 목업 일치도 개선 (v8 → Gmail 렌더링)
+# TASK: 뉴스레터 목업 v8 ↔ 실제 렌더링 일치 (Round 3)
 
 ## 목표
-목업 v8과 Gmail 실제 렌더링의 유사도를 60% → 90%+로 개선.
-핵심: 배너를 PNG→CSS-only로, row 여백 축소, 텍스트 폭 제어.
+목업 v8과 실제 Gmail 렌더링 사이의 시각적 차이 7건을 수정하여 99% 일치 달성.
 
 ## 제약
-- Gmail 호환: `linear-gradient`, `border-radius`, `max-width on div` 사용 금지. `<table>` 기반만.
-- Unlayer JSON 구조 유지: type="text" row의 values 구조 변경 없음.
-- 기존 로직(parseSummaryToSections, validateBannerKeys, structured JSON) 변경 없음.
-- npm run build 통과 필수.
-
-## 수정 대상 파일
-- `src/lib/newsletter-row-templates.ts` — T1, T2, T3, T4, T5, T6
-- `src/lib/email-template-utils.ts` — T1 (buildDesignFromSummary 배너 관련 확인)
+- 수정 파일: `src/lib/newsletter-row-templates.ts` 1개만
+- Gmail 호환 인라인 스타일만 사용 (CSS class 금지)
+- linear-gradient는 Gmail 미지원 → solid color 유지
+- 기존 Unlayer JSON 구조(makeTextRow 패턴) 유지
+- `npm run build` 통과 필수
 
 ## 현재 코드
 
-### `src/lib/newsletter-row-templates.ts` — createBannerRow (L363-382)
+### createInsightRows — 팁박스 (라인 ~167)
 ```ts
-export function createBannerRow(bannerKey: string): object {
-  const matchedKey = Object.keys(BANNER_MAP)
-    .filter(k => bannerKey.includes(k))
-    .sort((a, b) => b.length - a.length)[0];
-  const bannerFile = matchedKey ? BANNER_MAP[matchedKey] : undefined;
-  if (bannerFile) {
-    const slug = bannerFile.replace("banner-", "");
-    return makeImageRow(`banner-${slug}`, `${BANNER_BASE_URL}/${bannerFile}.png`, bannerKey);
-  }
-  // CSS gradient fallback
-  const slug = bannerKey.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "unknown";
-  return makeTextRow(`banner-${slug}`,
-    `<div style="max-width:600px;height:80px;line-height:80px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);border-radius:4px 0 0 4px;"><span style="padding-left:32px;color:#fff;font-size:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${escapeHtml(bannerKey)}</span></div>`,
-    "24px 24px 0px");
-}
+rows.push(
+  makeTextRow(
+    "insight-tip",
+    `<div style="background:#FFF8E7;border-left:4px solid #FDBA74;border-radius:0 6px 6px 0;padding:14px 18px;font-size:13.5px;line-height:1.6;color:#555">\n  ${tipHtml}\n</div>`,
+    "12px 24px",
+  ),
+);
 ```
 
-### `src/lib/newsletter-row-templates.ts` — makeTextRow (L41)
+### createBannerRow — CSS 배너 (라인 ~388)
 ```ts
-function makeTextRow(id: string, html: string, padding = "16px 32px"): object {
+return makeTextRow(
+  `banner-${slug}`,
+  `<table cellpadding="0" cellspacing="0" style="width:66%;"><tr><td style="background-color:#F75D5D;height:52px;padding:0 24px;color:#ffffff;font-size:16px;font-weight:700;letter-spacing:1px;line-height:52px;">${escapeHtml(bannerKey)}</td></tr></table>`,
+  "24px 24px 0px",
+);
 ```
 
-### `src/lib/newsletter-row-templates.ts` — createInterviewQuotesRow (L330)
+### createHeroRow — 히어로 (라인 ~410, ~421)
 ```ts
-return `<div style="border-left:3px solid #F75D5D;background:#f8f9fc;border-radius:0 8px 8px 0;padding:16px 20px;font-style:italic;font-size:14px;color:#555;line-height:1.6;margin-bottom:10px">
+const heroHtml = `...<p style="color:#ffffff;font-size:24px;font-weight:800;...">`;
+// ...
+containerPadding: "80px 32px",
 ```
 
-### `src/lib/newsletter-row-templates.ts` — hookLine row (L470)
+### ROW_PROFILE — 프로필 사진 (라인 ~589)
 ```ts
-`<p style="font-size:16px;line-height:160%;text-align:center;"><em><span style="color:#F75D5D;font-size:16px;font-weight:600;">${markdownBold(escapeHtml(text))}</span></em></p>`,
+text: '...<img src="..." style="width:80px;height:80px;border-radius:50%;..." />...</td width="100"...',
 ```
 
-### `src/lib/newsletter-row-templates.ts` — createCtaRow (L614)
+### createIntroRow (라인 ~479)
 ```ts
-export function createCtaRow(text: string, url: string, bgColor = "#F75D5D"): object {
+`<p style="font-size:14px;line-height:170%;margin:0;">...`
+```
+
+### ROW_FOOTER (라인 ~700+)
+```ts
+backgroundColor: "#f7f7f7",
 ```
 
 ## 태스크
 
-### T1. 배너 PNG → CSS-only 테이블 배너 전환 → frontend-dev (HIGH)
-**파일**: `src/lib/newsletter-row-templates.ts` — `createBannerRow()`
+### T1. 팁박스 색상 → 핑크 통일 (→ frontend-dev)
+- `createInsightRows()` 팁박스 스타일 변경
+- `background:#FFF8E7` → `background:#FFF5F5`
+- `border-left:4px solid #FDBA74` → `border-left:3px solid #F75D5D`
 
-**문제**: 현재 600x120px PNG 풀폭 배너. 목업은 max-width ~66%(400px), 좌정렬, 60px 높이.
-**수정**: `makeImageRow` 호출 제거 → `makeTextRow`로 table 기반 CSS-only 배너 생성.
+### T2. CSS 배너 크기 조정 (→ frontend-dev)
+- `createBannerRow()` 테이블 스타일 변경
+- `width:66%` → `max-width:400px` + `width:400` 속성 추가
+- `height:52px` → `height:60px`
+- `line-height:52px` → `line-height:60px`
+- `border-radius:4px 0 0 4px` td에 추가
 
-```html
-<table cellpadding="0" cellspacing="0" style="width:66%;">
-  <tr>
-    <td style="background-color:#F75D5D;padding:16px 24px;color:#ffffff;font-size:16px;font-weight:700;letter-spacing:1px;">
-      INSIGHT
-    </td>
-  </tr>
-</table>
-```
+### T3. 히어로 패딩 축소 (→ frontend-dev)
+- `createHeroRow()` containerPadding 변경
+- `"80px 32px"` → `"40px 32px"`
 
-- BANNER_MAP은 slug 생성용으로 유지, PNG URL 참조 제거
-- `makeImageRow` 대신 `makeTextRow`에 위 HTML 삽입
-- containerPadding: `"16px 24px 0px"`
-- 완료 기준:
-  - [x] 모든 13개 배너키가 CSS-only table 배너로 렌더됨
-  - [x] PNG `<img>` 태그 없음 (배너 한정)
-  - [x] Gmail에서 solid red 배경 + 흰 텍스트 정상 표시
-  - [x] 배너 폭이 전체의 약 66% (좌정렬)
+### T4. 히어로 타이틀 폰트 축소 (→ frontend-dev)
+- `createHeroRow()` heroHtml 내 font-size 변경
+- `font-size:24px` → `font-size:22px`
 
-### T2. row 간 여백 축소 → frontend-dev (MEDIUM)
-**파일**: `src/lib/newsletter-row-templates.ts` — 각 함수의 `makeTextRow` 호출부
+### T5. 프로필 사진 축소 (→ frontend-dev)
+- `ROW_PROFILE` 상수 내 이미지 크기 변경
+- `width:80px;height:80px` → `width:60px;height:60px`
+- `td width="100"` → `td width="80"`
 
-**문제**: 기본 padding `"16px 32px"`이 넉넉해서 목업 대비 늘어진 느낌.
-**수정**: 콘텐츠 row들의 padding을 명시적으로 줄이기.
+### T6. 인트로 텍스트 크기 (→ frontend-dev)
+- `createIntroRow()` font-size 변경
+- `font-size:14px` → `font-size:15px` (두 군데 모두)
 
-변경 목록:
-- `createNumberedCardsRow()` 반환: padding `"4px 24px 0px"`
-- `createChecklistCardsRow()` 반환: padding `"4px 24px 0px"`
-- `createBulletListRow()` 반환: padding `"4px 24px"`
-- `createInterviewQuotesRow()` 반환: padding `"4px 24px"`
-- `createImagePlaceholderRow()` 반환: padding `"8px 24px"`
-- 일반 본문 text row: `createSectionContentRows()` 내 subtitle/body makeTextRow 호출에 `"8px 24px"` 명시
+### T7. 푸터 배경색 (→ frontend-dev)
+- `ROW_FOOTER` backgroundColor 변경
+- `"#f7f7f7"` → `"#f5f5f5"`
 
-- 완료 기준:
-  - [x] 카드/체크리스트/불릿/인용 row padding이 축소됨
-  - [x] 배너→본문 간격이 이전보다 타이트함
-  - [x] Unlayer 에디터에서 정상 렌더
-
-### T3. 인용 블록 배경색 수정 → frontend-dev (LOW)
-**파일**: `src/lib/newsletter-row-templates.ts` — `createInterviewQuotesRow()` (L330)
-
-**수정**: `background:#f8f9fc` → `background:#f5f5f5`
-- 완료 기준:
-  - [x] 인용 블록 배경이 `#f5f5f5`
-
-### T4. hookLine/감정후킹 텍스트 폭 제어 → frontend-dev (MEDIUM)
-**파일**: `src/lib/newsletter-row-templates.ts` — hookLine 생성부 (L470 부근)
-
-**문제**: hookLine이 600px 풀폭으로 퍼짐. 목업은 max-width ~420px 중앙정렬.
-**수정**: `<p>` 대신 `<table align="center" width="420">` 래핑.
-
-```html
-<table align="center" cellpadding="0" cellspacing="0" style="max-width:420px;" width="420">
-  <tr><td style="text-align:center;font-size:16px;line-height:160%;">
-    <em><span style="color:#F75D5D;font-weight:600;">텍스트</span></em>
-  </td></tr>
-</table>
-```
-
-- `createHookLineRow()` (교육/고객사례 hookLine italic)
-- `createHookQuestionRow()` (웨비나 hookQuestion bold)
-- `createEmotionHookRow()` 있다면 동일 적용
-
-- 완료 기준:
-  - [x] hookLine 텍스트가 420px 중앙 정렬
-  - [x] Gmail에서 줄바꿈이 자연스러움
-
-### T5. 본문 텍스트 좌우 패딩 통일 → frontend-dev (MEDIUM)
-**파일**: `src/lib/newsletter-row-templates.ts` — 각 `makeTextRow` 호출부
-
-**문제**: 기본 좌우 padding 32px. 목업은 24px.
-**수정**: 본문 콘텐츠 row들의 padding 좌우를 24px로 통일.
-- subtitle/body text row: `"12px 24px"`
-- INSIGHT/핵심 주제 등 섹션 본문 row: `"12px 24px"`
-
-- 완료 기준:
-  - [x] 본문 텍스트 좌우 여백이 24px로 통일
-
-### T6. CTA 버튼 fullWidth + 스타일 확인 → frontend-dev (LOW)
-**파일**: `src/lib/newsletter-row-templates.ts` — `createCtaRow()` (L614)
-
-**확인/수정**:
-- Unlayer button values에 `fullWidth: true` 확인 (없으면 추가)
-- `borderRadius: "8px"` 확인
-- `padding: "14px"` 확인
-- 목업 기준: 풀폭, 라운드 8px, padding 14px
-
-- 완료 기준:
-  - [x] CTA 버튼 fullWidth: true
-  - [x] borderRadius: "8px"
+## 검증
+- [ ] T1: Unlayer 에디터에서 교육 콘텐츠 뉴스레터 생성 → 팁박스가 핑크 배경(#FFF5F5) + 빨간 좌측보더(#F75D5D)로 표시
+- [ ] T2: Gmail에서 배너가 ~400px 너비, 60px 높이로 표시 (좌정렬)
+- [ ] T3: Gmail에서 웨비나 히어로 섹션이 목업과 동일한 높이 (상하 40px)
+- [ ] T4: Gmail에서 히어로 타이틀이 22px로 표시
+- [ ] T5: Gmail에서 프로필 사진이 60x60px 원형으로 표시
+- [ ] T6: Gmail에서 인트로 본문이 15px로 표시
+- [ ] T7: Gmail에서 푸터 배경이 #f5f5f5로 표시
+- [ ] `npm run build` 성공
+- [ ] 3종(교육/웨비나/고객사례) Gmail 테스트 발송 통과
 
 ## 엣지 케이스
-1. **배너키가 BANNER_MAP에 없는 경우**: CSS-only 배너의 fallback slug 생성이 정상 작동해야 함
-2. **hookLine이 빈 문자열인 경우**: table 래핑이 빈 td를 만들지 않아야 함 (기존 null 체크 유지)
-3. **매우 긴 배너 텍스트** (예: "웨비나 일정 안내"): 66% 폭에서 줄바꿈 없이 한 줄 표시 확인. 넘치면 font-size 14px로 축소 가능.
-4. **Unlayer 에디터 호환**: CSS-only 배너가 Unlayer 에디터 프리뷰에서도 정상 보이는지 확인 (makeTextRow의 text HTML이 에디터에서 렌더됨)
+1. Gmail Android: table에 `border-radius` 무시됨 → 배너 border-radius 안 되어도 기능상 문제 없음
+2. Outlook: `max-width` 미지원 → `width="400"` HTML 속성 동시 설정으로 대응
+3. 모바일 뷰(320px): 배너 max-width:400px가 화면보다 넓어질 수 있음 → 실제로는 Unlayer가 `max-width: 600px` 컨테이너 안에서 렌더링하므로 OK
+
+## 수정 파일
+| 파일 | 수정 내용 |
+|------|----------|
+| `src/lib/newsletter-row-templates.ts` | T1~T7 전부 (7개 함수/상수) |
+
+## 체크리스트
+- [ ] T1: 팁박스 #FFF5F5 + #F75D5D
+- [ ] T2: 배너 max-width:400px, height:60px
+- [ ] T3: 히어로 패딩 40px
+- [ ] T4: 히어로 타이틀 22px
+- [ ] T5: 프로필 60x60px
+- [ ] T6: 인트로 15px
+- [ ] T7: 푸터 #f5f5f5
+- [ ] npm run build SUCCESS
+- [ ] Gmail QA 3종 PASS
 
 ## 레퍼런스
 - 목업 v8: https://mozzi-reports.vercel.app/reports/task/2026-02-18-newsletter-mockup-v8.html
 - 디자인 스펙 v7: https://mozzi-reports.vercel.app/reports/task/2026-02-18-newsletter-detail-fix.html
-- 골드 스탠다드 목업: `newsletter-reference/email-samples-v7.html`
-
-## 검증
-- [ ] `npm run build` 성공
-- [ ] Unlayer 에디터에서 교육/웨비나/고객사례 3종 뉴스레터 탭 정상 렌더
-- [ ] Gmail 테스트 발송 → 목업 v8과 비교 유사도 90%+
-- [ ] 배너가 CSS-only table로 렌더 (PNG img 태그 없음)
-- [ ] 카드/체크리스트 row 간격이 이전보다 타이트
+- 골드 스탠다드: `~/projects/qa-helpdesk/newsletter-reference/`
 
 ## 리뷰 보고서
-보고서 파일: mozzi-reports/public/reports/review/2026-02-18-newsletter-mockup-alignment.html
-에이전트팀 리뷰 예정 — 리뷰 완료 후 이 섹션에 피드백 기록.
+보고서 파일: mozzi-reports/public/reports/review/2026-02-18-newsletter-mockup-alignment-r3.html
+(에이전트팀 리뷰 후 작성 예정)
