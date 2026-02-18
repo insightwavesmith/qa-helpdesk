@@ -187,12 +187,12 @@ export function createNumberedCardsRow(fields: NumberedCardsFields): object[] {
     return `<tr><td>
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF5F5;border-left:3px solid #F75D5D;border-radius:0 8px 8px 0;">
     <tr>
-      <td width="44" style="width:44px;padding:14px 0 14px 14px;vertical-align:top;">
-        <img src="${BANNER_BASE_URL}/circle-${num}.png" width="28" height="28" alt="${num}" style="display:block;width:28px;height:28px;border:0;" />
+      <td width="56" style="width:56px;padding:16px 0 16px 14px;vertical-align:top;">
+        <img src="${BANNER_BASE_URL}/circle-${num}.png" width="38" height="38" alt="${num}" style="display:block;width:38px;height:38px;border:0;" />
       </td>
-      <td style="padding:14px 16px 14px 6px;vertical-align:top;">
-        <div style="font-weight:700;font-size:15px;margin-bottom:4px;line-height:1.5;">${markdownBold(escapeHtml(item.title))}</div>
-        <div style="font-size:13px;color:#666;line-height:1.7;">${nlToBr(markdownBold(escapeHtml(item.desc)))}</div>
+      <td style="padding:16px 16px 16px 8px;vertical-align:top;">
+        <div style="font-weight:800;font-size:16px;margin-bottom:6px;line-height:1.5;color:#1a1a1a;">${markdownBold(escapeHtml(item.title))}</div>
+        <div style="font-size:14px;color:#555;line-height:1.7;">${nlToBr(markdownBold(escapeHtml(item.desc)))}</div>
       </td>
     </tr>
   </table>
@@ -210,15 +210,15 @@ export function createNumberedCardsRow(fields: NumberedCardsFields): object[] {
 export function createChecklistRow(fields: ChecklistFields): object[] {
   const cards = fields.items.map((item, i) => {
     const spacer = i < fields.items.length - 1
-      ? `<tr><td style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>`
+      ? `<tr><td style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr>`
       : "";
     return `<tr><td>
   <table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #f0f0f0;">
     <tr>
-      <td width="40" style="width:40px;padding:12px 0 12px 16px;vertical-align:middle;">
-        <img src="${BANNER_BASE_URL}/circle-check.png" width="22" height="22" alt="✓" style="display:block;width:22px;height:22px;border:0;" />
+      <td width="48" style="width:48px;padding:14px 0 14px 16px;vertical-align:middle;">
+        <img src="${BANNER_BASE_URL}/circle-check.png" width="30" height="30" alt="✓" style="display:block;width:30px;height:30px;border:0;" />
       </td>
-      <td style="padding:12px 16px 12px 8px;vertical-align:middle;font-size:14px;line-height:1.6;">
+      <td style="padding:14px 16px 14px 8px;vertical-align:middle;font-size:15px;font-weight:600;line-height:1.6;color:#1a1a1a;">
         ${markdownBold(escapeHtml(item))}
       </td>
     </tr>
@@ -370,13 +370,13 @@ export function createBannerRow(bannerKey: string): object {
     ? BANNER_MAP[matchedKey].replace("banner-", "")
     : bannerKey.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "unknown";
 
-  // 개선_03: PNG 이미지 배너 (대각선 컷 디자인)
+  // 개선_03: PNG 이미지 배너 (대각선 컷 디자인) — 모바일 풀너비
   const imgFile = matchedKey ? BANNER_MAP[matchedKey] : `banner-${slug}`;
   const imgUrl = `${BANNER_BASE_URL}/${imgFile}.png`;
   return makeTextRow(
     `banner-${slug}`,
-    `<img src="${imgUrl}" width="400" alt="${escapeHtml(bannerKey)}" style="display:block;max-width:100%;height:auto;border:0;" />`,
-    "24px 24px 0px",
+    `<img src="${imgUrl}" width="100%" alt="${escapeHtml(bannerKey)}" style="display:block;width:100%;height:auto;border:0;" />`,
+    "20px 16px 0px",
   );
 }
 
@@ -503,20 +503,25 @@ export function createIntroRow(html: string): object {
  * @param period - 수강 기간 (선택)
  */
 export function createStudentInfoRow(name: string, brand?: string, industry?: string, period?: string): object {
-  const infoRows: string[] = [];
-  if (brand) infoRows.push(`<tr><td style="font-size:12px;color:#999;padding-right:12px;padding-top:6px;white-space:nowrap;vertical-align:top;">브랜드</td><td style="font-size:14px;color:#333;padding-top:6px;line-height:1.5;">${escapeHtml(brand)}</td></tr>`);
-  if (industry) infoRows.push(`<tr><td style="font-size:12px;color:#999;padding-right:12px;padding-top:6px;white-space:nowrap;vertical-align:top;">업종</td><td style="font-size:14px;color:#333;padding-top:6px;line-height:1.5;">${escapeHtml(industry)}</td></tr>`);
-  if (period) infoRows.push(`<tr><td style="font-size:12px;color:#999;padding-right:12px;padding-top:6px;white-space:nowrap;vertical-align:top;">수강 기간</td><td style="font-size:14px;color:#333;padding-top:6px;line-height:1.5;">${escapeHtml(period)}</td></tr>`);
+  const detailRows: string[] = [];
+  if (industry) detailRows.push(`<tr><td style="padding:8px 0;border-bottom:1px solid #FFE0E0;"><table cellpadding="0" cellspacing="0" width="100%"><tr><td width="80" style="font-size:12px;color:#C0392B;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;vertical-align:middle;">업종</td><td style="font-size:14px;color:#333;font-weight:500;vertical-align:middle;">${escapeHtml(industry)}</td></tr></table></td></tr>`);
+  if (brand) detailRows.push(`<tr><td style="padding:8px 0;border-bottom:1px solid #FFE0E0;"><table cellpadding="0" cellspacing="0" width="100%"><tr><td width="80" style="font-size:12px;color:#C0392B;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;vertical-align:middle;">브랜드</td><td style="font-size:14px;color:#333;font-weight:500;vertical-align:middle;">${escapeHtml(brand)}</td></tr></table></td></tr>`);
+  if (period) detailRows.push(`<tr><td style="padding:8px 0;"><table cellpadding="0" cellspacing="0" width="100%"><tr><td width="80" style="font-size:12px;color:#C0392B;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;vertical-align:middle;">수강</td><td style="font-size:14px;color:#333;font-weight:500;vertical-align:middle;">${escapeHtml(period)}</td></tr></table></td></tr>`);
 
-  const html = `<table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF5F5;border-left:3px solid #F75D5D;border-radius:0 8px 8px 0;">
-  <tr><td style="padding:16px 20px;">
-    <table cellpadding="0" cellspacing="0">
-      <tr><td style="font-size:12px;color:#999;padding-right:12px;white-space:nowrap;vertical-align:top;">수강생</td><td style="font-size:15px;font-weight:700;color:#1a1a1a;line-height:1.5;">${escapeHtml(name)}</td></tr>
-      ${infoRows.join("\n      ")}
+  const html = `<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:2px solid #F75D5D;border-radius:12px;">
+  <tr><td style="background:#F75D5D;padding:14px 20px;border-radius:10px 10px 0 0;">
+    <table cellpadding="0" cellspacing="0" width="100%"><tr>
+      <td style="font-size:18px;font-weight:800;color:#ffffff;letter-spacing:0.5px;">${escapeHtml(name)}</td>
+      <td align="right" style="font-size:12px;color:rgba(255,255,255,0.8);font-weight:600;">STUDENT PROFILE</td>
+    </tr></table>
+  </td></tr>
+  <tr><td style="padding:12px 20px 16px;">
+    <table cellpadding="0" cellspacing="0" width="100%">
+      ${detailRows.join("\n      ")}
     </table>
   </td></tr>
 </table>`;
-  return makeTextRow("student-info", html, "12px 24px 16px");
+  return makeTextRow("student-info", html, "16px 24px 20px");
 }
 
 /**
@@ -624,7 +629,7 @@ export const ROW_PROFILE: object = {
         displayCondition: null,
         _meta: { htmlID: "u_content_text_profile_coach", htmlClassNames: "u_content_text" },
         selectable: true, draggable: true, duplicatable: true, deletable: true, hideable: true,
-        text: '<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td style="padding:24px 0;border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;"><table cellpadding="0" cellspacing="0"><tr><td width="80" style="vertical-align:top;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/profile-smith.png" alt="스미스" style="width:60px;height:60px;border-radius:50%;display:block;" /></td><td style="vertical-align:top;"><p style="margin:0;font-weight:800;font-size:16px;color:#1a1a1a;">스미스 <span style="font-weight:600;font-size:13px;color:#F75D5D;">자사몰사관학교 코치</span></p><p style="margin:6px 0 0;font-size:13px;color:#64748b;line-height:160%;">메타파트너 / 메타공식 프로페셔널<br>스킨스쿨 / 재미어트 Co-founder<br>수강생 자사몰매출 450억+</p></td></tr></table></td></tr></table>',
+        text: '<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border:1px solid #e2e8f0;border-radius:12px;"><tr><td style="padding:20px 24px;"><table cellpadding="0" cellspacing="0" width="100%"><tr><td width="72" style="vertical-align:top;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/profile-smith.png" alt="스미스" style="width:60px;height:60px;border-radius:50%;display:block;border:2px solid #F75D5D;" /></td><td style="vertical-align:top;"><p style="margin:0;font-weight:800;font-size:17px;color:#1a1a1a;">스미스 코치</p><p style="margin:4px 0 0;"><span style="background:#F75D5D;color:#ffffff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;letter-spacing:0.5px;">자사몰사관학교</span></p><p style="margin:10px 0 0;font-size:13px;color:#64748b;line-height:170%;">메타파트너 / 메타공식 프로페셔널<br>스킨스쿨 / 재미어트 Co-founder<br>수강생 자사몰매출 450억+</p></td></tr></table></td></tr></table>',
       },
     }],
     values: {
