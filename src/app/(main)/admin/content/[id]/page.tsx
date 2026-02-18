@@ -64,6 +64,7 @@ export default function ContentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("post");
   const [generatingNewsletter, setGeneratingNewsletter] = useState(false);
+  const [editorKey, setEditorKey] = useState(0);
 
   const loadContent = useCallback(async () => {
     try {
@@ -112,7 +113,8 @@ export default function ContentDetailPage() {
         }
       }
       toast.success("뉴스레터가 생성되었습니다.");
-      loadContent();
+      await loadContent();
+      setEditorKey(prev => prev + 1);
     } catch {
       toast.error("뉴스레터 생성에 실패했습니다.");
     } finally {
@@ -242,6 +244,7 @@ export default function ContentDetailPage() {
               defaultTarget="email_summary"
             />
             <NewsletterEditPanel
+              key={editorKey}
               content={content}
               onContentUpdate={refreshContent}
             />

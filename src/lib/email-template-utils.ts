@@ -3,9 +3,9 @@ import type { Content } from "@/types/content";
 import { getSectionType, type SectionFields, type InsightFields, type NumberedCardsFields, type ChecklistFields, type BulletListFields, type ScheduleTableFields, type BATablesFields, type InterviewFields, type ImagePlaceholderFields } from "./newsletter-section-types";
 import {
   ROW_LOGO, ROW_DIVIDER, ROW_PROFILE, ROW_FOOTER,
-  createHeroRow, createTitleRow, createHookRow, createIntroRow, createClosingRow,
-  createGreetingRow, createEmotionHookRow, createStudentQuoteRow,
-  createCtaRow, createFarewellRow,
+  createHeroRow, createHookQuestionRow, createTitleRow, createHookRow, createIntroRow, createClosingRow,
+  createEmotionHookRow, createStudentQuoteRow,
+  createCtaRow,
   createSectionContentRows,
 } from "./newsletter-row-templates";
 
@@ -963,12 +963,13 @@ export function buildDesignFromSummary(content: Content): object {
     case_study: "성공사례 보러가기",
   };
   const ctaText = ctaTexts[contentType] ?? "전체 가이드 보기";
-  const ctaColor = contentType === "case_study" ? "#22C55E" : "#F75D5D";
+  const ctaColor = "#F75D5D";
 
   if (contentType === "notice" || contentType === "webinar") {
-    // Webinar/Notice: Hero(title+1st para) → IntroBody → Divider → Sections → Closing → Divider → Profile → CTA → Footer
+    // Webinar/Notice: Hero(title) → HookQuestion → IntroBody → Divider → Sections → Closing → Divider → Profile → CTA → Footer
     const { hook: wHook, intro: wIntro } = splitHookAndIntro(parsed.hookLine, contentType);
-    rows.push(createHeroRow(content.title, wHook));
+    rows.push(createHeroRow(content.title, ""));
+    if (wHook) rows.push(createHookQuestionRow(wHook));
     if (wIntro) rows.push(createIntroRow(wIntro));
     rows.push(ROW_DIVIDER);
     rows.push(...sectionRows);
@@ -979,8 +980,7 @@ export function buildDesignFromSummary(content: Content): object {
     // G8: farewell 제거 (골드 스탠다드에 없음)
     rows.push(ROW_FOOTER);
   } else if (contentType === "case_study") {
-    // Case Study: Greeting → Title → EmotionHook → Background → StudentQuote → Divider → Sections → CTA(green) → Footer
-    rows.push(createGreetingRow());
+    // Case Study: Title → EmotionHook → Background → StudentQuote → Divider → Sections → CTA → Footer
     rows.push(createTitleRow(content.title));
     const { hook: csHook, intro: csIntro, studentQuote } = splitHookAndIntro(parsed.hookLine, contentType);
     if (csHook) rows.push(createEmotionHookRow(csHook));
@@ -1003,7 +1003,6 @@ export function buildDesignFromSummary(content: Content): object {
     rows.push(ROW_DIVIDER);
     rows.push(ROW_PROFILE);
     rows.push(createCtaRow(ctaText, articleUrl, ctaColor));
-    rows.push(createFarewellRow());
     rows.push(ROW_FOOTER);
   }
 

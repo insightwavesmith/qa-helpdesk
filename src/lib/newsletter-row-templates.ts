@@ -178,28 +178,27 @@ export function createInsightRows(fields: InsightFields): object[] {
  * 마지막 카드는 border-bottom 없음.
  */
 export function createNumberedCardsRow(fields: NumberedCardsFields): object[] {
-  const cardRows = fields.items.map((item, i) => {
+  const cards = fields.items.map((item, i) => {
     const num = String(i + 1).padStart(2, "0");
-    const isLast = i === fields.items.length - 1;
-    const borderBottom = isLast ? "" : "border-bottom:1px solid #f0f0f0;";
-    return `<tr>
-    <td style="padding:14px 0;${borderBottom}">
-      <table cellpadding="0" cellspacing="0">
-        <tr>
-          <td style="vertical-align:top;width:48px">
-            <div style="width:36px;height:36px;border-radius:50%;background:#F75D5D;color:#fff;font-size:16px;font-weight:700;text-align:center;line-height:36px">${num}</div>
-          </td>
-          <td style="vertical-align:top">
-            <div style="font-weight:700;font-size:15px;margin-bottom:2px">${markdownBold(escapeHtml(item.title))}</div>
-            <div style="font-size:13px;color:#666;line-height:1.5">${nlToBr(markdownBold(escapeHtml(item.desc)))}</div>
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr>`;
+    const spacer = i < fields.items.length - 1
+      ? `<tr><td style="height:8px;font-size:0;line-height:0;">&nbsp;</td></tr>`
+      : "";
+    return `<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF5F5;border-left:3px solid #F75D5D;border-radius:0 8px 8px 0;">
+    <tr>
+      <td style="width:38px;padding:14px 0 14px 16px;vertical-align:top;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#F75D5D;color:#fff;font-size:13px;font-weight:700;text-align:center;line-height:28px;">${num}</div>
+      </td>
+      <td style="padding:14px 16px 14px 10px;vertical-align:top;">
+        <div style="font-weight:700;font-size:15px;margin-bottom:2px;">${markdownBold(escapeHtml(item.title))}</div>
+        <div style="font-size:13px;color:#666;line-height:1.5;">${nlToBr(markdownBold(escapeHtml(item.desc)))}</div>
+      </td>
+    </tr>
+  </table>
+</td></tr>${spacer}`;
   }).join("");
 
-  const html = `<table width="100%" cellpadding="0" cellspacing="0" style="padding:0 0 8px">${cardRows}</table>`;
+  const html = `<table width="100%" cellpadding="0" cellspacing="0" style="padding:0 0 8px;">${cards}</table>`;
   return [makeTextRow("numbered-cards", html)];
 }
 
@@ -208,22 +207,25 @@ export function createNumberedCardsRow(fields: NumberedCardsFields): object[] {
  * fields.items 배열 순회, 마지막 항목은 border-bottom 없음.
  */
 export function createChecklistRow(fields: ChecklistFields): object[] {
-  const checkRows = fields.items.map((item, i) => {
-    const isLast = i === fields.items.length - 1;
-    const borderBottom = isLast ? "" : "border-bottom:1px solid #f0f0f0;";
-    return `<tr>
-    <td style="padding:10px 0;${borderBottom}font-size:14px">
-      <table cellpadding="0" cellspacing="0">
-        <tr>
-          <td style="width:28px;vertical-align:middle"><div style="width:20px;height:20px;border-radius:50%;background:#F75D5D;text-align:center;line-height:20px;color:#fff;font-size:11px;font-weight:700">&#10003;</div></td>
-          <td style="vertical-align:middle">${markdownBold(escapeHtml(item))}</td>
-        </tr>
-      </table>
-    </td>
-  </tr>`;
+  const cards = fields.items.map((item, i) => {
+    const spacer = i < fields.items.length - 1
+      ? `<tr><td style="height:6px;font-size:0;line-height:0;">&nbsp;</td></tr>`
+      : "";
+    return `<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF5F5;border-left:3px solid #F75D5D;border-radius:0 8px 8px 0;">
+    <tr>
+      <td style="width:38px;padding:10px 0 10px 16px;vertical-align:middle;">
+        <div style="width:20px;height:20px;border-radius:50%;background:#F75D5D;text-align:center;line-height:20px;color:#fff;font-size:11px;font-weight:700;">&#10003;</div>
+      </td>
+      <td style="padding:10px 16px 10px 10px;vertical-align:middle;font-size:14px;">
+        ${markdownBold(escapeHtml(item))}
+      </td>
+    </tr>
+  </table>
+</td></tr>${spacer}`;
   }).join("");
 
-  const html = `<table width="100%" cellpadding="0" cellspacing="0" style="padding:0 0 8px">${checkRows}</table>`;
+  const html = `<table width="100%" cellpadding="0" cellspacing="0" style="padding:0 0 8px;">${cards}</table>`;
   return [makeTextRow("checklist", html)];
 }
 
@@ -295,18 +297,20 @@ export function createBATablesRow(fields: BATablesFields): object[] {
   const tablesHtml = fields.tables.map((table) => {
     const dataRows = table.rows.map((row) => {
       return `<tr>
-    <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #eee">${escapeHtml(row.metric)}</td>
-    <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #eee">${escapeHtml(row.before)}</td>
-    <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #eee;color:#F75D5D;font-weight:700">${markdownBold(escapeHtml(row.after))}</td>
+    <td style="padding:8px 12px;text-align:left;border-bottom:1px solid #eee;">${escapeHtml(row.metric)}</td>
+    <td style="padding:8px 12px;text-align:left;border-bottom:1px solid #eee;">${escapeHtml(row.before)}</td>
+    <td style="padding:8px 12px;text-align:left;border-bottom:1px solid #eee;color:#F75D5D;font-weight:700;">${markdownBold(escapeHtml(row.after))}</td>
   </tr>`;
     }).join("");
 
-    return `<div style="padding:4px 0;margin-top:12px;font-weight:700;color:#F75D5D;font-size:14px">${escapeHtml(table.title)}</div>
-<table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;margin:8px 0">
+    return `<table cellpadding="0" cellspacing="0" style="margin-top:12px;background:#FFF5F5;border-left:3px solid #F75D5D;border-radius:0 4px 4px 0;">
+  <tr><td style="padding:10px 16px;color:#F75D5D;font-weight:700;font-size:14px;">${escapeHtml(table.title)}</td></tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;margin:8px 0;">
   <tr>
-    <th style="background:#1a1a2e;color:#fff;padding:8px 12px;text-align:center;font-size:13px">지표</th>
-    <th style="background:#1a1a2e;color:#fff;padding:8px 12px;text-align:center;font-size:13px">Before</th>
-    <th style="background:#1a1a2e;color:#fff;padding:8px 12px;text-align:center;font-size:13px">After</th>
+    <th style="background:#FFF0F0;color:#333;padding:8px 12px;text-align:left;font-size:13px;font-weight:700;">지표</th>
+    <th style="background:#FFF0F0;color:#333;padding:8px 12px;text-align:left;font-size:13px;font-weight:700;">Before</th>
+    <th style="background:#FFF0F0;color:#333;padding:8px 12px;text-align:left;font-size:13px;font-weight:700;">After</th>
   </tr>
   ${dataRows}
 </table>`;
@@ -380,7 +384,7 @@ export function createBannerRow(bannerKey: string): object {
 /** 로고 이미지 row (자사몰사관학교 로고, 중앙 정렬, height:48px) */
 export const ROW_LOGO: object = makeTextRow(
   "logo",
-  '<p style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v4.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:48px;width:auto;" /></p>',
+  '<p style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v5-wide.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:48px;width:auto;" /></p>',
   "24px 24px 16px",
 );
 
@@ -389,8 +393,24 @@ export const ROW_LOGO: object = makeTextRow(
  * @param title - 웨비나 제목
  * @param subtitle - 부제목
  */
+/**
+ * 웨비나 전용 hookLine을 히어로 밖에 배치하는 질문 row.
+ * 중앙정렬, 18px bold, max-width:420px.
+ * @param text - 훅 질문 텍스트
+ */
+export function createHookQuestionRow(text: string): object {
+  return makeTextRow(
+    "hook-question",
+    `<p style="font-size:18px;font-weight:700;color:#1a1a1a;text-align:center;line-height:160%;max-width:420px;margin:0 auto;">${nlToBr(markdownBold(escapeHtml(text)))}</p>`,
+    "24px 32px 8px",
+  );
+}
+
 export function createHeroRow(title: string, subtitle: string): object {
-  const heroHtml = `<p style="text-align:center;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">LIVE 무료 웨비나</span></p>\n<p style="color:#ffffff;font-size:24px;font-weight:800;text-align:center;line-height:140%;margin-top:12px;">${escapeHtml(title)}</p>\n<p style="color:rgba(255,255,255,0.8);font-size:14px;text-align:center;margin-top:4px;">${escapeHtml(subtitle)}</p>`;
+  const subtitleHtml = subtitle
+    ? `\n<p style="color:rgba(255,255,255,0.8);font-size:14px;text-align:center;margin-top:4px;">${escapeHtml(subtitle)}</p>`
+    : "";
+  const heroHtml = `<p style="text-align:center;"><span style="background-color:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#ffffff;">LIVE 무료 웨비나</span></p>\n<p style="color:#ffffff;font-size:24px;font-weight:800;text-align:center;line-height:140%;margin-top:12px;">${escapeHtml(title)}</p>${subtitleHtml}`;
 
   return {
     id: "row-hero",
@@ -482,7 +502,7 @@ export function createGreetingRow(): object {
 export function createEmotionHookRow(text: string): object {
   return makeTextRow(
     "emotion-hook",
-    `<p style="font-size:15px;line-height:180%;text-align:center;"><strong><em><span style="color:#333;font-size:15px;">${markdownBold(escapeHtml(text))}</span></em></strong></p>`,
+    `<p style="font-size:15px;line-height:180%;text-align:center;max-width:400px;margin:0 auto;"><strong><em><span style="color:#333;font-size:15px;">${nlToBr(markdownBold(escapeHtml(text)))}</span></em></strong></p>`,
     "8px 24px 16px",
   );
 }
@@ -510,7 +530,7 @@ export function createStudentQuoteRow(text: string, source: string): object {
 export function createClosingRow(html: string): object {
   return makeTextRow(
     "closing",
-    `<p style="font-size:14px;line-height:180%;text-align:center;"><span style="color:#64748b;">${markdownBold(escapeHtml(html))}</span></p>`,
+    `<p style="font-size:14px;line-height:180%;text-align:center;max-width:400px;margin:0 auto;"><span style="color:#64748b;">${nlToBr(markdownBold(escapeHtml(html)))}</span></p>`,
     "16px 24px",
   );
 }
