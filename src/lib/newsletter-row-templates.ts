@@ -36,9 +36,9 @@ const BANNER_MAP: Record<string, string> = {
  * Unlayer text row 보일러플레이트 생성.
  * @param id - row 고유 식별자 (row-{id}, col-{id}, content-{id} 접두사 자동 생성)
  * @param html - row 내 표시할 HTML 문자열
- * @param padding - containerPadding (기본: "16px 32px")
+ * @param padding - containerPadding (기본: "16px 24px")
  */
-function makeTextRow(id: string, html: string, padding = "16px 32px"): object {
+function makeTextRow(id: string, html: string, padding = "16px 24px"): object {
   return {
     id: `row-${id}`,
     cells: [1],
@@ -51,7 +51,7 @@ function makeTextRow(id: string, html: string, padding = "16px 32px"): object {
           containerPadding: padding,
           anchor: "",
           textAlign: "left",
-          lineHeight: "180%",
+          lineHeight: "190%",
           linkStyle: { inherit: true, linkColor: "#F75D5D", linkHoverColor: "#E54949", linkUnderline: true, linkHoverUnderline: true },
           hideDesktop: false,
           displayCondition: null,
@@ -188,7 +188,7 @@ export function createNumberedCardsRow(fields: NumberedCardsFields): object[] {
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF5F5;border-left:3px solid #F75D5D;border-radius:0 8px 8px 0;">
     <tr>
       <td width="44" style="width:44px;padding:14px 0 14px 14px;vertical-align:top;">
-        <div style="width:28px;height:28px;border-radius:50%;background-color:#F75D5D;color:#ffffff;font-size:13px;font-weight:700;text-align:center;line-height:28px;mso-line-height-rule:exactly;">${num}</div>
+        <img src="${BANNER_BASE_URL}/circle-${num}.png" width="28" height="28" alt="${num}" style="display:block;width:28px;height:28px;border:0;" />
       </td>
       <td style="padding:14px 16px 14px 6px;vertical-align:top;">
         <div style="font-weight:700;font-size:15px;margin-bottom:4px;line-height:1.5;">${markdownBold(escapeHtml(item.title))}</div>
@@ -216,7 +216,7 @@ export function createChecklistRow(fields: ChecklistFields): object[] {
   <table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #f0f0f0;">
     <tr>
       <td width="40" style="width:40px;padding:12px 0 12px 16px;vertical-align:middle;">
-        <div style="width:22px;height:22px;border-radius:50%;background-color:#F75D5D;color:#ffffff;font-size:12px;font-weight:700;text-align:center;line-height:22px;mso-line-height-rule:exactly;">&#10003;</div>
+        <img src="${BANNER_BASE_URL}/circle-check.png" width="22" height="22" alt="✓" style="display:block;width:22px;height:22px;border:0;" />
       </td>
       <td style="padding:12px 16px 12px 8px;vertical-align:middle;font-size:14px;line-height:1.6;">
         ${markdownBold(escapeHtml(item))}
@@ -343,7 +343,7 @@ export function createInterviewQuotesRow(fields: InterviewFields): object[] {
  */
 export function createImagePlaceholderRow(fields: ImagePlaceholderFields): object[] {
   let html = `<div style="background:#f9f6f2;border-radius:8px;padding:32px 20px;text-align:center">
-  <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="text-align:center;"><div style="display:inline-block;width:60px;height:60px;border-radius:50%;background-color:#FDEAEA;color:#F75D5D;font-size:28px;text-align:center;line-height:60px;mso-line-height-rule:exactly;">&#9654;</div></td></tr></table>
+  <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="text-align:center;"><img src="${BANNER_BASE_URL}/circle-play.png" width="60" height="60" alt="▶" style="display:inline-block;width:60px;height:60px;border:0;" /></td></tr></table>
   <div style="color:#F75D5D;font-size:13px;font-weight:600;margin-top:10px">${markdownBold(escapeHtml(fields.caption))}</div>
   <div style="font-size:11px;color:#999;margin-top:2px">밑줄 친 이미지를 교체해주세요</div>
 </div>`;
@@ -370,10 +370,12 @@ export function createBannerRow(bannerKey: string): object {
     ? BANNER_MAP[matchedKey].replace("banner-", "")
     : bannerKey.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "unknown";
 
-  // T1: CSS-only table 배너 (Gmail 호환, PNG 제거)
+  // 개선_03: PNG 이미지 배너 (대각선 컷 디자인)
+  const imgFile = matchedKey ? BANNER_MAP[matchedKey] : `banner-${slug}`;
+  const imgUrl = `${BANNER_BASE_URL}/${imgFile}.png`;
   return makeTextRow(
     `banner-${slug}`,
-    `<table cellpadding="0" cellspacing="0" style="max-width:400px;" width="400"><tr><td style="background-color:#F75D5D;height:60px;padding:0 24px;color:#ffffff;font-size:16px;font-weight:700;letter-spacing:1px;line-height:60px;border-radius:4px 0 0 4px;">${escapeHtml(bannerKey)}</td></tr></table>`,
+    `<img src="${imgUrl}" width="400" alt="${escapeHtml(bannerKey)}" style="display:block;max-width:100%;height:auto;border:0;" />`,
     "24px 24px 0px",
   );
 }
