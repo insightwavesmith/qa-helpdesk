@@ -2,29 +2,17 @@
 // 질문에 대해 강의 자료 기반 AI 답변 생성
 
 import { createServiceClient } from "@/lib/supabase/server";
-import { generateEmbedding } from "@/lib/gemini";
-import { generate as ksGenerate } from "@/lib/knowledge";
+import {
+  generate as ksGenerate,
+  searchChunks,
+  type ChunkResult,
+  type SourceRef,
+} from "@/lib/knowledge";
 
-interface LectureChunk {
-  id: string;
-  lecture_name: string;
-  week: string;
-  chunk_index: number;
-  content: string;
-  similarity: number;
-  source_type?: string;
-  metadata?: Record<string, unknown> | null;
-}
-
-interface SourceRef {
-  lecture_name: string;
-  week: string;
-  chunk_index: number;
-  similarity: number;
-}
+export type LectureChunk = ChunkResult;
 
 /**
- * 질문 텍스트로 관련 강의 청크 검색
+ * 질문 텍스트로 관련 강의 청크 검색 (search_knowledge RPC)
  */
 export async function searchRelevantChunks(
   questionText: string,
@@ -32,26 +20,7 @@ export async function searchRelevantChunks(
   threshold: number = 0.5,
   sourceTypes?: string[]
 ): Promise<LectureChunk[]> {
-  const supabase = createServiceClient();
-
-  // 질문 임베딩 생성
-  const embedding = await generateEmbedding(questionText);
-
-  // 벡터 유사도 검색 (RPC 함수 호출)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase.rpc as any)("match_lecture_chunks", {
-    query_embedding: embedding,
-    match_threshold: threshold,
-    match_count: limit,
-    filter_source_types: sourceTypes || null,
-  });
-  
-  if (error) {
-    console.error("Vector search error:", error);
-    return [];
-  }
-  
-  return data || [];
+  return searchChunks(questionText, limit, threshold, sourceTypes);
 }
 
 /**

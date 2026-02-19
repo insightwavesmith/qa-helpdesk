@@ -17,10 +17,16 @@ export type ConsumerType =
 
 export type SourceType =
   | "lecture"
-  | "qa_archive"
+  | "blueprint"
+  | "papers"
+  | "qa"
   | "crawl"
   | "meeting"
-  | "manual";
+  | "marketing_theory"
+  | "webinar"
+  | "youtube"
+  | "assignment"
+  | "feedback";
 
 export interface KnowledgeRequest {
   query: string;
@@ -40,6 +46,9 @@ export interface SourceRef {
   week: string;
   chunk_index: number;
   similarity: number;
+  source_type?: string;
+  priority?: number;
+  final_score?: number;
 }
 
 export interface KnowledgeResponse {
@@ -86,7 +95,7 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     threshold: 0.4,
     tokenBudget: 3000,
     temperature: 0.3,
-    sourceTypes: ["lecture", "qa_archive", "manual"],
+    sourceTypes: ["lecture", "blueprint", "papers", "qa"],
     systemPrompt: QA_SYSTEM_PROMPT,
   },
   newsletter: {
@@ -126,14 +135,14 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     threshold: 0.5,
     tokenBudget: 2000,
     temperature: 0.7,
-    sourceTypes: ["lecture", "manual"],
+    sourceTypes: ["lecture", "blueprint"],
     systemPrompt: "", // contents.ts TYPE_PROMPTS에서 주입
   },
 };
 
 // ─── 인라인 RAG 검색 (순환 의존성 방지) ──────────────────
 
-interface ChunkResult {
+export interface ChunkResult {
   id: string;
   lecture_name: string;
   week: string;
@@ -141,10 +150,16 @@ interface ChunkResult {
   content: string;
   similarity: number;
   source_type?: string;
+  priority?: number;
+  tier_boost?: number;
+  final_score?: number;
+  topic_tags?: string[] | null;
+  source_ref?: string | null;
+  image_url?: string | null;
   metadata?: Record<string, unknown> | null;
 }
 
-async function searchChunks(
+export async function searchChunks(
   queryText: string,
   limit: number,
   threshold: number,
@@ -154,7 +169,7 @@ async function searchChunks(
   const embedding = await generateEmbedding(queryText);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase.rpc as any)("match_lecture_chunks", {
+  const { data, error } = await (supabase.rpc as any)("search_knowledge", {
     query_embedding: embedding,
     match_threshold: threshold,
     match_count: limit,
@@ -263,6 +278,11 @@ export async function generate(
       week: c.week,
       chunk_index: c.chunk_index,
       similarity: Math.round(c.similarity * 100) / 100,
+      source_type: c.source_type,
+      priority: c.priority,
+      final_score: c.final_score
+        ? Math.round(c.final_score * 100) / 100
+        : undefined,
     }));
 
     // fire-and-forget: 로깅 실패해도 KS 응답은 정상 반환

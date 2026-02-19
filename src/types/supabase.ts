@@ -14,69 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      _backup_contents_category: {
-        Row: {
-          category: string | null
-          id: string | null
-        }
-        Insert: {
-          category?: string | null
-          id?: string | null
-        }
-        Update: {
-          category?: string | null
-          id?: string | null
-        }
-        Relationships: []
-      }
-      _backup_posts: {
-        Row: {
-          author_id: string | null
-          category: string | null
-          content: string | null
-          content_id: string | null
-          created_at: string | null
-          id: string | null
-          is_pinned: boolean | null
-          is_published: boolean | null
-          like_count: number | null
-          published_at: string | null
-          title: string | null
-          updated_at: string | null
-          view_count: number | null
-        }
-        Insert: {
-          author_id?: string | null
-          category?: string | null
-          content?: string | null
-          content_id?: string | null
-          created_at?: string | null
-          id?: string | null
-          is_pinned?: boolean | null
-          is_published?: boolean | null
-          like_count?: number | null
-          published_at?: string | null
-          title?: string | null
-          updated_at?: string | null
-          view_count?: number | null
-        }
-        Update: {
-          author_id?: string | null
-          category?: string | null
-          content?: string | null
-          content_id?: string | null
-          created_at?: string | null
-          id?: string | null
-          is_pinned?: boolean | null
-          is_published?: boolean | null
-          like_count?: number | null
-          published_at?: string | null
-          title?: string | null
-          updated_at?: string | null
-          view_count?: number | null
-        }
-        Relationships: []
-      }
       ad_accounts: {
         Row: {
           account_id: string
@@ -462,6 +399,7 @@ export type Database = {
           author_id: string | null
           body_md: string
           category: string
+          chunks_count: number | null
           created_at: string | null
           email_cta_text: string | null
           email_cta_url: string | null
@@ -470,10 +408,13 @@ export type Database = {
           email_sent_at: string | null
           email_subject: string | null
           email_summary: string | null
+          embedded_at: string | null
+          embedding_status: string | null
           id: string
           images: Json | null
           is_pinned: boolean | null
           like_count: number | null
+          priority: number | null
           published_at: string | null
           source_hash: string | null
           source_ref: string | null
@@ -494,6 +435,7 @@ export type Database = {
           author_id?: string | null
           body_md: string
           category?: string
+          chunks_count?: number | null
           created_at?: string | null
           email_cta_text?: string | null
           email_cta_url?: string | null
@@ -502,10 +444,13 @@ export type Database = {
           email_sent_at?: string | null
           email_subject?: string | null
           email_summary?: string | null
+          embedded_at?: string | null
+          embedding_status?: string | null
           id?: string
           images?: Json | null
           is_pinned?: boolean | null
           like_count?: number | null
+          priority?: number | null
           published_at?: string | null
           source_hash?: string | null
           source_ref?: string | null
@@ -526,6 +471,7 @@ export type Database = {
           author_id?: string | null
           body_md?: string
           category?: string
+          chunks_count?: number | null
           created_at?: string | null
           email_cta_text?: string | null
           email_cta_url?: string | null
@@ -534,10 +480,13 @@ export type Database = {
           email_sent_at?: string | null
           email_subject?: string | null
           email_summary?: string | null
+          embedded_at?: string | null
+          embedding_status?: string | null
           id?: string
           images?: Json | null
           is_pinned?: boolean | null
           like_count?: number | null
+          priority?: number | null
           published_at?: string | null
           source_hash?: string | null
           source_ref?: string | null
@@ -972,6 +921,80 @@ export type Database = {
           },
         ]
       }
+      knowledge_chunks: {
+        Row: {
+          chunk_index: number
+          chunk_total: number | null
+          content: string
+          content_id: string | null
+          created_at: string | null
+          embedding: string | null
+          embedding_model: string | null
+          id: string
+          image_description: string | null
+          image_embedding: string | null
+          image_url: string | null
+          lecture_name: string
+          metadata: Json
+          priority: number | null
+          search_vector: unknown
+          source_ref: string | null
+          source_type: string
+          topic_tags: string[] | null
+          week: string
+        }
+        Insert: {
+          chunk_index: number
+          chunk_total?: number | null
+          content: string
+          content_id?: string | null
+          created_at?: string | null
+          embedding?: string | null
+          embedding_model?: string | null
+          id?: string
+          image_description?: string | null
+          image_embedding?: string | null
+          image_url?: string | null
+          lecture_name: string
+          metadata?: Json
+          priority?: number | null
+          search_vector?: unknown
+          source_ref?: string | null
+          source_type?: string
+          topic_tags?: string[] | null
+          week: string
+        }
+        Update: {
+          chunk_index?: number
+          chunk_total?: number | null
+          content?: string
+          content_id?: string | null
+          created_at?: string | null
+          embedding?: string | null
+          embedding_model?: string | null
+          id?: string
+          image_description?: string | null
+          image_embedding?: string | null
+          image_url?: string | null
+          lecture_name?: string
+          metadata?: Json
+          priority?: number | null
+          search_vector?: unknown
+          source_ref?: string | null
+          source_type?: string
+          topic_tags?: string[] | null
+          week?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_chunks_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_usage: {
         Row: {
           consumer_type: string
@@ -1105,42 +1128,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      lecture_chunks: {
-        Row: {
-          chunk_index: number
-          content: string
-          created_at: string | null
-          embedding: string | null
-          id: string
-          lecture_name: string
-          metadata: Json
-          source_type: string
-          week: string
-        }
-        Insert: {
-          chunk_index: number
-          content: string
-          created_at?: string | null
-          embedding?: string | null
-          id?: string
-          lecture_name: string
-          metadata?: Json
-          source_type?: string
-          week: string
-        }
-        Update: {
-          chunk_index?: number
-          content?: string
-          created_at?: string | null
-          embedding?: string | null
-          id?: string
-          lecture_name?: string
-          metadata?: Json
-          source_type?: string
-          week?: string
-        }
-        Relationships: []
       }
       likes: {
         Row: {
@@ -1552,7 +1539,80 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      lecture_chunks: {
+        Row: {
+          chunk_index: number | null
+          chunk_total: number | null
+          content: string | null
+          content_id: string | null
+          created_at: string | null
+          embedding: string | null
+          embedding_model: string | null
+          id: string | null
+          image_description: string | null
+          image_embedding: string | null
+          image_url: string | null
+          lecture_name: string | null
+          metadata: Json | null
+          priority: number | null
+          search_vector: unknown
+          source_ref: string | null
+          source_type: string | null
+          topic_tags: string[] | null
+          week: string | null
+        }
+        Insert: {
+          chunk_index?: number | null
+          chunk_total?: number | null
+          content?: string | null
+          content_id?: string | null
+          created_at?: string | null
+          embedding?: string | null
+          embedding_model?: string | null
+          id?: string | null
+          image_description?: string | null
+          image_embedding?: string | null
+          image_url?: string | null
+          lecture_name?: string | null
+          metadata?: Json | null
+          priority?: number | null
+          search_vector?: unknown
+          source_ref?: string | null
+          source_type?: string | null
+          topic_tags?: string[] | null
+          week?: string | null
+        }
+        Update: {
+          chunk_index?: number | null
+          chunk_total?: number | null
+          content?: string | null
+          content_id?: string | null
+          created_at?: string | null
+          embedding?: string | null
+          embedding_model?: string | null
+          id?: string | null
+          image_description?: string | null
+          image_embedding?: string | null
+          image_url?: string | null
+          lecture_name?: string | null
+          metadata?: Json | null
+          priority?: number | null
+          search_vector?: unknown
+          source_ref?: string | null
+          source_type?: string | null
+          topic_tags?: string[] | null
+          week?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_chunks_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       dblink: { Args: { "": string }; Returns: Record<string, unknown>[] }
@@ -1631,6 +1691,30 @@ export type Database = {
               week: string
             }[]
           }
+      search_knowledge: {
+        Args: {
+          filter_source_types?: string[]
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          chunk_index: number
+          content: string
+          final_score: number
+          id: string
+          image_url: string
+          lecture_name: string
+          metadata: Json
+          priority: number
+          similarity: number
+          source_ref: string
+          source_type: string
+          tier_boost: number
+          topic_tags: string[]
+          week: string
+        }[]
+      }
       search_lecture_chunks: {
         Args: { match_count?: number; query_embedding: string }
         Returns: {
