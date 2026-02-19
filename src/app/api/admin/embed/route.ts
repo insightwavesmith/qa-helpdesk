@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { embedContentToChunks, embedAllPending } from "@/actions/embed-pipeline";
 
 export const maxDuration = 300; // 5분 — 대량 임베딩용
@@ -7,7 +7,7 @@ export const maxDuration = 300; // 5분 — 대량 임베딩용
 // POST /api/admin/embed — 개별 또는 전체 임베딩
 export async function POST(req: NextRequest) {
   // 관리자 인증 체크
-  const supabase = createServiceClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
