@@ -6,12 +6,16 @@ export const maxDuration = 300; // 5분 — 대량 임베딩용
 
 // POST /api/admin/embed — 개별 또는 전체 임베딩
 export async function POST(req: NextRequest) {
-  // 관리자 인증 체크
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "인증 필요" }, { status: 401 });
+  // 관리자 인증: 브라우저 쿠키 또는 서비스 키
+  const serviceKey = req.headers.get("x-service-key");
+  if (serviceKey === process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    // 서비스 키로 인증 — CLI/스크립트용
+  } else {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "인증 필요" }, { status: 401 });
+    }
   }
 
   const body = await req.json();
