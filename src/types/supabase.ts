@@ -997,41 +997,56 @@ export type Database = {
       }
       knowledge_usage: {
         Row: {
+          chunks_after_rerank: number | null
+          chunks_before_rerank: number | null
           consumer_type: string
           content_id: string | null
           created_at: string
           duration_ms: number | null
+          expanded_queries: string[] | null
           id: string
+          image_count: number | null
           input_tokens: number
           model: string
           output_tokens: number
           question_id: string | null
+          rerank_scores: number[] | null
           source_types: string[] | null
           total_tokens: number
         }
         Insert: {
+          chunks_after_rerank?: number | null
+          chunks_before_rerank?: number | null
           consumer_type: string
           content_id?: string | null
           created_at?: string
           duration_ms?: number | null
+          expanded_queries?: string[] | null
           id?: string
+          image_count?: number | null
           input_tokens?: number
           model?: string
           output_tokens?: number
           question_id?: string | null
+          rerank_scores?: number[] | null
           source_types?: string[] | null
           total_tokens?: number
         }
         Update: {
+          chunks_after_rerank?: number | null
+          chunks_before_rerank?: number | null
           consumer_type?: string
           content_id?: string | null
           created_at?: string
           duration_ms?: number | null
+          expanded_queries?: string[] | null
           id?: string
+          image_count?: number | null
           input_tokens?: number
           model?: string
           output_tokens?: number
           question_id?: string | null
+          rerank_scores?: number[] | null
           source_types?: string[] | null
           total_tokens?: number
         }
