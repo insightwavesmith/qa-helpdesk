@@ -25,6 +25,9 @@ export interface Content {
   email_design_json: Record<string, unknown> | null;
   email_html: string | null;
   view_count: number;
+  embedding_status: string | null;
+  chunks_count: number | null;
+  embedded_at: string | null;
   created_at: string;
   updated_at: string;
 }

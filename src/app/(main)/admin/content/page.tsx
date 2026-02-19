@@ -20,9 +20,11 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, FileText, Plus, Newspaper, Mail } from "lucide-react";
+import { Loader2, FileText, Plus, Newspaper, Mail, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { getContents } from "@/actions/contents";
+import { embedAllPending } from "@/actions/embed-pipeline";
 import type { Content } from "@/types/content";
 import NewContentModal from "@/components/content/new-content-modal";
 
@@ -65,6 +67,7 @@ export default function AdminContentPage() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [modalOpen, setModalOpen] = useState(false);
+  const [embedding, setEmbedding] = useState(false);
 
   const loadContents = useCallback(async () => {
     setLoading(true);
@@ -98,6 +101,26 @@ export default function AdminContentPage() {
   };
 
   const handleNewContent = () => setModalOpen(true);
+
+  const pendingCount = contents.filter(
+    (c) => !c.embedding_status || c.embedding_status === "pending"
+  ).length;
+
+  const handleEmbedAll = async () => {
+    if (!confirm(`${pendingCount}개 콘텐츠를 임베딩합니다. 진행하시겠습니까?`)) return;
+    setEmbedding(true);
+    try {
+      const result = await embedAllPending();
+      toast.success(
+        `임베딩 완료: 성공 ${result.success}, 연결 ${result.linked}, 실패 ${result.failed}`
+      );
+      loadContents();
+    } catch {
+      toast.error("임베딩 실행에 실패했습니다.");
+    } finally {
+      setEmbedding(false);
+    }
+  };
 
   // Status counts
   const countByStatus = useCallback(
@@ -144,13 +167,29 @@ export default function AdminContentPage() {
             콘텐츠를 관리하고 편집합니다.
           </p>
         </div>
-        <Button
-          onClick={handleNewContent}
-          className="bg-[#F75D5D] hover:bg-[#E54949]"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          새 콘텐츠
-        </Button>
+        <div className="flex gap-2">
+          {pendingCount > 0 && (
+            <Button
+              onClick={handleEmbedAll}
+              disabled={embedding}
+              variant="outline"
+            >
+              {embedding ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Zap className="h-4 w-4 mr-2" />
+              )}
+              전체 임베딩 ({pendingCount})
+            </Button>
+          )}
+          <Button
+            onClick={handleNewContent}
+            className="bg-[#F75D5D] hover:bg-[#E54949]"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            새 콘텐츠
+          </Button>
+        </div>
       </div>
 
       {/* Hub Tabs */}
@@ -243,6 +282,7 @@ export default function AdminContentPage() {
                       <TableHead>유형</TableHead>
                       <TableHead>정보공유</TableHead>
                       <TableHead>뉴스레터</TableHead>
+                      <TableHead>임베딩</TableHead>
                       <TableHead className="text-right">조회수</TableHead>
                       <TableHead className="text-right">작성일</TableHead>
                     </TableRow>
@@ -285,6 +325,23 @@ export default function AdminContentPage() {
                               </Badge>
                             ) : (
                               <span className="text-[12px] text-gray-400">미발송</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {item.embedding_status === "completed" ? (
+                              <Badge variant="outline" className="text-[11px] bg-green-50 text-green-700 border-green-200">
+                                완료 ({item.chunks_count ?? 0})
+                              </Badge>
+                            ) : item.embedding_status === "processing" ? (
+                              <Badge variant="outline" className="text-[11px] bg-yellow-50 text-yellow-700 border-yellow-200">
+                                처리중
+                              </Badge>
+                            ) : item.embedding_status === "failed" ? (
+                              <Badge variant="outline" className="text-[11px] bg-red-50 text-red-700 border-red-200">
+                                실패
+                              </Badge>
+                            ) : (
+                              <span className="text-[12px] text-gray-400">대기</span>
                             )}
                           </TableCell>
                           <TableCell className="text-right text-[13px] text-gray-500 tabular-nums">

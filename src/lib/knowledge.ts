@@ -153,6 +153,7 @@ export interface ChunkResult {
   priority?: number;
   tier_boost?: number;
   final_score?: number;
+  text_score?: number;
   topic_tags?: string[] | null;
   source_ref?: string | null;
   image_url?: string | null;
@@ -168,12 +169,15 @@ export async function searchChunks(
   const supabase = createServiceClient();
   const embedding = await generateEmbedding(queryText);
 
+  // T5: query_text 전달 → hybrid search (vector + tsvector)
+  // query_text가 있으면 hybrid, 없으면 vector-only (하위호환)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase.rpc as any)("search_knowledge", {
     query_embedding: embedding,
     match_threshold: threshold,
     match_count: limit,
     filter_source_types: sourceTypes || null,
+    query_text: queryText,
   });
 
   if (error) {

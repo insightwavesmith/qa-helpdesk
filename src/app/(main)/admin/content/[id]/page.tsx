@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getContentById, generateEmailSummary } from "@/actions/contents";
+import { embedContentToChunks } from "@/actions/embed-pipeline";
 import AiEditPanel from "@/components/content/ai-edit-panel";
 import type { Content } from "@/types/content";
 
@@ -65,6 +66,7 @@ export default function ContentDetailPage() {
   const [activeTab, setActiveTab] = useState("post");
   const [generatingNewsletter, setGeneratingNewsletter] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
+  const [embeddingContent, setEmbeddingContent] = useState(false);
 
   const loadContent = useCallback(async () => {
     try {
@@ -73,7 +75,7 @@ export default function ContentDetailPage() {
         router.push("/admin/content");
         return;
       }
-      setContent(data as Content);
+      setContent(data as unknown as Content);
     } catch {
       router.push("/admin/content");
     } finally {
@@ -121,6 +123,26 @@ export default function ContentDetailPage() {
       setGeneratingNewsletter(false);
     }
   }, [content, loadContent]);
+
+  const handleEmbed = async () => {
+    if (!content) return;
+    setEmbeddingContent(true);
+    try {
+      const result = await embedContentToChunks(content.id);
+      if (result.status === "failed") {
+        toast.error(result.error || "임베딩 실패");
+      } else if (result.status === "linked") {
+        toast.success(`Blueprint 연결 완료 (${result.chunksCount} chunks)`);
+      } else {
+        toast.success(`임베딩 완료 (${result.chunksCount} chunks 생성)`);
+      }
+      await loadContent();
+    } catch {
+      toast.error("임베딩 실행에 실패했습니다.");
+    } finally {
+      setEmbeddingContent(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -175,8 +197,32 @@ export default function ContentDetailPage() {
                 뉴스레터 발송완료
               </Badge>
             )}
+            {content.embedding_status === "completed" ? (
+              <Badge variant="outline" className="text-[11px] bg-green-50 text-green-700 border-green-200">
+                임베딩 완료 ({content.chunks_count ?? 0})
+              </Badge>
+            ) : content.embedding_status === "failed" ? (
+              <Badge variant="outline" className="text-[11px] bg-red-50 text-red-700 border-red-200">
+                임베딩 실패
+              </Badge>
+            ) : null}
           </div>
         </div>
+        {(!content.embedding_status || content.embedding_status === "pending" || content.embedding_status === "failed") && (
+          <Button
+            onClick={handleEmbed}
+            disabled={embeddingContent}
+            variant="outline"
+            size="sm"
+          >
+            {embeddingContent ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Zap className="h-4 w-4 mr-2" />
+            )}
+            임베딩 실행
+          </Button>
+        )}
       </div>
 
       {/* DetailTabs */}

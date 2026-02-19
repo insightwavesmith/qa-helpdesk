@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P1 리뷰: Embed Pipeline + Hybrid Search | 2026-02-19</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Pretendard', -apple-system, sans-serif; background: #f8f9fa; color: #1a1a2e; line-height: 1.7; }
+  .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+
+  /* Header */
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #fff; padding: 48px 40px; border-radius: 16px; margin-bottom: 32px; }
+  .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .header .subtitle { font-size: 15px; color: #a0aec0; }
+  .meta { display: flex; gap: 24px; margin-top: 20px; font-size: 13px; color: #cbd5e0; flex-wrap: wrap; }
+  .meta span { display: flex; align-items: center; gap: 6px; }
+
+  /* Badges */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+  .badge-pass { background: #d4edda; color: #155724; }
+  .badge-warn { background: #fff3cd; color: #856404; }
+  .badge-fail { background: #f8d7da; color: #721c24; }
+  .badge-info { background: #d1ecf1; color: #0c5460; }
+  .badge-pending { background: #e2e8f0; color: #4a5568; }
+
+  /* Executive Summary */
+  .exec-summary { background: #fff; border-radius: 12px; padding: 32px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .exec-summary h2 { font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #1a1a2e; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; }
+  .summary-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; text-align: center; }
+  .summary-card .label { font-size: 13px; color: #718096; margin-bottom: 8px; }
+  .summary-card .value { font-size: 18px; font-weight: 700; }
+  .summary-card .value.warn { color: #f59e0b; }
+  .summary-card .value.pass { color: #22c55e; }
+  .summary-card .value.fail { color: #F75D5D; }
+  .summary-card .value.info { color: #3b82f6; }
+
+  /* Section */
+  .section { background: #fff; border-radius: 12px; padding: 32px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .section h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+  .section .section-desc { font-size: 14px; color: #718096; margin-bottom: 20px; }
+  .section h3 { font-size: 16px; font-weight: 600; margin: 20px 0 10px; color: #2d3748; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th { background: #f7fafc; text-align: left; padding: 10px 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; }
+  td { padding: 10px 12px; border-bottom: 1px solid #edf2f7; vertical-align: top; }
+  tr:hover td { background: #f7fafc; }
+  .col-status { width: 100px; text-align: center; }
+
+  /* Code */
+  code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #e53e3e; }
+  pre { background: #1a1a2e; color: #e2e8f0; padding: 20px; border-radius: 10px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 12px 0; }
+  pre code { background: none; color: inherit; padding: 0; }
+  .kw { color: #c084fc; }
+  .fn { color: #60a5fa; }
+  .cm { color: #6b7280; }
+  .st { color: #4ade80; }
+  .num { color: #fbbf24; }
+  .op { color: #f87171; }
+
+  /* Alert boxes */
+  .alert { padding: 16px 20px; border-radius: 10px; margin: 16px 0; font-size: 14px; }
+  .alert-danger { background: #fff5f5; border-left: 4px solid #F75D5D; }
+  .alert-warning { background: #fffbeb; border-left: 4px solid #f59e0b; }
+  .alert-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+  .alert-success { background: #f0fdf4; border-left: 4px solid #22c55e; }
+  .alert strong { display: block; margin-bottom: 4px; }
+
+  /* Diagram */
+  .diagram-wrap { background: #0f172a; border-radius: 12px; padding: 24px; margin: 16px 0; overflow-x: auto; }
+  .diagram-wrap pre { background: none; padding: 0; margin: 0; }
+  .diagram-wrap code { color: #e2e8f0; font-size: 12.5px; line-height: 1.5; }
+  .d-src { color: #60a5fa; }
+  .d-fn { color: #c084fc; }
+  .d-db { color: #4ade80; }
+  .d-rpc { color: #fbbf24; }
+  .d-arrow { color: #94a3b8; }
+  .d-note { color: #6b7280; font-style: italic; }
+
+  /* Formula */
+  .formula-box { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 12px; padding: 28px 32px; margin: 16px 0; text-align: center; }
+  .formula-box .formula { color: #f1f5f9; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 16px; line-height: 2; }
+  .formula-box .formula .var { color: #60a5fa; }
+  .formula-box .formula .val { color: #fbbf24; }
+  .formula-box .formula .op { color: #f87171; }
+  .formula-box .formula .fn { color: #c084fc; }
+  .formula-box .caption { color: #94a3b8; font-size: 13px; margin-top: 12px; }
+
+  /* Risk matrix */
+  .risk-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .risk-item { border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; position: relative; }
+  .risk-item.critical { border-left: 4px solid #ef4444; }
+  .risk-item.high { border-left: 4px solid #f59e0b; }
+  .risk-item.medium { border-left: 4px solid #3b82f6; }
+  .risk-item .risk-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .risk-item h4 { font-size: 15px; font-weight: 600; }
+  .risk-item p { font-size: 13px; color: #4a5568; margin-top: 4px; }
+  .risk-item .mitigation { font-size: 13px; color: #2563eb; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e2e8f0; }
+
+  /* Footer */
+  .footer { text-align: center; padding: 32px; color: #a0aec0; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ============ Header ============ -->
+<div class="header">
+  <h1>P1 Embed Pipeline + Hybrid Search</h1>
+  <div class="subtitle">사전 코드 리뷰 &mdash; TASK.md 기반 아키텍처 분석 + 위험 요소 식별</div>
+  <div class="meta">
+    <span>2026-02-19</span>
+    <span><span class="badge badge-info">P1</span></span>
+    <span>태스크 6개 (T1~T6)</span>
+    <span>신규 파일 4 / 수정 파일 4</span>
+    <span><span class="badge badge-pending">구현 전 리뷰</span></span>
+  </div>
+</div>
+
+<!-- ============ Executive Summary ============ -->
+<div class="exec-summary">
+  <h2>Executive Summary</h2>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="label">신규 chunks 예상</div>
+      <div class="value info">~850</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">최종 knowledge_chunks</div>
+      <div class="value info">~1,820</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Gemini API 호출</div>
+      <div class="value warn">~850</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Blueprint 중복 주의</div>
+      <div class="value fail">16건</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Scoring 변수</div>
+      <div class="value pass">3개</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">위험 요소</div>
+      <div class="value warn">5건</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 1. Architecture Diagram ============ -->
+<div class="section">
+  <h2>1. 아키텍처 다이어그램 (데이터 흐름)</h2>
+  <p class="section-desc">P1은 두 개의 독립 파이프라인(Embed + Hybrid Search)으로 구성되며, 공통 저장소 knowledge_chunks를 중심으로 동작한다.</p>
+
+  <h3>1-1. Embed Pipeline (T1→T2→T6)</h3>
+  <div class="diagram-wrap">
+<pre><code>
+  <span class="d-note">── Admin UI (T6) ──────────────────────────────────────────────</span>
+
+  <span class="d-src">[콘텐츠 상세]</span> ─── "임베딩 실행" ───┐    <span class="d-src">[콘텐츠 목록]</span> ─── "전체 임베딩" ───┐
+                                     │                                         │
+                                     ▼                                         ▼
+  <span class="d-note">── Server Actions (T2) ────────────────────────────────────────</span>
+
+  <span class="d-fn">embedContentToChunks(contentId)</span>           <span class="d-fn">embedAllPending()</span>
+       │                                          │
+       │  1. SELECT title, body_md,               │  1. SELECT WHERE embedding_status='pending'
+       │     source_type, priority                 │  2. FOR EACH → embedContentToChunks()
+       │     FROM <span class="d-db">contents</span>                        │  3. 에러 시 skip + 로그
+       │                                          │  4. 결과: {total, success, failed}
+       ▼
+  ┌─── source_type == 'blueprint'? ───┐
+  │ YES                                │ NO
+  ▼                                    ▼
+  <span class="d-fn">linkBlueprintChunks()</span>            <span class="d-fn">chunkText(body_md)</span> <span class="d-note">(T1)</span>
+  ┃ title 매칭으로 기존             ┃ 700 chars, 100 overlap
+  ┃ knowledge_chunks 찾기           ┃ 한국어 문장 경계 존중
+  ┃ → content_id UPDATE             │
+  ┃ → chunks INSERT 스킵             ▼
+  ┃                              <span class="d-fn">generateEmbedding(chunk)</span>
+  ┃                              ┃ Gemini gemini-embedding-001, 768d
+  ┃                              ┃ batch 5개, 200ms delay
+  ┃                                  │
+  ┃                                  ▼
+  ┃                              <span class="d-db">INSERT knowledge_chunks</span>
+  ┃                              ┃ content_id, source_type, priority
+  ┃                              ┃ chunk_index, chunk_total
+  ┃                              ┃ lecture_name=title, week=source_type
+  ┃                                  │
+  ▼                                  ▼
+  <span class="d-db">UPDATE contents</span>
+  ┃ embedding_status = 'completed'
+  ┃ chunks_count = N
+  ┃ embedded_at = now()
+</code></pre>
+  </div>
+
+  <h3>1-2. Hybrid Search (T3→T4→T5)</h3>
+  <div class="diagram-wrap">
+<pre><code>
+  <span class="d-note">── 마이그레이션 (T3) ─────────────────────────────────────────</span>
+
+  <span class="d-db">knowledge_chunks</span> (970 기존 + ~850 신규)
+       │
+       ├── <span class="d-fn">UPDATE SET search_vector = to_tsvector('simple', content)</span>
+       │   WHERE search_vector IS NULL
+       │
+       ├── <span class="d-fn">TRIGGER</span>: INSERT/UPDATE 시 search_vector 자동 생성
+       │
+       └── <span class="d-fn">GIN INDEX</span>: idx_kc_search_vector
+
+  <span class="d-note">── search_knowledge RPC v2 (T4) ──────────────────────────────</span>
+
+  <span class="d-src">[사용자 질문]</span>
+       │
+       ├── <span class="d-fn">generateEmbedding(question)</span> → query_embedding (768d)
+       │
+       └── query_text = 원본 질문 텍스트
+            │
+            ▼
+  <span class="d-rpc">search_knowledge(</span>
+  <span class="d-rpc">  query_embedding, query_text,</span>
+  <span class="d-rpc">  match_threshold, match_count,</span>
+  <span class="d-rpc">  filter_source_types</span>
+  <span class="d-rpc">)</span>
+       │
+       ├── <span class="d-fn">vector_score</span> = 1 - (embedding <=> query_embedding)
+       ├── <span class="d-fn">text_score</span>   = ts_rank_cd(search_vector, plainto_tsquery)
+       ├── <span class="d-fn">tier_boost</span>   = CASE priority (1→0.15 ... 5→0.00)
+       │
+       └── <span class="d-rpc">final_score = 0.6*vector + 0.4*text + tier_boost</span>
+            │
+            ▼
+       ORDER BY final_score DESC
+       LIMIT match_count
+
+  <span class="d-note">── 코드 연동 (T5) ────────────────────────────────────────────</span>
+
+  <span class="d-fn">searchChunks(queryText, limit, threshold, sourceTypes)</span>
+       │
+       └── supabase.rpc("search_knowledge", {
+             query_embedding, <span class="d-src">query_text,</span>  <span class="d-note">← 신규 파라미터</span>
+             match_threshold, match_count,
+             filter_source_types
+           })
+</code></pre>
+  </div>
+
+  <div class="alert alert-info">
+    <strong>하위호환 보장</strong>
+    query_text가 NULL이면 기존 vector-only 동작. match_lecture_chunks 래퍼는 변경 없음.
+    기존 QA 검색은 P1 적용 중에도 중단 없이 동작한다.
+  </div>
+</div>
+
+<!-- ============ 2. Changed Files ============ -->
+<div class="section">
+  <h2>2. 변경 파일 목록 + 영향 범위</h2>
+  <p class="section-desc">신규 4파일, 수정 4파일. 기존 파일 변경은 최소화되어 있으나, RPC 교체(T4)가 핵심 위험점.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>태스크</th>
+        <th>파일</th>
+        <th>작업</th>
+        <th>영향 범위</th>
+        <th>위험도</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>T1</code></td>
+        <td><code>src/lib/chunk-utils.ts</code></td>
+        <td>신규</td>
+        <td>없음 (순수 유틸)</td>
+        <td><span class="badge badge-pass">LOW</span></td>
+      </tr>
+      <tr>
+        <td><code>T2</code></td>
+        <td><code>src/actions/embed-pipeline.ts</code></td>
+        <td>신규</td>
+        <td>contents(읽기) + knowledge_chunks(쓰기)</td>
+        <td><span class="badge badge-warn">MED</span></td>
+      </tr>
+      <tr>
+        <td><code>T3</code></td>
+        <td><code>supabase/migrations/00016_search_vector.sql</code></td>
+        <td>신규</td>
+        <td>knowledge_chunks 전체 행 UPDATE + 트리거 추가</td>
+        <td><span class="badge badge-warn">MED</span></td>
+      </tr>
+      <tr>
+        <td><code>T4</code></td>
+        <td><code>supabase/migrations/00017_hybrid_search.sql</code></td>
+        <td>신규</td>
+        <td><strong>search_knowledge RPC 교체</strong> &mdash; QA 검색 전체에 영향</td>
+        <td><span class="badge badge-fail">HIGH</span></td>
+      </tr>
+      <tr>
+        <td><code>T5</code></td>
+        <td><code>src/lib/knowledge.ts</code></td>
+        <td>수정</td>
+        <td>searchChunks() 시그니처 변경 &rarr; 모든 Consumer에 영향</td>
+        <td><span class="badge badge-warn">MED</span></td>
+      </tr>
+      <tr>
+        <td><code>T5</code></td>
+        <td><code>src/lib/rag.ts</code></td>
+        <td>간접</td>
+        <td>searchChunks() import &rarr; 시그니처 변경 시 자동 반영</td>
+        <td><span class="badge badge-pass">LOW</span></td>
+      </tr>
+      <tr>
+        <td><code>T6</code></td>
+        <td><code>src/app/(main)/admin/content/[id]/page.tsx</code></td>
+        <td>수정</td>
+        <td>Admin 콘텐츠 상세 UI</td>
+        <td><span class="badge badge-pass">LOW</span></td>
+      </tr>
+      <tr>
+        <td><code>T6</code></td>
+        <td><code>src/app/(main)/admin/content/page.tsx</code></td>
+        <td>수정</td>
+        <td>Admin 콘텐츠 목록 UI</td>
+        <td><span class="badge badge-pass">LOW</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>의존성 그래프</h3>
+  <div class="diagram-wrap">
+<pre><code>
+  T1 (chunk-utils) ──→ T2 (embed-pipeline) ──→ T6 (Admin UI)
+                                │
+  T3 (search_vector) ──→ T4 (hybrid RPC) ──→ T5 (knowledge.ts 연동)
+
+  <span class="d-note">T1과 T3은 병렬 가능 / T2와 T3도 병렬 가능</span>
+  <span class="d-note">T4는 T3 완료 후 / T5는 T4 완료 후 / T6은 T2 완료 후</span>
+</code></pre>
+  </div>
+
+  <h3>영향받는 기존 코드 (수정 없이 동작 변경)</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>파일</th>
+        <th>영향</th>
+        <th>이유</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>src/lib/rag.ts</code></td>
+        <td>검색 결과에 text_score 추가</td>
+        <td>knowledge.ts의 searchChunks → search_knowledge RPC 변경</td>
+      </tr>
+      <tr>
+        <td><code>src/actions/questions.ts</code></td>
+        <td>AI 답변 품질 변화 가능</td>
+        <td>hybrid search로 검색 결과 순위 변동</td>
+      </tr>
+      <tr>
+        <td><code>src/actions/contents.ts</code></td>
+        <td>기존 embedContent() 코드 사실상 무효화</td>
+        <td>새 embed-pipeline.ts가 대체. 구 함수는 호출되지 않으므로 문제 없음</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============ 3. Hybrid Search Scoring ============ -->
+<div class="section">
+  <h2>3. Hybrid Search Scoring 공식</h2>
+  <p class="section-desc">ADR-6 기반. Vector similarity + BM25 텍스트 매칭 + 5-Tier 가중치의 3-factor 복합 점수.</p>
+
+  <div class="formula-box">
+    <div class="formula">
+      <span class="var">final_score</span> <span class="op">=</span>
+      <span class="val">0.6</span> <span class="op">&times;</span> <span class="fn">vector_score</span>
+      <span class="op">+</span> <span class="val">0.4</span> <span class="op">&times;</span> <span class="fn">text_score</span>
+      <span class="op">+</span> <span class="fn">tier_boost</span>
+    </div>
+    <div class="caption">
+      &alpha; = 0.6 (벡터 가중치) &mdash; ADR-6에서 확정. P2 A/B 테스트에서 조정 가능.
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>변수</th>
+        <th>공식</th>
+        <th>범위</th>
+        <th>설명</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>vector_score</code></td>
+        <td><code>1 - (embedding &lt;=&gt; query_embedding)</code></td>
+        <td>0.0 ~ 1.0</td>
+        <td>pgvector cosine distance. 의미적 유사도.</td>
+      </tr>
+      <tr>
+        <td><code>text_score</code></td>
+        <td><code>ts_rank_cd(search_vector, plainto_tsquery('simple', query_text))</code></td>
+        <td>0.0 ~ &infin;<br><small>(실질 0~0.5)</small></td>
+        <td>PostgreSQL tsvector 키워드 매칭. 'simple' config = 형태소 분석 없이 공백 토큰.</td>
+      </tr>
+      <tr>
+        <td><code>tier_boost</code></td>
+        <td><code>CASE priority</code></td>
+        <td>0.00 ~ 0.15</td>
+        <td>5-Tier 고정 가산. T1(강의/BP/papers)이 가장 높은 부스트.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Tier Boost 상세</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Tier</th>
+        <th>Priority</th>
+        <th>Boost</th>
+        <th>소스 타입</th>
+        <th>현재 chunks</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>T1</td>
+        <td>1</td>
+        <td><strong>+0.15</strong></td>
+        <td>lecture, blueprint, papers</td>
+        <td>836</td>
+      </tr>
+      <tr>
+        <td>T2</td>
+        <td>2</td>
+        <td>+0.10</td>
+        <td>qa, feedback</td>
+        <td>0 <small>(P2에서 추가)</small></td>
+      </tr>
+      <tr>
+        <td>T3</td>
+        <td>3</td>
+        <td>+0.05</td>
+        <td>crawl, marketing_theory, webinar</td>
+        <td>122 + <strong>~620 신규</strong></td>
+      </tr>
+      <tr>
+        <td>T4</td>
+        <td>4</td>
+        <td>+0.03</td>
+        <td>meeting, youtube</td>
+        <td>12</td>
+      </tr>
+      <tr>
+        <td>T5</td>
+        <td>5</td>
+        <td>+0.00</td>
+        <td>assignment</td>
+        <td>0 <small>(P2에서 추가)</small></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>점수 시뮬레이션 예시</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>시나리오</th>
+        <th>vector</th>
+        <th>text</th>
+        <th>tier</th>
+        <th>final</th>
+        <th>비고</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>강의 chunk, 의미+키워드 일치</td>
+        <td>0.82</td>
+        <td>0.35</td>
+        <td>+0.15</td>
+        <td><strong>0.782</strong></td>
+        <td>0.6&times;0.82 + 0.4&times;0.35 + 0.15</td>
+      </tr>
+      <tr>
+        <td>크롤링 chunk, 의미만 일치</td>
+        <td>0.78</td>
+        <td>0.00</td>
+        <td>+0.05</td>
+        <td><strong>0.518</strong></td>
+        <td>키워드 없으면 text_score=0</td>
+      </tr>
+      <tr>
+        <td>미팅 chunk, 키워드만 일치</td>
+        <td>0.45</td>
+        <td>0.40</td>
+        <td>+0.03</td>
+        <td><strong>0.460</strong></td>
+        <td>threshold 0.4 아래면 제외</td>
+      </tr>
+      <tr>
+        <td>강의 chunk, 약한 일치</td>
+        <td>0.55</td>
+        <td>0.10</td>
+        <td>+0.15</td>
+        <td><strong>0.520</strong></td>
+        <td>tier_boost가 순위 역전 가능</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="alert alert-warning">
+    <strong>F-R1: text_score 범위 불균형</strong>
+    <code>ts_rank_cd</code>의 실질 범위(0~0.5)는 vector_score(0~1.0)보다 좁다.
+    &alpha;=0.6/0.4 가중치를 적용해도 text_score의 실질 기여가 낮을 수 있다.
+    정규화(normalization)를 적용하거나, &alpha; 값을 P2 A/B 테스트로 튜닝해야 한다.
+  </div>
+
+  <div class="alert alert-warning">
+    <strong>F-R2: 'simple' config의 한계</strong>
+    <code>plainto_tsquery('simple', ...)</code>는 형태소 분석 없이 공백 기준 토큰화.
+    한국어에서 "메타광고" &rarr; ["메타광고"] (분리 안 됨). "메타 광고" &rarr; ["메타", "광고"].
+    사용자가 띄어쓰기를 안 하면 키워드 매칭 실패. Korean NLP 모듈(P2+)이나 trigram 인덱스가 대안.
+  </div>
+
+  <h3>하위호환 전략</h3>
+  <pre><code><span class="cm">-- query_text가 NULL이면 기존 vector-only 동작</span>
+<span class="kw">IF</span> query_text <span class="kw">IS NULL THEN</span>
+  final_score = vector_score + tier_boost   <span class="cm">-- 기존 공식</span>
+<span class="kw">ELSE</span>
+  final_score = <span class="num">0.6</span> * vector_score
+              + <span class="num">0.4</span> * text_score
+              + tier_boost                  <span class="cm">-- hybrid 공식</span>
+<span class="kw">END IF</span></code></pre>
+</div>
+
+<!-- ============ 4. Blueprint Dedup Strategy ============ -->
+<div class="section">
+  <h2>4. Blueprint 16개 중복 방지 전략</h2>
+  <p class="section-desc">contents 79개 중 blueprint 16개는 이미 knowledge_chunks에 320 chunks(priority=1)로 존재한다. 중복 INSERT하면 동일 벡터가 2배로 늘어나 검색 품질이 저하된다.</p>
+
+  <h3>현재 상태</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>테이블</th>
+        <th>Blueprint 데이터</th>
+        <th>content_id</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>contents</code></td>
+        <td>16건 (source_type='blueprint', avg 51K chars)</td>
+        <td>각 content의 id 존재</td>
+      </tr>
+      <tr>
+        <td><code>knowledge_chunks</code></td>
+        <td>320건 (source_type='blueprint', priority=1)</td>
+        <td><strong>content_id = NULL</strong> (P0 이전에 직접 삽입됨)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="alert alert-info">
+    <strong>핵심 문제</strong>
+    knowledge_chunks.content_id가 NULL이므로, 기존 chunks가 어떤 contents 레코드에 대응하는지 직접적인 FK 연결이 없다.
+    <code>lecture_name</code>(=contents.title)으로 매칭해야 한다.
+  </div>
+
+  <h3>TASK.md 명세 전략</h3>
+  <pre><code><span class="cm">// embedContentToChunks() 내부</span>
+<span class="kw">if</span> (content.source_type === <span class="st">'blueprint'</span>) {
+  <span class="cm">// 1. title로 기존 chunks 매칭</span>
+  <span class="kw">const</span> existing = <span class="kw">await</span> supabase
+    .from(<span class="st">'knowledge_chunks'</span>)
+    .select(<span class="st">'id'</span>)
+    .eq(<span class="st">'lecture_name'</span>, content.title)
+    .eq(<span class="st">'source_type'</span>, <span class="st">'blueprint'</span>);
+
+  <span class="cm">// 2. 기존 chunks에 content_id 연결</span>
+  <span class="kw">await</span> supabase
+    .from(<span class="st">'knowledge_chunks'</span>)
+    .update({ content_id: contentId })
+    .eq(<span class="st">'lecture_name'</span>, content.title)
+    .eq(<span class="st">'source_type'</span>, <span class="st">'blueprint'</span>);
+
+  <span class="cm">// 3. contents 상태 갱신 (INSERT 스킵)</span>
+  <span class="kw">await</span> supabase
+    .from(<span class="st">'contents'</span>)
+    .update({
+      embedding_status: <span class="st">'completed'</span>,
+      chunks_count: existing.length,
+      embedded_at: <span class="kw">new</span> Date().toISOString()
+    })
+    .eq(<span class="st">'id'</span>, contentId);
+
+  <span class="kw">return</span>; <span class="cm">// chunk 생성 + 임베딩 스킵</span>
+}</code></pre>
+
+  <h3>매칭 위험 분석</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>위험</th>
+        <th>확률</th>
+        <th>영향</th>
+        <th>대응</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>contents.title &ne; knowledge_chunks.lecture_name</td>
+        <td><span class="badge badge-warn">중</span></td>
+        <td>매칭 실패 &rarr; 중복 INSERT 또는 미연결</td>
+        <td>구현 전 <code>SELECT DISTINCT lecture_name FROM knowledge_chunks WHERE source_type='blueprint'</code>와 <code>SELECT title FROM contents WHERE source_type='blueprint'</code> 교차 검증 필수</td>
+      </tr>
+      <tr>
+        <td>동일 title의 lecture_name이 여러 source_type에 존재</td>
+        <td><span class="badge badge-pass">하</span></td>
+        <td>잘못된 chunks에 content_id 연결</td>
+        <td><code>source_type='blueprint'</code> 필터로 방어</td>
+      </tr>
+      <tr>
+        <td>blueprint contents 재임베딩 시 기존 320 chunks 보존 필요</td>
+        <td><span class="badge badge-warn">중</span></td>
+        <td>DELETE 후 재생성하면 기존 양질의 chunks 손실</td>
+        <td>blueprint는 재임베딩 로직에서 제외 (이미 completed이므로)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="alert alert-danger">
+    <strong>F-R3: 구현 전 반드시 실행</strong>
+    <code>SELECT c.title, kc.lecture_name, count(kc.id) as chunk_count FROM contents c LEFT JOIN knowledge_chunks kc ON kc.lecture_name = c.title AND kc.source_type = 'blueprint' WHERE c.source_type = 'blueprint' GROUP BY c.title, kc.lecture_name</code><br>
+    이 쿼리로 16건 전부 매칭되는지 사전 검증하라. 1건이라도 NULL이면 title 정규화 로직이 필요하다.
+  </div>
+</div>
+
+<!-- ============ 5. Risk Matrix ============ -->
+<div class="section">
+  <h2>5. 위험 요소</h2>
+  <p class="section-desc">5건의 위험을 식별. Critical 1건, High 2건, Medium 2건.</p>
+
+  <div class="risk-grid">
+
+    <div class="risk-item critical">
+      <div class="risk-header">
+        <h4>R1. search_knowledge RPC 교체 실패 시 QA 검색 전체 중단</h4>
+        <span class="badge badge-fail">CRITICAL</span>
+      </div>
+      <p>
+        T4에서 <code>CREATE OR REPLACE FUNCTION search_knowledge</code>를 실행하면, 기존 vector-only RPC가 hybrid로 교체된다.
+        새 RPC에 SQL 에러가 있으면 <strong>모든 QA 검색이 중단</strong>된다.
+        knowledge.ts의 searchChunks()는 에러 시 빈 배열을 반환하므로 UI 에러는 아니지만, AI 답변이 완전히 비게 된다.
+      </p>
+      <div class="mitigation">
+        <strong>완화:</strong>
+        (1) Supabase SQL Editor에서 테스트 쿼리 먼저 실행 &mdash;
+        <code>SELECT * FROM search_knowledge('{0.1, 0.2, ...}'::vector(768), 'test query', 0.3, 5)</code><br>
+        (2) 실패 시 즉시 롤백 SQL 준비: P0의 00014 RPC를 다시 적용<br>
+        (3) query_text DEFAULT NULL 이므로 기존 호출은 자동으로 vector-only 폴백
+      </div>
+    </div>
+
+    <div class="risk-item high">
+      <div class="risk-header">
+        <h4>R2. Gemini API Rate Limit 초과로 대량 임베딩 실패</h4>
+        <span class="badge badge-warn">HIGH</span>
+      </div>
+      <p>
+        contents 63개(blueprint 16개 제외) &times; 평균 ~13 chunks = <strong>~820 API 호출</strong>.
+        Free tier 1,500 RPM 한도. batch 5 + 200ms delay = 25 req/sec = 1,500 RPM 정확히 한도.
+        실제로는 각 embedding 요청 latency(~300ms)가 더해지므로 안전하지만,
+        네트워크 지연이 적으면 rate limit에 걸릴 수 있다.
+      </p>
+      <div class="mitigation">
+        <strong>완화:</strong>
+        (1) batch 크기를 5→3으로 줄이거나 delay를 200→500ms로 늘리기<br>
+        (2) 429 응답 시 exponential backoff (2초→4초→8초) 재시도 로직 추가<br>
+        (3) embedAllPending()에서 에러 발생 content는 skip + embedding_status='failed' 처리 (TASK.md에 명시됨)
+      </div>
+    </div>
+
+    <div class="risk-item high">
+      <div class="risk-header">
+        <h4>R3. 'simple' tsvector config — 한국어 키워드 매칭 품질 저하</h4>
+        <span class="badge badge-warn">HIGH</span>
+      </div>
+      <p>
+        PostgreSQL의 'simple' text search config는 공백 기준 토큰화만 수행.
+        한국어 복합어("메타광고", "자사몰", "리타겟팅")는 분리되지 않아 키워드 매칭이 실패한다.
+        이 프로젝트의 핵심 도메인 용어가 대부분 한국어 복합어이므로, text_score의 기여가 기대보다 낮을 수 있다.
+      </p>
+      <div class="mitigation">
+        <strong>완화:</strong>
+        (1) P1 단계에서는 &alpha;=0.6 (벡터 우위)로 text_score 의존도 낮게 유지<br>
+        (2) P2에서 pg_trgm (trigram 유사도) 인덱스 추가 검토<br>
+        (3) Gold Standard 50개(P1-7)에서 hybrid vs vector-only 품질 비교 후 &alpha; 조정
+      </div>
+    </div>
+
+    <div class="risk-item medium">
+      <div class="risk-header">
+        <h4>R4. search_vector UPDATE — 대량 행 잠금</h4>
+        <span class="badge badge-info">MEDIUM</span>
+      </div>
+      <p>
+        T3에서 <code>UPDATE knowledge_chunks SET search_vector = to_tsvector(...) WHERE search_vector IS NULL</code>은
+        ~1,820행(기존 970 + 신규 ~850)을 일괄 UPDATE한다.
+        Supabase 무료/Pro 플랜에서 이 규모는 수초 내 완료되지만,
+        동시에 QA 검색이 진행 중이면 행 잠금 대기가 발생할 수 있다.
+      </p>
+      <div class="mitigation">
+        <strong>완화:</strong>
+        (1) 트래픽이 적은 시간(한국시간 새벽)에 실행<br>
+        (2) 필요 시 batch UPDATE (500행씩) 분할
+      </div>
+    </div>
+
+    <div class="risk-item medium">
+      <div class="risk-header">
+        <h4>R5. contents.embedding (구 컬럼) 타입 불일치</h4>
+        <span class="badge badge-info">MEDIUM</span>
+      </div>
+      <p>
+        기존 <code>src/actions/contents.ts</code>의 <code>embedContent()</code>, <code>embedAllContents()</code>는
+        contents.embedding 컬럼에 직접 벡터를 저장하는 구 방식. 새로운 embed-pipeline.ts와 공존한다.
+        Admin UI에서 구 함수를 호출하는 경로가 있으면 혼란 발생.
+      </p>
+      <div class="mitigation">
+        <strong>완화:</strong>
+        (1) 구 함수 호출 경로가 없는지 확인 (현재 Admin UI에 임베딩 버튼 없음 &rarr; 호출 불가)<br>
+        (2) T6 구현 시 embed-pipeline.ts만 연결, 구 함수 참조 금지<br>
+        (3) P2에서 구 함수 deprecation 처리
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ Chunk Size Estimation ============ -->
+<div class="section">
+  <h2>Appendix: Chunk 수 추정</h2>
+  <p class="section-desc">contents 79개에서 blueprint 16개를 제외한 63개의 예상 chunk 수.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>source_type</th>
+        <th>건수</th>
+        <th>평균 글자수</th>
+        <th>예상 chunks/건</th>
+        <th>총 chunks</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>blueprint</td>
+        <td>16</td>
+        <td>51,032</td>
+        <td>&mdash;</td>
+        <td><strong>0 (기존 320 연결)</strong></td>
+      </tr>
+      <tr>
+        <td>crawl</td>
+        <td>53</td>
+        <td>6,867</td>
+        <td>~11</td>
+        <td>~583</td>
+      </tr>
+      <tr>
+        <td>file</td>
+        <td>9</td>
+        <td>7,107</td>
+        <td>~12</td>
+        <td>~108</td>
+      </tr>
+      <tr>
+        <td>webinar</td>
+        <td>1</td>
+        <td>55,000</td>
+        <td>~92</td>
+        <td>~92</td>
+      </tr>
+      <tr style="font-weight: 700; background: #f7fafc;">
+        <td colspan="4">합계 (신규 INSERT)</td>
+        <td>~783</td>
+      </tr>
+      <tr style="font-weight: 700; background: #f0fdf4;">
+        <td colspan="4">최종 knowledge_chunks (기존 970 + 신규 ~783)</td>
+        <td>~1,753</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="alert alert-info">
+    <strong>chunk 크기 설정</strong>
+    700 chars, 100 chars overlap. 한국어 기준 1 char &approx; 1 token.
+    Gemini embedding-001 입력 한도 2,048 tokens. 700 chars는 안전 범위.
+  </div>
+</div>
+
+<!-- ============ Checklist ============ -->
+<div class="section">
+  <h2>구현 체크리스트</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>항목</th>
+        <th>태스크</th>
+        <th>상태</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>blueprint title 매칭 사전 검증 쿼리 실행</td><td>T2 전</td><td><span class="badge badge-pending">대기</span></td></tr>
+      <tr><td>2</td><td>chunkText() 단위 테스트 (빈 텍스트, 초장문, 한국어 경계)</td><td>T1</td><td><span class="badge badge-pending">대기</span></td></tr>
+      <tr><td>3</td><td>Gemini 429 backoff 로직 구현</td><td>T2</td><td><span class="badge badge-pending">대기</span></td></tr>
+      <tr><td>4</td><td>search_knowledge v2 SQL Editor 사전 테스트</td><td>T4 전</td><td><span class="badge badge-pending">대기</span></td></tr>
+      <tr><td>5</td><td>롤백 SQL 준비 (00014 원본 보관)</td><td>T4 전</td><td><span class="badge badge-pending">대기</span></td></tr>
+      <tr><td>6</td><td>text_score 범위 검증 (실제 데이터로 분포 확인)</td><td>T4 후</td><td><span class="badge badge-pending">대기</span></td></tr>
+      <tr><td>7</td><td>기존 QA 검색 회귀 테스트 (검색 3개)</td><td>T5 후</td><td><span class="badge badge-pending">대기</span></td></tr>
+      <tr><td>8</td><td>npm run build + lint 통과</td><td>전체</td><td><span class="badge badge-pending">대기</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============ Footer ============ -->
+<div class="footer">
+  <p>P1 Embed Pipeline + Hybrid Search 사전 리뷰 &mdash; 자사몰사관학교 QA 헬프데스크</p>
+  <p>Generated 2026-02-19 by Claude Code</p>
+</div>
+
+</div>
+</body>
+</html>

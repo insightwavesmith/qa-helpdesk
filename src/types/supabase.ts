@@ -1697,6 +1697,7 @@ export type Database = {
           match_count?: number
           match_threshold?: number
           query_embedding: string
+          query_text?: string
         }
         Returns: {
           chunk_index: number
@@ -1710,6 +1711,7 @@ export type Database = {
           similarity: number
           source_ref: string
           source_type: string
+          text_score: number
           tier_boost: number
           topic_tags: string[]
           week: string
