@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { embedImage } from "@/lib/image-embedder";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -69,6 +70,7 @@ export async function getPendingAnswersCount() {
 export async function createAnswer(formData: {
   questionId: string;
   content: string;
+  imageUrls?: string[];
 }) {
   const supabase = await createClient();
   const {
@@ -92,21 +94,37 @@ export async function createAnswer(formData: {
     return { data: null, error: "답변 작성 권한이 없습니다." };
   }
 
-  const { data, error } = await svc
-    .from("answers")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (svc.from("answers") as any)
     .insert({
       question_id: formData.questionId,
       content: formData.content,
       author_id: user.id,
       is_ai: false,
       is_approved: false,
+      image_urls: formData.imageUrls || [],
     })
-    .select()
+    .select("*, question:questions!answers_question_id_fkey(id, title)")
     .single();
 
   if (error) {
     console.error("createAnswer error:", error);
     return { data: null, error: error.message };
+  }
+
+  // T5b: 이미지가 있으면 자동 임베딩 (fire-and-forget)
+  if (formData.imageUrls && formData.imageUrls.length > 0 && data) {
+    const questionTitle = data.question?.title || "QA 답변";
+    Promise.all(
+      formData.imageUrls.map((url: string) =>
+        embedImage(url, {
+          sourceType: "qa",
+          lectureName: questionTitle,
+        }).catch((err: unknown) =>
+          console.error("[T5b] Image embed failed:", err)
+        )
+      )
+    ).catch(() => {});
   }
 
   // 답변 등록만 하고, 상태 변경은 관리자 승인 시 처리
