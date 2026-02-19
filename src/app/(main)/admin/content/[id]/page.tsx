@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getContentById, generateEmailSummary } from "@/actions/contents";
-import { embedContentToChunks } from "@/actions/embed-pipeline";
+// embedContentToChunks는 API route(/api/admin/embed)를 통해 호출 (maxDuration 300s)
 import AiEditPanel from "@/components/content/ai-edit-panel";
 import type { Content } from "@/types/content";
 
@@ -128,7 +128,13 @@ export default function ContentDetailPage() {
     if (!content) return;
     setEmbeddingContent(true);
     try {
-      const result = await embedContentToChunks(content.id);
+      const res = await fetch("/api/admin/embed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentId: content.id }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
       if (result.status === "failed") {
         toast.error(result.error || "임베딩 실패");
       } else if (result.status === "linked") {

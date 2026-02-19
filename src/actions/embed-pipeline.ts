@@ -3,8 +3,6 @@
 // T2: Embed Pipeline — contents를 chunk 분할 → Gemini 임베딩 → knowledge_chunks INSERT
 // blueprint 16개는 기존 chunks에 content_id 연결만 (INSERT 스킵)
 
-export const maxDuration = 300; // 5분 — 대량 임베딩용
-
 import { createServiceClient } from "@/lib/supabase/server";
 import { generateEmbedding } from "@/lib/gemini";
 import { chunkText } from "@/lib/chunk-utils";

@@ -24,7 +24,7 @@ import { Loader2, FileText, Plus, Newspaper, Mail, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { getContents } from "@/actions/contents";
-import { embedAllPending } from "@/actions/embed-pipeline";
+// embedAllPending는 API route(/api/admin/embed)를 통해 호출 (maxDuration 300s)
 import type { Content } from "@/types/content";
 import NewContentModal from "@/components/content/new-content-modal";
 
@@ -110,7 +110,13 @@ export default function AdminContentPage() {
     if (!confirm(`${pendingCount}개 콘텐츠를 임베딩합니다. 진행하시겠습니까?`)) return;
     setEmbedding(true);
     try {
-      const result = await embedAllPending();
+      const res = await fetch("/api/admin/embed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ all: true }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
       toast.success(
         `임베딩 완료: 성공 ${result.success}, 연결 ${result.linked}, 실패 ${result.failed}`
       );
