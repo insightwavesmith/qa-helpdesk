@@ -23,37 +23,14 @@ export async function GET() {
     .order("created_at", { ascending: false })
     .limit(500);
 
-  // source_type별 chunk 수
+  // knowledge_chunks 통계 — SQL RPC로 group by (Supabase SDK에 GROUP BY 없음)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: chunkStats } = await (svc as any)
-    .from("knowledge_chunks")
-    .select("source_type")
-    .then(() => null); // RPC로 대체
-
-  // knowledge_chunks 통계를 RPC 대신 raw count로
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { count: totalChunks } = await (svc as any)
-    .from("knowledge_chunks")
-    .select("*", { count: "exact", head: true });
-
-  // source_type별 그룹핑은 클라이언트에서 하기 어려우므로 직접 쿼리
-  // Supabase JS SDK에는 GROUP BY가 없으므로 전체 source_type을 가져와서 집계
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: allSourceTypes } = await (svc as any)
-    .from("knowledge_chunks")
-    .select("source_type");
-
-  const sourceMap: Record<string, number> = {};
-  if (allSourceTypes) {
-    for (const row of allSourceTypes) {
-      const st = row.source_type || "unknown";
-      sourceMap[st] = (sourceMap[st] || 0) + 1;
-    }
-  }
-
-  const chunkStatsResult = Object.entries(sourceMap)
-    .map(([source_type, cnt]) => ({ source_type, cnt }))
-    .sort((a, b) => b.cnt - a.cnt);
+  const { data: chunkStatsResult } = await (svc as any).rpc("get_chunk_stats");
+  
+  const totalChunks = (chunkStatsResult || []).reduce(
+    (sum: number, r: { source_type: string; cnt: number }) => sum + r.cnt,
+    0
+  );
 
   return NextResponse.json({
     usage: usage || [],
