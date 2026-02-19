@@ -72,6 +72,7 @@ interface ConsumerConfig {
   systemPrompt: string;
   enableReranking: boolean;
   enableExpansion: boolean;
+  model: string;
 }
 
 const QA_SYSTEM_PROMPT = `당신은 자사몰사관학교 대표 Smith입니다. 수강생이 질문했고, 당신이 직접 답변합니다.
@@ -105,6 +106,7 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     systemPrompt: QA_SYSTEM_PROMPT,
     enableReranking: true,
     enableExpansion: true,
+    model: "claude-sonnet-4-6-20250514",
   },
   newsletter: {
     limit: 5,
@@ -115,6 +117,7 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     systemPrompt: "",
     enableReranking: false,
     enableExpansion: false,
+    model: "claude-opus-4-6",
   },
   education: {
     limit: 7,
@@ -125,6 +128,7 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     systemPrompt: "",
     enableReranking: false,
     enableExpansion: false,
+    model: "claude-opus-4-6",
   },
   webinar: {
     limit: 3,
@@ -135,6 +139,7 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     systemPrompt: "",
     enableReranking: false,
     enableExpansion: false,
+    model: "claude-opus-4-6",
   },
   chatbot: {
     limit: 5,
@@ -145,6 +150,7 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     systemPrompt: QA_SYSTEM_PROMPT,
     enableReranking: true,
     enableExpansion: true,
+    model: "claude-sonnet-4-6-20250514",
   },
   promo: {
     limit: 3,
@@ -155,6 +161,7 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     systemPrompt: "",
     enableReranking: false,
     enableExpansion: false,
+    model: "claude-opus-4-6",
   },
 };
 
@@ -307,7 +314,7 @@ function buildContext(
 
 // ─── KnowledgeService ─────────────────────────────────────
 
-const MODEL = "claude-opus-4-6";
+const DEFAULT_MODEL = "claude-opus-4-6";
 const API_URL = "https://api.anthropic.com/v1/messages";
 const TIMEOUT_MS = 280_000;
 
@@ -337,6 +344,7 @@ export async function generate(
   const temperature = request.temperature ?? config.temperature;
   const systemPrompt = request.systemPromptOverride ?? config.systemPrompt;
   const sourceTypes = request.sourceTypes ?? config.sourceTypes;
+  const model = config.model || DEFAULT_MODEL;
 
   // ── Stage 1: buildSearchResults (P2 파이프라인) ──
   const searchResult = await buildSearchResults(
@@ -364,7 +372,7 @@ export async function generate(
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: MODEL,
+        model,
         max_tokens: 8192,
         system: systemPrompt,
         messages: [{ role: "user", content: userContent }],
@@ -416,7 +424,7 @@ export async function generate(
         input_tokens: data.usage?.input_tokens || 0,
         output_tokens: data.usage?.output_tokens || 0,
         total_tokens: tokensUsed,
-        model: MODEL,
+        model,
         question_id: request.questionId || null,
         content_id: request.contentId || null,
         duration_ms: Date.now() - startTime,
@@ -429,7 +437,7 @@ export async function generate(
       } as Record<string, unknown>)
     ).catch((err) => console.error("[KS] Usage log failed:", err));
 
-    return { content, sourceRefs, tokensUsed, model: MODEL };
+    return { content, sourceRefs, tokensUsed, model };
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw new Error("AI 응답 시간 초과 (55초)");
