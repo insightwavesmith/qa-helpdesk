@@ -6,9 +6,8 @@ import SampleDashboard from "./sample-dashboard";
 /**
  * 접근 분기:
  * - admin → 실제 대시보드
- * - student/alumni + 광고계정 연결 → 실제 대시보드
- * - student/alumni 미연결 → 샘플 대시보드 (광고계정 연결 안내)
- * - member → 샘플 대시보드 (수강생 전용 안내)
+ * - student/member + 광고계정 연결 → 실제 대시보드
+ * - student/member 미연결 → 샘플 대시보드 (광고계정 연결 안내)
  */
 export default async function ProtractorPage() {
   const supabase = await createClient();
@@ -38,8 +37,8 @@ export default async function ProtractorPage() {
     return <RealDashboard />;
   }
 
-  // student/alumni → 광고계정 연결 여부 확인
-  if (role === "student" || role === "alumni") {
+  // student/member → 광고계정 연결 여부 확인
+  if (role === "student" || role === "member") {
     const { data: adAccounts } = await svc
       .from("ad_accounts")
       .select("id")

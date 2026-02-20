@@ -29,6 +29,11 @@ interface Member {
   shop_name: string | null;
   shop_url: string | null;
   business_number: string | null;
+  cohort: string | null;
+  meta_account_id: string | null;
+  mixpanel_project_id: string | null;
+  mixpanel_board_id: string | null;
+  mixpanel_secret_key: string | null;
   role: string;
   created_at: string;
 }
@@ -50,7 +55,6 @@ const roleLabels: Record<
   lead: { label: "리드", variant: "secondary", className: "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-50" },
   member: { label: "멤버", variant: "default", className: "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-50" },
   student: { label: "수강생", variant: "default", className: "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-50" },
-  alumni: { label: "졸업생", variant: "outline", className: "bg-red-50 text-red-700 border border-red-200 hover:bg-red-50" },
   admin: { label: "관리자", variant: "default", className: "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-50" },
 };
 
@@ -58,7 +62,6 @@ const roleFilters = [
   { value: "lead", label: "리드" },
   { value: "member", label: "멤버" },
   { value: "student", label: "수강생" },
-  { value: "alumni", label: "졸업생" },
   { value: "admin", label: "관리자" },
 ];
 
@@ -81,6 +84,9 @@ export function MembersClient({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [detailModal, setDetailModal] = useState<{ profile: Member; accounts: Array<{ id: string; account_id: string; account_name: string | null; active: boolean }> } | null>(null);
   const [detailLoading, setDetailLoading] = useState<string | null>(null);
+  // 수강생 전환 모달
+  const [studentModal, setStudentModal] = useState<{ userId: string; name: string } | null>(null);
+  const [studentForm, setStudentForm] = useState({ cohort: "", metaAccountId: "", mixpanelProjectId: "", mixpanelSecretKey: "" });
 
   const handleOpenDetail = async (memberId: string) => {
     setDetailLoading(memberId);
@@ -131,16 +137,32 @@ export function MembersClient({
     }
   };
 
-  // 특정 역할로 승인/전환
-  const handleApproveAs = async (userId: string, role: "member" | "student") => {
-    setLoadingId(userId);
+  // 수강생 전환: 모달로 기수+광고계정+믹스패널 입력
+  const handleOpenStudentModal = (userId: string, name: string) => {
+    setStudentForm({ cohort: "", metaAccountId: "", mixpanelProjectId: "", mixpanelSecretKey: "" });
+    setStudentModal({ userId, name });
+  };
+
+  const handleStudentConvert = async () => {
+    if (!studentModal) return;
+    const { cohort, metaAccountId, mixpanelProjectId, mixpanelSecretKey } = studentForm;
+    if (!cohort || !metaAccountId || !mixpanelProjectId || !mixpanelSecretKey) {
+      toast.error("모든 필드를 입력해주세요.");
+      return;
+    }
+    setLoadingId(studentModal.userId);
     try {
-      const { error } = await approveMember(userId, role);
+      const { error } = await approveMember(studentModal.userId, "student", {
+        cohort,
+        meta_account_id: metaAccountId,
+        mixpanel_project_id: mixpanelProjectId,
+        mixpanel_secret_key: mixpanelSecretKey,
+      });
       if (error) {
         toast.error(`전환 실패: ${error}`);
       } else {
-        const roleLabel = role === "student" ? "수강생" : "멤버";
-        toast.success(`회원이 ${roleLabel}으로 전환되었습니다.`);
+        toast.success("회원이 수강생으로 전환되었습니다.");
+        setStudentModal(null);
         router.refresh();
       }
     } catch {
@@ -194,7 +216,7 @@ export function MembersClient({
                   <TableHead className="text-xs font-medium text-gray-500 uppercase">이름</TableHead>
                   <TableHead className="text-xs font-medium text-gray-500 uppercase">이메일</TableHead>
                   <TableHead className="text-xs font-medium text-gray-500 uppercase">쇼핑몰</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-500 uppercase">사업자번호</TableHead>
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase">기수</TableHead>
                   <TableHead className="text-xs font-medium text-gray-500 uppercase">상태</TableHead>
                   <TableHead className="text-xs font-medium text-gray-500 uppercase">가입일</TableHead>
                   <TableHead className="text-xs font-medium text-gray-500 uppercase text-right">관리</TableHead>
@@ -219,8 +241,8 @@ export function MembersClient({
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">{member.email}</TableCell>
                       <TableCell className="text-sm text-gray-600">{member.shop_name}</TableCell>
-                      <TableCell className="text-sm font-mono text-gray-600">
-                        {member.business_number}
+                      <TableCell className="text-sm text-gray-600">
+                        {member.cohort || "-"}
                       </TableCell>
                       <TableCell>
                         <Badge variant={role.variant} className={role.className}>{role.label}</Badge>
@@ -249,7 +271,7 @@ export function MembersClient({
                               size="sm"
                               variant="secondary"
                               className="rounded-lg"
-                              onClick={() => handleApproveAs(member.id, "student")}
+                              onClick={() => handleOpenStudentModal(member.id, member.name)}
                               disabled={isLoading}
                             >
                               {isLoading ? (
@@ -267,7 +289,7 @@ export function MembersClient({
                             size="sm"
                             variant="outline"
                             className="rounded-lg"
-                            onClick={() => handleApproveAs(member.id, "student")}
+                            onClick={() => handleOpenStudentModal(member.id, member.name)}
                             disabled={isLoading}
                           >
                             수강생 전환
@@ -298,6 +320,79 @@ export function MembersClient({
               router.refresh();
             }}
           />
+        )}
+
+        {/* 수강생 전환 모달 */}
+        {studentModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="fixed inset-0 bg-black/50" onClick={() => setStudentModal(null)} />
+            <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 p-6 w-full max-w-md mx-4">
+              <h2 className="text-lg font-bold text-gray-900 mb-1">수강생 전환</h2>
+              <p className="text-sm text-gray-500 mb-4">{studentModal.name}님을 수강생으로 전환합니다.</p>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">기수 *</label>
+                  <input
+                    type="text"
+                    placeholder="예: 1기"
+                    value={studentForm.cohort}
+                    onChange={(e) => setStudentForm((p) => ({ ...p, cohort: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Meta 광고계정 ID *</label>
+                  <input
+                    type="text"
+                    placeholder="act_123456789"
+                    value={studentForm.metaAccountId}
+                    onChange={(e) => setStudentForm((p) => ({ ...p, metaAccountId: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">믹스패널 프로젝트 ID *</label>
+                  <input
+                    type="text"
+                    placeholder="프로젝트 ID"
+                    value={studentForm.mixpanelProjectId}
+                    onChange={(e) => setStudentForm((p) => ({ ...p, mixpanelProjectId: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">믹스패널 시크릿키 *</label>
+                  <input
+                    type="text"
+                    placeholder="시크릿키"
+                    value={studentForm.mixpanelSecretKey}
+                    onChange={(e) => setStudentForm((p) => ({ ...p, mixpanelSecretKey: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-5">
+                <Button variant="outline" size="sm" className="rounded-lg" onClick={() => setStudentModal(null)}>
+                  취소
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-[#F75D5D] hover:bg-[#E54949] text-white rounded-lg"
+                  onClick={handleStudentConvert}
+                  disabled={
+                    loadingId === studentModal.userId ||
+                    !studentForm.cohort ||
+                    !studentForm.metaAccountId ||
+                    !studentForm.mixpanelProjectId ||
+                    !studentForm.mixpanelSecretKey
+                  }
+                >
+                  {loadingId === studentModal.userId && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+                  수강생으로 전환
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
       </TabsContent>
 

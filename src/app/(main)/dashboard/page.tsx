@@ -54,6 +54,6 @@ export default async function DashboardPage() {
     );
   }
 
-  // student, alumni
+  // student, member
   return <StudentHome userName={profile?.name || "사용자"} />;
 }

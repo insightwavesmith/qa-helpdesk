@@ -13,7 +13,7 @@ interface StudentHeaderProps {
   userRole?: string;
 }
 
-const PROTRACTOR_ROLES = ["student", "alumni", "admin"];
+const PROTRACTOR_ROLES = ["student", "member", "admin"];
 
 export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -36,6 +36,7 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
     { label: "홈", href: "/dashboard" },
     { label: "Q&A", href: "/questions" },
     { label: "정보공유", href: "/posts" },
+    { label: "수강후기", href: "/reviews" },
     ...(userRole && PROTRACTOR_ROLES.includes(userRole)
       ? [{ label: "총가치각도기", href: "/protractor" }]
       : []),

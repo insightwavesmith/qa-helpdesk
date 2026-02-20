@@ -7,7 +7,7 @@ import { getCategories } from "@/actions/questions";
 import { NewQuestionForm } from "./new-question-form";
 
 export default async function NewQuestionPage() {
-  // 접근제어: student/alumni/admin만 질문 작성 가능
+  // 접근제어: student/member/admin만 질문 작성 가능
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -19,7 +19,7 @@ export default async function NewQuestionPage() {
     .eq("id", user.id)
     .single();
 
-  if (!["student", "alumni", "admin"].includes(profile?.role || "")) {
+  if (!["student", "member", "admin"].includes(profile?.role || "")) {
     redirect("/questions");
   }
 

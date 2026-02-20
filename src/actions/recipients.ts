@@ -102,7 +102,7 @@ export async function getRecipients(
       const { data } = await svc
         .from("profiles")
         .select("email, name")
-        .in("role", ["member", "student", "alumni", "admin"])
+        .in("role", ["member", "student", "admin"])
         .limit(5000);
       return {
         recipients: (data || []).map((r) => ({
@@ -124,7 +124,7 @@ export async function getRecipients(
       svc
         .from("profiles")
         .select("email, name")
-        .in("role", ["member", "student", "alumni", "admin"])
+        .in("role", ["member", "student", "admin"])
         .limit(5000),
     ]);
 
@@ -178,7 +178,7 @@ export async function getRecipientStats(): Promise<{
       svc
         .from("profiles")
         .select("email", { count: "exact" })
-        .in("role", ["member", "student", "alumni", "admin"])
+        .in("role", ["member", "student", "admin"])
         .limit(5000),
     ]);
 

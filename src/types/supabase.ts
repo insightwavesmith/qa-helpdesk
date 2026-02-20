@@ -1243,6 +1243,8 @@ export type Database = {
           meta_account_id: string | null
           mixpanel_board_id: string | null
           mixpanel_project_id: string | null
+          mixpanel_secret_key: string | null
+          annual_revenue: string | null
           monthly_ad_budget: string | null
           name: string
           onboarding_completed: boolean | null
@@ -1266,6 +1268,8 @@ export type Database = {
           meta_account_id?: string | null
           mixpanel_board_id?: string | null
           mixpanel_project_id?: string | null
+          mixpanel_secret_key?: string | null
+          annual_revenue?: string | null
           monthly_ad_budget?: string | null
           name: string
           onboarding_completed?: boolean | null
@@ -1289,6 +1293,8 @@ export type Database = {
           meta_account_id?: string | null
           mixpanel_board_id?: string | null
           mixpanel_project_id?: string | null
+          mixpanel_secret_key?: string | null
+          annual_revenue?: string | null
           monthly_ad_budget?: string | null
           name?: string
           onboarding_completed?: boolean | null
@@ -1302,6 +1308,50 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      reviews: {
+        Row: {
+          id: string
+          author_id: string | null
+          title: string
+          content: string
+          image_urls: string[]
+          view_count: number
+          like_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          author_id?: string | null
+          title: string
+          content: string
+          image_urls?: string[]
+          view_count?: number
+          like_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          author_id?: string | null
+          title?: string
+          content?: string
+          image_urls?: string[]
+          view_count?: number
+          like_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       progress: {
         Row: {
@@ -1760,7 +1810,7 @@ export type Database = {
         | "converted"
         | "lost"
       service_type: "mixpanel" | "cafe24" | "meta" | "google_ads" | "other"
-      user_role: "lead" | "member" | "student" | "alumni" | "admin"
+      user_role: "lead" | "member" | "student" | "admin"
     }
     CompositeTypes: {
       dblink_pkey_results: {
@@ -1909,7 +1959,7 @@ export const Constants = {
         "lost",
       ],
       service_type: ["mixpanel", "cafe24", "meta", "google_ads", "other"],
-      user_role: ["lead", "member", "student", "alumni", "admin"],
+      user_role: ["lead", "member", "student", "admin"],
     },
   },
 } as const

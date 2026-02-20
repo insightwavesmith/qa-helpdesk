@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, X } from "lucide-react";
-import { updateMember, changeRole, deactivateMember } from "@/actions/admin";
+import { updateMember, changeRole, deactivateMember, deleteMember } from "@/actions/admin";
 import { toast } from "sonner";
 
 interface AdAccount {
@@ -21,6 +21,11 @@ interface MemberProfile {
   phone: string | null;
   shop_name: string | null;
   shop_url: string | null;
+  cohort: string | null;
+  meta_account_id: string | null;
+  mixpanel_project_id: string | null;
+  mixpanel_board_id: string | null;
+  mixpanel_secret_key: string | null;
   role: string;
   created_at: string;
 }
@@ -36,11 +41,10 @@ const roleLabels: Record<string, { label: string; className: string }> = {
   lead: { label: "리드", className: "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-50" },
   member: { label: "멤버", className: "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-50" },
   student: { label: "수강생", className: "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-50" },
-  alumni: { label: "졸업생", className: "bg-red-50 text-red-700 border border-red-200 hover:bg-red-50" },
   admin: { label: "관리자", className: "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-50" },
 };
 
-const roleOptions = ["lead", "member", "student", "alumni", "admin"];
+const roleOptions = ["lead", "member", "student", "admin"];
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
@@ -52,7 +56,9 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
   const [saving, setSaving] = useState(false);
   const [roleLoading, setRoleLoading] = useState(false);
   const [deactivateLoading, setDeactivateLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const [showSecretKey, setShowSecretKey] = useState(false);
   const [name, setName] = useState(profile.name);
   const [phone, setPhone] = useState(profile.phone ?? "");
   const [shopName, setShopName] = useState(profile.shop_name ?? "");
@@ -118,6 +124,25 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
     }
   };
 
+  const handleDelete = async () => {
+    if (!confirm("정말 이 회원을 삭제하시겠습니까?\n계정과 프로필이 영구적으로 삭제됩니다.")) return;
+    setDeleteLoading(true);
+    try {
+      const { error } = await deleteMember(profile.id);
+      if (error) {
+        toast.error(`삭제 실패: ${error}`);
+      } else {
+        toast.success("회원이 삭제되었습니다.");
+        onUpdated();
+      }
+    } catch {
+      toast.error("처리 중 오류가 발생했습니다.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const canDelete = profile.role === "lead" || profile.role === "member";
   const role = roleLabels[profile.role] || roleLabels.lead;
 
   return (
@@ -225,6 +250,43 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                 <p className="text-sm font-medium text-gray-900">{profile.shop_url || "-"}</p>
               </div>
               <div>
+                <p className="text-sm text-gray-500">기수</p>
+                <p className="text-sm font-medium text-gray-900">{profile.cohort || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">메타 광고계정 ID</p>
+                <p className="text-sm font-medium text-gray-900 font-mono">{profile.meta_account_id || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">믹스패널 프로젝트 ID</p>
+                <p className="text-sm font-medium text-gray-900 font-mono">{profile.mixpanel_project_id || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">믹스패널 보드 ID</p>
+                <p className="text-sm font-medium text-gray-900 font-mono">{profile.mixpanel_board_id || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">믹스패널 시크릿키</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-gray-900 font-mono">
+                    {profile.mixpanel_secret_key
+                      ? showSecretKey
+                        ? profile.mixpanel_secret_key
+                        : "••••••••"
+                      : "-"}
+                  </p>
+                  {profile.mixpanel_secret_key && (
+                    <button
+                      type="button"
+                      onClick={() => setShowSecretKey(!showSecretKey)}
+                      className="text-xs text-[#F75D5D] hover:underline"
+                    >
+                      {showSecretKey ? "숨기기" : "보기"}
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div>
                 <p className="text-sm text-gray-500">가입일</p>
                 <p className="text-sm font-medium text-gray-900">{formatDate(profile.created_at)}</p>
               </div>
@@ -302,8 +364,8 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
           )}
         </div>
 
-        {/* 비활성화 */}
-        <div className="border-t border-gray-200 pt-4">
+        {/* 비활성화 / 삭제 */}
+        <div className="border-t border-gray-200 pt-4 flex gap-2">
           <Button
             size="sm"
             variant="outline"
@@ -312,7 +374,17 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
             disabled={deactivateLoading || profile.role === "inactive"}
           >
             {deactivateLoading && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-            회원 비활성화
+            비활성화
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border border-red-500 text-red-700 bg-red-50 hover:bg-red-100 rounded-lg"
+            onClick={handleDelete}
+            disabled={deleteLoading || !canDelete}
+          >
+            {deleteLoading && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+            회원 삭제
           </Button>
         </div>
       </div>

@@ -140,8 +140,8 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // student / alumni
-  if (role === "student" || role === "alumni") {
+  // student
+  if (role === "student") {
     if (onboardingStatus !== "completed") {
       // 온보딩 미완료: /onboarding만 허용, 나머지는 /onboarding으로 리다이렉트
       if (pathname.startsWith("/onboarding")) {
@@ -163,11 +163,19 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // lead / member
-  if (role === "lead" || role === "member") {
-    // /questions, /admin, /onboarding → /dashboard 리다이렉트
+  // lead → /pending만 허용
+  if (role === "lead") {
+    if (pathname === "/pending") {
+      return supabaseResponse;
+    }
+    const url = request.nextUrl.clone();
+    url.pathname = "/pending";
+    return createRedirectWithCookies(url, supabaseResponse);
+  }
+
+  // member → student와 동일하게 StudentHeader 사용, /admin과 /onboarding만 차단
+  if (role === "member") {
     if (
-      pathname.startsWith("/questions") ||
       pathname.startsWith("/admin") ||
       pathname.startsWith("/onboarding")
     ) {

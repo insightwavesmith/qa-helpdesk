@@ -40,7 +40,7 @@ export async function getMembers({
     .range(from, to);
 
   if (role && role !== "all") {
-    query = query.eq("role", role as "lead" | "member" | "student" | "alumni" | "admin");
+    query = query.eq("role", role as "lead" | "member" | "student" | "admin");
   }
 
   const { data, count, error } = await query;
@@ -53,10 +53,24 @@ export async function getMembers({
   return { data: data || [], count: count || 0, error: null };
 }
 
-export async function approveMember(userId: string, newRole: "member" | "student" = "member") {
+export async function approveMember(
+  userId: string,
+  newRole: "member" | "student" = "member",
+  extra?: {
+    cohort?: string;
+    meta_account_id?: string;
+    mixpanel_project_id?: string;
+    mixpanel_secret_key?: string;
+  }
+) {
   const supabase = await requireAdmin();
 
   const update: ProfileUpdate = { role: newRole };
+  if (extra?.cohort) update.cohort = extra.cohort;
+  if (extra?.meta_account_id) update.meta_account_id = extra.meta_account_id;
+  if (extra?.mixpanel_project_id) update.mixpanel_project_id = extra.mixpanel_project_id;
+  if (extra?.mixpanel_secret_key) update.mixpanel_secret_key = extra.mixpanel_secret_key;
+
   const { error } = await supabase
     .from("profiles")
     .update(update)
@@ -119,7 +133,7 @@ export async function getDashboardStats() {
       supabase
         .from("profiles")
         .select("id", { count: "exact", head: true })
-        .in("role", ["member", "student", "alumni"]),
+        .in("role", ["member", "student"]),
     ]);
 
   return {
@@ -241,6 +255,46 @@ export async function changeRole(userId: string, newRole: string) {
 // A4: 비활성화/재활성화
 export async function deactivateMember(userId: string) {
   return changeRole(userId, 'inactive');
+}
+
+// A4b: 회원 삭제 (lead/member만 가능, profiles + auth.users 삭제)
+export async function deleteMember(userId: string) {
+  const svc = await requireAdmin();
+
+  // 삭제 대상 role 확인
+  const { data: profile } = await svc
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .single();
+
+  if (!profile) return { error: "회원을 찾을 수 없습니다." };
+
+  if (!["lead", "member"].includes(profile.role)) {
+    return { error: "수강생과 관리자는 삭제할 수 없습니다." };
+  }
+
+  // 1. profiles 삭제 (FK ON DELETE SET NULL로 관련 레코드 안전)
+  const { error: profileError } = await svc
+    .from("profiles")
+    .delete()
+    .eq("id", userId);
+
+  if (profileError) {
+    console.error("deleteMember profiles error:", profileError);
+    return { error: profileError.message };
+  }
+
+  // 2. auth.users 삭제
+  const { error: authError } = await svc.auth.admin.deleteUser(userId);
+
+  if (authError) {
+    console.error("deleteMember auth error:", authError);
+    return { error: `프로필 삭제됨, auth 삭제 실패: ${authError.message}` };
+  }
+
+  revalidatePath("/admin/members");
+  return { error: null };
 }
 
 // A5: 광고계정 추가

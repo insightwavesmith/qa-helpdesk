@@ -129,14 +129,14 @@ export async function createQuestion(formData: {
 
   const svc = createServiceClient();
 
-  // role 체크: student/alumni/admin만 질문 작성 가능
+  // role 체크: student/member/admin만 질문 작성 가능
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
 
-  if (!profile || !["student", "alumni", "admin"].includes(profile.role)) {
+  if (!profile || !["student", "member", "admin"].includes(profile.role)) {
     return { data: null, error: "질문 작성 권한이 없습니다. 수강생만 질문할 수 있습니다." };
   }
 

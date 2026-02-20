@@ -24,10 +24,12 @@ export interface Database {
           monthly_ad_budget: string | null;
           category: string | null;
           reject_reason: string | null;
-          role: "lead" | "member" | "student" | "alumni" | "admin";
+          role: "lead" | "member" | "student" | "admin";
           meta_account_id: string | null;
           mixpanel_project_id: string | null;
           mixpanel_board_id: string | null;
+          mixpanel_secret_key: string | null;
+          annual_revenue: string | null;
           onboarding_completed: boolean;
           onboarding_step: number;
           onboarding_status: "not_started" | "in_progress" | "completed";
@@ -48,10 +50,12 @@ export interface Database {
           monthly_ad_budget?: string | null;
           category?: string | null;
           reject_reason?: string | null;
-          role?: "lead" | "member" | "student" | "alumni" | "admin";
+          role?: "lead" | "member" | "student" | "admin";
           meta_account_id?: string | null;
           mixpanel_project_id?: string | null;
           mixpanel_board_id?: string | null;
+          mixpanel_secret_key?: string | null;
+          annual_revenue?: string | null;
           onboarding_completed?: boolean;
           onboarding_step?: number;
           onboarding_status?: "not_started" | "in_progress" | "completed";
@@ -72,10 +76,12 @@ export interface Database {
           monthly_ad_budget?: string | null;
           category?: string | null;
           reject_reason?: string | null;
-          role?: "lead" | "member" | "student" | "alumni" | "admin";
+          role?: "lead" | "member" | "student" | "admin";
           meta_account_id?: string | null;
           mixpanel_project_id?: string | null;
           mixpanel_board_id?: string | null;
+          mixpanel_secret_key?: string | null;
+          annual_revenue?: string | null;
           onboarding_completed?: boolean;
           onboarding_step?: number;
           onboarding_status?: "not_started" | "in_progress" | "completed";
@@ -1131,6 +1137,50 @@ export interface Database {
             columns: ["content_id"];
             isOneToOne: false;
             referencedRelation: "contents";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      reviews: {
+        Row: {
+          id: string;
+          author_id: string | null;
+          title: string;
+          content: string;
+          image_urls: string[];
+          view_count: number;
+          like_count: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          author_id?: string | null;
+          title: string;
+          content: string;
+          image_urls?: string[];
+          view_count?: number;
+          like_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          author_id?: string | null;
+          title?: string;
+          content?: string;
+          image_urls?: string[];
+          view_count?: number;
+          like_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "reviews_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];

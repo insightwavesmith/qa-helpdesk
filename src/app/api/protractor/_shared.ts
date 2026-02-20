@@ -6,7 +6,7 @@ import type { UserRole } from "@/types";
 
 type ServiceClient = SupabaseClient<Database>;
 
-const ALLOWED_ROLES: UserRole[] = ["student", "alumni", "admin"];
+const ALLOWED_ROLES: UserRole[] = ["student", "member", "admin"];
 
 type AuthSuccess = {
   user: { id: string };

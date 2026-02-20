@@ -38,7 +38,7 @@ async function getStats() {
     supabase
       .from("profiles")
       .select("*", { count: "exact", head: true })
-      .in("role", ["member", "student", "alumni", "admin"]),
+      .in("role", ["member", "student", "admin"]),
     supabase.from("contents").select("*", { count: "exact", head: true }).eq("status", "published"),
     supabase
       .from("questions")

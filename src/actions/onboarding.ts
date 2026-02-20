@@ -12,7 +12,7 @@ export async function getOnboardingProfile() {
   const svc = createServiceClient();
   const { data, error } = await svc
     .from("profiles")
-    .select("name, cohort, shop_url, monthly_ad_budget, category, meta_account_id, onboarding_step, onboarding_status")
+    .select("name, cohort, shop_name, shop_url, annual_revenue, monthly_ad_budget, category, meta_account_id, mixpanel_project_id, mixpanel_secret_key, onboarding_step, onboarding_status")
     .eq("id", user.id)
     .single();
 
@@ -44,7 +44,9 @@ export async function updateOnboardingStep(step: number) {
 // Step 1: 프로필 정보 저장
 export async function saveOnboardingProfile(data: {
   name: string;
+  shopName: string;
   shopUrl: string;
+  annualRevenue: string;
   monthlyAdBudget: string;
   category: string;
 }) {
@@ -57,7 +59,9 @@ export async function saveOnboardingProfile(data: {
     .from("profiles")
     .update({
       name: data.name,
+      shop_name: data.shopName,
       shop_url: data.shopUrl,
+      annual_revenue: data.annualRevenue,
       monthly_ad_budget: data.monthlyAdBudget,
       category: data.category,
       onboarding_step: 2,
@@ -69,8 +73,12 @@ export async function saveOnboardingProfile(data: {
   return { error: null };
 }
 
-// Step 2: 광고계정 연결
-export async function saveAdAccount(metaAccountId: string | null) {
+// Step 2: 광고계정 + 믹스패널 연결
+export async function saveAdAccount(data: {
+  metaAccountId: string | null;
+  mixpanelProjectId: string | null;
+  mixpanelSecretKey: string | null;
+}) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "인증되지 않은 사용자입니다" };
@@ -80,8 +88,14 @@ export async function saveAdAccount(metaAccountId: string | null) {
     onboarding_step: 3,
     onboarding_status: "in_progress",
   };
-  if (metaAccountId) {
-    updates.meta_account_id = metaAccountId;
+  if (data.metaAccountId) {
+    updates.meta_account_id = data.metaAccountId;
+  }
+  if (data.mixpanelProjectId) {
+    updates.mixpanel_project_id = data.mixpanelProjectId;
+  }
+  if (data.mixpanelSecretKey) {
+    updates.mixpanel_secret_key = data.mixpanelSecretKey;
   }
 
   const { error } = await svc

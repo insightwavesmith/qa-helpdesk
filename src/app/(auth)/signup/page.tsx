@@ -109,13 +109,15 @@ export default function SignupPage() {
       };
 
       if (isStudentMode) {
-        // student 모드: 모든 필드 전송
+        // student 모드: 이름 + 기수 + 초대코드만
+        metadata.cohort = formData.cohort || null;
+        metadata.invite_code = inviteCode.trim();
+      } else {
+        // lead 모드: 사업자정보 필수
         metadata.phone = formData.phone;
         metadata.shop_url = formData.shopUrl;
         metadata.shop_name = formData.shopName;
         metadata.business_number = formData.businessNumber;
-        metadata.cohort = formData.cohort || null;
-        metadata.invite_code = inviteCode.trim();
       }
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -136,8 +138,8 @@ export default function SignupPage() {
         return;
       }
 
-      // 사업자등록증 파일 업로드 (student 모드에서만)
-      if (isStudentMode && businessFile) {
+      // 사업자등록증 파일 업로드 (lead 모드에서만)
+      if (!isStudentMode && businessFile) {
         const fileExt = businessFile.name.split(".").pop();
         const filePath = `business-docs/${authData.user.id}.${fileExt}`;
         const { error: uploadError } = await supabase.storage
@@ -157,7 +159,7 @@ export default function SignupPage() {
       if (isStudentMode) {
         router.push("/onboarding");
       } else {
-        router.push("/dashboard");
+        router.push("/pending");
       }
     } catch {
       setError("회원가입 중 오류가 발생했습니다.");
@@ -183,13 +185,13 @@ export default function SignupPage() {
           <h1 className="text-2xl font-bold mb-2 text-center text-[#111827]">회원가입</h1>
           <p className="text-center text-[#6B7280] text-sm mb-6">
             {isStudentMode ? (
+              "수강생 모드로 가입합니다."
+            ) : (
               <>
-                수강생 정보를 입력해주세요.
+                사업자 정보를 입력해주세요.
                 <br />
                 관리자 승인 후 서비스를 이용하실 수 있습니다.
               </>
-            ) : (
-              "헬프데스크에 가입합니다."
             )}
           </p>
 
@@ -315,7 +317,7 @@ export default function SignupPage() {
                 개인 정보
               </h3>
               <div className="space-y-3">
-                <div className={isStudentMode ? "grid grid-cols-2 gap-3" : ""}>
+                <div className={!isStudentMode ? "grid grid-cols-2 gap-3" : ""}>
                   <div className="space-y-2">
                     <label htmlFor="name" className="block text-sm font-medium text-[#111827]">
                       이름 *
@@ -329,7 +331,7 @@ export default function SignupPage() {
                       className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
                     />
                   </div>
-                  {isStudentMode && (
+                  {!isStudentMode && (
                     <div className="space-y-2">
                       <label htmlFor="phone" className="block text-sm font-medium text-[#111827]">
                         전화번호 *
@@ -348,8 +350,8 @@ export default function SignupPage() {
               </div>
             </div>
 
-            {/* 사업 정보 (student 모드에서만 표시) */}
-            {isStudentMode && (
+            {/* 사업 정보 (lead 모드에서만 표시) */}
+            {!isStudentMode && (
               <>
                 <Separator className="bg-gray-200" />
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireProtractorAccess } from "../_shared";
 
 // GET /api/protractor/accounts
-// student/alumni/admin만 접근 가능
+// student/member/admin만 접근 가능
 // ad_accounts 테이블에서 현재 사용자의 계정 조회 (admin은 전체)
 export async function GET() {
   try {

@@ -49,8 +49,7 @@ export default async function MainLayout({
   };
 
   const role = profile?.role;
-  const usesSidebarLayout =
-    role === "admin" || role === "lead" || role === "member";
+  const usesSidebarLayout = role === "admin";
 
   // 학생용: 상단 헤더만 (목업 스타일)
   if (!usesSidebarLayout) {
