@@ -208,12 +208,25 @@ function StepProfile({
   const [monthlyAdBudget, setMonthlyAdBudget] = useState(
     profile.monthly_ad_budget || ""
   );
-  const [category, setCategory] = useState(profile.category || "");
+  const [category, setCategory] = useState(
+    // 기존 저장값이 CATEGORY_OPTIONS에 없으면 "etc" + customCategory로 복원
+    profile.category && !CATEGORY_OPTIONS.some((o) => o.value === profile.category)
+      ? "etc"
+      : profile.category || ""
+  );
+  const [customCategory, setCustomCategory] = useState(
+    profile.category && !CATEGORY_OPTIONS.some((o) => o.value === profile.category)
+      ? profile.category
+      : ""
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ name, shopName, shopUrl, annualRevenue, monthlyAdBudget, category });
+    const finalCategory = category === "etc" ? customCategory.trim() : category;
+    onSave({ name, shopName, shopUrl, annualRevenue, monthlyAdBudget, category: finalCategory });
   };
+
+  const isCategoryValid = category !== "etc" || customCategory.trim().length > 0;
 
   return (
     <div>
@@ -321,7 +334,7 @@ function StepProfile({
           <label className="block text-sm font-medium text-[#111827]">
             카테고리
           </label>
-          <Select value={category} onValueChange={setCategory}>
+          <Select value={category} onValueChange={(v) => { setCategory(v); if (v !== "etc") setCustomCategory(""); }}>
             <SelectTrigger className="w-full h-11 px-4 border border-gray-200 rounded-lg bg-white text-[#111827]">
               <SelectValue placeholder="카테고리를 선택하세요" />
             </SelectTrigger>
@@ -333,11 +346,21 @@ function StepProfile({
               ))}
             </SelectContent>
           </Select>
+          {category === "etc" && (
+            <input
+              type="text"
+              placeholder="카테고리를 직접 입력하세요"
+              value={customCategory}
+              onChange={(e) => setCustomCategory(e.target.value)}
+              required
+              className="mt-2 w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
+            />
+          )}
         </div>
 
         <button
           type="submit"
-          disabled={saving || !name.trim()}
+          disabled={saving || !name.trim() || !isCategoryValid}
           className="w-full bg-[#F75D5D] hover:bg-[#E54949] text-white h-11 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
         >
           {saving ? (
@@ -357,12 +380,10 @@ function StepProfile({
 function StepAdAccount({
   profile,
   onConnect,
-  onSkip,
   saving,
 }: {
   profile: OnboardingProfile;
   onConnect: (data: { metaAccountId: string; mixpanelProjectId: string; mixpanelSecretKey: string }) => void;
-  onSkip: () => void;
   saving: boolean;
 }) {
   const [accountId, setAccountId] = useState(
@@ -375,7 +396,7 @@ function StepAdAccount({
     profile.mixpanel_secret_key || ""
   );
 
-  const hasAnyInput = accountId.trim() || mixpanelProjectId.trim() || mixpanelSecretKey.trim();
+  const hasMetaAccount = accountId.trim().length > 0;
 
   return (
     <div>
@@ -414,7 +435,7 @@ function StepAdAccount({
             htmlFor="onb-meta-id"
             className="block text-sm font-medium text-[#111827]"
           >
-            Meta 광고 계정 ID (선택)
+            Meta 광고 계정 ID <span className="text-[#F75D5D]">*</span>
           </label>
           <input
             id="onb-meta-id"
@@ -463,7 +484,7 @@ function StepAdAccount({
         <div className="flex flex-col gap-3">
           <button
             onClick={() => onConnect({ metaAccountId: accountId, mixpanelProjectId, mixpanelSecretKey })}
-            disabled={saving || !hasAnyInput}
+            disabled={saving || !hasMetaAccount}
             className="w-full bg-[#F75D5D] hover:bg-[#E54949] text-white h-11 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
             {saving ? (
@@ -472,15 +493,8 @@ function StepAdAccount({
                 연결 중...
               </>
             ) : (
-              "연결하기"
+              "연결하고 완료"
             )}
-          </button>
-          <button
-            onClick={onSkip}
-            disabled={saving}
-            className="w-full text-[#6B7280] hover:text-[#111827] h-11 px-4 rounded-lg font-medium transition-colors text-sm"
-          >
-            나중에 할게요, 건너뛰기
           </button>
         </div>
       </div>
@@ -618,21 +632,6 @@ export default function OnboardingPage() {
     setSaving(false);
   }, []);
 
-  const handleAdSkip = useCallback(async () => {
-    setSaving(true);
-    const result = await saveAdAccount({
-      metaAccountId: null,
-      mixpanelProjectId: null,
-      mixpanelSecretKey: null,
-    });
-    if (result.error) {
-      setError(result.error);
-    } else {
-      setStep(3);
-    }
-    setSaving(false);
-  }, []);
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
@@ -708,7 +707,6 @@ export default function OnboardingPage() {
             <StepAdAccount
               profile={profile}
               onConnect={handleAdConnect}
-              onSkip={handleAdSkip}
               saving={saving}
             />
           )}

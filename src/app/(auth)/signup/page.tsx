@@ -98,6 +98,12 @@ export default function SignupPage() {
       return;
     }
 
+    // T5: lead 모드 사업자등록번호 서버 사이드 validation
+    if (!isStudentMode && !formData.businessNumber.trim()) {
+      setError("사업자등록번호를 입력해주세요.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -386,34 +392,20 @@ export default function SignupPage() {
                         className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <label htmlFor="businessNumber" className="block text-sm font-medium text-[#111827]">
-                          사업자등록번호 *
-                        </label>
-                        <input
-                          id="businessNumber"
-                          placeholder="000-00-00000"
-                          value={formData.businessNumber}
-                          onChange={(e) =>
-                            updateField("businessNumber", e.target.value)
-                          }
-                          required
-                          className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label htmlFor="cohort" className="block text-sm font-medium text-[#111827]">
-                          수강 기수
-                        </label>
-                        <input
-                          id="cohort"
-                          placeholder="예: 1기"
-                          value={formData.cohort}
-                          readOnly
-                          className="w-full px-4 h-11 border border-gray-200 rounded-lg bg-gray-50 text-[#111827] placeholder:text-gray-400 cursor-not-allowed"
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <label htmlFor="businessNumber" className="block text-sm font-medium text-[#111827]">
+                        사업자등록번호 *
+                      </label>
+                      <input
+                        id="businessNumber"
+                        placeholder="000-00-00000"
+                        value={formData.businessNumber}
+                        onChange={(e) =>
+                          updateField("businessNumber", e.target.value)
+                        }
+                        required
+                        className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
+                      />
                     </div>
 
                     {/* 사업자등록증 업로드 */}
@@ -466,7 +458,7 @@ export default function SignupPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (!isStudentMode && !formData.businessNumber.trim())}
               className="w-full bg-[#F75D5D] hover:bg-[#E54949] text-white h-11 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {loading ? (

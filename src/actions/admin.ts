@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import nodemailer from "nodemailer";
 import type { Database } from "@/types/database";
 
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
@@ -82,7 +83,61 @@ export async function approveMember(
   }
 
   revalidatePath("/admin/members");
+
+  // T2: 승인 완료 메일 발송 (fire-and-forget)
+  sendApprovalEmail(userId, supabase).catch((err) =>
+    console.error("승인 메일 발송 실패 (무시됨):", err)
+  );
+
   return { error: null };
+}
+
+/** 승인 완료 알림 메일 발송 (실패해도 승인에 영향 없음) */
+async function sendApprovalEmail(
+  userId: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any
+) {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return;
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("email, name")
+    .eq("id", userId)
+    .single();
+
+  if (!data?.email) return;
+
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+  });
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://bscamp.kr";
+  const name = data.name || "회원";
+
+  await transporter.sendMail({
+    from: `"자사몰사관학교" <${process.env.SMTP_USER}>`,
+    to: data.email,
+    subject: "[자사몰사관학교] 회원 승인이 완료되었습니다",
+    html: `
+      <div style="font-family: 'Pretendard', -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 24px;">
+        <h2 style="color: #111827; font-size: 20px; margin-bottom: 16px;">${name}님, 승인이 완료되었습니다!</h2>
+        <p style="color: #6B7280; font-size: 15px; line-height: 1.7; margin-bottom: 24px;">
+          자사몰사관학교 헬프데스크 회원 승인이 완료되어 안내드립니다.<br/>
+          아래 버튼을 클릭하여 로그인하시면 서비스를 이용하실 수 있습니다.
+        </p>
+        <a href="${baseUrl}/login" style="display: inline-block; background: #F75D5D; color: #fff; text-decoration: none; padding: 12px 32px; border-radius: 8px; font-size: 15px; font-weight: 600;">
+          로그인하기
+        </a>
+        <p style="color: #9CA3AF; font-size: 13px; margin-top: 32px;">
+          본 메일은 자사몰사관학교 헬프데스크에서 자동 발송되었습니다.
+        </p>
+      </div>
+    `,
+  });
 }
 
 export async function rejectMember(userId: string, reason?: string) {

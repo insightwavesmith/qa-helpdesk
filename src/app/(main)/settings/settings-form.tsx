@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Bell, Save } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Bell, Save, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 
@@ -14,7 +21,19 @@ interface Profile {
   phone: string | null;
   shop_name: string | null;
   shop_url: string | null;
+  meta_account_id: string | null;
+  mixpanel_project_id: string | null;
+  mixpanel_secret_key: string | null;
+  annual_revenue: string | null;
 }
+
+const ANNUAL_REVENUE_OPTIONS = [
+  { value: "under_1억", label: "1억 미만" },
+  { value: "1억_5억", label: "1억~5억" },
+  { value: "5억_10억", label: "5억~10억" },
+  { value: "10억_50억", label: "10억~50억" },
+  { value: "over_50억", label: "50억 이상" },
+];
 
 interface SettingsFormProps {
   profile: Profile | null;
@@ -23,6 +42,10 @@ interface SettingsFormProps {
 
 export function SettingsForm({ profile, userId }: SettingsFormProps) {
   const [saving, setSaving] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
+  const [annualRevenue, setAnnualRevenue] = useState(
+    profile?.annual_revenue ?? ""
+  );
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -34,6 +57,12 @@ export function SettingsForm({ profile, userId }: SettingsFormProps) {
       phone: formData.get("phone") as string,
       shop_name: formData.get("shop_name") as string,
       shop_url: formData.get("shop_url") as string,
+      meta_account_id: (formData.get("meta_account_id") as string) || null,
+      mixpanel_project_id:
+        (formData.get("mixpanel_project_id") as string) || null,
+      mixpanel_secret_key:
+        (formData.get("mixpanel_secret_key") as string) || null,
+      annual_revenue: annualRevenue || null,
     };
 
     const supabase = createClient();
@@ -102,6 +131,74 @@ export function SettingsForm({ profile, userId }: SettingsFormProps) {
               placeholder="https://myshop.com"
               className="rounded-lg border-gray-200 focus:ring-[#F75D5D]"
             />
+          </div>
+
+          <Separator className="border-gray-200" />
+
+          {/* 광고계정 / 믹스패널 */}
+          <h2 className="text-lg font-semibold text-gray-900">
+            광고계정 / 분석 도구
+          </h2>
+
+          <div className="space-y-2">
+            <Label>Meta 광고 계정 ID</Label>
+            <Input
+              name="meta_account_id"
+              defaultValue={profile?.meta_account_id ?? ""}
+              placeholder="예: 123456789012345"
+              className="rounded-lg border-gray-200 focus:ring-[#F75D5D]"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>믹스패널 프로젝트 ID</Label>
+              <Input
+                name="mixpanel_project_id"
+                defaultValue={profile?.mixpanel_project_id ?? ""}
+                placeholder="프로젝트 ID"
+                className="rounded-lg border-gray-200 focus:ring-[#F75D5D]"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>믹스패널 시크릿키</Label>
+              <div className="relative">
+                <Input
+                  name="mixpanel_secret_key"
+                  type={showSecret ? "text" : "password"}
+                  defaultValue={profile?.mixpanel_secret_key ?? ""}
+                  placeholder="시크릿키"
+                  className="rounded-lg border-gray-200 focus:ring-[#F75D5D] pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSecret(!showSecret)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showSecret ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>연매출</Label>
+            <Select value={annualRevenue} onValueChange={setAnnualRevenue}>
+              <SelectTrigger className="w-full rounded-lg border-gray-200 focus:ring-[#F75D5D]">
+                <SelectValue placeholder="연매출 범위를 선택하세요" />
+              </SelectTrigger>
+              <SelectContent>
+                {ANNUAL_REVENUE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <Button

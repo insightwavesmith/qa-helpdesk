@@ -14,7 +14,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("name, phone, shop_name, shop_url")
+    .select("name, phone, shop_name, shop_url, meta_account_id, mixpanel_project_id, mixpanel_secret_key, annual_revenue")
     .eq("id", user.id)
     .single();
 

@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 3b 핫픽스 사전 리뷰 | 2026-02-20</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Pretendard', -apple-system, sans-serif; background: #f8f9fa; color: #1a1a2e; line-height: 1.7; }
+  .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+
+  /* Header */
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #fff; padding: 48px 40px; border-radius: 16px; margin-bottom: 32px; }
+  .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .header .subtitle { font-size: 15px; color: #a0aec0; }
+  .meta { display: flex; gap: 24px; margin-top: 20px; font-size: 13px; color: #cbd5e0; flex-wrap: wrap; }
+  .meta span { display: flex; align-items: center; gap: 6px; }
+
+  /* Badges */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+  .badge-critical { background: #f8d7da; color: #721c24; }
+  .badge-high { background: #fff3cd; color: #856404; }
+  .badge-medium { background: #d1ecf1; color: #0c5460; }
+  .badge-low { background: #d4edda; color: #155724; }
+  .badge-pending { background: #e2e8f0; color: #4a5568; }
+
+  /* Executive Summary */
+  .exec-summary { background: #fff; border-radius: 12px; padding: 32px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .exec-summary h2 { font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #1a1a2e; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; }
+  .summary-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; text-align: center; }
+  .summary-card .label { font-size: 13px; color: #718096; margin-bottom: 8px; }
+  .summary-card .value { font-size: 18px; font-weight: 700; }
+  .summary-card .value.critical { color: #F75D5D; }
+  .summary-card .value.high { color: #f59e0b; }
+  .summary-card .value.medium { color: #3b82f6; }
+  .summary-card .value.low { color: #22c55e; }
+
+  /* Section */
+  .section { background: #fff; border-radius: 12px; padding: 32px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .section h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+  .section .section-desc { font-size: 14px; color: #718096; margin-bottom: 20px; }
+  .section h3 { font-size: 16px; font-weight: 600; margin: 20px 0 10px; color: #2d3748; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th { background: #f7fafc; text-align: left; padding: 10px 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; }
+  td { padding: 10px 12px; border-bottom: 1px solid #edf2f7; vertical-align: top; }
+  tr:hover td { background: #f7fafc; }
+  .col-status { width: 100px; text-align: center; }
+
+  /* Code */
+  code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #e53e3e; }
+  pre { background: #1a1a2e; color: #e2e8f0; padding: 20px; border-radius: 10px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 12px 0; }
+  pre code { background: none; color: inherit; padding: 0; }
+  .kw { color: #c084fc; }
+  .fn { color: #60a5fa; }
+  .cm { color: #6b7280; }
+  .st { color: #4ade80; }
+  .num { color: #fbbf24; }
+  .op { color: #f87171; }
+
+  /* Alert boxes */
+  .alert { padding: 16px 20px; border-radius: 10px; margin: 16px 0; font-size: 14px; }
+  .alert-danger { background: #fff5f5; border-left: 4px solid #F75D5D; }
+  .alert-warning { background: #fffbeb; border-left: 4px solid #f59e0b; }
+  .alert-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+  .alert-success { background: #f0fdf4; border-left: 4px solid #22c55e; }
+  .alert strong { display: block; margin-bottom: 4px; }
+
+  /* Task card */
+  .task-card { border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 20px; overflow: hidden; }
+  .task-card-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
+  .task-card-header h3 { font-size: 16px; font-weight: 700; margin: 0; color: #1a1a2e; }
+  .task-card-body { padding: 20px; }
+  .task-card-body .files { font-size: 13px; color: #718096; margin-bottom: 12px; }
+  .task-card-body .files code { font-size: 12px; }
+
+  /* Before/After */
+  .ba-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 12px 0; }
+  .ba-box { border-radius: 8px; padding: 16px; font-size: 13px; }
+  .ba-before { background: #fff5f5; border: 1px solid #fed7d7; }
+  .ba-after { background: #f0fdf4; border: 1px solid #c6f6d5; }
+  .ba-box .ba-label { font-weight: 700; font-size: 12px; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
+  .ba-before .ba-label { color: #e53e3e; }
+  .ba-after .ba-label { color: #22c55e; }
+
+  /* Dependency diagram */
+  .dep-diagram { background: #0f172a; border-radius: 12px; padding: 24px; margin: 16px 0; overflow-x: auto; }
+  .dep-diagram pre { background: none; padding: 0; margin: 0; }
+  .dep-diagram code { color: #e2e8f0; font-size: 13px; line-height: 1.6; }
+  .d-task { color: #60a5fa; }
+  .d-arrow { color: #94a3b8; }
+  .d-file { color: #4ade80; }
+  .d-risk { color: #f87171; }
+
+  /* Footer */
+  .footer { text-align: center; padding: 32px 0; font-size: 13px; color: #a0aec0; }
+
+  @media (max-width: 640px) {
+    .ba-grid { grid-template-columns: 1fr; }
+    .header { padding: 32px 20px; }
+    .section { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- Header -->
+<div class="header">
+  <h1>Phase 3b 핫픽스 — 사전 리뷰 보고서</h1>
+  <p class="subtitle">Phase 3b 배포 후 QA에서 발견된 버그 5건 + 기능 변경 3건 구현 전 분석</p>
+  <div class="meta">
+    <span>&#128197; 2026-02-20</span>
+    <span>&#128221; 리뷰 유형: 사전 구현 리뷰 (Pre-implementation)</span>
+    <span>&#128204; 기준 커밋: <code style="background:rgba(255,255,255,0.15);color:#fff;">ecad07b</code></span>
+    <span>&#128196; 대상 태스크: T1 ~ T8 (8건)</span>
+  </div>
+</div>
+
+<!-- Executive Summary -->
+<div class="exec-summary">
+  <h2>Executive Summary</h2>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="label">총 태스크</div>
+      <div class="value medium">8건</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">CRITICAL</div>
+      <div class="value critical">3건</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">HIGH</div>
+      <div class="value high">2건</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">MEDIUM</div>
+      <div class="value medium">2건</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">LOW</div>
+      <div class="value low">1건</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">영향 파일</div>
+      <div class="value">8개</div>
+    </div>
+  </div>
+</div>
+
+<!-- Risk Overview -->
+<div class="section">
+  <h2>&#9888;&#65039; 위험도 요약</h2>
+  <p class="section-desc">태스크별 위험도와 영향 범위를 한눈에 파악합니다.</p>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:60px;">ID</th>
+        <th>제목</th>
+        <th style="width:100px;">위험도</th>
+        <th style="width:140px;">유형</th>
+        <th>영향 파일</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>T1</strong></td>
+        <td>승인 후 접근 불가 버그</td>
+        <td class="col-status"><span class="badge badge-critical">CRITICAL</span></td>
+        <td>버그 수정</td>
+        <td><code>admin.ts</code>, <code>middleware.ts</code>, <code>pending/page.tsx</code></td>
+      </tr>
+      <tr>
+        <td><strong>T2</strong></td>
+        <td>승인 메일 발송</td>
+        <td class="col-status"><span class="badge badge-high">HIGH</span></td>
+        <td>신규 기능</td>
+        <td><code>admin.ts</code></td>
+      </tr>
+      <tr>
+        <td><strong>T3</strong></td>
+        <td>/pending 로그아웃 기능</td>
+        <td class="col-status"><span class="badge badge-critical">CRITICAL</span></td>
+        <td>버그 수정</td>
+        <td><code>pending/page.tsx</code></td>
+      </tr>
+      <tr>
+        <td><strong>T4</strong></td>
+        <td>온보딩 스킵 제거</td>
+        <td class="col-status"><span class="badge badge-medium">MEDIUM</span></td>
+        <td>기능 변경</td>
+        <td><code>onboarding/page.tsx</code></td>
+      </tr>
+      <tr>
+        <td><strong>T5</strong></td>
+        <td>사업자등록번호 서버 validation</td>
+        <td class="col-status"><span class="badge badge-medium">MEDIUM</span></td>
+        <td>버그 수정</td>
+        <td><code>signup/page.tsx</code></td>
+      </tr>
+      <tr>
+        <td><strong>T6</strong></td>
+        <td>프로필 설정 필드 추가</td>
+        <td class="col-status"><span class="badge badge-high">HIGH</span></td>
+        <td>신규 기능</td>
+        <td><code>settings-form.tsx</code>, <code>settings/page.tsx</code></td>
+      </tr>
+      <tr>
+        <td><strong>T7</strong></td>
+        <td>카테고리 "기타" 텍스트 입력</td>
+        <td class="col-status"><span class="badge badge-low">LOW</span></td>
+        <td>기능 변경</td>
+        <td><code>onboarding/page.tsx</code></td>
+      </tr>
+      <tr>
+        <td><strong>T8</strong></td>
+        <td>리드 가입 시 기수 필드 제거</td>
+        <td class="col-status"><span class="badge badge-medium">MEDIUM</span></td>
+        <td>UI 정리</td>
+        <td><code>signup/page.tsx</code></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Dependency Diagram -->
+<div class="section">
+  <h2>&#128279; 태스크 의존성 & 구현 순서</h2>
+  <p class="section-desc">T1 → T2는 순차, 나머지는 병렬 가능</p>
+  <div class="dep-diagram">
+    <pre><code>
+  <span class="d-risk">CRITICAL</span>                  <span class="d-task">HIGH</span>                   <span class="d-task">MEDIUM / LOW</span>
+  ─────────                  ────────                 ───────────────
+
+  <span class="d-task">T1</span> 승인 후 접근 불가   <span class="d-arrow">──▶</span>  <span class="d-task">T2</span> 승인 메일 발송       <span class="d-task">T4</span> 온보딩 스킵 제거
+  <span class="d-file">admin.ts</span>                    <span class="d-file">admin.ts</span>               <span class="d-file">onboarding/page.tsx</span>
+  <span class="d-file">middleware.ts</span>                                          │
+  <span class="d-file">pending/page.tsx</span>                                       │  (같은 파일)
+                                                         ▼
+  <span class="d-task">T3</span> /pending 로그아웃                                  <span class="d-task">T7</span> 카테고리 기타 입력
+  <span class="d-file">pending/page.tsx</span>            <span class="d-task">T6</span> 프로필 설정 필드       <span class="d-file">onboarding/page.tsx</span>
+                              <span class="d-file">settings-form.tsx</span>
+  <span class="d-task">T5</span> 사업자번호 검증       <span class="d-file">settings/page.tsx</span>       <span class="d-task">T8</span> 리드 기수 필드 제거
+  <span class="d-file">signup/page.tsx</span>                                      <span class="d-file">signup/page.tsx</span>
+       │                                                   │
+       └──────────── (같은 파일, 순차 권장) ────────────────┘
+    </code></pre>
+  </div>
+
+  <div class="alert alert-warning">
+    <strong>충돌 주의 파일</strong>
+    <code>onboarding/page.tsx</code> — T4 + T7이 동시 수정. 한 팀원이 담당하거나 순차 처리 필요.<br>
+    <code>signup/page.tsx</code> — T5 + T8이 동시 수정. 동일 파일이므로 한 번에 처리 권장.<br>
+    <code>pending/page.tsx</code> — T1(DB 재조회) + T3(로그아웃). 두 기능 모두 클라이언트 컴포넌트 전환 필요.
+  </div>
+</div>
+
+<!-- T1 -->
+<div class="task-card">
+  <div class="task-card-header">
+    <h3>T1. 승인 후 접근 불가 버그 수정</h3>
+    <span class="badge badge-critical">CRITICAL</span>
+  </div>
+  <div class="task-card-body">
+    <div class="files">
+      <strong>영향 파일:</strong>
+      <code>src/actions/admin.ts:56~85</code>,
+      <code>src/lib/supabase/middleware.ts:166~174</code>,
+      <code>src/app/(auth)/pending/page.tsx</code>
+    </div>
+
+    <h3>문제 분석</h3>
+    <p>
+      <code>approveMember()</code>에서 role을 <code>lead → member</code>로 변경하지만,
+      미들웨어 캐시 쿠키(<code>x-user-role</code>, maxAge 300초)가 <strong>"lead"</strong>로 남아있습니다.
+      다음 로그인 시 미들웨어가 stale 쿠키를 읽어 <code>/pending</code>으로 리다이렉트합니다.
+      <code>/pending</code> 페이지는 서버 컴포넌트로, DB에서 현재 role을 재조회하지 않습니다.
+    </p>
+
+    <div class="ba-grid">
+      <div class="ba-box ba-before">
+        <div class="ba-label">Before (현재)</div>
+        <p><strong>admin.ts:approveMember()</strong></p>
+        <ul style="font-size:13px; padding-left:16px;">
+          <li>DB에 role 변경만 수행</li>
+          <li>캐시 쿠키 무효화 로직 없음</li>
+          <li><code>revalidatePath("/admin/members")</code>만 호출</li>
+        </ul>
+        <p style="margin-top:8px;"><strong>pending/page.tsx</strong></p>
+        <ul style="font-size:13px; padding-left:16px;">
+          <li>서버 컴포넌트 — DB role 재조회 없음</li>
+          <li>정적 텍스트 "승인 대기 중" 표시</li>
+          <li>승인 완료된 사용자도 같은 화면 노출</li>
+        </ul>
+      </div>
+      <div class="ba-box ba-after">
+        <div class="ba-label">After (기대)</div>
+        <p><strong>admin.ts:approveMember()</strong></p>
+        <ul style="font-size:13px; padding-left:16px;">
+          <li>role 변경 + onboarding_status 동시 설정</li>
+          <li>서버 사이드에서 직접 쿠키 삭제는 불가하므로 /pending에서 처리</li>
+        </ul>
+        <p style="margin-top:8px;"><strong>pending/page.tsx</strong></p>
+        <ul style="font-size:13px; padding-left:16px;">
+          <li>클라이언트 컴포넌트로 전환</li>
+          <li>마운트 시 DB에서 현재 role 조회</li>
+          <li>role !== "lead"이면 <code>/dashboard</code> 또는 <code>/onboarding</code>으로 즉시 리다이렉트</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="alert alert-danger">
+      <strong>핵심 원인: 서버 액션 → 클라이언트 쿠키 간 동기화 부재</strong>
+      서버 액션(<code>approveMember</code>)은 NextResponse를 직접 반환하지 않아 Set-Cookie로 캐시 쿠키를 삭제할 수 없습니다.
+      따라서 <strong>/pending 페이지에서 DB 재조회 후 리다이렉트</strong>가 유일한 해법입니다.
+    </div>
+  </div>
+</div>
+
+<!-- T2 -->
+<div class="task-card">
+  <div class="task-card-header">
+    <h3>T2. 승인 메일 발송</h3>
+    <span class="badge badge-high">HIGH</span>
+  </div>
+  <div class="task-card-body">
+    <div class="files">
+      <strong>영향 파일:</strong>
+      <code>src/actions/admin.ts:56~85</code>
+    </div>
+
+    <h3>문제 분석</h3>
+    <p>
+      <code>approveMember()</code>는 DB 업데이트 후 <code>return { error: null }</code>만 반환합니다.
+      승인된 사용자에게 알림 메일을 보내지 않아, 사용자는 승인 여부를 알 수 없습니다.
+    </p>
+
+    <div class="ba-grid">
+      <div class="ba-box ba-before">
+        <div class="ba-label">Before (현재)</div>
+        <ul style="font-size:13px; padding-left:16px;">
+          <li>이메일 발송 로직 없음</li>
+          <li>사용자 이메일 조회 없음</li>
+          <li>승인 성공 후 바로 return</li>
+        </ul>
+      </div>
+      <div class="ba-box ba-after">
+        <div class="ba-label">After (기대)</div>
+        <ul style="font-size:13px; padding-left:16px;">
+          <li>승인 성공 후 profiles/auth.users에서 email 조회</li>
+          <li>Supabase Auth Admin 또는 Resend로 메일 발송</li>
+          <li>fire-and-forget: 실패해도 승인은 유지</li>
+          <li>메일 내용: "승인이 완료되었습니다. 로그인하세요."</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="alert alert-info">
+      <strong>의존성: T1 완료 후 진행</strong>
+      T1에서 <code>approveMember()</code>를 수정하므로, T2는 그 위에 이메일 발송 로직을 추가합니다.
+      기존 프로젝트에 <code>src/app/api/admin/email/send/route.ts</code>가 있으므로 이메일 인프라는 확보되어 있습니다.
+    </div>
+  </div>
+</div>
+
+<!-- T3 -->
+<div class="task-card">
+  <div class="task-card-header">
+    <h3>T3. /pending 로그아웃 기능</h3>
+    <span class="badge badge-critical">CRITICAL</span>
+  </div>
+  <div class="task-card-body">
+    <div class="files">
+      <strong>영향 파일:</strong>
+      <code>src/app/(auth)/pending/page.tsx</code> (51줄)
+    </div>
+
+    <h3>문제 분석</h3>
+    <p>
+      현재 <code>/pending</code> 페이지의 "로그인 페이지로 돌아가기"는 <code>&lt;Link href="/login"&gt;</code>입니다.
+      세션이 살아있는 상태에서 <code>/login</code>으로 이동하면, 미들웨어가 세션을 감지하고 다시 <code>/pending</code>으로 리다이렉트합니다.
+      <strong>사실상 탈출 불가능한 루프</strong>가 됩니다.
+    </p>
+
+    <div class="ba-grid">
+      <div class="ba-box ba-before">
+        <div class="ba-label">Before (현재)</div>
+<pre style="font-size:12px; margin:8px 0;"><code>&lt;Link href="/login"&gt;
+  로그인 페이지로 돌아가기
+&lt;/Link&gt;</code></pre>
+        <ul style="font-size:13px; padding-left:16px;">
+          <li>서버 컴포넌트 (signOut 호출 불가)</li>
+          <li>세션 유지 상태로 /login 이동 → 다시 /pending</li>
+          <li>캐시 쿠키(x-user-role) 삭제 안 됨</li>
+        </ul>
+      </div>
+      <div class="ba-box ba-after">
+        <div class="ba-label">After (기대)</div>
+<pre style="font-size:12px; margin:8px 0;"><code>"use client"
+const handleLogout = async () =&gt; {
+  await supabase.auth.signOut();
+  // x-user-role, x-onboarding-status 쿠키 삭제
+  document.cookie = "x-user-role=; Max-Age=0; path=/";
+  document.cookie = "x-onboarding-status=; Max-Age=0; path=/";
+  router.push("/login");
+};</code></pre>
+        <ul style="font-size:13px; padding-left:16px;">
+          <li>클라이언트 컴포넌트로 전환</li>
+          <li>signOut() + 캐시 쿠키 삭제 + /login 이동</li>
+          <li>세션 완전 초기화 후 재로그인 가능</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="alert alert-warning">
+      <strong>T1과 함께 처리 권장</strong>
+      T1의 DB 재조회 로직과 T3의 로그아웃 버튼을 하나의 클라이언트 컴포넌트로 통합하면 /pending 페이지를 한 번만 수정합니다.
+      미들웨어의 <code>httpOnly 추가 금지</code> 주석(line 111)이 이 설계를 뒷받침합니다.
+    </div>
+  </div>
+</div>
+
+<!-- T4 -->
+<div class="task-card">
+  <div class="task-card-header">
+    <h3>T4. 온보딩 스킵 제거 (수강생 필수 완료)</h3>
+    <span class="badge badge-medium">MEDIUM</span>
+  </div>
+  <div class="task-card-body">
+    <div class="files">
+      <strong>영향 파일:</strong>
+      <code>src/app/(auth)/onboarding/page.tsx:478~484</code> (스킵 버튼),
+      <code>lines 621~633</code> (handleAdSkip)
+    </div>
+
+    <h3>문제 분석</h3>
+    <p>
+      온보딩 Step 2(광고계정 연결)에 "나중에 할게요, 건너뛰기" 버튼이 있습니다.
+      Smith님 피드백: <em>"수강생들은 무조건 등록을 해야됨"</em>.
+      현재 스킵 시 <code>saveAdAccount({null, null, null})</code> → <code>setStep(3)</code>으로 이동하며,
+      Step 3의 useEffect에서 <code>completeOnboarding()</code>이 호출되어 온보딩이 완료됩니다.
+    </p>
+
+    <div class="ba-grid">
+      <div class="ba-box ba-before">
+        <div class="ba-label">Before (현재)</div>
+        <ul style="font-size:13px; padding-left:16px;">
+          <li>"나중에 할게요, 건너뛰기" 버튼 존재 (line 478~484)</li>
+          <li>handleAdSkip: 모든 값 null로 저장 후 Step 3 이동</li>
+          <li>Meta 광고계정 ID 입력 선택사항</li>
+        </ul>
+      </div>
+      <div class="ba-box ba-after">
+        <div class="ba-label">After (기대)</div>
+        <ul style="font-size:13px; padding-left:16px;">
+          <li>스킵 버튼 제거 (JSX + handleAdSkip 함수)</li>
+          <li>Meta 광고계정 ID 필수 입력</li>
+          <li>"다음" 버튼은 metaAccountId 값이 있을 때만 활성화</li>
+          <li>믹스패널은 선택 유지</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="alert alert-info">
+      <strong>T7과 같은 파일</strong>
+      <code>onboarding/page.tsx</code>(720줄)를 T4와 T7이 동시 수정합니다.
+      한 팀원이 순차적으로 처리하거나, T4(스킵 제거) → T7(기타 입력) 순서를 지켜야 합니다.
+    </div>
+  </div>
+</div>
+
+<!-- T5 -->
+<div class="task-card">
+  <div class="task-card-header">
+    <h3>T5. 사업자등록번호 서버 사이드 validation</h3>
+    <span class="badge badge-medium">MEDIUM</span>
+  </div>
+  <div class="task-card-body">
+    <div class="files">
+      <strong>영향 파일:</strong>
+      <code>src/app/(auth)/signup/page.tsx:87~120</code> (handleSignup),
+      <code>lines 390~403</code> (business_number input)
+    </div>
+
+    <h3>문제 분석</h3>
+    <p>
+      리드(비수강생) 가입 시 사업자등록번호 입력란에 HTML <code>required</code> 속성만 있습니다.
+      프로그래밍적 제출(DevTools, API 직접 호출)로 우회 가능합니다.
+      <code>handleSignup()</code>에서 <code>metadata.business_number = formData.businessNumber</code>로 그대로 전달하며,
+      빈 값 체크가 없습니다.
+    </p>
+
+    <div class="ba-grid">
+      <div class="ba-box ba-before">
+        <div class="ba-label">Before (현재)</div>
+<pre style="font-size:12px; margin:8px 0;"><code>// signup/page.tsx:401
+&lt;input required ... /&gt;  // HTML only
+// signup/page.tsx:120
+metadata.business_number = formData.businessNumber;
+// → 빈 값이어도 auth.signUp() 진행</code></pre>
+      </div>
+      <div class="ba-box ba-after">
+        <div class="ba-label">After (기대)</div>
+<pre style="font-size:12px; margin:8px 0;"><code>// 클라이언트: 가입 버튼 disabled
+disabled={!isStudentMode &amp;&amp; !formData.businessNumber?.trim()}
+
+// 서버: handleSignup() 초반에 체크
+if (!isStudentMode) {
+  if (!formData.businessNumber?.trim()) {
+    setError("사업자등록번호를 입력해주세요.");
+    return;
+  }
+}</code></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- T6 -->
+<div class="task-card">
+  <div class="task-card-header">
+    <h3>T6. 프로필 설정에 광고계정/믹스패널 필드 추가</h3>
+    <span class="badge badge-high">HIGH</span>
+  </div>
+  <div class="task-card-body">
+    <div class="files">
+      <strong>영향 파일:</strong>
+      <code>src/app/(main)/settings/settings-form.tsx:12~17</code> (Profile interface),
+      <code>src/app/(main)/settings/page.tsx:17</code> (.select 쿼리)
+    </div>
+
+    <h3>문제 분석</h3>
+    <p>
+      프로필 설정 페이지는 <code>name, phone, shop_name, shop_url</code> 4개 필드만 지원합니다.
+      온보딩에서 입력한 <code>meta_account_id</code>, <code>mixpanel_project_id</code>,
+      <code>mixpanel_secret_key</code>, <code>annual_revenue</code>를 수정할 수 없습니다.
+    </p>
+
+    <div class="ba-grid">
+      <div class="ba-box ba-before">
+        <div class="ba-label">Before (현재)</div>
+        <ul style="font-size:13px; padding-left:16px;">
+          <li><strong>Profile interface</strong>: 4개 필드만 (name, phone, shop_name, shop_url)</li>
+          <li><strong>page.tsx .select()</strong>: 동일 4개 컬럼만 조회</li>
+          <li>광고계정/믹스패널 값 확인 불가</li>
+          <li>시크릿키 마스킹 처리 없음</li>
+        </ul>
+      </div>
+      <div class="ba-box ba-after">
+        <div class="ba-label">After (기대)</div>
+        <ul style="font-size:13px; padding-left:16px;">
+          <li><strong>Profile interface</strong>: +4개 필드 (meta_account_id, mixpanel_project_id, mixpanel_secret_key, annual_revenue)</li>
+          <li><strong>page.tsx .select()</strong>: 8개 컬럼 조회</li>
+          <li>Meta 광고계정 ID 입력 필드</li>
+          <li>믹스패널 프로젝트 ID 입력 필드</li>
+          <li>시크릿키: 마스킹 + 보기/숨기기 토글 (type="password" ↔ type="text")</li>
+          <li>연매출: Select 또는 텍스트 입력</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="alert alert-warning">
+      <strong>보안 주의: mixpanel_secret_key</strong>
+      시크릿키는 민감정보입니다. 마스킹 UI(***로 표시 + 토글)는 물론,
+      DB 조회 시 불필요하게 노출되지 않도록 주의해야 합니다.
+      현재 RLS 정책에서 <code>auth.uid() = id</code> 조건으로 자기 프로필만 조회 가능하므로
+      타인의 시크릿키 노출 위험은 낮습니다.
+    </div>
+  </div>
+</div>
+
+<!-- T7 -->
+<div class="task-card">
+  <div class="task-card-header">
+    <h3>T7. 카테고리 "기타" 텍스트 입력</h3>
+    <span class="badge badge-low">LOW</span>
+  </div>
+  <div class="task-card-body">
+    <div class="files">
+      <strong>영향 파일:</strong>
+      <code>src/app/(auth)/onboarding/page.tsx</code> (StepProfile 컴포넌트, CATEGORY_OPTIONS)
+    </div>
+
+    <h3>문제 분석</h3>
+    <p>
+      <code>CATEGORY_OPTIONS</code>에 "기타(etc)" 옵션이 있으나,
+      선택 시 텍스트 입력란이 표시되지 않습니다. 사용자가 커스텀 카테고리를 입력할 수 없습니다.
+    </p>
+
+    <div class="ba-grid">
+      <div class="ba-box ba-before">
+        <div class="ba-label">Before (현재)</div>
+        <ul style="font-size:13px; padding-left:16px;">
+          <li>"기타" 선택 가능하지만 텍스트 입력 불가</li>
+          <li>category에 "etc" 문자열만 저장됨</li>
+          <li>사용자 의도 파악 불가</li>
+        </ul>
+      </div>
+      <div class="ba-box ba-after">
+        <div class="ba-label">After (기대)</div>
+        <ul style="font-size:13px; padding-left:16px;">
+          <li>"기타" 선택 시 텍스트 입력란 조건부 렌더링</li>
+          <li>입력값이 <code>profiles.category</code>에 저장</li>
+          <li>빈 값이면 "다음" 버튼 비활성화</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- T8 -->
+<div class="task-card">
+  <div class="task-card-header">
+    <h3>T8. 리드 가입 시 기수 필드 제거</h3>
+    <span class="badge badge-medium">MEDIUM</span>
+  </div>
+  <div class="task-card-body">
+    <div class="files">
+      <strong>영향 파일:</strong>
+      <code>src/app/(auth)/signup/page.tsx:406~415</code>
+    </div>
+
+    <h3>문제 분석</h3>
+    <p>
+      리드 모드 가입 폼에서 기수(cohort) 필드가 <code>readOnly + disabled + cursor-not-allowed</code>로
+      표시됩니다. 기능적으로는 입력 불가하지만, <strong>사용자 혼란</strong>을 야기합니다.
+      리드는 기수와 무관하므로 필드 자체를 숨겨야 합니다.
+    </p>
+
+    <div class="ba-grid">
+      <div class="ba-box ba-before">
+        <div class="ba-label">Before (현재)</div>
+        <ul style="font-size:13px; padding-left:16px;">
+          <li>기수 필드가 리드 폼에 readOnly로 표시</li>
+          <li>회색 비활성화 상태이지만 보임</li>
+          <li>"이 필드는 뭔가요?" 혼란 유발</li>
+        </ul>
+      </div>
+      <div class="ba-box ba-after">
+        <div class="ba-label">After (기대)</div>
+        <ul style="font-size:13px; padding-left:16px;">
+          <li>리드 모드: 기수 필드 완전 숨김</li>
+          <li>수강생(초대코드) 모드에서만 표시</li>
+          <li><code>{isStudentMode && (...cohort field...)}</code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edge Cases -->
+<div class="section">
+  <h2>&#128270; 엣지 케이스 분석</h2>
+  <p class="section-desc">TASK.md에 명시된 11개 엣지 케이스의 현재 대응 상태</p>
+  <table>
+    <thead>
+      <tr>
+        <th>상황</th>
+        <th>기대 동작</th>
+        <th>관련 태스크</th>
+        <th style="width:100px;">현재 상태</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>승인된 회원이 /pending 직접 접근</td>
+        <td>/dashboard로 리다이렉트</td>
+        <td>T1</td>
+        <td class="col-status"><span class="badge badge-critical">미대응</span></td>
+      </tr>
+      <tr>
+        <td>온보딩 중간에 브라우저 닫기</td>
+        <td>다음 로그인 시 이어서 온보딩</td>
+        <td>T4</td>
+        <td class="col-status"><span class="badge badge-low">정상</span></td>
+      </tr>
+      <tr>
+        <td>사업자등록번호에 특수문자 입력</td>
+        <td>숫자+하이픈만 허용</td>
+        <td>T5</td>
+        <td class="col-status"><span class="badge badge-critical">미대응</span></td>
+      </tr>
+      <tr>
+        <td>승인 메일 발송 실패</td>
+        <td>승인 성공. 콘솔 로그만</td>
+        <td>T2</td>
+        <td class="col-status"><span class="badge badge-critical">미구현</span></td>
+      </tr>
+      <tr>
+        <td>프로필에서 시크릿키를 빈 값으로 저장</td>
+        <td>허용 (nullable)</td>
+        <td>T6</td>
+        <td class="col-status"><span class="badge badge-critical">미구현</span></td>
+      </tr>
+      <tr>
+        <td>"기타" 카테고리 텍스트 빈 값</td>
+        <td>"기타" 텍스트 입력 필수</td>
+        <td>T7</td>
+        <td class="col-status"><span class="badge badge-critical">미구현</span></td>
+      </tr>
+      <tr>
+        <td>캐시 쿠키 만료 전 역할 변경</td>
+        <td>/pending에서 DB 재조회로 해결</td>
+        <td>T1</td>
+        <td class="col-status"><span class="badge badge-critical">미대응</span></td>
+      </tr>
+      <tr>
+        <td>온보딩 Step 2 모든 필드 빈 값</td>
+        <td>다음 단계 진행 불가</td>
+        <td>T4</td>
+        <td class="col-status"><span class="badge badge-high">스킵 가능</span></td>
+      </tr>
+      <tr>
+        <td>lead가 /signup에서 기수 입력 시도</td>
+        <td>기수 필드 자체가 없음</td>
+        <td>T8</td>
+        <td class="col-status"><span class="badge badge-high">보이지만 readOnly</span></td>
+      </tr>
+      <tr>
+        <td>lead가 /dashboard URL 직접 입력</td>
+        <td>/pending으로 리다이렉트</td>
+        <td>-</td>
+        <td class="col-status"><span class="badge badge-low">정상</span></td>
+      </tr>
+      <tr>
+        <td>member가 /onboarding 재접근</td>
+        <td>/dashboard로 리다이렉트</td>
+        <td>-</td>
+        <td class="col-status"><span class="badge badge-low">정상</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Recommended Implementation Order -->
+<div class="section">
+  <h2>&#128295; 권장 구현 순서</h2>
+  <p class="section-desc">의존성과 파일 충돌을 고려한 최적 순서</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:50px;">순서</th>
+        <th style="width:60px;">태스크</th>
+        <th>작업 내용</th>
+        <th style="width:120px;">예상 난이도</th>
+        <th style="width:80px;">담당</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1</strong></td>
+        <td>T1 + T3</td>
+        <td>/pending 클라이언트 전환 + DB 재조회 + 로그아웃 (한 파일에서 동시 해결)</td>
+        <td><span class="badge badge-high">상</span></td>
+        <td>프론트엔드</td>
+      </tr>
+      <tr>
+        <td><strong>2</strong></td>
+        <td>T2</td>
+        <td>approveMember()에 이메일 발송 추가</td>
+        <td><span class="badge badge-medium">중</span></td>
+        <td>백엔드</td>
+      </tr>
+      <tr>
+        <td><strong>3</strong></td>
+        <td>T4 + T7</td>
+        <td>onboarding/page.tsx: 스킵 버튼 제거 + "기타" 텍스트 입력 (같은 파일)</td>
+        <td><span class="badge badge-medium">중</span></td>
+        <td>프론트엔드</td>
+      </tr>
+      <tr>
+        <td><strong>4</strong></td>
+        <td>T5 + T8</td>
+        <td>signup/page.tsx: 사업자번호 검증 + 리드 기수 필드 숨김 (같은 파일)</td>
+        <td><span class="badge badge-low">하</span></td>
+        <td>프론트엔드</td>
+      </tr>
+      <tr>
+        <td><strong>5</strong></td>
+        <td>T6</td>
+        <td>settings 페이지 필드 추가 (2개 파일)</td>
+        <td><span class="badge badge-medium">중</span></td>
+        <td>프론트엔드</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="alert alert-success">
+    <strong>병렬화 가능</strong>
+    순서 1(T1+T3)은 필수 선행이지만, 순서 3~5는 서로 다른 파일이므로 병렬 처리가 가능합니다.
+    T2는 순서 1 완료 후 admin.ts만 수정하므로 다른 작업과 충돌하지 않습니다.
+  </div>
+</div>
+
+<!-- Concerns & Recommendations -->
+<div class="section">
+  <h2>&#128680; 우려사항 & 권장사항</h2>
+
+  <div class="alert alert-danger">
+    <strong>C-01: /pending 무한 루프 (CRITICAL)</strong>
+    T1+T3이 해결되지 않으면, 승인된 사용자가 서비스를 전혀 이용할 수 없습니다.
+    가장 우선적으로 수정해야 합니다.
+  </div>
+
+  <div class="alert alert-warning">
+    <strong>C-02: 이메일 인프라 확인 필요</strong>
+    <code>src/app/api/admin/email/send/route.ts</code>가 존재하지만,
+    T2에서 사용할 이메일 전송 방식(Supabase Auth Admin vs Resend vs 직접 SMTP)을
+    구현 전에 확정해야 합니다.
+  </div>
+
+  <div class="alert alert-warning">
+    <strong>C-03: onboarding/page.tsx 720줄 — 복잡도 높음</strong>
+    T4 + T7이 이 파일을 수정합니다. 이미 720줄이므로 컴포넌트 분리를 고려하되,
+    이번 핫픽스에서는 최소 수정 원칙을 지켜 기능만 수정합니다.
+  </div>
+
+  <div class="alert alert-info">
+    <strong>C-04: 사업자등록번호 형식 검증</strong>
+    TASK.md 엣지 케이스에 "000-00-00000 형식"이 명시되어 있습니다.
+    T5에서 정규식 검증(<code>/^\d{3}-\d{2}-\d{5}$/</code>)을 추가할지,
+    또는 숫자만 10자리 허용할지 확정이 필요합니다.
+  </div>
+
+  <div class="alert alert-info">
+    <strong>C-05: DB 마이그레이션 미적용</strong>
+    <code>00022_member_management.sql</code>이 아직 Supabase에 수동 적용되지 않았습니다.
+    T6(settings 필드 추가)는 <code>mixpanel_secret_key</code>, <code>annual_revenue</code> 컬럼에 의존하므로,
+    마이그레이션 적용이 선행되어야 합니다.
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <p>QA Helpdesk — Phase 3b Hotfix 사전 리뷰 보고서</p>
+  <p>생성: 2026-02-20 | 기준 커밋: ecad07b | 대상: TASK.md T1~T8</p>
+</div>
+
+</div>
+</body>
+</html>
