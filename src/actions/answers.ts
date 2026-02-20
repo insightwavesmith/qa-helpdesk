@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { embedImage } from "@/lib/image-embedder";
+import { embedQAPair } from "@/lib/qa-embedder";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -185,6 +186,10 @@ export async function approveAnswer(answerId: string) {
       .from("questions")
       .update({ status: "answered" })
       .eq("id", answer.question_id);
+
+    // fire-and-forget: QA 분리 임베딩 (실패해도 승인은 정상)
+    Promise.resolve(embedQAPair(answer.question_id, answerId))
+      .catch(err => console.error("[QAEmbed] Failed:", err));
 
     revalidatePath(`/questions/${answer.question_id}`);
   }

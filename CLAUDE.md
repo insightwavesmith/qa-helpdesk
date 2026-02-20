@@ -147,6 +147,60 @@ git worktree remove ../qa-helpdesk-frontend
 - [ ] 기존 기능 깨지지 않음 확인
 - [ ] Playwright 스크린샷 QA (데스크탑 + 모바일)
 
+## 프로젝트 파일 구조 (팀원 탐색 최소화용)
+```
+src/
+├── actions/          ← Server Actions (DB CRUD)
+│   ├── answers.ts    — 답변 생성/승인/거절 + embedQAPair 훅
+│   ├── questions.ts  — 질문 생성 + AI 자동답변(createAIAnswerForQuestion)
+│   ├── contents.ts   — 콘텐츠 CRUD
+│   ├── embed-pipeline.ts — 임베딩 파이프라인 (embedContentToChunks)
+│   ├── auth.ts       — 회원가입/로그인
+│   ├── admin.ts      — 회원 관리 (역할 변경, 승인)
+│   └── leads.ts, posts.ts, recipients.ts, search.ts, subscribers.ts
+├── lib/              ← 핵심 비즈니스 로직
+│   ├── knowledge.ts  — RAG 엔진 (454줄, generate(), buildSearchResults, ConsumerConfig)
+│   ├── rag.ts        — generateRAGAnswer(), createAIAnswerForQuestion()
+│   ├── gemini.ts     — Gemini API (embedding, flash, vision)
+│   ├── qa-embedder.ts — QA 분리 임베딩 (embedQAPair)
+│   ├── reranker.ts   — Gemini Flash reranking
+│   ├── query-expander.ts — 쿼리 확장
+│   ├── image-embedder.ts — Vision→텍스트→임베딩
+│   ├── chunk-utils.ts — chunkText(700자, 100 overlap)
+│   ├── supabase/     — client.ts, server.ts, middleware.ts
+│   ├── email-*.ts    — 이메일/뉴스레터 렌더링
+│   ├── newsletter-*.ts — 뉴스레터 스키마/템플릿
+│   └── diagnosis/    — 광고 진단 엔진
+├── app/
+│   ├── (auth)/       — login, signup, pending, subscribe, unsubscribe
+│   ├── (main)/admin/ — 관리자 페이지 (answers, content, email, knowledge, members, stats)
+│   ├── (main)/dashboard/ — 역할별 대시보드
+│   ├── (main)/posts/ — 정보공유 게시판
+│   ├── (main)/questions/ — Q&A
+│   └── (main)/protractor/ — 총가치각도기 (광고 진단)
+├── components/       — 공통 UI (DashboardSidebar, ImageGallery 등)
+├── types/            — database.ts, content.ts, supabase.ts
+└── middleware.ts     — 인증 + 역할 기반 리다이렉트
+```
+
+### 핵심 의존성 흐름
+```
+questions.ts → rag.ts → knowledge.ts → gemini.ts
+                                      → reranker.ts
+                                      → query-expander.ts
+answers.ts → qa-embedder.ts → gemini.ts → chunk-utils.ts
+embed-pipeline.ts → gemini.ts → chunk-utils.ts
+```
+
+### DB 테이블 (주요)
+- `profiles` — 사용자 (role: lead/member/student/alumni/admin)
+- `questions` — Q&A 질문 (image_urls jsonb)
+- `answers` — Q&A 답변 (image_urls jsonb, is_approved, is_ai_generated)
+- `contents` — 콘텐츠 (body_md, email_summary, category, source_type)
+- `knowledge_chunks` — RAG 벡터 (1,912개, embedding vector(768), source_type TEXT)
+- `student_registry` — 수강생 명단 (78명, profiles와 미연결)
+- `cohorts` — 기수 정보
+
 ## 기술 스택
 - Next.js 15 (App Router)
 - TypeScript

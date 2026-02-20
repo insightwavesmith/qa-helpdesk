@@ -162,7 +162,7 @@ export async function createQuestion(formData: {
   // AI 답변 자동 생성 (after: 응답 반환 후 실행, Vercel serverless 종료 방지)
   after(async () => {
     try {
-      await createAIAnswerForQuestion(data.id, formData.title, formData.content);
+      await createAIAnswerForQuestion(data.id, formData.title, formData.content, formData.imageUrls);
     } catch (err) {
       console.error("AI answer generation failed:", err);
     }

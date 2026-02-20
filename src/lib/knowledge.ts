@@ -23,6 +23,8 @@ export type SourceType =
   | "blueprint"
   | "papers"
   | "qa"
+  | "qa_question"
+  | "qa_answer"
   | "crawl"
   | "meeting"
   | "marketing_theory"
@@ -42,6 +44,7 @@ export interface KnowledgeRequest {
   systemPromptOverride?: string;
   questionId?: string;
   contentId?: string;
+  imageDescriptions?: string;
 }
 
 export interface SourceRef {
@@ -73,6 +76,8 @@ interface ConsumerConfig {
   enableReranking: boolean;
   enableExpansion: boolean;
   model: string;
+  enableThinking: boolean;
+  thinkingBudget: number;
 }
 
 const QA_SYSTEM_PROMPT = `당신은 자사몰사관학교 대표 Smith입니다. 수강생이 질문했고, 당신이 직접 답변합니다.
@@ -94,7 +99,12 @@ const QA_SYSTEM_PROMPT = `당신은 자사몰사관학교 대표 Smith입니다.
 - O: "솔직히 이건 데이터를 봐야 합니다. 지금 CTR이 얼마인지부터 확인하세요."
 - X: "광고 성과 분석을 위해 다음과 같은 체계적인 접근이 필요합니다."
 
-제공된 강의 내용에 없는 정보는 추측하지 마라.`;
+제공된 강의 내용에 없는 정보는 추측하지 마라.
+
+유사 QA 활용 규칙:
+- 유사한 기존 Q&A가 제공되면 내용을 참고하되, 강의 자료와 대조해라.
+- 기존 답변을 그대로 복사하지 말고, 이 질문의 맥락에 맞게 재구성해라.
+- 강의자료가 기존 답변과 다르면 최신 정보를 우선해라.`;
 
 const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
   qa: {
@@ -102,11 +112,13 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     threshold: 0.4,
     tokenBudget: 3000,
     temperature: 0.3,
-    sourceTypes: ["lecture", "blueprint", "papers", "qa"],
+    sourceTypes: ["lecture", "blueprint", "papers", "qa", "qa_answer"],
     systemPrompt: QA_SYSTEM_PROMPT,
     enableReranking: true,
     enableExpansion: true,
     model: "claude-sonnet-4-6-20250514",
+    enableThinking: true,
+    thinkingBudget: 5000,
   },
   newsletter: {
     limit: 5,
@@ -118,6 +130,8 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     enableReranking: false,
     enableExpansion: false,
     model: "claude-opus-4-6",
+    enableThinking: false,
+    thinkingBudget: 0,
   },
   education: {
     limit: 7,
@@ -129,6 +143,8 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     enableReranking: false,
     enableExpansion: false,
     model: "claude-opus-4-6",
+    enableThinking: false,
+    thinkingBudget: 0,
   },
   webinar: {
     limit: 3,
@@ -140,6 +156,8 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     enableReranking: false,
     enableExpansion: false,
     model: "claude-opus-4-6",
+    enableThinking: false,
+    thinkingBudget: 0,
   },
   chatbot: {
     limit: 5,
@@ -151,6 +169,8 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     enableReranking: true,
     enableExpansion: true,
     model: "claude-sonnet-4-6-20250514",
+    enableThinking: true,
+    thinkingBudget: 5000,
   },
   promo: {
     limit: 3,
@@ -162,6 +182,8 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     enableReranking: false,
     enableExpansion: false,
     model: "claude-opus-4-6",
+    enableThinking: false,
+    thinkingBudget: 0,
   },
 };
 
@@ -222,6 +244,63 @@ export async function searchChunksByEmbedding(
   }
 
   return data || [];
+}
+
+// ─── Stage 1: 유사 QA 검색 ──────────────────────────────────
+
+interface SimilarQA {
+  question: ChunkResult;
+  answers: ChunkResult[];
+}
+
+async function searchSimilarQuestions(
+  queryText: string,
+  embedding: number[]
+): Promise<SimilarQA[]> {
+  // qa_question chunks만 검색 (limit 3, threshold 0.70)
+  const questionChunks = await searchChunksByEmbedding(
+    embedding, queryText, 3, 0.70, ["qa_question"]
+  );
+  if (questionChunks.length === 0) return [];
+
+  // question_id 추출 (중복 제거)
+  const questionIds = [...new Set(
+    questionChunks
+      .map(c => (c.metadata as Record<string, unknown>)?.question_id as string)
+      .filter(Boolean)
+  )];
+  if (questionIds.length === 0) return [];
+
+  // 해당 question_id의 qa_answer chunks 조회
+  const supabase = createServiceClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: answerChunks } = await (supabase as any)
+    .from("knowledge_chunks")
+    .select("id, lecture_name, week, chunk_index, content, source_type, priority, image_url, metadata")
+    .eq("source_type", "qa_answer")
+    .in("metadata->>question_id", questionIds);
+
+  // question별 그룹핑
+  return questionChunks.map(qc => {
+    const qId = (qc.metadata as Record<string, unknown>)?.question_id as string;
+    const answers = (answerChunks || []).filter(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (ac: any) => (ac.metadata as Record<string, unknown>)?.question_id === qId
+    );
+    return { question: qc, answers };
+  });
+}
+
+function buildSimilarQAContext(similarQAs: SimilarQA[]): string {
+  if (similarQAs.length === 0) return "";
+
+  const sections = similarQAs.map(({ question, answers }) => {
+    const similarity = Math.round(question.similarity * 100) / 100;
+    const answerText = answers.map(a => a.content).join("\n");
+    return `[유사도 ${similarity}] 질문: ${question.content}\n검증된 답변: ${answerText}`;
+  });
+
+  return `## 유사한 기존 Q&A (검증된 답변)\n${sections.join("\n\n")}`;
 }
 
 // ─── P2 파이프라인: buildSearchResults ──────────────────────
@@ -345,20 +424,76 @@ export async function generate(
   const systemPrompt = request.systemPromptOverride ?? config.systemPrompt;
   const sourceTypes = request.sourceTypes ?? config.sourceTypes;
   const model = config.model || DEFAULT_MODEL;
+  const isQAConsumer = request.consumerType === "qa" || request.consumerType === "chatbot";
 
-  // ── Stage 1: buildSearchResults (P2 파이프라인) ──
+  // ── Stage 0: 이미지 설명 결합 (qa/chatbot만) ──
+  let query = request.query;
+  if (isQAConsumer && request.imageDescriptions) {
+    query = `${request.query}\n\n[첨부 이미지 설명]\n${request.imageDescriptions}`;
+  }
+
+  // ── Stage 1: 유사 QA 검색 (qa/chatbot만) ──
+  let similarQAs: SimilarQA[] = [];
+  let stage1Embedding: number[] | null = null;
+  if (isQAConsumer) {
+    // Stage 1과 Stage 2에서 임베딩 재사용을 위해 먼저 생성
+    stage1Embedding = await generateEmbedding(query);
+    similarQAs = await searchSimilarQuestions(query, stage1Embedding);
+  }
+
+  // F-03: Stage 1에서 사용된 chunk ID 수집 (Stage 2 중복 방지)
+  const stage1ChunkIds = new Set<string>();
+  for (const qa of similarQAs) {
+    stage1ChunkIds.add(qa.question.id);
+    for (const a of qa.answers) stage1ChunkIds.add(a.id);
+  }
+
+  // ── Stage 2: buildSearchResults (P2 파이프라인) ──
+  // F-03: qa/chatbot일 때 qa_question, qa_answer를 Stage 2 sourceTypes에서 제외
+  let stage2SourceTypes = sourceTypes;
+  if (isQAConsumer && sourceTypes) {
+    stage2SourceTypes = (sourceTypes as SourceType[]).filter(
+      (st) => st !== "qa_question" && st !== "qa_answer"
+    );
+  }
+
   const searchResult = await buildSearchResults(
-    request.query, config, limit, threshold, sourceTypes
+    query, config, limit, threshold, stage2SourceTypes
   );
-  const { chunks, expandedQueries, chunksBeforeRerank } = searchResult;
+  let { chunks } = searchResult;
+  const { expandedQueries, chunksBeforeRerank } = searchResult;
 
-  // ── Stage 2: buildContext ──
+  // F-03: Stage 1에서 이미 사용된 chunk ID 제외
+  if (stage1ChunkIds.size > 0) {
+    chunks = chunks.filter((c) => !stage1ChunkIds.has(c.id));
+  }
+
+  // ── Stage 2b: buildContext ──
   const contextText = buildContext(chunks, tokenBudget);
+  const similarQAContext = buildSimilarQAContext(similarQAs);
 
-  // ── Stage 3: callLLM (Opus 4.6) ──
-  const userContent = contextText
-    ? `## 참고 강의 자료\n${contextText}\n\n## 질문\n${request.query}`
-    : request.query;
+  // ── Stage 3: callLLM ──
+  let userContent = "";
+  if (similarQAContext) {
+    userContent += `${similarQAContext}\n\n`;
+  }
+  if (contextText) {
+    userContent += `## 참고 강의 자료\n${contextText}\n\n`;
+  }
+  userContent += `## 질문\n${query}`;
+
+  // Extended Thinking: temperature=1 고정 (Anthropic API 제약)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const bodyObj: Record<string, any> = {
+    model,
+    max_tokens: 8192,
+    system: systemPrompt,
+    messages: [{ role: "user", content: userContent }],
+    temperature: config.enableThinking ? 1 : temperature,
+  };
+  if (config.enableThinking) {
+    bodyObj.thinking = { type: "enabled", budget_tokens: config.thinkingBudget };
+  }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -371,13 +506,7 @@ export async function generate(
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
       },
-      body: JSON.stringify({
-        model,
-        max_tokens: 8192,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userContent }],
-        temperature,
-      }),
+      body: JSON.stringify(bodyObj),
       signal: controller.signal,
     });
 
@@ -392,7 +521,16 @@ export async function generate(
     }
 
     const data = await response.json();
-    const content: string = data.content?.[0]?.text || "";
+
+    // T5: Extended Thinking 응답 파싱 — text block만 사용
+    let content: string;
+    if (config.enableThinking && Array.isArray(data.content)) {
+      const textBlock = data.content.find((b: { type: string }) => b.type === "text");
+      content = textBlock?.text || "";
+    } else {
+      content = data.content?.[0]?.text || "";
+    }
+
     const tokensUsed: number =
       (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0);
 
@@ -434,6 +572,7 @@ export async function generate(
         image_count: imageCount,
         chunks_before_rerank: chunksBeforeRerank,
         chunks_after_rerank: chunks.length,
+        similar_qa_count: similarQAs.length,
       } as Record<string, unknown>)
     ).catch((err) => console.error("[KS] Usage log failed:", err));
 
