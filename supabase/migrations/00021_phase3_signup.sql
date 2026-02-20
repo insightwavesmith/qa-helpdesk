@@ -52,12 +52,12 @@ BEGIN
     NEW.raw_user_meta_data->>'shop_name',
     NEW.raw_user_meta_data->>'business_number',
     NEW.raw_user_meta_data->>'cohort',
-    CASE
+    (CASE
       WHEN NEW.raw_user_meta_data->>'invite_code' IS NOT NULL
         AND NEW.raw_user_meta_data->>'invite_code' != ''
       THEN 'student'
       ELSE 'lead'
-    END,
+    END)::user_role,
     CASE
       WHEN NEW.raw_user_meta_data->>'invite_code' IS NOT NULL
         AND NEW.raw_user_meta_data->>'invite_code' != ''

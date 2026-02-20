@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 
 // 현재 프로필 조회 (온보딩 페이지용)
 export async function getOnboardingProfile() {
@@ -108,5 +109,11 @@ export async function completeOnboarding() {
     .eq("id", user.id);
 
   if (error) return { error: error.message };
+
+  // 캐시 쿠키 무효화 — 미들웨어가 다음 요청에서 DB 재조회
+  const cookieStore = await cookies();
+  cookieStore.delete("x-user-role");
+  cookieStore.delete("x-onboarding-status");
+
   return { error: null };
 }

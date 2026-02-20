@@ -68,7 +68,10 @@ export function DashboardSidebar({
 
   const handleLogout = async () => {
     const supabase = createClient();
-    await supabase.auth.signOut();
+    try { await supabase.auth.signOut(); } finally {
+      document.cookie = "x-user-role=; path=/; max-age=0";
+      document.cookie = "x-onboarding-status=; path=/; max-age=0";
+    }
     router.push("/login");
     router.refresh();
   };

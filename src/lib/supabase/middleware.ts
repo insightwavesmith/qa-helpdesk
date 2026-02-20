@@ -108,6 +108,7 @@ export async function updateSession(request: NextRequest) {
         onboardingStatus = fetchedStatus;
 
         // supabaseResponse에 캐싱 cookie 설정
+        // ⚠ httpOnly 추가 금지: client-side logout에서 document.cookie로 삭제 필요
         supabaseResponse.cookies.set(ROLE_COOKIE, fetchedRole, {
           path: "/",
           maxAge: COOKIE_MAX_AGE,
