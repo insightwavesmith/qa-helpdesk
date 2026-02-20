@@ -48,15 +48,12 @@ export default async function MainLayout({
     data: { name: string; role: string; email: string } | null;
   };
 
-  // lead는 아직 승인되지 않은 상태 → 대기 페이지로
-  if (profile?.role === "lead") {
-    redirect("/pending");
-  }
-
-  const isAdmin = profile?.role === "admin";
+  const role = profile?.role;
+  const usesSidebarLayout =
+    role === "admin" || role === "lead" || role === "member";
 
   // 학생용: 상단 헤더만 (목업 스타일)
-  if (!isAdmin) {
+  if (!usesSidebarLayout) {
     return (
       <div className="min-h-screen bg-background">
         <StudentHeader
@@ -71,8 +68,9 @@ export default async function MainLayout({
     );
   }
 
-  // 관리자용: v0 스타일 대시보드 사이드바 레이아웃
-  const pendingAnswersCount = await getPendingAnswersCount();
+  // admin/lead/member: 사이드바 레이아웃
+  const pendingAnswersCount =
+    role === "admin" ? await getPendingAnswersCount() : 0;
 
   return (
     <div className="flex h-screen overflow-hidden">

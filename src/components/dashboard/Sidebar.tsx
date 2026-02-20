@@ -20,6 +20,7 @@ import {
   Brain,
   LogOut,
   Lock,
+  Ticket,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -45,6 +46,7 @@ const adminNavItems: NavItem[] = [
   { label: "지식 베이스", href: "/admin/knowledge", icon: Brain },
   { label: "총가치각도기 관리", href: "/admin/protractor", icon: Crosshair },
   { label: "광고계정 관리", href: "/admin/accounts", icon: Monitor },
+  { label: "초대코드", href: "/admin/invites", icon: Ticket },
 ];
 
 interface SidebarProps {
@@ -72,9 +74,19 @@ export function DashboardSidebar({
   };
 
   const renderNavItem = (item: NavItem) => {
+    // lead/member에게 Q&A 메뉴 숨김
+    if (
+      item.href === "/questions" &&
+      (userRole === "lead" || userRole === "member")
+    ) {
+      return null;
+    }
+
     const isActive =
       pathname === item.href || pathname.startsWith(item.href + "/");
-    const isLocked = item.href === "/protractor" && userRole === "member";
+    const isLocked =
+      item.href === "/protractor" &&
+      (userRole === "member" || userRole === "lead");
     const Icon = isLocked ? Lock : item.icon;
     const showBadge =
       item.href === "/admin/answers" && pendingAnswersCount > 0;

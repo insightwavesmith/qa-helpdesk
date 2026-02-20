@@ -1,319 +1,253 @@
-# TASK.md — QA 지능화: 분리 임베딩 + 2단계 검색
-> 2026-02-20 | 승인된 QA를 분리 임베딩하고, 새 질문에 유사 QA + RAG를 결합해 답변하는 구조
+# TASK.md — Phase 3: 회원가입 리팩토링 + 초대코드 + 미들웨어 + 온보딩
+> 2026-02-20 | 수강생/일반 가입 분리, 역할별 접근제어, student 온보딩 4단계
 
 ## 목표
-1. 답변 승인 시 qa_question + qa_answer chunk를 knowledge_chunks에 자동 생성
-2. 새 질문 시 유사 기존 질문 매칭(Stage 1) + 전체 RAG(Stage 2) → AI 종합 답변
-3. 질문에 이미지가 있으면 Vision → 텍스트 변환 후 검색에 활용
-4. QA 0건(초기)일 때 기존 P2 파이프라인과 100% 동일 동작 보장
+1. 가입 경로 2개 분리: 초대코드 수강생(student) vs 일반가입(lead→member)
+2. 미들웨어에서 역할별 라우팅 + student 온보딩 강제 리다이렉트
+3. 온보딩 4단계 UI (/onboarding) — student 전용, 완료 전까지 사이트 접근 차단
+4. 관리자: 초대코드 생성/관리 + lead→student 수동 전환
 
 ## 레퍼런스
-- 아키텍처 보고서: `https://mozzi-reports.vercel.app/reports/architecture/2026-02-20-qa-intelligence-architecture.html`
-- ADR-20: QA 분리 임베딩, ADR-21: 2단계 검색, ADR-22: 이미지 Vision→텍스트
-- 참고 패턴: `src/lib/image-embedder.ts` (embedImage), `src/actions/answers.ts` (approveAnswer)
+- 기획서: `https://mozzi-reports.vercel.app/reports/architecture/2026-02-20-phase3-4-planning.html`
+- 온보딩 목업: 기획서 섹션 4 (Step 0~3 시각 목업 포함)
+- 결정사항 D1~D6 + C1~C4: 기획서 섹션 11 (전부 확정)
 
 ## 현재 코드
 
-### knowledge.ts — SourceType + ConsumerConfig (수정 대상)
+### profiles.role — DB enum (이미 변경됨)
 ```ts
-// src/lib/knowledge.ts L22~34
-export type SourceType =
-  | "lecture" | "blueprint" | "papers" | "qa" | "crawl"
-  | "meeting" | "marketing_theory" | "webinar" | "youtube"
-  | "assignment" | "feedback";
-// ⚠️ "qa_question", "qa_answer" 없음
-
-// qa ConsumerConfig (L120~130)
-qa: {
-  limit: 5,
-  threshold: 0.4,
-  tokenBudget: 3000,
-  temperature: 0.3,
-  sourceTypes: ["lecture", "blueprint", "papers", "qa"],
-  // ⚠️ qa_question/qa_answer가 sourceTypes에 없음
-  enableReranking: true,
-  enableExpansion: true,
-  model: "claude-sonnet-4-6-20250514",
-},
+// src/types/supabase.ts
+user_role: "lead" | "member" | "student" | "alumni" | "admin"
+// ✅ enum 이미 존재. 하지만 가입 시 기본값이 아직 old 방식
 ```
 
-### knowledge.ts — generate() 파이프라인 (수정 대상)
+### profiles 관련 컬럼 (이미 존재)
 ```ts
-// src/lib/knowledge.ts L300~320 — generate() 핵심 흐름
-export async function generate(request: KnowledgeRequest): Promise<KnowledgeResponse> {
-  // Stage 1: buildSearchResults (expansion + multi-search + dedup + rerank)
-  const searchResult = await buildSearchResults(query, config, limit, threshold, sourceTypes);
-  // Stage 2: buildContext (chunks → 텍스트)
-  const contextText = buildContext(chunks, tokenBudget);
-  // Stage 3: callLLM (Sonnet 4.6)
-  // ⚠️ 유사 질문 매칭 로직 없음
-  // ⚠️ 유사 QA 참고 섹션 없음
+// DB에 이미 있는 컬럼:
+onboarding_completed: boolean | null   // → onboarding_status로 교체 필요
+onboarding_step: number | null         // 유지 (단계 추적용)
+role_old: string | null                // 마이그레이션 히스토리
+```
+
+### invite_codes 테이블 (이미 존재)
+```ts
+// src/types/supabase.ts — 테이블 존재, 데이터 없음
+invite_codes: {
+  code: string,
+  cohort: string | null,
+  created_by: string | null,
+  expires_at: string | null,
+  max_uses: number | null,
+  used_count: number | null,
 }
 ```
 
-### rag.ts — createAIAnswerForQuestion() (수정 대상)
+### student_registry 테이블 (이미 존재)
 ```ts
-// src/lib/rag.ts L53~87
-export async function createAIAnswerForQuestion(
-  questionId: string,
-  questionTitle: string,
-  questionContent: string
-): Promise<boolean> {
-  // ⚠️ image_urls 파라미터 없음 — 이미지 전처리 안 함
-  const result = await generateRAGAnswer(questionTitle, questionContent);
-  // answers INSERT (is_ai: true, is_approved: false)
-}
-
-// generateRAGAnswer (L36~51)
-export async function generateRAGAnswer(questionTitle, questionContent) {
-  const questionText = `${questionTitle}\n\n${questionContent}`;
-  return ksGenerate({ query: questionText, consumerType: "qa" });
-  // ⚠️ 이미지 설명이 query에 포함되지 않음
+// 수강생 78명 데이터 (카페24에서 import)
+student_registry: {
+  name: string,
+  email: string | null,
+  phone: string | null,
+  cohort: string | null,
+  shop_name: string | null,
+  shop_url: string | null,
+  matched_profile_id: string | null,  // 매칭되면 profile UUID
 }
 ```
 
-### answers.ts — approveAnswer() (수정 대상)
-```ts
-// src/actions/answers.ts L121~148
-export async function approveAnswer(answerId: string) {
-  const supabase = await requireAdmin();
-  const { data: answer, error } = await supabase
-    .from("answers")
-    .update({ is_approved: true, approved_at: new Date().toISOString() })
-    .eq("id", answerId)
-    .select("question_id")
-    .single();
-  // 질문 상태 "answered"로 변경
-  // ⚠️ embedQAPair() 호출 없음 — QA가 RAG에 안 들어감
-}
+### 현재 가입 흐름 (signup/page.tsx)
+```tsx
+// src/app/(auth)/signup/page.tsx — 현재 문제점:
+// 1. 전체 사업정보 입력 필수 (일반 가입자에게 과도)
+// 2. role=pending으로 가입 → 관리자 수동 승인 → approved
+// 3. 초대코드 없음
+// 4. student_registry 매칭 없음
+
+// supabase.auth.signUp() → metadata에 name, phone, shop_url 등 전달
+// → auth trigger가 profiles INSERT (role='pending')
 ```
 
-### image-embedder.ts — embedImage() (재사용)
+### 현재 미들웨어 (middleware.ts)
 ```ts
-// src/lib/image-embedder.ts — Vision + 임베딩 파이프라인
-export async function embedImage(imageUrl, context): Promise<EmbedImageResult> {
-  const description = await generateVisionText(imageUrl, VISION_PROMPT);
-  const embedding = await generateEmbedding(description);
-  // knowledge_chunks INSERT
-}
-// ✅ generateVisionText, generateEmbedding 둘 다 gemini.ts에서 export됨
+// src/lib/supabase/middleware.ts — 현재:
+// - 인증 없으면 → /login (public paths 제외)
+// - 인증 있으면 /login, /signup → /dashboard
+// ⚠️ role 체크 없음. pending이든 student든 /dashboard 접근 가능
+// ⚠️ onboarding 리다이렉트 없음
 ```
 
-### gemini.ts — 사용 가능한 함수
-```ts
-// src/lib/gemini.ts
-export async function generateEmbedding(text: string): Promise<number[]>  // 768d
-export async function generateFlashText(prompt, options?): Promise<string>
-export async function generateVisionText(imageUrl, prompt): Promise<string>
+### 대시보드 라우팅 (dashboard/page.tsx)
+```tsx
+// src/app/(main)/dashboard/page.tsx
+if (role === "admin") return <AdminDashboard />;
+if (role === "member") return <MemberDashboard />;
+return <StudentHome />;  // student, alumni 모두
+// ⚠️ lead, pending에 대한 처리 없음
 ```
-
-### chunk-utils.ts — chunkText() (재사용)
-```ts
-// src/lib/chunk-utils.ts
-export function chunkText(text: string, maxChars = 700, overlap = 100): string[]
-// 한국어 문장 경계 존중, 0-based chunk_index
-```
-
-### questions.ts — createQuestion()에서 이미지 전달 (기존)
-```ts
-// src/actions/questions.ts L130~155
-after(async () => {
-  await createAIAnswerForQuestion(data.id, formData.title, formData.content);
-  // ⚠️ formData.imageUrls를 넘기지 않음
-});
-```
-
-### DB 상태
-- questions.image_urls: jsonb (이미 존재 — UI + actions에서 사용 중)
-- answers.image_urls: jsonb (migration 00019)
-- knowledge_chunks.source_type: text (CHECK 없음, 자유 추가)
-- knowledge_chunks.image_url: text (이미 존재)
-- knowledge_chunks.metadata: jsonb (이미 존재)
-- knowledge_chunks.embedding: vector(768)
-- Storage 버킷: question-images (Public), qa-images (Public)
 
 ## 제약
-- search_knowledge RPC 시그니처 변경 금지
-- knowledge_chunks 스키마 변경 최소화 (인덱스만 추가)
-- 기존 Consumer (newsletter, education 등) 동작 변경 없음
-- QA 0건일 때 기존 P2 파이프라인과 100% 동일 동작
-- Gemini Flash Free tier: 1,500 req/일
-- 전체 응답시간 10초 이내 (현재 ~8초 + Stage 1 ~0.3초)
-- 임베딩 실패해도 답변 승인은 정상 완료 (fire-and-forget)
-- 순환 의존성 주의: rag.ts → knowledge.ts (OK), knowledge.ts → rag.ts (금지)
+- invite_codes, student_registry 테이블 스키마 변경 최소화 (이미 존재)
+- 기존 profiles 데이터 (가입자 7명) 깨지지 않아야 함
+- Supabase Auth trigger 수정 시 SECURITY DEFINER + search_path 필수
+- 초대코드 형식: 기수당 1개 (예: BS6-2026). D1 확정
+- alumni = student 동일 권한. 별도 분기 불필요. D3 확정
+- 비회원 정보공유 3개 미리보기는 Phase 4로 보류 (D4)
+- member = Q&A 접근 불가 (정보공유/공지/뉴스레터만). D2 확정
 
 ## 태스크
 
 ### T0. DB 마이그레이션 → backend-dev
-- 파일: `supabase/migrations/00020_qa_intelligence.sql` (신규)
+- 파일: `supabase/migrations/00021_phase3_signup.sql` (신규)
 - 의존: 없음
 - 완료 기준:
-  - [ ] questions.image_urls jsonb DEFAULT '[]' — `ADD COLUMN IF NOT EXISTS` (이미 있을 수 있음, 안전 처리)
-  - [ ] knowledge_chunks에 부분 인덱스 추가:
-    ```sql
-    CREATE INDEX IF NOT EXISTS idx_kc_qa_question ON knowledge_chunks(source_type)
-      WHERE source_type = 'qa_question';
-    CREATE INDEX IF NOT EXISTS idx_kc_qa_answer ON knowledge_chunks(source_type)
-      WHERE source_type = 'qa_answer';
-    CREATE INDEX IF NOT EXISTS idx_kc_metadata_question_id ON knowledge_chunks((metadata->>'question_id'))
-      WHERE metadata->>'question_id' IS NOT NULL;
-    ```
-  - [ ] `npx supabase gen types` 실행하여 database.ts 타입 재생성
+  - [ ] profiles에 `onboarding_status text DEFAULT 'not_started' CHECK (onboarding_status IN ('not_started','in_progress','completed'))` 추가
+  - [ ] profiles에 `invite_code_used text` 추가 (어떤 초대코드로 가입했는지)
+  - [ ] 기존 onboarding_completed → onboarding_status 데이터 마이그레이션: `UPDATE profiles SET onboarding_status = CASE WHEN onboarding_completed THEN 'completed' ELSE 'not_started' END;` (현재 7명 전원 false → 'not_started')
+  - [ ] profiles NOT NULL 컬럼 nullable 변환: `ALTER TABLE profiles ALTER COLUMN phone DROP NOT NULL; ALTER TABLE profiles ALTER COLUMN shop_url DROP NOT NULL; ALTER TABLE profiles ALTER COLUMN shop_name DROP NOT NULL; ALTER TABLE profiles ALTER COLUMN business_number DROP NOT NULL;` (lead 간소화 가입에서 이 필드 미입력)
+  - [ ] auth trigger 수정: 가입 시 raw_user_meta_data에 invite_code 있으면 role='student', 없으면 role='lead'. 반드시 `SECURITY DEFINER SET search_path = public`
+  - [ ] invite_codes 테이블: 이미 존재 확인됨. RLS 정책 추가 (admin만 CRUD, 가입 시 code 검증은 service role)
+  - [ ] student_registry에 RLS 정책 추가 (admin만 조회/수정)
+  - [ ] database.ts:624의 `// invite_codes: 삭제됨` 주석 확인 → `npx supabase gen types` 재실행으로 해결
+  - [ ] `npx supabase gen types` 실행
 
-### T1. qa-embedder.ts 신규 → backend-dev
-- 파일: `src/lib/qa-embedder.ts` (신규)
+### T1. 가입 폼 리팩토링 → frontend-dev
+- 파일: `src/app/(auth)/signup/page.tsx` (수정)
 - 의존: T0 완료 후
 - 완료 기준:
-  - [ ] `embedQAPair(questionId: string, answerId: string): Promise<void>` 함수
-  - [ ] questions 테이블에서 질문 조회 (title, content, image_urls)
-  - [ ] answers 테이블에서 답변 조회 (content, image_urls, is_ai)
-  - [ ] 재승인 처리 (F-02): 같은 question_id의 기존 qa_question/qa_answer chunks를 DELETE 후 새로 생성
-  - [ ] DELETE: `knowledge_chunks WHERE source_type IN ('qa_question','qa_answer') AND metadata->>'question_id' = questionId`
-  - [ ] 질문 이미지 있으면 → `generateVisionText()` → 설명 텍스트 결합
-  - [ ] 답변 이미지 있으면 → `generateVisionText()` → 설명 텍스트 결합
-  - [ ] 질문 텍스트 = `${title}\n\n${content}` + 이미지 설명 (있으면 `\n\n[이미지: ${description}]`)
-  - [ ] 답변 텍스트 = `${answer.content}` + 이미지 설명
-  - [ ] 질문 텍스트 → `chunkText()` → 각 chunk마다:
-    - `generateEmbedding()` → knowledge_chunks INSERT
-    - source_type: 'qa_question'
-    - lecture_name: 질문 title (50자 truncate)
-    - week: 'qa_question'
-    - priority: 2
-    - metadata: `{ question_id, answer_id, category: question.category?.slug }`
-    - image_url: 첫 번째 질문 이미지 URL (있으면)
-  - [ ] 답변 텍스트 → `chunkText()` → 각 chunk마다:
-    - `generateEmbedding()` → knowledge_chunks INSERT
-    - source_type: 'qa_answer'
-    - lecture_name: 질문 title (50자 truncate)
-    - week: 'qa_answer'
-    - priority: 2
-    - metadata: `{ question_id, answer_id, is_ai: answer.is_ai }`
-    - image_url: 첫 번째 답변 이미지 URL (있으면)
-  - [ ] 전체 try-catch 감싸기 — 실패해도 console.error만. throw 금지
-  - [ ] 임베딩 성공 건수 로깅: `[QAEmbed] questionId=${id}, q_chunks=${n}, a_chunks=${m}`
+  - [ ] 가입 페이지에 초대코드 입력 필드 추가 (상단, 선택사항)
+  - [ ] 초대코드 입력 시:
+    - API로 코드 유효성 검증 (exists + not expired + used_count < max_uses)
+    - 유효하면 "수강생 가입 모드" 활성화 → 전체 사업정보 폼 표시
+    - 무효하면 에러 메시지 "유효하지 않은 초대코드입니다"
+  - [ ] 초대코드 없이 가입 시:
+    - 간소화 폼: 이메일 + 비밀번호 + 이름만 (사업정보 숨김)
+    - role=lead로 가입
+  - [ ] signUp() options.data에 `invite_code` 포함 (있을 때만)
+  - [ ] 가입 성공 후:
+    - 초대코드 있으면(student) → /onboarding 으로 이동
+    - 초대코드 없으면(lead) → /dashboard 으로 이동 (pending 페이지 불필요)
+  - [ ] lead 모드: 사업자등록증 업로드 UI 숨김 (student 모드에서만 표시)
+  - [ ] 기존 UI 스타일 유지 (브랜드 컬러 #F75D5D, 카드 레이아웃)
 
-### T2. approveAnswer() 훅 → backend-dev
-- 파일: `src/actions/answers.ts` (수정)
-- 의존: T1 완료 후
+### T2. 초대코드 검증 API + student_registry 매칭 → backend-dev
+- 파일: `src/app/api/invite/validate/route.ts` (신규), `src/actions/invites.ts` (신규)
+- 의존: T0 완료 후
 - 완료 기준:
-  - [ ] `import { embedQAPair } from "@/lib/qa-embedder"` 추가
-  - [ ] approveAnswer()에서 답변 승인 성공 후:
-    ```ts
-    // fire-and-forget: QA 분리 임베딩
-    if (answer?.question_id) {
-      Promise.resolve(embedQAPair(answer.question_id, answerId))
-        .catch(err => console.error("[QAEmbed] Failed:", err));
-    }
-    ```
-  - [ ] 기존 revalidatePath 로직 변경 없음
-  - [ ] 승인 → 질문 status "answered" 변경 로직 변경 없음
+  - [ ] `POST /api/invite/validate` — code 검증 (exists, not expired, uses 여유). 인증 불필요 (가입 폼에서 호출)
+    - 응답: `{ valid: boolean, cohort?: string, error?: string }`
+  - [ ] `useInviteCode()` server action (actions/invites.ts) — 가입 완료 후 호출
+    - invite_codes.used_count += 1 (원자적: `SET used_count = used_count + 1 WHERE used_count < max_uses`)
+    - profiles.invite_code_used = code
+    - profiles.cohort = invite_codes.cohort
+    - student_registry 이메일 매칭 시도:
+      - email 일치 → matched_profile_id = profile.id
+      - 불일치 → 로그만 (수동 매칭 대기)
+  - [ ] 에러 핸들링: 코드 만료, 사용 초과, 코드 없음
 
-### T3. knowledge.ts Stage 0+1 추가 → backend-dev
-- 파일: `src/lib/knowledge.ts` (수정)
-- 의존: T0 완료 후 (T1과 병렬 가능)
+### T3. 미들웨어 역할 분기 → backend-dev
+- 파일: `src/lib/supabase/middleware.ts` (수정)
+- 의존: T0 완료 후
 - 완료 기준:
-  - [ ] SourceType에 `"qa_question"`, `"qa_answer"` 추가
-  - [ ] qa ConsumerConfig.sourceTypes에 `"qa_answer"` 추가 (qa_question은 Stage 1 전용이라 제외)
-  - [ ] `searchSimilarQuestions(queryText: string, embedding: number[]): Promise<{question: ChunkResult, answers: ChunkResult[]}[]>` 함수 추가:
-    - search_knowledge RPC로 source_type='qa_question'만 검색 (limit 3, threshold 0.70)
-    - 결과에서 metadata.question_id 추출
-    - 같은 question_id의 qa_answer chunks를 Supabase SELECT로 조회
-    - 유사도 0.70 이상인 것만 반환
-  - [ ] generate() 함수 수정 — qa/chatbot Consumer일 때만:
-    - Stage 0: request에 imageDescriptions가 있으면 query에 결합
-    - Stage 1: `searchSimilarQuestions()` 호출
-    - 결과를 `buildContext()`의 유사 QA 섹션으로 분리
-    - Stage 2: 기존 buildSearchResults() — sourceTypes에서 qa_question, qa_answer 모두 제외 (F-03: 중복 방지)
-    - buildSearchResults()에 excludeSourceTypes 파라미터 추가 또는 sourceTypes 필터링
-    - Stage 3: callLLM — 유사 QA 있으면 시스템 프롬프트에 참고 섹션 추가
-  - [ ] KnowledgeRequest에 `imageDescriptions?: string` 필드 추가 (optional)
-  - [ ] QA_SYSTEM_PROMPT에 유사 QA 참고 지시사항 추가:
-    ```
-    - 유사한 기존 Q&A가 제공되면 내용을 참고하되, 강의 자료와 대조하세요.
-    - 기존 답변을 그대로 복사하지 말고, 이 질문의 맥락에 맞게 재구성하세요.
-    - 강의자료가 기존 답변과 다르면 최신 정보를 우선하세요.
-    ```
-  - [ ] newsletter, education 등 다른 Consumer는 동작 변경 없음 (enableReranking=false인 Consumer는 Stage 1 스킵)
-  - [ ] 유사 QA 컨텍스트 형식:
-    ```
-    ## 유사한 기존 Q&A (검증된 답변)
-    [유사도 0.87] 질문: {qa_question.content}
-    검증된 답변: {qa_answer.content}
-    ```
+  - [ ] 로그인 후 role 조회 (profiles 테이블 SELECT)
+  - [ ] 역할별 라우팅:
+    - `lead` → /dashboard 허용 (MemberDashboard — 정보공유/공지/뉴스레터만, Q&A 접근 불가)
+    - `member` → /dashboard 허용 (MemberDashboard — 정보공유/공지/뉴스레터만, Q&A 접근 불가)
+    - `student`/`alumni` + onboarding_status != 'completed' → /onboarding 강제 리다이렉트
+    - `student`/`alumni` + onboarding 완료 → 전체 접근
+    - `admin` → 전체 접근
+  - [ ] /onboarding은 student/alumni만 접근 가능
+  - [ ] /admin/* 은 admin만 접근 가능
+  - [ ] /questions/* 은 student/alumni/admin만 접근 가능 (lead/member → /dashboard 리다이렉트)
+  - [ ] 미들웨어 성능: 로그인 시 role + onboarding_status를 encrypted cookie에 저장. 미들웨어에서 cookie 우선 확인, 없거나 만료(TTL 5분) 시에만 DB 조회
+  - [ ] 공개 경로 업데이트: /login, /signup, /subscribe, /unsubscribe, /api/invite/validate + 정보공유 미리보기(Phase 4)
 
-### T4. rag.ts 이미지 전처리 → backend-dev
-- 파일: `src/lib/rag.ts` (수정), `src/actions/questions.ts` (수정)
+### T4. 온보딩 4단계 UI → frontend-dev
+- 파일: `src/app/(auth)/onboarding/page.tsx` (신규), `src/actions/onboarding.ts` (신규)
+- 의존: T0, T3 완료 후
+- 완료 기준:
+  - [ ] /onboarding 페이지 — 4단계 진행 UI
+  - [ ] Step 0 (환영): 이름 + 기수 표시, 서비스 소개 (Q&A, 정보공유, 총가치각도기), "시작하기" 버튼
+  - [ ] Step 1 (프로필 확인): 이름, 쇼핑몰 URL, 월 광고예산, 카테고리 — 확인/수정 후 "저장"
+  - [ ] Step 2 (광고계정): Meta 광고 계정 ID 입력 안내, "연결" 또는 "건너뛰기"
+  - [ ] Step 3 (완료): 완료 메시지, Q&A 바로가기 + 정보공유 바로가기 버튼
+  - [ ] 각 단계에서 onboarding_step 업데이트 (0→1→2→3)
+  - [ ] Step 3 완료 시 onboarding_status = 'completed'
+  - [ ] 중간에 나가면 in_progress 상태, 다음 접속 시 마지막 step부터 이어서
+  - [ ] 모바일 반응형 (375px~)
+  - [ ] 브랜드 스타일 (#F75D5D, 카드, rounded-xl)
+  - [ ] 기획서 목업 참고 (섹션 4)
+
+### T5. 관리자: 초대코드 관리 UI → frontend-dev
+- 파일: `src/app/(main)/admin/invites/page.tsx` (신규), `src/actions/invites.ts` (신규)
+- 의존: T0 완료 후
+- 완료 기준:
+  - [ ] /admin/invites 페이지 — 초대코드 목록 + 생성
+  - [ ] 코드 생성: 기수 선택, 만료일, 최대 사용 횟수 입력
+  - [ ] 코드 목록: code, cohort, used_count/max_uses, expires_at, 복사 버튼
+  - [ ] 사이드바에 "초대코드" 메뉴 추가 (admin만)
+  - [ ] 코드 삭제/비활성화
+
+### T6. 대시보드 라우팅 수정 → frontend-dev
+- 파일: `src/app/(main)/dashboard/page.tsx` (수정)
 - 의존: T3 완료 후
 - 완료 기준:
-  - [ ] createAIAnswerForQuestion() 시그니처에 imageUrls 추가:
-    `createAIAnswerForQuestion(questionId, title, content, imageUrls?: string[])`
-  - [ ] imageUrls가 있으면 각각 `generateVisionText()` 호출 → 설명 텍스트 생성
-  - [ ] Vision 실패 시 해당 이미지 스킵 (try-catch 개별)
-  - [ ] 설명 텍스트를 결합: `imageDescriptions = descriptions.join('\n')`
-  - [ ] generateRAGAnswer()에 imageDescriptions 전달
-  - [ ] ksGenerate() 호출 시 `imageDescriptions` 포함:
-    ```ts
-    ksGenerate({ query: questionText, consumerType: "qa", imageDescriptions })
-    ```
-  - [ ] questions.ts의 after() 호출부 수정:
-    ```ts
-    after(async () => {
-      await createAIAnswerForQuestion(data.id, formData.title, formData.content, formData.imageUrls);
-    });
-    ```
-  - [ ] imageUrls 없을 때 기존과 동일하게 동작 (하위호환)
+  - [ ] lead → MemberDashboard (정보공유/공지/뉴스레터만, Q&A 메뉴 숨김)
+  - [ ] member → MemberDashboard (정보공유/공지/뉴스레터만, Q&A 메뉴 숨김)
+  - [ ] Sidebar.tsx에서 역할별 메뉴 필터링: lead/member에게 Q&A 메뉴 숨김, lead에게도 총가치각도기 Lock
+  - [ ] Sidebar에 admin 전용 "초대코드" 메뉴 추가 (/admin/invites)
+  - [ ] student/alumni → StudentHome (기존 그대로)
+  - [ ] pending (레거시) → /pending 리다이렉트
+  - [ ] rejected → 에러 메시지 페이지
 
 ## 엣지 케이스
 | 상황 | 기대 동작 |
 |------|-----------|
-| QA 0건 (초기 — qa_question chunk 없음) | Stage 1 결과 없음 → Stage 2만으로 답변. 기존 P2와 100% 동일 |
-| 같은 답변 2번 승인 (중복) | question_id + answer_id 조합으로 중복 체크 → 스킵 |
-| 질문 이미지 Vision 실패 | 텍스트만으로 검색 + 임베딩. 이미지 무시 |
-| 답변이 2000자 (길이) | chunkText()로 3 chunks 분할. 모두 같은 metadata |
-| 유사도 0.70~0.85 (애매) | "참고 자료"로 포함하되 AI가 판단 |
-| 유사도 0.70 미만 | Stage 1 결과 없음으로 처리 |
-| 임베딩 생성 실패 (Gemini 429) | embedQAPair 전체 실패 → 로그만. 승인은 정상 |
-| 질문에 이미지 5장 (최대) | 각각 Vision 호출. 실패한 것만 스킵, 성공한 것만 결합 |
-| source_type 'qa' (기존) vs 'qa_question'/'qa_answer' (신규) | 기존 'qa'는 그대로 유지. 신규는 별도 source_type |
-| 관리자가 답변 수정 후 재승인 | 기존 chunks 삭제 후 재생성? → 아니, 중복 체크로 스킵. 수정된 답변으로 새 chunk 필요하면 별도 처리 |
+| 만료된 초대코드로 가입 시도 | "초대코드가 만료되었습니다" 에러 |
+| 사용 횟수 초과된 코드 | "초대코드 사용 한도를 초과했습니다" 에러 |
+| 존재하지 않는 코드 | "유효하지 않은 초대코드입니다" 에러 |
+| 코드 없이 가입 → lead | 간소화 폼, /dashboard에서 정보공유/공지/뉴스레터만 (Q&A 접근 불가) |
+| student가 온보딩 중간에 브라우저 닫음 | 다음 로그인 시 /onboarding, 마지막 step부터 |
+| student가 URL 직접 입력 (/dashboard) | 미들웨어가 /onboarding으로 리다이렉트 |
+| lead가 /admin 접근 시도 | 미들웨어가 /dashboard로 리다이렉트 |
+| lead/member가 /questions 접근 시도 | 미들웨어가 /dashboard로 리다이렉트 |
+| 기존 가입자 (role=approved/pending) | 레거시 처리: approved→member, pending→pending 유지 |
+| student_registry에 이메일 없는 수강생 | 매칭 실패 → 관리자 수동 매칭 대기 |
+| 동시에 같은 코드로 2명 가입 | used_count 원자적 증가 (UPDATE ... SET used_count = used_count + 1) |
+| 온보딩 Step 1에서 프로필 수정 | profiles 테이블 UPDATE, 기존 데이터 유지 |
+| 관리자가 lead를 student로 수동 전환 | onboarding_status = 'not_started' 세팅 → 다음 로그인 시 온보딩 |
 
 ## 리뷰 보고서
-- 보고서 파일: mozzi-reports/public/reports/review/2026-02-20-qa-intelligence-review.html
-- 리뷰 일시: 2026-02-20 11:47
-- 변경 유형: 혼합 (백엔드 구조 + DB)
-- 피드백 요약: Good 2건 + 주의 3건(F-02 재승인 중복, F-03 Stage1/2 중복, F-04 tokenBudget)
-- 반영 여부: F-02, F-03 반영 (아래 T1, T3에 추가). F-04는 선택사항이라 보류.
+- 보고서 파일: mozzi-reports/public/reports/review/2026-02-20-phase3-signup-review.html
+- 리뷰 일시: 2026-02-20 13:43
+- 변경 유형: 혼합 (프론트엔드 UI + 백엔드 + DB + 미들웨어)
+- 피드백 요약: F-01~F-11 (Major 3, Minor 6, Good 2)
+- 반영 여부:
+  - F-01 (onboarding 데이터 마이그레이션): 반영 → T0에 UPDATE 쿼리 추가
+  - F-02 (invite_codes 존재): 확인 완료 — DB에 테이블 존재함. 주석 제거로 해결
+  - F-03 (미들웨어 성능): 반영 → T3에 cookie 캐싱 명시
+  - F-04 (/api/invite/use → server action): 반영 → T2에서 server action으로 변경
+  - F-05 (Sidebar Q&A 메뉴): 반영 → T6에 추가
+  - F-06 (사업자등록증 업로드): 반영 → T1에 추가
+  - F-07 (NOT NULL 컬럼): 반영 → T0에 ALTER COLUMN DROP NOT NULL 추가. DB 확인: phone, shop_url, shop_name, business_number 전부 NOT NULL
+  - F-08 (동시성): 이미 양호
+  - F-09 (D1~D6 명확): 이미 양호
+  - F-10 (레거시 role): DB 확인 — approved/pending 없음. 처리 불필요
+  - F-11 (/api/invite/validate 공개 경로): 반영 → T3 공개 경로에 추가
 
 ## 검증
 ☐ npm run build 성공
-☐ 기존 기능 안 깨짐 — newsletter generate(), 기존 QA 답변 생성 정상
-☐ T1 검증: 테스트 답변 승인 → knowledge_chunks에 qa_question + qa_answer chunk 생성 확인
-☐ T1 검증: 같은 답변 재승인 → 중복 chunk 안 생김
-☐ T3 검증: "CAPI 설치 방법" 질문 → Stage 1에서 유사 qa_question 검색 (있으면)
-☐ T3 검증: QA 0건일 때 → 기존과 동일하게 답변 생성
-☐ T4 검증: 이미지 포함 질문 → Vision 텍스트가 AI 답변에 반영
-☐ T4 검증: 이미지 없는 질문 → 기존과 동일하게 동작
-☐ 응답시간: QA 질문 → 10초 이내
-
-### T5. Sonnet Extended Thinking 활성화 → backend-dev
-- 파일: `src/lib/knowledge.ts` (수정)
-- 의존: T3 완료 후
-- 완료 기준:
-  - [ ] ConsumerConfig에 `enableThinking: boolean`, `thinkingBudget: number` 필드 추가
-  - [ ] qa, chatbot Consumer만 `enableThinking: true`, `thinkingBudget: 5000`
-  - [ ] 나머지 Consumer는 `enableThinking: false`
-  - [ ] generate() 내부 callLLM에서 enableThinking=true일 때:
-    ```ts
-    // thinking 모드 활성화
-    body.thinking = { type: "enabled", budget_tokens: config.thinkingBudget };
-    // thinking 모드에서는 temperature를 1로 고정 (Anthropic API 제약)
-    body.temperature = 1;
-    ```
-  - [ ] 응답 파싱: thinking block과 text block 분리 — text block만 답변으로 사용
-    ```ts
-    // data.content는 배열: [{type:"thinking",...}, {type:"text",text:"답변"}]
-    const textBlock = data.content.find(b => b.type === "text");
-    const content = textBlock?.text || "";
-    ```
-  - [ ] thinking 토큰도 usage 로깅에 포함 (knowledge_usage.total_tokens)
-  - [ ] enableThinking=false인 Consumer는 기존 동작 100% 유지
+☐ 기존 가입자 (7명) 로그인 정상
+☐ T1 검증: 초대코드 입력 → 수강생 폼 활성화 → student로 가입
+☐ T1 검증: 코드 없이 가입 → 간소화 폼 → lead로 가입
+☐ T2 검증: 유효한 코드 → student_registry 이메일 매칭 → matched_profile_id 설정
+☐ T2 검증: 잘못된 코드 → 에러 메시지
+☐ T3 검증: student + 온보딩 미완료 → /onboarding 리다이렉트
+☐ T3 검증: lead → /dashboard 접근 가능 (정보공유/공지/뉴스레터만)
+☐ T3 검증: lead → /questions 접근 불가 (리다이렉트)
+☐ T3 검증: lead → /admin 접근 불가
+☐ T4 검증: 온보딩 4단계 진행 → onboarding_status 'completed'
+☐ T4 검증: 중간에 나가기 → 다음 접속 시 이어서
+☐ T5 검증: 관리자 초대코드 생성 + 코드 복사
+☐ T6 검증: lead/member/student/admin 각각 맞는 대시보드 표시
+☐ 모바일(375px) 가입폼 + 온보딩 정상 렌더링

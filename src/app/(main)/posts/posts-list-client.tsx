@@ -16,7 +16,7 @@ interface PostsListClientProps {
     view_count: number;
     like_count: number;
     created_at: string;
-    author?: { id: string; name: string; shop_name?: string } | null;
+    author?: { id: string; name: string; shop_name?: string | null } | null;
   }>;
   currentSearch: string;
   currentPage: number;

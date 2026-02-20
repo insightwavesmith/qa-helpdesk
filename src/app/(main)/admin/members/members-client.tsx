@@ -25,10 +25,10 @@ interface Member {
   id: string;
   email: string;
   name: string;
-  phone: string;
-  shop_name: string;
-  shop_url: string;
-  business_number: string;
+  phone: string | null;
+  shop_name: string | null;
+  shop_url: string | null;
+  business_number: string | null;
   role: string;
   created_at: string;
 }

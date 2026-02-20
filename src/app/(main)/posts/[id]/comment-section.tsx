@@ -12,7 +12,7 @@ interface Comment {
   id: string;
   content: string;
   created_at: string;
-  author?: { id: string; name: string; shop_name?: string } | null;
+  author?: { id: string; name: string; shop_name?: string | null } | null;
 }
 
 interface CommentSectionProps {

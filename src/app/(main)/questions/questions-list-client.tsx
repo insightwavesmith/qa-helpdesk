@@ -25,7 +25,7 @@ interface QuestionsListClientProps {
     like_count: number;
     created_at: string;
     answers_count?: number;
-    author?: { id: string; name: string; shop_name?: string } | null;
+    author?: { id: string; name: string; shop_name?: string | null } | null;
     category?: { id: number; name: string; slug: string } | null;
   }>;
   categories: { value: string; label: string }[];

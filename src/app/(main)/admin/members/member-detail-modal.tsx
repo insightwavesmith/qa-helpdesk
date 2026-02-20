@@ -18,9 +18,9 @@ interface MemberProfile {
   id: string;
   email: string;
   name: string;
-  phone: string;
-  shop_name: string;
-  shop_url: string;
+  phone: string | null;
+  shop_name: string | null;
+  shop_url: string | null;
   role: string;
   created_at: string;
 }
@@ -54,9 +54,9 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
   const [deactivateLoading, setDeactivateLoading] = useState(false);
 
   const [name, setName] = useState(profile.name);
-  const [phone, setPhone] = useState(profile.phone);
-  const [shopName, setShopName] = useState(profile.shop_name);
-  const [shopUrl, setShopUrl] = useState(profile.shop_url);
+  const [phone, setPhone] = useState(profile.phone ?? "");
+  const [shopName, setShopName] = useState(profile.shop_name ?? "");
+  const [shopUrl, setShopUrl] = useState(profile.shop_url ?? "");
   const [selectedRole, setSelectedRole] = useState(profile.role);
 
   const handleSaveProfile = async () => {
@@ -181,9 +181,9 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                   onClick={() => {
                     setEditing(false);
                     setName(profile.name);
-                    setPhone(profile.phone);
-                    setShopName(profile.shop_name);
-                    setShopUrl(profile.shop_url);
+                    setPhone(profile.phone ?? "");
+                    setShopName(profile.shop_name ?? "");
+                    setShopUrl(profile.shop_url ?? "");
                   }}
                 >
                   취소

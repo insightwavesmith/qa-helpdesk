@@ -11,7 +11,7 @@ interface AnswerCardProps {
     like_count: number;
     created_at: string;
     source_refs?: unknown;
-    author?: { id: string; name: string; shop_name?: string } | null;
+    author?: { id: string; name: string; shop_name?: string | null } | null;
   };
 }
 

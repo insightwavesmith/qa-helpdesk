@@ -82,7 +82,7 @@ export default async function PostDetailPage({
             created_at: post.created_at,
             author: post.author,
           }}
-          relatedPosts={relatedPosts.map((p: { id: string; title: string; content: string; body_md?: string; category: string; is_pinned: boolean; view_count: number; created_at: string; author?: { id: string; name: string; shop_name?: string } | null }) => ({
+          relatedPosts={relatedPosts.map((p: { id: string; title: string; content: string; body_md?: string; category: string; is_pinned: boolean; view_count: number; created_at: string; author?: { id: string; name: string; shop_name: string | null } | null }) => ({
             id: p.id,
             title: p.title,
             content: p.content,

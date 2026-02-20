@@ -93,6 +93,7 @@ return <StudentHome />;  // student, alumni 모두
 - 초대코드 형식: 기수당 1개 (예: BS6-2026). D1 확정
 - alumni = student 동일 권한. 별도 분기 불필요. D3 확정
 - 비회원 정보공유 3개 미리보기는 Phase 4로 보류 (D4)
+- member = Q&A 접근 불가 (정보공유/공지/뉴스레터만). D2 확정
 
 ## 태스크
 
@@ -146,13 +147,14 @@ return <StudentHome />;  // student, alumni 모두
 - 완료 기준:
   - [ ] 로그인 후 role 조회 (profiles 테이블 SELECT)
   - [ ] 역할별 라우팅:
-    - `lead` → /dashboard 허용 (MemberDashboard — 정보공유만)
-    - `member` → /dashboard 허용 (MemberDashboard)
+    - `lead` → /dashboard 허용 (MemberDashboard — 정보공유/공지/뉴스레터만, Q&A 접근 불가)
+    - `member` → /dashboard 허용 (MemberDashboard — 정보공유/공지/뉴스레터만, Q&A 접근 불가)
     - `student`/`alumni` + onboarding_status != 'completed' → /onboarding 강제 리다이렉트
     - `student`/`alumni` + onboarding 완료 → 전체 접근
     - `admin` → 전체 접근
   - [ ] /onboarding은 student/alumni만 접근 가능
   - [ ] /admin/* 은 admin만 접근 가능
+  - [ ] /questions/* 은 student/alumni/admin만 접근 가능 (lead/member → /dashboard 리다이렉트)
   - [ ] 미들웨어 성능: role 조회 캐싱 (cookie 또는 session)
   - [ ] 공개 경로 업데이트: /login, /signup, /subscribe, /unsubscribe + 정보공유 미리보기(Phase 4)
 
@@ -186,8 +188,8 @@ return <StudentHome />;  // student, alumni 모두
 - 파일: `src/app/(main)/dashboard/page.tsx` (수정)
 - 의존: T3 완료 후
 - 완료 기준:
-  - [ ] lead → MemberDashboard (정보공유만 표시)
-  - [ ] member → MemberDashboard
+  - [ ] lead → MemberDashboard (정보공유/공지/뉴스레터만, Q&A 메뉴 숨김)
+  - [ ] member → MemberDashboard (정보공유/공지/뉴스레터만, Q&A 메뉴 숨김)
   - [ ] student/alumni → StudentHome (기존 그대로)
   - [ ] pending (레거시) → /pending 리다이렉트
   - [ ] rejected → 에러 메시지 페이지
@@ -198,10 +200,11 @@ return <StudentHome />;  // student, alumni 모두
 | 만료된 초대코드로 가입 시도 | "초대코드가 만료되었습니다" 에러 |
 | 사용 횟수 초과된 코드 | "초대코드 사용 한도를 초과했습니다" 에러 |
 | 존재하지 않는 코드 | "유효하지 않은 초대코드입니다" 에러 |
-| 코드 없이 가입 → lead | 간소화 폼, /dashboard에서 정보공유만 표시 |
+| 코드 없이 가입 → lead | 간소화 폼, /dashboard에서 정보공유/공지/뉴스레터만 (Q&A 접근 불가) |
 | student가 온보딩 중간에 브라우저 닫음 | 다음 로그인 시 /onboarding, 마지막 step부터 |
 | student가 URL 직접 입력 (/dashboard) | 미들웨어가 /onboarding으로 리다이렉트 |
 | lead가 /admin 접근 시도 | 미들웨어가 /dashboard로 리다이렉트 |
+| lead/member가 /questions 접근 시도 | 미들웨어가 /dashboard로 리다이렉트 |
 | 기존 가입자 (role=approved/pending) | 레거시 처리: approved→member, pending→pending 유지 |
 | student_registry에 이메일 없는 수강생 | 매칭 실패 → 관리자 수동 매칭 대기 |
 | 동시에 같은 코드로 2명 가입 | used_count 원자적 증가 (UPDATE ... SET used_count = used_count + 1) |
@@ -223,7 +226,8 @@ return <StudentHome />;  // student, alumni 모두
 ☐ T2 검증: 유효한 코드 → student_registry 이메일 매칭 → matched_profile_id 설정
 ☐ T2 검증: 잘못된 코드 → 에러 메시지
 ☐ T3 검증: student + 온보딩 미완료 → /onboarding 리다이렉트
-☐ T3 검증: lead → /dashboard 접근 가능 (정보공유만)
+☐ T3 검증: lead → /dashboard 접근 가능 (정보공유/공지/뉴스레터만)
+☐ T3 검증: lead → /questions 접근 불가 (리다이렉트)
 ☐ T3 검증: lead → /admin 접근 불가
 ☐ T4 검증: 온보딩 4단계 진행 → onboarding_status 'completed'
 ☐ T4 검증: 중간에 나가기 → 다음 접속 시 이어서

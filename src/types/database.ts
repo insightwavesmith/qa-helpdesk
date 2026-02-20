@@ -15,10 +15,10 @@ export interface Database {
           id: string;
           email: string;
           name: string;
-          phone: string;
-          shop_url: string;
-          shop_name: string;
-          business_number: string;
+          phone: string | null;
+          shop_url: string | null;
+          shop_name: string | null;
+          business_number: string | null;
           business_cert_url: string | null;
           cohort: string | null;
           monthly_ad_budget: string | null;
@@ -30,6 +30,8 @@ export interface Database {
           mixpanel_board_id: string | null;
           onboarding_completed: boolean;
           onboarding_step: number;
+          onboarding_status: "not_started" | "in_progress" | "completed";
+          invite_code_used: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -37,10 +39,10 @@ export interface Database {
           id: string;
           email: string;
           name: string;
-          phone: string;
-          shop_url: string;
-          shop_name: string;
-          business_number: string;
+          phone?: string | null;
+          shop_url?: string | null;
+          shop_name?: string | null;
+          business_number?: string | null;
           business_cert_url?: string | null;
           cohort?: string | null;
           monthly_ad_budget?: string | null;
@@ -52,6 +54,8 @@ export interface Database {
           mixpanel_board_id?: string | null;
           onboarding_completed?: boolean;
           onboarding_step?: number;
+          onboarding_status?: "not_started" | "in_progress" | "completed";
+          invite_code_used?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -59,10 +63,10 @@ export interface Database {
           id?: string;
           email?: string;
           name?: string;
-          phone?: string;
-          shop_url?: string;
-          shop_name?: string;
-          business_number?: string;
+          phone?: string | null;
+          shop_url?: string | null;
+          shop_name?: string | null;
+          business_number?: string | null;
           business_cert_url?: string | null;
           cohort?: string | null;
           monthly_ad_budget?: string | null;
@@ -74,6 +78,8 @@ export interface Database {
           mixpanel_board_id?: string | null;
           onboarding_completed?: boolean;
           onboarding_step?: number;
+          onboarding_status?: "not_started" | "in_progress" | "completed";
+          invite_code_used?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -621,7 +627,33 @@ export interface Database {
           },
         ];
       };
-      // invite_codes: 삭제됨 - /signup?type=student 방식으로 변경
+      invite_codes: {
+        Row: {
+          code: string;
+          cohort: string | null;
+          created_by: string | null;
+          expires_at: string | null;
+          max_uses: number | null;
+          used_count: number | null;
+        };
+        Insert: {
+          code: string;
+          cohort?: string | null;
+          created_by?: string | null;
+          expires_at?: string | null;
+          max_uses?: number | null;
+          used_count?: number | null;
+        };
+        Update: {
+          code?: string;
+          cohort?: string | null;
+          created_by?: string | null;
+          expires_at?: string | null;
+          max_uses?: number | null;
+          used_count?: number | null;
+        };
+        Relationships: [];
+      };
       ad_accounts: {
         Row: {
           id: string;
