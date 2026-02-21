@@ -28,6 +28,11 @@ export interface Content {
   embedding_status: string | null;
   chunks_count: number | null;
   embedded_at: string | null;
+  ai_summary: string | null;
+  importance_score: number;
+  key_topics: string[];
+  curation_status: 'new' | 'selected' | 'dismissed' | 'published';
+  published_at: string | null;
   created_at: string;
   updated_at: string;
 }

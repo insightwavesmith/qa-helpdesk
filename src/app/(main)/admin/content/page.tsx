@@ -20,13 +20,17 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, FileText, Plus, Newspaper, Mail, Zap } from "lucide-react";
+import { Loader2, FileText, Plus, Newspaper, Mail, Zap, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { getContents } from "@/actions/contents";
+import { getCurationCount } from "@/actions/curation";
 // embedAllPending는 API route(/api/admin/embed)를 통해 호출 (maxDuration 300s)
 import type { Content } from "@/types/content";
 import NewContentModal from "@/components/content/new-content-modal";
+import { CurationTab } from "@/components/curation/curation-tab";
+import { InfoShareTab } from "@/components/curation/info-share-tab";
+import { GeneratePreviewModal } from "@/components/curation/generate-preview-modal";
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   draft: {
@@ -68,6 +72,8 @@ export default function AdminContentPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [embedding, setEmbedding] = useState(false);
+  const [curationCount, setCurationCount] = useState(0);
+  const [generateIds, setGenerateIds] = useState<string[] | null>(null);
 
   const loadContents = useCallback(async () => {
     setLoading(true);
@@ -94,6 +100,7 @@ export default function AdminContentPage() {
 
   useEffect(() => {
     loadContents();
+    getCurationCount().then(setCurationCount);
   }, [loadContents]);
 
   const handleRowClick = (contentId: string) => {
@@ -199,8 +206,17 @@ export default function AdminContentPage() {
       </div>
 
       {/* Hub Tabs */}
-      <Tabs defaultValue="contents">
+      <Tabs defaultValue="curation">
         <TabsList variant="line">
+          <TabsTrigger value="curation" className="gap-1.5">
+            <Sparkles className="h-4 w-4" />
+            큐레이션
+            {curationCount > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">
+                {curationCount}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="contents" className="gap-1.5">
             <FileText className="h-4 w-4" />
             콘텐츠
@@ -214,6 +230,13 @@ export default function AdminContentPage() {
             이메일
           </TabsTrigger>
         </TabsList>
+
+        {/* 큐레이션 탭 */}
+        <TabsContent value="curation" className="mt-4">
+          <CurationTab
+            onGenerateInfoShare={(ids) => setGenerateIds(ids)}
+          />
+        </TabsContent>
 
         {/* 콘텐츠 탭 */}
         <TabsContent value="contents" className="space-y-6 mt-4">
@@ -370,17 +393,9 @@ export default function AdminContentPage() {
           </Card>
         </TabsContent>
 
-        {/* 정보공유 탭 (Phase C에서 구현) */}
+        {/* 정보공유 탭 */}
         <TabsContent value="posts" className="mt-4">
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-20">
-              <Newspaper className="h-10 w-10 text-gray-300 mb-3" />
-              <p className="text-[15px] font-medium text-gray-500">정보공유 관리</p>
-              <p className="text-[13px] text-gray-400 mt-1">
-                게시 순서 변경, 조회수 성과 등을 관리합니다.
-              </p>
-            </CardContent>
-          </Card>
+          <InfoShareTab />
         </TabsContent>
 
         {/* 이메일 탭 (Phase D에서 구현) */}
@@ -402,6 +417,16 @@ export default function AdminContentPage() {
         onOpenChange={setModalOpen}
         onCreated={(id) => router.push(`/admin/content/${id}`)}
       />
+
+      {generateIds && (
+        <GeneratePreviewModal
+          contentIds={generateIds}
+          onClose={() => {
+            setGenerateIds(null);
+            getCurationCount().then(setCurationCount);
+          }}
+        />
+      )}
     </div>
   );
 }

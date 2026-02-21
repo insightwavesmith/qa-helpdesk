@@ -36,6 +36,7 @@ function getPriority(sourceType: string | null): number {
       return 1;
     case "qa":
     case "feedback":
+    case "info_share":
       return 2;
     case "crawl":
     case "marketing_theory":
