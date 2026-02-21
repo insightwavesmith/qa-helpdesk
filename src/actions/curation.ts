@@ -153,7 +153,7 @@ export async function batchUpdateCurationStatus(
   return { error: null };
 }
 
-export async function publishInfoShare({
+export async function createInfoShareDraft({
   title,
   bodyMd,
   category = "education",
@@ -167,31 +167,29 @@ export async function publishInfoShare({
   const supabase = await requireAdmin();
   const now = new Date().toISOString();
 
-  // 1. 새 contents 행 INSERT (정보공유)
+  // 1. 새 contents 행 INSERT (draft — 콘텐츠 탭에서 편집/게시)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: newContent, error: insertError } = await (supabase as any)
     .from("contents")
     .insert({
       title,
       body_md: bodyMd,
-      status: "published",
+      status: "draft",
       type: "education",
       category,
       source_type: "info_share",
       source_ref: sourceContentIds.join(","),
       curation_status: "published",
-      published_at: now,
-      embedding_status: "pending",
     })
     .select("id")
     .single();
 
   if (insertError || !newContent) {
-    console.error("publishInfoShare insert error:", insertError);
-    return { data: null, error: insertError?.message || "게시 실패" };
+    console.error("createInfoShareDraft insert error:", insertError);
+    return { data: null, error: insertError?.message || "생성 실패" };
   }
 
-  // 2. 원본 콘텐츠 curation_status → published (별도 클라이언트로 실행)
+  // 2. 원본 콘텐츠 curation_status → published (별도 클라이언트)
   if (sourceContentIds.length > 0) {
     const svc2 = createServiceClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -201,8 +199,7 @@ export async function publishInfoShare({
       .in("id", sourceContentIds);
 
     if (updateError) {
-      console.error("publishInfoShare 원본 상태 업데이트 실패:", updateError);
-      // 재시도 (개별 UPDATE)
+      console.error("createInfoShareDraft 원본 상태 업데이트 실패:", updateError);
       for (const srcId of sourceContentIds) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: retryErr } = await (svc2 as any)
@@ -216,13 +213,7 @@ export async function publishInfoShare({
     }
   }
 
-  // 3. 자동 임베딩 (fire-and-forget)
-  embedContentToChunks(newContent.id).catch((err) =>
-    console.error("publishInfoShare 임베딩 실패 (무시됨):", err)
-  );
-
   revalidatePath("/admin/content");
-  revalidatePath("/posts");
   return { data: { id: newContent.id }, error: null };
 }
 

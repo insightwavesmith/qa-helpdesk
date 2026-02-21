@@ -18,9 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Send, Eye, Pencil } from "lucide-react";
+import { Loader2, FileText, Eye, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { publishInfoShare } from "@/actions/curation";
+import { createInfoShareDraft } from "@/actions/curation";
+import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 
 interface GeneratePreviewModalProps {
@@ -32,8 +33,9 @@ export function GeneratePreviewModal({
   contentIds,
   onClose,
 }: GeneratePreviewModalProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [publishing, setPublishing] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState("");
   const [bodyMd, setBodyMd] = useState("");
   const [category, setCategory] = useState("education");
@@ -64,25 +66,29 @@ export function GeneratePreviewModal({
     generate();
   }, [contentIds]);
 
-  const handlePublish = async () => {
+  const handleCreate = async () => {
     if (!title.trim() || !bodyMd.trim()) {
       toast.error("제목과 본문을 입력해주세요.");
       return;
     }
-    setPublishing(true);
-    const { error: pubError } = await publishInfoShare({
+    setCreating(true);
+    const { data, error: createError } = await createInfoShareDraft({
       title: title.trim(),
       bodyMd: bodyMd.trim(),
       category,
       sourceContentIds: contentIds,
     });
-    if (pubError) {
-      toast.error(pubError);
+    if (createError) {
+      toast.error(createError);
+      setCreating(false);
     } else {
-      toast.success("정보공유가 게시되었습니다.");
+      toast.success("정보공유 초안이 콘텐츠 탭에 생성되었습니다.");
       onClose();
+      // 콘텐츠 상세 페이지로 이동
+      if (data?.id) {
+        router.push(`/admin/content/${data.id}`);
+      }
     }
-    setPublishing(false);
   };
 
   return (
@@ -170,22 +176,27 @@ export function GeneratePreviewModal({
               )}
             </div>
 
+            {/* 안내 */}
+            <p className="text-xs text-gray-400">
+              초안으로 저장됩니다. 콘텐츠 탭에서 확인 후 게시할 수 있습니다.
+            </p>
+
             {/* 액션 */}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={onClose}>
                 취소
               </Button>
               <Button
-                onClick={handlePublish}
-                disabled={publishing}
+                onClick={handleCreate}
+                disabled={creating}
                 className="bg-[#F75D5D] hover:bg-[#E54949] gap-1.5"
               >
-                {publishing ? (
+                {creating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Send className="h-4 w-4" />
+                  <FileText className="h-4 w-4" />
                 )}
-                {publishing ? "게시 중..." : "게시"}
+                {creating ? "생성 중..." : "생성"}
               </Button>
             </div>
           </div>
