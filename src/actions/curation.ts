@@ -191,13 +191,29 @@ export async function publishInfoShare({
     return { data: null, error: insertError?.message || "게시 실패" };
   }
 
-  // 2. 원본 콘텐츠 curation_status → published
+  // 2. 원본 콘텐츠 curation_status → published (별도 클라이언트로 실행)
   if (sourceContentIds.length > 0) {
+    const svc2 = createServiceClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    const { error: updateError } = await (svc2 as any)
       .from("contents")
       .update({ curation_status: "published", updated_at: now })
       .in("id", sourceContentIds);
+
+    if (updateError) {
+      console.error("publishInfoShare 원본 상태 업데이트 실패:", updateError);
+      // 재시도 (개별 UPDATE)
+      for (const srcId of sourceContentIds) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: retryErr } = await (svc2 as any)
+          .from("contents")
+          .update({ curation_status: "published", updated_at: now })
+          .eq("id", srcId);
+        if (retryErr) {
+          console.error(`  원본 ${srcId} 재시도 실패:`, retryErr);
+        }
+      }
+    }
   }
 
   // 3. 자동 임베딩 (fire-and-forget)
