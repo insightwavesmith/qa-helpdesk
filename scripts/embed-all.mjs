@@ -1,7 +1,7 @@
 // 전체 콘텐츠 임베딩 스크립트
 // lecture_chunks 테이블의 모든 행을 Gemini text-embedding-004로 임베딩
 
-const GEMINI_API_KEY = "AIzaSyCpsG0nDciBwBB4723Zbrf_ELu6tjhYJKU";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const SUPABASE_URL = "https://symvlrsmkjlztoopbnht.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5bXZscnNta2psenRvb3Bibmh0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTYwODYyMiwiZXhwIjoyMDgxMTg0NjIyfQ.FJLi7AiKw98JqUqPdkj2MBj9fDW6ZSsfgzUDVSFKc8Q";
 
