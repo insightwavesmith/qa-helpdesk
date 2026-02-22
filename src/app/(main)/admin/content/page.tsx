@@ -31,6 +31,7 @@ import NewContentModal from "@/components/content/new-content-modal";
 import { CurationTab } from "@/components/curation/curation-tab";
 import { InfoShareTab } from "@/components/curation/info-share-tab";
 import { GeneratePreviewModal } from "@/components/curation/generate-preview-modal";
+import { PipelineSidebar } from "@/components/curation/pipeline-sidebar";
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   draft: {
@@ -74,12 +75,13 @@ export default function AdminContentPage() {
   const [embedding, setEmbedding] = useState(false);
   const [curationCount, setCurationCount] = useState(0);
   const [generateIds, setGenerateIds] = useState<string[] | null>(null);
+  const [sidebarSource, setSidebarSource] = useState("all");
 
   const loadContents = useCallback(async () => {
     setLoading(true);
     try {
-      const params: { type?: string; status?: string; pageSize?: number } =
-        { pageSize: 100 };
+      const params: { type?: string; status?: string; sourceType?: string; pageSize?: number } =
+        { pageSize: 100, sourceType: "info_share" };
       if (typeFilter !== "all") params.type = typeFilter;
       if (statusFilter !== "all" && statusFilter !== "sent") params.status = statusFilter;
 
@@ -233,9 +235,18 @@ export default function AdminContentPage() {
 
         {/* 큐레이션 탭 */}
         <TabsContent value="curation" className="mt-4">
-          <CurationTab
-            onGenerateInfoShare={(ids) => setGenerateIds(ids)}
-          />
+          <div className="flex gap-4">
+            <PipelineSidebar
+              activeSource={sidebarSource}
+              onSourceSelect={setSidebarSource}
+            />
+            <div className="flex-1 min-w-0">
+              <CurationTab
+                onGenerateInfoShare={(ids) => setGenerateIds(ids)}
+                externalSourceFilter={sidebarSource}
+              />
+            </div>
+          </div>
         </TabsContent>
 
         {/* 콘텐츠 탭 */}

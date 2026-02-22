@@ -53,12 +53,11 @@ export async function getCurationContents({
     query = query.in("curation_status", ["new", "selected"]);
   }
 
-  // 소스 필터
+  // 소스 필터 (T3: 모든 source_type 허용, info_share만 제외)
   if (source && source !== "all") {
     query = query.eq("source_type", source);
   } else {
-    // 큐레이션 대상: crawl, youtube만
-    query = query.in("source_type", ["crawl", "youtube"]);
+    query = query.neq("source_type", "info_share");
   }
 
   // 중요도 필터
@@ -95,7 +94,7 @@ export async function getCurationCount() {
     .from("contents")
     .select("id", { count: "exact", head: true })
     .in("curation_status", ["new", "selected"])
-    .in("source_type", ["crawl", "youtube"]);
+    .neq("source_type", "info_share");
 
   if (error) {
     console.error("getCurationCount error:", error);
@@ -240,4 +239,72 @@ export async function getInfoShareContents({
   }
 
   return { data: data || [], count: count || 0, error: null };
+}
+
+// ─── T7: 파이프라인 현황 ─────────────────────────────────────
+
+export interface PipelineStat {
+  sourceType: string;
+  label: string;
+  contentsCount: number;
+  chunksCount: number;
+  newCount: number;
+}
+
+const SOURCE_LABELS: Record<string, string> = {
+  blueprint: "블루프린트",
+  lecture: "자사몰사관학교",
+  youtube: "YouTube",
+  crawl: "블로그",
+  marketing_theory: "마케팅원론",
+  webinar: "웨비나",
+  papers: "논문",
+  file: "파일",
+};
+
+export async function getPipelineStats(): Promise<PipelineStat[]> {
+  const supabase = await requireAdmin();
+  const dayAgo = new Date(Date.now() - 86400000).toISOString();
+
+  // 3개 쿼리 병렬 실행
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = supabase as any;
+  const [contentsRes, chunksRes, newRes] = await Promise.all([
+    s.from("contents").select("source_type").neq("source_type", "info_share"),
+    s.from("knowledge_chunks").select("source_type"),
+    s.from("contents").select("source_type").gte("created_at", dayAgo).neq("source_type", "info_share"),
+  ]);
+
+  // 집계
+  const contentsCounts: Record<string, number> = {};
+  const chunksCounts: Record<string, number> = {};
+  const newCounts: Record<string, number> = {};
+
+  for (const row of (contentsRes.data || []) as { source_type: string }[]) {
+    const st = row.source_type || "unknown";
+    contentsCounts[st] = (contentsCounts[st] || 0) + 1;
+  }
+  for (const row of (chunksRes.data || []) as { source_type: string }[]) {
+    const st = row.source_type || "unknown";
+    chunksCounts[st] = (chunksCounts[st] || 0) + 1;
+  }
+  for (const row of (newRes.data || []) as { source_type: string }[]) {
+    const st = row.source_type || "unknown";
+    newCounts[st] = (newCounts[st] || 0) + 1;
+  }
+
+  const allSources = new Set([...Object.keys(contentsCounts), ...Object.keys(chunksCounts)]);
+  const stats: PipelineStat[] = [];
+  for (const st of allSources) {
+    if (st === "info_share" || st === "unknown") continue;
+    stats.push({
+      sourceType: st,
+      label: SOURCE_LABELS[st] || st,
+      contentsCount: contentsCounts[st] || 0,
+      chunksCount: chunksCounts[st] || 0,
+      newCount: newCounts[st] || 0,
+    });
+  }
+  stats.sort((a, b) => b.chunksCount - a.chunksCount);
+  return stats;
 }

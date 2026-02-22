@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { searchChunks } from "@/lib/knowledge";
 
 export const maxDuration = 60;
 
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 선택된 콘텐츠 조회 (ai_summary는 마이그레이션 후 존재하는 컬럼)
+    // 선택된 콘텐츠 조회
     const { data: rawContents, error: fetchError } = await svc
       .from("contents")
       .select("id, title, body_md, source_type, source_ref")
@@ -69,14 +70,32 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const contents = rawContents as any[];
 
-    // 프롬프트 구성
+    // 프롬프트 구성 (T6: body_md 4,000자로 축소하여 RAG 컨텍스트 공간 확보)
     const isSingle = contents.length === 1;
     const contentBlocks = contents
       .map(
-        (c: { title: string; source_ref: string | null; ai_summary?: string | null; body_md: string | null }, i: number) =>
-          `### 콘텐츠 ${i + 1}: ${c.title}\n출처: ${c.source_ref || "없음"}\n요약: ${c.ai_summary || "없음"}\n\n${(c.body_md || "").substring(0, 8000)}`
+        (c: { title: string; source_ref: string | null; body_md: string | null }, i: number) =>
+          `### 콘텐츠 ${i + 1}: ${c.title}\n출처: ${c.source_ref || "없음"}\n\n${(c.body_md || "").substring(0, 4000)}`
       )
       .join("\n\n---\n\n");
+
+    // T6: RAG 검색 — lecture + blueprint chunks에서 관련 내용 검색
+    let ragContext = "";
+    try {
+      const searchQuery = contents.map((c: { title: string }) => c.title).join(" ");
+      const ragChunks = await Promise.race([
+        searchChunks(searchQuery, 5, 0.4, ["lecture", "blueprint"]),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("RAG timeout")), 10000)),
+      ]);
+
+      if (ragChunks.length > 0) {
+        ragContext = ragChunks
+          .map((c) => `[${c.lecture_name} / ${c.source_type}] ${c.content.substring(0, 600)}`)
+          .join("\n\n");
+      }
+    } catch (ragErr) {
+      console.warn("RAG 검색 실패 (비교 없이 진행):", ragErr instanceof Error ? ragErr.message : ragErr);
+    }
 
     const systemPrompt = `당신은 자사몰사관학교의 정보공유 글 작성 전문가입니다.
 메타(Meta) 광고를 운영하는 자사몰 대표님들을 위한 실용적인 콘텐츠를 작성합니다.
@@ -91,14 +110,20 @@ export async function POST(request: NextRequest) {
 2. "## 핵심 포인트" 헤더 후 핵심 3개 (각 2~3줄)
 3. 실무 적용 팁 1개
 4. 원문 출처 표기
+${ragContext ? `5. 강의/블루프린트 내용과 비교하여 충돌하거나 보완할 내용이 있으면 "## 강의 내용과 비교" 섹션을 추가하세요. 비교할 내용이 없으면 이 섹션을 생략하세요.` : ""}
 
 ## 출력 형식
 첫 줄: # 한국어 제목
 나머지: 마크다운 본문`;
 
-    const userPrompt = isSingle
+    let userPrompt = isSingle
       ? `다음 콘텐츠를 자사몰 대표님을 위한 정보공유 글로 변환해주세요.\n\n${contentBlocks}`
       : `다음 ${contents.length}개 콘텐츠를 묶어 "이번 주 핵심 뉴스" 형태의 정보공유 글로 작성해주세요.\n각 콘텐츠의 핵심을 정리하고, 전체를 아우르는 인사이트를 제공해주세요.\n\n${contentBlocks}`;
+
+    // RAG 컨텍스트 추가
+    if (ragContext) {
+      userPrompt += `\n\n---\n\n## 참고: 자사몰사관학교 강의/블루프린트 관련 내용\n아래는 기존 강의 자료에서 관련된 내용입니다. 위 콘텐츠와 충돌하거나 보완할 부분이 있으면 "## 강의 내용과 비교" 섹션에 정리해주세요.\n\n${ragContext}`;
+    }
 
     // Anthropic API 호출
     const response = await fetch(ANTHROPIC_API_URL, {
@@ -126,8 +151,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    const text =
-      data.content?.[0]?.text || "";
+    const text = data.content?.[0]?.text || "";
 
     if (!text.trim()) {
       return NextResponse.json(

@@ -75,12 +75,14 @@ export async function getContents({
   type,
   category,
   status,
+  sourceType,
   page = 1,
   pageSize = 20,
 }: {
   type?: string;
   category?: string;
   status?: string;
+  sourceType?: string;
   page?: number;
   pageSize?: number;
 } = {}) {
@@ -93,6 +95,10 @@ export async function getContents({
     .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(from, to);
+
+  if (sourceType) {
+    query = query.eq("source_type", sourceType);
+  }
 
   if (type) {
     query = query.eq("type", type);

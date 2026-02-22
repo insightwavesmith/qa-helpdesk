@@ -1,13 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Star, Globe, Youtube } from "lucide-react";
+import { Star, Globe, Youtube, Shield, GraduationCap, BookOpen, FileText, Mic, FlaskConical, ChevronDown, ChevronUp } from "lucide-react";
 
 interface CurationCardProps {
   id: string;
   title: string;
   aiSummary: string | null;
+  bodyMd: string | null;
   importanceScore: number;
   keyTopics: string[];
   sourceType: string | null;
@@ -45,6 +47,7 @@ export function CurationCard({
   id,
   title,
   aiSummary,
+  bodyMd,
   importanceScore,
   keyTopics,
   sourceType,
@@ -52,11 +55,26 @@ export function CurationCard({
   selected,
   onToggle,
 }: CurationCardProps) {
-  const isYoutube = sourceType === "youtube";
+  const [expanded, setExpanded] = useState(false);
+  const summaryText = aiSummary || (bodyMd ? bodyMd.substring(0, 500) : null);
+  const canExpand = !!summaryText && summaryText.length > 80;
   const time = new Date(createdAt).toLocaleTimeString("ko-KR", {
     hour: "2-digit",
     minute: "2-digit",
   });
+
+  const sourceIcon = () => {
+    switch (sourceType) {
+      case "youtube": return <Youtube className="h-4 w-4 text-red-500 shrink-0" />;
+      case "blueprint": return <Shield className="h-4 w-4 text-purple-500 shrink-0" />;
+      case "lecture": return <GraduationCap className="h-4 w-4 text-green-600 shrink-0" />;
+      case "marketing_theory": return <BookOpen className="h-4 w-4 text-orange-500 shrink-0" />;
+      case "webinar": return <Mic className="h-4 w-4 text-indigo-500 shrink-0" />;
+      case "papers": return <FlaskConical className="h-4 w-4 text-teal-500 shrink-0" />;
+      case "file": return <FileText className="h-4 w-4 text-gray-500 shrink-0" />;
+      default: return <Globe className="h-4 w-4 text-blue-500 shrink-0" />;
+    }
+  };
 
   return (
     <div
@@ -77,11 +95,7 @@ export function CurationCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2 mb-1">
           <div className="flex items-center gap-2 min-w-0">
-            {isYoutube ? (
-              <Youtube className="h-4 w-4 text-red-500 shrink-0" />
-            ) : (
-              <Globe className="h-4 w-4 text-blue-500 shrink-0" />
-            )}
+            {sourceIcon()}
             <h4 className="text-sm font-medium text-[#111827] truncate">
               {title}
             </h4>
@@ -92,10 +106,21 @@ export function CurationCard({
           </div>
         </div>
 
-        {aiSummary ? (
-          <p className="text-xs text-gray-500 line-clamp-2 mb-2">
-            {aiSummary}
-          </p>
+        {summaryText ? (
+          <div className="mb-2">
+            <p className={`text-xs text-gray-500 ${expanded ? "" : "line-clamp-2"}`}>
+              {summaryText}
+            </p>
+            {canExpand && (
+              <button
+                className="flex items-center gap-0.5 text-[11px] text-gray-400 hover:text-gray-600 mt-1"
+                onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+              >
+                {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                {expanded ? "접기" : "더보기"}
+              </button>
+            )}
+          </div>
         ) : (
           <p className="text-xs text-gray-400 italic mb-2">
             {importanceScore === 0 ? "분석 실패" : "요약 없음"}

@@ -21,6 +21,7 @@ import type { Content } from "@/types/content";
 
 interface CurationTabProps {
   onGenerateInfoShare: (selectedIds: string[]) => void;
+  externalSourceFilter?: string;
 }
 
 function groupByDate(items: Content[]) {
@@ -48,11 +49,11 @@ function groupByDate(items: Content[]) {
     .map((key) => ({ label: key, items: groups[key] }));
 }
 
-export function CurationTab({ onGenerateInfoShare }: CurationTabProps) {
+export function CurationTab({ onGenerateInfoShare, externalSourceFilter }: CurationTabProps) {
   const [contents, setContents] = useState<Content[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [sourceFilter, setSourceFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState(externalSourceFilter || "all");
   const [scoreFilter, setScoreFilter] = useState("all");
   const [periodFilter, setPeriodFilter] = useState("all");
   const [dismissing, setDismissing] = useState(false);
@@ -77,6 +78,12 @@ export function CurationTab({ onGenerateInfoShare }: CurationTabProps) {
       setLoading(false);
     }
   }, [sourceFilter, scoreFilter, periodFilter]);
+
+  useEffect(() => {
+    if (externalSourceFilter !== undefined && externalSourceFilter !== sourceFilter) {
+      setSourceFilter(externalSourceFilter);
+    }
+  }, [externalSourceFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     loadContents();
@@ -127,8 +134,14 @@ export function CurationTab({ onGenerateInfoShare }: CurationTabProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">전체 소스</SelectItem>
-              <SelectItem value="crawl">블로그</SelectItem>
+              <SelectItem value="blueprint">블루프린트</SelectItem>
+              <SelectItem value="lecture">자사몰사관학교</SelectItem>
               <SelectItem value="youtube">YouTube</SelectItem>
+              <SelectItem value="crawl">블로그</SelectItem>
+              <SelectItem value="marketing_theory">마케팅원론</SelectItem>
+              <SelectItem value="webinar">웨비나</SelectItem>
+              <SelectItem value="papers">논문</SelectItem>
+              <SelectItem value="file">파일</SelectItem>
             </SelectContent>
           </Select>
 
@@ -217,6 +230,7 @@ export function CurationTab({ onGenerateInfoShare }: CurationTabProps) {
                     id={item.id}
                     title={item.title}
                     aiSummary={item.ai_summary}
+                    bodyMd={item.body_md}
                     importanceScore={item.importance_score}
                     keyTopics={item.key_topics || []}
                     sourceType={item.source_type}
