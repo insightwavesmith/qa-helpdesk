@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { searchChunks } from "@/lib/knowledge";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 
@@ -54,10 +54,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 선택된 콘텐츠 조회
+    // 선택된 콘텐츠 조회 (key_topics, ai_summary 추가)
     const { data: rawContents, error: fetchError } = await svc
       .from("contents")
-      .select("id, title, body_md, source_type, source_ref")
+      .select("id, title, body_md, source_type, source_ref, key_topics, ai_summary")
       .in("id", contentIds);
 
     if (fetchError || !rawContents || rawContents.length === 0) {
@@ -70,59 +70,111 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const contents = rawContents as any[];
 
-    // 프롬프트 구성 (T6: body_md 4,000자로 축소하여 RAG 컨텍스트 공간 확보)
+    // 콘텐츠 수 기반 동적 truncation (1~2개: 4000자, 3~4개: 3000자)
+    const truncLen = contents.length <= 2 ? 4000 : 3000;
     const isSingle = contents.length === 1;
     const contentBlocks = contents
       .map(
-        (c: { title: string; source_ref: string | null; body_md: string | null }, i: number) =>
-          `### 콘텐츠 ${i + 1}: ${c.title}\n출처: ${c.source_ref || "없음"}\n\n${(c.body_md || "").substring(0, 4000)}`
+        (c: { title: string; body_md: string | null }, i: number) =>
+          `### 콘텐츠 ${i + 1}: ${c.title}\n\n${(c.body_md || "").substring(0, truncLen)}`
       )
       .join("\n\n---\n\n");
 
-    // T6: RAG 검색 — lecture + blueprint chunks에서 관련 내용 검색
+    // RAG 검색 — lecture + blueprint + marketing_theory chunks
     let ragContext = "";
     try {
-      const searchQuery = contents.map((c: { title: string }) => c.title).join(" ");
+      const searchQuery = contents
+        .map((c: { title: string; key_topics: string[] | null; ai_summary: string | null }) =>
+          [c.title, c.key_topics?.join(", ") || "", c.ai_summary?.slice(0, 200) || ""].filter(Boolean).join(" ")
+        )
+        .join(" ");
       const ragChunks = await Promise.race([
-        searchChunks(searchQuery, 5, 0.4, ["lecture", "blueprint"]),
+        searchChunks(searchQuery, 8, 0.4, ["lecture", "blueprint", "marketing_theory"]),
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error("RAG timeout")), 10000)),
       ]);
 
       if (ragChunks.length > 0) {
         ragContext = ragChunks
-          .map((c) => `[${c.lecture_name} / ${c.source_type}] ${c.content.substring(0, 600)}`)
+          .map((c) => `[${c.source_type}: ${c.lecture_name}]\n${c.content.substring(0, 1000)}`)
           .join("\n\n");
+      } else {
+        console.warn("RAG 검색 결과 0건:", searchQuery.substring(0, 100));
       }
     } catch (ragErr) {
       console.warn("RAG 검색 실패 (비교 없이 진행):", ragErr instanceof Error ? ragErr.message : ragErr);
     }
 
-    const systemPrompt = `당신은 자사몰사관학교의 정보공유 글 작성 전문가입니다.
-메타(Meta) 광고를 운영하는 자사몰 대표님들을 위한 실용적인 콘텐츠를 작성합니다.
+    const systemPrompt = `당신은 자사몰사관학교의 콘텐츠 에디터입니다.
+외부 트렌드 정보를 기반으로, 자사몰사관학교 강의 관점에서 재해석한 오리지널 콘텐츠를 작성합니다.
+독자: 메타(Meta) 광고를 운영하는 자사몰 대표님 (초급~중급)
+
+## 핵심 원칙
+- 이 글은 "우리 콘텐츠"다. 외부 글 요약이 아니라 강의 지식 기반의 오리지널 글.
+- 강의 내용과 외부 원문이 충돌하면 → 강의 기준으로 수정
+- 어려운 용어/표현 → 강의에서 쓰는 쉬운 표현으로 대체
+- 사례 → 수강생/자사몰 사례 활용 (강의 컨텍스트에 있으면 적극 활용)
+- 강의에서 더 깊게 다루는 부분 → 내용 보충
+- 출처/참고 표기 불필요
+
+## 글 구조 (리캐치 패턴)
+1. **훅** (1줄): 질문 또는 임팩트 있는 선언
+2. **도입부** (2~3문장): 왜 읽어야 하는지, 독자 고민에 공감
+3. **목차** (넘버링): 다룰 주제 미리보기
+
+---
+
+4. **본론** (넘버링된 h2 소제목, 2~4개 섹션):
+   각 섹션마다:
+   - 핵심 숫자 블록 (불릿 + 볼드 숫자) — 숫자 먼저, 설명 나중
+   - 본문 — 숫자를 스토리로 풀기. 업계 평균/벤치마크와 비교해서 의미 부여
+   - 인용구 (관련 인물이나 수강생 목소리, 있으면)
+   - 비유/일상 표현으로 체감시키기
+   - 인라인 CTA ("자세히 알아보기 →")는 자사몰사관학교 관련 링크가 있을 때만
+
+---
+
+5. **마치며**: 전체 요약 + 다음 액션 제안
+
+## 글자수
+- 표준: 2,500~4,000자 (공백 포함)
+- 짧은 글 (단일 팁): 1,500~2,500자
+- 긴 글 (종합 가이드): 4,000~6,000자
+- 콘텐츠 수에 따라 자동 판단:
+  - 1개 콘텐츠 → 표준 (2,500~4,000자)
+  - 2~4개 묶음 → 긴 글 (4,000~6,000자)
 
 ## 작성 규칙
-- ~해요 말투 사용 (예: "설정할 수 있어요", "확인해보세요")
-- 한국어만 사용. 영어 단독 제목 금지.
-- 전문 용어에는 괄호 설명 추가 (예: ROAS(광고비 대비 수익률))
+- ~해요 체 (부드럽고 친근하지만 전문적)
+- 한국어 기본. 영어 전문용어는 한글(영어) 병기 (첫 등장만, 이후 한글)
+- 숫자로 말하고 스토리로 풀기 — 데이터가 먼저, 감성이 뒤따름
+- 문단 짧게 (2~3문장)
+- 소제목 넘버링 필수
+- 섹션 사이 구분선(---) 필수
+- 추측 표현 금지 ("~인 것 같아요")
+- 교과서적 정의로 시작 금지 ("~란 ~입니다")
 
-## 구조
-1. 훅 1줄: 질문 또는 핵심 인사이트로 시작
-2. "## 핵심 포인트" 헤더 후 핵심 3개 (각 2~3줄)
-3. 실무 적용 팁 1개
-4. 원문 출처 표기
-${ragContext ? `5. 강의/블루프린트 내용과 비교하여 충돌하거나 보완할 내용이 있으면 "## 강의 내용과 비교" 섹션을 추가하세요. 비교할 내용이 없으면 이 섹션을 생략하세요.` : ""}
+## 강의 컨텍스트 활용법
+아래 '강의 컨텍스트'가 제공됩니다. 이것을 글의 기반으로 삼으세요:
+- 강의에서 설명한 개념이면 → 강의식 쉬운 표현 사용
+- 강의 사례가 있으면 → 구체적으로 인용/각색
+- 강의와 외부 원문이 다르면 → 강의 기준으로 쓰되, "최근 업계에서는 ~라는 의견도 있지만" 형태로 언급 가능
+- 강의에 없는 새로운 정보면 → 외부 원문 기반으로 쓰되 강의 톤/수준에 맞추기
 
 ## 출력 형식
-첫 줄: # 한국어 제목
+첫 줄: # 한국어 제목 (숫자+임팩트, 예: "ROAS 4배 만드는 ASC 세팅법 3가지")
 나머지: 마크다운 본문`;
 
-    let userPrompt = isSingle
-      ? `다음 콘텐츠를 자사몰 대표님을 위한 정보공유 글로 변환해주세요.\n\n${contentBlocks}`
-      : `다음 ${contents.length}개 콘텐츠를 묶어 "이번 주 핵심 뉴스" 형태의 정보공유 글로 작성해주세요.\n각 콘텐츠의 핵심을 정리하고, 전체를 아우르는 인사이트를 제공해주세요.\n\n${contentBlocks}`;
+    // User Prompt 구성
+    let userPrompt: string;
+    if (isSingle) {
+      userPrompt = `다음 외부 콘텐츠를 참고하여, 자사몰사관학교 강의 관점의 오리지널 정보공유 글을 작성해주세요.\n\n### 외부 콘텐츠: ${contents[0].title}\n${(contents[0].body_md || "").substring(0, truncLen)}`;
+    } else {
+      userPrompt = `다음 ${contents.length}개 외부 콘텐츠의 공통 주제를 기반으로, 자사몰사관학교 강의 관점의 오리지널 정보공유 글을 작성해주세요.\n각 콘텐츠에서 유용한 정보를 뽑되, 강의 내용으로 재해석하고 보충하세요.\n\n${contentBlocks}`;
+    }
 
-    // RAG 컨텍스트 추가
+    // 강의 컨텍스트 추가
     if (ragContext) {
-      userPrompt += `\n\n---\n\n## 참고: 자사몰사관학교 강의/블루프린트 관련 내용\n아래는 기존 강의 자료에서 관련된 내용입니다. 위 콘텐츠와 충돌하거나 보완할 부분이 있으면 "## 강의 내용과 비교" 섹션에 정리해주세요.\n\n${ragContext}`;
+      userPrompt += `\n\n---\n\n### 자사몰사관학교 강의 컨텍스트\n아래는 관련 강의/블루프린트 내용입니다. 이것을 글의 기반으로 삼으세요.\n\n${ragContext}`;
     }
 
     // Anthropic API 호출
@@ -136,6 +188,7 @@ ${ragContext ? `5. 강의/블루프린트 내용과 비교하여 충돌하거나
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
         max_tokens: 4096,
+        temperature: 0.7,
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
       }),
@@ -171,6 +224,13 @@ ${ragContext ? `5. 강의/블루프린트 내용과 비교하여 충돌하거나
     if (firstLine.startsWith("# ")) {
       title = firstLine.slice(2).trim();
       bodyMd = lines.slice(1).join("\n").trim();
+    }
+
+    // 출력 길이 검증
+    if (bodyMd.length < 2000) {
+      console.warn(`정보공유 생성 결과가 짧음: ${bodyMd.length}자 (기준 2,500자 이상)`);
+    } else if (bodyMd.length > 7000) {
+      console.warn(`정보공유 생성 결과가 김: ${bodyMd.length}자 (기준 6,000자 이하)`);
     }
 
     return NextResponse.json({
