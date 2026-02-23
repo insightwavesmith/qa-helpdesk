@@ -147,6 +147,14 @@ git worktree remove ../qa-helpdesk-frontend
 - [ ] 기존 기능 깨지지 않음 확인
 - [ ] Playwright 스크린샷 QA (데스크탑 + 모바일)
 
+## 개발 완료 후 QA (필수 — 건너뛰기 금지)
+TASK.md의 `## 완료 후 QA` 섹션 실행:
+1. `/bkit pdca check` 실행 → qa-strategist + qa-monitor 자동 수행
+2. bkit QA 결과 확인 (Match Rate 90%+, Critical 0)
+3. QA봇에게 결과 보고 (sessions_send → agent:qa-lead:main)
+
+bkit QA는 코드/로그 기반 내부 검증. 브라우저 QA(고객 관점)는 QA봇이 별도 진행.
+
 ## 프로젝트 파일 구조 (팀원 탐색 최소화용)
 ```
 src/
