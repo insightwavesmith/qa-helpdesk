@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!domain) return email;
+  const masked = local.length > 3 ? local.slice(0, 3) + "****" : local + "****";
+  return `${masked}@${domain}`;
+}
+
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -32,11 +39,12 @@ export async function GET() {
       .from("email_sends")
       .select("id, subject, recipient_email, recipient_type, status, sent_at, opened_at, clicked_at, content_id")
       .eq("status", "sent")
-      .order("sent_at", { ascending: false });
+      .order("sent_at", { ascending: false })
+      .limit(1000);
 
     if (error) {
       console.error("analytics error:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: "성과 데이터 조회에 실패했습니다." }, { status: 500 });
     }
 
     // subject별 그룹핑 → 발송 목록 생성
@@ -73,7 +81,7 @@ export async function GET() {
       if (s.clicked_at) g.clicks++;
       g.sends.push({
         id: s.id,
-        email: s.recipient_email,
+        email: maskEmail(s.recipient_email),
         type: s.recipient_type,
         openedAt: s.opened_at,
         clickedAt: s.clicked_at,
