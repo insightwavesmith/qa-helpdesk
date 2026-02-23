@@ -26,8 +26,9 @@ export async function GET() {
       );
     }
 
-    // email_sends에서 subject별 집계
-    const { data: sends, error } = await svc
+    // email_sends에서 subject별 집계 (content_id는 마이그레이션 후 추가된 컬럼)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: sends, error } = await (svc as any)
       .from("email_sends")
       .select("id, subject, recipient_email, recipient_type, status, sent_at, opened_at, clicked_at, content_id")
       .eq("status", "sent")

@@ -1,94 +1,88 @@
-# TASK.md — 큐레이션 탭 전체 임베딩 버튼 추가
-> 2026-02-23 | 콘텐츠 관리 > 큐레이션 탭에 "전체 임베딩" 버튼 추가
+# TASK.md — 뉴스레터 성과 추적 UI (WIP, 새 세션 인계)
+> 2026-02-23 | 에이전트팀 Rate limit으로 중단 → 새 세션에서 이어받기
 
 ## 타입
 개발
 
 ## 목표
-관리자가 큐레이션 탭에서 전체 콘텐츠를 한 번에 임베딩할 수 있는 버튼 추가.
+뉴스레터 편집 패널에 "성과 추적" 탭 추가. 발송된 뉴스레터별 열람율/클릭율 시각화.
 
-## 배경
-- `/api/admin/embed` API 이미 존재 (`POST { all: true }` 지원)
-- `embedAllPending()` 함수로 미임베딩 콘텐츠 일괄 처리 가능
-- 현재 큐레이션 탭(`curation-tab.tsx`)에는 임베딩 버튼 없음
+## 현재 상태 (WIP)
+- 커밋: `d907471` (wip: 뉴스레터 성과 추적 UI)
+- **빌드 에러 있음 — 이어받기 전 반드시 확인**
+
+## 빌드 에러 (수정 필요)
+
+### 에러 내용
+```
+./src/app/api/admin/email/analytics/route.ts:57:21
+Type error: Property 'subject' does not exist on type
+'SelectQueryError<"column 'content_id' does not exist on 'email_sends'.">'
+```
+
+### 원인
+`email_sends` 테이블에 `content_id` 컬럼이 없음. DB 마이그레이션 누락.
+
+### 해결 방법
+1. `email_sends` 테이블 스키마 확인 (`supabase/migrations/` 검색)
+2. `content_id` 컬럼 추가하는 마이그레이션 파일 생성
+3. 또는 analytics API에서 `content_id` 없이 작동하도록 쿼리 수정
+
+## 완료된 파일
+- `src/components/content/newsletter-analytics-tab.tsx` — 성과 추적 탭 컴포넌트 (356줄)
+- `src/app/api/admin/email/analytics/route.ts` — 분석 API
+- `src/app/(main)/admin/content/[id]/page.tsx` — 탭 연결 수정
+- `scripts/embed-notion.mjs` — 노션 임베딩 스크립트 (별도 작업)
+
+## 남은 작업
+☐ DB 마이그레이션 에러 해결
+☐ npm run build 성공 확인
+☐ 관리자 로그인 → 뉴스레터 편집 → "성과 추적" 탭 확인
+☐ Vercel 배포
 
 ## 제약
-- 기존 "정보공유 생성", "일괄 스킵" 버튼 동작에 영향 없어야 함
-- 임베딩 중 중복 요청 방지 (버튼 비활성화)
-- API 응답 타입: `{ processed: number, errors: number }`
-- 기존 import 스타일 유지 (lucide-react 아이콘)
+- `email_sends` 테이블 기존 스키마 보존
+- 기존 발송/편집/구독자 탭 회귀 없어야 함
 
 ## 태스크
 
-### T1. "전체 임베딩" 버튼 추가 (→ frontend-dev)
-**대상 파일:** `src/components/curation/curation-tab.tsx`
+### T1. DB 마이그레이션 수정 (→ backend-dev)
+**대상 파일:** `src/app/api/admin/email/analytics/route.ts`, `supabase/migrations/`
 
-1. `isEmbedding` state 추가 (`useState(false)`)
-2. `handleEmbedAll` 함수 구현:
-   - `POST /api/admin/embed` `{ all: true }` 호출
-   - 로딩 시작/종료 처리
-   - 완료: `toast.success("임베딩 완료: 처리 N건, 오류 M건")`
-   - 실패: `toast.error("임베딩 실패: {에러메시지}")`
-3. 버튼 위치: 필터 행 우측 (Select 컴포넌트 옆)
-   - 선택 없을 때도 항상 표시 (선택 기반 버튼과 달리)
-   - 라벨: "전체 임베딩"
-   - 아이콘: `Database` (lucide-react)
-   - 로딩 중: `Loader2` 스피너 + "임베딩 중..." 텍스트
-   - variant: `outline`, size: `sm`
+1. `email_sends` 테이블 현재 스키마 확인
+2. `content_id` 컬럼 존재 여부 확인
+3. 없으면 마이그레이션 추가 또는 쿼리 수정
+4. 빌드 통과 확인
+
+### T2. 빌드 통과 + 배포 (→ frontend-dev)
+1. `npm run build` 성공
+2. Vercel 배포 (`npx vercel --prod`)
 
 ## 현재 코드
 
-### curation-tab.tsx 버튼 영역 (170~195번째 줄 근처)
-```tsx
-// 필터 + 버튼 행
-<div className="flex items-center justify-between gap-2 mb-4">
-  <div className="flex gap-2">
-    <Select value={sourceFilter} onValueChange={setSourceFilter}>...</Select>
-    <Select value={periodFilter} onValueChange={setPeriodFilter}>...</Select>
-  </div>
-
-  {selectedIds.size > 0 && (
-    <div className="flex gap-2">
-      <Button size="sm" variant="outline" onClick={handleDismiss} ...>
-        <X className="h-3.5 w-3.5" />
-        일괄 스킵 ({selectedIds.size})
-      </Button>
-      <Button size="sm" onClick={handleGenerate} className="bg-[#F75D5D] ...">
-        <Sparkles className="h-3.5 w-3.5" />
-        정보공유 생성 ({selectedIds.size})
-      </Button>
-    </div>
-  )}
-</div>
-```
-
-### embed API 응답 (route.ts)
+### email_sends 관련 에러 위치 (route.ts:57)
 ```ts
-// POST { all: true }
-const result = await embedAllPending();
-return NextResponse.json(result); // { processed: number, errors: number }
+// 문제 라인
+const key = s.subject || "제목 없음";
+// email_sends에 subject, content_id 컬럼 없음
 ```
 
 ## 엣지 케이스
-1. **임베딩할 콘텐츠 0건**: `processed: 0, errors: 0` → "임베딩 완료: 처리 0건, 오류 0건" 토스트 표시 (정상 처리)
-2. **임베딩 중 버튼 재클릭**: `isEmbedding` 상태로 버튼 `disabled` → 중복 요청 차단
-3. **API 500 에러**: `toast.error("임베딩 실패: {에러메시지}")` 표시, 버튼 다시 활성화
+1. `email_sends` 테이블에 `content_id` 없을 때 → JOIN 없이 쿼리 재설계
+2. 발송 이력 0건 → "발송 이력 없음" 빈 상태 표시
+3. analytics 데이터 없을 때 → 0% 표시
 
 ## 검증
 ☐ npm run build 성공
-☐ 관리자 로그인 → 콘텐츠 관리 → 큐레이션 탭 → "전체 임베딩" 버튼 표시 확인
-☐ 버튼 클릭 → 로딩 스피너 + "임베딩 중..." 표시 확인
-☐ 임베딩 완료 → 결과 토스트 확인 (처리 건수 표시)
-☐ 기존 필터/스킵/정보공유 생성 버튼 정상 동작 (회귀 없음)
+☐ 성과 추적 탭 표시 확인
+☐ 기존 탭 회귀 없음
 
 ## 완료 후 QA
 ☐ /bkit pdca check 실행
-☐ bkit QA 결과 확인 (Match Rate 90%+, Critical 0)
 ☐ QA봇에게 결과 보고 (sessions_send → agent:qa-lead:main)
 
 ## 리뷰 보고서
-- 보고서 파일: mozzi-reports/public/reports/review/2026-02-23-embed-all-button.html
-- 리뷰 일시: 2026-02-23
-- 변경 유형: UI 버튼 추가 (단순, API 연결)
-- 피드백 요약: Smith님 직접 요청 — API 기존 존재, 버튼 연결만 필요
-- 반영 여부: 스펙대로 구현
+- 보고서 파일: mozzi-reports/public/reports/task/2026-02-23-newsletter-analytics-mockup.html
+- 리뷰 일시: 2026-02-23 10:27
+- 변경 유형: UI/UX 추가
+- 반영 여부: 목업 기반 구현 중
