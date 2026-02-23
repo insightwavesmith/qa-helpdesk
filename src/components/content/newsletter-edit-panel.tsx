@@ -48,7 +48,7 @@ interface RecipientStats {
   leads: number;
   students: number;
   members: number;
-  total: number;
+  all_deduplicated: number;
 }
 
 interface NewsletterEditPanelProps {
@@ -112,7 +112,7 @@ export default function NewsletterEditPanel({
       case "all_members":
         return recipientStats.members;
       case "all":
-        return recipientStats.total;
+        return recipientStats.all_deduplicated;
       default:
         return 0;
     }
@@ -289,7 +289,7 @@ export default function NewsletterEditPanel({
                     회원{recipientStats ? ` (${recipientStats.members}명)` : ""}
                   </SelectItem>
                   <SelectItem value="all">
-                    전체{recipientStats ? ` (${recipientStats.total}명)` : ""}
+                    전체{recipientStats ? ` (${recipientStats.all_deduplicated}명)` : ""}
                   </SelectItem>
                 </SelectContent>
               </Select>
