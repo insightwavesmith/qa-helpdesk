@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { ArrowLeft, Loader2, Sparkles, Zap } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, Zap, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +45,11 @@ const NewsletterEditPanel = dynamic(
 
 const ContentSettingsPanel = dynamic(
   () => import("@/components/content/content-settings-panel"),
+  { ssr: false }
+);
+
+const NewsletterAnalyticsTab = dynamic(
+  () => import("@/components/content/newsletter-analytics-tab").then(m => ({ default: m.NewsletterAnalyticsTab })),
   { ssr: false }
 );
 
@@ -236,6 +241,10 @@ export default function ContentDetailPage() {
         <TabsList variant="line">
           <TabsTrigger value="post">정보공유</TabsTrigger>
           <TabsTrigger value="newsletter">뉴스레터</TabsTrigger>
+          <TabsTrigger value="analytics" className="gap-1">
+            <BarChart3 className="h-3.5 w-3.5" />
+            성과 추적
+          </TabsTrigger>
           <TabsTrigger value="settings">설정</TabsTrigger>
         </TabsList>
 
@@ -301,6 +310,11 @@ export default function ContentDetailPage() {
               onContentUpdate={refreshContent}
             />
           </div>
+        </TabsContent>
+
+        {/* 성과 추적 탭 */}
+        <TabsContent value="analytics" className="mt-4">
+          <NewsletterAnalyticsTab />
         </TabsContent>
 
         {/* 설정 탭 */}

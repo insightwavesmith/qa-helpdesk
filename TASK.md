@@ -1,48 +1,94 @@
-# TASK.md — 뉴스레터 성과 추적 UI 목업
-> 2026-02-23 | 발송 성과(열람/클릭) 확인 UI가 없음 → 목업 설계
+# TASK.md — 큐레이션 탭 전체 임베딩 버튼 추가
+> 2026-02-23 | 콘텐츠 관리 > 큐레이션 탭에 "전체 임베딩" 버튼 추가
 
 ## 타입
-목업
+개발
 
 ## 목표
-뉴스레터 성과 추적 관리자 UI가 어떻게 보일지 HTML 목업을 제작한다.
-코드 구현은 하지 않음. 목업만.
+관리자가 큐레이션 탭에서 전체 콘텐츠를 한 번에 임베딩할 수 있는 버튼 추가.
 
-## 현재 상태 (코드 확인 완료)
-- DB에는 이미 추적 데이터 존재: `email_logs.total_opens`, `email_logs.total_clicks`
-- 추적 엔드포인트 존재: `/api/email/track`
-- **없는 것**: 이 데이터를 보여주는 관리자 UI
+## 배경
+- `/api/admin/embed` API 이미 존재 (`POST { all: true }` 지원)
+- `embedAllPending()` 함수로 미임베딩 콘텐츠 일괄 처리 가능
+- 현재 큐레이션 탭(`curation-tab.tsx`)에는 임베딩 버튼 없음
 
-## 현재 뉴스레터 관련 파일
+## 제약
+- 기존 "정보공유 생성", "일괄 스킵" 버튼 동작에 영향 없어야 함
+- 임베딩 중 중복 요청 방지 (버튼 비활성화)
+- API 응답 타입: `{ processed: number, errors: number }`
+- 기존 import 스타일 유지 (lucide-react 아이콘)
+
+## 태스크
+
+### T1. "전체 임베딩" 버튼 추가 (→ frontend-dev)
+**대상 파일:** `src/components/curation/curation-tab.tsx`
+
+1. `isEmbedding` state 추가 (`useState(false)`)
+2. `handleEmbedAll` 함수 구현:
+   - `POST /api/admin/embed` `{ all: true }` 호출
+   - 로딩 시작/종료 처리
+   - 완료: `toast.success("임베딩 완료: 처리 N건, 오류 M건")`
+   - 실패: `toast.error("임베딩 실패: {에러메시지}")`
+3. 버튼 위치: 필터 행 우측 (Select 컴포넌트 옆)
+   - 선택 없을 때도 항상 표시 (선택 기반 버튼과 달리)
+   - 라벨: "전체 임베딩"
+   - 아이콘: `Database` (lucide-react)
+   - 로딩 중: `Loader2` 스피너 + "임베딩 중..." 텍스트
+   - variant: `outline`, size: `sm`
+
+## 현재 코드
+
+### curation-tab.tsx 버튼 영역 (170~195번째 줄 근처)
+```tsx
+// 필터 + 버튼 행
+<div className="flex items-center justify-between gap-2 mb-4">
+  <div className="flex gap-2">
+    <Select value={sourceFilter} onValueChange={setSourceFilter}>...</Select>
+    <Select value={periodFilter} onValueChange={setPeriodFilter}>...</Select>
+  </div>
+
+  {selectedIds.size > 0 && (
+    <div className="flex gap-2">
+      <Button size="sm" variant="outline" onClick={handleDismiss} ...>
+        <X className="h-3.5 w-3.5" />
+        일괄 스킵 ({selectedIds.size})
+      </Button>
+      <Button size="sm" onClick={handleGenerate} className="bg-[#F75D5D] ...">
+        <Sparkles className="h-3.5 w-3.5" />
+        정보공유 생성 ({selectedIds.size})
+      </Button>
+    </div>
+  )}
+</div>
 ```
-src/app/api/admin/email/send/route.ts          # 발송 API
-src/app/api/email/track/route.ts               # 열람/클릭 추적
-src/components/content/newsletter-edit-panel.tsx    # 현재 편집 패널
-src/components/admin/SubscriberTab.tsx          # 수신자 관리
-supabase/migrations/00012_email_tracking.sql    # email_sends, email_logs 스키마
+
+### embed API 응답 (route.ts)
+```ts
+// POST { all: true }
+const result = await embedAllPending();
+return NextResponse.json(result); // { processed: number, errors: number }
 ```
 
-## 목업 요구사항
-관리자가 뉴스레터 발송 후 성과를 확인하는 UI.
+## 엣지 케이스
+1. **임베딩할 콘텐츠 0건**: `processed: 0, errors: 0` → "임베딩 완료: 처리 0건, 오류 0건" 토스트 표시 (정상 처리)
+2. **임베딩 중 버튼 재클릭**: `isEmbedding` 상태로 버튼 `disabled` → 중복 요청 차단
+3. **API 500 에러**: `toast.error("임베딩 실패: {에러메시지}")` 표시, 버튼 다시 활성화
 
-포함해야 할 요소:
-1. **발송 목록**: 발송한 뉴스레터 리스트 (제목, 발송일, 수신자 수)
-2. **성과 지표**: 발송 건당 열람율(%), 클릭율(%), 수신거부 수
-3. **상세 보기**: 클릭 시 개별 발송 건 상세 (열람자 목록, 클릭 링크별 집계)
-4. **UI 위치**: 기존 관리자 페이지 내 "뉴스레터" 탭 또는 별도 섹션
-
-## 목업 작성 규칙
-- HTML 파일로 작성 (실제 동작 없음, 시각적 설계만)
-- 기존 서비스 디자인 시스템 참고 (Tailwind, 다크 사이드바 + 화이트 컨텐츠 영역)
-- 데스크탑 기준
-- 실제 데이터처럼 보이는 더미 데이터 포함
-
-## 산출물
-- 파일: `docs/mockups/newsletter-analytics-ui.html`
-- mozzi-reports 배포: `mozzi-reports/public/reports/task/2026-02-23-newsletter-analytics-mockup.html`
-- 배포 후 링크 보고
+## 검증
+☐ npm run build 성공
+☐ 관리자 로그인 → 콘텐츠 관리 → 큐레이션 탭 → "전체 임베딩" 버튼 표시 확인
+☐ 버튼 클릭 → 로딩 스피너 + "임베딩 중..." 표시 확인
+☐ 임베딩 완료 → 결과 토스트 확인 (처리 건수 표시)
+☐ 기존 필터/스킵/정보공유 생성 버튼 정상 동작 (회귀 없음)
 
 ## 완료 후 QA
-☐ HTML이 브라우저에서 정상 렌더링되는지 확인
-☐ 목업이 요구사항 4개 항목을 모두 포함하는지 확인
-☐ 모찌에게 결과 보고
+☐ /bkit pdca check 실행
+☐ bkit QA 결과 확인 (Match Rate 90%+, Critical 0)
+☐ QA봇에게 결과 보고 (sessions_send → agent:qa-lead:main)
+
+## 리뷰 보고서
+- 보고서 파일: mozzi-reports/public/reports/review/2026-02-23-embed-all-button.html
+- 리뷰 일시: 2026-02-23
+- 변경 유형: UI 버튼 추가 (단순, API 연결)
+- 피드백 요약: Smith님 직접 요청 — API 기존 존재, 버튼 연결만 필요
+- 반영 여부: 스펙대로 구현
