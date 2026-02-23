@@ -105,14 +105,14 @@ export default function NewsletterEditPanel({
   const getRecipientCount = (): number => {
     if (!recipientStats) return 0;
     switch (target) {
+      case "all":
+        return recipientStats.all_deduplicated;
       case "all_leads":
         return recipientStats.leads;
       case "all_students":
         return recipientStats.students;
       case "all_members":
         return recipientStats.members;
-      case "all":
-        return recipientStats.all_deduplicated;
       default:
         return 0;
     }
@@ -279,6 +279,9 @@ export default function NewsletterEditPanel({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">
+                    전체{recipientStats ? ` (${recipientStats.all_deduplicated}명)` : ""}
+                  </SelectItem>
                   <SelectItem value="all_leads">
                     리드 전체{recipientStats ? ` (${recipientStats.leads}명)` : ""}
                   </SelectItem>
@@ -287,9 +290,6 @@ export default function NewsletterEditPanel({
                   </SelectItem>
                   <SelectItem value="all_members">
                     회원{recipientStats ? ` (${recipientStats.members}명)` : ""}
-                  </SelectItem>
-                  <SelectItem value="all">
-                    전체{recipientStats ? ` (${recipientStats.all_deduplicated}명)` : ""}
                   </SelectItem>
                 </SelectContent>
               </Select>

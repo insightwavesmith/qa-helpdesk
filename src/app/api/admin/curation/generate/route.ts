@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    if (profile?.role !== "admin") {
+    if (profile?.role !== "admin" && profile?.role !== "assistant") {
       return NextResponse.json(
         { error: "관리자 권한이 필요합니다." },
         { status: 403 }
@@ -153,6 +153,12 @@ export async function POST(request: NextRequest) {
 - 추측 표현 금지 ("~인 것 같아요")
 - 교과서적 정의로 시작 금지 ("~란 ~입니다")
 
+## 마크다운 이스케이프 규칙
+- 줄 끝 백슬래시(\\) 사용 금지. 줄바꿈은 빈 줄로 처리
+- *** 단독 한 줄 = 수평선. 볼드+이탤릭은 ***텍스트*** 형태로만
+- 수평선(--- 또는 ***) 연속 2개 이상 금지
+- 이미지 위치는 [이미지: 설명] 형식으로 표시
+
 ## 강의 컨텍스트 활용법
 아래 '강의 컨텍스트'가 제공됩니다. 이것을 글의 기반으로 삼으세요:
 - 강의에서 설명한 개념이면 → 강의식 쉬운 표현 사용
@@ -233,9 +239,16 @@ export async function POST(request: NextRequest) {
       console.warn(`정보공유 생성 결과가 김: ${bodyMd.length}자 (기준 6,000자 이하)`);
     }
 
+    // 원본 콘텐츠들의 주요 카테고리 결정
+    const sourceTypes = contents.map((c: { source_type: string | null }) => c.source_type).filter(Boolean);
+    const category = sourceTypes.includes("case_study") ? "case_study"
+      : sourceTypes.includes("webinar") ? "webinar"
+      : "education";
+
     return NextResponse.json({
       title,
       body_md: bodyMd,
+      category,
       sourceContents: contentIds,
     });
   } catch (error) {

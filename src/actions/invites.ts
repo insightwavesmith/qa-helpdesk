@@ -1,27 +1,7 @@
 "use server";
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-
-// ---------------------------------------------------------------------------
-// Helper: requireAdmin — admin.ts와 동일 패턴
-// ---------------------------------------------------------------------------
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("인증되지 않은 사용자입니다.");
-
-  const svc = createServiceClient();
-  const { data: profile } = await svc
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "admin") throw new Error("권한이 없습니다.");
-  return { svc, userId: user.id };
-}
+import { requireAdmin } from "@/lib/auth-utils";
 
 // ---------------------------------------------------------------------------
 // useInviteCode — 가입 완료 후 호출 (초대코드 사용 처리 + student_registry 매칭)
@@ -126,7 +106,7 @@ export async function useInviteCode(
 // getInviteCodes — 관리자용: 전체 초대코드 목록
 // ---------------------------------------------------------------------------
 export async function getInviteCodes() {
-  const { svc } = await requireAdmin();
+  const svc = await requireAdmin();
 
   const { data, error } = await svc
     .from("invite_codes")
@@ -150,7 +130,11 @@ export async function createInviteCode(input: {
   expiresAt: string;
   maxUses: number;
 }): Promise<{ error: string | null }> {
-  const { svc, userId } = await requireAdmin();
+  const svc = await requireAdmin();
+
+  // auth check already done by requireAdmin; get userId for created_by
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const { error } = await svc.from("invite_codes").insert({
     code: input.code.trim(),
@@ -158,7 +142,7 @@ export async function createInviteCode(input: {
     expires_at: input.expiresAt,
     max_uses: input.maxUses,
     used_count: 0,
-    created_by: userId,
+    created_by: user!.id,
   });
 
   if (error) {
@@ -179,7 +163,7 @@ export async function createInviteCode(input: {
 export async function deleteInviteCode(
   code: string
 ): Promise<{ error: string | null }> {
-  const { svc } = await requireAdmin();
+  const svc = await requireAdmin();
 
   const { error } = await svc
     .from("invite_codes")

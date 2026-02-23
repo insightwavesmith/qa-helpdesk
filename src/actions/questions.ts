@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth-utils";
 import { createAIAnswerForQuestion } from "@/lib/rag";
 
 export async function getQuestions({
@@ -171,6 +172,24 @@ export async function createQuestion(formData: {
   revalidatePath("/questions");
   revalidatePath("/dashboard");
   return { data, error: null };
+}
+
+export async function deleteQuestion(id: string) {
+  const svc = await requireAdmin();
+
+  // 답변 먼저 삭제
+  await svc.from("answers").delete().eq("question_id", id);
+
+  const { error } = await svc.from("questions").delete().eq("id", id);
+
+  if (error) {
+    console.error("deleteQuestion error:", error);
+    return { error: error.message };
+  }
+
+  revalidatePath("/questions");
+  revalidatePath("/dashboard");
+  return { error: null };
 }
 
 export async function getCategories() {

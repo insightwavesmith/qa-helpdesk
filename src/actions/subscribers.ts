@@ -1,24 +1,6 @@
 "use server";
 
-import { createClient, createServiceClient } from "@/lib/supabase/server";
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("인증이 필요합니다.");
-
-  const svc = createServiceClient();
-  const { data: profile } = await svc
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (profile?.role !== "admin") throw new Error("관리자 권한이 필요합니다.");
-
-  return svc;
-}
+import { requireAdmin } from "@/lib/auth-utils";
 
 /** LIKE 인젝션 방지: %, _, \ 이스케이프 */
 function escapeLike(value: string): string {

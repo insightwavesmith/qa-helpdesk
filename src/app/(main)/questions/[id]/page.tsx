@@ -8,6 +8,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { ImageGallery } from "@/components/questions/ImageGallery";
 import { SourceReferences } from "@/components/questions/SourceReferences";
 import { Badge } from "@/components/ui/badge";
+import { DeleteQuestionButton } from "@/components/questions/DeleteQuestionButton";
 import { mdToHtml } from "@/lib/markdown";
 
 const categoryColorMap: Record<string, string> = {
@@ -59,7 +60,7 @@ export default async function QuestionDetailPage({
         .select("role")
         .eq("id", user.id)
         .single();
-      isAdmin = profile?.role === "admin";
+      isAdmin = profile?.role === "admin" || profile?.role === "assistant";
     }
   } catch (e) {
     void e;
@@ -128,10 +129,15 @@ export default async function QuestionDetailPage({
           </Badge>
         </div>
 
-        {/* Title */}
-        <h1 className="text-xl font-bold text-foreground mb-4">
-          {question.title}
-        </h1>
+        {/* Title + Admin Actions */}
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <h1 className="text-xl font-bold text-foreground">
+            {question.title}
+          </h1>
+          {isAdmin && (
+            <DeleteQuestionButton questionId={id} />
+          )}
+        </div>
 
         {/* Content */}
         <div className="text-[15px] leading-relaxed text-foreground/90 whitespace-pre-wrap mb-5">

@@ -1,24 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { after } from "next/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { embedContentToChunks } from "@/actions/embed-pipeline";
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("인증되지 않은 사용자입니다.");
-  const svc = createServiceClient();
-  const { data: profile } = await svc
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (profile?.role !== "admin") throw new Error("권한이 없습니다.");
-  return svc;
-}
+import { requireStaff } from "@/lib/auth-utils";
 
 export async function getCurationContents({
   source,
@@ -35,7 +21,7 @@ export async function getCurationContents({
   page?: number;
   pageSize?: number;
 } = {}) {
-  const supabase = await requireAdmin();
+  const supabase = await requireStaff();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -87,7 +73,7 @@ export async function getCurationContents({
 }
 
 export async function getCurationCount() {
-  const supabase = await requireAdmin();
+  const supabase = await requireStaff();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { count, error } = await (supabase as any)
@@ -108,7 +94,7 @@ export async function updateCurationStatus(
   id: string,
   status: "selected" | "dismissed" | "published"
 ) {
-  const supabase = await requireAdmin();
+  const supabase = await requireStaff();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
@@ -132,7 +118,7 @@ export async function batchUpdateCurationStatus(
   ids: string[],
   status: "selected" | "dismissed" | "published"
 ) {
-  const supabase = await requireAdmin();
+  const supabase = await requireStaff();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
@@ -163,7 +149,7 @@ export async function createInfoShareDraft({
   category?: string;
   sourceContentIds: string[];
 }) {
-  const supabase = await requireAdmin();
+  const supabase = await requireStaff();
   const now = new Date().toISOString();
 
   // 1. 새 contents 행 INSERT (draft — 콘텐츠 탭에서 편집/게시)
@@ -188,7 +174,16 @@ export async function createInfoShareDraft({
     return { data: null, error: insertError?.message || "생성 실패" };
   }
 
-  // 2. 원본 콘텐츠 curation_status → published (별도 클라이언트)
+  // 2. 자동 임베딩 (응답 반환 후 비동기 실행)
+  after(async () => {
+    try {
+      await embedContentToChunks(newContent.id);
+    } catch (err) {
+      console.error("createInfoShareDraft auto-embed failed:", err);
+    }
+  });
+
+  // 3. 원본 콘텐츠 curation_status → published (별도 클라이언트)
   if (sourceContentIds.length > 0) {
     const svc2 = createServiceClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -220,7 +215,7 @@ export async function getInfoShareContents({
   page = 1,
   pageSize = 50,
 }: { page?: number; pageSize?: number } = {}) {
-  const supabase = await requireAdmin();
+  const supabase = await requireStaff();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -263,7 +258,7 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 export async function getPipelineStats(): Promise<PipelineStat[]> {
-  const supabase = await requireAdmin();
+  const supabase = await requireStaff();
   const dayAgo = new Date(Date.now() - 86400000).toISOString();
 
   // 3개 쿼리 병렬 실행

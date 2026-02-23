@@ -41,10 +41,11 @@ const roleLabels: Record<string, { label: string; className: string }> = {
   lead: { label: "리드", className: "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-50" },
   member: { label: "멤버", className: "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-50" },
   student: { label: "수강생", className: "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-50" },
+  assistant: { label: "조교", className: "bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-50" },
   admin: { label: "관리자", className: "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-50" },
 };
 
-const roleOptions = ["lead", "member", "student", "admin"];
+const roleOptions = ["lead", "member", "student", "assistant", "admin"];
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);

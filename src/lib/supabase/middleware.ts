@@ -135,8 +135,8 @@ export async function updateSession(request: NextRequest) {
 
   // 6. 역할별 라우팅
 
-  // admin → 전체 접근 허용
-  if (role === "admin") {
+  // admin / assistant → 전체 접근 허용
+  if (role === "admin" || role === "assistant") {
     return supabaseResponse;
   }
 

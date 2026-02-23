@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth-utils";
 
 export type RecipientTarget =
   | "all"
@@ -12,7 +12,7 @@ export type RecipientTarget =
 export interface Recipient {
   email: string;
   name: string;
-  source: "lead" | "member" | "student_registry";
+  source: "lead" | "member" | "profiles";
 }
 
 export interface RecipientStats {
@@ -22,29 +22,6 @@ export interface RecipientStats {
   all_deduplicated: number;
 }
 
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("인증이 필요합니다.");
-  }
-
-  const svc = createServiceClient();
-  const { data: profile } = await svc
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "admin") {
-    throw new Error("관리자 권한이 필요합니다.");
-  }
-
-  return svc;
-}
 
 export async function getRecipients(
   target: RecipientTarget,
@@ -85,14 +62,17 @@ export async function getRecipients(
 
     if (target === "all_students") {
       const { data } = await svc
-        .from("student_registry")
+        .from("profiles")
         .select("email, name")
+        .eq("role", "student")
+        .not("email", "is", null)
+        .neq("email", "")
         .limit(5000);
       return {
         recipients: (data || []).map((r) => ({
           email: r.email,
           name: r.name || "",
-          source: "student_registry" as const,
+          source: "profiles" as const,
         })),
         error: null,
       };
@@ -102,7 +82,7 @@ export async function getRecipients(
       const { data } = await svc
         .from("profiles")
         .select("email, name")
-        .in("role", ["member", "student", "admin"])
+        .eq("role", "member")
         .limit(5000);
       return {
         recipients: (data || []).map((r) => ({
@@ -114,44 +94,26 @@ export async function getRecipients(
       };
     }
 
-    // target === "all": leads + profiles 통합, 중복 제거
-    const [leadsResult, profilesResult] = await Promise.all([
-      svc
-        .from("leads")
-        .select("email, name")
-        .eq("email_opted_out", false)
-        .limit(5000),
-      svc
-        .from("profiles")
-        .select("email, name")
-        .in("role", ["member", "student", "admin"])
-        .limit(5000),
-    ]);
-
-    const recipientMap = new Map<string, Recipient>();
-
-    // leads 먼저 추가
-    for (const r of leadsResult.data || []) {
-      recipientMap.set(r.email, {
-        email: r.email,
-        name: r.name || "",
-        source: "lead",
-      });
+    if (target === "all") {
+      const [leadsRes, studentsRes, membersRes] = await Promise.all([
+        svc.from("leads").select("email, name").eq("email_opted_out", false).limit(5000),
+        svc.from("profiles").select("email, name").eq("role", "student").not("email", "is", null).neq("email", "").limit(5000),
+        svc.from("profiles").select("email, name").eq("role", "member").limit(5000),
+      ]);
+      const uniqueMap = new Map<string, Recipient>();
+      for (const r of (leadsRes.data || [])) {
+        if (!uniqueMap.has(r.email)) uniqueMap.set(r.email, { email: r.email, name: r.name || "", source: "lead" });
+      }
+      for (const r of (studentsRes.data || [])) {
+        if (!uniqueMap.has(r.email)) uniqueMap.set(r.email, { email: r.email, name: r.name || "", source: "profiles" });
+      }
+      for (const r of (membersRes.data || [])) {
+        if (!uniqueMap.has(r.email)) uniqueMap.set(r.email, { email: r.email, name: r.name || "", source: "member" });
+      }
+      return { recipients: Array.from(uniqueMap.values()), error: null };
     }
 
-    // profiles 덮어쓰기 (회원 정보가 더 정확)
-    for (const r of profilesResult.data || []) {
-      recipientMap.set(r.email, {
-        email: r.email,
-        name: r.name || "",
-        source: "member",
-      });
-    }
-
-    return {
-      recipients: Array.from(recipientMap.values()),
-      error: null,
-    };
+    return { recipients: [], error: "알 수 없는 수신 대상입니다." };
   } catch (err) {
     const message = err instanceof Error ? err.message : "수신자 조회 중 오류가 발생했습니다.";
     return { recipients: [], error: message };
@@ -165,34 +127,39 @@ export async function getRecipientStats(): Promise<{
   try {
     const svc = await requireAdmin();
 
-    // 그룹별 count + 중복 제거 count를 위해 이메일 목록 조회
+    // 그룹별 이메일 목록 조회
     const [leadsResult, studentsResult, membersResult] = await Promise.all([
       svc
         .from("leads")
-        .select("email", { count: "exact" })
+        .select("email")
         .eq("email_opted_out", false)
         .limit(5000),
       svc
-        .from("student_registry")
-        .select("id", { count: "exact", head: true }),
+        .from("profiles")
+        .select("email")
+        .eq("role", "student")
+        .not("email", "is", null)
+        .neq("email", "")
+        .limit(5000),
       svc
         .from("profiles")
-        .select("email", { count: "exact" })
-        .in("role", ["member", "student", "admin"])
+        .select("email")
+        .eq("role", "member")
         .limit(5000),
     ]);
 
     const leadsEmails = (leadsResult.data || []).map((r) => r.email);
+    const studentsEmails = (studentsResult.data || []).map((r) => r.email);
     const membersEmails = (membersResult.data || []).map((r) => r.email);
 
-    // 중복 제거: Set으로 합치기
-    const allEmails = new Set([...leadsEmails, ...membersEmails]);
+    // 전체 중복 제거
+    const allEmails = new Set([...leadsEmails, ...studentsEmails, ...membersEmails]);
 
     return {
       stats: {
-        leads: leadsResult.count ?? leadsEmails.length,
-        students: studentsResult.count || 0,
-        members: membersResult.count ?? membersEmails.length,
+        leads: leadsEmails.length,
+        students: studentsEmails.length,
+        members: membersEmails.length,
         all_deduplicated: allEmails.size,
       },
       error: null,

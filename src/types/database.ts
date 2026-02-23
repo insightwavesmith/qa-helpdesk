@@ -24,7 +24,7 @@ export interface Database {
           monthly_ad_budget: string | null;
           category: string | null;
           reject_reason: string | null;
-          role: "lead" | "member" | "student" | "admin";
+          role: "lead" | "member" | "student" | "assistant" | "admin";
           meta_account_id: string | null;
           mixpanel_project_id: string | null;
           mixpanel_board_id: string | null;
@@ -50,7 +50,7 @@ export interface Database {
           monthly_ad_budget?: string | null;
           category?: string | null;
           reject_reason?: string | null;
-          role?: "lead" | "member" | "student" | "admin";
+          role?: "lead" | "member" | "student" | "assistant" | "admin";
           meta_account_id?: string | null;
           mixpanel_project_id?: string | null;
           mixpanel_board_id?: string | null;
@@ -76,7 +76,7 @@ export interface Database {
           monthly_ad_budget?: string | null;
           category?: string | null;
           reject_reason?: string | null;
-          role?: "lead" | "member" | "student" | "admin";
+          role?: "lead" | "member" | "student" | "assistant" | "admin";
           meta_account_id?: string | null;
           mixpanel_project_id?: string | null;
           mixpanel_board_id?: string | null;

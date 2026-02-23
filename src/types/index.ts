@@ -1,7 +1,7 @@
 // 앱 전역 타입 정의
 
 // 사용자 역할
-export type UserRole = "lead" | "member" | "student" | "admin";
+export type UserRole = "lead" | "member" | "student" | "assistant" | "admin";
 
 // 질문 상태
 export type QuestionStatus = "open" | "answered" | "closed";

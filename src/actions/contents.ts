@@ -1,26 +1,12 @@
 "use server";
 
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { after } from "next/server";
+import { requireStaff } from "@/lib/auth-utils";
 import { generateEmbedding } from "@/lib/gemini";
+import { embedContentToChunks } from "@/actions/embed-pipeline";
 import { generate as ksGenerate, type ConsumerType } from "@/lib/knowledge";
 import { validateBannerKeys, parseSummaryToSections } from "@/lib/email-template-utils";
 import { parseAIResponse, convertJsonToEmailSummary } from "@/lib/newsletter-schemas";
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("인증되지 않은 사용자입니다.");
-  const svc = createServiceClient();
-  const { data: profile } = await svc
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (profile?.role !== "admin") throw new Error("권한이 없습니다.");
-  return svc;
-}
 
 function escapeHtml(str: string): string {
   return str
@@ -86,7 +72,7 @@ export async function getContents({
   page?: number;
   pageSize?: number;
 } = {}) {
-  const supabase = await requireAdmin();
+  const supabase = await requireStaff();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -130,7 +116,7 @@ export async function getContents({
 }
 
 export async function getContentById(id: string) {
-  const supabase = await requireAdmin();
+  const supabase = await requireStaff();
 
   const { data, error } = await supabase
     .from("contents")
@@ -161,7 +147,7 @@ export async function createContent(input: {
   author_id?: string | null;
   email_summary?: string | null;
 }) {
-  const supabase = await requireAdmin();
+  const supabase = await requireStaff();
 
   const { data, error } = await supabase
     .from("contents")
@@ -172,6 +158,18 @@ export async function createContent(input: {
   if (error) {
     console.error("createContent error:", error);
     return { data: null, error: error.message };
+  }
+
+  // 자동 임베딩: blueprint, lecture 타입은 생성 즉시 임베딩
+  const autoEmbedTypes = ["blueprint", "lecture", "info_share"];
+  if (data && input.source_type && autoEmbedTypes.includes(input.source_type)) {
+    after(async () => {
+      try {
+        await embedContentToChunks(data.id);
+      } catch (err) {
+        console.error("createContent auto-embed failed:", err);
+      }
+    });
   }
 
   return { data, error: null };
@@ -198,7 +196,7 @@ export async function updateContent(
     email_cta_url?: string | null;
   }
 ) {
-  const supabase = await requireAdmin();
+  const supabase = await requireStaff();
 
   const { data, error } = await supabase
     .from("contents")
@@ -216,7 +214,7 @@ export async function updateContent(
 }
 
 export async function deleteContent(id: string) {
-  const supabase = await requireAdmin();
+  const supabase = await requireStaff();
 
   const { error } = await supabase.from("contents").delete().eq("id", id);
 
@@ -229,7 +227,7 @@ export async function deleteContent(id: string) {
 }
 
 export async function publishContent(contentId: string) {
-  const supabase = await requireAdmin();
+  const supabase = await requireStaff();
 
   // Update content status to published
   const now = new Date().toISOString();
@@ -265,7 +263,7 @@ export async function publishContent(contentId: string) {
 }
 
 export async function generateNewsletterFromContents(contentIds: string[]) {
-  const supabase = await requireAdmin();
+  const supabase = await requireStaff();
 
   const { data: contents, error } = await supabase
     .from("contents")
@@ -337,7 +335,7 @@ export async function generateNewsletterFromContents(contentIds: string[]) {
 }
 
 export async function getContentAsEmailHtml(contentId: string) {
-  const supabase = await requireAdmin();
+  const supabase = await requireStaff();
 
   const { data, error } = await supabase
     .from("contents")
@@ -364,7 +362,7 @@ export async function getContentAsEmailHtml(contentId: string) {
 }
 
 export async function updateContentEmailSentAt(contentId: string) {
-  const supabase = await requireAdmin();
+  const supabase = await requireStaff();
 
   const { error } = await supabase
     .from("contents")
@@ -380,7 +378,7 @@ export async function updateContentEmailSentAt(contentId: string) {
 }
 
 export async function embedContent(contentId: string) {
-  const supabase = await requireAdmin();
+  const supabase = await requireStaff();
 
   const { data: content, error: fetchError } = await supabase
     .from("contents")
@@ -410,7 +408,7 @@ export async function embedContent(contentId: string) {
 }
 
 export async function embedAllContents() {
-  const supabase = await requireAdmin();
+  const supabase = await requireStaff();
 
   const { data: contents, error } = await supabase
     .from("contents")
@@ -446,7 +444,7 @@ export async function embedAllContents() {
 export async function crawlUrl(
   url: string
 ): Promise<{ title: string; bodyMd: string } | { error: string }> {
-  await requireAdmin();
+  await requireStaff();
 
   try {
     const res = await fetch(url, {
@@ -514,6 +512,12 @@ const CONTENT_BASE_STYLE = `## 공통 스타일
 - 첫 줄: # 제목 (한국어, 영어 금지)
 - 제목에 영어만 단독 사용 금지 (예: ❌ "ASC Campaign Guide" → ✅ "어드밴티지+ 쇼핑 캠페인 완전 가이드")
 - 이미지 위치는 [이미지: 설명] 형식으로 표시
+
+## 마크다운 이스케이프 규칙
+- 줄 끝 백슬래시(\\) 사용 금지 → 줄바꿈은 빈 줄로 처리
+- *** 단독 한 줄 = 수평선(hr). 볼드+이탤릭은 반드시 ***텍스트*** 형태로만 사용
+- 연속 수평선(--- 또는 ***) 2개 이상 연달아 사용 금지 → 하나만 사용
+- 특수문자 이스케이프: &, <, > 등은 그대로 사용 (HTML 변환은 시스템이 처리)
 
 ## 메타 광고 전문 지식
 - 2024-2025 안드로메다 알고리즘: AI 기반 광고-유저 매칭 100배 가속화
@@ -757,7 +761,7 @@ export async function generateEmailSummary(
   | { emailSummary: string; warnings?: { missing: string[]; forbidden: string[] } }
   | { error: string }
 > {
-  const svc = await requireAdmin();
+  const svc = await requireStaff();
 
   // 1. content 조회
   const { data: content, error: fetchError } = await svc
@@ -1122,7 +1126,7 @@ export async function reviseContentWithAI(
   target: "body_md" | "email_summary",
   instruction: string
 ): Promise<{ revised: string } | { error: string }> {
-  const svc = await requireAdmin();
+  const svc = await requireStaff();
 
   if (!instruction.trim()) {
     return { error: "수정 지시를 입력해주세요." };
@@ -1190,7 +1194,7 @@ export async function generateContentWithAI(
   topic: string,
   type: string = "education"
 ): Promise<{ title: string; bodyMd: string } | { error: string }> {
-  await requireAdmin();
+  await requireStaff();
 
   const typePrompt = TYPE_PROMPTS[type] || TYPE_PROMPTS.education;
   const consumerType = CONTENT_TO_CONSUMER[type] || "education";

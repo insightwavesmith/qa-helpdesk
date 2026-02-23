@@ -38,18 +38,28 @@ function markdownToHtml(md: string): string {
     return `<h2 id="heading-${h2Index}">${title}</h2>`;
   });
 
+  // Image placeholders [이미지: 설명]
+  html = html.replace(/\[이미지:\s*([^\]]+)\]/g,
+    '<div class="image-placeholder"><span>$1</span></div>');
+
   // Blockquote
   html = html.replace(/^> (.+)$/gm, "<blockquote><p>$1</p></blockquote>");
   // Merge consecutive blockquotes
   html = html.replace(/<\/blockquote>\s*<blockquote>/g, "");
+
+  // Horizontal rules (*** and --- patterns, before bold/italic to avoid conflict)
+  html = html.replace(/^\*\*\*\s*$/gm, "<hr />");
+  html = html.replace(/^---$/gm, "<hr />");
+  // Merge consecutive <hr /> tags
+  html = html.replace(/(<hr\s*\/?>[\s\n]*){2,}/g, "<hr />");
 
   // Bold + Italic
   html = html.replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>");
   html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   html = html.replace(/\*(.+?)\*/g, "<em>$1</em>");
 
-  // Horizontal rule
-  html = html.replace(/^---$/gm, "<hr />");
+  // Backslash escapes (remove trailing backslashes used as line breaks)
+  html = html.replace(/\\$/gm, "");
 
   // Unordered list
   html = html.replace(/^[\-\*] (.+)$/gm, "<li>$1</li>");

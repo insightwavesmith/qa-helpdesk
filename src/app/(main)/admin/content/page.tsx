@@ -20,12 +20,10 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, FileText, Plus, Newspaper, Mail, Zap, Sparkles } from "lucide-react";
+import { Loader2, FileText, Plus, Newspaper, Mail, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { getContents } from "@/actions/contents";
 import { getCurationCount } from "@/actions/curation";
-// embedAllPending는 API route(/api/admin/embed)를 통해 호출 (maxDuration 300s)
 import type { Content } from "@/types/content";
 import NewContentModal from "@/components/content/new-content-modal";
 import { CurationTab } from "@/components/curation/curation-tab";
@@ -72,7 +70,6 @@ export default function AdminContentPage() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [modalOpen, setModalOpen] = useState(false);
-  const [embedding, setEmbedding] = useState(false);
   const [curationCount, setCurationCount] = useState(0);
   const [generateIds, setGenerateIds] = useState<string[] | null>(null);
   const [sidebarSource, setSidebarSource] = useState("all");
@@ -110,32 +107,6 @@ export default function AdminContentPage() {
   };
 
   const handleNewContent = () => setModalOpen(true);
-
-  const pendingCount = contents.filter(
-    (c) => !c.embedding_status || c.embedding_status === "pending"
-  ).length;
-
-  const handleEmbedAll = async () => {
-    if (!confirm(`${pendingCount}개 콘텐츠를 임베딩합니다. 진행하시겠습니까?`)) return;
-    setEmbedding(true);
-    try {
-      const res = await fetch("/api/admin/embed", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ all: true }),
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
-      toast.success(
-        `임베딩 완료: 성공 ${result.success}, 연결 ${result.linked}, 실패 ${result.failed}`
-      );
-      loadContents();
-    } catch {
-      toast.error("임베딩 실행에 실패했습니다.");
-    } finally {
-      setEmbedding(false);
-    }
-  };
 
   // Status counts
   const countByStatus = useCallback(
@@ -183,20 +154,6 @@ export default function AdminContentPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {pendingCount > 0 && (
-            <Button
-              onClick={handleEmbedAll}
-              disabled={embedding}
-              variant="outline"
-            >
-              {embedding ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Zap className="h-4 w-4 mr-2" />
-              )}
-              전체 임베딩 ({pendingCount})
-            </Button>
-          )}
           <Button
             onClick={handleNewContent}
             className="bg-[#F75D5D] hover:bg-[#E54949]"

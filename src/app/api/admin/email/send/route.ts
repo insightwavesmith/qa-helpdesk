@@ -106,32 +106,31 @@ export async function POST(request: NextRequest) {
       recipients = (data || []).map((r) => ({ email: r.email, type: "lead" }));
     } else if (target === "all_students") {
       const { data } = await svc
-        .from("student_registry")
+        .from("profiles")
         .select("email")
+        .eq("role", "student")
+        .not("email", "is", null)
+        .neq("email", "")
         .limit(5000);
       recipients = (data || []).map((r) => ({ email: r.email, type: "student" }));
     } else if (target === "all_members") {
       const { data } = await svc
         .from("profiles")
         .select("email")
-        .in("role", ["member", "student", "admin"])
+        .eq("role", "member")
         .limit(5000);
       recipients = (data || []).map((r) => ({ email: r.email, type: "member" }));
     } else if (target === "all") {
-      // leads(opted_out 제외) + profiles 통합, 중복 제거
-      const [leadsData, profilesData] = await Promise.all([
+      const [leadsRes, studentsRes, membersRes] = await Promise.all([
         svc.from("leads").select("email").eq("email_opted_out", false).limit(5000),
-        svc.from("profiles").select("email").in("role", ["member", "student", "admin"]).limit(5000),
+        svc.from("profiles").select("email").eq("role", "student").not("email", "is", null).neq("email", "").limit(5000),
+        svc.from("profiles").select("email").eq("role", "member").limit(5000),
       ]);
-      const emailMap = new Map<string, string>();
-      for (const r of leadsData.data || []) {
-        emailMap.set(r.email, "lead");
-      }
-      // profiles 덮어쓰기 (회원 정보 우선)
-      for (const r of profilesData.data || []) {
-        emailMap.set(r.email, "member");
-      }
-      recipients = Array.from(emailMap.entries()).map(([email, type]) => ({ email, type }));
+      const allMap = new Map<string, string>();
+      for (const r of (leadsRes.data || [])) if (!allMap.has(r.email)) allMap.set(r.email, "lead");
+      for (const r of (studentsRes.data || [])) if (!allMap.has(r.email)) allMap.set(r.email, "student");
+      for (const r of (membersRes.data || [])) if (!allMap.has(r.email)) allMap.set(r.email, "member");
+      recipients = Array.from(allMap.entries()).map(([email, type]) => ({ email, type }));
     }
 
     if (recipients.length === 0) {
