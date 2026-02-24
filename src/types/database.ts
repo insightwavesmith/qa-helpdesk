@@ -169,6 +169,7 @@ export type Database = {
         Row: {
           avg_value: number | null
           calculated_at: string | null
+          creative_type: string | null
           date: string
           id: string
           metric_name: string
@@ -179,10 +180,12 @@ export type Database = {
           p90: number | null
           period: string | null
           sample_size: number | null
+          source: string | null
         }
         Insert: {
           avg_value?: number | null
           calculated_at?: string | null
+          creative_type?: string | null
           date: string
           id?: string
           metric_name: string
@@ -193,10 +196,12 @@ export type Database = {
           p90?: number | null
           period?: string | null
           sample_size?: number | null
+          source?: string | null
         }
         Update: {
           avg_value?: number | null
           calculated_at?: string | null
+          creative_type?: string | null
           date?: string
           id?: string
           metric_name?: string
@@ -207,6 +212,7 @@ export type Database = {
           p90?: number | null
           period?: string | null
           sample_size?: number | null
+          source?: string | null
         }
         Relationships: []
       }
@@ -582,6 +588,7 @@ export type Database = {
           account_name: string | null
           ad_id: string | null
           ad_name: string | null
+          add_to_cart: number | null
           adset_id: string | null
           adset_name: string | null
           campaign_id: string | null
@@ -602,10 +609,12 @@ export type Database = {
           engagement_ranking: string | null
           id: string
           impressions: number | null
+          initiate_checkout: number | null
           purchase_value: number | null
           purchases: number | null
           quality_ranking: string | null
           reach: number | null
+          reach_to_purchase_rate: number | null
           reactions_per_10k: number | null
           retention_rate: number | null
           roas: number | null
@@ -619,6 +628,7 @@ export type Database = {
           account_name?: string | null
           ad_id?: string | null
           ad_name?: string | null
+          add_to_cart?: number | null
           adset_id?: string | null
           adset_name?: string | null
           campaign_id?: string | null
@@ -639,10 +649,12 @@ export type Database = {
           engagement_ranking?: string | null
           id?: string
           impressions?: number | null
+          initiate_checkout?: number | null
           purchase_value?: number | null
           purchases?: number | null
           quality_ranking?: string | null
           reach?: number | null
+          reach_to_purchase_rate?: number | null
           reactions_per_10k?: number | null
           retention_rate?: number | null
           roas?: number | null
@@ -656,6 +668,7 @@ export type Database = {
           account_name?: string | null
           ad_id?: string | null
           ad_name?: string | null
+          add_to_cart?: number | null
           adset_id?: string | null
           adset_name?: string | null
           campaign_id?: string | null
@@ -676,10 +689,12 @@ export type Database = {
           engagement_ranking?: string | null
           id?: string
           impressions?: number | null
+          initiate_checkout?: number | null
           purchase_value?: number | null
           purchases?: number | null
           quality_ranking?: string | null
           reach?: number | null
+          reach_to_purchase_rate?: number | null
           reactions_per_10k?: number | null
           retention_rate?: number | null
           roas?: number | null

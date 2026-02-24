@@ -37,12 +37,10 @@ export interface AdInsightRow {
   comments_per_10k?: number;
   shares_per_10k?: number;
   engagement_per_10k?: number;
-  click_to_cart_rate?: number;
   click_to_checkout_rate?: number;
   checkout_to_purchase_rate?: number;
   click_to_purchase_rate?: number;
   reach_to_purchase_rate?: number;
-  quality_ranking?: string;
   engagement_ranking?: string;
   conversion_ranking?: string;
 }
@@ -61,7 +59,6 @@ export interface BenchmarkRow {
   avg_comments_per_10k?: number;
   avg_shares_per_10k?: number;
   avg_engagement_per_10k?: number;
-  avg_click_to_cart_rate?: number;
   avg_click_to_checkout_rate?: number;
   avg_checkout_to_purchase_rate?: number;
   avg_click_to_purchase_rate?: number;
@@ -101,10 +98,13 @@ function aggregateByAd(rows: AdInsightRow[]): AdInsightRow[] {
 interface AdMetricsTableProps {
   insights: AdInsightRow[];
   benchmarks: BenchmarkRow[];
+  accountId?: string;
+  mixpanelProjectId?: string | null;
+  mixpanelBoardId?: string | null;
 }
 
 // 광고 성과 테이블
-export function AdMetricsTable({ insights, benchmarks }: AdMetricsTableProps) {
+export function AdMetricsTable({ insights, benchmarks, accountId, mixpanelProjectId, mixpanelBoardId }: AdMetricsTableProps) {
   if (insights.length === 0) {
     return (
       <Card>
@@ -172,6 +172,7 @@ export function AdMetricsTable({ insights, benchmarks }: AdMetricsTableProps) {
                 <TableHead className="text-right">매출</TableHead>
                 <TableHead className="text-right">ROAS</TableHead>
                 <TableHead className="text-center">판정</TableHead>
+                <TableHead className="text-center">링크</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -207,6 +208,32 @@ export function AdMetricsTable({ insights, benchmarks }: AdMetricsTableProps) {
                     </TableCell>
                     <TableCell className="text-center">
                       <VerdictDot label={roasV.label} />
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        {accountId && (
+                          <a
+                            href={`https://adsmanager.facebook.com/adsmanager/manage/ads?act=${accountId}&selected_ad_ids=${ad.ad_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center rounded px-2 py-1 text-[11px] font-medium text-blue-600 hover:bg-blue-50 transition-colors"
+                            title="Meta 광고관리자"
+                          >
+                            Meta
+                          </a>
+                        )}
+                        {mixpanelProjectId && mixpanelBoardId && (
+                          <a
+                            href={`https://mixpanel.com/project/${mixpanelProjectId}/view/${mixpanelBoardId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center rounded px-2 py-1 text-[11px] font-medium text-purple-600 hover:bg-purple-50 transition-colors"
+                            title="Mixpanel"
+                          >
+                            Mixpanel
+                          </a>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
