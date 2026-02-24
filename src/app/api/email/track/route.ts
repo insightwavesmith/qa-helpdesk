@@ -87,7 +87,18 @@ export async function GET(request: NextRequest) {
 
   if (type === "click") {
     const url = searchParams.get("url");
-    const redirectUrl = url || SITE_URL;
+    let redirectUrl = SITE_URL;
+
+    if (url) {
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+          redirectUrl = url;
+        }
+      } catch {
+        // 잘못된 URL → SITE_URL로 폴백
+      }
+    }
 
     // fire-and-forget: 응답 후 비동기 DB 업데이트
     updatePromise.catch(() => {});

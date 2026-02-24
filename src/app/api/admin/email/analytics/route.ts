@@ -33,9 +33,7 @@ export async function GET() {
       );
     }
 
-    // email_sends에서 subject별 집계 (content_id는 마이그레이션 후 추가된 컬럼)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: sends, error } = await (svc as any)
+    const { data: sends, error } = await svc
       .from("email_sends")
       .select("id, subject, recipient_email, recipient_type, status, sent_at, opened_at, clicked_at, content_id")
       .eq("status", "sent")
@@ -52,13 +50,12 @@ export async function GET() {
       string,
       {
         subject: string;
-        sentAt: string;
+        sentAt: string | null;
         contentId: string | null;
         recipients: number;
         opens: number;
         clicks: number;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        sends: any[];
+        sends: { id: string; email: string; type: string | null; openedAt: string | null; clickedAt: string | null }[];
       }
     >();
 

@@ -856,6 +856,7 @@ export type Database = {
       email_sends: {
         Row: {
           clicked_at: string | null
+          content_id: string | null
           created_at: string | null
           error_message: string | null
           id: string
@@ -869,6 +870,7 @@ export type Database = {
         }
         Insert: {
           clicked_at?: string | null
+          content_id?: string | null
           created_at?: string | null
           error_message?: string | null
           id?: string
@@ -882,6 +884,7 @@ export type Database = {
         }
         Update: {
           clicked_at?: string | null
+          content_id?: string | null
           created_at?: string | null
           error_message?: string | null
           id?: string
@@ -893,7 +896,15 @@ export type Database = {
           subject?: string
           template?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "email_sends_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "contents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invite_codes: {
         Row: {
