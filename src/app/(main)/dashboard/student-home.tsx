@@ -7,7 +7,8 @@ import { getExcerpt } from "@/components/posts/post-card";
 import { decodeHtmlEntities } from "@/lib/utils/decode-entities";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
-function timeAgo(dateStr: string) {
+function timeAgo(dateStr: string | null) {
+  if (!dateStr) return "";
   const now = new Date();
   const d = new Date(dateStr);
   const diffMs = now.getTime() - d.getTime();

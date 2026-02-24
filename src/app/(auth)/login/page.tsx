@@ -27,14 +27,20 @@ export default function LoginPage() {
       });
 
       if (error) {
-        setError("이메일 또는 비밀번호가 올바르지 않습니다.");
+        if (error.message?.includes("Invalid login credentials")) {
+          setError("이메일 또는 비밀번호가 올바르지 않습니다.");
+        } else if (error.message?.includes("Failed to fetch") || error.status === 0) {
+          setError("서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+        } else {
+          setError("로그인 중 오류가 발생했습니다.");
+        }
         return;
       }
 
       router.push("/dashboard");
       router.refresh();
     } catch {
-      setError("로그인 중 오류가 발생했습니다.");
+      setError("서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setLoading(false);
     }
@@ -92,6 +98,12 @@ export default function LoginPage() {
                 required
                 className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
               />
+            </div>
+
+            <div className="text-right mt-1">
+              <Link href="/forgot-password" className="text-sm text-[#F75D5D] hover:underline">
+                비밀번호를 잊으셨나요?
+              </Link>
             </div>
 
             <button

@@ -23,7 +23,8 @@ function getCategoryColor(name: string): string {
   return categoryColorMap[name] || "bg-slate-50 text-slate-600 border-slate-200";
 }
 
-function timeAgo(dateStr: string) {
+function timeAgo(dateStr: string | null) {
+  if (!dateStr) return "";
   const now = new Date();
   const d = new Date(dateStr);
   const diffMs = now.getTime() - d.getTime();

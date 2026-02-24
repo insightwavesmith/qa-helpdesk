@@ -40,7 +40,8 @@ function parseKoreanCurrency(value: number): {
   return { num: value, suffix: "", decimals: 0 };
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return "";
   const d = new Date(dateStr);
   return d.toLocaleDateString("ko-KR", {
     year: "numeric",

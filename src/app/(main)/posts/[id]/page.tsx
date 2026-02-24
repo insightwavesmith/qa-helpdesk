@@ -76,22 +76,22 @@ export default async function PostDetailPage({
             body_md: post.body_md,
             category: post.category,
             thumbnail_url: post.thumbnail_url,
-            is_pinned: post.is_pinned,
-            view_count: post.view_count,
+            is_pinned: post.is_pinned ?? false,
+            view_count: post.view_count ?? 0,
             status: post.status,
-            created_at: post.created_at,
+            created_at: post.created_at ?? "",
             author: post.author,
           }}
-          relatedPosts={relatedPosts.map((p: { id: string; title: string; content: string; body_md?: string; category: string; is_pinned: boolean; view_count: number; created_at: string; author?: { id: string; name: string; shop_name: string | null } | null }) => ({
+          relatedPosts={relatedPosts.map((p) => ({
             id: p.id,
             title: p.title,
             content: p.content,
             body_md: p.body_md,
             category: p.category,
-            is_pinned: p.is_pinned,
-            view_count: p.view_count,
+            is_pinned: p.is_pinned ?? false,
+            view_count: p.view_count ?? 0,
             like_count: 0,
-            created_at: p.created_at,
+            created_at: p.created_at ?? "",
             author: p.author,
           }))}
           isAdmin={isAdmin}

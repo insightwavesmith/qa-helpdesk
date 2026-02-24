@@ -93,8 +93,8 @@ export default function SignupPage() {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError("비밀번호는 6자 이상이어야 합니다.");
+    if (formData.password.length < 8) {
+      setError("비밀번호는 8자 이상이어야 합니다.");
       return;
     }
 
@@ -121,7 +121,12 @@ export default function SignupPage() {
       } else {
         // lead 모드: 사업자정보 필수
         metadata.phone = formData.phone;
-        metadata.shop_url = formData.shopUrl;
+        // shopUrl https:// 자동 보완
+        let finalShopUrl = formData.shopUrl.trim();
+        if (finalShopUrl && !finalShopUrl.startsWith("http")) {
+          finalShopUrl = `https://${finalShopUrl}`;
+        }
+        metadata.shop_url = finalShopUrl || null;
         metadata.shop_name = formData.shopName;
         metadata.business_number = formData.businessNumber;
       }
@@ -288,7 +293,7 @@ export default function SignupPage() {
                     <input
                       id="password"
                       type="password"
-                      placeholder="6자 이상"
+                      placeholder="8자 이상"
                       value={formData.password}
                       onChange={(e) => updateField("password", e.target.value)}
                       required
@@ -381,14 +386,13 @@ export default function SignupPage() {
                     </div>
                     <div className="space-y-2">
                       <label htmlFor="shopUrl" className="block text-sm font-medium text-[#111827]">
-                        쇼핑몰 URL *
+                        쇼핑몰 URL
                       </label>
                       <input
                         id="shopUrl"
                         placeholder="https://myshop.com"
                         value={formData.shopUrl}
                         onChange={(e) => updateField("shopUrl", e.target.value)}
-                        required
                         className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
                       />
                     </div>

@@ -212,7 +212,7 @@ export async function getWeeklyQuestionStats() {
   }
 
   data?.forEach((q) => {
-    const key = q.created_at.split("T")[0];
+    const key = q.created_at?.split("T")[0] ?? "unknown";
     if (dailyCounts[key] !== undefined) {
       dailyCounts[key]++;
     }

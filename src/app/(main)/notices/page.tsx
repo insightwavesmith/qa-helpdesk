@@ -2,7 +2,8 @@ import Link from "next/link";
 import { Megaphone } from "lucide-react";
 import { getNotices } from "@/actions/posts";
 
-function formatDate(dateStr: string) {
+function formatDate(dateStr: string | null) {
+  if (!dateStr) return "";
   const d = new Date(dateStr);
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -60,7 +61,7 @@ export default async function NoticesPage() {
               </p>
               <span className="text-xs text-gray-400 mt-2 block">
                 {formatDate(notice.published_at || notice.created_at)}
-                {notice.view_count > 0 && ` · 조회 ${notice.view_count}`}
+                {(notice.view_count ?? 0) > 0 && ` · 조회 ${notice.view_count}`}
               </span>
             </Link>
           ))}

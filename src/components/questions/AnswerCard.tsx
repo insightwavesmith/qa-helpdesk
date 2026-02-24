@@ -15,7 +15,8 @@ interface AnswerCardProps {
   };
 }
 
-function timeAgo(dateStr: string) {
+function timeAgo(dateStr: string | null) {
+  if (!dateStr) return "";
   const now = new Date();
   const d = new Date(dateStr);
   const diffMs = now.getTime() - d.getTime();

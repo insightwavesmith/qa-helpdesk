@@ -69,7 +69,12 @@ export default async function ReviewsPage({
       </div>
 
       <ReviewListClient
-        reviews={reviews}
+        reviews={(reviews ?? []).map((r) => ({
+          ...r,
+          image_urls: r.image_urls ?? [],
+          view_count: r.view_count ?? 0,
+          created_at: r.created_at ?? "",
+        }))}
         currentPage={page}
         totalPages={totalPages}
         totalCount={count || 0}

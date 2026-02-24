@@ -11,6 +11,9 @@ const PUBLIC_PATHS = [
   "/subscribe",
   "/unsubscribe",
   "/api/invite/validate",
+  "/forgot-password",
+  "/reset-password",
+  "/api/auth/callback",
 ];
 
 // 정확히 "/" 만 매칭 (startsWith("/")는 모든 경로 매칭하므로 별도 처리)
@@ -134,6 +137,12 @@ export async function updateSession(request: NextRequest) {
   }
 
   // 6. 역할별 라우팅
+
+  // 인증 플로우 경로는 역할 라우팅 우회 (비밀번호 재설정 등)
+  const AUTH_FLOW_PATHS = ["/reset-password", "/forgot-password"];
+  if (AUTH_FLOW_PATHS.some((p) => pathname.startsWith(p))) {
+    return supabaseResponse;
+  }
 
   // admin / assistant → 전체 접근 허용
   if (role === "admin" || role === "assistant") {

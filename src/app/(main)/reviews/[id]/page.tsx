@@ -44,7 +44,12 @@ export default async function ReviewDetailPage({
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
-      <ReviewDetailClient review={result.data} isAdmin={isAdmin} />
+      <ReviewDetailClient review={{
+        ...result.data,
+        image_urls: result.data.image_urls ?? [],
+        view_count: result.data.view_count ?? 0,
+        created_at: result.data.created_at ?? "",
+      }} isAdmin={isAdmin} />
     </div>
   );
 }

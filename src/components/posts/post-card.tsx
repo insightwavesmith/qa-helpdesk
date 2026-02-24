@@ -26,7 +26,8 @@ export const categoryConfig: Record<string, { label: string; bg: string; text: s
   case_study: { label: "고객사례", bg: "#FFF7ED", text: "#F97316" },
 };
 
-function formatDate(dateStr: string) {
+function formatDate(dateStr: string | null) {
+  if (!dateStr) return "";
   const d = new Date(dateStr);
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");

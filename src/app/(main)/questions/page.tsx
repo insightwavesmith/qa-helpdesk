@@ -67,7 +67,18 @@ export default async function QuestionsPage({
   return (
     <Suspense fallback={<QuestionsLoading />}>
       <QuestionsListClient
-        questions={questions}
+        questions={questions.map((q) => ({
+          id: q.id,
+          title: q.title,
+          content: q.content,
+          status: q.status ?? "open",
+          view_count: q.view_count ?? 0,
+          like_count: q.like_count ?? 0,
+          created_at: q.created_at ?? "",
+          answers_count: "answers_count" in q ? (q as { answers_count?: number }).answers_count : undefined,
+          author: q.author,
+          category: q.category,
+        }))}
         categories={categoryTabs}
         currentCategory={categorySlug}
         currentSearch={search}

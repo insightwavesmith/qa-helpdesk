@@ -25,7 +25,8 @@ const categoryLabels: Record<string, string> = {
   newsletter: "최신정보",
 };
 
-function timeAgo(dateStr: string) {
+function timeAgo(dateStr: string | null) {
+  if (!dateStr) return "";
   const now = new Date();
   const d = new Date(dateStr);
   const diffMs = now.getTime() - d.getTime();

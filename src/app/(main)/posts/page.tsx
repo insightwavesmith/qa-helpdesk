@@ -40,9 +40,25 @@ export default async function PostsPage({
 
   const totalPages = Math.ceil((count || 0) / PAGE_SIZE);
 
+  // nullable → non-null 변환 (Supabase 타입 갱신 대응)
+  const safePosts = posts.map((p) => ({
+    id: p.id,
+    title: p.title,
+    content: p.content,
+    body_md: p.body_md,
+    category: p.category,
+    thumbnail_url: p.thumbnail_url,
+    type: p.type ?? undefined,
+    is_pinned: p.is_pinned ?? false,
+    view_count: p.view_count ?? 0,
+    like_count: p.like_count ?? 0,
+    created_at: p.created_at ?? "",
+    author: p.author,
+  }));
+
   // 베스트 콘텐츠: is_pinned 첫 번째 글
-  const pinnedPost = posts.find((p: { is_pinned: boolean }) => p.is_pinned) || null;
-  const regularPosts = posts.filter((p: { id: string }) => p.id !== pinnedPost?.id);
+  const pinnedPost = safePosts.find((p) => p.is_pinned) || null;
+  const regularPosts = safePosts.filter((p) => p.id !== pinnedPost?.id);
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">

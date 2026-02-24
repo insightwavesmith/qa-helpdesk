@@ -55,7 +55,8 @@ function getCategoryColor(name: string): string {
   return categoryColorMap[name] || "bg-slate-50 text-slate-600 border-slate-200";
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return "";
   const d = new Date(dateStr);
   return d.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\. /g, "-").replace(".", "");
 }

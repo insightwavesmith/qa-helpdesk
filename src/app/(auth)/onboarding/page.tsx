@@ -223,7 +223,12 @@ function StepProfile({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const finalCategory = category === "etc" ? customCategory.trim() : category;
-    onSave({ name, shopName, shopUrl, annualRevenue, monthlyAdBudget, category: finalCategory });
+    // shopUrl https:// 자동 보완
+    let finalShopUrl = shopUrl.trim();
+    if (finalShopUrl && !finalShopUrl.startsWith("http")) {
+      finalShopUrl = `https://${finalShopUrl}`;
+    }
+    onSave({ name, shopName, shopUrl: finalShopUrl, annualRevenue, monthlyAdBudget, category: finalCategory });
   };
 
   const isCategoryValid = category !== "etc" || customCategory.trim().length > 0;
@@ -283,7 +288,7 @@ function StepProfile({
           </label>
           <input
             id="onb-shop-url"
-            type="url"
+            type="text"
             placeholder="https://myshop.com"
             value={shopUrl}
             onChange={(e) => setShopUrl(e.target.value)}

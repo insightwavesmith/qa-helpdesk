@@ -5,7 +5,8 @@ import { getQuestions } from "@/actions/questions";
 import { getExcerpt } from "@/components/posts/post-card";
 import { LockedFeatureCard } from "@/components/ui/locked-feature-card";
 
-function timeAgo(dateStr: string) {
+function timeAgo(dateStr: string | null) {
+  if (!dateStr) return "";
   const now = new Date();
   const d = new Date(dateStr);
   const diffMs = now.getTime() - d.getTime();
