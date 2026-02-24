@@ -47,6 +47,14 @@ const roleLabels: Record<string, { label: string; className: string }> = {
 
 const roleOptions = ["lead", "member", "student", "assistant", "admin"];
 
+const roleDescriptions: Record<string, string> = {
+  lead: "",
+  member: "",
+  student: "강의 시청, Q&A 질문, 정보공유 열람",
+  assistant: "수강생 기능 + 콘텐츠 관리, Q&A 답변 관리",
+  admin: "전체 권한",
+};
+
 function formatDate(dateStr: string | null) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
@@ -92,6 +100,8 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
 
   const handleChangeRole = async () => {
     if (selectedRole === profile.role) return;
+    const targetLabel = roleLabels[selectedRole]?.label || selectedRole;
+    if (!confirm(`${profile.name}님을 ${targetLabel}(으)로 변경하시겠습니까?`)) return;
     setRoleLoading(true);
     try {
       const { error } = await changeRole(profile.id, selectedRole);
@@ -307,28 +317,51 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
         {/* 역할 변경 */}
         <div className="border-t border-gray-200 pt-4 mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">역할 변경</label>
-          <div className="flex gap-2">
-            <select
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
-              className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
-            >
-              {roleOptions.map((r) => (
-                <option key={r} value={r}>
-                  {roleLabels[r]?.label || r}
-                </option>
-              ))}
-            </select>
-            <Button
-              size="sm"
-              className="bg-[#F75D5D] hover:bg-[#E54949] text-white rounded-lg"
-              onClick={handleChangeRole}
-              disabled={roleLoading || selectedRole === profile.role}
-            >
-              {roleLoading && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-              변경
-            </Button>
+          <div className="space-y-2">
+            {roleOptions.map((r) => {
+              const info = roleLabels[r];
+              const desc = roleDescriptions[r];
+              const isSelected = selectedRole === r;
+              const isCurrent = profile.role === r;
+              return (
+                <label
+                  key={r}
+                  className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                    isSelected
+                      ? "border-[#F75D5D] bg-red-50/50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="role"
+                    value={r}
+                    checked={isSelected}
+                    onChange={() => setSelectedRole(r)}
+                    className="mt-0.5 accent-[#F75D5D]"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-900">{info?.label || r}</span>
+                      {isCurrent && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">현재</span>
+                      )}
+                    </div>
+                    {desc && <p className="text-xs text-gray-500 mt-0.5">{desc}</p>}
+                  </div>
+                </label>
+              );
+            })}
           </div>
+          <Button
+            size="sm"
+            className="mt-3 w-full bg-[#F75D5D] hover:bg-[#E54949] text-white rounded-lg"
+            onClick={handleChangeRole}
+            disabled={roleLoading || selectedRole === profile.role}
+          >
+            {roleLoading && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+            변경
+          </Button>
         </div>
 
         {/* 배정된 광고계정 */}

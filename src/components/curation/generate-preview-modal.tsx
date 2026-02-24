@@ -39,6 +39,7 @@ export function GeneratePreviewModal({
   const [title, setTitle] = useState("");
   const [bodyMd, setBodyMd] = useState("");
   const [category, setCategory] = useState("education");
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [error, setError] = useState("");
 
@@ -55,6 +56,7 @@ export function GeneratePreviewModal({
         if (!res.ok) throw new Error(data.error || "생성 실패");
         setTitle(data.title);
         setBodyMd(data.body_md);
+        if (data.thumbnail_url) setThumbnailUrl(data.thumbnail_url);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "정보공유 생성에 실패했습니다."
@@ -77,6 +79,7 @@ export function GeneratePreviewModal({
       bodyMd: bodyMd.trim(),
       category,
       sourceContentIds: contentIds,
+      thumbnailUrl,
     });
     if (createError) {
       toast.error(createError);

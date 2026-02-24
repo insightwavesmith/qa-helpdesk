@@ -1,3 +1,6 @@
+"use client";
+
+import { useRef, useEffect } from "react";
 import "./post-body.css";
 
 interface PostBodyProps {
@@ -24,10 +27,18 @@ function markdownToHtml(md: string): string {
   // Inline code
   html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
 
-  // Images
+  // Images with IMAGE_PLACEHOLDER → figure with data-unsplash-query
+  html = html.replace(/!\[([^\]]*)\]\(IMAGE_PLACEHOLDER\)/g,
+    '<figure class="post-image-figure"><img data-unsplash-query="$1" src="" loading="lazy" alt="$1" /><figcaption>$1</figcaption></figure>');
+
+  // Regular images
   html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />');
 
-  // Links
+  // CTA links (text contains →)
+  html = html.replace(/\[([^\]]*→[^\]]*)\]\(([^)]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener noreferrer" class="cta-link">$1</a>');
+
+  // Regular links
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
 
   // Headings (h2, h3 only — h1 is the title)
@@ -101,7 +112,7 @@ function markdownToHtml(md: string): string {
       const trimmed = block.trim();
       if (!trimmed) return "";
       // Skip blocks already wrapped in HTML tags
-      if (/^<(h[23]|ul|ol|li|blockquote|pre|table|hr|img|div)/.test(trimmed)) {
+      if (/^<(h[23]|ul|ol|li|blockquote|pre|table|hr|img|div|figure)/.test(trimmed)) {
         return trimmed;
       }
       // Wrap plain text lines in <p>
@@ -110,7 +121,7 @@ function markdownToHtml(md: string): string {
         .map((line: string) => {
           const l = line.trim();
           if (!l) return "";
-          if (/^<(h[23]|ul|ol|li|blockquote|pre|table|hr|img|div)/.test(l)) return l;
+          if (/^<(h[23]|ul|ol|li|blockquote|pre|table|hr|img|div|figure)/.test(l)) return l;
           return `<p>${l}</p>`;
         })
         .join("\n");
@@ -121,10 +132,34 @@ function markdownToHtml(md: string): string {
 }
 
 export function PostBody({ content }: PostBodyProps) {
+  const ref = useRef<HTMLDivElement>(null);
   const html = markdownToHtml(content);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const imgs = ref.current.querySelectorAll<HTMLImageElement>("[data-unsplash-query]");
+    if (imgs.length === 0) return;
+
+    imgs.forEach(async (img) => {
+      const query = img.dataset.unsplashQuery;
+      if (!query) return;
+      try {
+        const res = await fetch(`/api/unsplash/search?query=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        if (data.url) {
+          img.src = data.url;
+        } else {
+          img.src = `https://placehold.co/800x400?text=${encodeURIComponent(query)}`;
+        }
+      } catch {
+        img.src = `https://placehold.co/800x400?text=${encodeURIComponent(query)}`;
+      }
+    });
+  }, [html]);
 
   return (
     <div
+      ref={ref}
       className="post-body"
       dangerouslySetInnerHTML={{ __html: html }}
     />

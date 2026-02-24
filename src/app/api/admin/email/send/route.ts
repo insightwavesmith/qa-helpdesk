@@ -6,6 +6,7 @@ import { makeUnsubscribeUrl, replaceUnsubscribeUrl } from "@/lib/email-templates
 
 const BATCH_SIZE = 50;
 const BATCH_DELAY_MS = 1000;
+const DAILY_LIMIT = 2000;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -224,13 +225,73 @@ export async function POST(request: NextRequest) {
       return `<img src="${trackBaseUrl}/api/email/track?t=open&sid=${sendId}" width="1" height="1" alt="" style="display:none;" />`;
     }
 
+    // T4: 일일 발송 한계 확인
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const { count: todaySentCount } = await svc
+      .from("email_sends")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "sent")
+      .gte("sent_at", todayStart.toISOString());
+
+    const remainingQuota = DAILY_LIMIT - (todaySentCount || 0);
+    let queued = 0;
+
+    // 쿼타 초과분 사전 큐잉
+    let sendableRecipients = recipients;
+    if (remainingQuota <= 0) {
+      sendableRecipients = [];
+    } else if (recipients.length > remainingQuota) {
+      sendableRecipients = recipients.slice(0, remainingQuota);
+    }
+
+    const toQueueUpfront = recipients.length - sendableRecipients.length;
+    if (toQueueUpfront > 0) {
+      const queueBatch = recipients.slice(sendableRecipients.length);
+      for (let qi = 0; qi < queueBatch.length; qi += 100) {
+        const chunk = queueBatch.slice(qi, qi + 100);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const payloads: any[] = chunk.map((r) => ({
+          recipient_email: r.email,
+          recipient_type: r.type,
+          subject,
+          template: templateName,
+          status: "queued",
+          ...(contentId ? { content_id: contentId } : {}),
+        }));
+        await svc.from("email_sends").insert(payloads);
+      }
+      queued = toQueueUpfront;
+    }
+
     // 배치 발송
     let sent = 0;
     let failed = 0;
+    let rateLimitHit = false;
     const errors: { email: string; error: string }[] = [];
 
-    for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
-      const batch = recipients.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < sendableRecipients.length; i += BATCH_SIZE) {
+      // T5: rate limit 감지 시 나머지 큐잉
+      if (rateLimitHit) {
+        const remaining = sendableRecipients.slice(i);
+        for (let qi = 0; qi < remaining.length; qi += 100) {
+          const chunk = remaining.slice(qi, qi + 100);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const payloads: any[] = chunk.map((r) => ({
+            recipient_email: r.email,
+            recipient_type: r.type,
+            subject,
+            template: templateName,
+            status: "queued",
+            ...(contentId ? { content_id: contentId } : {}),
+          }));
+          await svc.from("email_sends").insert(payloads);
+        }
+        queued += remaining.length;
+        break;
+      }
+
+      const batch = sendableRecipients.slice(i, i + BATCH_SIZE);
 
       const results = await Promise.allSettled(
         batch.map(async (recipient) => {
@@ -311,6 +372,11 @@ export async function POST(request: NextRequest) {
             if (contentId) errorPayload.content_id = contentId;
             try { await svc.from("email_sends").insert(errorPayload); } catch { /* ignore */ }
 
+            // T5: SMTP rate limit 에러 감지
+            if (/550|421|rate.?limit|too many/i.test(errorMessage)) {
+              rateLimitHit = true;
+            }
+
             return { success: false, email: recipient.email, error: errorMessage };
           }
         })
@@ -331,7 +397,7 @@ export async function POST(request: NextRequest) {
       }
 
       // 배치 간 딜레이 (마지막 배치 제외)
-      if (i + BATCH_SIZE < recipients.length) {
+      if (i + BATCH_SIZE < sendableRecipients.length) {
         await sleep(BATCH_DELAY_MS);
       }
     }
@@ -341,6 +407,7 @@ export async function POST(request: NextRequest) {
       total: recipients.length,
       sent,
       failed,
+      queued,
       errors: errors.slice(0, 10),
     });
   } catch (error) {

@@ -143,11 +143,13 @@ export async function createInfoShareDraft({
   bodyMd,
   category = "education",
   sourceContentIds,
+  thumbnailUrl,
 }: {
   title: string;
   bodyMd: string;
   category?: string;
   sourceContentIds: string[];
+  thumbnailUrl?: string | null;
 }) {
   const supabase = await requireStaff();
   const now = new Date().toISOString();
@@ -165,6 +167,7 @@ export async function createInfoShareDraft({
       source_type: "info_share",
       source_ref: sourceContentIds.join(","),
       curation_status: "published",
+      ...(thumbnailUrl ? { thumbnail_url: thumbnailUrl } : {}),
     })
     .select("id")
     .single();

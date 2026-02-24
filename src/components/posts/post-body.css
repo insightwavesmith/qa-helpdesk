@@ -32,6 +32,7 @@
   padding: 16px;
   margin: 16px 0;
   border-radius: 0 8px 8px 0;
+  font-style: italic;
 }
 
 .post-body blockquote p {
@@ -147,6 +148,42 @@
   margin: 16px 0;
   color: #9ca3af;
   font-size: 14px;
+}
+
+.post-body .cta-link {
+  display: inline-block;
+  background: #F75D5D;
+  color: #ffffff;
+  padding: 10px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  margin: 8px 0;
+  transition: background 0.2s;
+}
+
+.post-body .cta-link:hover {
+  background: #E54949;
+  color: #ffffff;
+}
+
+.post-body .post-image-figure {
+  margin: 24px 0;
+  text-align: center;
+}
+
+.post-body .post-image-figure img {
+  width: 100%;
+  border-radius: 8px;
+  min-height: 200px;
+  background: #f8f9fa;
+}
+
+.post-body .post-image-figure figcaption {
+  font-size: 13px;
+  color: #9ca3af;
+  margin-top: 8px;
 }
 
 .post-body strong {

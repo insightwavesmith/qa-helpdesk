@@ -123,17 +123,20 @@ export async function POST(request: NextRequest) {
 
 ---
 
-4. **본론** (넘버링된 h2 소제목, 2~4개 섹션):
-   각 섹션마다:
+4. **본론** (넘버링된 h2 소제목, 3~5개 섹션):
+   각 섹션마다 반드시 포함:
    - 핵심 숫자 블록 (불릿 + 볼드 숫자) — 숫자 먼저, 설명 나중
    - 본문 — 숫자를 스토리로 풀기. 업계 평균/벤치마크와 비교해서 의미 부여
-   - 인용구 (관련 인물이나 수강생 목소리, 있으면)
+   - \`> 인용문\` 1개 이상 (관련 인물, 수강생 목소리, 또는 핵심 메시지)
+   - \`![이미지 설명](IMAGE_PLACEHOLDER)\` 1개 (섹션 주제를 시각화하는 이미지)
    - 비유/일상 표현으로 체감시키기
    - 인라인 CTA ("자세히 알아보기 →")는 자사몰사관학교 관련 링크가 있을 때만
 
 ---
 
-5. **마치며**: 전체 요약 + 다음 액션 제안
+5. **## 마치며** (필수 섹션 — 생략 금지):
+   - 전체 요약 + 다음 액션 제안
+   - 마지막에 수강 문의 CTA 1줄: "자사몰사관학교에서 더 자세히 배워보세요 →"
 
 ## 글자수 (절대 규칙)
 - 최소 4,000자 이상 (공백 포함). 4,000자 미만 절대 금지.
@@ -150,6 +153,9 @@ export async function POST(request: NextRequest) {
 - 섹션 사이 구분선(---) 필수
 - 추측 표현 금지 ("~인 것 같아요")
 - 교과서적 정의로 시작 금지 ("~란 ~입니다")
+- 각 h2 섹션마다 \`> 인용문\` 최소 1개 필수 (빠뜨리면 안 됨)
+- 각 h2 섹션마다 \`![이미지 설명](IMAGE_PLACEHOLDER)\` 최소 1개 필수
+- \`## 마치며\` 섹션은 반드시 포함. 생략 금지
 
 ## 마크다운 이스케이프 규칙
 - 줄 끝 백슬래시(\\) 사용 금지. 줄바꿈은 빈 줄로 처리
@@ -191,7 +197,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 4096,
+        max_tokens: 8192,
         temperature: 0.7,
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
@@ -243,11 +249,38 @@ export async function POST(request: NextRequest) {
       : sourceTypes.includes("webinar") ? "webinar"
       : "education";
 
+    // T2: 커버 이미지 — 제목 키워드로 Unsplash 검색
+    let thumbnailUrl: string | null = null;
+    const unsplashKey = process.env.UNSPLASH_ACCESS_KEY;
+    if (unsplashKey) {
+      try {
+        const keywords = title
+          .replace(/[0-9]/g, "")
+          .replace(/[^\w\sㄱ-ㅎ가-힣]/g, "")
+          .split(/\s+/)
+          .filter((w: string) => w.length > 1)
+          .slice(0, 3)
+          .join(" ");
+
+        const unsplashRes = await fetch(
+          `https://api.unsplash.com/search/photos?query=${encodeURIComponent(keywords)}&orientation=landscape&per_page=1`,
+          { headers: { Authorization: `Client-ID ${unsplashKey}` } }
+        );
+        if (unsplashRes.ok) {
+          const unsplashData = await unsplashRes.json();
+          thumbnailUrl = unsplashData.results?.[0]?.urls?.regular || null;
+        }
+      } catch (unsplashErr) {
+        console.warn("Unsplash 검색 실패:", unsplashErr instanceof Error ? unsplashErr.message : unsplashErr);
+      }
+    }
+
     return NextResponse.json({
       title,
       body_md: bodyMd,
       category,
       sourceContents: contentIds,
+      thumbnail_url: thumbnailUrl,
     });
   } catch (error) {
     console.error("Curation generate error:", error);

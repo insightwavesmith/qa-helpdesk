@@ -191,7 +191,7 @@ export default function AdminContentPage() {
         </TabsList>
 
         {/* 큐레이션 탭 */}
-        <TabsContent value="curation" className="mt-4">
+        <TabsContent value="curation" forceMount className="mt-4">
           <div className="flex gap-4">
             <PipelineSidebar
               activeSource={sidebarSource}
@@ -207,7 +207,7 @@ export default function AdminContentPage() {
         </TabsContent>
 
         {/* 콘텐츠 탭 */}
-        <TabsContent value="contents" className="space-y-6 mt-4">
+        <TabsContent value="contents" forceMount className="space-y-6 mt-4">
           {/* Stat Cards */}
           <div className="grid grid-cols-4 gap-4">
             {statCards.map((card) => (
@@ -362,12 +362,12 @@ export default function AdminContentPage() {
         </TabsContent>
 
         {/* 정보공유 탭 */}
-        <TabsContent value="posts" className="mt-4">
+        <TabsContent value="posts" forceMount className="mt-4">
           <InfoShareTab />
         </TabsContent>
 
         {/* 이메일 탭 (Phase D에서 구현) */}
-        <TabsContent value="email" className="mt-4">
+        <TabsContent value="email" forceMount className="mt-4">
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-20">
               <Mail className="h-10 w-10 text-gray-300 mb-3" />
