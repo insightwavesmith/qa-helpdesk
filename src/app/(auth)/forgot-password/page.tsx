@@ -21,7 +21,7 @@ export default function ForgotPasswordPage() {
         process.env.NEXT_PUBLIC_SITE_URL ?? "https://qa-helpdesk.vercel.app";
 
       await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${siteUrl}/api/auth/callback?next=/reset-password`,
+        redirectTo: `${siteUrl}/reset-password`,
       });
     } catch {
       // 에러도 동일 메시지 표시 (정보 노출 방지)
