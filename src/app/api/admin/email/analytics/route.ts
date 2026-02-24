@@ -26,7 +26,7 @@ export async function GET() {
       .eq("id", user.id)
       .single();
 
-    if (profile?.role !== "admin") {
+    if (profile?.role !== "admin" && profile?.role !== "assistant") {
       return NextResponse.json(
         { error: "관리자 권한이 필요합니다." },
         { status: 403 }

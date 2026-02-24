@@ -49,7 +49,7 @@ export default async function MainLayout({
   };
 
   const role = profile?.role;
-  const usesSidebarLayout = role === "admin";
+  const usesSidebarLayout = role === "admin" || role === "assistant";
 
   // 학생용: 상단 헤더만 (목업 스타일)
   if (!usesSidebarLayout) {
@@ -69,7 +69,7 @@ export default async function MainLayout({
 
   // admin/lead/member: 사이드바 레이아웃
   const pendingAnswersCount =
-    role === "admin" ? await getPendingAnswersCount() : 0;
+    (role === "admin" || role === "assistant") ? await getPendingAnswersCount() : 0;
 
   return (
     <div className="flex h-screen overflow-hidden">

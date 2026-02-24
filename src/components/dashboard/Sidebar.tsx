@@ -163,7 +163,7 @@ export function DashboardSidebar({
       >
         {mainNavItems.map(renderNavItem)}
 
-        {userRole === "admin" && (
+        {(userRole === "admin" || userRole === "assistant") && (
           <>
             <div className="my-3 border-t border-sidebar-border" />
             {!collapsed && (

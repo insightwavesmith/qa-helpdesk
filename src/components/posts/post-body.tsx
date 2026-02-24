@@ -10,6 +10,11 @@ interface PostBodyProps {
 function markdownToHtml(md: string): string {
   let html = md;
 
+  // Blockquote (before HTML escape to preserve > character)
+  html = html.replace(/^> (.+)$/gm, "<blockquote><p>$1</p></blockquote>");
+  // Merge consecutive blockquotes
+  html = html.replace(/<\/blockquote>\s*<blockquote>/g, "");
+
   // Escape HTML (but preserve existing tags if content has HTML)
   // Only escape if content looks like plain markdown
   if (!/<[a-z][\s\S]*>/i.test(html)) {
@@ -52,11 +57,6 @@ function markdownToHtml(md: string): string {
   // Image placeholders [이미지: 설명]
   html = html.replace(/\[이미지:\s*([^\]]+)\]/g,
     '<div class="image-placeholder"><span>$1</span></div>');
-
-  // Blockquote
-  html = html.replace(/^> (.+)$/gm, "<blockquote><p>$1</p></blockquote>");
-  // Merge consecutive blockquotes
-  html = html.replace(/<\/blockquote>\s*<blockquote>/g, "");
 
   // Horizontal rules (*** and --- patterns, before bold/italic to avoid conflict)
   html = html.replace(/^\*\*\*\s*$/gm, "<hr />");
@@ -149,10 +149,10 @@ export function PostBody({ content }: PostBodyProps) {
         if (data.url) {
           img.src = data.url;
         } else {
-          img.src = `https://placehold.co/800x400?text=${encodeURIComponent(query)}`;
+          img.src = `https://placehold.co/800x400/F5F5F5/999999?text=Image`;
         }
       } catch {
-        img.src = `https://placehold.co/800x400?text=${encodeURIComponent(query)}`;
+        img.src = `https://placehold.co/800x400/F5F5F5/999999?text=Image`;
       }
     });
   }, [html]);
