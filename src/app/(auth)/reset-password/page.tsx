@@ -19,34 +19,54 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const supabase = createClient();
 
-    // PKCE flow: URL에 code가 있으면 서버에서 교환
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-        if (!error) {
-          setSessionReady(true);
-          // URL에서 code 제거 (깔끔한 UX)
-          window.history.replaceState({}, "", "/reset-password");
-        }
-      });
-    }
-
-    // hash fragment 방식도 대응 (non-PKCE)
+    // 1. onAuthStateChange 먼저 등록 (PASSWORD_RECOVERY 이벤트 감지)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event) => {
-        if (event === "PASSWORD_RECOVERY") {
+        if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
           setSessionReady(true);
         }
       }
     );
 
-    // 이미 세션이 있을 수 있음
+    // 2. PKCE flow: URL에 code가 있으면 교환
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error: codeError }) => {
+        if (!codeError) {
+          setSessionReady(true);
+          window.history.replaceState({}, "", "/reset-password");
+        } else {
+          console.error("code exchange failed:", codeError.message);
+          setError("인증 코드가 만료되었거나 유효하지 않습니다. 비밀번호 재설정을 다시 요청해 주세요.");
+        }
+      });
+    }
+
+    // 3. hash fragment 방식 (token_hash) - URL hash에서 직접 처리
+    const hash = window.location.hash;
+    if (hash) {
+      // Supabase가 hash로 토큰을 전달하는 경우 onAuthStateChange가 자동 처리
+      // 별도 처리 불필요
+    }
+
+    // 4. 이미 세션이 있을 수 있음
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setSessionReady(true);
       }
     });
+
+    // 5. code도 hash도 없으면 10초 후 안내 메시지
+    if (!code && !hash) {
+      const timer = setTimeout(() => {
+        setError("세션을 찾을 수 없습니다. 비밀번호 재설정을 다시 요청해 주세요.");
+      }, 10000);
+      return () => {
+        subscription.unsubscribe();
+        clearTimeout(timer);
+      };
+    }
 
     return () => {
       subscription.unsubscribe();
