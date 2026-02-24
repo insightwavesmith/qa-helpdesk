@@ -19,6 +19,20 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const supabase = createClient();
 
+    // PKCE flow: URL에 code가 있으면 서버에서 교환
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (!error) {
+          setSessionReady(true);
+          // URL에서 code 제거 (깔끔한 UX)
+          window.history.replaceState({}, "", "/reset-password");
+        }
+      });
+    }
+
+    // hash fragment 방식도 대응 (non-PKCE)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event) => {
         if (event === "PASSWORD_RECOVERY") {
@@ -27,7 +41,7 @@ export default function ResetPasswordPage() {
       }
     );
 
-    // 이미 세션이 있을 수 있음 (callback에서 교환 완료)
+    // 이미 세션이 있을 수 있음
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setSessionReady(true);
