@@ -6,8 +6,10 @@ import { type DateRange } from "./components/period-tabs";
 import {
   type AdInsightRow,
   type BenchmarkRow,
+  AdMetricsTable,
 } from "./components/ad-metrics-table";
-import { type LpMetricRow } from "./components/lp-metrics-card";
+import { type LpMetricRow, LpMetricsCard } from "./components/lp-metrics-card";
+import { BenchmarkCompare } from "./components/benchmark-compare";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, BarChart3 } from "lucide-react";
 
@@ -257,10 +259,6 @@ export default function RealDashboard() {
   const funnelResult = insights.length > 0 ? toFunnelData(insights) : undefined;
   const dailyMetrics = insights.length > 0 ? toDailyMetrics(insights) : undefined;
 
-  // unused 방지
-  void lpMetrics;
-  void benchmarks;
-
   return (
     <div className="flex flex-col gap-6">
       {/* Header: 제목 + 계정선택 + 기간선택 */}
@@ -332,6 +330,9 @@ export default function RealDashboard() {
             </div>
           </div>
           <DailyMetricsTable data={dailyMetrics} />
+          <BenchmarkCompare insights={insights} benchmarks={benchmarks} />
+          <AdMetricsTable insights={insights} benchmarks={benchmarks} />
+          {lpMetrics.length > 0 && <LpMetricsCard lpMetrics={lpMetrics} />}
         </>
       )}
     </div>

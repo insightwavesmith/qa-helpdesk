@@ -95,6 +95,7 @@ export async function POST(req: NextRequest) {
         date: today,
         period: `${sevenDaysAgo}~${today}`,
         metric_name: metric,
+        p25: round(percentile(values, 25), 4),
         p50: round(percentile(values, 50), 4),
         p75: round(percentile(values, 75), 4),
         p90: round(percentile(values, 90), 4),

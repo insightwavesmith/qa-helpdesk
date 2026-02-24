@@ -15,7 +15,7 @@ import { diagnoseAd, Verdict } from '@/lib/diagnosis';
  *   - below: avg_value * 0.5 (추정)
  */
 function transformBenchmarks(
-  rows: { metric_name: string; avg_value: number | null; p75: number | null }[],
+  rows: { metric_name: string; avg_value: number | null; p75: number | null; p25: number | null }[],
 ): Record<string, Record<string, number>> {
   const rankingTypes = ['quality', 'engagement', 'conversion'];
   const result: Record<string, Record<string, number>> = {};
@@ -29,7 +29,7 @@ function transformBenchmarks(
   for (const row of rows) {
     const aboveVal = row.p75 ?? row.avg_value ?? 0;
     const avgVal = row.avg_value ?? 0;
-    const belowVal = avgVal * 0.5;
+    const belowVal = row.p25 ?? avgVal * 0.5;
 
     const key = `avg_${row.metric_name}`;
 
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
     if (latestBench && latestBench.length > 0) {
       const { data: benchRows } = await svc
         .from('benchmarks')
-        .select('metric_name, avg_value, p75')
+        .select('metric_name, avg_value, p75, p25')
         .eq('date', latestBench[0].date);
 
       if (benchRows) {
