@@ -23,13 +23,7 @@ interface TotalValueGaugeProps {
   isLoading?: boolean;
 }
 
-const GRADE_COLORS: Record<string, string> = {
-  A: "border-green-500 bg-green-50 text-green-700",
-  B: "border-blue-500 bg-blue-50 text-blue-700",
-  C: "border-yellow-500 bg-yellow-50 text-yellow-700",
-  D: "border-orange-500 bg-orange-50 text-orange-700",
-  F: "border-red-500 bg-red-50 text-red-700",
-};
+// ── 등급별 텍스트 색상 ──
 
 const GRADE_TEXT_COLORS: Record<string, string> = {
   A: "#15803d",
@@ -38,6 +32,102 @@ const GRADE_TEXT_COLORS: Record<string, string> = {
   D: "#c2410c",
   F: "#b91c1c",
 };
+
+// ── 반원형 SVG 게이지 설정 ──
+
+const CX = 110;
+const CY = 108;
+const GAUGE_R = 85;
+const GAUGE_STROKE = 20;
+
+const GAUGE_SEGMENTS = [
+  { grade: "F", color: "#ef4444", start: 180, end: 145 },
+  { grade: "D", color: "#f97316", start: 143, end: 108 },
+  { grade: "C", color: "#eab308", start: 106, end: 72 },
+  { grade: "B", color: "#3b82f6", start: 70, end: 36 },
+  { grade: "A", color: "#22c55e", start: 34, end: 0 },
+];
+
+const NEEDLE_ANGLE: Record<string, number> = {
+  F: 162,
+  D: 126,
+  C: 89,
+  B: 53,
+  A: 17,
+};
+
+function polar(cx: number, cy: number, r: number, deg: number) {
+  const rad = (deg * Math.PI) / 180;
+  return { x: cx + r * Math.cos(rad), y: cy - r * Math.sin(rad) };
+}
+
+function arcPath(startDeg: number, endDeg: number) {
+  const s = polar(CX, CY, GAUGE_R, startDeg);
+  const e = polar(CX, CY, GAUGE_R, endDeg);
+  const large = Math.abs(startDeg - endDeg) > 180 ? 1 : 0;
+  return `M ${s.x.toFixed(1)} ${s.y.toFixed(1)} A ${GAUGE_R} ${GAUGE_R} 0 ${large} 0 ${e.x.toFixed(1)} ${e.y.toFixed(1)}`;
+}
+
+function SemiCircleGauge({ grade, gradeColor }: { grade: string; gradeColor: string }) {
+  const angle = NEEDLE_ANGLE[grade] ?? 90;
+  const needleLen = GAUGE_R - GAUGE_STROKE / 2 - 8;
+  const tip = polar(CX, CY, needleLen, angle);
+  const b1 = polar(CX, CY, 7, angle + 90);
+  const b2 = polar(CX, CY, 7, angle - 90);
+
+  return (
+    <svg
+      viewBox="0 0 220 125"
+      className="mx-auto w-full max-w-[220px]"
+      role="img"
+      aria-label={`총가치 수준 ${grade}등급`}
+    >
+      {/* 세그먼트 (F→A 컬러 그라데이션) */}
+      {GAUGE_SEGMENTS.map((seg) => (
+        <path
+          key={seg.grade}
+          d={arcPath(seg.start, seg.end)}
+          fill="none"
+          stroke={seg.color}
+          strokeWidth={GAUGE_STROKE}
+          strokeLinecap="round"
+          opacity={seg.grade === grade ? 1 : 0.25}
+        />
+      ))}
+
+      {/* 양 끝 등급 라벨 */}
+      <text x="20" y={CY + 18} textAnchor="middle" fontSize="10" fill="#9ca3af">
+        F
+      </text>
+      <text x="200" y={CY + 18} textAnchor="middle" fontSize="10" fill="#9ca3af">
+        A
+      </text>
+
+      {/* 바늘 */}
+      <path
+        d={`M ${tip.x.toFixed(1)} ${tip.y.toFixed(1)} L ${b1.x.toFixed(1)} ${b1.y.toFixed(1)} L ${b2.x.toFixed(1)} ${b2.y.toFixed(1)} Z`}
+        fill="#374151"
+      />
+      <circle cx={CX} cy={CY} r={5} fill="#374151" />
+
+      {/* 중앙 등급 텍스트 */}
+      <text
+        x={CX}
+        y={CY - 30}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize="34"
+        fontWeight="900"
+        fill={gradeColor}
+        style={{ fontFamily: "Pretendard, sans-serif" }}
+      >
+        {grade}
+      </text>
+    </svg>
+  );
+}
+
+// ── 지표 카드 헬퍼 ──
 
 const STATUS_COLORS: Record<string, { bar: string; text: string }> = {
   "🟢": { bar: "bg-green-500", text: "text-green-600" },
@@ -142,6 +232,8 @@ function buildDiagnosticJsx(
   );
 }
 
+// ── 메인 컴포넌트 ──
+
 export function TotalValueGauge({
   grade,
   gradeLabel,
@@ -173,7 +265,6 @@ export function TotalValueGauge({
     return null;
   }
 
-  const gradeColor = GRADE_COLORS[grade] ?? GRADE_COLORS.C;
   const gradeTextColor = GRADE_TEXT_COLORS[grade] ?? GRADE_TEXT_COLORS.C;
   const periodDays = calcPeriodDays(dateRange);
   const periodLabel = `${periodDays}일`;
@@ -184,16 +275,12 @@ export function TotalValueGauge({
     <Card className="bg-white border border-gray-200">
       <CardContent className="p-5">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-          {/* 좌측: 총가치 수준 등급 */}
-          <div className="flex-shrink-0 text-center" style={{ minWidth: "140px" }}>
-            <p className="mb-2 text-xs font-semibold text-muted-foreground">총가치 수준</p>
-            <div
-              className={`mx-auto flex h-24 w-24 items-center justify-center rounded-full border-4 ${gradeColor}`}
-            >
-              <span className="text-4xl font-black">{grade}</span>
-            </div>
+          {/* 좌측: 반원형 게이지 */}
+          <div className="flex-shrink-0 text-center" style={{ minWidth: "220px" }}>
+            <p className="mb-1 text-xs font-semibold text-muted-foreground">총가치 수준</p>
+            <SemiCircleGauge grade={grade} gradeColor={gradeTextColor} />
             {gradeLabel && (
-              <p className="mt-2 text-sm font-semibold">{gradeLabel}</p>
+              <p className="-mt-1 text-sm font-semibold">{gradeLabel}</p>
             )}
             <p className="mt-1 text-[11px] text-muted-foreground">{periodLabel} 기준</p>
             {totalSpend != null && (

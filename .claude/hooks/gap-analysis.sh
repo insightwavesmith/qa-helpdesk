@@ -46,17 +46,19 @@ if [ -z "$ACTIVE_TASK" ]; then
     exit 0
 fi
 
-# T항목 수 세기
-TOTAL_TASKS=$(grep -cE '^## T[0-9]+\.' "$ACTIVE_TASK" 2>/dev/null || echo "0")
+# T항목 수 세기 (T1, A1, B1, Part A 등 다양한 형식 지원)
+TOTAL_TASKS=$(grep -cE '^## (T[0-9]+\.|A[0-9]+\.|B[0-9]+\.|C[0-9]+\.|Part [A-Z])' "$ACTIVE_TASK" 2>/dev/null || echo "0")
+TOTAL_TASKS=$(echo "$TOTAL_TASKS" | tr -d '[:space:]')
 
-if [ "$TOTAL_TASKS" -eq 0 ]; then
+if [ "$TOTAL_TASKS" -eq 0 ] 2>/dev/null; then
     exit 0
 fi
 
 # staged 파일 수 확인
-STAGED_COUNT=$(cd "$PROJECT_DIR" && git diff --cached --name-only 2>/dev/null | wc -l | tr -d ' ')
+STAGED_COUNT=$(cd "$PROJECT_DIR" && git diff --cached --name-only 2>/dev/null | wc -l)
+STAGED_COUNT=$(echo "$STAGED_COUNT" | tr -d '[:space:]')
 
-if [ "$STAGED_COUNT" -eq 0 ]; then
+if [ "$STAGED_COUNT" -eq 0 ] 2>/dev/null; then
     exit 0
 fi
 
@@ -66,9 +68,10 @@ MISSING=""
 FOUND=0
 
 while IFS= read -r line; do
-    TASK_ID=$(echo "$line" | grep -oE 'T[0-9]+')
+    TASK_ID=$(echo "$line" | grep -oE '(T[0-9]+|A[0-9]+|B[0-9]+|C[0-9]+|Part [A-Z])' | head -1)
+    [ -z "$TASK_ID" ] && continue
     # T항목에서 언급된 파일 경로 추출
-    TASK_SECTION=$(sed -n "/^## ${TASK_ID}\./,/^## T[0-9]/p" "$ACTIVE_TASK" 2>/dev/null | head -30)
+    TASK_SECTION=$(sed -n "/^## ${TASK_ID}/,/^## [A-Z]/p" "$ACTIVE_TASK" 2>/dev/null | head -30)
     
     # 해당 섹션에서 .ts/.tsx 파일 언급 확인
     MENTIONED_FILES=$(echo "$TASK_SECTION" | grep -oE '[a-zA-Z0-9_/-]+\.(ts|tsx)' | sort -u)
@@ -89,7 +92,7 @@ while IFS= read -r line; do
     else
         FOUND=$((FOUND + 1))
     fi
-done < <(grep -E '^## T[0-9]+\.' "$ACTIVE_TASK" 2>/dev/null)
+done < <(grep -E '^## (T[0-9]+\.|A[0-9]+\.|B[0-9]+\.|C[0-9]+\.|Part [A-Z])' "$ACTIVE_TASK" 2>/dev/null)
 
 # 결과 판정
 if [ -n "$MISSING" ]; then

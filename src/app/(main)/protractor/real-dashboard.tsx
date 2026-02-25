@@ -12,7 +12,8 @@ import { Top5AdCards } from "./components/top5-ad-cards";
 import { BenchmarkCompare } from "./components/benchmark-compare";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, BarChart3 } from "lucide-react";
+import { AlertTriangle, ArrowRight, BarChart3, ChevronDown, ChevronUp, LinkIcon } from "lucide-react";
+import Link from "next/link";
 
 import {
   ProtractorHeader,
@@ -98,6 +99,7 @@ export default function RealDashboard() {
   const [loadingDiagnosis, setLoadingDiagnosis] = useState(false);
   const [loadingTotalValue, setLoadingTotalValue] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showTop5, setShowTop5] = useState(false);
 
   // 1) 계정 목록 로드
   useEffect(() => {
@@ -307,6 +309,32 @@ export default function RealDashboard() {
         </div>
       )}
 
+      {/* 광고계정 연결 배너 (A4) */}
+      {accounts.length === 0 && !loadingAccounts && !error && (
+        <div className="flex items-center justify-between rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20">
+              <LinkIcon className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">
+                광고계정을 연결하면 내 데이터를 볼 수 있습니다
+              </p>
+              <p className="text-xs text-white/80">
+                Meta 광고계정을 연결하고 실제 성과 데이터로 진단 받으세요
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-white/90"
+          >
+            광고계정 연결
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      )}
+
       {/* 탭 구조: 성과 요약 / 타겟중복 */}
       <Tabs
         value={activeTab}
@@ -356,16 +384,34 @@ export default function RealDashboard() {
 
               <SummaryCards cards={summaryCards} />
 
-              {loadingDiagnosis ? (
-                <Skeleton className="h-[200px] w-full rounded-lg" />
-              ) : (
-                <Top5AdCards
-                  insights={insights}
-                  accountId={selectedAccountId ?? undefined}
-                  mixpanelProjectId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_project_id}
-                  mixpanelBoardId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_board_id}
-                  diagnoses={rawDiagnoses ?? undefined}
-                />
+              {/* TOP 5 광고 보기 버튼 (A3) */}
+              {insights.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowTop5((v) => !v)}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-blue-600 py-3 text-sm font-bold text-blue-600 transition-colors hover:bg-blue-50"
+                >
+                  {showTop5 ? (
+                    <>TOP 5 광고 접기 <ChevronUp className="h-4 w-4" /></>
+                  ) : (
+                    <>TOP 5 광고 자세히 보기 <ChevronDown className="h-4 w-4" /></>
+                  )}
+                </button>
+              )}
+
+              {/* TOP 5 광고 카드 (토글) */}
+              {showTop5 && (
+                loadingDiagnosis ? (
+                  <Skeleton className="h-[200px] w-full rounded-lg" />
+                ) : (
+                  <Top5AdCards
+                    insights={insights}
+                    accountId={selectedAccountId ?? undefined}
+                    mixpanelProjectId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_project_id}
+                    mixpanelBoardId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_board_id}
+                    diagnoses={rawDiagnoses ?? undefined}
+                  />
+                )
               )}
 
               <div className="grid gap-6 xl:grid-cols-5">

@@ -173,23 +173,23 @@ function CTABanner({ type }: { type: BannerType }) {
   }
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 px-5 py-4">
+    <div className="flex items-center justify-between rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-4">
       <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100">
-          <LinkIcon className="h-5 w-5 text-blue-700" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20">
+          <LinkIcon className="h-5 w-5 text-white" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-card-foreground">
+          <p className="text-sm font-semibold text-white">
             광고계정을 연결하면 내 데이터를 볼 수 있습니다
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-white/80">
             Meta 광고계정을 연결하고 실제 성과 데이터로 진단 받으세요
           </p>
         </div>
       </div>
       <Link
         href="/dashboard"
-        className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-white/90"
       >
         광고계정 연결
         <ArrowRight className="h-4 w-4" />
