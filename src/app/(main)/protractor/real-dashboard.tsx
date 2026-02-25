@@ -11,6 +11,7 @@ import {
 } from "./components/ad-metrics-table";
 import { BenchmarkCompare } from "./components/benchmark-compare";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, BarChart3 } from "lucide-react";
 
 import {
@@ -22,6 +23,8 @@ import {
   ConversionFunnel,
   DailyMetricsTable,
   TotalValueGauge,
+  OverlapAnalysis,
+  type OverlapData,
 } from "@/components/protractor";
 
 import {
@@ -142,6 +145,11 @@ export default function RealDashboard() {
     totalSpend: number;
     metrics: { name: string; value: number | null; p50: number | null; p75: number | null; status: string }[];
   } | null>(null);
+
+  const [activeTab, setActiveTab] = useState<"summary" | "overlap">("summary");
+  const [overlapData, setOverlapData] = useState<OverlapData | null>(null);
+  const [loadingOverlap, setLoadingOverlap] = useState(false);
+  const [overlapError, setOverlapError] = useState<string | null>(null);
 
   const [loadingAccounts, setLoadingAccounts] = useState(true);
   const [loadingData, setLoadingData] = useState(false);
@@ -277,6 +285,47 @@ export default function RealDashboard() {
     })();
   }, [selectedAccountId, insights, dateRange]);
 
+  // 6) 타겟중복 분석 (overlap 탭 활성 + 7일 이상일 때)
+  const fetchOverlap = useCallback(
+    async (force = false) => {
+      if (!selectedAccountId) return;
+      const days =
+        Math.round(
+          (new Date(dateRange.end).getTime() -
+            new Date(dateRange.start).getTime()) /
+            (1000 * 60 * 60 * 24)
+        ) + 1;
+      if (days < 7) return;
+
+      setLoadingOverlap(true);
+      setOverlapError(null);
+      try {
+        const params = new URLSearchParams({
+          account_id: selectedAccountId,
+          date_start: dateRange.start,
+          date_end: dateRange.end,
+        });
+        if (force) params.set("force", "true");
+        const res = await fetch(`/api/protractor/overlap?${params}`);
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "타겟중복 분석 실패");
+        setOverlapData(json);
+      } catch (e) {
+        setOverlapError((e as Error).message);
+        setOverlapData(null);
+      } finally {
+        setLoadingOverlap(false);
+      }
+    },
+    [selectedAccountId, dateRange]
+  );
+
+  useEffect(() => {
+    if (activeTab === "overlap") {
+      fetchOverlap();
+    }
+  }, [activeTab, fetchOverlap]);
+
   const handlePeriodChange = (range: DateRange) => {
     setDateRange(range);
   };
@@ -316,75 +365,99 @@ export default function RealDashboard() {
         </div>
       )}
 
-      {/* 로딩 */}
-      {loadingData && (
-        <div className="space-y-4">
-          <Skeleton className="h-[120px] w-full rounded-lg" />
-          <Skeleton className="h-[200px] w-full rounded-lg" />
-          <Skeleton className="h-[300px] w-full rounded-lg" />
-        </div>
-      )}
+      {/* 탭 구조: 성과 요약 / 타겟중복 */}
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as "summary" | "overlap")}
+      >
+        <TabsList>
+          <TabsTrigger value="summary">성과 요약</TabsTrigger>
+          <TabsTrigger value="overlap">타겟중복</TabsTrigger>
+        </TabsList>
 
-      {/* 계정 미선택 */}
-      {!selectedAccountId && !loadingAccounts && (
-        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-          <BarChart3 className="h-10 w-10" />
-          <p className="mt-3 text-base font-medium">광고계정을 선택하세요</p>
-          <p className="mt-1 text-sm">
-            위 드롭다운에서 분석할 광고계정을 선택하면 데이터가 표시됩니다
-          </p>
-        </div>
-      )}
-
-      {/* 데이터 표시 — 실데이터 연결 */}
-      {selectedAccountId && !loadingData && (
-        <>
-          <TotalValueGauge
-            grade={totalValue?.grade}
-            gradeLabel={totalValue?.gradeLabel}
-            totalSpend={totalValue?.totalSpend}
-            metrics={totalValue?.metrics}
-            dateRange={dateRange}
-            isLoading={loadingTotalValue}
-          />
-
-          <SummaryCards cards={summaryCards} />
-
-          {loadingDiagnosis ? (
-            <Skeleton className="h-[200px] w-full rounded-lg" />
-          ) : diagnosisData ? (
-            <DiagnosticPanel
-              grade={diagnosisData.grade}
-              gradeLabel={diagnosisData.gradeLabel}
-              summary={diagnosisData.summary}
-              issues={diagnosisData.issues}
-            />
-          ) : (
-            <DiagnosticPanel />
+        <TabsContent value="summary" className="mt-6 space-y-6">
+          {/* 로딩 */}
+          {loadingData && (
+            <div className="space-y-4">
+              <Skeleton className="h-[120px] w-full rounded-lg" />
+              <Skeleton className="h-[200px] w-full rounded-lg" />
+              <Skeleton className="h-[300px] w-full rounded-lg" />
+            </div>
           )}
 
-          <div className="grid gap-6 xl:grid-cols-5">
-            <div className="xl:col-span-3">
-              <PerformanceTrendChart data={trendData} />
+          {/* 계정 미선택 */}
+          {!selectedAccountId && !loadingAccounts && (
+            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+              <BarChart3 className="h-10 w-10" />
+              <p className="mt-3 text-base font-medium">광고계정을 선택하세요</p>
+              <p className="mt-1 text-sm">
+                위 드롭다운에서 분석할 광고계정을 선택하면 데이터가 표시됩니다
+              </p>
             </div>
-            <div className="xl:col-span-2">
-              <ConversionFunnel
-                steps={funnelResult?.steps}
-                overallRate={funnelResult?.overallRate}
+          )}
+
+          {/* 데이터 표시 — 실데이터 연결 */}
+          {selectedAccountId && !loadingData && (
+            <>
+              <TotalValueGauge
+                grade={totalValue?.grade}
+                gradeLabel={totalValue?.gradeLabel}
+                totalSpend={totalValue?.totalSpend}
+                metrics={totalValue?.metrics}
+                dateRange={dateRange}
+                isLoading={loadingTotalValue}
               />
-            </div>
-          </div>
-          <DailyMetricsTable data={dailyMetrics} />
-          <BenchmarkCompare insights={insights} benchmarks={benchmarks} />
-          <AdMetricsTable
-            insights={insights}
-            benchmarks={benchmarks}
-            accountId={selectedAccountId ?? undefined}
-            mixpanelProjectId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_project_id}
-            mixpanelBoardId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_board_id}
+
+              <SummaryCards cards={summaryCards} />
+
+              {loadingDiagnosis ? (
+                <Skeleton className="h-[200px] w-full rounded-lg" />
+              ) : diagnosisData ? (
+                <DiagnosticPanel
+                  grade={diagnosisData.grade}
+                  gradeLabel={diagnosisData.gradeLabel}
+                  summary={diagnosisData.summary}
+                  issues={diagnosisData.issues}
+                />
+              ) : (
+                <DiagnosticPanel />
+              )}
+
+              <div className="grid gap-6 xl:grid-cols-5">
+                <div className="xl:col-span-3">
+                  <PerformanceTrendChart data={trendData} />
+                </div>
+                <div className="xl:col-span-2">
+                  <ConversionFunnel
+                    steps={funnelResult?.steps}
+                    overallRate={funnelResult?.overallRate}
+                  />
+                </div>
+              </div>
+              <DailyMetricsTable data={dailyMetrics} />
+              <BenchmarkCompare insights={insights} benchmarks={benchmarks} />
+              <AdMetricsTable
+                insights={insights}
+                benchmarks={benchmarks}
+                accountId={selectedAccountId ?? undefined}
+                mixpanelProjectId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_project_id}
+                mixpanelBoardId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_board_id}
+              />
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="overlap" className="mt-6">
+          <OverlapAnalysis
+            accountId={selectedAccountId}
+            dateRange={dateRange}
+            overlapData={overlapData}
+            isLoading={loadingOverlap}
+            onRefresh={() => fetchOverlap(true)}
+            error={overlapError}
           />
-        </>
-      )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

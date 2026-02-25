@@ -6,3 +6,5 @@ export { PerformanceTrendChart } from "./PerformanceTrendChart";
 export { ConversionFunnel } from "./ConversionFunnel";
 export { DailyMetricsTable } from "./DailyMetricsTable";
 export { TotalValueGauge } from "./TotalValueGauge";
+export { OverlapAnalysis } from "./OverlapAnalysis";
+export type { OverlapData } from "./OverlapAnalysis";

@@ -64,6 +64,36 @@ export type Database = {
           },
         ]
       }
+      adset_overlap_cache: {
+        Row: {
+          id: string
+          account_id: string
+          adset_pair: string
+          period_start: string
+          period_end: string
+          overlap_data: Json
+          cached_at: string | null
+        }
+        Insert: {
+          id?: string
+          account_id: string
+          adset_pair: string
+          period_start: string
+          period_end: string
+          overlap_data: Json
+          cached_at?: string | null
+        }
+        Update: {
+          id?: string
+          account_id?: string
+          adset_pair?: string
+          period_start?: string
+          period_end?: string
+          overlap_data?: Json
+          cached_at?: string | null
+        }
+        Relationships: []
+      }
       answers: {
         Row: {
           approved_at: string | null
