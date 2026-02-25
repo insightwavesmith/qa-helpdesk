@@ -106,7 +106,29 @@ export async function GET(request: NextRequest) {
         totalImpressions > 0 ? (totalPurchases / totalImpressions) * 100 : null,
     };
 
-    // 3. 벤치마크 조회
+    // 2-b. 고유 광고 수 (adCount)
+    const adIds = new Set<string>();
+    for (const row of rows) {
+      const aid = row.ad_id as string | undefined;
+      if (aid) adIds.add(aid);
+    }
+
+    // 2-c. 계정의 주된 creative_type 계산
+    const ctCounts = new Map<string, number>();
+    for (const row of rows) {
+      const ct = ((row.creative_type as string) ?? "ALL").toUpperCase();
+      ctCounts.set(ct, (ctCounts.get(ct) ?? 0) + 1);
+    }
+    let dominantCT = "ALL";
+    let maxCTCount = 0;
+    for (const [ct, count] of ctCounts) {
+      if (ct !== "ALL" && count > maxCTCount) {
+        dominantCT = ct;
+        maxCTCount = count;
+      }
+    }
+
+    // 3. 벤치마크 조회 (creative_type 매칭 → ALL 폴백)
     const { data: latestBench } = await svc
       .from("benchmarks")
       .select("date")
@@ -122,16 +144,26 @@ export async function GET(request: NextRequest) {
         .eq("date", latestBench[0].date);
 
       if (benchRows) {
+        // creative_type별로 그룹핑
+        const byType = new Map<string, Record<string, { p50: number | null; p75: number | null }>>();
         for (const row of benchRows) {
           const r = row as Record<string, unknown>;
-          const ct = r.creative_type as string | null;
-          // ALL 또는 null의 벤치마크 사용
-          if (ct === "ALL" || ct == null) {
-            benchMap[r.metric_name as string] = {
-              p50: r.p50 as number | null,
-              p75: r.p75 as number | null,
-            };
-          }
+          const ct = ((r.creative_type as string) ?? "ALL").toUpperCase();
+          if (!byType.has(ct)) byType.set(ct, {});
+          byType.get(ct)![r.metric_name as string] = {
+            p50: r.p50 as number | null,
+            p75: r.p75 as number | null,
+          };
+        }
+
+        // dominantCT 우선 → ALL 폴백
+        const primary = byType.get(dominantCT);
+        const fallback = byType.get("ALL");
+
+        for (const def of METRIC_DEFS) {
+          const key = def.benchKey;
+          const entry = primary?.[key] ?? fallback?.[key];
+          if (entry) benchMap[key] = entry;
         }
       }
     }
@@ -168,10 +200,19 @@ export async function GET(request: NextRequest) {
     // 5. 등급
     const { grade, label: gradeLabel } = calcGrade(greenCount);
 
+    // 6. ROAS 계산
+    const totalRevenue = rows.reduce((s, r) => s + (Number(r.purchase_value) || 0), 0);
+    const totalRoas = totalSpend > 0 ? totalRevenue / totalSpend : 0;
+
     return NextResponse.json({
       grade,
       gradeLabel,
       totalSpend: Math.round(totalSpend),
+      totalClicks,
+      totalPurchases,
+      totalRoas: Math.round(totalRoas * 100) / 100,
+      adCount: adIds.size,
+      period: { start: dateStart, end: dateEnd },
       metrics: metricsResult,
     });
   } catch (e) {

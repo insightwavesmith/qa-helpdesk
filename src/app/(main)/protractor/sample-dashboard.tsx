@@ -107,32 +107,38 @@ const SAMPLE_DAILY_METRICS = [
   { date: "1/20", impressions: 120200, clicks: 2524, ctr: 2.1, cpc: 860, adSpend: 718000, revenue: 2512000, roas: 350, conversions: 32 },
 ];
 
-const SAMPLE_DIAGNOSIS = {
-  grade: "B" as const,
-  gradeLabel: "양호",
-  summary:
-    "전반적으로 양호한 광고 성과를 보이고 있으나, 일부 캠페인의 전환율 개선이 필요합니다. ROAS는 목표 대비 초과 달성 중이며, CTR은 업계 평균 이상입니다.",
-  issues: [
-    {
-      title: "광고 소재 피로도 상승",
-      description:
-        "주력 광고 소재 3건의 CTR이 최근 7일간 23% 하락했습니다. 새로운 크리에이티브 테스트를 권장합니다.",
-      severity: "심각" as const,
-    },
-    {
-      title: "CPA 상승 추세",
-      description:
-        "최근 14일간 CPA가 ₩18,500에서 ₩21,347으로 15.4% 상승했습니다. 타겟 오디언스 재설정을 검토하세요.",
-      severity: "주의" as const,
-    },
-    {
-      title: "리타겟팅 캠페인 효율 우수",
-      description:
-        "리타겟팅 캠페인의 ROAS가 520%로 전체 평균 대비 48% 높은 성과를 보이고 있습니다.",
-      severity: "양호" as const,
-    },
-  ],
-};
+const SAMPLE_DIAGNOSES = [
+  {
+    ad_id: "sample_1",
+    ad_name: "샘플 광고 A",
+    overall_verdict: "🟡",
+    parts: [
+      {
+        part_name: "기반점수",
+        verdict: "🟢",
+        metrics: [
+          { name: "3초시청률", my_value: 42.5, above_avg: 35.0, average_avg: 28.0, verdict: "🟢" },
+          { name: "CTR", my_value: 3.2, above_avg: 2.5, average_avg: 1.8, verdict: "🟢" },
+        ],
+      },
+      {
+        part_name: "참여율",
+        verdict: "🟡",
+        metrics: [
+          { name: "참여합계/만노출", my_value: 15.3, above_avg: 18.0, average_avg: 12.0, verdict: "🟡" },
+        ],
+      },
+      {
+        part_name: "전환율",
+        verdict: "🔴",
+        metrics: [
+          { name: "구매전환율", my_value: 0.8, above_avg: 2.1, average_avg: 1.5, verdict: "🔴" },
+          { name: "노출→구매", my_value: 0.01, above_avg: 0.05, average_avg: 0.03, verdict: "🔴" },
+        ],
+      },
+    ],
+  },
+];
 
 // ── CTA 배너 ─────────────────────────────────────────
 
@@ -231,12 +237,7 @@ export default function SampleDashboard({ bannerType }: SampleDashboardProps) {
         <div className="flex flex-col gap-6">
           <SummaryCards cards={SAMPLE_SUMMARY_CARDS} />
 
-          <DiagnosticPanel
-            grade={SAMPLE_DIAGNOSIS.grade}
-            gradeLabel={SAMPLE_DIAGNOSIS.gradeLabel}
-            summary={SAMPLE_DIAGNOSIS.summary}
-            issues={SAMPLE_DIAGNOSIS.issues}
-          />
+          <DiagnosticPanel diagnoses={SAMPLE_DIAGNOSES} />
 
           <div className="grid gap-6 xl:grid-cols-5">
             <div className="xl:col-span-3">

@@ -95,16 +95,28 @@ function aggregateByAd(rows: AdInsightRow[]): AdInsightRow[] {
   return Array.from(map.values()).sort((a, b) => b.spend - a.spend);
 }
 
+// 진단 결과 (per-ad) — real-dashboard에서 전달
+export interface AdDiagnosis {
+  ad_id: string;
+  ad_name: string;
+  overall_verdict: string;
+  parts: {
+    part_name: string;
+    verdict: string;
+  }[];
+}
+
 interface AdMetricsTableProps {
   insights: AdInsightRow[];
   benchmarks: BenchmarkRow[];
   accountId?: string;
   mixpanelProjectId?: string | null;
   mixpanelBoardId?: string | null;
+  diagnoses?: AdDiagnosis[];
 }
 
 // 광고 성과 테이블
-export function AdMetricsTable({ insights, benchmarks, accountId, mixpanelProjectId, mixpanelBoardId }: AdMetricsTableProps) {
+export function AdMetricsTable({ insights, benchmarks, accountId, mixpanelProjectId, mixpanelBoardId, diagnoses }: AdMetricsTableProps) {
   if (insights.length === 0) {
     return (
       <Card>
@@ -126,6 +138,12 @@ export function AdMetricsTable({ insights, benchmarks, accountId, mixpanelProjec
 
   const ads = aggregateByAd(insights);
   const convBench = findAboveAvg(benchmarks, "conversion");
+
+  // 진단 결과를 ad_id → diagnosis 맵으로 변환
+  const diagMap = new Map<string, AdDiagnosis>();
+  if (diagnoses) {
+    for (const d of diagnoses) diagMap.set(d.ad_id, d);
+  }
 
   // 전체 합계
   const totalSpend = ads.reduce((s, a) => s + a.spend, 0);
@@ -179,6 +197,7 @@ export function AdMetricsTable({ insights, benchmarks, accountId, mixpanelProjec
               {ads.slice(0, 10).map((ad) => {
                 const roasV = getVerdict(ad.roas, convBench?.avg_roas);
                 const ctrV = getVerdict(ad.ctr, convBench?.avg_ctr);
+                const diag = diagMap.get(ad.ad_id);
 
                 return (
                   <TableRow key={ad.ad_id}>
@@ -207,7 +226,17 @@ export function AdMetricsTable({ insights, benchmarks, accountId, mixpanelProjec
                       {ad.roas?.toFixed(2) || "-"}
                     </TableCell>
                     <TableCell className="text-center">
-                      <VerdictDot label={roasV.label} />
+                      {diag && diag.parts.length > 0 ? (
+                        <div className="flex items-center justify-center gap-0.5">
+                          {diag.parts.map((p) => (
+                            <span key={p.part_name} title={p.part_name} className="text-xs">
+                              {p.verdict}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <VerdictDot label={roasV.label} />
+                      )}
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-1">
@@ -216,7 +245,7 @@ export function AdMetricsTable({ insights, benchmarks, accountId, mixpanelProjec
                             href={`https://adsmanager.facebook.com/adsmanager/manage/ads?act=${accountId}&selected_ad_ids=${ad.ad_id}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center rounded px-2 py-1 text-[11px] font-medium text-blue-600 hover:bg-blue-50 transition-colors"
+                            className="rounded-md px-2.5 py-1 text-[11px] font-medium bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
                             title="Meta 광고통계"
                           >
                             Meta 광고통계
@@ -227,7 +256,7 @@ export function AdMetricsTable({ insights, benchmarks, accountId, mixpanelProjec
                             href={`https://mixpanel.com/project/${mixpanelProjectId}/view/${mixpanelBoardId}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center rounded px-2 py-1 text-[11px] font-medium text-purple-600 hover:bg-purple-50 transition-colors"
+                            className="rounded-md px-2.5 py-1 text-[11px] font-medium bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white transition-colors"
                             title="믹스패널"
                           >
                             믹스패널

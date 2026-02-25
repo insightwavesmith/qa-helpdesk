@@ -43,93 +43,28 @@ function yesterday(): DateRange {
   return { start: s, end: s };
 }
 
-// 진단 결과 타입
-interface DiagnosisIssue {
-  title: string;
-  description: string;
-  severity: "심각" | "주의" | "양호";
-  partName?: string;
+// 진단 결과 원본 타입 (diagnose API 응답)
+interface RawDiagnosisMetric {
+  name: string;
+  my_value: number | null;
+  above_avg: number | null;
+  average_avg: number | null;
+  verdict: string;
 }
 
-interface DiagnosisData {
-  grade: "A" | "B" | "C" | "D" | "F";
-  gradeLabel: string;
-  summary: string;
-  issues: DiagnosisIssue[];
+interface RawDiagnosisPart {
+  part_num: number;
+  part_name: string;
+  verdict: string;
+  metrics: RawDiagnosisMetric[];
 }
 
-// 진단 verdict → grade 변환
-function verdictToGrade(diagnoses: {
+interface RawDiagnosis {
+  ad_id: string;
+  ad_name: string;
   overall_verdict: string;
   one_line_diagnosis: string;
-  ad_name: string;
-  parts: { part_name: string; verdict: string; metrics: { name: string; verdict: string; my_value: number | null; above_avg: number | null }[] }[];
-}[]): DiagnosisData {
-  if (!diagnoses || diagnoses.length === 0) {
-    return { grade: "C", gradeLabel: "데이터 없음", summary: "진단할 광고 데이터가 부족합니다.", issues: [] };
-  }
-
-  // 전체 verdict 분포 계산
-  const verdictCounts = { "🟢": 0, "🟡": 0, "🔴": 0, "⚪": 0 };
-  for (const d of diagnoses) {
-    const v = d.overall_verdict as keyof typeof verdictCounts;
-    if (v in verdictCounts) verdictCounts[v]++;
-  }
-
-  // 등급 산출
-  let grade: DiagnosisData["grade"];
-  let gradeLabel: string;
-  const total = diagnoses.length;
-  const goodRatio = verdictCounts["🟢"] / total;
-  const poorRatio = verdictCounts["🔴"] / total;
-
-  if (goodRatio >= 0.8) { grade = "A"; gradeLabel = "우수"; }
-  else if (goodRatio >= 0.5) { grade = "B"; gradeLabel = "양호"; }
-  else if (poorRatio >= 0.6) { grade = "F"; gradeLabel = "위험"; }
-  else if (poorRatio >= 0.3) { grade = "D"; gradeLabel = "주의 필요"; }
-  else { grade = "C"; gradeLabel = "보통"; }
-
-  // 한줄 진단 (첫 번째 광고의 one_line_diagnosis 사용)
-  const summary = diagnoses[0].one_line_diagnosis;
-
-  // 이슈 생성 (각 광고의 파트별 WARNING/BAD 항목)
-  const issues: DiagnosisIssue[] = [];
-  for (const d of diagnoses) {
-    for (const part of d.parts) {
-      if (part.verdict === "🔴") {
-        const badMetrics = part.metrics
-          .filter((m) => m.verdict === "🔴")
-          .map((m) => m.name)
-          .join(", ");
-        issues.push({
-          title: `${d.ad_name.substring(0, 30)} - ${part.part_name}`,
-          description: badMetrics ? `미달 지표: ${badMetrics}` : `${part.part_name} 파트 전체가 미달입니다.`,
-          severity: "심각",
-          partName: part.part_name,
-        });
-      } else if (part.verdict === "🟡") {
-        issues.push({
-          title: `${d.ad_name.substring(0, 30)} - ${part.part_name}`,
-          description: `${part.part_name} 파트가 보통 수준입니다. 개선 여지가 있습니다.`,
-          severity: "주의",
-          partName: part.part_name,
-        });
-      } else if (part.verdict === "🟢") {
-        issues.push({
-          title: `${d.ad_name.substring(0, 30)} - ${part.part_name}`,
-          description: `${part.part_name} 파트가 우수합니다.`,
-          severity: "양호",
-          partName: part.part_name,
-        });
-      }
-    }
-  }
-
-  // 심각 → 주의 → 양호 순 정렬
-  const severityOrder = { "심각": 0, "주의": 1, "양호": 2 };
-  issues.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
-
-  return { grade, gradeLabel, summary, issues: issues.slice(0, 8) };
+  parts: RawDiagnosisPart[];
 }
 
 export default function RealDashboard() {
@@ -142,11 +77,16 @@ export default function RealDashboard() {
   const [dateRange, setDateRange] = useState<DateRange>(yesterday());
   const [insights, setInsights] = useState<AdInsightRow[]>([]);
   const [benchmarks, setBenchmarks] = useState<BenchmarkRow[]>([]);
-  const [diagnosisData, setDiagnosisData] = useState<DiagnosisData | null>(null);
+  const [rawDiagnoses, setRawDiagnoses] = useState<RawDiagnosis[] | null>(null);
   const [totalValue, setTotalValue] = useState<{
     grade: "A" | "B" | "C" | "D" | "F";
     gradeLabel: string;
     totalSpend: number;
+    totalClicks: number;
+    totalPurchases: number;
+    totalRoas: number;
+    adCount: number;
+    period: { start: string; end: string } | null;
     metrics: { name: string; value: number | null; p50: number | null; p75: number | null; status: string }[];
   } | null>(null);
 
@@ -233,7 +173,7 @@ export default function RealDashboard() {
   // 4) 진단 호출 (insights 로드 완료 후)
   useEffect(() => {
     if (!selectedAccountId || insights.length === 0) {
-      setDiagnosisData(null);
+      setRawDiagnoses(null);
       return;
     }
 
@@ -251,7 +191,7 @@ export default function RealDashboard() {
         });
         const json = await res.json();
         if (res.ok && json.diagnoses) {
-          setDiagnosisData(verdictToGrade(json.diagnoses));
+          setRawDiagnoses(json.diagnoses as RawDiagnosis[]);
         }
       } catch {
         // 진단 실패해도 대시보드는 표시
@@ -407,6 +347,10 @@ export default function RealDashboard() {
                 grade={totalValue?.grade}
                 gradeLabel={totalValue?.gradeLabel}
                 totalSpend={totalValue?.totalSpend}
+                totalClicks={totalValue?.totalClicks}
+                totalPurchases={totalValue?.totalPurchases}
+                totalRoas={totalValue?.totalRoas}
+                adCount={totalValue?.adCount}
                 metrics={totalValue?.metrics}
                 dateRange={dateRange}
                 isLoading={loadingTotalValue}
@@ -416,15 +360,8 @@ export default function RealDashboard() {
 
               {loadingDiagnosis ? (
                 <Skeleton className="h-[200px] w-full rounded-lg" />
-              ) : diagnosisData ? (
-                <DiagnosticPanel
-                  grade={diagnosisData.grade}
-                  gradeLabel={diagnosisData.gradeLabel}
-                  summary={diagnosisData.summary}
-                  issues={diagnosisData.issues}
-                />
               ) : (
-                <DiagnosticPanel />
+                <DiagnosticPanel diagnoses={rawDiagnoses ?? undefined} />
               )}
 
               <div className="grid gap-6 xl:grid-cols-5">
@@ -446,6 +383,7 @@ export default function RealDashboard() {
                 accountId={selectedAccountId ?? undefined}
                 mixpanelProjectId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_project_id}
                 mixpanelBoardId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_board_id}
+                diagnoses={rawDiagnoses ?? undefined}
               />
             </>
           )}

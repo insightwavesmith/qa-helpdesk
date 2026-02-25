@@ -134,7 +134,7 @@ export async function POST(request: Request) {
       'video_p3s_rate', 'thruplay_rate', 'retention_rate',
       'reactions_per_10k', 'comments_per_10k', 'shares_per_10k', 'engagement_per_10k',
       'click_to_checkout_rate', 'click_to_purchase_rate',
-      'checkout_to_purchase_rate',
+      'checkout_to_purchase_rate', 'reach_to_purchase_rate',
     ];
 
     for (const row of rawInsights) {
@@ -184,6 +184,7 @@ export async function POST(request: Request) {
               name: m.metricName,
               my_value: m.myValue,
               above_avg: m.aboveAvg,
+              average_avg: m.averageAvg,
               verdict: m.verdict,
             })),
         })),
