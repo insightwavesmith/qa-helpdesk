@@ -1302,6 +1302,48 @@ export type Database = {
           },
         ]
       }
+      owner_ad_summaries: {
+        Row: {
+          id: string
+          account_id: string
+          account_name: string | null
+          owner_type: string
+          period_start: string
+          period_end: string
+          total_spend: number | null
+          total_revenue: number | null
+          avg_roas: number | null
+          total_purchases: number | null
+          collected_at: string | null
+        }
+        Insert: {
+          id?: string
+          account_id: string
+          account_name?: string | null
+          owner_type?: string
+          period_start: string
+          period_end: string
+          total_spend?: number | null
+          total_revenue?: number | null
+          avg_roas?: number | null
+          total_purchases?: number | null
+          collected_at?: string | null
+        }
+        Update: {
+          id?: string
+          account_id?: string
+          account_name?: string | null
+          owner_type?: string
+          period_start?: string
+          period_end?: string
+          total_spend?: number | null
+          total_revenue?: number | null
+          avg_roas?: number | null
+          total_purchases?: number | null
+          collected_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           annual_revenue: string | null

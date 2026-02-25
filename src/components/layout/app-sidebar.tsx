@@ -18,6 +18,8 @@ import {
   Monitor,
   Lock,
   Brain,
+  TrendingUp,
+  BarChart3,
 } from "lucide-react";
 import {
   Sidebar,
@@ -64,6 +66,8 @@ const adminNavItems: NavItem[] = [
   { label: "지식 베이스", href: "/admin/knowledge", icon: Brain },
   { label: "총가치각도기 관리", href: "/admin/protractor", icon: Crosshair },
   { label: "광고계정 관리", href: "/admin/accounts", icon: Monitor },
+  { label: "수강생 성과", href: "/admin/performance", icon: TrendingUp },
+  { label: "내 광고계정", href: "/admin/owner-accounts", icon: BarChart3 },
 ];
 
 interface AppSidebarProps {
