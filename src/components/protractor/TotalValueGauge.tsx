@@ -50,6 +50,31 @@ function calcBarWidth(value: number | null, p75: number | null): number {
   return Math.max(pct, 5);
 }
 
+function buildDiagnosticText(
+  grade: string,
+  metrics: MetricData[],
+): string | null {
+  const good: string[] = [];
+  const bad: string[] = [];
+
+  for (const m of metrics) {
+    if (m.status === "🟢") good.push(m.name);
+    else if (m.status === "🔴") bad.push(m.name);
+    // 🟡(보통), ⚪(데이터없음)는 진단 문구에서 제외
+  }
+
+  // 모든 지표가 ⚪이면 텍스트 미표시
+  if (good.length === 0 && bad.length === 0) return null;
+
+  if (bad.length === 0) {
+    return `${grade}등급 — 모든 지표가 벤치마크 상위 수준입니다`;
+  }
+  if (good.length === 0) {
+    return `${grade}등급 — 전체적인 개선이 필요합니다 (${bad.join("·")} 미달)`;
+  }
+  return `${grade}등급 — ${good.join("·")}은 우수하나, ${bad.join("·")}이 벤치마크 미달`;
+}
+
 export function TotalValueGauge({
   grade,
   gradeLabel,
@@ -143,6 +168,17 @@ export function TotalValueGauge({
             })}
           </div>
         </div>
+
+        {/* 하단: 한줄 진단 텍스트 */}
+        {(() => {
+          const diagText = buildDiagnosticText(grade, metrics);
+          if (!diagText) return null;
+          return (
+            <div className="mt-4 rounded-lg bg-muted/50 px-4 py-3">
+              <p className="text-sm text-muted-foreground">{diagText}</p>
+            </div>
+          );
+        })()}
       </CardContent>
     </Card>
   );

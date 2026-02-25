@@ -217,9 +217,9 @@ export function AdMetricsTable({ insights, benchmarks, accountId, mixpanelProjec
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center rounded px-2 py-1 text-[11px] font-medium text-blue-600 hover:bg-blue-50 transition-colors"
-                            title="Meta 광고관리자"
+                            title="Meta 광고통계"
                           >
-                            Meta
+                            Meta 광고통계
                           </a>
                         )}
                         {mixpanelProjectId && mixpanelBoardId && (
@@ -228,9 +228,9 @@ export function AdMetricsTable({ insights, benchmarks, accountId, mixpanelProjec
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center rounded px-2 py-1 text-[11px] font-medium text-purple-600 hover:bg-purple-50 transition-colors"
-                            title="Mixpanel"
+                            title="믹스패널"
                           >
-                            Mixpanel
+                            믹스패널
                           </a>
                         )}
                       </div>
