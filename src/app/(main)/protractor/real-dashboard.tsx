@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { type AdAccount } from "./components/account-selector";
-import { type DateRange } from "./components/period-tabs";
 import {
   type AdInsightRow,
   type BenchmarkRow,
-  AdMetricsTable,
 } from "./components/ad-metrics-table";
+import { PeriodTabs, type DateRange as PeriodDateRange } from "./components/period-tabs";
+import { Top5AdCards } from "./components/top5-ad-cards";
 import { BenchmarkCompare } from "./components/benchmark-compare";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,9 +16,7 @@ import { AlertTriangle, BarChart3 } from "lucide-react";
 
 import {
   ProtractorHeader,
-  PeriodSelector,
   SummaryCards,
-  DiagnosticPanel,
   PerformanceTrendChart,
   ConversionFunnel,
   DailyMetricsTable,
@@ -36,7 +34,7 @@ import {
 } from "@/lib/protractor/aggregate";
 
 // 어제 날짜 (기본값)
-function yesterday(): DateRange {
+function yesterday(): PeriodDateRange {
   const d = new Date();
   d.setDate(d.getDate() - 1);
   const s = d.toISOString().split("T")[0];
@@ -74,7 +72,7 @@ export default function RealDashboard() {
   // 상태
   const [accounts, setAccounts] = useState<AdAccount[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<DateRange>(yesterday());
+  const [dateRange, setDateRange] = useState<PeriodDateRange>(yesterday());
   const [insights, setInsights] = useState<AdInsightRow[]>([]);
   const [benchmarks, setBenchmarks] = useState<BenchmarkRow[]>([]);
   const [rawDiagnoses, setRawDiagnoses] = useState<RawDiagnosis[] | null>(null);
@@ -270,7 +268,7 @@ export default function RealDashboard() {
     }
   }, [activeTab, fetchOverlap]);
 
-  const handlePeriodChange = (range: DateRange) => {
+  const handlePeriodChange = (range: PeriodDateRange) => {
     setDateRange(range);
   };
 
@@ -298,7 +296,7 @@ export default function RealDashboard() {
           onSelect={handleAccountSelect}
           isLoading={loadingAccounts}
         />
-        <PeriodSelector onPeriodChange={handlePeriodChange} />
+        <PeriodTabs onPeriodChange={handlePeriodChange} />
       </header>
 
       {/* 에러 메시지 */}
@@ -340,7 +338,7 @@ export default function RealDashboard() {
             </div>
           )}
 
-          {/* 데이터 표시 — 실데이터 연결 */}
+          {/* 데이터 표시 — 목업 순서: 게이지 → 요약카드 → TOP5 광고 → 차트/퍼널 → 일별테이블 → 벤치마크 */}
           {selectedAccountId && !loadingData && (
             <>
               <TotalValueGauge
@@ -361,7 +359,13 @@ export default function RealDashboard() {
               {loadingDiagnosis ? (
                 <Skeleton className="h-[200px] w-full rounded-lg" />
               ) : (
-                <DiagnosticPanel diagnoses={rawDiagnoses ?? undefined} />
+                <Top5AdCards
+                  insights={insights}
+                  accountId={selectedAccountId ?? undefined}
+                  mixpanelProjectId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_project_id}
+                  mixpanelBoardId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_board_id}
+                  diagnoses={rawDiagnoses ?? undefined}
+                />
               )}
 
               <div className="grid gap-6 xl:grid-cols-5">
@@ -377,14 +381,6 @@ export default function RealDashboard() {
               </div>
               <DailyMetricsTable data={dailyMetrics} />
               <BenchmarkCompare insights={insights} benchmarks={benchmarks} />
-              <AdMetricsTable
-                insights={insights}
-                benchmarks={benchmarks}
-                accountId={selectedAccountId ?? undefined}
-                mixpanelProjectId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_project_id}
-                mixpanelBoardId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_board_id}
-                diagnoses={rawDiagnoses ?? undefined}
-              />
             </>
           )}
         </TabsContent>

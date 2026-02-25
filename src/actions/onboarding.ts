@@ -78,6 +78,7 @@ export async function saveAdAccount(data: {
   metaAccountId: string | null;
   mixpanelProjectId: string | null;
   mixpanelSecretKey: string | null;
+  mixpanelBoardId?: string | null;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -96,6 +97,9 @@ export async function saveAdAccount(data: {
   }
   if (data.mixpanelSecretKey) {
     updates.mixpanel_secret_key = data.mixpanelSecretKey;
+  }
+  if (data.mixpanelBoardId) {
+    updates.mixpanel_board_id = data.mixpanelBoardId;
   }
 
   const { error } = await svc

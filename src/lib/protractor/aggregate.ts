@@ -65,7 +65,7 @@ export interface SummaryCardData {
 
 /**
  * 현재 기간과 이전 기간의 insights를 비교하여 SummaryCards에 필요한 데이터 생성
- * 카드: 총 매출, 광고비, ROAS, 구매전환수, CPA, CTR (원본과 동일 항목)
+ * 카드: 총 광고비, 총 클릭, 총 구매, ROAS
  */
 export function toSummaryCards(
   current: AccountSummary,
@@ -76,54 +76,31 @@ export function toSummaryCards(
     return +((cur - prev) / prev * 100).toFixed(1);
   };
 
-  const cpa = current.totalPurchases > 0
-    ? Math.round(current.totalSpend / current.totalPurchases)
-    : 0;
-  const prevCpa = previous && previous.totalPurchases > 0
-    ? Math.round(previous.totalSpend / previous.totalPurchases)
-    : 0;
-
   return [
     {
-      label: "총 매출",
-      value: current.totalRevenue.toLocaleString("ko-KR"),
-      prefix: "₩",
-      changePercent: pct(current.totalRevenue, previous?.totalRevenue ?? 0),
-      changeLabel: "전주 대비",
-    },
-    {
-      label: "광고비",
+      label: "총 광고비",
       value: current.totalSpend.toLocaleString("ko-KR"),
       prefix: "₩",
       changePercent: pct(current.totalSpend, previous?.totalSpend ?? 0),
-      changeLabel: "전주 대비",
+      changeLabel: "전기간 대비",
+    },
+    {
+      label: "총 클릭",
+      value: current.totalClicks.toLocaleString("ko-KR"),
+      changePercent: pct(current.totalClicks, previous?.totalClicks ?? 0),
+      changeLabel: "전기간 대비",
+    },
+    {
+      label: "총 구매",
+      value: current.totalPurchases.toLocaleString("ko-KR"),
+      changePercent: pct(current.totalPurchases, previous?.totalPurchases ?? 0),
+      changeLabel: "전기간 대비",
     },
     {
       label: "ROAS",
-      value: (current.roas * 100).toFixed(0),
-      suffix: "%",
+      value: current.roas.toFixed(2),
       changePercent: pct(current.roas, previous?.roas ?? 0),
-      changeLabel: "전주 대비",
-    },
-    {
-      label: "구매전환수",
-      value: current.totalPurchases.toLocaleString("ko-KR"),
-      changePercent: pct(current.totalPurchases, previous?.totalPurchases ?? 0),
-      changeLabel: "전주 대비",
-    },
-    {
-      label: "CPA",
-      value: cpa.toLocaleString("ko-KR"),
-      prefix: "₩",
-      changePercent: pct(cpa, prevCpa),
-      changeLabel: "전주 대비",
-    },
-    {
-      label: "CTR",
-      value: current.avgCtr.toFixed(2),
-      suffix: "%",
-      changePercent: pct(current.avgCtr, previous?.avgCtr ?? 0),
-      changeLabel: "전주 대비",
+      changeLabel: "전기간 대비",
     },
   ];
 }

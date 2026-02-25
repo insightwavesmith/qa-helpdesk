@@ -10,7 +10,9 @@ import {
   Check,
   ArrowRight,
   PartyPopper,
+  LogOut,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import {
   Select,
   SelectContent,
@@ -388,7 +390,7 @@ function StepAdAccount({
   saving,
 }: {
   profile: OnboardingProfile;
-  onConnect: (data: { metaAccountId: string; mixpanelProjectId: string; mixpanelSecretKey: string }) => void;
+  onConnect: (data: { metaAccountId: string; mixpanelProjectId: string; mixpanelSecretKey: string; mixpanelBoardId: string }) => void;
   saving: boolean;
 }) {
   const [accountId, setAccountId] = useState(
@@ -400,6 +402,7 @@ function StepAdAccount({
   const [mixpanelSecretKey, setMixpanelSecretKey] = useState(
     profile.mixpanel_secret_key || ""
   );
+  const [mixpanelBoardId, setMixpanelBoardId] = useState("");
 
   const hasMetaAccount = accountId.trim().length > 0;
 
@@ -471,6 +474,23 @@ function StepAdAccount({
 
         <div className="space-y-2">
           <label
+            htmlFor="onb-mixpanel-board"
+            className="block text-sm font-medium text-[#111827]"
+          >
+            믹스패널 보드 ID (선택)
+          </label>
+          <input
+            id="onb-mixpanel-board"
+            type="text"
+            placeholder="보드 ID"
+            value={mixpanelBoardId}
+            onChange={(e) => setMixpanelBoardId(e.target.value)}
+            className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label
             htmlFor="onb-mixpanel-secret"
             className="block text-sm font-medium text-[#111827]"
           >
@@ -488,7 +508,7 @@ function StepAdAccount({
 
         <div className="flex flex-col gap-3">
           <button
-            onClick={() => onConnect({ metaAccountId: accountId, mixpanelProjectId, mixpanelSecretKey })}
+            onClick={() => onConnect({ metaAccountId: accountId, mixpanelProjectId, mixpanelSecretKey, mixpanelBoardId })}
             disabled={saving || !hasMetaAccount}
             className="w-full bg-[#F75D5D] hover:bg-[#E54949] text-white h-11 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
@@ -622,12 +642,13 @@ export default function OnboardingPage() {
     []
   );
 
-  const handleAdConnect = useCallback(async (data: { metaAccountId: string; mixpanelProjectId: string; mixpanelSecretKey: string }) => {
+  const handleAdConnect = useCallback(async (data: { metaAccountId: string; mixpanelProjectId: string; mixpanelSecretKey: string; mixpanelBoardId: string }) => {
     setSaving(true);
     const result = await saveAdAccount({
       metaAccountId: data.metaAccountId || null,
       mixpanelProjectId: data.mixpanelProjectId || null,
       mixpanelSecretKey: data.mixpanelSecretKey || null,
+      mixpanelBoardId: data.mixpanelBoardId || null,
     });
     if (result.error) {
       setError(result.error);
@@ -670,18 +691,32 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center p-4 py-8">
       <div className="w-full max-w-2xl">
         {/* Header */}
-        <div className="text-center mb-6">
-          <div className="flex items-center justify-center mb-3">
-            <Image
-              src="/logo.png"
-              alt="자사몰사관학교"
-              width={40}
-              height={40}
-              className="rounded-lg object-cover"
-            />
-            <span className="ml-2 text-xl font-bold text-[#111827]">
-              자사몰사관학교
-            </span>
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Image
+                src="/logo.png"
+                alt="자사몰사관학교"
+                width={40}
+                height={40}
+                className="rounded-lg object-cover"
+              />
+              <span className="ml-2 text-xl font-bold text-[#111827]">
+                자사몰사관학교
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                const supabase = createClient();
+                await supabase.auth.signOut();
+                window.location.href = "/login";
+              }}
+              className="flex items-center gap-1.5 text-sm text-[#6B7280] hover:text-[#F75D5D] transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              로그인으로 돌아가기
+            </button>
           </div>
         </div>
 

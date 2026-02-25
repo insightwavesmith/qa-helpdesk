@@ -100,7 +100,6 @@ export function OverlapAnalysis({
   onRefresh,
   error,
 }: OverlapAnalysisProps) {
-  const [guideOpen, setGuideOpen] = useState(false);
   const [sortKey, setSortKey] = useState<"rate" | "name">("rate");
   const [sortAsc, setSortAsc] = useState(false);
 
@@ -234,17 +233,17 @@ export function OverlapAnalysis({
     <div className="flex flex-col gap-6">
       {/* ── 히어로: 전체 중복률 ─────────────────────────────── */}
       <Card>
-        <CardContent className="flex flex-col items-center gap-6 py-6 sm:flex-row">
-          {/* 도넛 차트 */}
-          <div className="h-[160px] w-[160px] shrink-0">
+        <CardContent className="flex flex-col items-center gap-6 py-8 sm:flex-row">
+          {/* 도넛 차트 — 200x200 */}
+          <div className="relative h-[200px] w-[200px] shrink-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={donutData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={50}
-                  outerRadius={70}
+                  innerRadius={62}
+                  outerRadius={86}
                   dataKey="value"
                   startAngle={90}
                   endAngle={-270}
@@ -256,63 +255,127 @@ export function OverlapAnalysis({
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
-            <p className="-mt-[100px] text-center text-2xl font-bold">
-              {overall_rate.toFixed(1)}%
-            </p>
-            <p className="mt-1 text-center text-xs text-muted-foreground">
-              전체 중복률
-            </p>
+            {/* 중앙 텍스트 오버레이 */}
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <p className="text-2xl font-bold">{overall_rate.toFixed(1)}%</p>
+              <p className="text-xs text-muted-foreground">전체 중복률</p>
+            </div>
           </div>
 
-          {/* 수치 */}
-          <div className="grid flex-1 grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-sm text-muted-foreground">실제 도달</p>
-              <p className="text-xl font-bold">{fmtNumber(total_unique)}</p>
+          {/* 수치 + 새로 분석 버튼 */}
+          <div className="flex-1">
+            <div className="mb-4 flex items-center justify-between">
+              <div />
+              <Button
+                onClick={onRefresh}
+                disabled={isLoading}
+                className="rounded-xl bg-gradient-to-r from-[#F75D5D] to-red-500 text-white hover:from-[#E54949] hover:to-red-600"
+              >
+                <RefreshCw className="mr-2 h-3.5 w-3.5" />
+                새로 분석
+              </Button>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">개별합</p>
-              <p className="text-xl font-bold">{fmtNumber(individual_sum)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">중복 낭비</p>
-              <p className="text-xl font-bold text-[#F75D5D]">
-                {fmtNumber(wastedReach)}
-              </p>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-sm text-muted-foreground">실제 도달</p>
+                <p className="text-xl font-bold">{fmtNumber(total_unique)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">개별합</p>
+                <p className="text-xl font-bold">{fmtNumber(individual_sum)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">중복 낭비</p>
+                <p className="text-xl font-bold text-[#F75D5D]">
+                  {fmtNumber(wastedReach)}
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* ── 위험 경고: 60% 이상 조합 ───────────────────────── */}
+      {/* ── 위험 경고: 60% 이상 조합 — 카드 레이아웃 ──────── */}
       {dangerPairs.length > 0 && (
         <Card className="border-red-200 bg-red-50">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base text-red-700">
               <AlertTriangle className="h-4 w-4" />
-              중복률 60% 이상 조합 ({dangerPairs.length}건)
+              중복 경고 ({dangerPairs.length}건 — 중복률 60% 이상)
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-3">
             {dangerPairs.map((p, i) => (
               <div
                 key={i}
-                className="flex items-center justify-between rounded-md bg-white/70 px-3 py-2 text-sm"
+                className="flex items-stretch overflow-hidden rounded-lg border border-red-100 bg-white"
               >
-                <div className="flex-1">
-                  <span className="font-medium">{p.campaign_a}</span>
-                  <span className="mx-1 text-muted-foreground">/</span>
-                  <span>{p.adset_a_name}</span>
-                  <span className="mx-2 text-muted-foreground">↔</span>
-                  <span className="font-medium">{p.campaign_b}</span>
-                  <span className="mx-1 text-muted-foreground">/</span>
-                  <span>{p.adset_b_name}</span>
+                {/* 왼쪽: 중복률 패널 */}
+                <div className="flex w-20 shrink-0 items-center justify-center bg-red-500">
+                  <span className="text-2xl font-black text-white">
+                    {p.overlap_rate}%
+                  </span>
                 </div>
-                <span className="ml-4 font-bold text-red-700">
-                  {p.overlap_rate}%
-                </span>
+                {/* 오른쪽: 캠페인/세트 정보 */}
+                <div className="flex-1 px-4 py-3">
+                  <div className="text-sm">
+                    <span className="font-medium">{p.campaign_a}</span>
+                    <span className="mx-1 text-muted-foreground">/</span>
+                    <span className="text-muted-foreground">{p.adset_a_name}</span>
+                    <span className="mx-2 font-bold text-red-400">↔</span>
+                    <span className="font-medium">{p.campaign_b}</span>
+                    <span className="mx-1 text-muted-foreground">/</span>
+                    <span className="text-muted-foreground">{p.adset_b_name}</span>
+                  </div>
+                </div>
               </div>
             ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── 광고세트별 요약 테이블 ──────────────────────────── */}
+      {Object.keys(maxOverlapByAdset).length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">광고세트별 요약</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>캠페인명</TableHead>
+                    <TableHead>광고세트명</TableHead>
+                    <TableHead className="text-right">최고 중복률</TableHead>
+                    <TableHead className="text-center">상태</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Object.entries(maxOverlapByAdset)
+                    .sort(([, rateA], [, rateB]) => rateB - rateA)
+                    .map(([key, maxRate]) => {
+                      const pipeIdx = key.indexOf("|");
+                      const campaignName = pipeIdx >= 0 ? key.slice(0, pipeIdx) : key;
+                      const adsetName = pipeIdx >= 0 ? key.slice(pipeIdx + 1) : "";
+                      return (
+                        <TableRow key={key}>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {campaignName}
+                          </TableCell>
+                          <TableCell className="font-medium">{adsetName}</TableCell>
+                          <TableCell className="text-right font-mono font-medium">
+                            {maxRate}%
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <StatusBadge rate={maxRate} />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -320,17 +383,8 @@ export function OverlapAnalysis({
       {/* ── 전체 조합 테이블 ────────────────────────────────── */}
       {sortedPairs.length > 0 && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <CardHeader className="pb-3">
             <CardTitle className="text-base">광고세트 조합별 중복률</CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRefresh}
-              disabled={isLoading}
-            >
-              <RefreshCw className="mr-2 h-3.5 w-3.5" />
-              새로 분석
-            </Button>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -395,61 +449,47 @@ export function OverlapAnalysis({
         </Card>
       )}
 
-      {/* ── 하단: 분석 시각 + 해석 가이드 ──────────────────── */}
-      <div className="flex flex-col gap-3">
-        {/* 마지막 분석 시각 */}
-        {cached_at && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            마지막 분석:{" "}
-            {new Date(cached_at).toLocaleString("ko-KR", {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
+      {/* ── 해석 가이드 — 항상 표시 ────────────────────────── */}
+      <Card className="border-blue-100 bg-blue-50">
+        <CardContent className="space-y-2 py-4 text-sm">
+          <div className="mb-2 flex items-center gap-1.5 font-medium text-blue-700">
+            <Info className="h-4 w-4" />
+            해석 가이드
           </div>
-        )}
+          <p className="text-muted-foreground">
+            <strong className="text-foreground">전체 중복률</strong> ={" "}
+            (개별 도달 합계 - 실제 고유 도달) / 개별 도달 합계 × 100
+          </p>
+          <p className="text-muted-foreground">
+            <strong className="text-foreground">60% 이상</strong>: 두
+            광고세트가 거의 같은 사람에게 노출됩니다. 하나를 끄거나 타겟을
+            조정하세요.
+          </p>
+          <p className="text-muted-foreground">
+            <strong className="text-foreground">30~60%</strong>: 일부 중복이
+            있습니다. 타겟 세분화를 권장합니다.
+          </p>
+          <p className="text-muted-foreground">
+            <strong className="text-foreground">30% 미만</strong>: 양호한
+            수준입니다. 각 광고세트가 서로 다른 사람에게 도달하고 있습니다.
+          </p>
+        </CardContent>
+      </Card>
 
-        {/* 해석 가이드 */}
-        <button
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-          onClick={() => setGuideOpen(!guideOpen)}
-        >
-          <Info className="h-3 w-3" />
-          해석 가이드
-          {guideOpen ? (
-            <ChevronUp className="h-3 w-3" />
-          ) : (
-            <ChevronDown className="h-3 w-3" />
-          )}
-        </button>
-
-        {guideOpen && (
-          <Card className="bg-muted/50">
-            <CardContent className="space-y-2 py-4 text-sm text-muted-foreground">
-              <p>
-                <strong className="text-foreground">전체 중복률</strong> ={" "}
-                (개별 도달 합계 - 실제 고유 도달) / 개별 도달 합계 × 100
-              </p>
-              <p>
-                <strong className="text-foreground">60% 이상</strong>: 두
-                광고세트가 거의 같은 사람에게 노출됩니다. 하나를 끄거나 타겟을
-                조정하세요.
-              </p>
-              <p>
-                <strong className="text-foreground">30~60%</strong>: 일부 중복이
-                있습니다. 타겟 세분화를 권장합니다.
-              </p>
-              <p>
-                <strong className="text-foreground">30% 미만</strong>: 양호한
-                수준입니다. 각 광고세트가 서로 다른 사람에게 도달하고 있습니다.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      {/* ── 마지막 분석 시각 ─────────────────────────────────── */}
+      {cached_at && (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          마지막 분석:{" "}
+          {new Date(cached_at).toLocaleString("ko-KR", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </div>
+      )}
     </div>
   );
 }

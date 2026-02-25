@@ -78,6 +78,10 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
   const [phone, setPhone] = useState(profile.phone ?? "");
   const [shopName, setShopName] = useState(profile.shop_name ?? "");
   const [shopUrl, setShopUrl] = useState(profile.shop_url ?? "");
+  const [cohort, setCohort] = useState(profile.cohort ?? "");
+  const [metaAccountId, setMetaAccountId] = useState(profile.meta_account_id ?? "");
+  const [mixpanelProjectId, setMixpanelProjectId] = useState(profile.mixpanel_project_id ?? "");
+  const [mixpanelBoardId, setMixpanelBoardId] = useState(profile.mixpanel_board_id ?? "");
   const [selectedRole, setSelectedRole] = useState(profile.role);
 
   const handleEditAccount = (acc: AdAccount) => {
@@ -120,6 +124,10 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
         phone,
         shop_name: shopName,
         shop_url: shopUrl,
+        cohort: cohort || null,
+        meta_account_id: metaAccountId || null,
+        mixpanel_project_id: mixpanelProjectId || null,
+        mixpanel_board_id: mixpanelBoardId || null,
       });
       if (error) {
         toast.error(`수정 실패: ${error}`);
@@ -247,6 +255,44 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">기수</label>
+                <input
+                  type="text"
+                  value={cohort}
+                  onChange={(e) => setCohort(e.target.value)}
+                  placeholder="예: 피드백반 1기"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">메타 광고계정 ID</label>
+                <input
+                  type="text"
+                  value={metaAccountId}
+                  onChange={(e) => setMetaAccountId(e.target.value)}
+                  placeholder="예: 123456789012345"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">믹스패널 프로젝트 ID</label>
+                <input
+                  type="text"
+                  value={mixpanelProjectId}
+                  onChange={(e) => setMixpanelProjectId(e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">믹스패널 보드 ID</label>
+                <input
+                  type="text"
+                  value={mixpanelBoardId}
+                  onChange={(e) => setMixpanelBoardId(e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                />
+              </div>
               <div className="flex justify-end gap-2 pt-2">
                 <Button
                   variant="outline"
@@ -258,6 +304,10 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                     setPhone(profile.phone ?? "");
                     setShopName(profile.shop_name ?? "");
                     setShopUrl(profile.shop_url ?? "");
+                    setCohort(profile.cohort ?? "");
+                    setMetaAccountId(profile.meta_account_id ?? "");
+                    setMixpanelProjectId(profile.mixpanel_project_id ?? "");
+                    setMixpanelBoardId(profile.mixpanel_board_id ?? "");
                   }}
                 >
                   취소

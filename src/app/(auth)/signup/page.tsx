@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/client";
 import { updateBusinessCertUrl } from "@/actions/auth";
+import { useInviteCode as consumeInviteCode } from "@/actions/invites";
 import Image from "next/image";
 import { Loader2, Upload, FileCheck, CheckCircle2 } from "lucide-react";
 
@@ -164,6 +165,11 @@ export default function SignupPage() {
           // server action으로 프로필 업데이트 (service role = RLS 우회)
           await updateBusinessCertUrl(authData.user.id, publicUrl);
         }
+      }
+
+      // 수강생 모드: 초대코드 사용 처리 (used_count 증가 + student_registry 매칭)
+      if (isStudentMode && inviteCode.trim()) {
+        await consumeInviteCode(authData.user.id, formData.email, inviteCode.trim());
       }
 
       // 가입 후 리다이렉트 분기

@@ -31,6 +31,14 @@ const GRADE_COLORS: Record<string, string> = {
   F: "border-red-500 bg-red-50 text-red-700",
 };
 
+const GRADE_TEXT_COLORS: Record<string, string> = {
+  A: "#15803d",
+  B: "#1d4ed8",
+  C: "#a16207",
+  D: "#c2410c",
+  F: "#b91c1c",
+};
+
 const STATUS_COLORS: Record<string, { bar: string; text: string }> = {
   "🟢": { bar: "bg-green-500", text: "text-green-600" },
   "🟡": { bar: "bg-yellow-500", text: "text-yellow-600" },
@@ -67,10 +75,20 @@ function calcBarWidth(value: number | null, p75: number | null): number {
   return Math.max(pct, 5);
 }
 
-function buildDiagnosticText(
+function calcPeriodDays(dateRange?: { start: string; end: string }): number {
+  if (!dateRange) return 14;
+  const start = new Date(dateRange.start);
+  const end = new Date(dateRange.end);
+  const diffMs = end.getTime() - start.getTime();
+  const days = Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1;
+  return Math.max(days, 1);
+}
+
+function buildDiagnosticJsx(
   grade: string,
   metrics: MetricData[],
-): string | null {
+  gradeTextColor: string,
+): React.ReactNode | null {
   const good: string[] = [];
   const bad: string[] = [];
 
@@ -81,22 +99,60 @@ function buildDiagnosticText(
 
   if (good.length === 0 && bad.length === 0) return null;
 
+  const gradeSpan = (
+    <span className="font-bold" style={{ color: gradeTextColor }}>
+      {grade}등급
+    </span>
+  );
+
   if (bad.length === 0) {
-    return `${grade}등급 — 모든 지표가 벤치마크 상위 수준입니다`;
+    return (
+      <>
+        {gradeSpan} — 모든 지표가 벤치마크 상위 수준입니다
+      </>
+    );
   }
+
+  const badSpans = bad.map((name, i) => (
+    <span key={name}>
+      <span className="font-semibold text-red-500">{name}</span>
+      {i < bad.length - 1 ? "·" : ""}
+    </span>
+  ));
+
   if (good.length === 0) {
-    return `${grade}등급 — 전체적인 개선이 필요합니다 (${bad.join("·")} 미달)`;
+    return (
+      <>
+        {gradeSpan} — 전체적인 개선이 필요합니다 ({badSpans} 미달)
+      </>
+    );
   }
-  return `${grade}등급 — ${good.join("·")}은 우수하나, ${bad.join("·")}이 벤치마크 미달`;
+
+  const goodSpans = good.map((name, i) => (
+    <span key={name}>
+      {name}
+      {i < good.length - 1 ? "·" : ""}
+    </span>
+  ));
+
+  return (
+    <>
+      {gradeSpan} — {goodSpans}은 우수하나, {badSpans}이 벤치마크 미달
+    </>
+  );
 }
 
 export function TotalValueGauge({
   grade,
   gradeLabel,
   totalSpend,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   totalClicks,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   totalPurchases,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   totalRoas,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   adCount,
   metrics,
   dateRange,
@@ -118,45 +174,38 @@ export function TotalValueGauge({
   }
 
   const gradeColor = GRADE_COLORS[grade] ?? GRADE_COLORS.C;
+  const gradeTextColor = GRADE_TEXT_COLORS[grade] ?? GRADE_TEXT_COLORS.C;
+  const periodDays = calcPeriodDays(dateRange);
+  const periodLabel = `${periodDays}일`;
+
+  const diagJsx = buildDiagnosticJsx(grade, metrics, gradeTextColor);
 
   return (
-    <Card>
+    <Card className="bg-white border border-gray-200">
       <CardContent className="p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
-          {/* 좌측: 등급 + 요약 수치 */}
-          <div className="flex flex-shrink-0 flex-col items-center gap-3">
-            <div className="flex items-center gap-4 lg:flex-col lg:items-center lg:gap-2">
-              <div
-                className={`flex h-20 w-20 items-center justify-center rounded-full border-4 ${gradeColor}`}
-              >
-                <span className="text-3xl font-black">{grade}</span>
-              </div>
-              <div className="lg:text-center">
-                <p className="text-sm font-semibold">{gradeLabel}</p>
-                {dateRange && (
-                  <p className="text-[11px] text-muted-foreground">
-                    {dateRange.start} ~ {dateRange.end}
-                  </p>
-                )}
-                {adCount != null && (
-                  <p className="text-[11px] text-muted-foreground">
-                    광고 {adCount}개
-                  </p>
-                )}
-              </div>
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+          {/* 좌측: 총가치 수준 등급 */}
+          <div className="flex-shrink-0 text-center" style={{ minWidth: "140px" }}>
+            <p className="mb-2 text-xs font-semibold text-muted-foreground">총가치 수준</p>
+            <div
+              className={`mx-auto flex h-24 w-24 items-center justify-center rounded-full border-4 ${gradeColor}`}
+            >
+              <span className="text-4xl font-black">{grade}</span>
             </div>
-
-            {/* 4개 요약 수치 카드 */}
-            <div className="grid grid-cols-2 gap-2">
-              <MiniStat label="총 광고비" value={totalSpend != null ? fmtCurrency(totalSpend) : "-"} />
-              <MiniStat label="총 클릭" value={totalClicks != null ? totalClicks.toLocaleString("ko-KR") : "-"} />
-              <MiniStat label="총 구매" value={totalPurchases != null ? totalPurchases.toLocaleString("ko-KR") : "-"} />
-              <MiniStat label="ROAS" value={totalRoas != null ? totalRoas.toFixed(2) : "-"} highlight />
-            </div>
+            {gradeLabel && (
+              <p className="mt-2 text-sm font-semibold">{gradeLabel}</p>
+            )}
+            <p className="mt-1 text-[11px] text-muted-foreground">{periodLabel} 기준</p>
+            {totalSpend != null && (
+              <p className="mt-2 text-sm font-bold">
+                총 광고비 {fmtCurrency(totalSpend)}
+              </p>
+            )}
+            <p className="mt-0.5 text-[10px] text-muted-foreground">전체 광고 합산 기준</p>
           </div>
 
           {/* 우측: 6개 지표 */}
-          <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="grid flex-1 grid-cols-3 gap-3">
             {metrics.map((m) => {
               const sc = STATUS_COLORS[m.status] ?? STATUS_COLORS["⚪"];
               const barW = calcBarWidth(m.value, m.p75);
@@ -165,7 +214,7 @@ export function TotalValueGauge({
               return (
                 <div
                   key={m.name}
-                  className="rounded-lg border p-3"
+                  className="rounded-lg border border-gray-200 bg-white p-3"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">{m.name}</span>
@@ -177,7 +226,7 @@ export function TotalValueGauge({
                   <div className={`mt-1 text-lg font-bold ${sc.text}`}>
                     {fmtValue(m.value, m.name)}
                   </div>
-                  {/* 게이지 바 (h-2 = 8px) */}
+                  {/* 게이지 바 */}
                   <div className="relative mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100">
                     <div
                       className={`absolute left-0 top-0 h-full rounded-full transition-all ${sc.bar}`}
@@ -207,25 +256,12 @@ export function TotalValueGauge({
         </div>
 
         {/* 하단: 한줄 진단 텍스트 */}
-        {(() => {
-          const diagText = buildDiagnosticText(grade, metrics);
-          if (!diagText) return null;
-          return (
-            <div className="mt-4 rounded-lg bg-muted/50 px-4 py-3">
-              <p className="text-sm text-muted-foreground">{diagText}</p>
-            </div>
-          );
-        })()}
+        {diagJsx && (
+          <div className="mt-4 rounded-lg bg-gray-50 px-4 py-3 border border-gray-100">
+            <p className="text-sm text-muted-foreground">{diagJsx}</p>
+          </div>
+        )}
       </CardContent>
     </Card>
-  );
-}
-
-function MiniStat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
-  return (
-    <div className={`rounded-md px-3 py-2 text-center ${highlight ? "bg-primary/10" : "bg-muted/50"}`}>
-      <div className={`text-sm font-bold ${highlight ? "text-primary" : ""}`}>{value}</div>
-      <div className="text-[10px] text-muted-foreground">{label}</div>
-    </div>
   );
 }

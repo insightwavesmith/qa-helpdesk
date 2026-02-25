@@ -23,6 +23,7 @@ interface Profile {
   shop_url: string | null;
   meta_account_id: string | null;
   mixpanel_project_id: string | null;
+  mixpanel_board_id: string | null;
   mixpanel_secret_key: string | null;
   annual_revenue: string | null;
 }
@@ -60,6 +61,8 @@ export function SettingsForm({ profile, userId }: SettingsFormProps) {
       meta_account_id: (formData.get("meta_account_id") as string) || null,
       mixpanel_project_id:
         (formData.get("mixpanel_project_id") as string) || null,
+      mixpanel_board_id:
+        (formData.get("mixpanel_board_id") as string) || null,
       mixpanel_secret_key:
         (formData.get("mixpanel_secret_key") as string) || null,
       annual_revenue: annualRevenue || null,
@@ -160,6 +163,17 @@ export function SettingsForm({ profile, userId }: SettingsFormProps) {
                 className="rounded-lg border-gray-200 focus:ring-[#F75D5D]"
               />
             </div>
+            <div className="space-y-2">
+              <Label>믹스패널 보드 ID</Label>
+              <Input
+                name="mixpanel_board_id"
+                defaultValue={profile?.mixpanel_board_id ?? ""}
+                placeholder="보드 ID"
+                className="rounded-lg border-gray-200 focus:ring-[#F75D5D]"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>믹스패널 시크릿키</Label>
               <div className="relative">

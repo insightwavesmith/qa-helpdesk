@@ -16,52 +16,15 @@ interface SummaryCardsProps {
 }
 
 const defaultCards: SummaryCardData[] = [
-  {
-    label: "총 매출",
-    value: "127,450,000",
-    prefix: "₩",
-    changePercent: 12.5,
-    changeLabel: "전주 대비",
-  },
-  {
-    label: "광고비",
-    value: "18,320,000",
-    prefix: "₩",
-    changePercent: -3.2,
-    changeLabel: "전주 대비",
-  },
-  {
-    label: "ROAS",
-    value: "695",
-    suffix: "%",
-    changePercent: 18.7,
-    changeLabel: "전주 대비",
-  },
-  {
-    label: "구매전환수",
-    value: "1,847",
-    changePercent: 8.3,
-    changeLabel: "전주 대비",
-  },
-  {
-    label: "CPA",
-    value: "9,920",
-    prefix: "₩",
-    changePercent: -11.4,
-    changeLabel: "전주 대비",
-  },
-  {
-    label: "CTR",
-    value: "2.34",
-    suffix: "%",
-    changePercent: 5.1,
-    changeLabel: "전주 대비",
-  },
+  { label: "총 광고비", value: "834,500", prefix: "₩", changePercent: 8, changeLabel: "전기간 대비" },
+  { label: "총 클릭", value: "4,280", changePercent: 12, changeLabel: "전기간 대비" },
+  { label: "총 구매", value: "132", changePercent: 18, changeLabel: "전기간 대비" },
+  { label: "ROAS", value: "2.85", changePercent: 5, changeLabel: "전기간 대비" },
 ];
 
 export function SummaryCards({ cards = defaultCards }: SummaryCardsProps) {
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {cards.map((card) => {
         const isPositive = card.changePercent >= 0;
         // For CPA, decrease is good; for others, increase is good
