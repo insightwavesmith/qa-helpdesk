@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { type AdAccount } from "./components/account-selector";
 import { type DateRange } from "./components/period-tabs";
 import {
@@ -8,7 +9,6 @@ import {
   type BenchmarkRow,
   AdMetricsTable,
 } from "./components/ad-metrics-table";
-import { type LpMetricRow, LpMetricsCard } from "./components/lp-metrics-card";
 import { BenchmarkCompare } from "./components/benchmark-compare";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, BarChart3 } from "lucide-react";
@@ -21,6 +21,7 @@ import {
   PerformanceTrendChart,
   ConversionFunnel,
   DailyMetricsTable,
+  TotalValueGauge,
 } from "@/components/protractor";
 
 import {
@@ -125,18 +126,27 @@ function verdictToGrade(diagnoses: {
 }
 
 export default function RealDashboard() {
+  const searchParams = useSearchParams();
+  const accountParam = searchParams.get("account");
+
   // 상태
   const [accounts, setAccounts] = useState<AdAccount[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>(yesterday());
   const [insights, setInsights] = useState<AdInsightRow[]>([]);
-  const [lpMetrics, setLpMetrics] = useState<LpMetricRow[]>([]);
   const [benchmarks, setBenchmarks] = useState<BenchmarkRow[]>([]);
   const [diagnosisData, setDiagnosisData] = useState<DiagnosisData | null>(null);
+  const [totalValue, setTotalValue] = useState<{
+    grade: "A" | "B" | "C" | "D" | "F";
+    gradeLabel: string;
+    totalSpend: number;
+    metrics: { name: string; value: number | null; p50: number | null; p75: number | null; status: string }[];
+  } | null>(null);
 
   const [loadingAccounts, setLoadingAccounts] = useState(true);
   const [loadingData, setLoadingData] = useState(false);
   const [loadingDiagnosis, setLoadingDiagnosis] = useState(false);
+  const [loadingTotalValue, setLoadingTotalValue] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // 1) 계정 목록 로드
@@ -148,7 +158,10 @@ export default function RealDashboard() {
         if (!res.ok) throw new Error(json.error || "계정 로드 실패");
         const data: AdAccount[] = json.data ?? [];
         setAccounts(data);
-        if (data.length === 1) {
+        // URL 파라미터로 계정 지정된 경우 우선 선택
+        if (accountParam && data.some((a) => a.account_id === accountParam)) {
+          setSelectedAccountId(accountParam);
+        } else if (data.length === 1) {
           setSelectedAccountId(data[0].account_id);
         }
       } catch (e) {
@@ -157,6 +170,7 @@ export default function RealDashboard() {
         setLoadingAccounts(false);
       }
     })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 2) 벤치마크 로드 (한 번만)
@@ -188,22 +202,13 @@ export default function RealDashboard() {
         end: dateRange.end,
       });
 
-      const [insightsRes, lpRes] = await Promise.all([
-        fetch(`/api/protractor/insights?${params}`),
-        fetch(`/api/protractor/lp-metrics?${params}`),
-      ]);
-
+      const insightsRes = await fetch(`/api/protractor/insights?${params}`);
       const insightsJson = await insightsRes.json();
-      const lpJson = await lpRes.json();
-
       if (!insightsRes.ok) throw new Error(insightsJson.error || "인사이트 조회 실패");
-
       setInsights(insightsJson.data ?? []);
-      setLpMetrics(lpJson.data ?? []);
     } catch (e) {
       setError((e as Error).message);
       setInsights([]);
-      setLpMetrics([]);
     } finally {
       setLoadingData(false);
     }
@@ -244,12 +249,43 @@ export default function RealDashboard() {
     })();
   }, [selectedAccountId, insights, dateRange]);
 
+  // 5) 총가치수준 호출
+  useEffect(() => {
+    if (!selectedAccountId || insights.length === 0) {
+      setTotalValue(null);
+      return;
+    }
+
+    (async () => {
+      setLoadingTotalValue(true);
+      try {
+        const params = new URLSearchParams({
+          account_id: selectedAccountId,
+          date_start: dateRange.start,
+          date_end: dateRange.end,
+        });
+        const res = await fetch(`/api/protractor/total-value?${params}`);
+        const json = await res.json();
+        if (res.ok && json.grade) {
+          setTotalValue(json);
+        }
+      } catch {
+        // 총가치수준 실패해도 대시보드 표시
+      } finally {
+        setLoadingTotalValue(false);
+      }
+    })();
+  }, [selectedAccountId, insights, dateRange]);
+
   const handlePeriodChange = (range: DateRange) => {
     setDateRange(range);
   };
 
   const handleAccountSelect = (accountId: string) => {
     setSelectedAccountId(accountId);
+    const url = new URL(window.location.href);
+    url.searchParams.set("account", accountId);
+    window.history.replaceState({}, "", url.toString());
   };
 
   // 실데이터 집계
@@ -303,6 +339,15 @@ export default function RealDashboard() {
       {/* 데이터 표시 — 실데이터 연결 */}
       {selectedAccountId && !loadingData && (
         <>
+          <TotalValueGauge
+            grade={totalValue?.grade}
+            gradeLabel={totalValue?.gradeLabel}
+            totalSpend={totalValue?.totalSpend}
+            metrics={totalValue?.metrics}
+            dateRange={dateRange}
+            isLoading={loadingTotalValue}
+          />
+
           <SummaryCards cards={summaryCards} />
 
           {loadingDiagnosis ? (
@@ -331,8 +376,13 @@ export default function RealDashboard() {
           </div>
           <DailyMetricsTable data={dailyMetrics} />
           <BenchmarkCompare insights={insights} benchmarks={benchmarks} />
-          <AdMetricsTable insights={insights} benchmarks={benchmarks} />
-          {lpMetrics.length > 0 && <LpMetricsCard lpMetrics={lpMetrics} />}
+          <AdMetricsTable
+            insights={insights}
+            benchmarks={benchmarks}
+            accountId={selectedAccountId ?? undefined}
+            mixpanelProjectId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_project_id}
+            mixpanelBoardId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_board_id}
+          />
         </>
       )}
     </div>

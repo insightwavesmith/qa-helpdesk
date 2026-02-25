@@ -5,7 +5,6 @@ import { generateOneLineDiagnosis } from './one-line';
 
 type AdData = Record<string, unknown>;
 type Benchmarks = Record<string, Record<string, number | null>>;
-type LpData = Record<string, unknown> | null;
 
 /** 개별 지표 판정 (V3: 3그룹 비교) */
 export function judgeMetric(
@@ -65,7 +64,6 @@ export function selfJudgeRanking(
   const belowKey = `${rankingType}_below`;
 
   const representativeMetrics: Record<string, string[]> = {
-    quality: ['ctr', 'click_to_purchase_rate'],
     engagement: ['engagement_per_10k', 'reactions_per_10k'],
     conversion: ['click_to_purchase_rate', 'ctr'],
   };
@@ -127,7 +125,6 @@ export function judgePart(metricResults: MetricResult[]): Verdict {
 export function diagnoseAd(
   adData: AdData,
   benchmarks: Benchmarks,
-  lpData: LpData = null,
   creativeType?: string,
 ): DiagnosisResult {
   // V3.4: creativeType이 없으면 adData에서 추출
@@ -135,7 +132,7 @@ export function diagnoseAd(
     creativeType ?? (adData.creative_type as string | undefined) ?? 'VIDEO';
 
   // V3: Meta 랭킹이 UNKNOWN이면 자체 판정
-  for (const rankingType of ['quality', 'engagement', 'conversion']) {
+  for (const rankingType of ['engagement', 'conversion']) {
     const rankingKey = `${rankingType}_ranking`;
     const metaRanking = adData[rankingKey] as string | null | undefined;
 
@@ -169,16 +166,11 @@ export function diagnoseAd(
     const belowKey = `${benchmarkSource}_below`;
 
     for (const metricDef of partConfig.metrics) {
-      const { key, label, reverse: isReverse, source } = metricDef;
-      const effectiveSource = source ?? 'ad';
+      const { key, label, reverse: isReverse } = metricDef;
 
       // 값 추출
       let myValue: number | null;
-      if (partNum === 1 || effectiveSource === 'lp') {
-        myValue = lpData ? (lpData[key] as number | null | undefined) ?? null : null;
-      } else {
-        myValue = (adData[key] as number | null | undefined) ?? null;
-      }
+      myValue = (adData[key] as number | null | undefined) ?? null;
 
       // 벤치마크 값 (V3: avg_ prefix 추가)
       let aboveAvg = (benchmarks[aboveKey] ?? {})[`avg_${key}`] ?? null;

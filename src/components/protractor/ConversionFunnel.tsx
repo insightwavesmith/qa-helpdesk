@@ -39,7 +39,7 @@ const defaultSteps: FunnelStep[] = [
     },
   },
   {
-    label: "장바구니",
+    label: "결제시작",
     value: "12.4K",
     conversionRate: "12.56",
     color: {

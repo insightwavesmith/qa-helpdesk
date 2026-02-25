@@ -34,11 +34,10 @@ export interface MetricDef {
   key: string;
   label: string;
   reverse: boolean;
-  source?: 'ad' | 'lp';
 }
 
 export interface PartConfig {
   name: string;
-  benchmarkSource: 'quality' | 'engagement' | 'conversion';
+  benchmarkSource: 'engagement' | 'conversion';
   metrics: MetricDef[];
 }

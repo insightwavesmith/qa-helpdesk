@@ -15,6 +15,8 @@ export interface AdAccount {
   account_name: string;
   user_id: string;
   created_at: string;
+  mixpanel_project_id?: string | null;
+  mixpanel_board_id?: string | null;
 }
 
 interface AccountSelectorProps {

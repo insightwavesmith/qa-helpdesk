@@ -1,136 +1,153 @@
-# TASK.md — 파트 1: 메타 배지 + 정보공유 렌더링 + 버그 수정 (2026-02-24)
+# TASK.md — 총가치각도기 리팩토링
 
-> 작성: 모찌 | 승인: Smith님 ("그래 해라")
-> 목업: https://mozzi-reports.vercel.app/reports/architecture/2026-02-24-meta-badge-mockup.html
-
----
-
-## Part A — 메타 배지 + 자격증 적용 (5곳)
-
-### T1. MetaBadge 공통 컴포넌트 생성
-
-**신규 파일:** `src/components/meta-badge.tsx`
-
-배지 SVG + 자격증 PNG을 재사용 가능한 컴포넌트로.
-- Meta Business Partner 배지: `/public/images/meta-badge-light.svg` (원본 SVG 복사)
-- Meta Certified 자격증 3종: `/public/images/meta-cert-*.png`
-- 배지 클릭 → 메타 파트너 디렉토리 링크 (https://www.facebook.com/business/partner-directory/)
-- 최소 높이 55px, clearspace 확보
-- size prop: "sm" | "md" | "lg"
-- variant prop: "badge-only" | "badge-with-certs" | "full" (배지+자격증+문구)
-
-### T2. 로그인/회원가입 페이지 배지 추가
-
-**파일:** `src/app/(auth)/login/page.tsx`, `src/app/(auth)/signup/page.tsx`
-
-카드 하단에 MetaBadge 컴포넌트 (variant="badge-with-certs", size="sm")
-문구: "자사몰사관학교는 Meta Business Partner입니다"
-
-### T3. 사이트 푸터 신규 생성
-
-**신규 파일:** `src/components/layout/site-footer.tsx`
-**수정:** `src/app/(main)/layout.tsx` — 3개 레이아웃 분기에 SiteFooter 추가
-
-- Meta Business Partner 배지 + 자격증 3종
-- "대표 김성현 · Meta Certified Specialist 3종"
-- © 2026 자사몰사관학교 All rights reserved.
-- 배지 클릭 → 파트너 디렉토리 링크
-
-### T4. 뉴스레터 이메일 시그니처
-
-**파일:** `src/components/email/email-templates.ts` — `footerHtml()` 함수 수정
-
-- 대표 프로필 블록: "김성현 | 자사몰사관학교 대표"
-- Meta Business Partner 배지 (PNG, Supabase Storage 또는 public URL)
-- "Meta Business Partner · Meta Certified Specialist 3종"
-- 이메일 호환 table 레이아웃 (SVG 미지원 → PNG 사용)
-
-### T5. 정보공유 글 하단 저자 프로필 카드
-
-**파일:** `src/app/(main)/posts/[id]/page.tsx` 또는 `src/components/posts/post-body.tsx`
-
-- 글 본문 아래에 저자 카드
-- "김성현 · 자사몰사관학교 대표"
-- Meta Business Partner 배지 + Certified 3종
-- CTA: "자사몰사관학교 더 알아보기 →"
+> 작성: 모찌 | 2026-02-25
+> 기획서: https://mozzi-reports.vercel.app/reports/architecture/2026-02-25-protractor-integrated-plan.html
+> 목업: https://mozzi-reports.vercel.app/reports/architecture/2026-02-25-protractor-ui-mockup.html
 
 ---
 
-## Part B — 정보공유 렌더링 버그 수정
+## 개요
 
-### T6. 마크다운 blockquote 파서 수정
-
-**파일:** `src/components/posts/post-body.tsx` — `markdownToHtml()` 함수
-
-현재: `> 인용문` → `<p>&gt; 인용문</p>` (변환 안 됨)
-수정: `> 인용문` → `<blockquote>인용문</blockquote>`
-CSS는 이미 `post-body.css`에 완성됨 (#F75D5D 좌측 바, #FFF5F5 배경)
-
-### T7. CTA 링크 버튼 변환
-
-**파일:** `src/components/posts/post-body.tsx` — `markdownToHtml()` 함수
-
-현재: "→" 포함 링크가 일반 `<p>` 태그로 렌더링
-수정: `[텍스트 →](URL)` → `<a class="cta-link" href="URL">텍스트 →</a>`
-CSS는 이미 `post-body.css`에 완성됨 (배경 #F75D5D, 흰 텍스트)
-
-### T8. 정보공유 이미지 플레이스홀더 처리 개선
-
-**파일:** `src/components/posts/post-body.tsx`
-
-현재: placehold.co 한글 텍스트 깨짐 (mojibake)
-수정: 한글 → encodeURIComponent 처리, 또는 Unsplash API 연동 (UNSPLASH_ACCESS_KEY 등록 완료)
+총가치각도기 핵심 리팩토링. LP/장바구니 제거, 진단 3파트 변경, 총가치수준 게이지 신규, 벤치마크 수집 로직 변경, 수강생 UI 개선.
 
 ---
 
-## Part C — 버그 수정 3건
+## T1. LP 관련 코드 제거
 
-### B1. 뉴스레터 발송완료 → 성과 탭 미표시
+- `engine.ts` PART_METRICS에서 LP품질 파트(파트1) 삭제
+- `lp-metrics-card.tsx` 컴포넌트 제거 또는 비활성
+- `/api/protractor/lp-metrics` 라우트 비활성
+- `collect-daily/route.ts`에서 Mixpanel LP 수집 블록 비활성
+- `daily_lp_metrics` 수집 중단 (데이터 테이블은 유지, 코드만 제거)
+- `real-dashboard.tsx`의 `void lpMetrics` 제거 + LpMetricsCard import/사용 제거
 
-발송 완료했는데 뉴스레터 탭에 성과가 안 나옴.
-관련 파일 확인 후 수정.
+## T2. 장바구니 지표 제거
 
-### B2. 조교 역할 → 관리자 탭 미노출
+- `click_to_cart_rate`, `cart_to_purchase_rate`, `lp_session_to_cart` 제거 대상:
+  - `engine.ts` 진단 로직
+  - `metrics.ts` 벤치마크 메트릭 정의
+  - `collect-benchmarks/route.ts` 수집 로직
+- 전환율 파트에서 장바구니 관련 행 삭제
 
-조교(assistant)가 되면 관리자 탭이 보여야 하는데 안 보임.
-`src/app/(main)/layout.tsx` 또는 미들웨어에서 역할 분기 확인.
+## T3. 진단 파트 구조 변경 (4파트 → 3파트)
 
-### B3. 조교 계정 → 좌측 관리 메뉴 미노출
+- 파트0 **기반점수**: video_p3s_rate, thruplay_rate, retention_rate
+- 파트1 **참여율**: reactions, comments, shares, engagement_per_10k (모두 per 10K impressions)
+- 파트2 **전환율**: CTR, 결제시작율, 구매전환율, 노출대비구매전환율(신규), 결제→구매율
+  - `reach_to_purchase_rate` = purchases / impressions 추가 (진단 + 벤치마크 양쪽)
+- PART_METRICS 배열 인덱스 재정렬
 
-조교로 로그인해도 왼쪽 사이드바에 관리 탭이 안 뜸.
-`src/components/dashboard/Sidebar.tsx` 역할 체크 로직 확인.
+## T4. benchmarks 테이블 컬럼 추가
+
+Supabase 마이그레이션:
+```sql
+ALTER TABLE benchmarks ADD COLUMN IF NOT EXISTS creative_type text;
+ALTER TABLE benchmarks ADD COLUMN IF NOT EXISTS source text DEFAULT 'all_accounts';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_benchmarks_metric_type_date 
+  ON benchmarks (metric_name, creative_type, date);
+```
+
+## T5. 벤치마크 수집 로직 변경
+
+- 파일: `collect-benchmarks/route.ts`
+- 현재: ad_accounts 테이블의 수강생 계정만 대상
+- 변경:
+  1. `GET /me/adaccounts` → META_ACCESS_TOKEN으로 전체 접근 가능 계정 목록
+  2. 각 계정별 `GET /act_{id}/insights?level=ad` 조회
+  3. 노출 ≥ 3,500 필터
+  4. `creative_type`별 그룹핑 (VIDEO / IMAGE / CAROUSEL / ALL)
+  5. 그룹별 p25 / p50 / p75 / p90 / avg / sample_size 계산
+  6. benchmarks 테이블에 creative_type + source 포함 INSERT
+- `belowVal = avgVal * 0.5` → 실제 p25 계산으로 변경
+
+## T6. 진단 엔진 벤치마크 조회 수정
+
+- 해당 광고의 creative_type에 맞는 벤치마크 행 조회
+- creative_type이 없으면 'ALL' 폴백
+- `real-dashboard.tsx`의 `void benchmarks` 제거 + BenchmarkCompare 연결 확인
+
+## T7. 총가치수준 게이지 API
+
+- 신규: `/api/protractor/total-value`
+- 입력: account_id, date_start, date_end
+- 로직:
+  1. 해당 계정+기간의 모든 daily_ad_insights 집계
+  2. 6개 지표 가중평균:
+     - 3초시청률: SUM(video_p3s) / SUM(impressions)
+     - CTR: SUM(clicks) / SUM(impressions)
+     - 참여합계: (SUM(reactions+comments+shares) / SUM(impressions)) × 10,000
+     - 결제시작율: SUM(initiate_checkout) / SUM(clicks)
+     - 구매전환율: SUM(purchases) / SUM(clicks)
+     - 노출→구매: SUM(purchases) / SUM(impressions)
+  3. benchmarks 테이블에서 p50/p75 조회 → 비교
+  4. 등급: 🟢(≥p75) 4개↑→A, 3개→B, 2개→C, 1개→D, 0개→F
+- 출력: `{ grade, total_spend, metrics: [{name, value, p50, p75, status}] }`
+
+## T8. TotalValueGauge 컴포넌트
+
+- 신규: `src/components/protractor/TotalValueGauge.tsx`
+- 좌측: 등급 원형(A~F) + 총 광고비 + 기간
+- 우측: 6개 지표 카드 (값 + 게이지 바 + 벤치마크 기준 🟢🟡🔴)
+- 하단: 한줄 진단 텍스트 (어떤 지표가 미달인지)
+- real-dashboard.tsx 최상단에 배치 (기간 탭 바로 아래)
+- 목업 참고: 수강생 대시보드 "총가치 수준" 섹션
+
+## T9. TOP 5 광고 — 버튼 추가
+
+- 파일: `ad-metrics-table.tsx`
+- 각 광고 카드에 2개 버튼:
+  - **Meta 광고통계**: `https://adsmanager.facebook.com/adsmanager/manage/ads?act={account_id}&selected_ad_ids={ad_id}`
+  - **믹스패널**: `https://mixpanel.com/project/{project_id}/view/{board_id}`
+- 필요 데이터: ad_accounts에서 mixpanel_project_id, mixpanel_board_id 조회
+- ad_accounts 테이블에 `mixpanel_board_id` 컬럼 없으면 추가
+
+## T10. 진단 UI 3파트 반영
+
+- LP품질 파트 UI 제거
+- 전환율 파트에 노출→구매 행 추가
+- 목업 참고: 광고 상세 진단 화면 (3컬럼: 기반점수 / 참여율 / 전환율)
 
 ---
 
-## 검증
+## 참고 파일
 
-1. `npm run build` 성공
-2. 로그인 페이지에 배지 표시
-3. 푸터 모든 페이지에 표시
-4. 정보공유 글에서 blockquote 빨간 바 렌더링
-5. 조교 계정으로 관리 메뉴 접근 가능
-6. 커밋 + 푸시
+| 파일 | 역할 |
+|------|------|
+| `src/lib/protractor/engine.ts` | 진단 엔진 (PART_METRICS, 판정 로직) |
+| `src/lib/protractor/metrics.ts` | 벤치마크 메트릭 정의 |
+| `src/app/api/protractor/collect-benchmarks/route.ts` | 벤치마크 수집 크론 |
+| `src/app/api/protractor/collect-daily/route.ts` | 일일 데이터 수집 |
+| `src/app/api/protractor/lp-metrics/route.ts` | LP 메트릭 API (제거 대상) |
+| `src/app/protractor/real-dashboard.tsx` | 수강생 대시보드 메인 |
+| `src/components/protractor/ad-metrics-table.tsx` | TOP 5 광고 테이블 |
+| `src/components/protractor/lp-metrics-card.tsx` | LP 카드 (제거 대상) |
+| `src/components/protractor/benchmark-compare.tsx` | 벤치마크 비교 |
+| 기존 GCP 원본 | `/Users/smith/Library/Mobile Documents/com~apple~CloudDocs/cluade_code/meta-ads-benchmark/` |
+
+## 환경변수
+
+- `META_ACCESS_TOKEN`: Vercel env (또는 Smith님 직접 제공한 토큰)
 
 ---
 
 ## 리뷰 결과
 
-> 리뷰어: 에이전트팀 | 날짜: 2026-02-24 19:57 KST | Plan file: crystalline-wishing-pinwheel.md
+리뷰 보고서: https://mozzi-reports.vercel.app/reports/review/2026-02-25-protractor-code-review.html
 
-### 즉시 수정 가능 (의존성 없음)
-- **B1** `analytics/route.ts:29` — role 체크 1줄 수정 (`assistant` 추가)
-- **B2** `layout.tsx:52` — `usesSidebarLayout` 조건 1줄 수정
-- **B3** `Sidebar.tsx:166` — admin 메뉴 role 체크 1줄 수정
-- **T6** `post-body.tsx` — blockquote 변환을 이스케이프 **전**으로 이동 (Option A)
+### 경로 수정
+- `src/lib/protractor/engine.ts` → `src/lib/diagnosis/engine.ts`
+- `src/lib/protractor/metrics.ts` → `src/lib/diagnosis/metrics.ts`
 
-### 이미지 파일 필요 (T1~T5 블로킹)
-- `meta-badge-light.svg` — public/images/ 필요
-- `meta-cert-ai-performance.png`, `meta-cert-measurement.png`, `meta-cert-technical.png` — 3종
-- **이미지 없으면 T1~T5 전체 블로킹**
+### 숨은 이슈 5건 (TASK.md에 추가 반영)
+- **H1**: collect-daily가 영상/참여/creative_type 수집 안 함 → T5에서 함께 처리 (calculateMetrics 확장)
+- **H2**: database.ts 타입 재생성 필요 (initiate_checkout 등)
+- **H3**: one-line.ts SHARE 분기 → T3에서 함께 재작성
+- **H4**: engine.ts quality_ranking 키 → T1에서 함께 제거
+- **H5**: ConversionFunnel 장바구니 스텝 → T2에서 함께 확인
 
-### 검증 필요
-- **T7** — regex 자체 정상, 실제 동작 여부 테스트 후 결정 (아마 이미 동작 중)
-- **T8** — Unsplash API 이미 연동됨, fallback 빈도 낮음 → 큰 문제 아닐 수 있음
+### 권장 실행 순서
+Phase 1(병렬): T1, T2, T4, T9 → Phase 2: T3, T5 → Phase 3: T6, T10 → Phase 4: T7 → Phase 5: T8
 
-## 리뷰 보고서
-Plan file: `~/.claude/plans/crystalline-wishing-pinwheel.md`
+### 고위험 태스크
+- T3 (진단 3파트 구조): metrics.ts + one-line.ts 전체 재작성
+- T5 (벤치마크 수집): Meta API 직접 호출로 전환 + rate limit 대응

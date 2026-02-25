@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireProtractorAccess } from "../_shared";
 
 // GET /api/protractor/accounts
@@ -31,5 +31,42 @@ export async function GET() {
       { error: "서버 오류가 발생했습니다." },
       { status: 500 }
     );
+  }
+}
+
+// DELETE /api/protractor/accounts
+// admin만 계정 삭제 가능 (ad_accounts + service_secrets 정리)
+export async function DELETE(request: NextRequest) {
+  try {
+    const auth = await requireProtractorAccess();
+    if ("response" in auth) return auth.response;
+    const { profile, svc } = auth;
+
+    if (profile.role !== "admin") {
+      return NextResponse.json({ error: "관리자만 삭제할 수 있습니다." }, { status: 403 });
+    }
+
+    const { account_id } = await request.json();
+    if (!account_id) {
+      return NextResponse.json({ error: "account_id가 필요합니다." }, { status: 400 });
+    }
+
+    // service_secrets 정리
+    await svc
+      .from("service_secrets" as never)
+      .delete()
+      .eq("key_name" as never, `secret_${account_id}`);
+
+    // ad_accounts 삭제
+    const { error } = await svc.from("ad_accounts").delete().eq("account_id", account_id);
+
+    if (error) {
+      console.error("ad_accounts 삭제 오류:", error);
+      return NextResponse.json({ error: "삭제 실패" }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 });
   }
 }

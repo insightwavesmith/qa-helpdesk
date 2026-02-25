@@ -83,11 +83,11 @@ export function MembersClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [detailModal, setDetailModal] = useState<{ profile: Member; accounts: Array<{ id: string; account_id: string; account_name: string | null; active: boolean }> } | null>(null);
+  const [detailModal, setDetailModal] = useState<{ profile: Member; accounts: Array<{ id: string; account_id: string; account_name: string | null; mixpanel_project_id: string | null; mixpanel_board_id: string | null; active: boolean }> } | null>(null);
   const [detailLoading, setDetailLoading] = useState<string | null>(null);
   // 수강생 전환 모달
   const [studentModal, setStudentModal] = useState<{ userId: string; name: string } | null>(null);
-  const [studentForm, setStudentForm] = useState({ cohort: "", metaAccountId: "", mixpanelProjectId: "", mixpanelSecretKey: "" });
+  const [studentForm, setStudentForm] = useState({ cohort: "", metaAccountId: "", mixpanelProjectId: "", mixpanelSecretKey: "", mixpanelBoardId: "" });
 
   const handleOpenDetail = async (memberId: string) => {
     setDetailLoading(memberId);
@@ -140,15 +140,15 @@ export function MembersClient({
 
   // 수강생 전환: 모달로 기수+광고계정+믹스패널 입력
   const handleOpenStudentModal = (userId: string, name: string) => {
-    setStudentForm({ cohort: "", metaAccountId: "", mixpanelProjectId: "", mixpanelSecretKey: "" });
+    setStudentForm({ cohort: "", metaAccountId: "", mixpanelProjectId: "", mixpanelSecretKey: "", mixpanelBoardId: "" });
     setStudentModal({ userId, name });
   };
 
   const handleStudentConvert = async () => {
     if (!studentModal) return;
-    const { cohort, metaAccountId, mixpanelProjectId, mixpanelSecretKey } = studentForm;
+    const { cohort, metaAccountId, mixpanelProjectId, mixpanelSecretKey, mixpanelBoardId } = studentForm;
     if (!cohort || !metaAccountId || !mixpanelProjectId || !mixpanelSecretKey) {
-      toast.error("모든 필드를 입력해주세요.");
+      toast.error("필수 필드를 입력해주세요.");
       return;
     }
     setLoadingId(studentModal.userId);
@@ -158,6 +158,7 @@ export function MembersClient({
         meta_account_id: metaAccountId,
         mixpanel_project_id: mixpanelProjectId,
         mixpanel_secret_key: mixpanelSecretKey,
+        mixpanel_board_id: mixpanelBoardId || undefined,
       });
       if (error) {
         toast.error(`전환 실패: ${error}`);
@@ -368,6 +369,16 @@ export function MembersClient({
                     placeholder="시크릿키"
                     value={studentForm.mixpanelSecretKey}
                     onChange={(e) => setStudentForm((p) => ({ ...p, mixpanelSecretKey: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">믹스패널 보드 ID</label>
+                  <input
+                    type="text"
+                    placeholder="보드 ID (선택)"
+                    value={studentForm.mixpanelBoardId}
+                    onChange={(e) => setStudentForm((p) => ({ ...p, mixpanelBoardId: e.target.value }))}
                     className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
                   />
                 </div>

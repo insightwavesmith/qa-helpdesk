@@ -18,7 +18,6 @@ const METRIC_FIELD_MAP: Record<string, { field: string; group: "engagement" | "c
   comments_per_10k: { field: "avg_comments_per_10k", group: "engagement" },
   shares_per_10k: { field: "avg_shares_per_10k", group: "engagement" },
   engagement_per_10k: { field: "avg_engagement_per_10k", group: "engagement" },
-  click_to_cart_rate: { field: "avg_click_to_cart_rate", group: "conversion" },
   click_to_checkout_rate: { field: "avg_click_to_checkout_rate", group: "conversion" },
   checkout_to_purchase_rate: { field: "avg_checkout_to_purchase_rate", group: "conversion" },
   click_to_purchase_rate: { field: "avg_click_to_purchase_rate", group: "conversion" },
@@ -28,36 +27,37 @@ const METRIC_FIELD_MAP: Record<string, { field: string; group: "engagement" | "c
 // EAV 행들을 프론트엔드가 기대하는 wide-format BenchmarkRow로 피벗
 // p75를 "상위 기준선" (above_avg) 값으로 사용
 function pivotBenchmarks(
-  rows: { metric_name: string; avg_value: number | null; p75: number | null; date: string }[]
+  rows: { metric_name: string; avg_value: number | null; p75: number | null; date: string; creative_type?: string | null }[]
 ): Record<string, unknown>[] {
-  // date별로 그룹핑 (같은 날짜의 metric_name들을 하나의 wide row로 합침)
-  const byDate = new Map<string, { metric_name: string; avg_value: number | null; p75: number | null }[]>();
+  // date + creative_type별로 그룹핑
+  const byGroup = new Map<string, { metric_name: string; avg_value: number | null; p75: number | null }[]>();
   for (const row of rows) {
-    const existing = byDate.get(row.date) ?? [];
+    const ct = row.creative_type ?? 'ALL';
+    const key = `${row.date}_${ct}`;
+    const existing = byGroup.get(key) ?? [];
     existing.push(row);
-    byDate.set(row.date, existing);
+    byGroup.set(key, existing);
   }
 
   const result: Record<string, unknown>[] = [];
 
-  for (const [, metrics] of byDate) {
-    // engagement 그룹 row
+  for (const [groupKey, metrics] of byGroup) {
+    const ct = groupKey.split('_').slice(1).join('_') || 'ALL';
+
     const engRow: Record<string, unknown> = {
       ranking_type: "engagement",
       ranking_group: "above_avg",
-      creative_type: "VIDEO",
+      creative_type: ct,
     };
-    // conversion 그룹 row
     const convRow: Record<string, unknown> = {
       ranking_type: "conversion",
       ranking_group: "above_avg",
-      creative_type: "VIDEO",
+      creative_type: ct,
     };
 
     for (const m of metrics) {
       const mapping = METRIC_FIELD_MAP[m.metric_name];
       if (!mapping) continue;
-      // p75를 기준선으로 사용, 없으면 avg_value 폴백
       const value = m.p75 ?? m.avg_value;
       if (value == null) continue;
 
@@ -105,7 +105,7 @@ export async function GET() {
     const latestDate = latest[0].date;
     const { data, error } = await svc
       .from("benchmarks")
-      .select("metric_name, avg_value, p75, date")
+      .select("metric_name, avg_value, p75, date, creative_type")
       .eq("date", latestDate);
 
     if (error) {

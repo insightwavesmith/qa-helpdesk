@@ -3,14 +3,16 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, X } from "lucide-react";
-import { updateMember, changeRole, deactivateMember, deleteMember } from "@/actions/admin";
+import { Loader2, Pencil, X } from "lucide-react";
+import { updateMember, changeRole, deactivateMember, deleteMember, updateAdAccount } from "@/actions/admin";
 import { toast } from "sonner";
 
 interface AdAccount {
   id: string;
   account_id: string;
   account_name: string | null;
+  mixpanel_project_id: string | null;
+  mixpanel_board_id: string | null;
   active: boolean;
 }
 
@@ -69,11 +71,46 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [showSecretKey, setShowSecretKey] = useState(false);
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  const [accountForm, setAccountForm] = useState({ account_name: "", mixpanel_project_id: "", mixpanel_board_id: "" });
+  const [accountSaving, setAccountSaving] = useState(false);
   const [name, setName] = useState(profile.name);
   const [phone, setPhone] = useState(profile.phone ?? "");
   const [shopName, setShopName] = useState(profile.shop_name ?? "");
   const [shopUrl, setShopUrl] = useState(profile.shop_url ?? "");
   const [selectedRole, setSelectedRole] = useState(profile.role);
+
+  const handleEditAccount = (acc: AdAccount) => {
+    setEditingAccountId(acc.id);
+    setAccountForm({
+      account_name: acc.account_name ?? "",
+      mixpanel_project_id: acc.mixpanel_project_id ?? "",
+      mixpanel_board_id: acc.mixpanel_board_id ?? "",
+    });
+  };
+
+  const handleSaveAccount = async () => {
+    if (!editingAccountId) return;
+    setAccountSaving(true);
+    try {
+      const { error } = await updateAdAccount(editingAccountId, {
+        account_name: accountForm.account_name || undefined,
+        mixpanel_project_id: accountForm.mixpanel_project_id || undefined,
+        mixpanel_board_id: accountForm.mixpanel_board_id || undefined,
+      });
+      if (error) {
+        toast.error(`저장 실패: ${error}`);
+      } else {
+        toast.success("광고계정이 수정되었습니다.");
+        setEditingAccountId(null);
+        onUpdated();
+      }
+    } catch {
+      toast.error("처리 중 오류가 발생했습니다.");
+    } finally {
+      setAccountSaving(false);
+    }
+  };
 
   const handleSaveProfile = async () => {
     setSaving(true);
@@ -266,7 +303,7 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                 <p className="text-sm font-medium text-gray-900">{profile.cohort || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">메타 광고계정 ID</p>
+                <p className="text-sm text-gray-500">메타 광고계정 ID <span className="text-gray-400">(레거시)</span></p>
                 <p className="text-sm font-medium text-gray-900 font-mono">{profile.meta_account_id || "-"}</p>
               </div>
               <div>
@@ -374,25 +411,81 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
           ) : (
             <div className="space-y-2">
               {accounts.map((acc) => (
-                <div
-                  key={acc.id}
-                  className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {acc.account_name || acc.account_id}
-                    </p>
-                    <p className="text-xs text-gray-500 font-mono">{acc.account_id}</p>
-                  </div>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full ${
-                      acc.active
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-500"
-                    }`}
-                  >
-                    {acc.active ? "활성" : "비활성"}
-                  </span>
+                <div key={acc.id} className="bg-gray-50 rounded-lg px-3 py-2">
+                  {editingAccountId === acc.id ? (
+                    <div className="space-y-2">
+                      <p className="text-xs text-gray-500 font-mono mb-1">{acc.account_id}</p>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-0.5">계정명</label>
+                        <input
+                          type="text"
+                          value={accountForm.account_name}
+                          onChange={(e) => setAccountForm((p) => ({ ...p, account_name: e.target.value }))}
+                          className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-0.5">믹스패널 프로젝트 ID</label>
+                        <input
+                          type="text"
+                          value={accountForm.mixpanel_project_id}
+                          onChange={(e) => setAccountForm((p) => ({ ...p, mixpanel_project_id: e.target.value }))}
+                          className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-0.5">믹스패널 보드 ID</label>
+                        <input
+                          type="text"
+                          value={accountForm.mixpanel_board_id}
+                          onChange={(e) => setAccountForm((p) => ({ ...p, mixpanel_board_id: e.target.value }))}
+                          className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                        />
+                      </div>
+                      <div className="flex justify-end gap-1.5 pt-1">
+                        <Button variant="outline" size="sm" className="h-7 text-xs rounded" onClick={() => setEditingAccountId(null)}>
+                          취소
+                        </Button>
+                        <Button size="sm" className="h-7 text-xs rounded bg-[#F75D5D] hover:bg-[#E54949] text-white" onClick={handleSaveAccount} disabled={accountSaving}>
+                          {accountSaving && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                          저장
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {acc.account_name || acc.account_id}
+                        </p>
+                        <p className="text-xs text-gray-500 font-mono">{acc.account_id}</p>
+                        {acc.mixpanel_project_id && (
+                          <p className="text-xs text-gray-400 mt-0.5">프로젝트: {acc.mixpanel_project_id}</p>
+                        )}
+                        {acc.mixpanel_board_id && (
+                          <p className="text-xs text-gray-400">보드: {acc.mixpanel_board_id}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleEditAccount(acc)}
+                          className="p-1 text-gray-400 hover:text-gray-600"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            acc.active
+                              ? "bg-green-100 text-green-700"
+                              : "bg-gray-100 text-gray-500"
+                          }`}
+                        >
+                          {acc.active ? "활성" : "비활성"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

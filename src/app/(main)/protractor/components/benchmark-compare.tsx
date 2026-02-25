@@ -65,14 +65,6 @@ const VIDEO_METRICS: MetricDef[] = [
 
 const ENGAGEMENT_METRICS: MetricDef[] = [
   {
-    label: "광고 CTR",
-    insightKey: "ctr",
-    benchKey: "avg_ctr",
-    benchGroup: "conversion",
-    higherBetter: true,
-    format: fmtPercent,
-  },
-  {
     label: "좋아요/만노출",
     insightKey: "reactions_per_10k",
     benchKey: "avg_reactions_per_10k",
@@ -100,9 +92,9 @@ const ENGAGEMENT_METRICS: MetricDef[] = [
 
 const CONVERSION_METRICS: MetricDef[] = [
   {
-    label: "클릭→장바구니",
-    insightKey: "click_to_cart_rate",
-    benchKey: "avg_click_to_cart_rate",
+    label: "CTR",
+    insightKey: "ctr",
+    benchKey: "avg_ctr",
     benchGroup: "conversion",
     higherBetter: true,
     format: fmtPercent,
@@ -127,6 +119,14 @@ const CONVERSION_METRICS: MetricDef[] = [
     label: "클릭→구매",
     insightKey: "click_to_purchase_rate",
     benchKey: "avg_click_to_purchase_rate",
+    benchGroup: "conversion",
+    higherBetter: true,
+    format: fmtPercent,
+  },
+  {
+    label: "노출→구매",
+    insightKey: "reach_to_purchase_rate",
+    benchKey: "avg_reach_to_purchase_rate",
     benchGroup: "conversion",
     higherBetter: true,
     format: fmtPercent,

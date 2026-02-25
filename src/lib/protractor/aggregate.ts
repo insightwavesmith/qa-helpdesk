@@ -231,8 +231,8 @@ function formatCompact(n: number): string {
 }
 
 /**
- * impressions → clicks → cart (click_to_cart_rate 기반 추정) → purchases
- * cart 값은 clicks * avg(click_to_cart_rate)/100 으로 추정
+ * 노출 → 클릭 → 결제시작 → 구매
+ * 결제시작 추정: clicks * avg(click_to_checkout_rate)/100
  */
 export function toFunnelData(insights: AdInsightRow[]): {
   steps: FunnelStepData[];
@@ -242,17 +242,17 @@ export function toFunnelData(insights: AdInsightRow[]): {
   const totalClicks = insights.reduce((s, r) => s + (r.clicks || 0), 0);
   const totalPurchases = insights.reduce((s, r) => s + (r.purchases || 0), 0);
 
-  // cart 추정: clicks * avg click_to_cart_rate
-  const cartRates = insights
-    .filter((r) => r.click_to_cart_rate != null && r.click_to_cart_rate > 0);
-  const avgCartRate = cartRates.length > 0
-    ? cartRates.reduce((s, r) => s + (r.click_to_cart_rate ?? 0), 0) / cartRates.length
+  // 결제시작 추정: clicks * avg click_to_checkout_rate
+  const checkoutRates = insights
+    .filter((r) => r.click_to_checkout_rate != null && r.click_to_checkout_rate > 0);
+  const avgCheckoutRate = checkoutRates.length > 0
+    ? checkoutRates.reduce((s, r) => s + (r.click_to_checkout_rate ?? 0), 0) / checkoutRates.length
     : 0;
-  const estimatedCart = Math.round(totalClicks * avgCartRate / 100);
+  const estimatedCheckout = Math.round(totalClicks * avgCheckoutRate / 100);
 
   const ctrPct = totalImpressions > 0 ? (totalClicks / totalImpressions * 100).toFixed(2) : "0";
-  const clickToCartPct = totalClicks > 0 ? (estimatedCart / totalClicks * 100).toFixed(2) : "0";
-  const cartToPurchasePct = estimatedCart > 0 ? (totalPurchases / estimatedCart * 100).toFixed(1) : "0";
+  const clickToCheckoutPct = totalClicks > 0 ? (estimatedCheckout / totalClicks * 100).toFixed(2) : "0";
+  const checkoutToPurchasePct = estimatedCheckout > 0 ? (totalPurchases / estimatedCheckout * 100).toFixed(1) : "0";
   const overallRate = totalImpressions > 0 ? (totalPurchases / totalImpressions * 100).toFixed(3) : "0";
 
   return {
@@ -271,17 +271,17 @@ export function toFunnelData(insights: AdInsightRow[]): {
         color: { border: "border-blue-200", bg: "bg-blue-50", text: "text-blue-700" },
       },
       {
-        label: "장바구니",
-        value: formatCompact(estimatedCart),
-        rawValue: estimatedCart,
-        conversionRate: clickToCartPct,
+        label: "결제시작",
+        value: formatCompact(estimatedCheckout),
+        rawValue: estimatedCheckout,
+        conversionRate: clickToCheckoutPct,
         color: { border: "border-amber-200", bg: "bg-amber-50", text: "text-amber-700" },
       },
       {
         label: "구매",
         value: formatCompact(totalPurchases),
         rawValue: totalPurchases,
-        conversionRate: cartToPurchasePct,
+        conversionRate: checkoutToPurchasePct,
         color: { border: "border-emerald-200", bg: "bg-emerald-50", text: "text-emerald-700" },
       },
     ],

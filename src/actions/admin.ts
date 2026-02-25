@@ -45,6 +45,7 @@ export async function approveMember(
     meta_account_id?: string;
     mixpanel_project_id?: string;
     mixpanel_secret_key?: string;
+    mixpanel_board_id?: string;
   }
 ) {
   const supabase = await requireAdmin();
@@ -63,6 +64,45 @@ export async function approveMember(
   if (error) {
     console.error("approveMember error:", error);
     return { error: error.message };
+  }
+
+  // ad_accounts + service_secrets UPSERT (총가치각도기 연동)
+  if (extra?.meta_account_id) {
+    const svc = createServiceClient();
+    const { data: existing } = await svc
+      .from("ad_accounts")
+      .select("id")
+      .eq("account_id", extra.meta_account_id)
+      .maybeSingle();
+
+    if (existing) {
+      await svc.from("ad_accounts").update({
+        user_id: userId,
+        mixpanel_project_id: extra.mixpanel_project_id || null,
+        mixpanel_board_id: extra.mixpanel_board_id || null,
+      }).eq("id", existing.id);
+    } else {
+      await svc.from("ad_accounts").insert({
+        account_id: extra.meta_account_id,
+        user_id: userId,
+        account_name: extra.meta_account_id,
+        mixpanel_project_id: extra.mixpanel_project_id || null,
+        mixpanel_board_id: extra.mixpanel_board_id || null,
+        active: true,
+      });
+    }
+
+    // service_secrets UPSERT (mixpanel secret key)
+    if (extra.mixpanel_secret_key) {
+      await svc
+        .from("service_secrets" as never)
+        .upsert({
+          user_id: userId,
+          service: "mixpanel",
+          key_name: `secret_${extra.meta_account_id}`,
+          key_value: extra.mixpanel_secret_key,
+        } as never, { onConflict: "user_id,service,key_name" } as never);
+    }
   }
 
   revalidatePath("/admin/members");

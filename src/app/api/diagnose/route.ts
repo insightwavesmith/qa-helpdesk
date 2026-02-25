@@ -17,7 +17,7 @@ import { diagnoseAd, Verdict } from '@/lib/diagnosis';
 function transformBenchmarks(
   rows: { metric_name: string; avg_value: number | null; p75: number | null; p25: number | null }[],
 ): Record<string, Record<string, number>> {
-  const rankingTypes = ['quality', 'engagement', 'conversion'];
+  const rankingTypes = ['engagement', 'conversion'];
   const result: Record<string, Record<string, number>> = {};
 
   for (const rt of rankingTypes) {
@@ -77,17 +77,33 @@ export async function POST(request: Request) {
       .order('calculated_at', { ascending: false })
       .limit(1);
 
-    let benchmarks: Record<string, Record<string, number>> = {};
+    // creative_type별 벤치마크 Map
+    const benchmarksByType = new Map<string, Record<string, Record<string, number>>>();
+
     if (latestBench && latestBench.length > 0) {
       const { data: benchRows } = await svc
         .from('benchmarks')
-        .select('metric_name, avg_value, p75, p25')
+        .select('metric_name, avg_value, p75, p25, creative_type')
         .eq('date', latestBench[0].date);
 
       if (benchRows) {
-        benchmarks = transformBenchmarks(benchRows);
+        // creative_type별 그룹핑 (benchRows를 unknown 경유로 캐스트 — creative_type 컬럼은 DB에 존재하나 SDK 타입 추론 미반영)
+        const typedRows = benchRows as unknown as { metric_name: string; avg_value: number | null; p75: number | null; p25: number | null; creative_type: string | null }[];
+        const groups = new Map<string, typeof typedRows>();
+        for (const row of typedRows) {
+          const ct = row.creative_type ?? 'ALL';
+          if (!groups.has(ct)) groups.set(ct, []);
+          groups.get(ct)!.push(row);
+        }
+
+        for (const [ct, rows] of groups) {
+          benchmarksByType.set(ct, transformBenchmarks(rows));
+        }
       }
     }
+
+    // 폴백: ALL 벤치마크
+    const allBenchmarks = benchmarksByType.get('ALL') ?? {};
 
     // 5. TOP N 광고 조회 (daily_ad_insights 테이블)
     // select('*') returns all DB columns including those not in TypeScript types
@@ -117,8 +133,8 @@ export async function POST(request: Request) {
     const rateKeys = [
       'video_p3s_rate', 'thruplay_rate', 'retention_rate',
       'reactions_per_10k', 'comments_per_10k', 'shares_per_10k', 'engagement_per_10k',
-      'click_to_cart_rate', 'click_to_checkout_rate', 'click_to_purchase_rate',
-      'cart_to_purchase_rate', 'checkout_to_purchase_rate',
+      'click_to_checkout_rate', 'click_to_purchase_rate',
+      'checkout_to_purchase_rate',
     ];
 
     for (const row of rawInsights) {
@@ -150,7 +166,9 @@ export async function POST(request: Request) {
 
     // 6. 각 광고 진단 실행
     const results = topAds.map((ad) => {
-      const diagnosis = diagnoseAd(ad, benchmarks, null);
+      const adCreativeType = ((ad.creative_type as string) ?? 'ALL').toUpperCase();
+      const benchmarks = benchmarksByType.get(adCreativeType) ?? allBenchmarks;
+      const diagnosis = diagnoseAd(ad, benchmarks);
       return {
         ad_id: diagnosis.adId,
         ad_name: diagnosis.adName,
