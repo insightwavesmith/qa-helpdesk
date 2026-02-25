@@ -82,32 +82,7 @@ export async function GET() {
       }
     }
 
-    // 3) Mixpanel 최신 수집일 + 세션 수 (최근 3일 내 데이터)
-    const { data: lpData } = await svc
-      .from("daily_lp_metrics")
-      .select("account_id, date, total_users")
-      .in("account_id", accountIds)
-      .gte("date", threeDaysAgoStr)
-      .order("date", { ascending: false });
-
-    const mixpanelStatusMap = new Map<
-      string,
-      { lastDate: string; sessions: number }
-    >();
-    for (const row of lpData || []) {
-      const existing = mixpanelStatusMap.get(row.account_id);
-      if (!existing) {
-        mixpanelStatusMap.set(row.account_id, {
-          lastDate: row.date,
-          sessions: row.total_users || 0,
-        });
-      } else {
-        if (row.date > existing.lastDate) existing.lastDate = row.date;
-        existing.sessions += row.total_users || 0;
-      }
-    }
-
-    // 4) service_secrets 유무 체크
+    // 3) service_secrets 유무 체크
     const secretKeyNames = accountIds.map((id) => `secret_${id}`);
     const { data: secrets } = await svc
       .from("service_secrets" as never)
@@ -121,19 +96,15 @@ export async function GET() {
       )
     );
 
-    // 5) 결과 조합
+    // 4) 결과 조합
     const result = (accounts || []).map((acc) => {
       const meta = metaStatusMap.get(acc.account_id);
-      const mixpanel = mixpanelStatusMap.get(acc.account_id);
       const hasSecret = secretSet.has(acc.account_id);
 
       const metaOk = !!meta;
-      const mixpanelOk = !!mixpanel;
+      const mixpanelOk = false;
 
-      let mixpanelState: "ok" | "no_data" | "not_configured";
-      if (mixpanelOk) mixpanelState = "ok";
-      else if (hasSecret) mixpanelState = "no_data";
-      else mixpanelState = "not_configured";
+      const mixpanelState: "no_data" | "not_configured" = hasSecret ? "no_data" : "not_configured";
 
       return {
         id: acc.id,
@@ -148,8 +119,8 @@ export async function GET() {
         mixpanel: {
           ok: mixpanelOk,
           state: mixpanelState,
-          last_date: mixpanel?.lastDate || null,
-          sessions: mixpanel?.sessions || 0,
+          last_date: null,
+          sessions: 0,
         },
       };
     });

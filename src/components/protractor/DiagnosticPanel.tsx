@@ -9,6 +9,7 @@ interface DiagnosticIssue {
   title: string;
   description: string;
   severity: Severity;
+  partName?: string;
 }
 
 interface DiagnosticPanelProps {
@@ -142,36 +143,58 @@ export function DiagnosticPanel({
               발견된 이슈
             </h3>
             <div className="flex flex-col gap-3">
-              {issues.map((issue) => {
-                const config = severityConfig[issue.severity];
-                const Icon = config.icon;
-
-                return (
-                  <div
-                    key={issue.title}
-                    className={`flex gap-3 rounded-lg border border-border p-3 ${config.bg}`}
-                  >
-                    <Icon
-                      className={`mt-0.5 h-4 w-4 shrink-0 ${config.iconColor}`}
-                    />
-                    <div className="flex flex-1 flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-card-foreground">
-                          {issue.title}
-                        </span>
-                        <span
-                          className={`inline-flex items-center rounded-full border px-1.5 py-0 text-[10px] font-semibold ${config.badgeBg} ${config.badgeText} ${config.badgeBorder}`}
-                        >
-                          {issue.severity}
-                        </span>
+              {(() => {
+                // partName이 있는 이슈가 있으면 그룹핑
+                const hasPartNames = issues.some((i) => i.partName);
+                if (!hasPartNames) {
+                  return issues.map((issue) => {
+                    const config = severityConfig[issue.severity];
+                    const Icon = config.icon;
+                    return (
+                      <div key={issue.title} className={`flex gap-3 rounded-lg border border-border p-3 ${config.bg}`}>
+                        <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${config.iconColor}`} />
+                        <div className="flex flex-1 flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-card-foreground">{issue.title}</span>
+                            <span className={`inline-flex items-center rounded-full border px-1.5 py-0 text-[10px] font-semibold ${config.badgeBg} ${config.badgeText} ${config.badgeBorder}`}>{issue.severity}</span>
+                          </div>
+                          <p className="text-xs leading-relaxed text-muted-foreground">{issue.description}</p>
+                        </div>
                       </div>
-                      <p className="text-xs leading-relaxed text-muted-foreground">
-                        {issue.description}
-                      </p>
-                    </div>
+                    );
+                  });
+                }
+
+                // 파트별 그룹핑
+                const grouped = new Map<string, DiagnosticIssue[]>();
+                for (const issue of issues) {
+                  const key = issue.partName ?? "기타";
+                  if (!grouped.has(key)) grouped.set(key, []);
+                  grouped.get(key)!.push(issue);
+                }
+
+                return Array.from(grouped.entries()).map(([partName, partIssues]) => (
+                  <div key={partName}>
+                    <h4 className="text-xs font-semibold text-muted-foreground mb-2 mt-3 first:mt-0">{partName}</h4>
+                    {partIssues.map((issue) => {
+                      const config = severityConfig[issue.severity];
+                      const Icon = config.icon;
+                      return (
+                        <div key={issue.title} className={`flex gap-3 rounded-lg border border-border p-3 mb-2 last:mb-0 ${config.bg}`}>
+                          <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${config.iconColor}`} />
+                          <div className="flex flex-1 flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-card-foreground">{issue.title}</span>
+                              <span className={`inline-flex items-center rounded-full border px-1.5 py-0 text-[10px] font-semibold ${config.badgeBg} ${config.badgeText} ${config.badgeBorder}`}>{issue.severity}</span>
+                            </div>
+                            <p className="text-xs leading-relaxed text-muted-foreground">{issue.description}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                ));
+              })()}
             </div>
           </div>
         </div>

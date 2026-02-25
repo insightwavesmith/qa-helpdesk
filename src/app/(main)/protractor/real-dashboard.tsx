@@ -48,6 +48,7 @@ interface DiagnosisIssue {
   title: string;
   description: string;
   severity: "심각" | "주의" | "양호";
+  partName?: string;
 }
 
 interface DiagnosisData {
@@ -104,18 +105,21 @@ function verdictToGrade(diagnoses: {
           title: `${d.ad_name.substring(0, 30)} - ${part.part_name}`,
           description: badMetrics ? `미달 지표: ${badMetrics}` : `${part.part_name} 파트 전체가 미달입니다.`,
           severity: "심각",
+          partName: part.part_name,
         });
       } else if (part.verdict === "🟡") {
         issues.push({
           title: `${d.ad_name.substring(0, 30)} - ${part.part_name}`,
           description: `${part.part_name} 파트가 보통 수준입니다. 개선 여지가 있습니다.`,
           severity: "주의",
+          partName: part.part_name,
         });
       } else if (part.verdict === "🟢") {
         issues.push({
           title: `${d.ad_name.substring(0, 30)} - ${part.part_name}`,
           description: `${part.part_name} 파트가 우수합니다.`,
           severity: "양호",
+          partName: part.part_name,
         });
       }
     }

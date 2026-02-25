@@ -82,7 +82,7 @@ const SAMPLE_FUNNEL_STEPS = [
     color: { border: "border-blue-200", bg: "bg-blue-50", text: "text-blue-700" },
   },
   {
-    label: "장바구니",
+    label: "결제시작",
     value: "2.3K",
     rawValue: 2340,
     conversionRate: "12.49",

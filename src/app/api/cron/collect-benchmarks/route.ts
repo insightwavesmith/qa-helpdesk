@@ -45,9 +45,9 @@ function percentile(sorted: number[], p: number): number {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
 }
 
-// ── POST /api/cron/collect-benchmarks ─────────────────────────
+// ── GET /api/cron/collect-benchmarks ─────────────────────────
 // Vercel Cron: 매주 월요일 00:00 UTC (KST 09:00)
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
   if (!verifyCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

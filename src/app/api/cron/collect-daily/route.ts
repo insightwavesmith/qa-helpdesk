@@ -323,9 +323,9 @@ async function fetchAccountInsights(accountId: string) {
 //   };
 // }
 
-// ── POST /api/cron/collect-daily ──────────────────────────────
+// ── GET /api/cron/collect-daily ──────────────────────────────
 // Vercel Cron: 매일 01:00 UTC (KST 10:00)
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
   if (!verifyCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

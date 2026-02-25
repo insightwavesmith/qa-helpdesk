@@ -143,8 +143,17 @@ export function OverlapAnalysis({
     );
   }
 
-  // 에러
+  // 에러 — 사용자 친화적 빈 상태 UI
   if (error) {
+    if (error.includes("필수") || error.includes("활성 캠페인") || error.includes("접근 권한")) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+          <BarChart3 className="h-10 w-10" />
+          <p className="mt-3 text-base font-medium">타겟중복 분석을 사용할 수 없습니다</p>
+          <p className="mt-1 text-sm">{error}</p>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-20">
         <div className="flex items-center gap-2 text-sm text-destructive">
