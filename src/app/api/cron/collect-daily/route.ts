@@ -110,7 +110,7 @@ function calculateMetrics(insight: Record<string, any>) {
     click_to_checkout_rate: clicks > 0 ? round(initiateCheckout / clicks * 100, 4) : null,
     click_to_purchase_rate: clicks > 0 ? round(purchases / clicks * 100, 4) : null,
     checkout_to_purchase_rate: initiateCheckout > 0 ? round(purchases / initiateCheckout * 100, 4) : null,
-    reach_to_purchase_rate: reach > 0 ? round(purchases / reach * 100, 6) : null,
+    reach_to_purchase_rate: impressions > 0 ? round(purchases / impressions * 100, 6) : null,
     // 크리에이티브 타입
     creative_type: videoP3s > 0 ? 'VIDEO' : 'IMAGE',
   };
