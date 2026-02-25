@@ -337,16 +337,26 @@ export async function GET(req: NextRequest) {
     .slice(0, 10);
 
   try {
-    // 1. active ad_accounts 조회
-    const { data: accounts, error: accErr } = await svc
-      .from("ad_accounts")
-      .select("account_id, account_name, mixpanel_project_id")
-      .eq("active", true);
+    // 1. Meta API로 접근 가능한 전체 광고계정 조회
+    const token = process.env.META_ACCESS_TOKEN;
+    if (!token) throw new Error("META_ACCESS_TOKEN not set");
 
-    if (accErr) throw accErr;
-    if (!accounts || accounts.length === 0) {
-      return NextResponse.json({ message: "No active accounts", results: [] });
+    const adAccountsUrl = new URL("https://graph.facebook.com/v21.0/me/adaccounts");
+    adAccountsUrl.searchParams.set("access_token", token);
+    adAccountsUrl.searchParams.set("fields", "account_id,name");
+    adAccountsUrl.searchParams.set("limit", "500");
+
+    const adAccountsRes = await fetch(adAccountsUrl.toString());
+    const adAccountsJson = await adAccountsRes.json();
+
+    if (!adAccountsJson.data || adAccountsJson.data.length === 0) {
+      return NextResponse.json({ message: "No accessible accounts", results: [] });
     }
+
+    const accounts = adAccountsJson.data.map((a: any) => ({
+      account_id: a.account_id.replace(/^act_/, ""),
+      account_name: a.name,
+    }));
 
     const results: Record<string, unknown>[] = [];
 
