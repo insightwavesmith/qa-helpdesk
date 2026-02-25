@@ -124,8 +124,9 @@ async function fetchAccountInsights(accountId: string) {
   const fields =
     "spend,impressions,clicks,actions,action_values,ctr,cpc,cpm,frequency,reach,video_p3s_watched_actions,video_thruplay_watched_actions";
 
+  const cleanId = accountId.replace(/^act_/, "");
   const url = new URL(
-    `https://graph.facebook.com/v21.0/act_${accountId}/insights`
+    `https://graph.facebook.com/v21.0/act_${cleanId}/insights`
   );
   url.searchParams.set("access_token", token);
   url.searchParams.set("fields", fields);
@@ -461,7 +462,7 @@ export async function GET(req: NextRequest) {
   } catch (e) {
     console.error("collect-daily fatal error:", e);
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Unknown error" },
+      { error: e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? (e as { message: string }).message : "Unknown error" },
       { status: 500 }
     );
   }

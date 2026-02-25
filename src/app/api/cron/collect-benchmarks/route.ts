@@ -147,7 +147,7 @@ export async function GET(req: NextRequest) {
   } catch (e) {
     console.error("collect-benchmarks error:", e);
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Unknown error" },
+      { error: e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? (e as { message: string }).message : "Unknown error" },
       { status: 500 }
     );
   }
