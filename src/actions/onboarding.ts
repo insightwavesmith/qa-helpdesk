@@ -108,6 +108,100 @@ export async function saveAdAccount(data: {
     .eq("id", user.id);
 
   if (error) return { error: error.message };
+
+  // ad_accounts + service_secrets 동기화 (총가치각도기 연동)
+  if (data.metaAccountId) {
+    const { data: existing } = await svc
+      .from("ad_accounts")
+      .select("id")
+      .eq("account_id", data.metaAccountId)
+      .maybeSingle();
+
+    if (existing) {
+      await svc.from("ad_accounts").update({
+        user_id: user.id,
+        mixpanel_project_id: data.mixpanelProjectId || null,
+        mixpanel_board_id: data.mixpanelBoardId || null,
+      }).eq("id", existing.id);
+    } else {
+      await svc.from("ad_accounts").insert({
+        account_id: data.metaAccountId,
+        user_id: user.id,
+        account_name: data.metaAccountId,
+        mixpanel_project_id: data.mixpanelProjectId || null,
+        mixpanel_board_id: data.mixpanelBoardId || null,
+        active: true,
+      });
+    }
+
+    if (data.mixpanelSecretKey) {
+      await svc
+        .from("service_secrets" as never)
+        .upsert({
+          user_id: user.id,
+          service: "mixpanel",
+          key_name: `secret_${data.metaAccountId}`,
+          key_value: data.mixpanelSecretKey,
+        } as never, { onConflict: "user_id,service,key_name" } as never);
+    }
+  }
+
+  return { error: null };
+}
+
+// 설정 페이지에서 광고계정 동기화 (ad_accounts + service_secrets)
+export async function syncAdAccount(data: {
+  metaAccountId: string | null;
+  mixpanelProjectId: string | null;
+  mixpanelSecretKey: string | null;
+  mixpanelBoardId: string | null;
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "인증되지 않은 사용자입니다" };
+
+  const svc = createServiceClient();
+
+  if (data.metaAccountId) {
+    const { data: existing } = await svc
+      .from("ad_accounts")
+      .select("id")
+      .eq("account_id", data.metaAccountId)
+      .maybeSingle();
+
+    if (existing) {
+      await svc.from("ad_accounts").update({
+        user_id: user.id,
+        mixpanel_project_id: data.mixpanelProjectId || null,
+        mixpanel_board_id: data.mixpanelBoardId || null,
+        active: true,
+      }).eq("id", existing.id);
+    } else {
+      await svc.from("ad_accounts").insert({
+        account_id: data.metaAccountId,
+        user_id: user.id,
+        account_name: data.metaAccountId,
+        mixpanel_project_id: data.mixpanelProjectId || null,
+        mixpanel_board_id: data.mixpanelBoardId || null,
+        active: true,
+      });
+    }
+
+    if (data.mixpanelSecretKey) {
+      await svc
+        .from("service_secrets" as never)
+        .upsert({
+          user_id: user.id,
+          service: "mixpanel",
+          key_name: `secret_${data.metaAccountId}`,
+          key_value: data.mixpanelSecretKey,
+        } as never, { onConflict: "user_id,service,key_name" } as never);
+    }
+  } else {
+    // meta_account_id가 비었으면 기존 ad_accounts 비활성화
+    await svc.from("ad_accounts").update({ active: false }).eq("user_id", user.id);
+  }
+
   return { error: null };
 }
 

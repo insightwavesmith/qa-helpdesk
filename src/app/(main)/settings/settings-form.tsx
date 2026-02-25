@@ -15,6 +15,7 @@ import {
 import { Bell, Save, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { syncAdAccount } from "@/actions/onboarding";
 
 interface Profile {
   name: string | null;
@@ -74,10 +75,24 @@ export function SettingsForm({ profile, userId }: SettingsFormProps) {
       .update(updates)
       .eq("id", userId);
 
+    if (error) {
+      setSaving(false);
+      toast.error("저장에 실패했습니다.");
+      return;
+    }
+
+    // ad_accounts + service_secrets 동기화
+    const syncResult = await syncAdAccount({
+      metaAccountId: updates.meta_account_id,
+      mixpanelProjectId: updates.mixpanel_project_id,
+      mixpanelSecretKey: updates.mixpanel_secret_key,
+      mixpanelBoardId: updates.mixpanel_board_id,
+    });
+
     setSaving(false);
 
-    if (error) {
-      toast.error("저장에 실패했습니다.");
+    if (syncResult.error) {
+      toast.error("광고계정 동기화에 실패했습니다.");
     } else {
       toast.success("프로필이 저장되었습니다.");
     }

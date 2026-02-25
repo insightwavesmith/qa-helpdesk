@@ -78,7 +78,7 @@ function calculateMetrics(insight: Record<string, any>) {
   const roas = spend > 0 ? purchaseValue / spend : 0;
 
   // 영상 지표
-  const videoP3s = getVideoActionValue(insight.video_p3s_watched_actions);
+  const videoP3s = getVideoActionValue(insight.video_play_actions);
   const thruplay = getVideoActionValue(insight.video_thruplay_watched_actions);
 
   // 참여 지표
@@ -122,7 +122,7 @@ async function fetchAccountInsights(accountId: string) {
   if (!token) throw new Error("META_ACCESS_TOKEN not set");
 
   const fields =
-    "spend,impressions,clicks,actions,action_values,ctr,cpc,cpm,frequency,reach,video_p3s_watched_actions,video_thruplay_watched_actions";
+    "spend,impressions,clicks,actions,action_values,ctr,cpc,cpm,frequency,reach,video_play_actions,video_thruplay_watched_actions";
 
   const cleanId = accountId.replace(/^act_/, "");
   const url = new URL(

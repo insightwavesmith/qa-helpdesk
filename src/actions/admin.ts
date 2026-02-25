@@ -312,11 +312,39 @@ export async function getMemberDetail(userId: string) {
   return { profile: profileRes.data, accounts: accountsRes.data || [] };
 }
 
-// A2: 프로필 수정
+// A2: 프로필 수정 + ad_accounts 동기화
 export async function updateMember(userId: string, data: ProfileUpdate) {
   const svc = await requireAdmin();
   const { error } = await svc.from('profiles').update(data).eq('id', userId);
   if (error) return { error: error.message };
+
+  // ad_accounts 동기화 (총가치각도기 연동)
+  const metaAccountId = data.meta_account_id;
+  if (metaAccountId) {
+    const { data: existing } = await svc
+      .from("ad_accounts")
+      .select("id")
+      .eq("account_id", metaAccountId)
+      .maybeSingle();
+
+    if (existing) {
+      await svc.from("ad_accounts").update({
+        user_id: userId,
+        mixpanel_project_id: data.mixpanel_project_id || null,
+        mixpanel_board_id: data.mixpanel_board_id || null,
+      }).eq("id", existing.id);
+    } else {
+      await svc.from("ad_accounts").insert({
+        account_id: metaAccountId,
+        user_id: userId,
+        account_name: metaAccountId,
+        mixpanel_project_id: data.mixpanel_project_id || null,
+        mixpanel_board_id: data.mixpanel_board_id || null,
+        active: true,
+      });
+    }
+  }
+
   revalidatePath('/admin/members');
   return { error: null };
 }
