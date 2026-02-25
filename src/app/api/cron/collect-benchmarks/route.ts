@@ -12,6 +12,8 @@ function verifyCron(req: NextRequest): boolean {
 const BENCHMARK_METRICS = [
   "roas",
   "ctr",
+  "cpc",
+  "cpm",
   "spend",
   "impressions",
   "clicks",
@@ -45,8 +47,10 @@ function percentile(sorted: number[], p: number): number {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
 }
 
+export const maxDuration = 300; // 5분 (Vercel Pro 최대)
+
 // ── GET /api/cron/collect-benchmarks ─────────────────────────
-// Vercel Cron: 매주 월요일 00:00 UTC (KST 09:00)
+// Vercel Cron: 매주 월요일 02:00 UTC (KST 11:00)
 export async function GET(req: NextRequest) {
   if (!verifyCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -62,12 +66,13 @@ export async function GET(req: NextRequest) {
 
   try {
     // 1. daily_ad_insights에서 최근 7일 데이터 조회 (creative_type 포함)
-    const { data: insights, error: fetchErr } = await svc
+    // cpc, cpm 컬럼은 DB 마이그레이션 후 사용 가능
+    const { data: insights, error: fetchErr } = (await svc
       .from("daily_ad_insights")
-      .select("roas, ctr, spend, impressions, clicks, purchases, purchase_value, video_p3s_rate, thruplay_rate, retention_rate, reactions_per_10k, comments_per_10k, shares_per_10k, engagement_per_10k, click_to_checkout_rate, checkout_to_purchase_rate, click_to_purchase_rate, reach_to_purchase_rate, creative_type")
+      .select("*")
       .gte("date", sevenDaysAgo)
       .lte("date", today)
-      .gte("impressions", 3500);
+      .gte("impressions", 3500)) as { data: Record<string, unknown>[] | null; error: Error | null };
 
     if (fetchErr) throw fetchErr;
 

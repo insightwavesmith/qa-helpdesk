@@ -61,9 +61,6 @@ function calculateMetrics(insight: Record<string, any>) {
   const actions: Action[] = insight.actions ?? [];
   const actionValues: Action[] = insight.action_values ?? [];
 
-  const addToCart =
-    getActionValue(actions, "add_to_cart") ||
-    getActionValue(actions, "omni_add_to_cart");
   const initiateCheckout =
     getActionValue(actions, "initiate_checkout") ||
     getActionValue(actions, "omni_initiated_checkout");
@@ -95,7 +92,9 @@ function calculateMetrics(insight: Record<string, any>) {
     purchase_value: round(purchaseValue, 2),
     ctr: round(ctr, 4),
     roas: round(roas, 4),
-    add_to_cart: Math.trunc(addToCart),
+    cpc: safeFloat(insight.cpc),
+    cpm: safeFloat(insight.cpm),
+    frequency: safeFloat(insight.frequency),
     initiate_checkout: Math.trunc(initiateCheckout),
     // 영상 지표
     video_p3s_rate: impressions > 0 ? round(videoP3s / impressions * 100, 4) : null,
@@ -324,8 +323,10 @@ async function fetchAccountInsights(accountId: string) {
 //   };
 // }
 
+export const maxDuration = 300; // 5분 (Vercel Pro 최대)
+
 // ── GET /api/cron/collect-daily ──────────────────────────────
-// Vercel Cron: 매일 01:00 UTC (KST 10:00)
+// Vercel Cron: 매일 03:00 UTC (KST 12:00)
 export async function GET(req: NextRequest) {
   if (!verifyCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

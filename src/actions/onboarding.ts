@@ -120,6 +120,7 @@ export async function saveAdAccount(data: {
     if (existing) {
       await svc.from("ad_accounts").update({
         user_id: user.id,
+        active: true,
         mixpanel_project_id: data.mixpanelProjectId || null,
         mixpanel_board_id: data.mixpanelBoardId || null,
       }).eq("id", existing.id);

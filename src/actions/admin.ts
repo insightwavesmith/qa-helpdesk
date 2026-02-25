@@ -78,6 +78,7 @@ export async function approveMember(
     if (existing) {
       await svc.from("ad_accounts").update({
         user_id: userId,
+        active: true,
         mixpanel_project_id: extra.mixpanel_project_id || null,
         mixpanel_board_id: extra.mixpanel_board_id || null,
       }).eq("id", existing.id);
