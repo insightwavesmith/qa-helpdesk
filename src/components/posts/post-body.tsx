@@ -32,12 +32,18 @@ function markdownToHtml(md: string): string {
   // Inline code
   html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
 
-  // Images with IMAGE_PLACEHOLDER → figure with data-unsplash-query
-  html = html.replace(/!\[([^\]]*)\]\(IMAGE_PLACEHOLDER\)/g,
-    '<figure class="post-image-figure"><img data-unsplash-query="$1" src="" loading="lazy" alt="$1" /><figcaption>$1</figcaption></figure>');
+  // Images with IMAGE_PLACEHOLDER (including backslash-escaped IMAGE\_PLACEHOLDER) → figure with data-unsplash-query
+  const placeholderDataUri = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+  html = html.replace(/!\[([^\]]*)\]\(IMAGE\\?_PLACEHOLDER\)/g,
+    `<figure class="post-image-figure"><img data-unsplash-query="$1" src="${placeholderDataUri}" loading="lazy" alt="$1" /><figcaption>$1</figcaption></figure>`);
 
-  // Regular images
-  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />');
+  // Regular images (with IMAGE_PLACEHOLDER guard for any remaining variants)
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt, src) => {
+    if (/IMAGE.*PLACEHOLDER/i.test(src)) {
+      return `<figure class="post-image-figure"><img data-unsplash-query="${alt}" src="${placeholderDataUri}" loading="lazy" alt="${alt}" /><figcaption>${alt}</figcaption></figure>`;
+    }
+    return `<img src="${src}" alt="${alt}" />`;
+  });
 
   // CTA links (text contains →)
   html = html.replace(/\[([^\]]*→[^\]]*)\]\(([^)]+)\)/g,
@@ -45,6 +51,10 @@ function markdownToHtml(md: string): string {
 
   // Regular links
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+  // Standalone CTA text (line ending with → but not already a link)
+  html = html.replace(/^(?!.*<a\b)(.+→)\s*$/gm,
+    '<p class="cta-standalone"><a href="https://bscamp.co.kr" target="_blank" rel="noopener noreferrer" class="cta-link">$1</a></p>');
 
   // Headings (h2, h3 only — h1 is the title)
   html = html.replace(/^### (.+)$/gm, "<h3>$1</h3>");
@@ -112,7 +122,7 @@ function markdownToHtml(md: string): string {
       const trimmed = block.trim();
       if (!trimmed) return "";
       // Skip blocks already wrapped in HTML tags
-      if (/^<(h[23]|ul|ol|li|blockquote|pre|table|hr|img|div|figure)/.test(trimmed)) {
+      if (/^<(h[23]|p|ul|ol|li|blockquote|pre|table|hr|img|div|figure)/.test(trimmed)) {
         return trimmed;
       }
       // Wrap plain text lines in <p>
@@ -121,7 +131,7 @@ function markdownToHtml(md: string): string {
         .map((line: string) => {
           const l = line.trim();
           if (!l) return "";
-          if (/^<(h[23]|ul|ol|li|blockquote|pre|table|hr|img|div|figure)/.test(l)) return l;
+          if (/^<(h[23]|p|ul|ol|li|blockquote|pre|table|hr|img|div|figure)/.test(l)) return l;
           return `<p>${l}</p>`;
         })
         .join("\n");

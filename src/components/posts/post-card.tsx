@@ -59,6 +59,7 @@ function CategoryBadge({ category }: { category: string }) {
 }
 
 function Thumbnail({ title, category, thumbnailUrl }: { title: string; category: string; thumbnailUrl?: string | null }) {
+  const isOgFallback = !thumbnailUrl;
   return (
     <Image
       src={thumbnailUrl || `/api/og?title=${encodeURIComponent(title)}&category=${encodeURIComponent(category)}`}
@@ -66,6 +67,7 @@ function Thumbnail({ title, category, thumbnailUrl }: { title: string; category:
       width={640}
       height={360}
       className="w-full aspect-video object-cover"
+      unoptimized={isOgFallback}
     />
   );
 }
