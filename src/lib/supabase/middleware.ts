@@ -15,6 +15,7 @@ const PUBLIC_PATHS = [
   "/reset-password",
   "/api/auth/callback",
   "/api/og",
+  "/api/cron",
 ];
 
 // 정확히 "/" 만 매칭 (startsWith("/")는 모든 경로 매칭하므로 별도 처리)
