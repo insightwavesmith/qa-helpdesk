@@ -155,6 +155,15 @@ export default function RealDashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 1-a) 선택된 계정이 목록에 없으면 첫 번째 활성 계정으로 자동 전환
+  useEffect(() => {
+    if (!selectedAccountId || accounts.length === 0) return;
+    const exists = accounts.some((a) => a.account_id === selectedAccountId);
+    if (!exists) {
+      setSelectedAccountId(accounts[0].account_id);
+    }
+  }, [accounts, selectedAccountId]);
+
   // 1-b) 벤치마크 로드 (한 번만)
   useEffect(() => {
     (async () => {

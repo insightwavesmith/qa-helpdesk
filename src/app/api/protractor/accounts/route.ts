@@ -10,7 +10,7 @@ export async function GET() {
     if ("response" in auth) return auth.response;
     const { user, profile, svc } = auth;
 
-    let query = svc.from("ad_accounts").select("*");
+    let query = svc.from("ad_accounts").select("*").eq("active", true);
     if (profile.role !== "admin") {
       query = query.eq("user_id", user.id);
     }

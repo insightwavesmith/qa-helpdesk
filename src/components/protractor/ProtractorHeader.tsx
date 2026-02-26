@@ -46,7 +46,9 @@ export function ProtractorHeader({
           </h1>
           <p className="text-xs text-gray-400">
             {selectedAccount
-              ? `${selectedAccount.account_name || selectedAccount.account_id} · ${selectedAccount.account_id}`
+              ? selectedAccount.account_name
+                ? `${selectedAccount.account_name} · ${selectedAccount.account_id}`
+                : selectedAccount.account_id
               : "Meta 광고 성과 진단"}
           </p>
         </div>
