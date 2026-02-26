@@ -21,7 +21,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, FileText, Plus, Newspaper, Mail, Sparkles } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getContents } from "@/actions/contents";
 import { getCurationCount } from "@/actions/curation";
 import type { Content } from "@/types/content";
@@ -64,6 +64,8 @@ const TYPE_LABEL: Record<string, string> = {
 
 export default function AdminContentPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get("tab") ?? "curation";
   const [contents, setContents] = useState<Content[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -165,7 +167,14 @@ export default function AdminContentPage() {
       </div>
 
       {/* Hub Tabs */}
-      <Tabs defaultValue="curation">
+      <Tabs
+        value={currentTab}
+        onValueChange={(v) => {
+          const params = new URLSearchParams(searchParams.toString());
+          params.set("tab", v);
+          router.replace(`?${params.toString()}`);
+        }}
+      >
         <TabsList variant="line">
           <TabsTrigger value="curation" className="gap-1.5">
             <Sparkles className="h-4 w-4" />

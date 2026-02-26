@@ -59,7 +59,8 @@
 | ROAS | purchaseValue / spend | |
 | 완시청률 (thruplay_rate) | thruplay / impressions × 100 | |
 | 유지율 (retention_rate) | thruplay / video_play_actions합 × 100 | |
-| 참여율 지표 | reactions/comments/shares per 10k impressions | |
+| 참여율 지표 | reactions/comments/shares/**saves** per 10k impressions | ⚠️ saves 추가 필수 |
+| 참여합계 (engagement) | (reactions+comments+shares+saves) / impressions × 10,000 | ⚠️ saves 포함 |
 | 클릭→구매전환율 | purchases / clicks × 100 | |
 | 체크아웃→구매전환율 | purchases / initiateCheckout × 100 | |
 | 노출대비 구매전환율 | purchases / impressions × 100 | |
@@ -111,6 +112,8 @@ LIMIT 5
 - [ ] 진단 3컬럼 데이터 연결
 - [ ] 훅비율 = video_play_actions / reach × 100
 - [ ] reach 값 daily_ad_insights에 저장
+- [ ] saves 수집 + saves_per_10k 계산
+- [ ] engagement_per_10k에 saves 포함 (4개 합산)
 - [ ] 일별 데이터 테이블 정상
 - [ ] 라이트모드(화이트) 전용
 - [ ] `npm run build` PASS
@@ -153,7 +156,17 @@ LIMIT 5
 - 파일: `src/app/api/cron/collect-daily/route.ts` → `calculateMetrics()`
 - `reach` 값은 이미 Meta API에서 요청하고 DB에 저장됨
 
-### B4. collect-daily reach 저장 확인
+### B4. saves(저장) 수집 추가
+- 현재: collect-daily에서 reactions/comments/shares만 수집, saves 없음
+- 수정:
+  1. `collect-daily/route.ts`에서 `onsite_conversion.post_save` 액션 추가 수집
+  2. DB에 `saves_per_10k` 컬럼 추가 (float8, nullable)
+  3. `saves_per_10k = saves / impressions × 10,000`
+  4. `engagement_per_10k = (reactions + comments + shares + saves) / impressions × 10,000` (기존: saves 빠져있음)
+  5. `collect-benchmarks`에 `saves_per_10k` 벤치마크 항목 추가
+- 참여합계 = 좋아요 + 댓글 + 공유 + 저장 4개의 합
+
+### B5. collect-daily reach 저장 확인
 - `calculateMetrics()` 반환값에 `reach` 포함 여부 확인
 - DB UPSERT에 `reach` 포함 여부 확인
 - 없으면 추가

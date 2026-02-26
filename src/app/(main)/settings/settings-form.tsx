@@ -12,10 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Bell, Save, Eye, EyeOff, Plus, Trash2, Star } from "lucide-react";
+import { Bell, Save, Eye, EyeOff, Plus, Trash2, Star, Pencil, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { syncAdAccount, addAdAccount, removeAdAccount } from "@/actions/onboarding";
+import { syncAdAccount, addAdAccount, removeAdAccount, updateAdAccount } from "@/actions/onboarding";
 
 interface Profile {
   name: string | null;
@@ -68,6 +68,15 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
   const [newMixpanelProjectId, setNewMixpanelProjectId] = useState("");
   const [newMixpanelBoardId, setNewMixpanelBoardId] = useState("");
   const [newMixpanelSecretKey, setNewMixpanelSecretKey] = useState("");
+
+  // 편집 상태
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  const [editAccountName, setEditAccountName] = useState("");
+  const [editMixpanelProjectId, setEditMixpanelProjectId] = useState("");
+  const [editMixpanelBoardId, setEditMixpanelBoardId] = useState("");
+  const [editMixpanelSecretKey, setEditMixpanelSecretKey] = useState("");
+  const [editingAccount, setEditingAccount] = useState(false);
+  const [showEditSecret, setShowEditSecret] = useState(false);
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -154,6 +163,53 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
     }
   };
 
+  const handleStartEdit = (acc: AdAccountRow) => {
+    setEditingAccountId(acc.account_id);
+    setEditAccountName(acc.account_name || "");
+    setEditMixpanelProjectId(acc.mixpanel_project_id || "");
+    setEditMixpanelBoardId(acc.mixpanel_board_id || "");
+    setEditMixpanelSecretKey("");
+    setShowEditSecret(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingAccountId(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingAccountId) return;
+
+    setEditingAccount(true);
+    const result = await updateAdAccount({
+      metaAccountId: editingAccountId,
+      accountName: editAccountName.trim() || undefined,
+      mixpanelProjectId: editMixpanelProjectId.trim() || null,
+      mixpanelBoardId: editMixpanelBoardId.trim() || null,
+      mixpanelSecretKey: editMixpanelSecretKey.trim() || null,
+    });
+
+    setEditingAccount(false);
+
+    if (result.error) {
+      toast.error(`저장 실패: ${result.error}`);
+    } else {
+      toast.success("계정 설정이 저장되었습니다.");
+      setAccounts((prev) =>
+        prev.map((a) =>
+          a.account_id === editingAccountId
+            ? {
+                ...a,
+                account_name: editAccountName.trim() || a.account_name,
+                mixpanel_project_id: editMixpanelProjectId.trim() || null,
+                mixpanel_board_id: editMixpanelBoardId.trim() || null,
+              }
+            : a
+        )
+      );
+      setEditingAccountId(null);
+    }
+  };
+
   const handleSetPrimary = async (accountId: string) => {
     const account = accounts.find((a) => a.account_id === accountId);
     if (!account) return;
@@ -188,7 +244,7 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
       </div>
 
       {/* 프로필 설정 */}
-      <form onSubmit={handleSave}>
+      <form onSubmit={handleSave} autoComplete="off">
         <section className="space-y-5">
           <h2 className="text-lg font-semibold text-gray-900">프로필</h2>
 
@@ -271,6 +327,100 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
           <div className="rounded-lg border border-gray-200 divide-y divide-gray-100">
             {accounts.map((acc) => {
               const isPrimary = acc.account_id === profile?.meta_account_id;
+              const isEditing = editingAccountId === acc.account_id;
+
+              if (isEditing) {
+                return (
+                  <div key={acc.account_id} className="px-4 py-4 space-y-3 bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-sm font-medium text-gray-700">
+                        {acc.account_id} 편집
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">계정 이름</Label>
+                        <Input
+                          value={editAccountName}
+                          onChange={(e) => setEditAccountName(e.target.value)}
+                          placeholder="계정 이름"
+                          autoComplete="off"
+                          className="h-8 text-sm rounded-lg border-gray-200 bg-white"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">믹스패널 프로젝트 ID</Label>
+                        <Input
+                          value={editMixpanelProjectId}
+                          onChange={(e) => setEditMixpanelProjectId(e.target.value)}
+                          placeholder="프로젝트 ID"
+                          autoComplete="off"
+                          className="h-8 text-sm rounded-lg border-gray-200 bg-white"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">믹스패널 보드 ID</Label>
+                        <Input
+                          value={editMixpanelBoardId}
+                          onChange={(e) => setEditMixpanelBoardId(e.target.value)}
+                          placeholder="보드 ID"
+                          autoComplete="off"
+                          className="h-8 text-sm rounded-lg border-gray-200 bg-white"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">믹스패널 시크릿키</Label>
+                        <div className="relative">
+                          <Input
+                            type={showEditSecret ? "text" : "password"}
+                            value={editMixpanelSecretKey}
+                            onChange={(e) => setEditMixpanelSecretKey(e.target.value)}
+                            placeholder="변경 시에만 입력"
+                            autoComplete="new-password"
+                            className="h-8 text-sm rounded-lg border-gray-200 bg-white pr-8"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowEditSecret(!showEditSecret)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            {showEditSecret ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleSaveEdit}
+                        disabled={editingAccount}
+                        className="gap-1 bg-[#F75D5D] hover:bg-[#E54949]"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        {editingAccount ? "저장 중..." : "저장"}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCancelEdit}
+                        className="border-gray-200"
+                      >
+                        취소
+                      </Button>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div
                   key={acc.account_id}
@@ -291,6 +441,14 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
                     )}
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleStartEdit(acc)}
+                      className="text-xs text-gray-400 hover:text-blue-500 transition-colors"
+                      title="편집"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
                     {!isPrimary && (
                       <button
                         type="button"
@@ -360,6 +518,7 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
                   value={newMixpanelProjectId}
                   onChange={(e) => setNewMixpanelProjectId(e.target.value)}
                   placeholder="프로젝트 ID"
+                  autoComplete="off"
                   className="rounded-lg border-gray-200 bg-white focus:ring-[#F75D5D]"
                 />
               </div>
@@ -369,6 +528,7 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
                   value={newMixpanelBoardId}
                   onChange={(e) => setNewMixpanelBoardId(e.target.value)}
                   placeholder="보드 ID"
+                  autoComplete="off"
                   className="rounded-lg border-gray-200 bg-white focus:ring-[#F75D5D]"
                 />
               </div>
@@ -380,6 +540,7 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
                     value={newMixpanelSecretKey}
                     onChange={(e) => setNewMixpanelSecretKey(e.target.value)}
                     placeholder="시크릿키"
+                    autoComplete="new-password"
                     className="rounded-lg border-gray-200 bg-white focus:ring-[#F75D5D] pr-10"
                   />
                   <button

@@ -274,6 +274,52 @@ export async function addAdAccount(data: {
   return { error: null };
 }
 
+// 광고계정 편집 (믹스패널 설정 업데이트)
+export async function updateAdAccount(data: {
+  metaAccountId: string;
+  accountName?: string;
+  mixpanelProjectId?: string | null;
+  mixpanelBoardId?: string | null;
+  mixpanelSecretKey?: string | null;
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "인증되지 않은 사용자입니다" };
+
+  const svc = createServiceClient();
+
+  // ad_accounts 업데이트
+  const updates: Record<string, unknown> = {
+    mixpanel_project_id: data.mixpanelProjectId || null,
+    mixpanel_board_id: data.mixpanelBoardId || null,
+  };
+  if (data.accountName) {
+    updates.account_name = data.accountName;
+  }
+
+  const { error } = await svc
+    .from("ad_accounts")
+    .update(updates)
+    .eq("account_id", data.metaAccountId)
+    .eq("user_id", user.id);
+
+  if (error) return { error: error.message };
+
+  // 시크릿키가 입력된 경우에만 upsert (빈 문자열이면 변경 안 함)
+  if (data.mixpanelSecretKey) {
+    await svc
+      .from("service_secrets" as never)
+      .upsert({
+        user_id: user.id,
+        service: "mixpanel",
+        key_name: `secret_${data.metaAccountId}`,
+        key_value: data.mixpanelSecretKey,
+      } as never, { onConflict: "user_id,service,key_name" } as never);
+  }
+
+  return { error: null };
+}
+
 // 광고계정 삭제 (비활성화 + service_secrets 정리)
 export async function removeAdAccount(accountId: string) {
   const supabase = await createClient();

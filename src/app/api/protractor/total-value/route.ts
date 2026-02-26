@@ -66,6 +66,7 @@ export async function GET(request: NextRequest) {
     let totalReactions = 0;
     let totalComments = 0;
     let totalShares = 0;
+    let totalSaves = 0;
     let totalInitiateCheckout = 0;
     let totalReach = 0;
 
@@ -86,9 +87,11 @@ export async function GET(request: NextRequest) {
       const reactPer10k = Number(row.reactions_per_10k) || 0;
       const commentPer10k = Number(row.comments_per_10k) || 0;
       const sharePer10k = Number(row.shares_per_10k) || 0;
+      const savesPer10k = Number(row.saves_per_10k) || 0;
       totalReactions += (reactPer10k / 10000) * imp;
       totalComments += (commentPer10k / 10000) * imp;
       totalShares += (sharePer10k / 10000) * imp;
+      totalSaves += (savesPer10k / 10000) * imp;
 
       totalInitiateCheckout += Number(row.initiate_checkout) || 0;
     }
@@ -99,7 +102,7 @@ export async function GET(request: NextRequest) {
       ctr: totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : null,
       engagement_per_10k:
         totalImpressions > 0
-          ? ((totalReactions + totalComments + totalShares) / totalImpressions) * 10000
+          ? ((totalReactions + totalComments + totalShares + totalSaves) / totalImpressions) * 10000
           : null,
       click_to_checkout_rate:
         totalClicks > 0 ? (totalInitiateCheckout / totalClicks) * 100 : null,

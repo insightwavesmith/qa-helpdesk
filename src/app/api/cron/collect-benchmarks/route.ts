@@ -25,6 +25,7 @@ const BENCHMARK_METRICS = [
   "reactions_per_10k",
   "comments_per_10k",
   "shares_per_10k",
+  "saves_per_10k",
   "engagement_per_10k",
   "click_to_checkout_rate",
   "checkout_to_purchase_rate",

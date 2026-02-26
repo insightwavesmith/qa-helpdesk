@@ -82,6 +82,7 @@ function calculateMetrics(insight: Record<string, any>) {
   const reactions = getActionValue(actions, "post_reaction") || getActionValue(actions, "like");
   const comments = getActionValue(actions, "comment");
   const shares = getActionValue(actions, "post");
+  const saves = getActionValue(actions, "onsite_conversion.post_save");
 
   return {
     spend: round(spend, 2),
@@ -104,7 +105,8 @@ function calculateMetrics(insight: Record<string, any>) {
     reactions_per_10k: impressions > 0 ? round(reactions / impressions * 10000, 2) : null,
     comments_per_10k: impressions > 0 ? round(comments / impressions * 10000, 2) : null,
     shares_per_10k: impressions > 0 ? round(shares / impressions * 10000, 2) : null,
-    engagement_per_10k: impressions > 0 ? round((reactions + comments + shares) / impressions * 10000, 2) : null,
+    saves_per_10k: impressions > 0 ? round(saves / impressions * 10000, 2) : null,
+    engagement_per_10k: impressions > 0 ? round((reactions + comments + shares + saves) / impressions * 10000, 2) : null,
     // 전환율 지표
     click_to_checkout_rate: clicks > 0 ? round(initiateCheckout / clicks * 100, 4) : null,
     click_to_purchase_rate: clicks > 0 ? round(purchases / clicks * 100, 4) : null,

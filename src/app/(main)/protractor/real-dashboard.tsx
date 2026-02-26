@@ -15,6 +15,8 @@ import {
   ProtractorHeader,
   SummaryCards,
   TotalValueGauge,
+  DiagnosticPanel,
+  DailyMetricsTable,
   OverlapAnalysis,
   type OverlapData,
 } from "@/components/protractor";
@@ -22,6 +24,7 @@ import {
 import {
   aggregateSummary,
   toSummaryCards,
+  toDailyMetrics,
 } from "@/lib/protractor/aggregate";
 
 // 어제 날짜 (기본값)
@@ -174,9 +177,9 @@ export default function RealDashboard() {
     })();
   }, [selectedAccountId, insights, dateRange]);
 
-  // 4) 총가치수준 호출
+  // 4) 총가치수준 호출 (insights와 독립적으로 호출)
   useEffect(() => {
-    if (!selectedAccountId || insights.length === 0) {
+    if (!selectedAccountId) {
       setTotalValue(null);
       return;
     }
@@ -193,14 +196,17 @@ export default function RealDashboard() {
         const json = await res.json();
         if (res.ok && json.grade) {
           setTotalValue(json);
+        } else {
+          setTotalValue(null);
         }
       } catch {
         // 총가치수준 실패해도 대시보드 표시
+        setTotalValue(null);
       } finally {
         setLoadingTotalValue(false);
       }
     })();
-  }, [selectedAccountId, insights, dateRange]);
+  }, [selectedAccountId, dateRange]);
 
   // 5) 타겟중복 분석 (overlap 탭 활성 + 7일 이상일 때)
   const fetchOverlap = useCallback(
@@ -359,7 +365,12 @@ export default function RealDashboard() {
               {/* 3b. SummaryCards */}
               <SummaryCards cards={summaryCards} />
 
-              {/* 3c. Top5AdCards (항상 표시, 토글 없음) */}
+              {/* 3c. 진단 3컬럼 (기반점수 / 참여율 / 전환율) */}
+              {!loadingDiagnosis && rawDiagnoses && rawDiagnoses.length > 0 && (
+                <DiagnosticPanel diagnoses={rawDiagnoses} />
+              )}
+
+              {/* 3d. Top5AdCards (항상 표시, 토글 없음) */}
               {loadingDiagnosis ? (
                 <Skeleton className="h-[200px] w-full rounded-lg" />
               ) : (
@@ -370,6 +381,11 @@ export default function RealDashboard() {
                   mixpanelBoardId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_board_id}
                   diagnoses={rawDiagnoses ?? undefined}
                 />
+              )}
+
+              {/* 3e. 일별 성과 테이블 */}
+              {insights.length > 0 && (
+                <DailyMetricsTable data={toDailyMetrics(insights)} />
               )}
             </>
           )}

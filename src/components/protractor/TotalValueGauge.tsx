@@ -26,13 +26,129 @@ interface TotalValueGaugeProps {
 
 // ── 등급별 스타일 매핑 (화이트 테마) ──
 
-const GRADE_STYLES: Record<string, { border: string; text: string; bg: string }> = {
-  A: { border: "border-emerald-400", text: "text-emerald-500", bg: "bg-emerald-50" },
-  B: { border: "border-blue-400", text: "text-blue-500", bg: "bg-blue-50" },
-  C: { border: "border-yellow-400", text: "text-yellow-500", bg: "bg-yellow-50" },
-  D: { border: "border-orange-400", text: "text-orange-500", bg: "bg-orange-50" },
-  F: { border: "border-red-400", text: "text-red-500", bg: "bg-red-50" },
+const GRADE_STYLES: Record<string, { border: string; text: string; bg: string; hex: string }> = {
+  A: { border: "border-emerald-400", text: "text-emerald-500", bg: "bg-emerald-50", hex: "#10b981" },
+  B: { border: "border-blue-400", text: "text-blue-500", bg: "bg-blue-50", hex: "#3b82f6" },
+  C: { border: "border-yellow-400", text: "text-yellow-500", bg: "bg-yellow-50", hex: "#eab308" },
+  D: { border: "border-orange-400", text: "text-orange-500", bg: "bg-orange-50", hex: "#f97316" },
+  F: { border: "border-red-400", text: "text-red-500", bg: "bg-red-50", hex: "#ef4444" },
 };
+
+// ── 점수 계산 (metrics 상태 기반) ──
+
+function calcScoreFromMetrics(metrics: MetricData[]): number {
+  const SCORE_MAP: Record<string, number> = {
+    "🟢": 100,
+    "🟡": 55,
+    "🔴": 15,
+  };
+
+  let total = 0;
+  let count = 0;
+  for (const m of metrics) {
+    const s = SCORE_MAP[m.status];
+    if (s != null) {
+      total += s;
+      count++;
+    }
+  }
+  return count > 0 ? Math.round(total / count) : 0;
+}
+
+// ── 반원형 SVG 게이지 ──
+
+function SemiCircleGauge({ score, grade, gradeStyle }: {
+  score: number;
+  grade: string;
+  gradeStyle: { hex: string; text: string };
+}) {
+  const cx = 120;
+  const cy = 110;
+  const r = 85;
+  const strokeWidth = 14;
+
+  // 반원: 180° (왼쪽) → 0° (오른쪽)
+  // 각도 = 180 - (score / 100) * 180
+  const startAngle = Math.PI; // 180°
+  const endAngle = 0; // 0°
+
+  function arcPath(startDeg: number, endDeg: number): string {
+    const x1 = cx + r * Math.cos(startDeg);
+    const y1 = cy - r * Math.sin(startDeg);
+    const x2 = cx + r * Math.cos(endDeg);
+    const y2 = cy - r * Math.sin(endDeg);
+    const sweep = endDeg < startDeg ? 0 : 1;
+    return `M ${x1} ${y1} A ${r} ${r} 0 0 ${sweep} ${x2} ${y2}`;
+  }
+
+  // 게이지 세그먼트 (빨강→노랑→초록)
+  const segments = [
+    { start: Math.PI, end: Math.PI * 0.667, color: "#fca5a5" },          // 0~33: 연빨강
+    { start: Math.PI * 0.667, end: Math.PI * 0.333, color: "#fde68a" },  // 33~66: 연노랑
+    { start: Math.PI * 0.333, end: 0, color: "#86efac" },                // 66~100: 연초록
+  ];
+
+  // 바늘 각도: score 0 → 180°, score 100 → 0°
+  const needleAngle = Math.PI - (score / 100) * Math.PI;
+  const needleLen = r - 10;
+  const nx = cx + needleLen * Math.cos(needleAngle);
+  const ny = cy - needleLen * Math.sin(needleAngle);
+
+  return (
+    <svg viewBox="0 0 240 140" className="w-full max-w-[220px]">
+      {/* 배경 세그먼트 */}
+      {segments.map((seg, i) => (
+        <path
+          key={i}
+          d={arcPath(seg.start, seg.end)}
+          fill="none"
+          stroke={seg.color}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+        />
+      ))}
+
+      {/* 활성 구간 (0 ~ score) */}
+      {score > 0 && (
+        <path
+          d={arcPath(startAngle, startAngle - (score / 100) * Math.PI)}
+          fill="none"
+          stroke={gradeStyle.hex}
+          strokeWidth={strokeWidth + 2}
+          strokeLinecap="round"
+          opacity={0.7}
+        />
+      )}
+
+      {/* 바늘 */}
+      <line
+        x1={cx}
+        y1={cy}
+        x2={nx}
+        y2={ny}
+        stroke="#374151"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+      />
+      <circle cx={cx} cy={cy} r={5} fill="#374151" />
+
+      {/* 점수 */}
+      <text x={cx} y={cy + 25} textAnchor="middle" className="text-2xl font-black" fill="#111827" fontSize="26" fontWeight="900">
+        {score}
+      </text>
+
+      {/* 등급 */}
+      <text x={cx} y={cy + 42} textAnchor="middle" fill={gradeStyle.hex} fontSize="13" fontWeight="700">
+        {grade}등급
+      </text>
+
+      {/* 스케일 라벨 */}
+      <text x={cx - r - 2} y={cy + 16} textAnchor="middle" fill="#9ca3af" fontSize="10">0</text>
+      <text x={cx} y={cy - r + 4} textAnchor="middle" fill="#9ca3af" fontSize="10">50</text>
+      <text x={cx + r + 2} y={cy + 16} textAnchor="middle" fill="#9ca3af" fontSize="10">100</text>
+    </svg>
+  );
+}
 
 // ── 지표 카드 헬퍼 ──
 
@@ -179,6 +295,7 @@ export function TotalValueGauge({
   const gradeStyle = GRADE_STYLES[grade] ?? GRADE_STYLES.C;
   const periodDays = calcPeriodDays(dateRange);
   const periodLabel = `${periodDays}일`;
+  const score = calcScoreFromMetrics(metrics);
 
   const diagJsx = buildDiagnosticJsx(grade, metrics, gradeStyle);
 
@@ -186,17 +303,11 @@ export function TotalValueGauge({
     <Card className="bg-white border border-gray-200">
       <CardContent className="p-5">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-          {/* 좌측: 원형 등급 서클 */}
-          <div className="flex-shrink-0 flex flex-col items-center" style={{ minWidth: "200px" }}>
-            <div
-              className={`flex h-24 w-24 items-center justify-center rounded-full border-4 ${gradeStyle.border} ${gradeStyle.bg}`}
-            >
-              <span className={`text-4xl font-black ${gradeStyle.text}`}>
-                {grade}
-              </span>
-            </div>
+          {/* 좌측: 반원형 SVG 게이지 */}
+          <div className="flex-shrink-0 flex flex-col items-center" style={{ minWidth: "220px" }}>
+            <SemiCircleGauge score={score} grade={grade} gradeStyle={gradeStyle} />
             {gradeLabel && (
-              <p className={`mt-2 text-sm font-semibold ${gradeStyle.text}`}>{gradeLabel}</p>
+              <p className={`-mt-1 text-sm font-semibold ${gradeStyle.text}`}>{gradeLabel}</p>
             )}
             <p className="mt-1 text-[11px] text-muted-foreground">{periodLabel} 기준</p>
             {totalSpend != null && (
