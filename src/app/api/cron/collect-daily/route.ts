@@ -118,7 +118,7 @@ function calculateMetrics(insight: Record<string, any>) {
 }
 
 // ── Meta Graph API 호출 ────────────────────────────────────────
-async function fetchAccountInsights(accountId: string) {
+async function fetchAccountInsights(accountId: string, targetDate?: string) {
   const token = process.env.META_ACCESS_TOKEN;
   if (!token) throw new Error("META_ACCESS_TOKEN not set");
 
@@ -131,7 +131,11 @@ async function fetchAccountInsights(accountId: string) {
   );
   url.searchParams.set("access_token", token);
   url.searchParams.set("fields", fields);
-  url.searchParams.set("date_preset", "yesterday");
+  if (targetDate) {
+    url.searchParams.set("time_range", JSON.stringify({ since: targetDate, until: targetDate }));
+  } else {
+    url.searchParams.set("date_preset", "yesterday");
+  }
   url.searchParams.set("level", "ad");
   url.searchParams.set("limit", "500");
 
@@ -335,7 +339,9 @@ export async function GET(req: NextRequest) {
   }
 
   const svc = createServiceClient();
-  const yesterday = new Date(Date.now() - 86_400_000)
+  const { searchParams } = new URL(req.url);
+  const dateParam = searchParams.get("date"); // optional: YYYY-MM-DD
+  const yesterday = dateParam ?? new Date(Date.now() - 86_400_000)
     .toISOString()
     .slice(0, 10);
 
@@ -372,7 +378,7 @@ export async function GET(req: NextRequest) {
 
       // ── Meta 광고 데이터 수집 ──
       try {
-        const insights = await fetchAccountInsights(account.account_id);
+        const insights = await fetchAccountInsights(account.account_id, dateParam ?? undefined);
 
         if (insights.length > 0) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
