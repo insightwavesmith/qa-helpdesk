@@ -33,6 +33,7 @@ function getPriority(sourceType: string | null): number {
     case "lecture":
     case "blueprint":
     case "papers":
+    case "webinar":
       return 1;
     case "qa":
     case "feedback":
@@ -40,7 +41,6 @@ function getPriority(sourceType: string | null): number {
       return 2;
     case "crawl":
     case "marketing_theory":
-    case "webinar":
       return 3;
     case "meeting":
     case "youtube":

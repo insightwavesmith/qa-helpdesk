@@ -161,7 +161,7 @@ export async function createContent(input: {
   }
 
   // 자동 임베딩: blueprint, lecture 타입은 생성 즉시 임베딩
-  const autoEmbedTypes = ["blueprint", "lecture", "info_share"];
+  const autoEmbedTypes = ["blueprint", "lecture", "info_share", "webinar"];
   if (data && input.source_type && autoEmbedTypes.includes(input.source_type)) {
     after(async () => {
       try {
