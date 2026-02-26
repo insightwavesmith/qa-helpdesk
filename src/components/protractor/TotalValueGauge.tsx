@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { AlertTriangle } from "lucide-react";
 
 interface MetricData {
   name: string;
@@ -262,7 +263,15 @@ export function TotalValueGauge({
   }
 
   if (!grade || !metrics) {
-    return null;
+    return (
+      <Card className="bg-white border border-gray-200">
+        <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+          <AlertTriangle className="h-6 w-6 mb-2" />
+          <p className="text-sm">데이터를 불러올 수 없습니다</p>
+          <p className="text-xs mt-1">기간을 변경하거나 다시 시도해 주세요</p>
+        </CardContent>
+      </Card>
+    );
   }
 
   const gradeTextColor = GRADE_TEXT_COLORS[grade] ?? GRADE_TEXT_COLORS.C;

@@ -48,6 +48,7 @@ export interface OverlapData {
   individual_sum: number;
   cached_at: string;
   pairs: OverlapPair[];
+  truncated?: boolean;
 }
 
 interface OverlapAnalysisProps {
@@ -181,7 +182,7 @@ export function OverlapAnalysis({
     );
   }
 
-  const { overall_rate, total_unique, individual_sum, cached_at, pairs } =
+  const { overall_rate, total_unique, individual_sum, cached_at, pairs, truncated } =
     overlapData;
   const wastedReach = individual_sum - total_unique;
   const dangerPairs = pairs.filter((p) => p.overlap_rate >= 60);
@@ -231,6 +232,16 @@ export function OverlapAnalysis({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* ── truncated 안내 배너 ──────────────────────────────── */}
+      {truncated && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardContent className="flex items-center gap-2 py-3 text-sm text-yellow-800">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            일부 결과만 표시됩니다. 상위 광고세트 기준으로 분석되었습니다.
+          </CardContent>
+        </Card>
+      )}
+
       {/* ── 히어로: 전체 중복률 ─────────────────────────────── */}
       <Card>
         <CardContent className="flex flex-col items-center gap-6 py-8 sm:flex-row">

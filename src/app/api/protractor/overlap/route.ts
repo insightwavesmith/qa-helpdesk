@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireProtractorAccess, verifyAccountOwnership } from "../_shared";
 
+export const maxDuration = 300;
+
 // ── 타입 ────────────────────────────────────────────────────────
 interface OverlapPair {
   adset_a_name: string;
@@ -16,6 +18,7 @@ interface OverlapResponse {
   individual_sum: number;
   cached_at: string;
   pairs: OverlapPair[];
+  truncated?: boolean;
 }
 
 interface AdsetInfo {
@@ -268,14 +271,21 @@ export async function GET(request: NextRequest) {
     const pairs: OverlapPair[] = [];
     const now = new Date().toISOString();
 
-    // 조합 수가 많으면 상위 reach adset만 처리 (최대 15개 → 105조합)
+    // 조합 수가 많으면 상위 reach adset만 처리 (최대 8개 → 28조합)
     const sortedAdsets = [...activeAdsets].sort(
       (a, b) => (reachByAdset[b.id] ?? 0) - (reachByAdset[a.id] ?? 0)
     );
-    const cappedAdsets = sortedAdsets.slice(0, 15);
+    const cappedAdsets = sortedAdsets.slice(0, 8);
+    const adsetsTruncated = activeAdsets.length > 8;
 
-    for (let i = 0; i < cappedAdsets.length; i++) {
+    const startTime = Date.now();
+    let deadlineHit = false;
+    for (let i = 0; i < cappedAdsets.length && !deadlineHit; i++) {
       for (let j = i + 1; j < cappedAdsets.length; j++) {
+        if (Date.now() - startTime > 55_000) {
+          deadlineHit = true;
+          break;
+        }
         const a = cappedAdsets[i];
         const b = cappedAdsets[j];
         const reachA = reachByAdset[a.id] ?? 0;
@@ -352,12 +362,14 @@ export async function GET(request: NextRequest) {
     // overlap_rate 내림차순 정렬
     pairs.sort((a, b) => b.overlap_rate - a.overlap_rate);
 
+    const truncated = adsetsTruncated || deadlineHit;
     const response: OverlapResponse = {
       overall_rate: Math.round(overallRate * 10) / 10,
       total_unique: totalUnique,
       individual_sum: individualSum,
       cached_at: now,
       pairs,
+      ...(truncated ? { truncated: true } : {}),
     };
 
     return NextResponse.json(response);

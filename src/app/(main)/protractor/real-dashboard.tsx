@@ -18,6 +18,7 @@ import Link from "next/link";
 import {
   ProtractorHeader,
   SummaryCards,
+  DiagnosticPanel,
   PerformanceTrendChart,
   ConversionFunnel,
   DailyMetricsTable,
@@ -383,6 +384,8 @@ export default function RealDashboard() {
               />
 
               <SummaryCards cards={summaryCards} />
+
+              <DiagnosticPanel diagnoses={rawDiagnoses ?? undefined} />
 
               {/* TOP 5 광고 보기 버튼 (A3) */}
               {insights.length > 0 && (
