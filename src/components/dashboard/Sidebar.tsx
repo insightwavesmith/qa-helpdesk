@@ -21,6 +21,7 @@ import {
   LogOut,
   Lock,
   Ticket,
+  TrendingUp,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -41,6 +42,7 @@ const mainNavItems: NavItem[] = [
 
 const adminNavItems: NavItem[] = [
   { label: "회원 관리", href: "/admin/members", icon: Users },
+  { label: "수강생 성과", href: "/admin/performance", icon: TrendingUp },
   { label: "답변 검토", href: "/admin/answers", icon: CheckCircle },
   { label: "콘텐츠 관리", href: "/admin/content", icon: FileText },
   { label: "지식 베이스", href: "/admin/knowledge", icon: Brain },
