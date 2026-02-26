@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { type AdAccount } from "./components/account-selector";
-import { type AdInsightRow } from "./components/ad-metrics-table";
+import { type AdInsightRow, type BenchmarkRow } from "./components/ad-metrics-table";
 import { PeriodTabs, type DateRange as PeriodDateRange } from "./components/period-tabs";
 import { Top5AdCards } from "./components/top5-ad-cards";
+import { BenchmarkCompare } from "./components/benchmark-compare";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, ArrowRight, BarChart3, LinkIcon } from "lucide-react";
@@ -17,6 +18,8 @@ import {
   TotalValueGauge,
   DiagnosticPanel,
   DailyMetricsTable,
+  PerformanceTrendChart,
+  ConversionFunnel,
   OverlapAnalysis,
   type OverlapData,
 } from "@/components/protractor";
@@ -25,6 +28,8 @@ import {
   aggregateSummary,
   toSummaryCards,
   toDailyMetrics,
+  toDailyTrend,
+  toFunnelData,
 } from "@/lib/protractor/aggregate";
 
 // 어제 날짜 (기본값)
@@ -81,7 +86,9 @@ export default function RealDashboard() {
     metrics: { name: string; value: number | null; p50: number | null; p75: number | null; status: string }[];
   } | null>(null);
 
-  const [activeTab, setActiveTab] = useState<"summary" | "overlap">("summary");
+  const [benchmarks, setBenchmarks] = useState<BenchmarkRow[]>([]);
+
+  const [activeTab, setActiveTab] = useState<"summary" | "overlap" | "content">("summary");
   const [overlapData, setOverlapData] = useState<OverlapData | null>(null);
   const [loadingOverlap, setLoadingOverlap] = useState(false);
   const [overlapError, setOverlapError] = useState<string | null>(null);
@@ -114,6 +121,21 @@ export default function RealDashboard() {
       }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 1-b) 벤치마크 로드 (한 번만)
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/protractor/benchmarks");
+        const json = await res.json();
+        if (res.ok && json.data) {
+          setBenchmarks(json.data);
+        }
+      } catch {
+        // 벤치마크 없어도 대시보드 표시 가능
+      }
+    })();
   }, []);
 
   // 2) 계정 + 기간 변경 시 데이터 로드
@@ -317,11 +339,12 @@ export default function RealDashboard() {
       {/* 3. 탭 구조: 성과 요약 / 타겟중복 */}
       <Tabs
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v as "summary" | "overlap")}
+        onValueChange={(v) => setActiveTab(v as "summary" | "overlap" | "content")}
       >
         <TabsList>
           <TabsTrigger value="summary">성과 요약</TabsTrigger>
           <TabsTrigger value="overlap">타겟중복</TabsTrigger>
+          <TabsTrigger value="content">콘텐츠</TabsTrigger>
         </TabsList>
 
         <TabsContent value="summary" className="mt-6 space-y-6">
@@ -400,6 +423,35 @@ export default function RealDashboard() {
             onRefresh={() => fetchOverlap(true)}
             error={overlapError}
           />
+        </TabsContent>
+
+        <TabsContent value="content" className="mt-6 space-y-6">
+          {selectedAccountId && insights.length > 0 ? (
+            <>
+              {/* 성과 추이 + 전환 퍼널 */}
+              <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
+                <div className="xl:col-span-3">
+                  <PerformanceTrendChart data={toDailyTrend(insights)} />
+                </div>
+                <div className="xl:col-span-2">
+                  <ConversionFunnel
+                    steps={toFunnelData(insights).steps}
+                    overallRate={toFunnelData(insights).overallRate}
+                  />
+                </div>
+              </div>
+
+              {/* 벤치마크 비교 */}
+              <BenchmarkCompare insights={insights} benchmarks={benchmarks} />
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+              <BarChart3 className="h-10 w-10" />
+              <p className="mt-3 text-base font-medium">
+                {!selectedAccountId ? "광고계정을 선택하세요" : "데이터가 없습니다"}
+              </p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

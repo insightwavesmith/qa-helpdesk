@@ -205,10 +205,11 @@ function AdCard({
   diagnosis?: RawDiagnosis;
 }) {
   const metaUrl = `https://adsmanager.facebook.com/adsmanager/manage/ads?act=${accountId}&selected_ad_ids=${ad.ad_id}`;
-  const mixpanelUrl =
-    mixpanelProjectId && mixpanelBoardId
+  const mixpanelUrl = mixpanelProjectId
+    ? mixpanelBoardId
       ? `https://mixpanel.com/project/${mixpanelProjectId}/view/${mixpanelBoardId}/app/boards`
-      : null;
+      : `https://mixpanel.com/project/${mixpanelProjectId}`
+    : null;
 
   // 파트 3개: 기반점수, 참여율, 전환율 (없으면 빈 배열)
   const parts = diagnosis?.parts ?? [];
