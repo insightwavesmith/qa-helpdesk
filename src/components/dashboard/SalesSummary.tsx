@@ -107,7 +107,7 @@ export function SalesSummary() {
       bgGlow: "bg-rose-500/20",
     },
     {
-      label: "총 매출",
+      label: "총 광고매출",
       tickerValue: revenueParsed.num,
       tickerDecimals: revenueParsed.decimals,
       suffix: revenueParsed.suffix,

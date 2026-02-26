@@ -90,7 +90,7 @@ export function V0Dashboard() {
   const stats = summary
     ? [
         { label: "ROAS", value: `${(summary.roas * 100).toFixed(0)}%`, change: 0, icon: Target },
-        { label: "총 매출", value: fmtKRW(summary.totalRevenue), change: 0, icon: DollarSign },
+        { label: "총 광고매출", value: fmtKRW(summary.totalRevenue), change: 0, icon: DollarSign },
         { label: "광고비", value: fmtKRW(summary.totalSpend), change: 0, icon: ChartColumn },
         { label: "CTR", value: `${summary.avgCtr}%`, change: 0, icon: MousePointerClick },
         { label: "활성 계정", value: `${summary.activeAccounts}개`, change: 0, icon: Users },

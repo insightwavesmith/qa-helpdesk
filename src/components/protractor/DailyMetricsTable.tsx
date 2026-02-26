@@ -38,7 +38,7 @@ const columns: { key: SortKey; label: string }[] = [
   { key: "ctr", label: "CTR" },
   { key: "cpc", label: "CPC" },
   { key: "adSpend", label: "광고비" },
-  { key: "revenue", label: "매출" },
+  { key: "revenue", label: "광고매출" },
   { key: "roas", label: "ROAS" },
   { key: "conversions", label: "전환수" },
 ];

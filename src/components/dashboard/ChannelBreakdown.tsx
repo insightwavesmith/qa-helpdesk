@@ -60,7 +60,7 @@ export function ChannelBreakdown({ channels = [] }: ChannelBreakdownProps) {
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>광고비: {ch.adSpend}</span>
-                  <span>매출: {ch.revenue}</span>
+                  <span>광고매출: {ch.revenue}</span>
                 </div>
               </div>
             ))}

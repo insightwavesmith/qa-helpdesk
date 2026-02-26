@@ -156,7 +156,7 @@ export function CampaignTable({ campaigns = [] }: CampaignTableProps) {
                   {renderSortButton("광고비", "adSpend")}
                 </TableHead>
                 <TableHead className="text-right">
-                  {renderSortButton("매출", "revenue")}
+                  {renderSortButton("광고매출", "revenue")}
                 </TableHead>
                 <TableHead className="text-right">
                   {renderSortButton("ROAS", "roas")}

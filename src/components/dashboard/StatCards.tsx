@@ -18,7 +18,7 @@ interface StatCardData {
 
 const placeholderStats: StatCardData[] = [
   { label: "ROAS", value: "", change: 0, icon: Target },
-  { label: "총 매출", value: "", change: 0, icon: DollarSign },
+  { label: "총 광고매출", value: "", change: 0, icon: DollarSign },
   { label: "광고비", value: "", change: 0, icon: ChartColumn },
   { label: "CTR", value: "", change: 0, icon: MousePointerClick },
   { label: "CPC", value: "", change: 0, icon: DollarSign },

@@ -32,7 +32,7 @@ interface MetricConfig {
 }
 
 const metrics: MetricConfig[] = [
-  { key: "revenue", label: "매출", color: "#F75D5D" },
+  { key: "revenue", label: "광고매출", color: "#F75D5D" },
   { key: "adSpend", label: "광고비", color: "#3B82F6" },
   { key: "roas", label: "ROAS", color: "#10B981" },
 ];
@@ -166,7 +166,7 @@ export function PerformanceChart({ data = [] }: PerformanceChartProps) {
                   stroke="#F75D5D"
                   strokeWidth={2}
                   fill="url(#gradRevenue)"
-                  name="매출"
+                  name="광고매출"
                   yAxisId="left"
                 />
               )}

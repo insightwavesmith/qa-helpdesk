@@ -65,10 +65,10 @@ export function PerformanceTrendChart({
     <div className="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
       <div className="border-b border-border px-6 py-4">
         <h3 className="text-sm font-semibold text-card-foreground">
-          매출 vs 광고비 추이
+          광고매출 vs 광고비 추이
         </h3>
         <p className="text-xs text-muted-foreground">
-          기간 내 일별 매출과 광고비 비교
+          기간 내 일별 광고매출과 광고비 비교
         </p>
       </div>
       <div className="px-4 py-4">
@@ -110,7 +110,7 @@ export function PerformanceTrendChart({
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               formatter={((value: any, name: any) => [
                 `₩${Number(value ?? 0).toLocaleString()}`,
-                name === "revenue" ? "매출" : "광고비",
+                name === "revenue" ? "광고매출" : "광고비",
               ]) as never}
               labelStyle={{ fontSize: 12 }}
               contentStyle={{
@@ -121,7 +121,7 @@ export function PerformanceTrendChart({
             />
             <Legend
               formatter={(value: string) =>
-                value === "revenue" ? "매출" : "광고비"
+                value === "revenue" ? "광고매출" : "광고비"
               }
               wrapperStyle={{ fontSize: 12 }}
             />

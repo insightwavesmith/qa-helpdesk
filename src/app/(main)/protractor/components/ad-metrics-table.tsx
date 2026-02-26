@@ -187,7 +187,7 @@ export function AdMetricsTable({ insights, benchmarks, accountId, mixpanelProjec
                 <TableHead className="text-right">클릭</TableHead>
                 <TableHead className="text-right">CTR</TableHead>
                 <TableHead className="text-right">구매</TableHead>
-                <TableHead className="text-right">매출</TableHead>
+                <TableHead className="text-right">광고매출</TableHead>
                 <TableHead className="text-right">ROAS</TableHead>
                 <TableHead className="text-center">판정</TableHead>
                 <TableHead className="text-center">링크</TableHead>

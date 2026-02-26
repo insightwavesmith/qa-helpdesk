@@ -40,7 +40,7 @@ export function StudentAdSummary({ data }: StudentAdSummaryProps) {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="text-center">
           <div className="text-2xl font-bold text-text-main">{fmtKRW(data.totalRevenue)}</div>
-          <div className="text-xs text-text-secondary mt-1">매출</div>
+          <div className="text-xs text-text-secondary mt-1">광고매출</div>
         </div>
         <div className="text-center">
           <div className="text-2xl font-bold text-text-main">{fmtKRW(data.totalSpend)}</div>

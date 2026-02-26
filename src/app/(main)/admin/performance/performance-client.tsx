@@ -177,7 +177,7 @@ export function PerformanceClient({
       iconColor: "text-emerald-500",
     },
     {
-      label: `총 매출 ${periodLabel}`,
+      label: `총 광고매출 ${periodLabel}`,
       value: formatKRW(summary.totalRevenue),
       icon: ShoppingCart,
       accentColor: "border-l-[#F75D5D]",
@@ -299,7 +299,7 @@ export function PerformanceClient({
                     className="h-auto p-0 text-xs font-medium text-gray-500 uppercase hover:text-gray-700"
                     onClick={() => handleSort("revenue")}
                   >
-                    매출
+                    광고매출
                     <ArrowUpDown className="ml-1 h-3 w-3" />
                   </Button>
                 </TableHead>

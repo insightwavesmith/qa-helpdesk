@@ -15,7 +15,7 @@ import {
 
 const SAMPLE_SUMMARY_CARDS = [
   {
-    label: "총 매출",
+    label: "총 광고매출",
     value: "18,305,000",
     prefix: "₩",
     changePercent: 12.5,

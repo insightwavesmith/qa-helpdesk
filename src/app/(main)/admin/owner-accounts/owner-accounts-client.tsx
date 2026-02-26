@@ -145,7 +145,7 @@ export function OwnerAccountsClient({ rows, totalAccounts, totalSpend, avgRoas }
                 광고비
               </TableHead>
               <TableHead className="text-xs font-medium text-gray-500 uppercase">
-                매출
+                광고매출
               </TableHead>
               <TableHead className="text-xs font-medium text-gray-500 uppercase">
                 ROAS
