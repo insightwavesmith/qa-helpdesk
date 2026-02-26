@@ -35,7 +35,7 @@ export async function GET() {
 }
 
 // DELETE /api/protractor/accounts
-// admin만 계정 삭제 가능 (ad_accounts + service_secrets 정리)
+// admin만 계정 삭제 가능 (soft delete: active=false + service_secrets 삭제)
 export async function DELETE(request: NextRequest) {
   try {
     const auth = await requireProtractorAccess();
@@ -51,17 +51,20 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "account_id가 필요합니다." }, { status: 400 });
     }
 
-    // service_secrets 정리
+    // service_secrets 삭제
     await svc
       .from("service_secrets" as never)
       .delete()
       .eq("key_name" as never, `secret_${account_id}`);
 
-    // ad_accounts 삭제
-    const { error } = await svc.from("ad_accounts").delete().eq("account_id", account_id);
+    // ad_accounts soft delete (서버 액션과 동일 방식)
+    const { error } = await svc
+      .from("ad_accounts")
+      .update({ active: false })
+      .eq("account_id", account_id);
 
     if (error) {
-      console.error("ad_accounts 삭제 오류:", error);
+      console.error("ad_accounts 비활성화 오류:", error);
       return NextResponse.json({ error: "삭제 실패" }, { status: 500 });
     }
 

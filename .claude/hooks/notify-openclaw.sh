@@ -20,3 +20,12 @@ EOF
 
 # macOS 알림 (즉시 — Smith님에게)
 osascript -e "display notification \"$LAST_COMMIT\" with title \"에이전트팀 세션 종료\" sound name \"Glass\"" 2>/dev/null || true
+
+# 슬랙 DM 알림 (모찌 → Smith님)
+BRANCH=$(cd "$PROJECT_DIR" 2>/dev/null && git branch --show-current 2>/dev/null || echo "unknown")
+/opt/homebrew/bin/openclaw message send \
+  --channel slack \
+  --account mozzi \
+  --target U06BP49UEJD \
+  --message "[에이전트팀 세션 종료] ${LAST_COMMIT} (변경 ${CHANGED_FILES}파일, ${BRANCH})" \
+  2>/dev/null || true

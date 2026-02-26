@@ -186,8 +186,52 @@ T3 총점 = (A + B + C) / 3
 ---
 
 ## 리뷰 결과
-- 모찌 검토 완료 (2026-02-26)
-- T3 아키텍처 문서(모찌리포트 #61) 기반
+
+> 리뷰: 에이전트팀 | 2026-02-26
+> 모찌 검토 완료 (2026-02-26)
+> T3 아키텍처 문서(모찌리포트 #61) 기반
+
+### Part A: 다수 광고계정 — 3/3 ✅
+
+| 항목 | 상태 | 비고 |
+|------|------|------|
+| A1 | ✅ 완료 | ProtractorHeader.tsx: 2개 이상 시 드롭다운, 1개 시 숨김+subtitle 표시 |
+| A2 | ✅ 완료 | settings-form.tsx: addAdAccount + 입력 폼 동작 |
+| A3 | ✅ 완료 | settings-form.tsx: removeAdAccount + window.confirm + primary 재할당 |
+
+### Part B: T3 점수 엔진 — 7/7 ✅
+
+| 항목 | 상태 | 비고 |
+|------|------|------|
+| B1 | ✅ 완료 | period=[1,7,14,30], periodToDateRange() 자동 계산 |
+| B2 | ✅ 완료 | calculateMetricScore: percentile 보간 + zero-div 방어 |
+| B3 | ✅ 완료 | foundation(3) + engagement(1) + conversion(5) = 9개 지표 |
+| B4 | ✅ 완료 | 분자/분모 SUM 후 재계산 (역산 방식) |
+| B5 | ✅ 완료 | 최신 calculated_at → dominantCT 우선 → ALL 폴백 |
+| B6 | ✅ 완료 | dataAvailableDays + "N일치 데이터 기준" + "내일부터 확인 가능합니다" |
+| B7 | ✅ 완료 | score/period/dataAvailableDays/grade/diagnostics/metrics/summary |
+
+### Part C: 기간 선택 UI — 4/4 ✅
+
+| 항목 | 상태 | 비고 |
+|------|------|------|
+| C1 | ✅ 완료 | period-tabs.tsx: [어제][7일][14일][30일][직접선택] |
+| C2 | ✅ 완료 | TotalValueGauge.tsx: periodLabel 동적 변경 + 데이터 부족 안내 |
+| C3 | ✅ 완료 | TOP 5 광고비(spend) 기준 정렬 — 모찌 확인 완료 |
+| C4 | ✅ 완료 | insights가 dateRange로 필터되므로 기간 연동 동작 |
+
+### 발견 이슈 및 조치
+
+| ID | 심각도 | 내용 | 조치 |
+|----|--------|------|------|
+| I1 | Medium | TOP 5 정렬: spend vs purchase_value | 모찌 결정: spend 기준 유지 — 수정 불필요 |
+| I2 | Low | DELETE API hard delete vs 서버 액션 soft delete | ✅ 수정 완료: API도 soft delete(active=false)로 통일 |
+| I3 | Low | 클라이언트 primary 재할당 중복 | ✅ 수정 완료: 클라이언트 코드 제거 (서버에 위임) |
+| I4 | Low | "직접선택" 탭 TASK 미언급 | 모찌 결정: 유지 |
+| I5 | Low | DailyMetricsTable mock data 잔존 | ✅ 수정 완료: mock 제거 + 빈 상태 처리 |
+| I6 | Trivial | purchase_value 네이밍(snake vs camel) | 모찌 결정: 수정 불필요 (JS 컨벤션) |
+
+### 최종: 14/14 항목 구현 완료, 3건 코드 수정 적용
 
 ---
 

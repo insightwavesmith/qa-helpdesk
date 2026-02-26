@@ -22,3 +22,11 @@ EOF
 
 # macOS 알림 (즉시 — Smith님에게)
 osascript -e "display notification \"${LAST_COMMIT}\" with title \"에이전트팀 태스크 완료\" sound name \"Glass\"" 2>/dev/null || true
+
+# 슬랙 DM 알림 (모찌 → Smith님)
+/opt/homebrew/bin/openclaw message send \
+  --channel slack \
+  --account mozzi \
+  --target U06BP49UEJD \
+  --message "[에이전트팀 태스크 완료] ${LAST_COMMIT} (변경 ${CHANGED_FILES}파일, ${BRANCH})" \
+  2>/dev/null || true
