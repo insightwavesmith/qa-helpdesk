@@ -12,7 +12,8 @@ export async function getMembers({
   page = 1,
   pageSize = 20,
   role,
-}: { page?: number; pageSize?: number; role?: string } = {}) {
+  cohort,
+}: { page?: number; pageSize?: number; role?: string; cohort?: string } = {}) {
   const supabase = await requireStaff();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
@@ -27,6 +28,10 @@ export async function getMembers({
     query = query.eq("role", role as "lead" | "member" | "student" | "assistant" | "admin");
   }
 
+  if (cohort) {
+    query = query.eq("cohort", cohort);
+  }
+
   const { data, count, error } = await query;
 
   if (error) {
@@ -35,6 +40,19 @@ export async function getMembers({
   }
 
   return { data: data || [], count: count || 0, error: null };
+}
+
+export async function getDistinctCohorts(): Promise<string[]> {
+  const supabase = createServiceClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("cohort")
+    .not("cohort", "is", null)
+    .neq("cohort", "");
+
+  if (!data) return [];
+  const unique = [...new Set(data.map((d) => d.cohort as string))].sort();
+  return unique;
 }
 
 export async function approveMember(

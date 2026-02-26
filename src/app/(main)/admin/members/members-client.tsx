@@ -17,6 +17,13 @@ import { Pagination } from "@/components/shared/Pagination";
 import { approveMember, getMemberDetail } from "@/actions/admin";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CheckCircle, Loader2, Mail, Users } from "lucide-react";
 import { MemberDetailModal } from "./member-detail-modal";
 import { SubscriberTab } from "@/components/admin/SubscriberTab";
@@ -41,6 +48,8 @@ interface Member {
 interface MembersClientProps {
   members: Member[];
   currentRole: string;
+  currentCohort: string;
+  cohortList: string[];
   currentPage: number;
   totalPages: number;
   totalCount: number;
@@ -74,6 +83,8 @@ function formatDate(dateStr: string | null) {
 export function MembersClient({
   members,
   currentRole,
+  currentCohort,
+  cohortList,
   currentPage,
   totalPages,
   totalCount,
@@ -113,7 +124,7 @@ export function MembersClient({
           params.delete(key);
         }
       });
-      if ("role" in updates) {
+      if ("role" in updates || "cohort" in updates) {
         params.delete("page");
       }
       router.push(`/admin/members?${params.toString()}`);
@@ -194,13 +205,35 @@ export function MembersClient({
       </TabsList>
 
       <TabsContent value="members" className="mt-4 space-y-4">
-        <CategoryFilter
-          categories={roleFilters}
-          currentValue={currentRole}
-          onChange={(value) =>
-            updateParams({ role: value === "all" ? "" : value })
-          }
-        />
+        <div className="flex items-center gap-3 flex-wrap">
+          <CategoryFilter
+            categories={roleFilters}
+            currentValue={currentRole}
+            onChange={(value) =>
+              updateParams({ role: value === "all" ? "" : value })
+            }
+          />
+          {cohortList.length > 0 && (
+            <Select
+              value={currentCohort || "all"}
+              onValueChange={(value) =>
+                updateParams({ cohort: value === "all" ? "" : value })
+              }
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="기수 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체 기수</SelectItem>
+                {cohortList.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
 
         <p className="text-sm text-muted-foreground">
           총 {totalCount}명의 회원

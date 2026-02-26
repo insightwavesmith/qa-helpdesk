@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -23,16 +24,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Users, DollarSign, TrendingUp, ShoppingCart, ArrowUpDown } from "lucide-react";
+import { Users, DollarSign, TrendingUp, ShoppingCart, ArrowUpDown, Award } from "lucide-react";
 import type { StudentPerformanceRow, PerformanceSummary } from "@/actions/performance";
 
 interface Props {
   initialRows: StudentPerformanceRow[];
   initialSummary: PerformanceSummary;
   cohorts: { id: string; name: string }[];
+  initialCohort?: string;
+  initialPeriod?: number;
 }
 
-type SortKey = "roas" | "spend" | "revenue" | "purchases";
+type SortKey = "roas" | "spend" | "revenue" | "purchases" | "t3Score";
+
+const PERIOD_OPTIONS = [
+  { value: "7", label: "7일" },
+  { value: "14", label: "14일" },
+  { value: "30", label: "30일" },
+];
 
 function formatKRW(value: number): string {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}백만`;
@@ -40,25 +49,82 @@ function formatKRW(value: number): string {
   return `₩${Math.round(value).toLocaleString()}`;
 }
 
-export function PerformanceClient({ initialRows, initialSummary, cohorts }: Props) {
+// T3: 성과 등급 계산 — roas는 비율(3.0 = 300%), spend는 원화
+function getPerformanceGrade(roas: number, spend: number): {
+  label: string;
+  emoji: string;
+  className: string;
+} {
+  if (spend === 0) {
+    return { label: "데이터없음", emoji: "⚪", className: "bg-gray-100 text-gray-500" };
+  }
+  if (roas >= 3.0 && spend >= 10000) {
+    return { label: "우수", emoji: "🥇", className: "bg-amber-50 text-amber-700 border border-amber-200" };
+  }
+  if (roas >= 1.0) {
+    return { label: "보통", emoji: "🥈", className: "bg-blue-50 text-blue-700 border border-blue-200" };
+  }
+  return { label: "미달", emoji: "🔴", className: "bg-red-50 text-red-700 border border-red-200" };
+}
+
+export function PerformanceClient({
+  initialRows,
+  initialSummary,
+  cohorts,
+  initialCohort = "",
+  initialPeriod = 30,
+}: Props) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [rows, setRows] = useState(initialRows);
   const [summary, setSummary] = useState(initialSummary);
-  const [cohortFilter, setCohortFilter] = useState<string>("all");
+  const [cohortFilter, setCohortFilter] = useState<string>(initialCohort || "all");
+  const [periodFilter, setPeriodFilter] = useState<string>(String(initialPeriod));
   const [sortKey, setSortKey] = useState<SortKey>("roas");
   const [sortAsc, setSortAsc] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleCohortChange = async (value: string) => {
-    setCohortFilter(value);
+  const updateParams = useCallback(
+    (updates: Record<string, string>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value && value !== "all" && value !== "30") {
+          params.set(key, value);
+        } else {
+          params.delete(key);
+        }
+      });
+      router.push(`/admin/performance${params.toString() ? `?${params.toString()}` : ""}`);
+    },
+    [router, searchParams],
+  );
+
+  const fetchData = async (cohort: string, period: string) => {
     setLoading(true);
     try {
       const { getStudentPerformance } = await import("@/actions/performance");
-      const result = await getStudentPerformance(value === "all" ? undefined : value);
+      const result = await getStudentPerformance(
+        cohort === "all" ? undefined : cohort,
+        parseInt(period, 10),
+      );
       setRows(result.rows);
       setSummary(result.summary);
     } finally {
       setLoading(false);
     }
+  };
+
+  // B1: cohort 드롭다운 value를 c.name (텍스트)으로 사용
+  const handleCohortChange = async (value: string) => {
+    setCohortFilter(value);
+    updateParams({ cohort: value === "all" ? "" : value, period: periodFilter });
+    await fetchData(value, periodFilter);
+  };
+
+  const handlePeriodChange = async (value: string) => {
+    setPeriodFilter(value);
+    updateParams({ cohort: cohortFilter === "all" ? "" : cohortFilter, period: value });
+    await fetchData(cohortFilter, value);
   };
 
   const handleSort = (key: SortKey) => {
@@ -72,10 +138,18 @@ export function PerformanceClient({ initialRows, initialSummary, cohorts }: Prop
 
   const sortedRows = useMemo(() => {
     return [...rows].sort((a, b) => {
-      const diff = a[sortKey] - b[sortKey];
+      let diff: number;
+      if (sortKey === "t3Score") {
+        diff = (a.t3Score ?? -1) - (b.t3Score ?? -1);
+      } else {
+        diff = a[sortKey] - b[sortKey];
+      }
       return sortAsc ? diff : -diff;
     });
   }, [rows, sortKey, sortAsc]);
+
+  // B4: 라벨 동적화 — "(30일)" → 선택 기간에 따라 변경
+  const periodLabel = `(${periodFilter}일)`;
 
   const statCards = [
     {
@@ -87,7 +161,7 @@ export function PerformanceClient({ initialRows, initialSummary, cohorts }: Prop
       iconColor: "text-blue-500",
     },
     {
-      label: "총 광고비 (30일)",
+      label: `총 광고비 ${periodLabel}`,
       value: formatKRW(summary.totalSpend),
       icon: DollarSign,
       accentColor: "border-l-purple-500",
@@ -103,7 +177,7 @@ export function PerformanceClient({ initialRows, initialSummary, cohorts }: Prop
       iconColor: "text-emerald-500",
     },
     {
-      label: "총 매출 (30일)",
+      label: `총 매출 ${periodLabel}`,
       value: formatKRW(summary.totalRevenue),
       icon: ShoppingCart,
       accentColor: "border-l-[#F75D5D]",
@@ -112,9 +186,26 @@ export function PerformanceClient({ initialRows, initialSummary, cohorts }: Prop
     },
   ];
 
+  // T4: 평균 T3 점수 카드 추가
+  const t3Rows = rows.filter((r) => r.t3Score != null && r.t3Score > 0);
+  const avgT3 = t3Rows.length > 0
+    ? Math.round(t3Rows.reduce((s, r) => s + (r.t3Score ?? 0), 0) / t3Rows.length)
+    : null;
+
+  if (avgT3 != null) {
+    statCards.push({
+      label: `평균 T3 점수 ${periodLabel}`,
+      value: `${avgT3}점`,
+      icon: Award,
+      accentColor: "border-l-indigo-500",
+      iconBg: "bg-indigo-50",
+      iconColor: "text-indigo-500",
+    });
+  }
+
   return (
     <div className="space-y-6">
-      {/* 기수 필터 */}
+      {/* 기수 + 기간 필터 */}
       <div className="flex items-center gap-3">
         <Select value={cohortFilter} onValueChange={handleCohortChange}>
           <SelectTrigger className="w-[200px]">
@@ -122,9 +213,22 @@ export function PerformanceClient({ initialRows, initialSummary, cohorts }: Prop
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">전체 기수</SelectItem>
+            {/* B1: value를 c.name (텍스트)으로 사용 */}
             {cohorts.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
+              <SelectItem key={c.id} value={c.name}>
                 {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={periodFilter} onValueChange={handlePeriodChange}>
+          <SelectTrigger className="w-[120px]">
+            <SelectValue placeholder="기간 선택" />
+          </SelectTrigger>
+          <SelectContent>
+            {PERIOD_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -135,7 +239,7 @@ export function PerformanceClient({ initialRows, initialSummary, cohorts }: Prop
       </div>
 
       {/* 요약 카드 */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className={`grid gap-4 sm:grid-cols-2 ${avgT3 != null ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
@@ -221,6 +325,20 @@ export function PerformanceClient({ initialRows, initialSummary, cohorts }: Prop
                     <ArrowUpDown className="ml-1 h-3 w-3" />
                   </Button>
                 </TableHead>
+                <TableHead className="text-xs font-medium text-gray-500 uppercase">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 text-xs font-medium text-gray-500 uppercase hover:text-gray-700"
+                    onClick={() => handleSort("t3Score")}
+                  >
+                    T3 점수
+                    <ArrowUpDown className="ml-1 h-3 w-3" />
+                  </Button>
+                </TableHead>
+                <TableHead className="text-xs font-medium text-gray-500 uppercase">
+                  등급
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -232,6 +350,8 @@ export function PerformanceClient({ initialRows, initialSummary, cohorts }: Prop
                     : roasPercent < 100 && roasPercent > 0
                       ? "text-red-700 bg-red-50"
                       : "";
+                // T3: 성과 등급 (B2: roas 비율 기준 사용)
+                const grade = getPerformanceGrade(row.roas, row.spend);
                 return (
                   <TableRow
                     key={row.userId}
@@ -262,6 +382,35 @@ export function PerformanceClient({ initialRows, initialSummary, cohorts }: Prop
                     </TableCell>
                     <TableCell className="text-sm text-gray-900 font-mono">
                       {row.purchases > 0 ? row.purchases.toLocaleString() : "-"}
+                    </TableCell>
+                    {/* T4: T3 점수 */}
+                    <TableCell className="text-sm font-mono">
+                      {row.t3Score != null ? (
+                        <span className="flex items-center gap-1">
+                          <span className="font-medium text-gray-900">{row.t3Score}</span>
+                          {row.t3Grade && (
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${
+                              row.t3Grade === "A" ? "bg-emerald-50 text-emerald-700" :
+                              row.t3Grade === "B" ? "bg-blue-50 text-blue-700" :
+                              row.t3Grade === "C" ? "bg-amber-50 text-amber-700" :
+                              row.t3Grade === "D" ? "bg-orange-50 text-orange-700" :
+                              "bg-red-50 text-red-700"
+                            }`}>
+                              {row.t3Grade}
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </TableCell>
+                    {/* T3: 성과 등급 배지 */}
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${grade.className}`}
+                      >
+                        {grade.emoji} {grade.label}
+                      </span>
                     </TableCell>
                   </TableRow>
                 );

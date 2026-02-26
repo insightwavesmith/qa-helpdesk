@@ -1,25 +1,30 @@
-import { getMembers } from "@/actions/admin";
+import { getMembers, getDistinctCohorts } from "@/actions/admin";
 import { getSubscriberCount } from "@/actions/subscribers";
 import { MembersClient } from "./members-client";
 
 export default async function AdminMembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; role?: string; tab?: string }>;
+  searchParams: Promise<{ page?: string; role?: string; tab?: string; cohort?: string }>;
 }) {
   const params = await searchParams;
   const page = parseInt(params.page || "1", 10);
   const role = params.role || "all";
   const tab = params.tab || "members";
+  const cohort = params.cohort || "";
 
-  const { data: members, count } = await getMembers({
-    page,
-    pageSize: 20,
-    role: role !== "all" ? role : undefined,
-  });
+  const [{ data: members, count }, subscriberCount, cohortList] = await Promise.all([
+    getMembers({
+      page,
+      pageSize: 20,
+      role: role !== "all" ? role : undefined,
+      cohort: cohort || undefined,
+    }),
+    getSubscriberCount(),
+    getDistinctCohorts(),
+  ]);
 
   const totalPages = Math.ceil((count || 0) / 20);
-  const subscriberCount = await getSubscriberCount();
 
   return (
     <div className="space-y-6">
@@ -33,6 +38,8 @@ export default async function AdminMembersPage({
       <MembersClient
         members={members}
         currentRole={role}
+        currentCohort={cohort}
+        cohortList={cohortList}
         currentPage={page}
         totalPages={totalPages}
         totalCount={count || 0}
