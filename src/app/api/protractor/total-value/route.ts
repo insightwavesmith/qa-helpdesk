@@ -1,25 +1,113 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireProtractorAccess, verifyAccountOwnership } from "../_shared";
 
-// 지표 정의
-const METRIC_DEFS = [
-  { name: "3초시청률", benchKey: "video_p3s_rate", unit: "%" },
-  { name: "CTR", benchKey: "ctr", unit: "%" },
-  { name: "참여합계/만노출", benchKey: "engagement_per_10k", unit: "" },
-  { name: "결제시작율", benchKey: "click_to_checkout_rate", unit: "%" },
-  { name: "구매전환율", benchKey: "click_to_purchase_rate", unit: "%" },
-  { name: "노출→구매", benchKey: "reach_to_purchase_rate", unit: "%" },
-] as const;
+// ============================================================
+// T3 점수 엔진 — 지표 정의
+// ============================================================
 
-type GradeLabel = { grade: "A" | "B" | "C" | "D" | "F"; label: string };
+interface T3MetricDef {
+  name: string;
+  key: string;
+  ascending: boolean; // true = 높을수록 좋음
+  unit: string;
+}
 
-function calcGrade(greenCount: number): GradeLabel {
-  if (greenCount >= 4) return { grade: "A", label: "우수" };
-  if (greenCount >= 3) return { grade: "B", label: "양호" };
-  if (greenCount >= 2) return { grade: "C", label: "보통" };
-  if (greenCount >= 1) return { grade: "D", label: "주의 필요" };
+const T3_PARTS: Record<string, { label: string; metrics: T3MetricDef[] }> = {
+  foundation: {
+    label: "기반점수",
+    metrics: [
+      { name: "3초시청률", key: "video_p3s_rate", ascending: true, unit: "%" },
+      { name: "ThruPlay율", key: "thruplay_rate", ascending: true, unit: "%" },
+      { name: "지속비율", key: "retention_rate", ascending: true, unit: "%" },
+    ],
+  },
+  engagement: {
+    label: "참여율",
+    metrics: [
+      { name: "참여합계/만노출", key: "engagement_per_10k", ascending: true, unit: "" },
+    ],
+  },
+  conversion: {
+    label: "전환율",
+    metrics: [
+      { name: "CTR", key: "ctr", ascending: true, unit: "%" },
+      { name: "결제시작율", key: "click_to_checkout_rate", ascending: true, unit: "%" },
+      { name: "구매전환율", key: "click_to_purchase_rate", ascending: true, unit: "%" },
+      { name: "노출대비구매", key: "reach_to_purchase_rate", ascending: true, unit: "%" },
+      { name: "결제→구매율", key: "checkout_to_purchase_rate", ascending: true, unit: "%" },
+    ],
+  },
+};
+
+const ALL_METRIC_DEFS = Object.values(T3_PARTS).flatMap((p) => p.metrics);
+
+// ============================================================
+// 점수 계산 (percentile 보간)
+// ============================================================
+
+interface BenchEntry {
+  p25: number | null;
+  p50: number | null;
+  p75: number | null;
+  p90: number | null;
+}
+
+function calculateMetricScore(
+  value: number,
+  bench: BenchEntry,
+  ascending: boolean
+): number {
+  const { p25, p50, p75, p90 } = bench;
+  if (p25 == null || p50 == null || p75 == null || p90 == null) return 50;
+
+  if (ascending) {
+    if (value >= p90) return 100;
+    if (value >= p75 && p90 > p75) return 75 + ((value - p75) / (p90 - p75)) * 25;
+    if (value >= p50 && p75 > p50) return 50 + ((value - p50) / (p75 - p50)) * 25;
+    if (value >= p25 && p50 > p25) return 25 + ((value - p25) / (p50 - p25)) * 25;
+    if (p25 > 0) return Math.max(0, (value / p25) * 25);
+    return 0;
+  } else {
+    if (value <= p25) return 100;
+    if (value <= p50 && p50 > p25) return 75 + ((p50 - value) / (p50 - p25)) * 25;
+    if (value <= p75 && p75 > p50) return 50 + ((p75 - value) / (p75 - p50)) * 25;
+    if (value <= p90 && p90 > p75) return 25 + ((p90 - value) / (p90 - p75)) * 25;
+    if (p90 > 0) return Math.max(0, 25 - ((value - p90) / p90) * 25);
+    return 0;
+  }
+}
+
+function scoreToStatus(score: number): string {
+  if (score >= 75) return "🟢";
+  if (score >= 50) return "🟡";
+  return "🔴";
+}
+
+function scoreToGrade(score: number): { grade: "A" | "B" | "C" | "D" | "F"; label: string } {
+  if (score >= 80) return { grade: "A", label: "우수" };
+  if (score >= 60) return { grade: "B", label: "양호" };
+  if (score >= 40) return { grade: "C", label: "보통" };
+  if (score >= 20) return { grade: "D", label: "주의 필요" };
   return { grade: "F", label: "위험" };
 }
+
+// ============================================================
+// period → date range
+// ============================================================
+
+function periodToDateRange(period: number): { start: string; end: string } {
+  const end = new Date();
+  end.setDate(end.getDate() - 1); // 어제까지
+  const endStr = end.toISOString().split("T")[0];
+  const start = new Date(end);
+  start.setDate(start.getDate() - (period - 1));
+  const startStr = start.toISOString().split("T")[0];
+  return { start: startStr, end: endStr };
+}
+
+// ============================================================
+// API 핸들러
+// ============================================================
 
 export async function GET(request: NextRequest) {
   const auth = await requireProtractorAccess();
@@ -28,11 +116,20 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const accountId = searchParams.get("account_id");
-  const dateStart = searchParams.get("date_start");
-  const dateEnd = searchParams.get("date_end");
+  const periodParam = parseInt(searchParams.get("period") ?? "1", 10);
+  let dateStart = searchParams.get("date_start");
+  let dateEnd = searchParams.get("date_end");
 
   if (!accountId) {
     return NextResponse.json({ error: "account_id 필수" }, { status: 400 });
+  }
+
+  // period → date range 자동 계산 (date_start/end 없을 때)
+  const period = [1, 7, 14, 30].includes(periodParam) ? periodParam : 1;
+  if (!dateStart || !dateEnd) {
+    const range = periodToDateRange(period);
+    dateStart = range.start;
+    dateEnd = range.end;
   }
 
   const hasAccess = await verifyAccountOwnership(svc, user.id, profile.role, accountId);
@@ -41,49 +138,69 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // 1. daily_ad_insights 조회
-    let query = svc
+    // ── 1. daily_ad_insights 조회 ──
+    const { data: rawData } = await svc
       .from("daily_ad_insights")
       .select("*")
-      .eq("account_id", accountId);
+      .eq("account_id", accountId)
+      .gte("date", dateStart)
+      .lte("date", dateEnd);
 
-    if (dateStart) query = query.gte("date", dateStart);
-    if (dateEnd) query = query.lte("date", dateEnd);
-
-    const { data: rawData } = await query;
     const rows = rawData as unknown as Record<string, unknown>[] | null;
 
+    // 데이터 없음 처리 (B6)
     if (!rows || rows.length === 0) {
-      return NextResponse.json({ error: "데이터 없음" }, { status: 404 });
+      return NextResponse.json({
+        score: null,
+        period,
+        dataAvailableDays: 0,
+        grade: null,
+        diagnostics: null,
+        metrics: [],
+        summary: null,
+        message: "내일부터 확인 가능합니다",
+      });
     }
 
-    // 2. 집계
+    // ── 2. 집계 (분자/분모 SUM 후 재계산) ──
     let totalImpressions = 0;
     let totalClicks = 0;
     let totalPurchases = 0;
     let totalSpend = 0;
     let totalVideoP3s = 0;
+    let totalThruplay = 0;
     let totalReactions = 0;
     let totalComments = 0;
     let totalShares = 0;
     let totalSaves = 0;
     let totalInitiateCheckout = 0;
     let totalReach = 0;
+    let totalPurchaseValue = 0;
+
+    const uniqueDates = new Set<string>();
+    const adIds = new Set<string>();
 
     for (const row of rows) {
       const imp = Number(row.impressions) || 0;
       const clk = Number(row.clicks) || 0;
       const rowReach = Number(row.reach) || 0;
+
       totalImpressions += imp;
       totalClicks += clk;
       totalPurchases += Number(row.purchases) || 0;
       totalSpend += Number(row.spend) || 0;
       totalReach += rowReach;
+      totalPurchaseValue += Number(row.purchase_value) || 0;
+      totalInitiateCheckout += Number(row.initiate_checkout) || 0;
 
-      // rate에서 역산 (reach 기반)
+      // 영상 지표 역산
       const p3sRate = Number(row.video_p3s_rate) || 0;
       totalVideoP3s += (p3sRate / 100) * rowReach;
 
+      const thruplayRate = Number(row.thruplay_rate) || 0;
+      totalThruplay += (thruplayRate / 100) * imp;
+
+      // 참여 지표 역산
       const reactPer10k = Number(row.reactions_per_10k) || 0;
       const commentPer10k = Number(row.comments_per_10k) || 0;
       const sharePer10k = Number(row.shares_per_10k) || 0;
@@ -93,33 +210,30 @@ export async function GET(request: NextRequest) {
       totalShares += (sharePer10k / 10000) * imp;
       totalSaves += (savesPer10k / 10000) * imp;
 
-      totalInitiateCheckout += Number(row.initiate_checkout) || 0;
+      // 고유 날짜/광고 수집
+      if (row.date) uniqueDates.add(row.date as string);
+      if (row.ad_id) adIds.add(row.ad_id as string);
     }
 
-    // 6개 지표 계산
+    const dataAvailableDays = uniqueDates.size;
+
+    // ── 3. 9개 지표 값 계산 (분자/분모 SUM 후 재계산) ──
     const metricValues: Record<string, number | null> = {
       video_p3s_rate: totalReach > 0 ? (totalVideoP3s / totalReach) * 100 : null,
-      ctr: totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : null,
+      thruplay_rate: totalImpressions > 0 ? (totalThruplay / totalImpressions) * 100 : null,
+      retention_rate: totalVideoP3s > 0 ? (totalThruplay / totalVideoP3s) * 100 : null,
       engagement_per_10k:
         totalImpressions > 0
           ? ((totalReactions + totalComments + totalShares + totalSaves) / totalImpressions) * 10000
           : null,
-      click_to_checkout_rate:
-        totalClicks > 0 ? (totalInitiateCheckout / totalClicks) * 100 : null,
-      click_to_purchase_rate:
-        totalClicks > 0 ? (totalPurchases / totalClicks) * 100 : null,
-      reach_to_purchase_rate:
-        totalImpressions > 0 ? (totalPurchases / totalImpressions) * 100 : null,
+      ctr: totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : null,
+      click_to_checkout_rate: totalClicks > 0 ? (totalInitiateCheckout / totalClicks) * 100 : null,
+      click_to_purchase_rate: totalClicks > 0 ? (totalPurchases / totalClicks) * 100 : null,
+      reach_to_purchase_rate: totalImpressions > 0 ? (totalPurchases / totalImpressions) * 100 : null,
+      checkout_to_purchase_rate: totalInitiateCheckout > 0 ? (totalPurchases / totalInitiateCheckout) * 100 : null,
     };
 
-    // 2-b. 고유 광고 수 (adCount)
-    const adIds = new Set<string>();
-    for (const row of rows) {
-      const aid = row.ad_id as string | undefined;
-      if (aid) adIds.add(aid);
-    }
-
-    // 2-c. 계정의 주된 creative_type 계산
+    // ── 4. 계정 주된 creative_type ──
     const ctCounts = new Map<string, number>();
     for (const row of rows) {
       const ct = ((row.creative_type as string) ?? "ALL").toUpperCase();
@@ -134,92 +248,134 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 3. 벤치마크 조회 (creative_type 매칭 → ALL 폴백)
+    // ── 5. 벤치마크 조회 (p25/p50/p75/p90) ──
+    const benchMap: Record<string, BenchEntry> = {};
+
     const { data: latestBench } = await svc
       .from("benchmarks")
       .select("date")
       .order("calculated_at", { ascending: false })
       .limit(1);
 
-    const benchMap: Record<string, { p50: number | null; p75: number | null }> = {};
-
     if (latestBench && latestBench.length > 0) {
       const { data: benchRows } = await svc
         .from("benchmarks")
-        .select("metric_name, p50, p75, creative_type")
+        .select("metric_name, p25, p50, p75, p90, creative_type")
         .eq("date", latestBench[0].date);
 
       if (benchRows) {
-        // creative_type별로 그룹핑
-        const byType = new Map<string, Record<string, { p50: number | null; p75: number | null }>>();
+        const byType = new Map<string, Record<string, BenchEntry>>();
         for (const row of benchRows) {
           const r = row as Record<string, unknown>;
           const ct = ((r.creative_type as string) ?? "ALL").toUpperCase();
           if (!byType.has(ct)) byType.set(ct, {});
           byType.get(ct)![r.metric_name as string] = {
+            p25: r.p25 as number | null,
             p50: r.p50 as number | null,
             p75: r.p75 as number | null,
+            p90: r.p90 as number | null,
           };
         }
 
-        // dominantCT 우선 → ALL 폴백
         const primary = byType.get(dominantCT);
         const fallback = byType.get("ALL");
 
-        for (const def of METRIC_DEFS) {
-          const key = def.benchKey;
-          const entry = primary?.[key] ?? fallback?.[key];
-          if (entry) benchMap[key] = entry;
+        for (const def of ALL_METRIC_DEFS) {
+          const entry = primary?.[def.key] ?? fallback?.[def.key];
+          if (entry) benchMap[def.key] = entry;
         }
       }
     }
 
-    // 4. 판정
-    let greenCount = 0;
-    const metricsResult = METRIC_DEFS.map((def) => {
-      const value = metricValues[def.benchKey];
-      const bench = benchMap[def.benchKey];
-      const p50 = bench?.p50 ?? null;
-      const p75 = bench?.p75 ?? null;
+    // ── 6. 점수 계산 + 진단 3파트 구성 ──
+    type MetricResult = {
+      name: string;
+      key: string;
+      value: number | null;
+      score: number | null;
+      p25: number | null;
+      p50: number | null;
+      p75: number | null;
+      p90: number | null;
+      status: string;
+      unit: string;
+    };
 
-      let status: string;
-      if (value == null) {
-        status = "⚪";
-      } else if (p75 != null && value >= p75) {
-        status = "🟢";
-        greenCount++;
-      } else if (p50 != null && value >= p50) {
-        status = "🟡";
-      } else {
-        status = "🔴";
+    const diagnostics: Record<string, { label: string; score: number; metrics: MetricResult[] }> = {};
+    const allMetrics: MetricResult[] = [];
+    const partScores: number[] = [];
+
+    for (const [partKey, partDef] of Object.entries(T3_PARTS)) {
+      const partMetrics: MetricResult[] = [];
+      const scores: number[] = [];
+
+      for (const def of partDef.metrics) {
+        const value = metricValues[def.key];
+        const bench = benchMap[def.key];
+        let metricScore: number | null = null;
+        let status = "⚪";
+
+        if (value != null && bench) {
+          metricScore = Math.round(calculateMetricScore(value, bench, def.ascending) * 100) / 100;
+          status = scoreToStatus(metricScore);
+          scores.push(metricScore);
+        }
+
+        const result: MetricResult = {
+          name: def.name,
+          key: def.key,
+          value: value != null ? Math.round(value * 100) / 100 : null,
+          score: metricScore != null ? Math.round(metricScore) : null,
+          p25: bench?.p25 != null ? Math.round(bench.p25 * 100) / 100 : null,
+          p50: bench?.p50 != null ? Math.round(bench.p50 * 100) / 100 : null,
+          p75: bench?.p75 != null ? Math.round(bench.p75 * 100) / 100 : null,
+          p90: bench?.p90 != null ? Math.round(bench.p90 * 100) / 100 : null,
+          status,
+          unit: def.unit,
+        };
+
+        partMetrics.push(result);
+        allMetrics.push(result);
       }
 
-      return {
-        name: def.name,
-        value: value != null ? Math.round(value * 100) / 100 : null,
-        p50: p50 != null ? Math.round(p50 * 100) / 100 : null,
-        p75: p75 != null ? Math.round(p75 * 100) / 100 : null,
-        status,
+      const partScore = scores.length > 0
+        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+        : 0;
+
+      diagnostics[partKey] = {
+        label: partDef.label,
+        score: partScore,
+        metrics: partMetrics,
       };
-    });
 
-    // 5. 등급
-    const { grade, label: gradeLabel } = calcGrade(greenCount);
+      partScores.push(partScore);
+    }
 
-    // 6. ROAS 계산
-    const totalRevenue = rows.reduce((s, r) => s + (Number(r.purchase_value) || 0), 0);
-    const totalRoas = totalSpend > 0 ? totalRevenue / totalSpend : 0;
+    // T3 총점 = (기반점수 + 참여율 + 전환율) / 3
+    const t3Score = partScores.length > 0
+      ? Math.round(partScores.reduce((a, b) => a + b, 0) / partScores.length)
+      : 0;
 
+    const gradeResult = scoreToGrade(t3Score);
+
+    // ── 7. 응답 ──
     return NextResponse.json({
-      grade,
-      gradeLabel,
-      totalSpend: Math.round(totalSpend),
-      totalClicks,
-      totalPurchases,
-      totalRoas: Math.round(totalRoas * 100) / 100,
-      adCount: adIds.size,
-      period: { start: dateStart, end: dateEnd },
-      metrics: metricsResult,
+      score: t3Score,
+      period,
+      dataAvailableDays,
+      grade: gradeResult,
+      diagnostics,
+      metrics: allMetrics,
+      summary: {
+        spend: Math.round(totalSpend),
+        impressions: totalImpressions,
+        reach: totalReach,
+        clicks: totalClicks,
+        purchases: totalPurchases,
+        purchaseValue: Math.round(totalPurchaseValue),
+        roas: totalSpend > 0 ? Math.round((totalPurchaseValue / totalSpend) * 100) / 100 : 0,
+        adCount: adIds.size,
+      },
     });
   } catch (e) {
     return NextResponse.json(

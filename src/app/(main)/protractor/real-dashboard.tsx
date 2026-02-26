@@ -40,6 +40,47 @@ function yesterday(): PeriodDateRange {
   return { start: s, end: s };
 }
 
+// ── T3 API 응답 타입 ──
+
+interface T3MetricResult {
+  name: string;
+  key: string;
+  value: number | null;
+  score: number | null;
+  p25: number | null;
+  p50: number | null;
+  p75: number | null;
+  p90: number | null;
+  status: string;
+  unit: string;
+}
+
+interface T3DiagnosticPart {
+  label: string;
+  score: number;
+  metrics: T3MetricResult[];
+}
+
+interface T3Response {
+  score: number | null;
+  period: number;
+  dataAvailableDays: number;
+  grade: { grade: "A" | "B" | "C" | "D" | "F"; label: string } | null;
+  diagnostics: Record<string, T3DiagnosticPart> | null;
+  metrics: T3MetricResult[];
+  summary: {
+    spend: number;
+    impressions: number;
+    reach: number;
+    clicks: number;
+    purchases: number;
+    purchaseValue: number;
+    roas: number;
+    adCount: number;
+  } | null;
+  message?: string;
+}
+
 // 진단 결과 원본 타입 (diagnose API 응답)
 interface RawDiagnosisMetric {
   name: string;
@@ -72,19 +113,10 @@ export default function RealDashboard() {
   const [accounts, setAccounts] = useState<AdAccount[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<PeriodDateRange>(yesterday());
+  const [periodNum, setPeriodNum] = useState(1); // 기간 (일수)
   const [insights, setInsights] = useState<AdInsightRow[]>([]);
   const [rawDiagnoses, setRawDiagnoses] = useState<RawDiagnosis[] | null>(null);
-  const [totalValue, setTotalValue] = useState<{
-    grade: "A" | "B" | "C" | "D" | "F";
-    gradeLabel: string;
-    totalSpend: number;
-    totalClicks: number;
-    totalPurchases: number;
-    totalRoas: number;
-    adCount: number;
-    period: { start: string; end: string } | null;
-    metrics: { name: string; value: number | null; p50: number | null; p75: number | null; status: string }[];
-  } | null>(null);
+  const [totalValue, setTotalValue] = useState<T3Response | null>(null);
 
   const [benchmarks, setBenchmarks] = useState<BenchmarkRow[]>([]);
 
@@ -108,10 +140,10 @@ export default function RealDashboard() {
         if (!res.ok) throw new Error(json.error || "계정 로드 실패");
         const data: AdAccount[] = json.data ?? [];
         setAccounts(data);
-        // URL 파라미터로 계정 지정된 경우 우선 선택
+        // URL 파라미터로 계정 지정된 경우 우선 선택, 아니면 첫 번째 자동 선택
         if (accountParam && data.some((a) => a.account_id === accountParam)) {
           setSelectedAccountId(accountParam);
-        } else if (data.length === 1) {
+        } else if (data.length >= 1) {
           setSelectedAccountId(data[0].account_id);
         }
       } catch (e) {
@@ -199,7 +231,7 @@ export default function RealDashboard() {
     })();
   }, [selectedAccountId, insights, dateRange]);
 
-  // 4) 총가치수준 호출 (insights와 독립적으로 호출)
+  // 4) 총가치수준 T3 호출 (period 포함)
   useEffect(() => {
     if (!selectedAccountId) {
       setTotalValue(null);
@@ -211,24 +243,24 @@ export default function RealDashboard() {
       try {
         const params = new URLSearchParams({
           account_id: selectedAccountId,
+          period: String(periodNum),
           date_start: dateRange.start,
           date_end: dateRange.end,
         });
         const res = await fetch(`/api/protractor/total-value?${params}`);
-        const json = await res.json();
-        if (res.ok && json.grade) {
+        const json: T3Response = await res.json();
+        if (res.ok) {
           setTotalValue(json);
         } else {
           setTotalValue(null);
         }
       } catch {
-        // 총가치수준 실패해도 대시보드 표시
         setTotalValue(null);
       } finally {
         setLoadingTotalValue(false);
       }
     })();
-  }, [selectedAccountId, dateRange]);
+  }, [selectedAccountId, dateRange, periodNum]);
 
   // 5) 타겟중복 분석 (overlap 탭 활성 + 7일 이상일 때)
   const fetchOverlap = useCallback(
@@ -271,8 +303,9 @@ export default function RealDashboard() {
     }
   }, [activeTab, fetchOverlap]);
 
-  const handlePeriodChange = (range: PeriodDateRange) => {
+  const handlePeriodChange = (range: PeriodDateRange, days: number) => {
     setDateRange(range);
+    setPeriodNum(days);
   };
 
   const handleAccountSelect = (accountId: string) => {
@@ -371,26 +404,18 @@ export default function RealDashboard() {
           {/* 데이터 표시 — 목업 순서: 게이지 → 요약카드 → TOP5 광고 (항상 표시) */}
           {selectedAccountId && !loadingData && (
             <>
-              {/* 3a. TotalValueGauge */}
+              {/* 3a. TotalValueGauge (T3 엔진) */}
               <TotalValueGauge
-                grade={totalValue?.grade}
-                gradeLabel={totalValue?.gradeLabel}
-                totalSpend={totalValue?.totalSpend}
-                totalClicks={totalValue?.totalClicks}
-                totalPurchases={totalValue?.totalPurchases}
-                totalRoas={totalValue?.totalRoas}
-                adCount={totalValue?.adCount}
-                metrics={totalValue?.metrics}
-                dateRange={dateRange}
+                data={totalValue}
                 isLoading={loadingTotalValue}
               />
 
               {/* 3b. SummaryCards */}
               <SummaryCards cards={summaryCards} />
 
-              {/* 3c. 진단 3컬럼 (기반점수 / 참여율 / 전환율) */}
-              {!loadingDiagnosis && rawDiagnoses && rawDiagnoses.length > 0 && (
-                <DiagnosticPanel diagnoses={rawDiagnoses} />
+              {/* 3c. 진단 3컬럼 (T3 기반점수 / 참여율 / 전환율) */}
+              {totalValue?.diagnostics && (
+                <DiagnosticPanel t3Diagnostics={totalValue.diagnostics} />
               )}
 
               {/* 3d. Top5AdCards (항상 표시, 토글 없음) */}

@@ -154,12 +154,28 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
   };
 
   const handleRemoveAccount = async (accountId: string) => {
+    const confirmed = window.confirm(
+      `광고계정 ${accountId}를 삭제하시겠습니까?\n삭제 후 복구할 수 없습니다.`
+    );
+    if (!confirmed) return;
+
     const result = await removeAdAccount(accountId);
     if (result.error) {
       toast.error(`계정 삭제 실패: ${result.error}`);
     } else {
       toast.success("광고계정이 삭제되었습니다.");
       setAccounts((prev) => prev.filter((a) => a.account_id !== accountId));
+
+      // 삭제 대상이 대표 계정이면 profiles.meta_account_id 변경
+      if (accountId === profile?.meta_account_id) {
+        const remaining = accounts.filter((a) => a.account_id !== accountId);
+        const newPrimary = remaining.length > 0 ? remaining[0].account_id : null;
+        const supabase = createClient();
+        await supabase
+          .from("profiles")
+          .update({ meta_account_id: newPrimary })
+          .eq("id", userId);
+      }
     }
   };
 

@@ -60,10 +60,10 @@ export function ProtractorHeader({
           </span>
         )}
 
-        {/* 계정 드롭다운 */}
+        {/* 계정 드롭다운 (2개 이상일 때만, 1개면 바로 표시) */}
         {isLoading ? (
           <div className="h-10 w-[200px] animate-pulse rounded-md bg-gray-100" />
-        ) : accounts.length > 0 ? (
+        ) : accounts.length > 1 ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button

@@ -42,8 +42,17 @@ const PERIOD_OPTIONS: { key: PeriodKey; label: string }[] = [
   { key: "custom", label: "직접선택" },
 ];
 
+// PeriodKey → 일수 매핑
+const PERIOD_DAYS: Record<PeriodKey, number> = {
+  yesterday: 1,
+  "7d": 7,
+  "14d": 14,
+  "30d": 30,
+  custom: 0,
+};
+
 interface PeriodTabsProps {
-  onPeriodChange: (range: DateRange) => void;
+  onPeriodChange: (range: DateRange, periodDays: number) => void;
 }
 
 // 기간 선택 탭
@@ -56,14 +65,15 @@ export function PeriodTabs({ onPeriodChange }: PeriodTabsProps) {
     setActivePeriod(period);
 
     if (period !== "custom") {
-      onPeriodChange(getDateRange(period));
+      onPeriodChange(getDateRange(period), PERIOD_DAYS[period]);
     }
   };
 
   const handleCustomApply = () => {
     if (!customStart || !customEnd) return;
     if (customStart > customEnd) return;
-    onPeriodChange({ start: customStart, end: customEnd });
+    const days = Math.round((new Date(customEnd).getTime() - new Date(customStart).getTime()) / 86400000) + 1;
+    onPeriodChange({ start: customStart, end: customEnd }, days);
   };
 
   // 현재 활성 기간의 날짜 범위 라벨
