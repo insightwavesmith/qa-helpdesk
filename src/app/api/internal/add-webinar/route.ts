@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
       .insert({
         title,
         body_md,
+        type: "webinar",
         source_type: "webinar",
         source_ref,
         curation_status: "new",
