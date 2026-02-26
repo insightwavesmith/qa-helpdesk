@@ -62,13 +62,17 @@ const TYPE_LABEL: Record<string, string> = {
   promo: "홍보",
 };
 
+// Module-level cache — 뒤로가기 시 로딩 스피너 방지 (컴포넌트 재마운트 되어도 캐시 유지)
+let _contentsCache: Content[] | null = null;
+let _contentsCacheCount = 0;
+
 export default function AdminContentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentTab = searchParams.get("tab") ?? "curation";
-  const [contents, setContents] = useState<Content[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [contents, setContents] = useState<Content[]>(_contentsCache ?? []);
+  const [totalCount, setTotalCount] = useState(_contentsCacheCount);
+  const [loading, setLoading] = useState(!_contentsCache);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [modalOpen, setModalOpen] = useState(false);
@@ -77,7 +81,7 @@ export default function AdminContentPage() {
   const [sidebarSource, setSidebarSource] = useState("all");
 
   const loadContents = useCallback(async () => {
-    setLoading(true);
+    if (!_contentsCache) setLoading(true);
     try {
       const params: { type?: string; status?: string; sourceType?: string; pageSize?: number } =
         { pageSize: 100, sourceType: "info_share" };
@@ -91,6 +95,8 @@ export default function AdminContentPage() {
       }
       setContents(filtered);
       setTotalCount(statusFilter === "sent" ? filtered.length : (count ?? 0));
+      _contentsCache = filtered;
+      _contentsCacheCount = statusFilter === "sent" ? filtered.length : (count ?? 0);
     } catch {
       setContents([]);
       setTotalCount(0);
@@ -105,7 +111,7 @@ export default function AdminContentPage() {
   }, [loadContents]);
 
   const handleRowClick = (contentId: string) => {
-    router.push(`/admin/content/${contentId}`);
+    router.push(`/admin/content/${contentId}?from=${currentTab}`);
   };
 
   const handleNewContent = () => setModalOpen(true);
@@ -392,7 +398,7 @@ export default function AdminContentPage() {
       <NewContentModal
         open={modalOpen}
         onOpenChange={setModalOpen}
-        onCreated={(id) => router.push(`/admin/content/${id}`)}
+        onCreated={(id) => router.push(`/admin/content/${id}?from=${currentTab}`)}
       />
 
       {generateIds && (

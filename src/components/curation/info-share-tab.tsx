@@ -88,7 +88,7 @@ export function InfoShareTab() {
               <TableRow
                 key={item.id}
                 className="cursor-pointer hover:bg-gray-50"
-                onClick={() => router.push(`/admin/content/${item.id}`)}
+                onClick={() => router.push(`/admin/content/${item.id}?from=posts`)}
               >
                 <TableCell className="font-medium max-w-[400px] truncate">
                   {item.title}

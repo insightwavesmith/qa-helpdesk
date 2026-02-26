@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ArrowLeft, Loader2, Sparkles, Zap, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,9 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
 export default function ContentDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const contentId = params.id as string;
+  const fromTab = searchParams.get("from") || "curation";
 
   const [content, setContent] = useState<Content | null>(null);
   const [loading, setLoading] = useState(true);
@@ -172,15 +175,18 @@ export default function ContentDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* BackLink — router.back()으로 탭 상태 + 스크롤 위치 보존 */}
-      <button
-        type="button"
-        onClick={() => router.back()}
+      {/* BackLink — Link로 prefetch + router.back()으로 히스토리 정합성 유지 */}
+      <Link
+        href={`/admin/content?tab=${fromTab}`}
+        onClick={(e) => {
+          e.preventDefault();
+          router.back();
+        }}
         className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-gray-900 transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
         콘텐츠 목록
-      </button>
+      </Link>
 
       {/* ContentHeader */}
       <div className="flex items-start justify-between">

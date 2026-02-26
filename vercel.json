@@ -1,6 +1,7 @@
 {
   "crons": [
     { "path": "/api/cron/collect-daily", "schedule": "0 3 * * *" },
-    { "path": "/api/cron/collect-benchmarks", "schedule": "0 2 * * 1" }
+    { "path": "/api/cron/collect-benchmarks", "schedule": "0 2 * * 1" },
+    { "path": "/api/cron/collect-mixpanel", "schedule": "30 3 * * *" }
   ]
 }

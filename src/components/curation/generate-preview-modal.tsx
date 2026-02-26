@@ -89,7 +89,7 @@ export function GeneratePreviewModal({
       onClose();
       // 콘텐츠 상세 페이지로 이동
       if (data?.id) {
-        router.push(`/admin/content/${data.id}`);
+        router.push(`/admin/content/${data.id}?from=curation`);
       }
     }
   };
