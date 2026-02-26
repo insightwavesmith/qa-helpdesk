@@ -1,7 +1,5 @@
 "use client";
 
-import { TrendingUp, TrendingDown } from "lucide-react";
-
 interface SummaryCardData {
   label: string;
   value: string;
@@ -26,50 +24,35 @@ export function SummaryCards({ cards = defaultCards }: SummaryCardsProps) {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {cards.map((card) => {
-        const isPositive = card.changePercent >= 0;
-        // For CPA, decrease is good; for others, increase is good
-        const isCpaLike = card.label === "CPA" || card.label === "광고비";
-        const isGood = isCpaLike ? !isPositive : isPositive;
+        const isRoas = card.label === "ROAS";
 
         return (
           <div
             key={card.label}
-            className="flex flex-col gap-1 rounded-lg border border-border bg-card p-4 shadow-sm"
+            className={`flex flex-col items-center justify-center text-center rounded-lg border p-4 shadow-sm ${
+              isRoas
+                ? "bg-gradient-to-r from-[#F75D5D]/10 to-[#F75D5D]/5 border-[#F75D5D]/20"
+                : "border-gray-200 bg-white"
+            }`}
           >
-            <span className="text-xs font-medium text-muted-foreground">
-              {card.label}
-            </span>
-            <div className="flex items-baseline gap-1">
+            <div className="flex items-baseline gap-0.5">
               {card.prefix && (
-                <span className="text-sm font-medium text-muted-foreground">
+                <span className={`text-2xl font-extrabold ${isRoas ? "text-[#F75D5D]" : "text-gray-900"}`}>
                   {card.prefix}
                 </span>
               )}
-              <span className="text-xl font-bold tabular-nums text-card-foreground">
+              <span className={`text-2xl font-extrabold tabular-nums ${isRoas ? "text-[#F75D5D]" : "text-gray-900"}`}>
                 {card.value}
               </span>
               {card.suffix && (
-                <span className="text-sm font-medium text-muted-foreground">
+                <span className={`text-2xl font-extrabold ${isRoas ? "text-[#F75D5D]" : "text-gray-900"}`}>
                   {card.suffix}
                 </span>
               )}
             </div>
-            <div
-              className={`flex items-center gap-1 text-xs font-medium ${
-                isGood ? "text-emerald-600" : "text-red-600"
-              }`}
-            >
-              {isPositive ? (
-                <TrendingUp className="h-3 w-3" />
-              ) : (
-                <TrendingDown className="h-3 w-3" />
-              )}
-              <span>
-                {isPositive ? "+" : ""}
-                {card.changePercent}%
-              </span>
-              <span className="text-muted-foreground">{card.changeLabel}</span>
-            </div>
+            <span className="mt-1 text-xs font-medium text-gray-400">
+              {card.label}
+            </span>
           </div>
         );
       })}

@@ -67,18 +67,21 @@ export async function GET(request: NextRequest) {
     let totalComments = 0;
     let totalShares = 0;
     let totalInitiateCheckout = 0;
+    let totalReach = 0;
 
     for (const row of rows) {
       const imp = Number(row.impressions) || 0;
       const clk = Number(row.clicks) || 0;
+      const rowReach = Number(row.reach) || 0;
       totalImpressions += imp;
       totalClicks += clk;
       totalPurchases += Number(row.purchases) || 0;
       totalSpend += Number(row.spend) || 0;
+      totalReach += rowReach;
 
-      // rate에서 역산
+      // rate에서 역산 (reach 기반)
       const p3sRate = Number(row.video_p3s_rate) || 0;
-      totalVideoP3s += (p3sRate / 100) * imp;
+      totalVideoP3s += (p3sRate / 100) * rowReach;
 
       const reactPer10k = Number(row.reactions_per_10k) || 0;
       const commentPer10k = Number(row.comments_per_10k) || 0;
@@ -92,7 +95,7 @@ export async function GET(request: NextRequest) {
 
     // 6개 지표 계산
     const metricValues: Record<string, number | null> = {
-      video_p3s_rate: totalImpressions > 0 ? (totalVideoP3s / totalImpressions) * 100 : null,
+      video_p3s_rate: totalReach > 0 ? (totalVideoP3s / totalReach) * 100 : null,
       ctr: totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : null,
       engagement_per_10k:
         totalImpressions > 0

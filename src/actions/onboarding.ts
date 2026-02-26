@@ -206,6 +206,110 @@ export async function syncAdAccount(data: {
   return { error: null };
 }
 
+// 광고계정 추가 (기존 계정 유지하면서 새 계정 추가)
+export async function addAdAccount(data: {
+  metaAccountId: string;
+  accountName?: string;
+  mixpanelProjectId?: string | null;
+  mixpanelSecretKey?: string | null;
+  mixpanelBoardId?: string | null;
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "인증되지 않은 사용자입니다" };
+
+  const svc = createServiceClient();
+
+  // ad_accounts INSERT or UPDATE
+  const { data: existing } = await svc
+    .from("ad_accounts")
+    .select("id")
+    .eq("account_id", data.metaAccountId)
+    .maybeSingle();
+
+  if (existing) {
+    await svc.from("ad_accounts").update({
+      user_id: user.id,
+      account_name: data.accountName || data.metaAccountId,
+      mixpanel_project_id: data.mixpanelProjectId || null,
+      mixpanel_board_id: data.mixpanelBoardId || null,
+      active: true,
+    }).eq("id", existing.id);
+  } else {
+    await svc.from("ad_accounts").insert({
+      account_id: data.metaAccountId,
+      user_id: user.id,
+      account_name: data.accountName || data.metaAccountId,
+      mixpanel_project_id: data.mixpanelProjectId || null,
+      mixpanel_board_id: data.mixpanelBoardId || null,
+      active: true,
+    });
+  }
+
+  // service_secrets UPSERT (믹스패널 시크릿키)
+  if (data.mixpanelSecretKey) {
+    await svc
+      .from("service_secrets" as never)
+      .upsert({
+        user_id: user.id,
+        service: "mixpanel",
+        key_name: `secret_${data.metaAccountId}`,
+        key_value: data.mixpanelSecretKey,
+      } as never, { onConflict: "user_id,service,key_name" } as never);
+  }
+
+  // 첫 번째 계정이면 profiles.meta_account_id에도 설정 (대표 계정)
+  const { data: existingAccounts } = await svc
+    .from("ad_accounts")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("active", true);
+
+  if (existingAccounts && existingAccounts.length <= 1) {
+    await svc.from("profiles").update({
+      meta_account_id: data.metaAccountId,
+    } as never).eq("id", user.id);
+  }
+
+  return { error: null };
+}
+
+// 광고계정 삭제 (비활성화 + service_secrets 정리)
+export async function removeAdAccount(accountId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "인증되지 않은 사용자입니다" };
+
+  const svc = createServiceClient();
+
+  // ad_accounts 비활성화
+  await svc.from("ad_accounts").update({ active: false }).eq("account_id", accountId).eq("user_id", user.id);
+
+  // service_secrets 삭제
+  await svc
+    .from("service_secrets" as never)
+    .delete()
+    .eq("user_id" as never, user.id)
+    .eq("service" as never, "mixpanel")
+    .eq("key_name" as never, `secret_${accountId}`);
+
+  // 대표 계정이었으면 다른 활성 계정으로 교체
+  const { data: profile } = await svc.from("profiles").select("meta_account_id").eq("id", user.id).single();
+  if (profile?.meta_account_id === accountId) {
+    const { data: remaining } = await svc
+      .from("ad_accounts")
+      .select("account_id")
+      .eq("user_id", user.id)
+      .eq("active", true)
+      .limit(1);
+    await svc.from("profiles").update({
+      meta_account_id: remaining?.[0]?.account_id || null,
+    } as never).eq("id", user.id);
+  }
+
+  return { error: null };
+}
+
 // Step 3: 온보딩 완료
 export async function completeOnboarding() {
   const supabase = await createClient();

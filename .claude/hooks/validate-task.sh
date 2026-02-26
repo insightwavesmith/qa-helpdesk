@@ -39,7 +39,8 @@ TASK_NAME=$(basename "$ACTIVE_TASK")
 ERRORS=""
 
 # 1. T항목 존재 체크
-TOTAL_TASKS=$(grep -cE '^## (T[0-9]+\.|A[0-9]+\.|B[0-9]+\.|Part )' "$ACTIVE_TASK" 2>/dev/null || echo "0")
+TOTAL_TASKS=$(grep -cE '^## (T[0-9]+\.|A[0-9]+\.|B[0-9]+\.|Part )' "$ACTIVE_TASK" 2>/dev/null || true)
+TOTAL_TASKS=${TOTAL_TASKS:-0}
 if [ "$TOTAL_TASKS" -eq 0 ]; then
     ERRORS="$ERRORS\n  - T/A/B/Part 항목이 없음"
 fi
@@ -76,10 +77,10 @@ if [ "$HAS_DETAIL" -lt 2 ]; then
 fi
 
 if [ -n "$ERRORS" ]; then
-    echo "VALIDATE 실패 ($TASK_NAME):"
-    echo -e "$ERRORS"
-    echo ""
-    echo "목업/기획서 없이 개발을 시작할 수 없습니다."
+    echo "VALIDATE 실패 ($TASK_NAME):" >&2
+    echo -e "$ERRORS" >&2
+    echo "" >&2
+    echo "목업/기획서 없이 개발을 시작할 수 없습니다." >&2
     exit 2
 fi
 

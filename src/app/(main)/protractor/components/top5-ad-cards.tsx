@@ -89,13 +89,7 @@ function StatCell({
   highlight?: boolean;
 }) {
   return (
-    <div
-      className={`flex flex-col items-center justify-center rounded-lg px-2 py-3 ${
-        highlight
-          ? "bg-[#F75D5D]/8 border border-[#F75D5D]/20"
-          : "bg-gray-50 border border-gray-100"
-      }`}
-    >
+    <div className="flex flex-col items-center justify-center px-2 py-2">
       <span
         className={`text-sm font-bold ${
           highlight ? "text-[#F75D5D]" : "text-gray-900"
@@ -366,7 +360,7 @@ export function Top5AdCards({
   }
 
   return (
-    <section>
+    <section className="rounded-2xl border border-gray-200 bg-white p-6">
       {/* 섹션 타이틀 */}
       <div className="mb-4 flex items-baseline gap-2">
         <h2 className="text-base font-bold text-gray-900">TOP 5 광고</h2>
@@ -390,6 +384,13 @@ export function Top5AdCards({
             diagnosis={diagMap.get(ad.ad_id)}
           />
         ))}
+      </div>
+
+      {/* 범례 */}
+      <div className="mt-4 flex items-center gap-4 text-xs text-gray-400">
+        <span>🟢 우수 (p75 이상)</span>
+        <span>🟡 보통 (p50~p75)</span>
+        <span>🔴 미달 (p50 미만)</span>
       </div>
     </section>
   );

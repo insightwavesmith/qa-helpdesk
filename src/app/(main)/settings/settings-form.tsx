@@ -12,10 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Bell, Save, Eye, EyeOff } from "lucide-react";
+import { Bell, Save, Eye, EyeOff, Plus, Trash2, Star } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { syncAdAccount } from "@/actions/onboarding";
+import { syncAdAccount, addAdAccount, removeAdAccount } from "@/actions/onboarding";
 
 interface Profile {
   name: string | null;
@@ -29,6 +29,15 @@ interface Profile {
   annual_revenue: string | null;
 }
 
+interface AdAccountRow {
+  id: string;
+  account_id: string;
+  account_name: string | null;
+  mixpanel_project_id: string | null;
+  mixpanel_board_id: string | null;
+  active: boolean | null;
+}
+
 const ANNUAL_REVENUE_OPTIONS = [
   { value: "under_1억", label: "1억 미만" },
   { value: "1억_5억", label: "1억~5억" },
@@ -40,14 +49,25 @@ const ANNUAL_REVENUE_OPTIONS = [
 interface SettingsFormProps {
   profile: Profile | null;
   userId: string;
+  accounts: AdAccountRow[];
 }
 
-export function SettingsForm({ profile, userId }: SettingsFormProps) {
+export function SettingsForm({ profile, userId, accounts: initialAccounts }: SettingsFormProps) {
   const [saving, setSaving] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
   const [annualRevenue, setAnnualRevenue] = useState(
     profile?.annual_revenue ?? ""
   );
+
+  // 광고계정 관리 상태
+  const [accounts, setAccounts] = useState<AdAccountRow[]>(initialAccounts);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addingAccount, setAddingAccount] = useState(false);
+  const [newAccountId, setNewAccountId] = useState("");
+  const [newAccountName, setNewAccountName] = useState("");
+  const [newMixpanelProjectId, setNewMixpanelProjectId] = useState("");
+  const [newMixpanelBoardId, setNewMixpanelBoardId] = useState("");
+  const [newMixpanelSecretKey, setNewMixpanelSecretKey] = useState("");
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -59,13 +79,10 @@ export function SettingsForm({ profile, userId }: SettingsFormProps) {
       phone: formData.get("phone") as string,
       shop_name: formData.get("shop_name") as string,
       shop_url: formData.get("shop_url") as string,
-      meta_account_id: (formData.get("meta_account_id") as string) || null,
-      mixpanel_project_id:
-        (formData.get("mixpanel_project_id") as string) || null,
-      mixpanel_board_id:
-        (formData.get("mixpanel_board_id") as string) || null,
-      mixpanel_secret_key:
-        (formData.get("mixpanel_secret_key") as string) || null,
+      meta_account_id: profile?.meta_account_id || null,
+      mixpanel_project_id: profile?.mixpanel_project_id || null,
+      mixpanel_board_id: profile?.mixpanel_board_id || null,
+      mixpanel_secret_key: profile?.mixpanel_secret_key || null,
       annual_revenue: annualRevenue || null,
     };
 
@@ -75,26 +92,89 @@ export function SettingsForm({ profile, userId }: SettingsFormProps) {
       .update(updates)
       .eq("id", userId);
 
+    setSaving(false);
+
     if (error) {
-      setSaving(false);
       toast.error("저장에 실패했습니다.");
+    } else {
+      toast.success("프로필이 저장되었습니다.");
+    }
+  };
+
+  const handleAddAccount = async () => {
+    if (!newAccountId.trim()) {
+      toast.error("Meta 계정 ID를 입력하세요.");
       return;
     }
 
-    // ad_accounts + service_secrets 동기화
-    const syncResult = await syncAdAccount({
-      metaAccountId: updates.meta_account_id,
-      mixpanelProjectId: updates.mixpanel_project_id,
-      mixpanelSecretKey: updates.mixpanel_secret_key,
-      mixpanelBoardId: updates.mixpanel_board_id,
+    setAddingAccount(true);
+    const result = await addAdAccount({
+      metaAccountId: newAccountId.trim(),
+      accountName: newAccountName.trim() || undefined,
+      mixpanelProjectId: newMixpanelProjectId.trim() || null,
+      mixpanelBoardId: newMixpanelBoardId.trim() || null,
+      mixpanelSecretKey: newMixpanelSecretKey.trim() || null,
     });
 
-    setSaving(false);
+    setAddingAccount(false);
 
-    if (syncResult.error) {
-      toast.error("광고계정 동기화에 실패했습니다.");
+    if (result.error) {
+      toast.error(`계정 추가 실패: ${result.error}`);
     } else {
-      toast.success("프로필이 저장되었습니다.");
+      toast.success("광고계정이 추가되었습니다.");
+      // 로컬 상태 업데이트
+      setAccounts((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(), // 임시 ID
+          account_id: newAccountId.trim(),
+          account_name: newAccountName.trim() || newAccountId.trim(),
+          mixpanel_project_id: newMixpanelProjectId.trim() || null,
+          mixpanel_board_id: newMixpanelBoardId.trim() || null,
+          active: true,
+        },
+      ]);
+      // 폼 초기화
+      setNewAccountId("");
+      setNewAccountName("");
+      setNewMixpanelProjectId("");
+      setNewMixpanelBoardId("");
+      setNewMixpanelSecretKey("");
+      setShowAddForm(false);
+    }
+  };
+
+  const handleRemoveAccount = async (accountId: string) => {
+    const result = await removeAdAccount(accountId);
+    if (result.error) {
+      toast.error(`계정 삭제 실패: ${result.error}`);
+    } else {
+      toast.success("광고계정이 삭제되었습니다.");
+      setAccounts((prev) => prev.filter((a) => a.account_id !== accountId));
+    }
+  };
+
+  const handleSetPrimary = async (accountId: string) => {
+    const account = accounts.find((a) => a.account_id === accountId);
+    if (!account) return;
+
+    const result = await syncAdAccount({
+      metaAccountId: accountId,
+      mixpanelProjectId: account.mixpanel_project_id,
+      mixpanelSecretKey: null,
+      mixpanelBoardId: account.mixpanel_board_id,
+    });
+
+    if (result.error) {
+      toast.error("대표 계정 변경 실패");
+    } else {
+      // profiles.meta_account_id도 업데이트
+      const supabase = createClient();
+      await supabase
+        .from("profiles")
+        .update({ meta_account_id: accountId })
+        .eq("id", userId);
+      toast.success("대표 계정이 변경되었습니다.");
     }
   };
 
@@ -151,69 +231,6 @@ export function SettingsForm({ profile, userId }: SettingsFormProps) {
             />
           </div>
 
-          <Separator className="border-gray-200" />
-
-          {/* 광고계정 / 믹스패널 */}
-          <h2 className="text-lg font-semibold text-gray-900">
-            광고계정 / 분석 도구
-          </h2>
-
-          <div className="space-y-2">
-            <Label>Meta 광고 계정 ID</Label>
-            <Input
-              name="meta_account_id"
-              defaultValue={profile?.meta_account_id ?? ""}
-              placeholder="예: 123456789012345"
-              className="rounded-lg border-gray-200 focus:ring-[#F75D5D]"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>믹스패널 프로젝트 ID</Label>
-              <Input
-                name="mixpanel_project_id"
-                defaultValue={profile?.mixpanel_project_id ?? ""}
-                placeholder="프로젝트 ID"
-                className="rounded-lg border-gray-200 focus:ring-[#F75D5D]"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>믹스패널 보드 ID</Label>
-              <Input
-                name="mixpanel_board_id"
-                defaultValue={profile?.mixpanel_board_id ?? ""}
-                placeholder="보드 ID"
-                className="rounded-lg border-gray-200 focus:ring-[#F75D5D]"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>믹스패널 시크릿키</Label>
-              <div className="relative">
-                <Input
-                  name="mixpanel_secret_key"
-                  type={showSecret ? "text" : "password"}
-                  defaultValue={profile?.mixpanel_secret_key ?? ""}
-                  placeholder="시크릿키"
-                  className="rounded-lg border-gray-200 focus:ring-[#F75D5D] pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowSecret(!showSecret)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showSecret ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
           <div className="space-y-2">
             <Label>연매출</Label>
             <Select value={annualRevenue} onValueChange={setAnnualRevenue}>
@@ -240,6 +257,167 @@ export function SettingsForm({ profile, userId }: SettingsFormProps) {
           </Button>
         </section>
       </form>
+
+      <Separator className="border-gray-200" />
+
+      {/* 광고계정 / 분석 도구 */}
+      <section className="space-y-5">
+        <h2 className="text-lg font-semibold text-gray-900">
+          광고계정 / 분석 도구
+        </h2>
+
+        {/* 등록된 계정 목록 */}
+        {accounts.length > 0 && (
+          <div className="rounded-lg border border-gray-200 divide-y divide-gray-100">
+            {accounts.map((acc) => {
+              const isPrimary = acc.account_id === profile?.meta_account_id;
+              return (
+                <div
+                  key={acc.account_id}
+                  className="flex items-center justify-between px-4 py-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-sm text-gray-700">
+                      {acc.account_id}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      {acc.account_name || ""}
+                    </span>
+                    {isPrimary && (
+                      <span className="flex items-center gap-1 rounded-full bg-[#F75D5D]/10 px-2 py-0.5 text-xs font-medium text-[#F75D5D]">
+                        <Star className="h-3 w-3" />
+                        대표
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {!isPrimary && (
+                      <button
+                        type="button"
+                        onClick={() => handleSetPrimary(acc.account_id)}
+                        className="text-xs text-gray-400 hover:text-[#F75D5D] transition-colors"
+                        title="대표 계정으로 설정"
+                      >
+                        <Star className="h-4 w-4" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAccount(acc.account_id)}
+                      className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                      title="계정 삭제"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {accounts.length === 0 && (
+          <p className="text-sm text-gray-400">등록된 광고계정이 없습니다.</p>
+        )}
+
+        {/* 추가 버튼 / 추가 폼 */}
+        {!showAddForm ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowAddForm(true)}
+            className="gap-2 border-gray-200 text-gray-600 hover:bg-gray-50"
+          >
+            <Plus className="h-4 w-4" />
+            광고계정 추가
+          </Button>
+        ) : (
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Meta 계정 ID</Label>
+                <Input
+                  value={newAccountId}
+                  onChange={(e) => setNewAccountId(e.target.value)}
+                  placeholder="예: 123456789012345"
+                  className="rounded-lg border-gray-200 bg-white focus:ring-[#F75D5D]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>계정 이름 (선택)</Label>
+                <Input
+                  value={newAccountName}
+                  onChange={(e) => setNewAccountName(e.target.value)}
+                  placeholder="예: 유비드"
+                  className="rounded-lg border-gray-200 bg-white focus:ring-[#F75D5D]"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>믹스패널 프로젝트 ID</Label>
+                <Input
+                  value={newMixpanelProjectId}
+                  onChange={(e) => setNewMixpanelProjectId(e.target.value)}
+                  placeholder="프로젝트 ID"
+                  className="rounded-lg border-gray-200 bg-white focus:ring-[#F75D5D]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>믹스패널 보드 ID</Label>
+                <Input
+                  value={newMixpanelBoardId}
+                  onChange={(e) => setNewMixpanelBoardId(e.target.value)}
+                  placeholder="보드 ID"
+                  className="rounded-lg border-gray-200 bg-white focus:ring-[#F75D5D]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>믹스패널 시크릿키</Label>
+                <div className="relative">
+                  <Input
+                    type={showSecret ? "text" : "password"}
+                    value={newMixpanelSecretKey}
+                    onChange={(e) => setNewMixpanelSecretKey(e.target.value)}
+                    placeholder="시크릿키"
+                    className="rounded-lg border-gray-200 bg-white focus:ring-[#F75D5D] pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSecret(!showSecret)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showSecret ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                onClick={handleAddAccount}
+                disabled={addingAccount}
+                className="gap-2 bg-[#F75D5D] hover:bg-[#E54949]"
+              >
+                <Plus className="h-4 w-4" />
+                {addingAccount ? "추가 중..." : "추가"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowAddForm(false)}
+                className="border-gray-200"
+              >
+                취소
+              </Button>
+            </div>
+          </div>
+        )}
+      </section>
 
       <Separator className="border-gray-200" />
 

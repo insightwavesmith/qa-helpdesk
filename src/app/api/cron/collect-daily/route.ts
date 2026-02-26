@@ -97,7 +97,7 @@ function calculateMetrics(insight: Record<string, any>) {
     frequency: safeFloat(insight.frequency),
     initiate_checkout: Math.trunc(initiateCheckout),
     // 영상 지표
-    video_p3s_rate: impressions > 0 ? round(videoP3s / impressions * 100, 4) : null,
+    video_p3s_rate: reach > 0 ? round(videoP3s / reach * 100, 4) : null,
     thruplay_rate: impressions > 0 ? round(thruplay / impressions * 100, 4) : null,
     retention_rate: videoP3s > 0 ? round(thruplay / videoP3s * 100, 4) : null,
     // 참여 지표

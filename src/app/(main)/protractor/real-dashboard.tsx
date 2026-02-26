@@ -3,25 +3,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { type AdAccount } from "./components/account-selector";
-import {
-  type AdInsightRow,
-  type BenchmarkRow,
-} from "./components/ad-metrics-table";
+import { type AdInsightRow } from "./components/ad-metrics-table";
 import { PeriodTabs, type DateRange as PeriodDateRange } from "./components/period-tabs";
 import { Top5AdCards } from "./components/top5-ad-cards";
-import { BenchmarkCompare } from "./components/benchmark-compare";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, ArrowRight, BarChart3, ChevronDown, ChevronUp, LinkIcon } from "lucide-react";
+import { AlertTriangle, ArrowRight, BarChart3, LinkIcon } from "lucide-react";
 import Link from "next/link";
 
 import {
   ProtractorHeader,
   SummaryCards,
-  DiagnosticPanel,
-  PerformanceTrendChart,
-  ConversionFunnel,
-  DailyMetricsTable,
   TotalValueGauge,
   OverlapAnalysis,
   type OverlapData,
@@ -30,9 +22,6 @@ import {
 import {
   aggregateSummary,
   toSummaryCards,
-  toDailyTrend,
-  toFunnelData,
-  toDailyMetrics,
 } from "@/lib/protractor/aggregate";
 
 // 어제 날짜 (기본값)
@@ -76,7 +65,6 @@ export default function RealDashboard() {
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<PeriodDateRange>(yesterday());
   const [insights, setInsights] = useState<AdInsightRow[]>([]);
-  const [benchmarks, setBenchmarks] = useState<BenchmarkRow[]>([]);
   const [rawDiagnoses, setRawDiagnoses] = useState<RawDiagnosis[] | null>(null);
   const [totalValue, setTotalValue] = useState<{
     grade: "A" | "B" | "C" | "D" | "F";
@@ -100,7 +88,6 @@ export default function RealDashboard() {
   const [loadingDiagnosis, setLoadingDiagnosis] = useState(false);
   const [loadingTotalValue, setLoadingTotalValue] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showTop5, setShowTop5] = useState(false);
 
   // 1) 계정 목록 로드
   useEffect(() => {
@@ -126,22 +113,7 @@ export default function RealDashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 2) 벤치마크 로드 (한 번만)
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/protractor/benchmarks");
-        const json = await res.json();
-        if (res.ok && json.data) {
-          setBenchmarks(json.data);
-        }
-      } catch {
-        // 벤치마크 없어도 대시보드 표시 가능
-      }
-    })();
-  }, []);
-
-  // 3) 계정 + 기간 변경 시 데이터 로드
+  // 2) 계정 + 기간 변경 시 데이터 로드
   const fetchData = useCallback(async () => {
     if (!selectedAccountId) return;
 
@@ -171,7 +143,7 @@ export default function RealDashboard() {
     fetchData();
   }, [fetchData]);
 
-  // 4) 진단 호출 (insights 로드 완료 후)
+  // 3) 진단 호출 (insights 로드 완료 후)
   useEffect(() => {
     if (!selectedAccountId || insights.length === 0) {
       setRawDiagnoses(null);
@@ -202,7 +174,7 @@ export default function RealDashboard() {
     })();
   }, [selectedAccountId, insights, dateRange]);
 
-  // 5) 총가치수준 호출
+  // 4) 총가치수준 호출
   useEffect(() => {
     if (!selectedAccountId || insights.length === 0) {
       setTotalValue(null);
@@ -230,7 +202,7 @@ export default function RealDashboard() {
     })();
   }, [selectedAccountId, insights, dateRange]);
 
-  // 6) 타겟중복 분석 (overlap 탭 활성 + 7일 이상일 때)
+  // 5) 타겟중복 분석 (overlap 탭 활성 + 7일 이상일 때)
   const fetchOverlap = useCallback(
     async (force = false) => {
       if (!selectedAccountId) return;
@@ -285,32 +257,32 @@ export default function RealDashboard() {
   // 실데이터 집계
   const summary = insights.length > 0 ? aggregateSummary(insights) : null;
   const summaryCards = summary ? toSummaryCards(summary) : undefined;
-  const trendData = insights.length > 0 ? toDailyTrend(insights) : undefined;
-  const funnelResult = insights.length > 0 ? toFunnelData(insights) : undefined;
-  const dailyMetrics = insights.length > 0 ? toDailyMetrics(insights) : undefined;
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header: 제목 + 계정선택 + 기간선택 */}
-      <header className="-m-6 mb-0 flex flex-col gap-4 border-b border-border bg-card px-6 py-4">
-        <ProtractorHeader
-          accounts={accounts}
-          selectedAccountId={selectedAccountId}
-          onSelect={handleAccountSelect}
-          isLoading={loadingAccounts}
-        />
+      {/* 1. ProtractorHeader (카드형) */}
+      <ProtractorHeader
+        accounts={accounts}
+        selectedAccountId={selectedAccountId}
+        onSelect={handleAccountSelect}
+        isLoading={loadingAccounts}
+        dateRange={dateRange}
+      />
+
+      {/* 2. PeriodTabs (카드형) */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-4">
         <PeriodTabs onPeriodChange={handlePeriodChange} />
-      </header>
+      </div>
 
       {/* 에러 메시지 */}
       {error && (
-        <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           {error}
         </div>
       )}
 
-      {/* 광고계정 연결 배너 (A4) */}
+      {/* 광고계정 연결 배너 */}
       {accounts.length === 0 && !loadingAccounts && !error && (
         <div className="flex items-center justify-between rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-4">
           <div className="flex items-center gap-3">
@@ -336,7 +308,7 @@ export default function RealDashboard() {
         </div>
       )}
 
-      {/* 탭 구조: 성과 요약 / 타겟중복 */}
+      {/* 3. 탭 구조: 성과 요약 / 타겟중복 */}
       <Tabs
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as "summary" | "overlap")}
@@ -358,7 +330,7 @@ export default function RealDashboard() {
 
           {/* 계정 미선택 */}
           {!selectedAccountId && !loadingAccounts && (
-            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
               <BarChart3 className="h-10 w-10" />
               <p className="mt-3 text-base font-medium">광고계정을 선택하세요</p>
               <p className="mt-1 text-sm">
@@ -367,9 +339,10 @@ export default function RealDashboard() {
             </div>
           )}
 
-          {/* 데이터 표시 — 목업 순서: 게이지 → 요약카드 → TOP5 광고 → 차트/퍼널 → 일별테이블 → 벤치마크 */}
+          {/* 데이터 표시 — 목업 순서: 게이지 → 요약카드 → TOP5 광고 (항상 표시) */}
           {selectedAccountId && !loadingData && (
             <>
+              {/* 3a. TotalValueGauge */}
               <TotalValueGauge
                 grade={totalValue?.grade}
                 gradeLabel={totalValue?.gradeLabel}
@@ -383,53 +356,21 @@ export default function RealDashboard() {
                 isLoading={loadingTotalValue}
               />
 
+              {/* 3b. SummaryCards */}
               <SummaryCards cards={summaryCards} />
 
-              <DiagnosticPanel diagnoses={rawDiagnoses ?? undefined} />
-
-              {/* TOP 5 광고 보기 버튼 (A3) */}
-              {insights.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setShowTop5((v) => !v)}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-blue-600 py-3 text-sm font-bold text-blue-600 transition-colors hover:bg-blue-50"
-                >
-                  {showTop5 ? (
-                    <>TOP 5 광고 접기 <ChevronUp className="h-4 w-4" /></>
-                  ) : (
-                    <>TOP 5 광고 자세히 보기 <ChevronDown className="h-4 w-4" /></>
-                  )}
-                </button>
+              {/* 3c. Top5AdCards (항상 표시, 토글 없음) */}
+              {loadingDiagnosis ? (
+                <Skeleton className="h-[200px] w-full rounded-lg" />
+              ) : (
+                <Top5AdCards
+                  insights={insights}
+                  accountId={selectedAccountId ?? undefined}
+                  mixpanelProjectId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_project_id}
+                  mixpanelBoardId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_board_id}
+                  diagnoses={rawDiagnoses ?? undefined}
+                />
               )}
-
-              {/* TOP 5 광고 카드 (토글) */}
-              {showTop5 && (
-                loadingDiagnosis ? (
-                  <Skeleton className="h-[200px] w-full rounded-lg" />
-                ) : (
-                  <Top5AdCards
-                    insights={insights}
-                    accountId={selectedAccountId ?? undefined}
-                    mixpanelProjectId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_project_id}
-                    mixpanelBoardId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_board_id}
-                    diagnoses={rawDiagnoses ?? undefined}
-                  />
-                )
-              )}
-
-              <div className="grid gap-6 xl:grid-cols-5">
-                <div className="xl:col-span-3">
-                  <PerformanceTrendChart data={trendData} />
-                </div>
-                <div className="xl:col-span-2">
-                  <ConversionFunnel
-                    steps={funnelResult?.steps}
-                    overallRate={funnelResult?.overallRate}
-                  />
-                </div>
-              </div>
-              <DailyMetricsTable data={dailyMetrics} />
-              <BenchmarkCompare insights={insights} benchmarks={benchmarks} />
             </>
           )}
         </TabsContent>

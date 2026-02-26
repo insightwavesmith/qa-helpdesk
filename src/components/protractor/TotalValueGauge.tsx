@@ -24,109 +24,15 @@ interface TotalValueGaugeProps {
   isLoading?: boolean;
 }
 
-// ── 등급별 텍스트 색상 ──
+// ── 등급별 스타일 매핑 (화이트 테마) ──
 
-const GRADE_TEXT_COLORS: Record<string, string> = {
-  A: "#15803d",
-  B: "#1d4ed8",
-  C: "#a16207",
-  D: "#c2410c",
-  F: "#b91c1c",
+const GRADE_STYLES: Record<string, { border: string; text: string; bg: string }> = {
+  A: { border: "border-emerald-400", text: "text-emerald-500", bg: "bg-emerald-50" },
+  B: { border: "border-blue-400", text: "text-blue-500", bg: "bg-blue-50" },
+  C: { border: "border-yellow-400", text: "text-yellow-500", bg: "bg-yellow-50" },
+  D: { border: "border-orange-400", text: "text-orange-500", bg: "bg-orange-50" },
+  F: { border: "border-red-400", text: "text-red-500", bg: "bg-red-50" },
 };
-
-// ── 반원형 SVG 게이지 설정 ──
-
-const CX = 110;
-const CY = 108;
-const GAUGE_R = 85;
-const GAUGE_STROKE = 20;
-
-const GAUGE_SEGMENTS = [
-  { grade: "F", color: "#ef4444", start: 180, end: 145 },
-  { grade: "D", color: "#f97316", start: 143, end: 108 },
-  { grade: "C", color: "#eab308", start: 106, end: 72 },
-  { grade: "B", color: "#3b82f6", start: 70, end: 36 },
-  { grade: "A", color: "#22c55e", start: 34, end: 0 },
-];
-
-const NEEDLE_ANGLE: Record<string, number> = {
-  F: 162,
-  D: 126,
-  C: 89,
-  B: 53,
-  A: 17,
-};
-
-function polar(cx: number, cy: number, r: number, deg: number) {
-  const rad = (deg * Math.PI) / 180;
-  return { x: cx + r * Math.cos(rad), y: cy - r * Math.sin(rad) };
-}
-
-function arcPath(startDeg: number, endDeg: number) {
-  const s = polar(CX, CY, GAUGE_R, startDeg);
-  const e = polar(CX, CY, GAUGE_R, endDeg);
-  const large = Math.abs(startDeg - endDeg) > 180 ? 1 : 0;
-  return `M ${s.x.toFixed(1)} ${s.y.toFixed(1)} A ${GAUGE_R} ${GAUGE_R} 0 ${large} 0 ${e.x.toFixed(1)} ${e.y.toFixed(1)}`;
-}
-
-function SemiCircleGauge({ grade, gradeColor }: { grade: string; gradeColor: string }) {
-  const angle = NEEDLE_ANGLE[grade] ?? 90;
-  const needleLen = GAUGE_R - GAUGE_STROKE / 2 - 8;
-  const tip = polar(CX, CY, needleLen, angle);
-  const b1 = polar(CX, CY, 7, angle + 90);
-  const b2 = polar(CX, CY, 7, angle - 90);
-
-  return (
-    <svg
-      viewBox="0 0 220 125"
-      className="mx-auto w-full max-w-[220px]"
-      role="img"
-      aria-label={`총가치 수준 ${grade}등급`}
-    >
-      {/* 세그먼트 (F→A 컬러 그라데이션) */}
-      {GAUGE_SEGMENTS.map((seg) => (
-        <path
-          key={seg.grade}
-          d={arcPath(seg.start, seg.end)}
-          fill="none"
-          stroke={seg.color}
-          strokeWidth={GAUGE_STROKE}
-          strokeLinecap="round"
-          opacity={seg.grade === grade ? 1 : 0.25}
-        />
-      ))}
-
-      {/* 양 끝 등급 라벨 */}
-      <text x="20" y={CY + 18} textAnchor="middle" fontSize="10" fill="#9ca3af">
-        F
-      </text>
-      <text x="200" y={CY + 18} textAnchor="middle" fontSize="10" fill="#9ca3af">
-        A
-      </text>
-
-      {/* 바늘 */}
-      <path
-        d={`M ${tip.x.toFixed(1)} ${tip.y.toFixed(1)} L ${b1.x.toFixed(1)} ${b1.y.toFixed(1)} L ${b2.x.toFixed(1)} ${b2.y.toFixed(1)} Z`}
-        fill="#374151"
-      />
-      <circle cx={CX} cy={CY} r={5} fill="#374151" />
-
-      {/* 중앙 등급 텍스트 */}
-      <text
-        x={CX}
-        y={CY - 30}
-        textAnchor="middle"
-        dominantBaseline="central"
-        fontSize="34"
-        fontWeight="900"
-        fill={gradeColor}
-        style={{ fontFamily: "Pretendard, sans-serif" }}
-      >
-        {grade}
-      </text>
-    </svg>
-  );
-}
 
 // ── 지표 카드 헬퍼 ──
 
@@ -178,7 +84,7 @@ function calcPeriodDays(dateRange?: { start: string; end: string }): number {
 function buildDiagnosticJsx(
   grade: string,
   metrics: MetricData[],
-  gradeTextColor: string,
+  gradeStyle: { text: string },
 ): React.ReactNode | null {
   const good: string[] = [];
   const bad: string[] = [];
@@ -191,7 +97,7 @@ function buildDiagnosticJsx(
   if (good.length === 0 && bad.length === 0) return null;
 
   const gradeSpan = (
-    <span className="font-bold" style={{ color: gradeTextColor }}>
+    <span className={`font-bold ${gradeStyle.text}`}>
       {grade}등급
     </span>
   );
@@ -239,14 +145,10 @@ export function TotalValueGauge({
   grade,
   gradeLabel,
   totalSpend,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  totalClicks,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  totalPurchases,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  totalRoas,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  adCount,
+  totalClicks: _totalClicks,
+  totalPurchases: _totalPurchases,
+  totalRoas: _totalRoas,
+  adCount: _adCount,
   metrics,
   dateRange,
   isLoading,
@@ -274,26 +176,31 @@ export function TotalValueGauge({
     );
   }
 
-  const gradeTextColor = GRADE_TEXT_COLORS[grade] ?? GRADE_TEXT_COLORS.C;
+  const gradeStyle = GRADE_STYLES[grade] ?? GRADE_STYLES.C;
   const periodDays = calcPeriodDays(dateRange);
   const periodLabel = `${periodDays}일`;
 
-  const diagJsx = buildDiagnosticJsx(grade, metrics, gradeTextColor);
+  const diagJsx = buildDiagnosticJsx(grade, metrics, gradeStyle);
 
   return (
     <Card className="bg-white border border-gray-200">
       <CardContent className="p-5">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-          {/* 좌측: 반원형 게이지 */}
-          <div className="flex-shrink-0 text-center" style={{ minWidth: "220px" }}>
-            <p className="mb-1 text-xs font-semibold text-muted-foreground">총가치 수준</p>
-            <SemiCircleGauge grade={grade} gradeColor={gradeTextColor} />
+          {/* 좌측: 원형 등급 서클 */}
+          <div className="flex-shrink-0 flex flex-col items-center" style={{ minWidth: "200px" }}>
+            <div
+              className={`flex h-24 w-24 items-center justify-center rounded-full border-4 ${gradeStyle.border} ${gradeStyle.bg}`}
+            >
+              <span className={`text-4xl font-black ${gradeStyle.text}`}>
+                {grade}
+              </span>
+            </div>
             {gradeLabel && (
-              <p className="-mt-1 text-sm font-semibold">{gradeLabel}</p>
+              <p className={`mt-2 text-sm font-semibold ${gradeStyle.text}`}>{gradeLabel}</p>
             )}
             <p className="mt-1 text-[11px] text-muted-foreground">{periodLabel} 기준</p>
             {totalSpend != null && (
-              <p className="mt-2 text-sm font-bold">
+              <p className="mt-2 text-sm font-bold text-gray-900">
                 총 광고비 {fmtCurrency(totalSpend)}
               </p>
             )}
