@@ -145,6 +145,7 @@ export function OverlapAnalysis({
 
   // 에러 — 사용자 친화적 빈 상태 UI
   if (error) {
+    // 정보성 에러: 활성 캠페인 없음, 파라미터 누락, 권한 부족
     if (error.includes("필수") || error.includes("활성 캠페인") || error.includes("접근 권한")) {
       return (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
@@ -154,6 +155,17 @@ export function OverlapAnalysis({
         </div>
       );
     }
+    // 토큰 만료 / Meta API 연결 문제
+    if (error.includes("토큰") || error.includes("연결이 설정되지")) {
+      return (
+        <div className="flex flex-col items-center justify-center gap-3 py-20">
+          <AlertTriangle className="h-8 w-8 text-yellow-500" />
+          <p className="text-base font-medium text-foreground">Meta 연결 문제</p>
+          <p className="text-sm text-muted-foreground text-center max-w-md">{error}</p>
+        </div>
+      );
+    }
+    // 재시도 가능한 에러: 타임아웃, 일시적 API 오류
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-20">
         <div className="flex items-center gap-2 text-sm text-destructive">

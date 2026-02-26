@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ArrowLeft, Loader2, Sparkles, Zap, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -173,14 +172,15 @@ export default function ContentDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* BackLink */}
-      <Link
-        href="/admin/content"
+      {/* BackLink — router.back()으로 탭 상태 + 스크롤 위치 보존 */}
+      <button
+        type="button"
+        onClick={() => router.back()}
         className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-gray-900 transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
         콘텐츠 목록
-      </Link>
+      </button>
 
       {/* ContentHeader */}
       <div className="flex items-start justify-between">

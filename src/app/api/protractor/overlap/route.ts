@@ -255,12 +255,18 @@ export async function GET(request: NextRequest) {
     );
 
     // 3) 전체 합산 unique reach (Meta API 1회)
-    const totalUnique = await fetchCombinedReach(
-      accountId,
-      activeAdsets.map((a) => a.id),
-      dateStart,
-      dateEnd
-    );
+    let totalUnique: number;
+    try {
+      totalUnique = await fetchCombinedReach(
+        accountId,
+        activeAdsets.map((a) => a.id),
+        dateStart,
+        dateEnd
+      );
+    } catch {
+      // 전체 reach 조회 실패 시 개별합으로 대체 (중복률 0%)
+      totalUnique = individualSum;
+    }
 
     const overallRate =
       individualSum > 0
@@ -342,22 +348,26 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 전체 결과 캐시 저장
-    await svc.from("adset_overlap_cache" as never).upsert(
-      {
-        account_id: accountId,
-        adset_pair: "__overall__",
-        period_start: dateStart,
-        period_end: dateEnd,
-        overlap_data: {
-          overall_rate: Math.round(overallRate * 10) / 10,
-          total_unique: totalUnique,
-          individual_sum: individualSum,
-        },
-        cached_at: now,
-      } as never,
-      { onConflict: "account_id,adset_pair,period_start,period_end" }
-    );
+    // 전체 결과 캐시 저장 (실패해도 응답에 영향 없음)
+    try {
+      await svc.from("adset_overlap_cache" as never).upsert(
+        {
+          account_id: accountId,
+          adset_pair: "__overall__",
+          period_start: dateStart,
+          period_end: dateEnd,
+          overlap_data: {
+            overall_rate: Math.round(overallRate * 10) / 10,
+            total_unique: totalUnique,
+            individual_sum: individualSum,
+          },
+          cached_at: now,
+        } as never,
+        { onConflict: "account_id,adset_pair,period_start,period_end" }
+      );
+    } catch {
+      // 캐시 저장 실패는 무시 (테이블 미존재 등)
+    }
 
     // overlap_rate 내림차순 정렬
     pairs.sort((a, b) => b.overlap_rate - a.overlap_rate);
@@ -375,8 +385,43 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response);
   } catch (e) {
     console.error("overlap API error:", e);
+    const msg = (e as Error).message || "";
+
+    // Meta API 토큰 미설정
+    if (msg.includes("META_ACCESS_TOKEN")) {
+      return NextResponse.json(
+        { error: "Meta API 연결이 설정되지 않았습니다. 관리자에게 문의하세요." },
+        { status: 503 }
+      );
+    }
+
+    // Meta API 오류 (토큰 만료, 권한 부족 등)
+    if (msg.includes("Meta API")) {
+      const isTokenError =
+        msg.includes("validating access token") ||
+        msg.includes("expired") ||
+        msg.includes("Session has expired") ||
+        msg.includes("Invalid OAuth");
+      return NextResponse.json(
+        {
+          error: isTokenError
+            ? "Meta API 토큰이 만료되었습니다. 광고계정을 다시 연결해주세요."
+            : "Meta API 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+        },
+        { status: isTokenError ? 401 : 502 }
+      );
+    }
+
+    // 타임아웃
+    if (msg.includes("timeout") || msg.includes("aborted") || msg.includes("TimeoutError")) {
+      return NextResponse.json(
+        { error: "Meta API 응답 시간이 초과되었습니다. 잠시 후 다시 시도해주세요." },
+        { status: 504 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "서버 오류가 발생했습니다." },
+      { error: "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요." },
       { status: 500 }
     );
   }
