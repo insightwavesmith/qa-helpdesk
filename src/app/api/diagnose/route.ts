@@ -112,6 +112,7 @@ export async function POST(request: Request) {
 
     for (const row of rawInsights) {
       const adId = row.ad_id as string;
+      if (!adId) continue;
       const existing = adMap.get(adId);
       if (!existing) {
         adMap.set(adId, { ...row });

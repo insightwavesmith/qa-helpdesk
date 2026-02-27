@@ -426,26 +426,70 @@ export async function deleteMember(userId: string) {
   return { error: null };
 }
 
-// A5: 광고계정 추가
-export async function addAdAccount(data: { accountId: string; accountName: string; userId?: string }) {
+// A5: 광고계정 추가 (5필드)
+export async function addAdAccount(data: {
+  accountId: string;
+  accountName: string;
+  userId?: string;
+  mixpanelProjectId?: string;
+  mixpanelBoardId?: string;
+  mixpanelSecretKey?: string;
+}) {
   const svc = await requireAdmin();
   const { error } = await svc.from('ad_accounts').insert({
     account_id: data.accountId,
     account_name: data.accountName,
     user_id: data.userId || null,
+    mixpanel_project_id: data.mixpanelProjectId || null,
+    mixpanel_board_id: data.mixpanelBoardId || null,
     active: true,
   });
   if (error) return { error: error.message };
+
+  // service_secrets UPSERT (mixpanel secret key)
+  if (data.mixpanelSecretKey && data.userId) {
+    await svc
+      .from("service_secrets" as never)
+      .upsert({
+        user_id: data.userId,
+        service: "mixpanel",
+        key_name: `secret_${data.accountId}`,
+        key_value: data.mixpanelSecretKey,
+      } as never, { onConflict: "user_id,service,key_name" } as never);
+  }
+
   revalidatePath('/admin/accounts');
+  revalidatePath('/admin/members');
   return { error: null };
 }
 
-// A6: 광고계정 수정
-export async function updateAdAccount(id: string, data: { account_name?: string; mixpanel_project_id?: string; mixpanel_board_id?: string }) {
+// A6: 광고계정 수정 (시크릿키 포함)
+export async function updateAdAccount(
+  id: string,
+  data: { account_name?: string; mixpanel_project_id?: string; mixpanel_board_id?: string },
+  secretKey?: string
+) {
   const svc = await requireAdmin();
   const { error } = await svc.from('ad_accounts').update(data).eq('id', id);
   if (error) return { error: error.message };
+
+  // 시크릿키 업데이트
+  if (secretKey) {
+    const { data: acc } = await svc.from('ad_accounts').select('user_id, account_id').eq('id', id).single();
+    if (acc?.user_id) {
+      await svc
+        .from("service_secrets" as never)
+        .upsert({
+          user_id: acc.user_id,
+          service: "mixpanel",
+          key_name: `secret_${acc.account_id}`,
+          key_value: secretKey,
+        } as never, { onConflict: "user_id,service,key_name" } as never);
+    }
+  }
+
   revalidatePath('/admin/accounts');
+  revalidatePath('/admin/members');
   return { error: null };
 }
 
@@ -455,5 +499,32 @@ export async function toggleAdAccount(id: string, active: boolean) {
   const { error } = await svc.from('ad_accounts').update({ active }).eq('id', id);
   if (error) return { error: error.message };
   revalidatePath('/admin/accounts');
+  return { error: null };
+}
+
+// A8: 광고계정 완전 삭제 (ad_accounts + service_secrets)
+export async function deleteAdAccountHard(id: string) {
+  const svc = await requireAdmin();
+
+  // 삭제 대상 조회
+  const { data: acc } = await svc.from('ad_accounts').select('account_id, user_id').eq('id', id).single();
+  if (!acc) return { error: "광고계정을 찾을 수 없습니다." };
+
+  // service_secrets 삭제
+  if (acc.user_id) {
+    await svc
+      .from("service_secrets" as never)
+      .delete()
+      .eq("user_id" as never, acc.user_id)
+      .eq("service" as never, "mixpanel")
+      .eq("key_name" as never, `secret_${acc.account_id}`);
+  }
+
+  // ad_accounts 삭제
+  const { error } = await svc.from('ad_accounts').delete().eq('id', id);
+  if (error) return { error: error.message };
+
+  revalidatePath('/admin/accounts');
+  revalidatePath('/admin/members');
   return { error: null };
 }

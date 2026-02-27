@@ -122,10 +122,91 @@ function PartVerdictBadge({ part }: { part: RawDiagnosisPart }) {
 // 진단 상세 — 파트별 메트릭 테이블
 // ============================================================
 
+function formatMetricValue(metric: RawDiagnosisMetric): string {
+  if (metric.my_value == null) return "-";
+  const isRoas = metric.name.toLowerCase().includes("roas");
+  if (isRoas) return fmtRoas(metric.my_value);
+  if (metric.name.toLowerCase().includes("rate") || metric.name.toLowerCase().includes("ctr"))
+    return fmtCtr(metric.my_value);
+  return fmtNum(metric.my_value);
+}
+
+function EngagementDetail({ part }: { part: RawDiagnosisPart }) {
+  const style = verdictBadgeStyle(part.verdict);
+  const summaryMetric = part.metrics.find((m) => m.name.includes("참여합계") || m.name.includes("engagement_per"));
+  const individualMetrics = part.metrics.filter((m) => m !== summaryMetric);
+
+  return (
+    <div className={`rounded-xl border ${style.border} ${style.bg} p-4`}>
+      <div className="mb-3 flex items-center justify-between">
+        <span className={`text-sm font-bold ${style.text}`}>{part.part_name}</span>
+        <span className="text-base">{part.verdict.match(/[🟢🟡🔴]/u)?.[0] ?? part.verdict}</span>
+      </div>
+
+      {/* 개별 4개 지표 */}
+      <div className="space-y-2">
+        {individualMetrics.map((metric) => {
+          const mStyle = verdictBadgeStyle(metric.verdict);
+          return (
+            <div key={metric.name} className="rounded-md bg-white/70 px-2 py-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-600">{metric.name}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-xs font-medium ${mStyle.text}`}>
+                    {formatMetricValue(metric)}
+                  </span>
+                  <span className="text-[10px]">
+                    {metric.verdict.match(/[🟢🟡🔴]/u)?.[0] ?? metric.verdict}
+                  </span>
+                </div>
+              </div>
+              {metric.above_avg != null && (
+                <p className="mt-0.5 text-[10px] text-gray-400">
+                  기준선: {fmtNum(metric.above_avg)}
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 구분선 + 합계 */}
+      {summaryMetric && (
+        <>
+          <hr className="my-2 border-gray-200" />
+          <div className="rounded-md bg-white/70 px-2 py-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-gray-700">{summaryMetric.name}</span>
+              <div className="flex items-center gap-1.5">
+                <span className={`text-sm font-bold ${verdictBadgeStyle(summaryMetric.verdict).text}`}>
+                  {formatMetricValue(summaryMetric)}
+                </span>
+                <span className="text-[10px]">
+                  {summaryMetric.verdict.match(/[🟢🟡🔴]/u)?.[0] ?? summaryMetric.verdict}
+                </span>
+              </div>
+            </div>
+            {summaryMetric.above_avg != null && (
+              <p className="mt-0.5 text-[10px] text-gray-400">
+                기준선: {fmtNum(summaryMetric.above_avg)}
+              </p>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function DiagnosisDetail({ parts }: { parts: RawDiagnosisPart[] }) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       {parts.map((part) => {
+        // 참여율 파트: 개별 4개 + 합계 레이아웃
+        if (part.part_name === "참여율") {
+          return <EngagementDetail key={part.part_num} part={part} />;
+        }
+
         const style = verdictBadgeStyle(part.verdict);
         return (
           <div
@@ -157,14 +238,7 @@ function DiagnosisDetail({ parts }: { parts: RawDiagnosisPart[] }) {
                       <span
                         className={`${isRoas ? "text-sm font-bold" : "text-xs font-medium"} ${mStyle.text}`}
                       >
-                        {metric.my_value != null
-                          ? isRoas
-                            ? fmtRoas(metric.my_value)
-                            : metric.name.toLowerCase().includes("rate") ||
-                              metric.name.toLowerCase().includes("ctr")
-                            ? fmtCtr(metric.my_value)
-                            : fmtNum(metric.my_value)
-                          : "-"}
+                        {formatMetricValue(metric)}
                       </span>
                       <span className="text-[10px]">
                         {metric.verdict.match(/[🟢🟡🔴]/u)?.[0] ?? metric.verdict}

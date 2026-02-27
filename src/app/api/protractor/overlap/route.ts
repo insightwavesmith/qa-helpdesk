@@ -120,13 +120,6 @@ async function fetchCombinedReach(
   return rows.length > 0 ? parseInt(rows[0].reach ?? "0", 10) : 0;
 }
 
-// ── 날짜 차이 계산 ──────────────────────────────────────────────
-function daysBetween(start: string, end: string): number {
-  const s = new Date(start);
-  const e = new Date(end);
-  return Math.round((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-}
-
 // ── adset_pair 키 생성 (항상 정렬) ──────────────────────────────
 function makePairKey(a: string, b: string): string {
   return [a, b].sort().join("_");

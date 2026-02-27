@@ -543,14 +543,28 @@ export function ContentRanking({
         const res = await fetch("/api/diagnose", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({
             accountId,
             startDate,
             endDate,
           }),
         });
-        const json = await res.json();
-        if (res.ok && json.diagnoses) {
+
+        if (!res.ok) {
+          console.warn(`[ContentRanking] diagnose API ${res.status}`);
+          return;
+        }
+
+        let json: { diagnoses?: RawDiagnosis[] };
+        try {
+          json = await res.json();
+        } catch {
+          console.warn("[ContentRanking] diagnose non-JSON response");
+          return;
+        }
+
+        if (json.diagnoses) {
           setDiagnoses(json.diagnoses as RawDiagnosis[]);
         }
       } catch {
@@ -564,7 +578,9 @@ export function ContentRanking({
   // 진단 결과 맵
   const diagMap = new Map<string, RawDiagnosis>();
   if (diagnoses) {
-    for (const d of diagnoses) diagMap.set(d.ad_id, d);
+    for (const d of diagnoses) {
+      if (d.ad_id) diagMap.set(d.ad_id, d);
+    }
   }
 
   // ABOVE_AVERAGE 벤치마크

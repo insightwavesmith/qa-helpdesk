@@ -278,19 +278,8 @@ export function OverlapAnalysis({
             </div>
           </div>
 
-          {/* 수치 + 새로 분석 버튼 */}
+          {/* 수치 + 상위 3쌍 */}
           <div className="flex-1">
-            <div className="mb-4 flex items-center justify-between">
-              <div />
-              <Button
-                onClick={onRefresh}
-                disabled={isLoading}
-                className="rounded-xl bg-gradient-to-r from-[#F75D5D] to-red-500 text-white hover:from-[#E54949] hover:to-red-600"
-              >
-                <RefreshCw className="mr-2 h-3.5 w-3.5" />
-                새로 분석
-              </Button>
-            </div>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
                 <p className="text-sm text-muted-foreground">실제 도달</p>
@@ -307,6 +296,32 @@ export function OverlapAnalysis({
                 </p>
               </div>
             </div>
+
+            {/* 상위 3쌍 */}
+            {sortedPairs.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {sortedPairs.slice(0, 3).map((p, i) => {
+                  const medals = ["🥇", "🥈", "🥉"];
+                  return (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2"
+                    >
+                      <span className="text-base">{medals[i]}</span>
+                      <span className="flex-1 truncate text-xs text-gray-700">
+                        {p.adset_a_name}
+                        <span className="mx-1 text-gray-400">↔</span>
+                        {p.adset_b_name}
+                      </span>
+                      <span className="shrink-0 font-mono text-sm font-bold">
+                        {p.overlap_rate}%
+                      </span>
+                      <StatusBadge rate={p.overlap_rate} />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

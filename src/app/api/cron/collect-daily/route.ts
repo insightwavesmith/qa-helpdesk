@@ -244,6 +244,7 @@ export async function GET(req: NextRequest) {
         const ads = await fetchAccountAds(account.account_id, dateParam ?? undefined);
 
         if (ads.length > 0) {
+          console.log(`[collect-daily] Sample ad keys [${account.account_id}]:`, Object.keys(ads[0]));
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const rows = ads.map((ad: any) => {
             const insight = (ad.insights as { data: Record<string, unknown>[] }).data[0];
@@ -258,8 +259,8 @@ export async function GET(req: NextRequest) {
               campaign_name: ad.campaign_name ?? null,
               adset_id: ad.adset_id ?? null,
               adset_name: ad.adset_name ?? null,
-              ad_id: ad.id ?? null,
-              ad_name: ad.name ?? null,
+              ad_id: (ad.ad_id ?? ad.id) as string | null,
+              ad_name: (ad.ad_name ?? ad.name) as string | null,
               creative_type: creativeType,
               quality_ranking: normalizeRanking(insight.quality_ranking as string),
               engagement_ranking: normalizeRanking(insight.engagement_rate_ranking as string),

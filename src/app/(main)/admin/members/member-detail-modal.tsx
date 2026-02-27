@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Pencil, Trash2, X } from "lucide-react";
-import { updateMember, changeRole, deactivateMember, deleteMember, updateAdAccount, toggleAdAccount } from "@/actions/admin";
+import { Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
+import { updateMember, changeRole, deactivateMember, deleteMember, updateAdAccount, deleteAdAccountHard, addAdAccount } from "@/actions/admin";
 import { toast } from "sonner";
 
 interface AdAccount {
@@ -71,16 +71,16 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
-  const [accountForm, setAccountForm] = useState({ account_name: "", mixpanel_project_id: "", mixpanel_board_id: "" });
+  const [accountForm, setAccountForm] = useState({ account_name: "", mixpanel_project_id: "", mixpanel_board_id: "", mixpanel_secret_key: "" });
   const [accountSaving, setAccountSaving] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newAccountForm, setNewAccountForm] = useState({ account_id: "", account_name: "", mixpanel_project_id: "", mixpanel_board_id: "", mixpanel_secret_key: "" });
+  const [addSaving, setAddSaving] = useState(false);
   const [name, setName] = useState(profile.name);
   const [phone, setPhone] = useState(profile.phone ?? "");
   const [shopName, setShopName] = useState(profile.shop_name ?? "");
   const [shopUrl, setShopUrl] = useState(profile.shop_url ?? "");
   const [cohort, setCohort] = useState(profile.cohort ?? "");
-  const [metaAccountId, setMetaAccountId] = useState(profile.meta_account_id ?? "");
-  const [mixpanelProjectId, setMixpanelProjectId] = useState(profile.mixpanel_project_id ?? "");
-  const [mixpanelBoardId, setMixpanelBoardId] = useState(profile.mixpanel_board_id ?? "");
   const [selectedRole, setSelectedRole] = useState(profile.role);
 
   const handleEditAccount = (acc: AdAccount) => {
@@ -89,13 +89,14 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
       account_name: acc.account_name ?? "",
       mixpanel_project_id: acc.mixpanel_project_id ?? "",
       mixpanel_board_id: acc.mixpanel_board_id ?? "",
+      mixpanel_secret_key: "",
     });
   };
 
   const handleDeleteAccount = async (acc: AdAccount) => {
-    if (!confirm(`광고계정 "${acc.account_name || acc.account_id}"을(를) 삭제하시겠습니까?`)) return;
+    if (!confirm(`광고계정 "${acc.account_name || acc.account_id}"을(를) 삭제하시겠습니까?\n삭제하면 관련 시크릿키도 함께 삭제됩니다.`)) return;
     try {
-      const res = await toggleAdAccount(acc.id, false);
+      const res = await deleteAdAccountHard(acc.id);
       if (res.error) toast.error(`삭제 실패: ${res.error}`);
       else { toast.success("광고계정이 삭제되었습니다."); onUpdated(); }
     } catch { toast.error("처리 중 오류가 발생했습니다."); }
@@ -105,11 +106,15 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
     if (!editingAccountId) return;
     setAccountSaving(true);
     try {
-      const { error } = await updateAdAccount(editingAccountId, {
-        account_name: accountForm.account_name || undefined,
-        mixpanel_project_id: accountForm.mixpanel_project_id || undefined,
-        mixpanel_board_id: accountForm.mixpanel_board_id || undefined,
-      });
+      const { error } = await updateAdAccount(
+        editingAccountId,
+        {
+          account_name: accountForm.account_name || undefined,
+          mixpanel_project_id: accountForm.mixpanel_project_id || undefined,
+          mixpanel_board_id: accountForm.mixpanel_board_id || undefined,
+        },
+        accountForm.mixpanel_secret_key || undefined
+      );
       if (error) {
         toast.error(`저장 실패: ${error}`);
       } else {
@@ -124,6 +129,33 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
     }
   };
 
+  const handleAddAccount = async () => {
+    if (!newAccountForm.account_id) { toast.error("광고계정 ID를 입력하세요."); return; }
+    setAddSaving(true);
+    try {
+      const { error } = await addAdAccount({
+        accountId: newAccountForm.account_id,
+        accountName: newAccountForm.account_name || newAccountForm.account_id,
+        userId: profile.id,
+        mixpanelProjectId: newAccountForm.mixpanel_project_id || undefined,
+        mixpanelBoardId: newAccountForm.mixpanel_board_id || undefined,
+        mixpanelSecretKey: newAccountForm.mixpanel_secret_key || undefined,
+      });
+      if (error) {
+        toast.error(`추가 실패: ${error}`);
+      } else {
+        toast.success("광고계정이 추가되었습니다.");
+        setShowAddForm(false);
+        setNewAccountForm({ account_id: "", account_name: "", mixpanel_project_id: "", mixpanel_board_id: "", mixpanel_secret_key: "" });
+        onUpdated();
+      }
+    } catch {
+      toast.error("처리 중 오류가 발생했습니다.");
+    } finally {
+      setAddSaving(false);
+    }
+  };
+
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
@@ -133,9 +165,6 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
         shop_name: shopName,
         shop_url: shopUrl,
         cohort: cohort || null,
-        meta_account_id: metaAccountId || null,
-        mixpanel_project_id: mixpanelProjectId || null,
-        mixpanel_board_id: mixpanelBoardId || null,
       });
       if (error) {
         toast.error(`수정 실패: ${error}`);
@@ -273,34 +302,6 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">메타 광고계정 ID</label>
-                <input
-                  type="text"
-                  value={metaAccountId}
-                  onChange={(e) => setMetaAccountId(e.target.value)}
-                  placeholder="예: 123456789012345"
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">믹스패널 프로젝트 ID</label>
-                <input
-                  type="text"
-                  value={mixpanelProjectId}
-                  onChange={(e) => setMixpanelProjectId(e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">믹스패널 보드 ID</label>
-                <input
-                  type="text"
-                  value={mixpanelBoardId}
-                  onChange={(e) => setMixpanelBoardId(e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
-                />
-              </div>
               <div className="flex justify-end gap-2 pt-2">
                 <Button
                   variant="outline"
@@ -313,9 +314,6 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                     setShopName(profile.shop_name ?? "");
                     setShopUrl(profile.shop_url ?? "");
                     setCohort(profile.cohort ?? "");
-                    setMetaAccountId(profile.meta_account_id ?? "");
-                    setMixpanelProjectId(profile.mixpanel_project_id ?? "");
-                    setMixpanelBoardId(profile.mixpanel_board_id ?? "");
                   }}
                 >
                   취소
@@ -431,9 +429,9 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
           <h3 className="text-sm font-medium text-gray-700 mb-2">
             배정된 광고계정 ({accounts.length})
           </h3>
-          {accounts.length === 0 ? (
+          {accounts.length === 0 && !showAddForm ? (
             <p className="text-sm text-gray-400">배정된 광고계정이 없습니다.</p>
-          ) : (
+          ) : accounts.length > 0 ? (
             <div className="space-y-2">
               {accounts.map((acc) => (
                 <div key={acc.id} className="bg-gray-50 rounded-lg px-3 py-2">
@@ -464,6 +462,16 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                           type="text"
                           value={accountForm.mixpanel_board_id}
                           onChange={(e) => setAccountForm((p) => ({ ...p, mixpanel_board_id: e.target.value }))}
+                          className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-0.5">믹스패널 시크릿키</label>
+                        <input
+                          type="password"
+                          value={accountForm.mixpanel_secret_key}
+                          onChange={(e) => setAccountForm((p) => ({ ...p, mixpanel_secret_key: e.target.value }))}
+                          placeholder="변경 시에만 입력"
                           className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
                         />
                       </div>
@@ -506,21 +514,87 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full ${
-                            acc.active
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-500"
-                          }`}
-                        >
-                          {acc.active ? "활성" : "비활성"}
-                        </span>
                       </div>
                     </div>
                   )}
                 </div>
               ))}
             </div>
+          ) : null}
+
+          {/* 광고계정 추가 폼 */}
+          {showAddForm && (
+            <div className="mt-2 bg-gray-50 rounded-lg px-3 py-3 space-y-2">
+              <p className="text-xs font-medium text-gray-700 mb-1">새 광고계정 추가</p>
+              <div>
+                <label className="block text-xs text-gray-500 mb-0.5">광고계정 ID</label>
+                <input
+                  type="text"
+                  value={newAccountForm.account_id}
+                  onChange={(e) => setNewAccountForm((p) => ({ ...p, account_id: e.target.value }))}
+                  placeholder="act_xxxxxxxxxx"
+                  className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-0.5">광고계정명</label>
+                <input
+                  type="text"
+                  value={newAccountForm.account_name}
+                  onChange={(e) => setNewAccountForm((p) => ({ ...p, account_name: e.target.value }))}
+                  className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-0.5">믹스패널 프로젝트 ID</label>
+                <input
+                  type="text"
+                  value={newAccountForm.mixpanel_project_id}
+                  onChange={(e) => setNewAccountForm((p) => ({ ...p, mixpanel_project_id: e.target.value }))}
+                  className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-0.5">믹스패널 보드 ID</label>
+                <input
+                  type="text"
+                  value={newAccountForm.mixpanel_board_id}
+                  onChange={(e) => setNewAccountForm((p) => ({ ...p, mixpanel_board_id: e.target.value }))}
+                  className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-0.5">믹스패널 시크릿키</label>
+                <input
+                  type="password"
+                  value={newAccountForm.mixpanel_secret_key}
+                  onChange={(e) => setNewAccountForm((p) => ({ ...p, mixpanel_secret_key: e.target.value }))}
+                  className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                />
+              </div>
+              <div className="flex justify-end gap-1.5 pt-1">
+                <Button variant="outline" size="sm" className="h-7 text-xs rounded" onClick={() => { setShowAddForm(false); setNewAccountForm({ account_id: "", account_name: "", mixpanel_project_id: "", mixpanel_board_id: "", mixpanel_secret_key: "" }); }}>
+                  취소
+                </Button>
+                <Button size="sm" className="h-7 text-xs rounded bg-[#F75D5D] hover:bg-[#E54949] text-white" onClick={handleAddAccount} disabled={addSaving}>
+                  {addSaving && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                  저장
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* 광고계정 추가 버튼 */}
+          {!showAddForm && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2 w-full border-dashed border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg"
+              onClick={() => setShowAddForm(true)}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              광고계정 추가
+            </Button>
           )}
         </div>
 
