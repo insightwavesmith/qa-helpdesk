@@ -1,47 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireProtractorAccess, verifyAccountOwnership } from '@/app/api/protractor/_shared';
-import { diagnoseAd, Verdict } from '@/lib/diagnosis';
-
-/**
- * 벤치마크 EAV 행들을 진단 엔진이 기대하는 9그룹 형식으로 변환
- *
- * EAV 원본: { metric_name, avg_value, p75 }
- * 진단 엔진 기대:
- *   { quality_above: { avg_ctr: ..., }, quality_average: {...}, ... }
- *
- * 현재 DB에는 ranking_type 구분 없이 단일 벤치마크 → 3그룹으로 분배
- *   - above: p75 값 (상위 기준선)
- *   - average: avg_value 값
- *   - below: avg_value * 0.5 (추정)
- */
-function transformBenchmarks(
-  rows: { metric_name: string; avg_value: number | null; p75: number | null; p25: number | null }[],
-): Record<string, Record<string, number>> {
-  const rankingTypes = ['engagement', 'conversion'];
-  const result: Record<string, Record<string, number>> = {};
-
-  for (const rt of rankingTypes) {
-    result[`${rt}_above`] = {};
-    result[`${rt}_average`] = {};
-    result[`${rt}_below`] = {};
-  }
-
-  for (const row of rows) {
-    const aboveVal = row.p75 ?? row.avg_value ?? 0;
-    const avgVal = row.avg_value ?? 0;
-    const belowVal = row.p25 ?? avgVal * 0.5;
-
-    const key = `avg_${row.metric_name}`;
-
-    for (const rt of rankingTypes) {
-      result[`${rt}_above`][key] = aboveVal;
-      result[`${rt}_average`][key] = avgVal;
-      result[`${rt}_below`][key] = belowVal;
-    }
-  }
-
-  return result;
-}
+import { diagnoseAd, Verdict, type GCPBenchmarks } from '@/lib/diagnosis';
 
 export async function POST(request: Request) {
   // 1. 인증 확인
@@ -70,45 +29,57 @@ export async function POST(request: Request) {
   }
 
   try {
-    // 4. 벤치마크 조회 (실 데이터) — Phase 3 재작성 전 임시 any 캐스팅
+    // 4. 벤치마크 조회 — wide format, ABOVE_AVERAGE 그룹만
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const benchSvc = svc as any;
+
     const { data: latestBench } = await benchSvc
       .from('benchmarks')
       .select('calculated_at')
       .order('calculated_at', { ascending: false })
       .limit(1);
 
-    // creative_type별 벤치마크 Map
-    const benchmarksByType = new Map<string, Record<string, Record<string, number>>>();
+    // GCPBenchmarks: { VIDEO: { engagement: { above_avg: {...} }, conversion: {...} }, ... }
+    const gcpBenchmarks: GCPBenchmarks = {};
 
     if (latestBench && latestBench.length > 0) {
+      const latestAt = (latestBench[0].calculated_at as string).slice(0, 10);
       const { data: benchRows } = await benchSvc
         .from('benchmarks')
         .select('*')
-        .gte('calculated_at', (latestBench[0].calculated_at as string).slice(0, 10));
+        .eq('ranking_group', 'ABOVE_AVERAGE')
+        .gte('calculated_at', latestAt);
 
       if (benchRows) {
-        // creative_type별 그룹핑 (benchRows를 unknown 경유로 캐스트 — creative_type 컬럼은 DB에 존재하나 SDK 타입 추론 미반영)
-        const typedRows = benchRows as unknown as { metric_name: string; avg_value: number | null; p75: number | null; p25: number | null; creative_type: string | null }[];
-        const groups = new Map<string, typeof typedRows>();
-        for (const row of typedRows) {
-          const ct = row.creative_type ?? 'ALL';
-          if (!groups.has(ct)) groups.set(ct, []);
-          groups.get(ct)!.push(row);
-        }
+        for (const row of benchRows as Record<string, unknown>[]) {
+          const ct = (row.creative_type as string) ?? 'VIDEO';
+          const rt = (row.ranking_type as string) ?? 'engagement';
 
-        for (const [ct, rows] of groups) {
-          benchmarksByType.set(ct, transformBenchmarks(rows));
+          if (!gcpBenchmarks[ct]) gcpBenchmarks[ct] = {};
+
+          gcpBenchmarks[ct][rt as 'engagement' | 'conversion'] = {
+            above_avg: {
+              video_p3s_rate: row.video_p3s_rate as number | null,
+              thruplay_rate: row.thruplay_rate as number | null,
+              retention_rate: row.retention_rate as number | null,
+              reactions_per_10k: row.reactions_per_10k as number | null,
+              comments_per_10k: row.comments_per_10k as number | null,
+              shares_per_10k: row.shares_per_10k as number | null,
+              saves_per_10k: row.saves_per_10k as number | null,
+              engagement_per_10k: row.engagement_per_10k as number | null,
+              ctr: row.ctr as number | null,
+              click_to_checkout_rate: row.click_to_checkout_rate as number | null,
+              click_to_purchase_rate: row.click_to_purchase_rate as number | null,
+              checkout_to_purchase_rate: row.checkout_to_purchase_rate as number | null,
+              roas: row.roas as number | null,
+            },
+            sample_count: row.sample_count as number | undefined,
+          };
         }
       }
     }
 
-    // 폴백: ALL 벤치마크
-    const allBenchmarks = benchmarksByType.get('ALL') ?? {};
-
     // 5. TOP N 광고 조회 (daily_ad_insights 테이블)
-    // select('*') returns all DB columns including those not in TypeScript types
     let query = svc
       .from('daily_ad_insights')
       .select('*')
@@ -119,7 +90,6 @@ export async function POST(request: Request) {
     if (endDate) query = query.lte('date', endDate);
 
     const { data: rawData } = await query;
-    // Cast to Record<string, unknown>[] to access all columns (DB has more columns than TS types)
     const rawInsights = rawData as unknown as Record<string, unknown>[] | null;
 
     if (!rawInsights || rawInsights.length === 0) {
@@ -134,9 +104,10 @@ export async function POST(request: Request) {
     const sumKeys = ['impressions', 'reach', 'clicks', 'spend', 'purchases', 'purchase_value'];
     const rateKeys = [
       'video_p3s_rate', 'thruplay_rate', 'retention_rate',
-      'reactions_per_10k', 'comments_per_10k', 'shares_per_10k', 'engagement_per_10k',
+      'reactions_per_10k', 'comments_per_10k', 'shares_per_10k',
+      'saves_per_10k', 'engagement_per_10k',
       'click_to_checkout_rate', 'click_to_purchase_rate',
-      'checkout_to_purchase_rate', 'reach_to_purchase_rate',
+      'checkout_to_purchase_rate',
     ];
 
     for (const row of rawInsights) {
@@ -152,7 +123,7 @@ export async function POST(request: Request) {
         for (const k of rateKeys) {
           if (row[k] != null) existing[k] = row[k];
         }
-        // roas, ctr 재계산
+        // ctr, roas 재계산
         const totalSpend = existing.spend as number;
         const totalClicks = existing.clicks as number;
         const totalImpressions = existing.impressions as number;
@@ -168,9 +139,8 @@ export async function POST(request: Request) {
 
     // 6. 각 광고 진단 실행
     const results = topAds.map((ad) => {
-      const adCreativeType = ((ad.creative_type as string) ?? 'ALL').toUpperCase();
-      const benchmarks = benchmarksByType.get(adCreativeType) ?? allBenchmarks;
-      const diagnosis = diagnoseAd(ad, benchmarks);
+      const adCreativeType = ((ad.creative_type as string) ?? 'VIDEO').toUpperCase();
+      const diagnosis = diagnoseAd(ad, gcpBenchmarks, adCreativeType);
       return {
         ad_id: diagnosis.adId,
         ad_name: diagnosis.adName,
@@ -186,7 +156,8 @@ export async function POST(request: Request) {
               name: m.metricName,
               my_value: m.myValue,
               above_avg: m.aboveAvg,
-              average_avg: m.averageAvg,
+              // threshold = aboveAvg × 0.75, for DiagnosticPanel display
+              average_avg: m.aboveAvg != null ? m.aboveAvg * 0.75 : null,
               verdict: m.verdict,
             })),
         })),
@@ -196,7 +167,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       account_id: accountId,
       diagnoses: results,
-      has_lp_data: false,
+      has_benchmark_data: Object.keys(gcpBenchmarks).length > 0,
     });
   } catch (e) {
     return NextResponse.json(

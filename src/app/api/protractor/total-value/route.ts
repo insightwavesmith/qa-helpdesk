@@ -9,15 +9,19 @@ import {
   periodToDateRange,
 } from "@/lib/protractor/t3-engine";
 
-// Phase 3에서 전면 재작성 예정 — wide format 스키마 대응 임시 구현
+/**
+ * wide format 벤치마크 조회 — ranking_group=ABOVE_AVERAGE 기준 단일 값
+ * dominantCT: creative_type (VIDEO/IMAGE/CATALOG/ALL)
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchBenchmarks(svc: any, _dominantCT: string): Promise<Record<string, BenchEntry>> {
-  // Phase 3 재작성 전까지 빈 맵 반환 (benchmarks 스키마 전환 중)
+async function fetchBenchmarks(svc: any, dominantCT: string): Promise<Record<string, BenchEntry>> {
   const benchMap: Record<string, BenchEntry> = {};
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const benchSvc = svc as any;
+
+    // 최신 calculated_at 조회
     const { data: latestBench } = await benchSvc
       .from("benchmarks")
       .select("calculated_at")
@@ -26,22 +30,45 @@ async function fetchBenchmarks(svc: any, _dominantCT: string): Promise<Record<st
 
     if (!latestBench || latestBench.length === 0) return benchMap;
 
-    // wide format: 한 행에 모든 지표가 컬럼으로 존재
+    const latestAt = (latestBench[0].calculated_at as string).slice(0, 10);
+
+    // creative_type + ABOVE_AVERAGE 행 조회 (engagement + conversion 두 행)
     const { data: rows } = await benchSvc
       .from("benchmarks")
       .select("*")
-      .order("calculated_at", { ascending: false })
-      .limit(10);
+      .eq("creative_type", dominantCT)
+      .eq("ranking_group", "ABOVE_AVERAGE")
+      .gte("calculated_at", latestAt);
 
-    if (!rows || rows.length === 0) return benchMap;
+    if (!rows || rows.length === 0) {
+      // fallback: ALL creative_type 시도
+      const { data: fallbackRows } = await benchSvc
+        .from("benchmarks")
+        .select("*")
+        .eq("creative_type", "ALL")
+        .eq("ranking_group", "ABOVE_AVERAGE")
+        .gte("calculated_at", latestAt);
 
-    // wide format에서 BenchEntry 구성 (p25=0, p50=avg, p75=avg, p90=avg 임시)
-    // Phase 3에서 ranking_type/ranking_group 기반으로 대체 예정
-    const row = rows[0] as Record<string, unknown>;
-    for (const def of ALL_METRIC_DEFS) {
-      const val = row[def.key];
-      if (val != null && typeof val === "number") {
-        benchMap[def.key] = { p25: val * 0.7, p50: val * 0.85, p75: val, p90: val * 1.2 };
+      if (!fallbackRows || fallbackRows.length === 0) return benchMap;
+
+      for (const row of fallbackRows as Record<string, unknown>[]) {
+        for (const def of ALL_METRIC_DEFS) {
+          const val = row[def.key];
+          if (val != null && typeof val === "number" && benchMap[def.key] == null) {
+            benchMap[def.key] = val;
+          }
+        }
+      }
+      return benchMap;
+    }
+
+    // engagement + conversion 두 행에서 지표값 추출 (먼저 발견된 값 우선)
+    for (const row of rows as Record<string, unknown>[]) {
+      for (const def of ALL_METRIC_DEFS) {
+        const val = row[def.key];
+        if (val != null && typeof val === "number" && benchMap[def.key] == null) {
+          benchMap[def.key] = val;
+        }
       }
     }
   } catch {

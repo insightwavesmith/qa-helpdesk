@@ -47,10 +47,7 @@ interface T3MetricResult {
   key: string;
   value: number | null;
   score: number | null;
-  p25: number | null;
-  p50: number | null;
-  p75: number | null;
-  p90: number | null;
+  aboveAvg: number | null; // ABOVE_AVERAGE 단일 값 (T8: p25/p50/p75/p90 제거)
   status: string;
   unit: string;
 }

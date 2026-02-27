@@ -218,7 +218,7 @@ export async function getStudentPerformance(
   };
 }
 
-// T4: 벤치마크 조회 (한 번만) — creative_type별로 분류
+// T4: 벤치마크 조회 (한 번만) — wide format, ABOVE_AVERAGE 기준 단일 값
 type BenchByType = Map<string, Record<string, BenchEntry>>;
 
 async function fetchBenchmarksForT3(
@@ -229,28 +229,34 @@ async function fetchBenchmarksForT3(
 
   const { data: latestBench } = await supabase
     .from("benchmarks")
-    .select("date")
+    .select("calculated_at")
     .order("calculated_at", { ascending: false })
     .limit(1);
 
   if (!latestBench || latestBench.length === 0) return byType;
 
+  const latestAt = (latestBench[0].calculated_at as string).slice(0, 10);
+
+  // wide format: ranking_group=ABOVE_AVERAGE 행만 조회
   const { data: benchRows } = await supabase
     .from("benchmarks")
-    .select("metric_name, p25, p50, p75, p90, creative_type")
-    .eq("date", latestBench[0].date);
+    .select("*")
+    .eq("ranking_group", "ABOVE_AVERAGE")
+    .gte("calculated_at", latestAt);
 
   if (!benchRows) return byType;
 
   for (const row of benchRows as Record<string, unknown>[]) {
     const ct = ((row.creative_type as string) ?? "ALL").toUpperCase();
     if (!byType.has(ct)) byType.set(ct, {});
-    byType.get(ct)![row.metric_name as string] = {
-      p25: row.p25 as number | null,
-      p50: row.p50 as number | null,
-      p75: row.p75 as number | null,
-      p90: row.p90 as number | null,
-    };
+    const ctMap = byType.get(ct)!;
+    // wide format: 각 지표가 컬럼으로 존재
+    for (const def of ALL_METRIC_DEFS) {
+      const val = row[def.key];
+      if (val != null && typeof val === "number" && ctMap[def.key] == null) {
+        ctMap[def.key] = val as BenchEntry;
+      }
+    }
   }
 
   return byType;
@@ -266,7 +272,7 @@ function resolveBenchmarks(
 
   for (const def of ALL_METRIC_DEFS) {
     const entry = primary?.[def.key] ?? fallback?.[def.key];
-    if (entry) result[def.key] = entry;
+    if (entry != null) result[def.key] = entry;
   }
 
   return result;

@@ -9,8 +9,6 @@ export interface MetricResult {
   metricName: string;
   myValue: number | null;
   aboveAvg: number | null;
-  averageAvg: number | null;
-  belowAvg: number | null;
   verdict: Verdict;
   isReverse: boolean;
 }
@@ -34,6 +32,8 @@ export interface MetricDef {
   key: string;
   label: string;
   reverse: boolean;
+  /** 파트의 benchmarkSource를 덮어씀 (예: Part0의 ctr → conversion 기준) */
+  benchmarkSourceOverride?: 'engagement' | 'conversion';
 }
 
 export interface PartConfig {

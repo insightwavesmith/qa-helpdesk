@@ -1,6 +1,7 @@
 /**
- * T3 점수 엔진 — 순수 계산 로직
- * total-value/route.ts에서 추출. HTTP/인증 무관.
+ * T3 점수 엔진 — ratio 기반 점수 계산 (T8 재작성)
+ * BenchEntry: 단일 ABOVE_AVERAGE 값
+ * calculateMetricScore: ratio 기반 (GCP 방식)
  */
 
 // ─── 타입 ───────────────────────────────────────────────
@@ -12,22 +13,15 @@ export interface T3MetricDef {
   unit: string;
 }
 
-export interface BenchEntry {
-  p25: number | null;
-  p50: number | null;
-  p75: number | null;
-  p90: number | null;
-}
+/** ABOVE_AVERAGE 단일 값 (Phase 3: p25/p50/p75/p90 제거) */
+export type BenchEntry = number | null;
 
 export interface MetricResult {
   name: string;
   key: string;
   value: number | null;
   score: number | null;
-  p25: number | null;
-  p50: number | null;
-  p75: number | null;
-  p90: number | null;
+  aboveAvg: number | null; // 기존 p25/p50/p75/p90 → 단일 ABOVE_AVERAGE 값
   status: string;
   unit: string;
 }
@@ -77,29 +71,39 @@ export const ALL_METRIC_DEFS = Object.values(T3_PARTS).flatMap((p) => p.metrics)
 
 // ─── 점수 계산 ──────────────────────────────────────────
 
+function clamp(v: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, v));
+}
+
+/**
+ * ratio → 0~100 점수 매핑
+ * ratio >= 1.33 → 100
+ * ratio >= 1.0  → 75~100
+ * ratio >= 0.75 → 50~75
+ * ratio >= 0.5  → 25~50
+ * ratio < 0.5   → 0~25
+ */
+function mapRatioToScore(ratio: number): number {
+  if (ratio >= 1.33) return 100;
+  if (ratio >= 1.0) return 75 + ((ratio - 1.0) / 0.33) * 25;
+  if (ratio >= 0.75) return 50 + ((ratio - 0.75) / 0.25) * 25;
+  if (ratio >= 0.5) return 25 + ((ratio - 0.5) / 0.25) * 25;
+  return Math.max(0, (ratio / 0.5) * 25);
+}
+
+/**
+ * ratio 기반 지표 점수 계산 (GCP 방식)
+ * ascending=true: ratio = value / aboveAvg (높을수록 좋음)
+ * ascending=false: ratio = aboveAvg / value (낮을수록 좋음)
+ */
 export function calculateMetricScore(
   value: number,
-  bench: BenchEntry,
-  ascending: boolean,
+  aboveAvg: number, // 단일 ABOVE_AVERAGE 값
+  ascending = true,
 ): number {
-  const { p25, p50, p75, p90 } = bench;
-  if (p25 == null || p50 == null || p75 == null || p90 == null) return 50;
-
-  if (ascending) {
-    if (value >= p90) return 100;
-    if (value >= p75 && p90 > p75) return 75 + ((value - p75) / (p90 - p75)) * 25;
-    if (value >= p50 && p75 > p50) return 50 + ((value - p50) / (p75 - p50)) * 25;
-    if (value >= p25 && p50 > p25) return 25 + ((value - p25) / (p50 - p25)) * 25;
-    if (p25 > 0) return Math.max(0, (value / p25) * 25);
-    return 0;
-  } else {
-    if (value <= p25) return 100;
-    if (value <= p50 && p50 > p25) return 75 + ((p50 - value) / (p50 - p25)) * 25;
-    if (value <= p75 && p75 > p50) return 50 + ((p75 - value) / (p75 - p50)) * 25;
-    if (value <= p90 && p90 > p75) return 25 + ((p90 - value) / (p90 - p75)) * 25;
-    if (p90 > 0) return Math.max(0, 25 - ((value - p90) / p90) * 25);
-    return 0;
-  }
+  if (!aboveAvg || aboveAvg === 0) return 50;
+  const ratio = ascending ? value / aboveAvg : aboveAvg / value;
+  return clamp(mapRatioToScore(ratio), 0, 100);
 }
 
 export function scoreToStatus(score: number): string {
@@ -126,7 +130,7 @@ export function periodToDateRange(period: number): { start: string; end: string 
   return { start: startStr, end: endStr };
 }
 
-// ─── 지표값 계산 (row 배열 → 9개 지표) ─────────────────
+// ─── 지표값 계산 (row 배열 → 지표 값 맵) ────────────────
 
 export function computeMetricValues(rows: Record<string, unknown>[]): Record<string, number | null> {
   let totalImpressions = 0;
@@ -218,12 +222,12 @@ export function calculateT3Score(
 
     for (const def of partDef.metrics) {
       const value = metricValues[def.key];
-      const bench = benchMap[def.key];
+      const aboveAvg = benchMap[def.key] ?? null;
       let metricScore: number | null = null;
       let status = "⚪";
 
-      if (value != null && bench) {
-        metricScore = Math.round(calculateMetricScore(value, bench, def.ascending) * 100) / 100;
+      if (value != null && aboveAvg != null) {
+        metricScore = Math.round(calculateMetricScore(value, aboveAvg, def.ascending) * 100) / 100;
         status = scoreToStatus(metricScore);
         scores.push(metricScore);
       }
@@ -233,10 +237,7 @@ export function calculateT3Score(
         key: def.key,
         value: value != null ? Math.round(value * 100) / 100 : null,
         score: metricScore != null ? Math.round(metricScore) : null,
-        p25: bench?.p25 != null ? Math.round(bench.p25 * 100) / 100 : null,
-        p50: bench?.p50 != null ? Math.round(bench.p50 * 100) / 100 : null,
-        p75: bench?.p75 != null ? Math.round(bench.p75 * 100) / 100 : null,
-        p90: bench?.p90 != null ? Math.round(bench.p90 * 100) / 100 : null,
+        aboveAvg: aboveAvg != null ? Math.round(aboveAvg * 100) / 100 : null,
         status,
         unit: def.unit,
       };

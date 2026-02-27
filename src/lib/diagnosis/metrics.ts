@@ -8,6 +8,8 @@ export const PART_METRICS: Record<number, PartConfig> = {
       { key: 'video_p3s_rate', label: '3초 시청률', reverse: false },
       { key: 'thruplay_rate', label: 'ThruPlay율', reverse: false },
       { key: 'retention_rate', label: '지속비율', reverse: false },
+      // CTR은 conversion 벤치마크 기준
+      { key: 'ctr', label: 'CTR', reverse: false, benchmarkSourceOverride: 'conversion' },
     ],
   },
   1: {
@@ -25,7 +27,6 @@ export const PART_METRICS: Record<number, PartConfig> = {
     name: '전환율',
     benchmarkSource: 'conversion',
     metrics: [
-      { key: 'ctr', label: 'CTR', reverse: false },
       { key: 'click_to_checkout_rate', label: '결제시작율', reverse: false },
       { key: 'click_to_purchase_rate', label: '구매전환율', reverse: false },
       { key: 'checkout_to_purchase_rate', label: '결제→구매율', reverse: false },

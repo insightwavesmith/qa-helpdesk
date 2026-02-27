@@ -10,10 +10,7 @@ interface T3MetricResult {
   key: string;
   value: number | null;
   score: number | null;
-  p25: number | null;
-  p50: number | null;
-  p75: number | null;
-  p90: number | null;
+  aboveAvg: number | null; // ABOVE_AVERAGE 단일 값 (T8: p25/p50/p75/p90 제거)
   status: string;
   unit: string;
 }
@@ -122,8 +119,8 @@ function T3DiagnosticView({ diagnostics }: { diagnostics: Record<string, T3Diagn
                           )}
                         </div>
                         <div className="mt-1 text-[10px] text-muted-foreground">
-                          {m.p50 != null && m.p75 != null
-                            ? `p50: ${fmtMetric(m.p50)} / p75: ${fmtMetric(m.p75)}`
+                          {m.aboveAvg != null
+                            ? `기준선: ${fmtMetric(m.aboveAvg)}`
                             : ""}
                         </div>
                       </div>

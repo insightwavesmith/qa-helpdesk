@@ -1,89 +1,61 @@
 import { NextResponse } from "next/server";
 import { requireProtractorAccess } from "../_shared";
 
-// EAV metric_name → 프론트엔드 BenchmarkRow 필드 매핑
-// 벤치마크 그룹: engagement 또는 conversion
-const METRIC_FIELD_MAP: Record<string, { field: string; group: "engagement" | "conversion" }> = {
-  roas: { field: "avg_roas", group: "conversion" },
-  ctr: { field: "avg_ctr", group: "conversion" },
-  spend: { field: "avg_spend", group: "conversion" },
-  impressions: { field: "avg_impressions", group: "engagement" },
-  clicks: { field: "avg_clicks", group: "conversion" },
-  purchases: { field: "avg_purchases", group: "conversion" },
-  purchase_value: { field: "avg_purchase_value", group: "conversion" },
-  video_p3s_rate: { field: "avg_video_p3s_rate", group: "engagement" },
-  thruplay_rate: { field: "avg_thruplay_rate", group: "engagement" },
-  retention_rate: { field: "avg_retention_rate", group: "engagement" },
-  reactions_per_10k: { field: "avg_reactions_per_10k", group: "engagement" },
-  comments_per_10k: { field: "avg_comments_per_10k", group: "engagement" },
-  shares_per_10k: { field: "avg_shares_per_10k", group: "engagement" },
-  engagement_per_10k: { field: "avg_engagement_per_10k", group: "engagement" },
-  click_to_checkout_rate: { field: "avg_click_to_checkout_rate", group: "conversion" },
-  checkout_to_purchase_rate: { field: "avg_checkout_to_purchase_rate", group: "conversion" },
-  click_to_purchase_rate: { field: "avg_click_to_purchase_rate", group: "conversion" },
-};
+/**
+ * 벤치마크 API — GCP wide format 직접 반환 (T7 재작성)
+ *
+ * DB: benchmarks 테이블 (wide format)
+ *   creative_type × ranking_type × ranking_group 조합, 13개 지표 컬럼
+ *
+ * 프론트엔드(BenchmarkRow)와 호환을 위해:
+ *   - ranking_group: "ABOVE_AVERAGE" → "above_avg" (lowercase) 변환
+ *   - 지표 필드: DB 컬럼명(ctr) → avg_ prefix 추가(avg_ctr) 변환
+ */
 
-// EAV 행들을 프론트엔드가 기대하는 wide-format BenchmarkRow로 피벗
-// p75를 "상위 기준선" (above_avg) 값으로 사용
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function pivotBenchmarks(rows: any[]): Record<string, unknown>[] {
-  // date + creative_type별로 그룹핑
-  const byGroup = new Map<string, { metric_name: string; avg_value: number | null; p75: number | null }[]>();
-  for (const row of rows) {
-    const ct = row.creative_type ?? 'ALL';
-    const key = `${row.date}_${ct}`;
-    const existing = byGroup.get(key) ?? [];
-    existing.push(row);
-    byGroup.set(key, existing);
-  }
+// DB wide-format → BenchmarkRow 변환
+function toFrontendRow(row: Record<string, unknown>): Record<string, unknown> {
+  const rankingGroup = (row.ranking_group as string ?? "").toLowerCase().replace(/_/g, "_");
+  // ABOVE_AVERAGE → above_avg, AVERAGE → average, etc.
+  const groupAlias = rankingGroup === "above_average" ? "above_avg"
+    : rankingGroup === "median_all" ? "median_all"
+    : rankingGroup;
 
-  const result: Record<string, unknown>[] = [];
-
-  for (const [groupKey, metrics] of byGroup) {
-    const ct = groupKey.split('_').slice(1).join('_') || 'ALL';
-
-    const engRow: Record<string, unknown> = {
-      ranking_type: "engagement",
-      ranking_group: "above_avg",
-      creative_type: ct,
-    };
-    const convRow: Record<string, unknown> = {
-      ranking_type: "conversion",
-      ranking_group: "above_avg",
-      creative_type: ct,
-    };
-
-    for (const m of metrics) {
-      const mapping = METRIC_FIELD_MAP[m.metric_name];
-      if (!mapping) continue;
-      const value = m.p75 ?? m.avg_value;
-      if (value == null) continue;
-
-      if (mapping.group === "engagement") {
-        engRow[mapping.field] = value;
-      } else {
-        convRow[mapping.field] = value;
-      }
-    }
-
-    result.push(engRow, convRow);
-  }
-
-  return result;
+  return {
+    id: row.id,
+    creative_type: row.creative_type,
+    ranking_type: row.ranking_type,
+    ranking_group: groupAlias,
+    sample_count: row.sample_count,
+    calculated_at: row.calculated_at,
+    // 13개 지표: avg_ prefix 추가
+    avg_video_p3s_rate: row.video_p3s_rate,
+    avg_thruplay_rate: row.thruplay_rate,
+    avg_retention_rate: row.retention_rate,
+    avg_reactions_per_10k: row.reactions_per_10k,
+    avg_comments_per_10k: row.comments_per_10k,
+    avg_shares_per_10k: row.shares_per_10k,
+    avg_saves_per_10k: row.saves_per_10k,
+    avg_engagement_per_10k: row.engagement_per_10k,
+    avg_ctr: row.ctr,
+    avg_click_to_checkout_rate: row.click_to_checkout_rate,
+    avg_click_to_purchase_rate: row.click_to_purchase_rate,
+    avg_checkout_to_purchase_rate: row.checkout_to_purchase_rate,
+    avg_roas: row.roas,
+  };
 }
 
 // GET /api/protractor/benchmarks
 // student 이상만 접근 가능
-// benchmarks 테이블(EAV)에서 최근 데이터 조회 → 프론트엔드용 wide format으로 변환
 export async function GET() {
   try {
     const auth = await requireProtractorAccess();
     if ("response" in auth) return auth.response;
     const { svc } = auth;
 
-    // 가장 최근 날짜의 벤치마크만 가져오기 (Phase 3에서 전면 재작성 예정 — 임시 any 캐스팅)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const benchSvc = svc as any;
+
+    // 가장 최근 calculated_at 조회
     const { data: latest, error: latestErr } = await benchSvc
       .from("benchmarks")
       .select("calculated_at")
@@ -102,11 +74,13 @@ export async function GET() {
       return NextResponse.json({ data: [] });
     }
 
-    const latestDate = latest[0].calculated_at;
+    const latestAt = (latest[0].calculated_at as string).slice(0, 10);
+
+    // 최근 수집분 전체 조회 (모든 ranking_group 포함)
     const { data, error } = await benchSvc
       .from("benchmarks")
       .select("*")
-      .gte("calculated_at", latestDate.slice(0, 10));
+      .gte("calculated_at", latestAt);
 
     if (error) {
       console.error("benchmarks 조회 오류:", error);
@@ -116,8 +90,8 @@ export async function GET() {
       );
     }
 
-    const pivoted = pivotBenchmarks(data ?? []);
-    return NextResponse.json({ data: pivoted });
+    const rows = (data as Record<string, unknown>[] ?? []).map(toFrontendRow);
+    return NextResponse.json({ data: rows });
   } catch {
     return NextResponse.json(
       { error: "서버 오류가 발생했습니다." },
