@@ -10,6 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, ArrowRight, BarChart3, LinkIcon } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
+import { removeAdAccount } from "@/actions/onboarding";
 
 import {
   ProtractorHeader,
@@ -251,6 +253,25 @@ export default function RealDashboard() {
     window.history.replaceState({}, "", url.toString());
   };
 
+  const handleRemoveAccount = async (accountId: string) => {
+    const confirmed = window.confirm(
+      `광고계정 ${accountId}를 삭제하시겠습니까?\n삭제 후 복구할 수 없습니다.`
+    );
+    if (!confirmed) return;
+
+    const result = await removeAdAccount(accountId);
+    if (result.error) {
+      toast.error(`계정 삭제 실패: ${result.error}`);
+    } else {
+      toast.success("광고계정이 삭제되었습니다.");
+      setAccounts((prev) => prev.filter((a) => a.account_id !== accountId));
+      if (selectedAccountId === accountId) {
+        const remaining = accounts.filter((a) => a.account_id !== accountId);
+        setSelectedAccountId(remaining.length > 0 ? remaining[0].account_id : null);
+      }
+    }
+  };
+
   // 실데이터 집계
   const summary = insights.length > 0 ? aggregateSummary(insights) : null;
   const summaryCards = summary ? toSummaryCards(summary) : undefined;
@@ -265,6 +286,7 @@ export default function RealDashboard() {
         accounts={accounts}
         selectedAccountId={selectedAccountId}
         onSelect={handleAccountSelect}
+        onRemove={handleRemoveAccount}
         isLoading={loadingAccounts}
         dateRange={dateRange}
       />

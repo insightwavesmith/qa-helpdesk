@@ -1,6 +1,6 @@
 "use client";
 
-import { Compass, ChevronDown } from "lucide-react";
+import { Compass, ChevronDown, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,6 +14,7 @@ interface ProtractorHeaderProps {
   accounts: AdAccount[];
   selectedAccountId: string | null;
   onSelect: (accountId: string) => void;
+  onRemove?: (accountId: string) => void;
   isLoading?: boolean;
   dateRange?: { start: string; end: string };
 }
@@ -27,6 +28,7 @@ export function ProtractorHeader({
   accounts,
   selectedAccountId,
   onSelect,
+  onRemove,
   isLoading,
   dateRange,
 }: ProtractorHeaderProps) {
@@ -88,6 +90,7 @@ export function ProtractorHeader({
                 <DropdownMenuItem
                   key={acc.id}
                   onClick={() => onSelect(acc.account_id)}
+                  className="flex items-center justify-between gap-2"
                 >
                   <div className="flex flex-col">
                     <span className="text-sm font-medium">
@@ -97,6 +100,19 @@ export function ProtractorHeader({
                       {acc.account_id}
                     </span>
                   </div>
+                  {onRemove && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemove(acc.account_id);
+                      }}
+                      className="shrink-0 rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                      title="계정 삭제"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
