@@ -35,7 +35,7 @@ export default async function ProtractorPage() {
 
   // admin → 실제 대시보드
   if (role === "admin") {
-    return <Suspense><RealDashboard isAdmin /></Suspense>;
+    return <Suspense><RealDashboard /></Suspense>;
   }
 
   // student/member → 광고계정 연결 여부 확인
@@ -49,7 +49,7 @@ export default async function ProtractorPage() {
     const hasAdAccount = adAccounts && adAccounts.length > 0;
 
     if (hasAdAccount) {
-      return <Suspense><RealDashboard isAdmin={false} /></Suspense>;
+      return <Suspense><RealDashboard /></Suspense>;
     }
 
     // 미연결 수강생 → 샘플 + 연결 안내

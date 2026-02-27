@@ -133,7 +133,7 @@ function calculateMetrics(insight: Record<string, any>, accountId: string, colle
   const shares = getActionValue(actions, "post");
   const saves = getActionValue(actions, "onsite_conversion.post_save");
 
-  const videoP3s = getVideoActionValue(insight.video_play_actions);
+  const videoP3s = getActionValue(actions, "video_view");
   const thruplay = getVideoActionValue(insight.video_thruplay_watched_actions);
   const videoP100 = getVideoActionValue(insight.video_p100_watched_actions);
 

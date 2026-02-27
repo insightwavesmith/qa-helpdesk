@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AdInsightRow, BenchmarkRow } from "./ad-metrics-table";
 import { getTop5Ads } from "@/lib/protractor/aggregate";
@@ -277,8 +277,6 @@ function DiagnosisDetail({ parts, ad, periodNum, engAbove }: DiagnosisDetailProp
 function AdRankCard({
   ad,
   rank,
-  isExpanded,
-  onToggle,
   accountId,
   mixpanelProjectId,
   mixpanelBoardId,
@@ -288,8 +286,6 @@ function AdRankCard({
 }: {
   ad: AdInsightRow;
   rank: number;
-  isExpanded: boolean;
-  onToggle: () => void;
   accountId: string;
   mixpanelProjectId?: string | null;
   mixpanelBoardId?: string | null;
@@ -308,17 +304,10 @@ function AdRankCard({
 
   return (
     <div
-      className={`rounded-xl border bg-white transition-all duration-200 hover:border-[#F75D5D]/30 hover:shadow-md ${
-        isExpanded ? "border-[#F75D5D]/20 shadow-sm" : "border-gray-100 shadow-sm"
-      }`}
+      className="rounded-xl border border-[#F75D5D]/20 bg-white shadow-sm transition-all duration-200 hover:border-[#F75D5D]/30 hover:shadow-md"
     >
       {/* 헤더 */}
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full px-5 py-4 text-left"
-        aria-expanded={isExpanded}
-      >
+      <div className="w-full px-5 py-4 text-left">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <span className="shrink-0 text-lg font-extrabold text-[#F75D5D]">#{rank}</span>
@@ -332,7 +321,6 @@ function AdRankCard({
               href={metaUrl}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
               className="flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#1877f2] to-[#0d65d9] px-3 py-1.5 text-xs font-semibold text-white"
             >
               광고 통계
@@ -343,19 +331,15 @@ function AdRankCard({
                 href={mixpanelUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
                 className="flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] px-3 py-1.5 text-xs font-semibold text-white"
               >
                 믹스패널
                 <ExternalLink className="h-3 w-3" />
               </a>
             )}
-            <span className="ml-1 text-gray-400">
-              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </span>
           </div>
         </div>
-      </button>
+      </div>
 
       {/* 통계 행 */}
       <div className="grid grid-cols-5 gap-3 px-5 pb-4">
@@ -375,32 +359,30 @@ function AdRankCard({
         </div>
       )}
 
-      {/* 확장: 진단 상세 */}
-      {isExpanded && (
-        <div className="border-t border-gray-100 px-5 py-4">
-          {diagnosis ? (
-            <>
-              {diagnosis.one_line_diagnosis && (
-                <p className="mb-4 text-sm font-medium text-gray-600">
-                  {diagnosis.overall_verdict} {diagnosis.one_line_diagnosis}
-                </p>
-              )}
-              {parts.length > 0 ? (
-                <DiagnosisDetail
-                  parts={parts}
-                  ad={ad}
-                  periodNum={periodNum}
-                  engAbove={engAbove}
-                />
-              ) : (
-                <p className="text-sm text-gray-400">진단 파트 데이터 없음</p>
-              )}
-            </>
-          ) : (
-            <p className="text-sm text-gray-400">진단 데이터 없음</p>
-          )}
-        </div>
-      )}
+      {/* 진단 상세 (항상 펼침) */}
+      <div className="border-t border-gray-100 px-5 py-4">
+        {diagnosis ? (
+          <>
+            {diagnosis.one_line_diagnosis && (
+              <p className="mb-4 text-sm font-medium text-gray-600">
+                {diagnosis.overall_verdict} {diagnosis.one_line_diagnosis}
+              </p>
+            )}
+            {parts.length > 0 ? (
+              <DiagnosisDetail
+                parts={parts}
+                ad={ad}
+                periodNum={periodNum}
+                engAbove={engAbove}
+              />
+            ) : (
+              <p className="text-sm text-gray-400">진단 파트 데이터 없음</p>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-gray-400">진단 데이터 없음</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -418,9 +400,6 @@ export function ContentRanking({
   mixpanelBoardId,
 }: ContentRankingProps) {
   const top5 = getTop5Ads(insights);
-  const [expandedId, setExpandedId] = useState<string | null>(
-    top5.length > 0 ? top5[0].ad_id : null
-  );
   const [diagnoses, setDiagnoses] = useState<RawDiagnosis[] | null>(null);
   const [loadingDiagnosis, setLoadingDiagnosis] = useState(false);
 
@@ -500,8 +479,6 @@ export function ContentRanking({
             key={ad.ad_id}
             ad={ad}
             rank={index + 1}
-            isExpanded={expandedId === ad.ad_id}
-            onToggle={() => setExpandedId((prev) => (prev === ad.ad_id ? null : ad.ad_id))}
             accountId={accountId}
             mixpanelProjectId={mixpanelProjectId}
             mixpanelBoardId={mixpanelBoardId}

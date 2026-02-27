@@ -6,7 +6,6 @@ import { type AdAccount } from "./components/account-selector";
 import { type AdInsightRow, type BenchmarkRow } from "./components/ad-metrics-table";
 import { PeriodTabs, type DateRange as PeriodDateRange } from "./components/period-tabs";
 import { ContentRanking } from "./components/content-ranking";
-import { BenchmarkAdmin } from "./components/benchmark-admin";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, ArrowRight, BarChart3, LinkIcon } from "lucide-react";
@@ -72,7 +71,7 @@ interface T3Response {
   message?: string;
 }
 
-export default function RealDashboard({ isAdmin = false }: { isAdmin?: boolean }) {
+export default function RealDashboard() {
   const searchParams = useSearchParams();
   const accountParam = searchParams.get("account");
 
@@ -86,7 +85,7 @@ export default function RealDashboard({ isAdmin = false }: { isAdmin?: boolean }
 
   const [benchmarks, setBenchmarks] = useState<BenchmarkRow[]>([]);
 
-  const [activeTab, setActiveTab] = useState<"summary" | "overlap" | "content" | "benchmark">("summary");
+  const [activeTab, setActiveTab] = useState<"summary" | "content">("summary");
   const [overlapData, setOverlapData] = useState<OverlapData | null>(null);
   const [loadingOverlap, setLoadingOverlap] = useState(false);
   const [overlapError, setOverlapError] = useState<string | null>(null);
@@ -313,13 +312,11 @@ export default function RealDashboard({ isAdmin = false }: { isAdmin?: boolean }
       {/* 3. 탭 구조: 성과 요약 / 콘텐츠 / 벤치마크 관리 */}
       <Tabs
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v as "summary" | "overlap" | "content" | "benchmark")}
+        onValueChange={(v) => setActiveTab(v as "summary" | "content")}
       >
         <TabsList>
           <TabsTrigger value="summary">성과 요약</TabsTrigger>
-          <TabsTrigger value="overlap">타겟중복</TabsTrigger>
           <TabsTrigger value="content">콘텐츠</TabsTrigger>
-          {isAdmin && <TabsTrigger value="benchmark">벤치마크 관리</TabsTrigger>}
         </TabsList>
 
         {/* ── 성과 요약 탭 ── */}
@@ -361,26 +358,18 @@ export default function RealDashboard({ isAdmin = false }: { isAdmin?: boolean }
                 <DiagnosticPanel t3Diagnostics={totalValue.diagnostics} />
               )}
 
+              {/* 3d. 타겟중복 분석 */}
+              {selectedAccountId && periodNum >= 7 && (
+                <OverlapAnalysis
+                  accountId={selectedAccountId}
+                  dateRange={dateRange}
+                  overlapData={overlapData}
+                  isLoading={loadingOverlap}
+                  onRefresh={() => fetchOverlap(true)}
+                  error={overlapError}
+                />
+              )}
             </>
-          )}
-        </TabsContent>
-
-        {/* ── 타겟중복 탭 ── */}
-        <TabsContent value="overlap" className="mt-6">
-          {selectedAccountId ? (
-            <OverlapAnalysis
-              accountId={selectedAccountId}
-              dateRange={dateRange}
-              overlapData={overlapData}
-              isLoading={loadingOverlap}
-              onRefresh={() => fetchOverlap(true)}
-              error={overlapError}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-              <BarChart3 className="h-10 w-10" />
-              <p className="mt-3 text-base font-medium">광고계정을 선택하세요</p>
-            </div>
           )}
         </TabsContent>
 
@@ -405,12 +394,6 @@ export default function RealDashboard({ isAdmin = false }: { isAdmin?: boolean }
           )}
         </TabsContent>
 
-        {/* ── 벤치마크 관리 탭 ── */}
-        {isAdmin && (
-          <TabsContent value="benchmark" className="mt-6">
-            <BenchmarkAdmin />
-          </TabsContent>
-        )}
       </Tabs>
     </div>
   );
