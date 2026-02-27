@@ -161,7 +161,7 @@ export function computeMetricValues(rows: Record<string, unknown>[]): Record<str
     totalInitiateCheckout += Number(row.initiate_checkout) || 0;
 
     const p3sRate = Number(row.video_p3s_rate) || 0;
-    totalVideoP3s += (p3sRate / 100) * rowReach;
+    totalVideoP3s += (p3sRate / 100) * imp;
 
     const thruplayRate = Number(row.thruplay_rate) || 0;
     totalThruplay += (thruplayRate / 100) * imp;
@@ -177,9 +177,13 @@ export function computeMetricValues(rows: Record<string, unknown>[]): Record<str
   }
 
   return {
-    video_p3s_rate: totalReach > 0 ? (totalVideoP3s / totalReach) * 100 : null,
+    video_p3s_rate: totalImpressions > 0 ? (totalVideoP3s / totalImpressions) * 100 : null,
     thruplay_rate: totalImpressions > 0 ? (totalThruplay / totalImpressions) * 100 : null,
     retention_rate: totalVideoP3s > 0 ? (totalThruplay / totalVideoP3s) * 100 : null,
+    reactions_per_10k: totalImpressions > 0 ? (totalReactions / totalImpressions) * 10000 : null,
+    comments_per_10k: totalImpressions > 0 ? (totalComments / totalImpressions) * 10000 : null,
+    shares_per_10k: totalImpressions > 0 ? (totalShares / totalImpressions) * 10000 : null,
+    saves_per_10k: totalImpressions > 0 ? (totalSaves / totalImpressions) * 10000 : null,
     engagement_per_10k:
       totalImpressions > 0
         ? ((totalReactions + totalComments + totalShares + totalSaves) / totalImpressions) * 10000
