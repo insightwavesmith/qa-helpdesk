@@ -70,10 +70,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    // 4. 벤치마크 조회 (실 데이터)
-    const { data: latestBench } = await svc
+    // 4. 벤치마크 조회 (실 데이터) — Phase 3 재작성 전 임시 any 캐스팅
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const benchSvc = svc as any;
+    const { data: latestBench } = await benchSvc
       .from('benchmarks')
-      .select('date')
+      .select('calculated_at')
       .order('calculated_at', { ascending: false })
       .limit(1);
 
@@ -81,10 +83,10 @@ export async function POST(request: Request) {
     const benchmarksByType = new Map<string, Record<string, Record<string, number>>>();
 
     if (latestBench && latestBench.length > 0) {
-      const { data: benchRows } = await svc
+      const { data: benchRows } = await benchSvc
         .from('benchmarks')
-        .select('metric_name, avg_value, p75, p25, creative_type')
-        .eq('date', latestBench[0].date);
+        .select('*')
+        .gte('calculated_at', (latestBench[0].calculated_at as string).slice(0, 10));
 
       if (benchRows) {
         // creative_type별 그룹핑 (benchRows를 unknown 경유로 캐스트 — creative_type 컬럼은 DB에 존재하나 SDK 타입 추론 미반영)

@@ -17,6 +17,7 @@ export const PART_METRICS: Record<number, PartConfig> = {
       { key: 'reactions_per_10k', label: '좋아요/만노출', reverse: false },
       { key: 'comments_per_10k', label: '댓글/만노출', reverse: false },
       { key: 'shares_per_10k', label: '공유/만노출', reverse: false },
+      { key: 'saves_per_10k', label: '저장/만노출', reverse: false },
       { key: 'engagement_per_10k', label: '참여합계/만노출', reverse: false },
     ],
   },
@@ -27,8 +28,8 @@ export const PART_METRICS: Record<number, PartConfig> = {
       { key: 'ctr', label: 'CTR', reverse: false },
       { key: 'click_to_checkout_rate', label: '결제시작율', reverse: false },
       { key: 'click_to_purchase_rate', label: '구매전환율', reverse: false },
-      { key: 'reach_to_purchase_rate', label: '노출대비구매전환율', reverse: false },
       { key: 'checkout_to_purchase_rate', label: '결제→구매율', reverse: false },
+      { key: 'roas', label: 'ROAS', reverse: false },
     ],
   },
 };

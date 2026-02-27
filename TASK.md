@@ -423,6 +423,18 @@ const expected = engAbove.reactions_per_10k × (ad.impressions / 10000);  // 기
 ### 실행 순서
 Phase 1(병렬): T1 + T2 + T3 + T4 → Phase 2: T5 → Phase 3(병렬): T6 + T7 + T8 + T9 → Phase 4(병렬): T10 + T11 + T12
 
+## T1. LP 코드 제거 및 지표 정리
+## T2. reach_to_purchase_rate 제거 + saves_per_10k 추가
+## T3. benchmarks 타입 wide format 재작성
+## T4. ad_insights_classified 타입 추가
+## T5. collect-benchmarks GCP 방식 재작성
+## T6. 진단 엔진 재작성
+## T7. 벤치마크 API 재작성
+## T8. T3 엔진 + total-value API 재작성
+## T10. 성과 요약 탭 개편
+## T11. 콘텐츠 탭 ContentRanking 신규
+## T12. 벤치마크 관리 탭 신규
+
 ---
 
 ## 엣지 케이스

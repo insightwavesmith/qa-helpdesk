@@ -36,11 +36,11 @@ export interface AdInsightRow {
   reactions_per_10k?: number;
   comments_per_10k?: number;
   shares_per_10k?: number;
+  saves_per_10k?: number;
   engagement_per_10k?: number;
   click_to_checkout_rate?: number;
   checkout_to_purchase_rate?: number;
   click_to_purchase_rate?: number;
-  reach_to_purchase_rate?: number;
   engagement_ranking?: string;
   conversion_ranking?: string;
 }
@@ -58,11 +58,11 @@ export interface BenchmarkRow {
   avg_reactions_per_10k?: number;
   avg_comments_per_10k?: number;
   avg_shares_per_10k?: number;
+  avg_saves_per_10k?: number;
   avg_engagement_per_10k?: number;
   avg_click_to_checkout_rate?: number;
   avg_checkout_to_purchase_rate?: number;
   avg_click_to_purchase_rate?: number;
-  avg_reach_to_purchase_rate?: number;
   [key: string]: string | number | undefined;
 }
 

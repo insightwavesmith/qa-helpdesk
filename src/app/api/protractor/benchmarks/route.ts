@@ -21,14 +21,12 @@ const METRIC_FIELD_MAP: Record<string, { field: string; group: "engagement" | "c
   click_to_checkout_rate: { field: "avg_click_to_checkout_rate", group: "conversion" },
   checkout_to_purchase_rate: { field: "avg_checkout_to_purchase_rate", group: "conversion" },
   click_to_purchase_rate: { field: "avg_click_to_purchase_rate", group: "conversion" },
-  reach_to_purchase_rate: { field: "avg_reach_to_purchase_rate", group: "conversion" },
 };
 
 // EAV 행들을 프론트엔드가 기대하는 wide-format BenchmarkRow로 피벗
 // p75를 "상위 기준선" (above_avg) 값으로 사용
-function pivotBenchmarks(
-  rows: { metric_name: string; avg_value: number | null; p75: number | null; date: string; creative_type?: string | null }[]
-): Record<string, unknown>[] {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function pivotBenchmarks(rows: any[]): Record<string, unknown>[] {
   // date + creative_type별로 그룹핑
   const byGroup = new Map<string, { metric_name: string; avg_value: number | null; p75: number | null }[]>();
   for (const row of rows) {
@@ -83,10 +81,12 @@ export async function GET() {
     if ("response" in auth) return auth.response;
     const { svc } = auth;
 
-    // 가장 최근 날짜의 벤치마크만 가져오기
-    const { data: latest, error: latestErr } = await svc
+    // 가장 최근 날짜의 벤치마크만 가져오기 (Phase 3에서 전면 재작성 예정 — 임시 any 캐스팅)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const benchSvc = svc as any;
+    const { data: latest, error: latestErr } = await benchSvc
       .from("benchmarks")
-      .select("date")
+      .select("calculated_at")
       .order("calculated_at", { ascending: false })
       .limit(1);
 
@@ -102,11 +102,11 @@ export async function GET() {
       return NextResponse.json({ data: [] });
     }
 
-    const latestDate = latest[0].date;
-    const { data, error } = await svc
+    const latestDate = latest[0].calculated_at;
+    const { data, error } = await benchSvc
       .from("benchmarks")
-      .select("metric_name, avg_value, p75, date, creative_type")
-      .eq("date", latestDate);
+      .select("*")
+      .gte("calculated_at", latestDate.slice(0, 10));
 
     if (error) {
       console.error("benchmarks 조회 오류:", error);

@@ -64,6 +64,93 @@ export type Database = {
           },
         ]
       }
+      ad_insights_classified: {
+        Row: {
+          id: string
+          ad_id: string
+          account_id: string
+          ad_name: string | null
+          creative_type: string
+          quality_ranking: string | null
+          engagement_ranking: string | null
+          conversion_ranking: string | null
+          impressions: number | null
+          clicks: number | null
+          spend: number | null
+          reach: number | null
+          video_p3s_rate: number | null
+          thruplay_rate: number | null
+          retention_rate: number | null
+          reactions_per_10k: number | null
+          comments_per_10k: number | null
+          shares_per_10k: number | null
+          saves_per_10k: number | null
+          engagement_per_10k: number | null
+          ctr: number | null
+          click_to_checkout_rate: number | null
+          click_to_purchase_rate: number | null
+          checkout_to_purchase_rate: number | null
+          roas: number | null
+          collected_at: string | null
+        }
+        Insert: {
+          id?: string
+          ad_id: string
+          account_id: string
+          ad_name?: string | null
+          creative_type: string
+          quality_ranking?: string | null
+          engagement_ranking?: string | null
+          conversion_ranking?: string | null
+          impressions?: number | null
+          clicks?: number | null
+          spend?: number | null
+          reach?: number | null
+          video_p3s_rate?: number | null
+          thruplay_rate?: number | null
+          retention_rate?: number | null
+          reactions_per_10k?: number | null
+          comments_per_10k?: number | null
+          shares_per_10k?: number | null
+          saves_per_10k?: number | null
+          engagement_per_10k?: number | null
+          ctr?: number | null
+          click_to_checkout_rate?: number | null
+          click_to_purchase_rate?: number | null
+          checkout_to_purchase_rate?: number | null
+          roas?: number | null
+          collected_at?: string | null
+        }
+        Update: {
+          id?: string
+          ad_id?: string
+          account_id?: string
+          ad_name?: string | null
+          creative_type?: string
+          quality_ranking?: string | null
+          engagement_ranking?: string | null
+          conversion_ranking?: string | null
+          impressions?: number | null
+          clicks?: number | null
+          spend?: number | null
+          reach?: number | null
+          video_p3s_rate?: number | null
+          thruplay_rate?: number | null
+          retention_rate?: number | null
+          reactions_per_10k?: number | null
+          comments_per_10k?: number | null
+          shares_per_10k?: number | null
+          saves_per_10k?: number | null
+          engagement_per_10k?: number | null
+          ctr?: number | null
+          click_to_checkout_rate?: number | null
+          click_to_purchase_rate?: number | null
+          checkout_to_purchase_rate?: number | null
+          roas?: number | null
+          collected_at?: string | null
+        }
+        Relationships: []
+      }
       adset_overlap_cache: {
         Row: {
           id: string
@@ -197,52 +284,67 @@ export type Database = {
       }
       benchmarks: {
         Row: {
-          avg_value: number | null
-          calculated_at: string | null
-          creative_type: string | null
-          date: string
           id: string
-          metric_name: string
-          p10: number | null
-          p25: number | null
-          p50: number | null
-          p75: number | null
-          p90: number | null
-          period: string | null
-          sample_size: number | null
-          source: string | null
+          creative_type: string
+          ranking_type: string
+          ranking_group: string
+          sample_count: number | null
+          video_p3s_rate: number | null
+          thruplay_rate: number | null
+          retention_rate: number | null
+          reactions_per_10k: number | null
+          comments_per_10k: number | null
+          shares_per_10k: number | null
+          saves_per_10k: number | null
+          engagement_per_10k: number | null
+          ctr: number | null
+          click_to_checkout_rate: number | null
+          click_to_purchase_rate: number | null
+          checkout_to_purchase_rate: number | null
+          roas: number | null
+          calculated_at: string | null
         }
         Insert: {
-          avg_value?: number | null
-          calculated_at?: string | null
-          creative_type?: string | null
-          date: string
           id?: string
-          metric_name: string
-          p10?: number | null
-          p25?: number | null
-          p50?: number | null
-          p75?: number | null
-          p90?: number | null
-          period?: string | null
-          sample_size?: number | null
-          source?: string | null
+          creative_type: string
+          ranking_type: string
+          ranking_group: string
+          sample_count?: number | null
+          video_p3s_rate?: number | null
+          thruplay_rate?: number | null
+          retention_rate?: number | null
+          reactions_per_10k?: number | null
+          comments_per_10k?: number | null
+          shares_per_10k?: number | null
+          saves_per_10k?: number | null
+          engagement_per_10k?: number | null
+          ctr?: number | null
+          click_to_checkout_rate?: number | null
+          click_to_purchase_rate?: number | null
+          checkout_to_purchase_rate?: number | null
+          roas?: number | null
+          calculated_at?: string | null
         }
         Update: {
-          avg_value?: number | null
-          calculated_at?: string | null
-          creative_type?: string | null
-          date?: string
           id?: string
-          metric_name?: string
-          p10?: number | null
-          p25?: number | null
-          p50?: number | null
-          p75?: number | null
-          p90?: number | null
-          period?: string | null
-          sample_size?: number | null
-          source?: string | null
+          creative_type?: string
+          ranking_type?: string
+          ranking_group?: string
+          sample_count?: number | null
+          video_p3s_rate?: number | null
+          thruplay_rate?: number | null
+          retention_rate?: number | null
+          reactions_per_10k?: number | null
+          comments_per_10k?: number | null
+          shares_per_10k?: number | null
+          saves_per_10k?: number | null
+          engagement_per_10k?: number | null
+          ctr?: number | null
+          click_to_checkout_rate?: number | null
+          click_to_purchase_rate?: number | null
+          checkout_to_purchase_rate?: number | null
+          roas?: number | null
+          calculated_at?: string | null
         }
         Relationships: []
       }

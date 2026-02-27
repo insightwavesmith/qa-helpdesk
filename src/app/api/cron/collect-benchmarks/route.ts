@@ -8,29 +8,24 @@ function verifyCron(req: NextRequest): boolean {
   return authHeader === `Bearer ${process.env.CRON_SECRET}`;
 }
 
-// 벤치마크 대상 지표 (daily_ad_insights 컬럼)
+// 벤치마크 대상 지표 (최종 13개 — daily_ad_insights 컬럼)
 const BENCHMARK_METRICS = [
-  "roas",
-  "ctr",
-  "cpc",
-  "cpm",
-  "spend",
-  "impressions",
-  "clicks",
-  "purchases",
-  "purchase_value",
+  // 영상 (3)
   "video_p3s_rate",
   "thruplay_rate",
   "retention_rate",
+  // 참여 (5)
   "reactions_per_10k",
   "comments_per_10k",
   "shares_per_10k",
   "saves_per_10k",
   "engagement_per_10k",
+  // 전환 (5)
+  "ctr",
   "click_to_checkout_rate",
-  "checkout_to_purchase_rate",
   "click_to_purchase_rate",
-  "reach_to_purchase_rate",
+  "checkout_to_purchase_rate",
+  "roas",
 ] as const;
 
 function round(v: number, d: number): number {

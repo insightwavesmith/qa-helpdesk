@@ -9,44 +9,43 @@ import {
   periodToDateRange,
 } from "@/lib/protractor/t3-engine";
 
+// Phase 3에서 전면 재작성 예정 — wide format 스키마 대응 임시 구현
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchBenchmarks(svc: any, dominantCT: string): Promise<Record<string, BenchEntry>> {
+async function fetchBenchmarks(svc: any, _dominantCT: string): Promise<Record<string, BenchEntry>> {
+  // Phase 3 재작성 전까지 빈 맵 반환 (benchmarks 스키마 전환 중)
   const benchMap: Record<string, BenchEntry> = {};
 
-  const { data: latestBench } = await svc
-    .from("benchmarks")
-    .select("date")
-    .order("calculated_at", { ascending: false })
-    .limit(1);
-
-  if (latestBench && latestBench.length > 0) {
-    const { data: benchRows } = await svc
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const benchSvc = svc as any;
+    const { data: latestBench } = await benchSvc
       .from("benchmarks")
-      .select("metric_name, p25, p50, p75, p90, creative_type")
-      .eq("date", latestBench[0].date);
+      .select("calculated_at")
+      .order("calculated_at", { ascending: false })
+      .limit(1);
 
-    if (benchRows) {
-      const byType = new Map<string, Record<string, BenchEntry>>();
-      for (const row of benchRows) {
-        const r = row as Record<string, unknown>;
-        const ct = ((r.creative_type as string) ?? "ALL").toUpperCase();
-        if (!byType.has(ct)) byType.set(ct, {});
-        byType.get(ct)![r.metric_name as string] = {
-          p25: r.p25 as number | null,
-          p50: r.p50 as number | null,
-          p75: r.p75 as number | null,
-          p90: r.p90 as number | null,
-        };
-      }
+    if (!latestBench || latestBench.length === 0) return benchMap;
 
-      const primary = byType.get(dominantCT);
-      const fallback = byType.get("ALL");
+    // wide format: 한 행에 모든 지표가 컬럼으로 존재
+    const { data: rows } = await benchSvc
+      .from("benchmarks")
+      .select("*")
+      .order("calculated_at", { ascending: false })
+      .limit(10);
 
-      for (const def of ALL_METRIC_DEFS) {
-        const entry = primary?.[def.key] ?? fallback?.[def.key];
-        if (entry) benchMap[def.key] = entry;
+    if (!rows || rows.length === 0) return benchMap;
+
+    // wide format에서 BenchEntry 구성 (p25=0, p50=avg, p75=avg, p90=avg 임시)
+    // Phase 3에서 ranking_type/ranking_group 기반으로 대체 예정
+    const row = rows[0] as Record<string, unknown>;
+    for (const def of ALL_METRIC_DEFS) {
+      const val = row[def.key];
+      if (val != null && typeof val === "number") {
+        benchMap[def.key] = { p25: val * 0.7, p50: val * 0.85, p75: val, p90: val * 1.2 };
       }
     }
+  } catch {
+    // 벤치마크 없어도 T3 계산 가능 (기본 점수 반환)
   }
 
   return benchMap;

@@ -88,6 +88,14 @@ const ENGAGEMENT_METRICS: MetricDef[] = [
     higherBetter: true,
     format: (n) => (n != null ? n.toFixed(1) : "-"),
   },
+  {
+    label: "저장/만노출",
+    insightKey: "saves_per_10k",
+    benchKey: "avg_saves_per_10k",
+    benchGroup: "engagement",
+    higherBetter: true,
+    format: (n) => (n != null ? n.toFixed(1) : "-"),
+  },
 ];
 
 const CONVERSION_METRICS: MetricDef[] = [
@@ -119,14 +127,6 @@ const CONVERSION_METRICS: MetricDef[] = [
     label: "클릭→구매",
     insightKey: "click_to_purchase_rate",
     benchKey: "avg_click_to_purchase_rate",
-    benchGroup: "conversion",
-    higherBetter: true,
-    format: fmtPercent,
-  },
-  {
-    label: "노출→구매",
-    insightKey: "reach_to_purchase_rate",
-    benchKey: "avg_reach_to_purchase_rate",
     benchGroup: "conversion",
     higherBetter: true,
     format: fmtPercent,
