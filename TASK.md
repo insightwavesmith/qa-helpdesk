@@ -440,11 +440,15 @@ Phase 1(병렬): T1 + T2 + T3 + T4 → Phase 2: T5 → Phase 3(병렬): T6 + T7 
 
 ## 리뷰 보고서
 
-- 보고서 파일: (리뷰 후 채움)
-- 리뷰 일시: (리뷰 후 채움)
+- 보고서 파일: https://mozzi-reports.vercel.app/reports/review/2026-02-27-benchmark-v2-review.html
+- 리뷰 일시: 2026-02-27 10:34
 - 변경 유형: 혼합 (DB + 백엔드 구조 + API + UI/UX)
-- 피드백 요약: (리뷰 후 채움)
-- 반영 여부: (리뷰 후 채움)
+- 피드백 요약:
+  - engine.ts ↔ utils.ts 판정 로직 이미 불일치 (2-threshold vs 0.75 단일) → 통일 필요
+  - DB 컬럼 대부분 이미 존재 (quality/engagement/conversion_ranking), 값만 미수집
+  - 데이터 단절 리스크: video_p3s_rate 분모(reach→impressions), retention_rate, creative_type 변경
+  - 의사결정 필요: D1(retention_rate 분모), D2(타겟중복 배치), D3(T3 엔진 유지), D4(콘텐츠 벤치마크 기준)
+- 반영: D1=retention_rate 계산식은 GCP 방식(100%시청/3초조회) 그대로, D2=성과요약 내 배치 확정, D4=ABOVE_AVERAGE 기준 확정
 
 ## 검증
 
