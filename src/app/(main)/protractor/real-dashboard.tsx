@@ -204,11 +204,10 @@ export default function RealDashboard() {
     })();
   }, [selectedAccountId, dateRange, periodNum]);
 
-  // 4) 타겟중복 분석 — 7일 이상 + 계정 선택 시 자동 fetch
+  // 4) 타겟중복 분석 — 계정 선택 시 자동 fetch
   const fetchOverlap = useCallback(
     async (force = false) => {
       if (!selectedAccountId) return;
-      if (periodNum < 7) return;
 
       setLoadingOverlap(true);
       setOverlapError(null);
@@ -233,12 +232,12 @@ export default function RealDashboard() {
     [selectedAccountId, dateRange, periodNum]
   );
 
-  // 7일 이상일 때 성과 요약 탭에서 자동 fetch
+  // 계정 선택 시 성과 요약 탭에서 자동 fetch
   useEffect(() => {
-    if (periodNum >= 7 && selectedAccountId) {
+    if (selectedAccountId) {
       fetchOverlap();
     }
-  }, [periodNum, selectedAccountId, fetchOverlap]);
+  }, [selectedAccountId, fetchOverlap]);
 
   const handlePeriodChange = (range: PeriodDateRange, days: number) => {
     setDateRange(range);
@@ -359,7 +358,7 @@ export default function RealDashboard() {
               )}
 
               {/* 3d. 타겟중복 분석 */}
-              {selectedAccountId && periodNum >= 7 && (
+              {selectedAccountId && (
                 <OverlapAnalysis
                   accountId={selectedAccountId}
                   dateRange={dateRange}
@@ -375,7 +374,13 @@ export default function RealDashboard() {
 
         {/* ── 콘텐츠 탭 ── */}
         <TabsContent value="content" className="mt-6">
-          {selectedAccountId && insights.length > 0 ? (
+          {loadingData ? (
+            <div className="space-y-3">
+              <Skeleton className="h-[140px] w-full rounded-xl" />
+              <Skeleton className="h-[140px] w-full rounded-xl" />
+              <Skeleton className="h-[140px] w-full rounded-xl" />
+            </div>
+          ) : selectedAccountId && insights.length > 0 ? (
             <ContentRanking
               insights={insights}
               benchmarks={benchmarks}
@@ -388,7 +393,7 @@ export default function RealDashboard() {
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
               <BarChart3 className="h-10 w-10" />
               <p className="mt-3 text-base font-medium">
-                {!selectedAccountId ? "광고계정을 선택하세요" : "벤치마크 데이터 없음"}
+                {!selectedAccountId ? "광고계정을 선택하세요" : "해당 기간에 광고 데이터가 없습니다"}
               </p>
             </div>
           )}

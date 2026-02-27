@@ -274,6 +274,126 @@ function DiagnosisDetail({ parts, ad, periodNum, engAbove }: DiagnosisDetailProp
 // 개별 광고 카드
 // ============================================================
 
+// ============================================================
+// 벤치마크 비교 (진단 없을 때 fallback)
+// ============================================================
+
+interface BenchMetric {
+  label: string;
+  adKey: keyof AdInsightRow;
+  benchKey: string;
+  benchSource: "eng" | "conv";
+  format: "pct" | "decimal" | "per10k";
+}
+
+const BENCH_METRICS: { part: string; metrics: BenchMetric[] }[] = [
+  {
+    part: "기반점수",
+    metrics: [
+      { label: "3초 시청률", adKey: "video_p3s_rate", benchKey: "avg_video_p3s_rate", benchSource: "eng", format: "pct" },
+      { label: "ThruPlay률", adKey: "thruplay_rate", benchKey: "avg_thruplay_rate", benchSource: "eng", format: "pct" },
+      { label: "유지율", adKey: "retention_rate", benchKey: "avg_retention_rate", benchSource: "eng", format: "pct" },
+    ],
+  },
+  {
+    part: "참여율",
+    metrics: [
+      { label: "반응", adKey: "reactions_per_10k", benchKey: "avg_reactions_per_10k", benchSource: "eng", format: "per10k" },
+      { label: "댓글", adKey: "comments_per_10k", benchKey: "avg_comments_per_10k", benchSource: "eng", format: "per10k" },
+      { label: "공유", adKey: "shares_per_10k", benchKey: "avg_shares_per_10k", benchSource: "eng", format: "per10k" },
+      { label: "저장", adKey: "saves_per_10k", benchKey: "avg_saves_per_10k", benchSource: "eng", format: "per10k" },
+    ],
+  },
+  {
+    part: "전환율",
+    metrics: [
+      { label: "CTR", adKey: "ctr", benchKey: "avg_ctr", benchSource: "conv", format: "pct" },
+      { label: "클릭→구매", adKey: "click_to_purchase_rate", benchKey: "avg_click_to_purchase_rate", benchSource: "conv", format: "pct" },
+      { label: "ROAS", adKey: "roas", benchKey: "avg_roas", benchSource: "conv", format: "decimal" },
+    ],
+  },
+];
+
+function BenchmarkCompareGrid({
+  ad,
+  engAbove,
+  convAbove,
+}: {
+  ad: AdInsightRow;
+  engAbove: BenchmarkRow | undefined;
+  convAbove: BenchmarkRow | undefined;
+}) {
+  if (!engAbove && !convAbove) {
+    return <p className="text-sm text-gray-400">벤치마크 데이터 없음</p>;
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      {BENCH_METRICS.map((group) => {
+        const hasAnyData = group.metrics.some((m) => {
+          const bench = m.benchSource === "eng" ? engAbove : convAbove;
+          return ad[m.adKey] != null || (bench && bench[m.benchKey] != null);
+        });
+        if (!hasAnyData) return null;
+
+        return (
+          <div key={group.part} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-sm font-bold text-gray-700">{group.part}</span>
+            </div>
+            <div className="space-y-2">
+              {group.metrics.map((m) => {
+                const myVal = ad[m.adKey] as number | undefined | null;
+                const bench = m.benchSource === "eng" ? engAbove : convAbove;
+                const benchVal = bench ? (bench[m.benchKey] as number | undefined) : undefined;
+
+                if (myVal == null && benchVal == null) return null;
+
+                const style = calcVerdictStyle(myVal ?? null, benchVal ?? null);
+                const emoji = calcVerdictEmoji(myVal ?? null, benchVal ?? null);
+
+                const myDisplay =
+                  myVal == null ? "-"
+                    : m.format === "pct" ? fmtCtr(myVal)
+                    : m.format === "per10k" ? fmtDecimal(myVal)
+                    : fmtDecimal(myVal, 2);
+
+                const benchDisplay =
+                  benchVal == null ? "-"
+                    : m.format === "pct" ? fmtCtr(benchVal)
+                    : m.format === "per10k" ? fmtDecimal(benchVal)
+                    : fmtDecimal(benchVal, 2);
+
+                return (
+                  <div
+                    key={m.label}
+                    className="flex items-center justify-between rounded-md bg-white/70 px-2 py-1.5"
+                  >
+                    <span className="text-xs text-gray-600">{m.label}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-xs font-medium ${style.text}`}>
+                        {myDisplay}
+                        {benchDisplay !== "-" && (
+                          <span className="text-gray-400"> / {benchDisplay}</span>
+                        )}
+                      </span>
+                      <span className="text-[10px]">{emoji}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============================================================
+// 개별 광고 카드
+// ============================================================
+
 function AdRankCard({
   ad,
   rank,
@@ -283,6 +403,7 @@ function AdRankCard({
   diagnosis,
   periodNum,
   engAbove,
+  convAbove,
 }: {
   ad: AdInsightRow;
   rank: number;
@@ -292,6 +413,7 @@ function AdRankCard({
   diagnosis?: RawDiagnosis;
   periodNum: number;
   engAbove: BenchmarkRow | undefined;
+  convAbove: BenchmarkRow | undefined;
 }) {
   const metaUrl = `https://adsmanager.facebook.com/adsmanager/manage/ads?act=${accountId}&selected_ad_ids=${ad.ad_id}`;
   const mixpanelUrl = mixpanelProjectId
@@ -376,11 +498,11 @@ function AdRankCard({
                 engAbove={engAbove}
               />
             ) : (
-              <p className="text-sm text-gray-400">진단 파트 데이터 없음</p>
+              <BenchmarkCompareGrid ad={ad} engAbove={engAbove} convAbove={convAbove} />
             )}
           </>
         ) : (
-          <p className="text-sm text-gray-400">진단 데이터 없음</p>
+          <BenchmarkCompareGrid ad={ad} engAbove={engAbove} convAbove={convAbove} />
         )}
       </div>
     </div>
@@ -445,8 +567,9 @@ export function ContentRanking({
     for (const d of diagnoses) diagMap.set(d.ad_id, d);
   }
 
-  // engagement ABOVE_AVERAGE 벤치마크
+  // ABOVE_AVERAGE 벤치마크
   const engAbove = findAboveAvg(benchmarks, "engagement");
+  const convAbove = findAboveAvg(benchmarks, "conversion");
 
   if (insights.length === 0 || top5.length === 0) {
     return (
@@ -485,6 +608,7 @@ export function ContentRanking({
             diagnosis={diagMap.get(ad.ad_id)}
             periodNum={periodNum}
             engAbove={engAbove}
+            convAbove={convAbove}
           />
         ))}
       </div>
