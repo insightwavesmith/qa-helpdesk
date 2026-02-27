@@ -42,6 +42,7 @@ export interface AdInsightRow {
   click_to_checkout_rate?: number;
   checkout_to_purchase_rate?: number;
   click_to_purchase_rate?: number;
+  reach_to_purchase_rate?: number;
   engagement_ranking?: string;
   conversion_ranking?: string;
 }

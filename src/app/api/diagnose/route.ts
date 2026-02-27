@@ -71,6 +71,7 @@ export async function POST(request: Request) {
               click_to_checkout_rate: row.click_to_checkout_rate as number | null,
               click_to_purchase_rate: row.click_to_purchase_rate as number | null,
               checkout_to_purchase_rate: row.checkout_to_purchase_rate as number | null,
+              reach_to_purchase_rate: row.reach_to_purchase_rate as number | null,
               roas: row.roas as number | null,
             },
             sample_count: row.sample_count as number | undefined,
@@ -107,7 +108,7 @@ export async function POST(request: Request) {
       'reactions_per_10k', 'comments_per_10k', 'shares_per_10k',
       'saves_per_10k', 'engagement_per_10k',
       'click_to_checkout_rate', 'click_to_purchase_rate',
-      'checkout_to_purchase_rate',
+      'checkout_to_purchase_rate', 'reach_to_purchase_rate',
     ];
 
     for (const row of rawInsights) {
@@ -131,6 +132,9 @@ export async function POST(request: Request) {
         const totalRevenue = existing.purchase_value as number;
         existing.ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
         existing.roas = totalSpend > 0 ? totalRevenue / totalSpend : 0;
+        const totalReach = existing.reach as number;
+        const totalPurchases = existing.purchases as number;
+        existing.reach_to_purchase_rate = totalReach > 0 ? (totalPurchases / totalReach) * 100 : 0;
       }
     }
 

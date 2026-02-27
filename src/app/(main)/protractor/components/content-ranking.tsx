@@ -313,6 +313,7 @@ const BENCH_METRICS: { part: string; metrics: BenchMetric[]; hasSummary?: boolea
       { label: "결제시작율", adKey: "click_to_checkout_rate", benchKey: "avg_click_to_checkout_rate", benchSource: "conv", format: "pct" },
       { label: "결제→구매율", adKey: "checkout_to_purchase_rate", benchKey: "avg_checkout_to_purchase_rate", benchSource: "conv", format: "pct" },
       { label: "클릭→구매", adKey: "click_to_purchase_rate", benchKey: "avg_click_to_purchase_rate", benchSource: "conv", format: "pct" },
+      { label: "도달당구매율", adKey: "reach_to_purchase_rate", benchKey: "avg_reach_to_purchase_rate", benchSource: "conv", format: "pct" },
       { label: "ROAS", adKey: "roas", benchKey: "avg_roas", benchSource: "conv", format: "decimal" },
     ],
   },

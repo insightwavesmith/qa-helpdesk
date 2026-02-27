@@ -132,6 +132,14 @@ const CONVERSION_METRICS: MetricDef[] = [
     format: fmtPercent,
   },
   {
+    label: "도달당구매율",
+    insightKey: "reach_to_purchase_rate",
+    benchKey: "avg_reach_to_purchase_rate",
+    benchGroup: "conversion",
+    higherBetter: true,
+    format: fmtPercent,
+  },
+  {
     label: "ROAS",
     insightKey: "roas",
     benchKey: "avg_roas",

@@ -67,6 +67,7 @@ export const T3_PARTS: Record<string, { label: string; metrics: T3MetricDef[] }>
       { name: "결제시작율", key: "click_to_checkout_rate", ascending: true, unit: "%" },
       { name: "구매전환율", key: "click_to_purchase_rate", ascending: true, unit: "%" },
       { name: "결제→구매율", key: "checkout_to_purchase_rate", ascending: true, unit: "%" },
+      { name: "도달당구매율", key: "reach_to_purchase_rate", ascending: true, unit: "%" },
     ],
   },
 };
@@ -192,6 +193,7 @@ export function computeMetricValues(rows: Record<string, unknown>[]): Record<str
     click_to_checkout_rate: totalClicks > 0 ? (totalInitiateCheckout / totalClicks) * 100 : null,
     click_to_purchase_rate: totalClicks > 0 ? (totalPurchases / totalClicks) * 100 : null,
     checkout_to_purchase_rate: totalInitiateCheckout > 0 ? (totalPurchases / totalInitiateCheckout) * 100 : null,
+    reach_to_purchase_rate: totalReach > 0 ? (totalPurchases / totalReach) * 100 : null,
   };
 }
 
