@@ -156,14 +156,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 기간 7일 미만 체크
-    if (daysBetween(dateStart, dateEnd) < 7) {
-      return NextResponse.json(
-        { error: "7일 이상 기간을 선택해주세요." },
-        { status: 400 }
-      );
-    }
-
     // 계정 소유권 확인
     const hasAccess = await verifyAccountOwnership(
       svc,

@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, Inbox } from "lucide-react";
 import { findAboveAvg, getVerdict, fmt, fmtCurrency, fmtPercent } from "./utils";
 import { VerdictDot } from "./verdict-dot";
+import { aggregateInsightsByAd } from "@/lib/protractor/aggregate";
 
 // 광고 인사이트 로우 타입 (daily_ad_insights 테이블)
 export interface AdInsightRow {
@@ -66,33 +67,9 @@ export interface BenchmarkRow {
   [key: string]: string | number | undefined;
 }
 
-// 인사이트 데이터를 광고별로 집계 (기간 합산)
+// 인사이트 데이터를 광고별로 집계 (기간 합산) — 비율 지표 역산 재계산 포함
 function aggregateByAd(rows: AdInsightRow[]): AdInsightRow[] {
-  const map = new Map<string, AdInsightRow>();
-
-  for (const row of rows) {
-    const existing = map.get(row.ad_id);
-    if (!existing) {
-      map.set(row.ad_id, { ...row });
-    } else {
-      existing.impressions += row.impressions || 0;
-      existing.reach += row.reach || 0;
-      existing.clicks += row.clicks || 0;
-      existing.spend += row.spend || 0;
-      existing.purchases += row.purchases || 0;
-      existing.purchase_value += row.purchase_value || 0;
-      // ROAS, CTR 등 비율 지표는 합산 후 재계산
-      existing.roas =
-        existing.spend > 0 ? existing.purchase_value / existing.spend : 0;
-      existing.ctr =
-        existing.impressions > 0
-          ? (existing.clicks / existing.impressions) * 100
-          : 0;
-    }
-  }
-
-  // spend 기준 내림차순 정렬
-  return Array.from(map.values()).sort((a, b) => b.spend - a.spend);
+  return aggregateInsightsByAd(rows).sort((a, b) => b.spend - a.spend);
 }
 
 // 진단 결과 (per-ad) — real-dashboard에서 전달

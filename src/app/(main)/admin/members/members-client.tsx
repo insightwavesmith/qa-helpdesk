@@ -64,6 +64,7 @@ const roleLabels: Record<
   lead: { label: "리드", variant: "secondary", className: "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-50" },
   member: { label: "멤버", variant: "default", className: "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-50" },
   student: { label: "수강생", variant: "default", className: "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-50" },
+  assistant: { label: "조교", variant: "default", className: "bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-50" },
   admin: { label: "관리자", variant: "default", className: "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-50" },
 };
 
@@ -71,6 +72,7 @@ const roleFilters = [
   { value: "lead", label: "리드" },
   { value: "member", label: "멤버" },
   { value: "student", label: "수강생" },
+  { value: "assistant", label: "조교" },
   { value: "admin", label: "관리자" },
 ];
 

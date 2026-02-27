@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Pencil, X } from "lucide-react";
-import { updateMember, changeRole, deactivateMember, deleteMember, updateAdAccount } from "@/actions/admin";
+import { Loader2, Pencil, Trash2, X } from "lucide-react";
+import { updateMember, changeRole, deactivateMember, deleteMember, updateAdAccount, toggleAdAccount } from "@/actions/admin";
 import { toast } from "sonner";
 
 interface AdAccount {
@@ -70,7 +70,6 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
   const [deactivateLoading, setDeactivateLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const [showSecretKey, setShowSecretKey] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [accountForm, setAccountForm] = useState({ account_name: "", mixpanel_project_id: "", mixpanel_board_id: "" });
   const [accountSaving, setAccountSaving] = useState(false);
@@ -91,6 +90,15 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
       mixpanel_project_id: acc.mixpanel_project_id ?? "",
       mixpanel_board_id: acc.mixpanel_board_id ?? "",
     });
+  };
+
+  const handleDeleteAccount = async (acc: AdAccount) => {
+    if (!confirm(`광고계정 "${acc.account_name || acc.account_id}"을(를) 삭제하시겠습니까?`)) return;
+    try {
+      const res = await toggleAdAccount(acc.id, false);
+      if (res.error) toast.error(`삭제 실패: ${res.error}`);
+      else { toast.success("광고계정이 삭제되었습니다."); onUpdated(); }
+    } catch { toast.error("처리 중 오류가 발생했습니다."); }
   };
 
   const handleSaveAccount = async () => {
@@ -353,39 +361,6 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                 <p className="text-sm font-medium text-gray-900">{profile.cohort || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">메타 광고계정 ID <span className="text-gray-400">(레거시)</span></p>
-                <p className="text-sm font-medium text-gray-900 font-mono">{profile.meta_account_id || "-"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">믹스패널 프로젝트 ID</p>
-                <p className="text-sm font-medium text-gray-900 font-mono">{profile.mixpanel_project_id || "-"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">믹스패널 보드 ID</p>
-                <p className="text-sm font-medium text-gray-900 font-mono">{profile.mixpanel_board_id || "-"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">믹스패널 시크릿키</p>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-gray-900 font-mono">
-                    {profile.mixpanel_secret_key
-                      ? showSecretKey
-                        ? profile.mixpanel_secret_key
-                        : "••••••••"
-                      : "-"}
-                  </p>
-                  {profile.mixpanel_secret_key && (
-                    <button
-                      type="button"
-                      onClick={() => setShowSecretKey(!showSecretKey)}
-                      className="text-xs text-[#F75D5D] hover:underline"
-                    >
-                      {showSecretKey ? "숨기기" : "보기"}
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div>
                 <p className="text-sm text-gray-500">가입일</p>
                 <p className="text-sm font-medium text-gray-900">{formatDate(profile.created_at)}</p>
               </div>
@@ -466,7 +441,7 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                     <div className="space-y-2">
                       <p className="text-xs text-gray-500 font-mono mb-1">{acc.account_id}</p>
                       <div>
-                        <label className="block text-xs text-gray-500 mb-0.5">계정명</label>
+                        <label className="block text-xs text-gray-500 mb-0.5">광고계정명</label>
                         <input
                           type="text"
                           value={accountForm.account_name}
@@ -523,6 +498,13 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                           className="p-1 text-gray-400 hover:text-gray-600"
                         >
                           <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteAccount(acc)}
+                          className="p-1 text-gray-400 hover:text-red-500"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                         <span
                           className={`text-xs px-2 py-0.5 rounded-full ${

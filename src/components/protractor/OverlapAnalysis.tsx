@@ -117,21 +117,6 @@ export function OverlapAnalysis({
     );
   }
 
-  // 기간 7일 미만 안내
-  if (daysBetween(dateRange.start, dateRange.end) < 7) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-        <Info className="h-10 w-10" />
-        <p className="mt-3 text-base font-medium">
-          7일 이상 기간을 선택해주세요
-        </p>
-        <p className="mt-1 text-sm">
-          타겟중복 분석은 정확도를 위해 최소 7일 이상의 데이터가 필요합니다
-        </p>
-      </div>
-    );
-  }
-
   // 로딩
   if (isLoading) {
     return (
@@ -244,6 +229,14 @@ export function OverlapAnalysis({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* ── 3일 미만 경고 배너 ──────────────────────────────── */}
+      {daysBetween(dateRange.start, dateRange.end) < 3 && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-sm">
+          <Info className="h-4 w-4 shrink-0" />
+          <p>분석 기간이 짧아 신뢰도가 낮을 수 있습니다.</p>
+        </div>
+      )}
+
       {/* ── truncated 안내 배너 ──────────────────────────────── */}
       {truncated && (
         <Card className="border-yellow-200 bg-yellow-50">

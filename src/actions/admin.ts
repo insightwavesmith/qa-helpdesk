@@ -64,6 +64,7 @@ export async function approveMember(
     mixpanel_project_id?: string;
     mixpanel_secret_key?: string;
     mixpanel_board_id?: string;
+    account_name?: string;
   }
 ) {
   const supabase = await requireAdmin();
@@ -99,12 +100,13 @@ export async function approveMember(
         active: true,
         mixpanel_project_id: extra.mixpanel_project_id || null,
         mixpanel_board_id: extra.mixpanel_board_id || null,
+        ...(extra.account_name && { account_name: extra.account_name }),
       }).eq("id", existing.id);
     } else {
       await svc.from("ad_accounts").insert({
         account_id: extra.meta_account_id,
         user_id: userId,
-        account_name: extra.meta_account_id,
+        account_name: extra.account_name || extra.meta_account_id,
         mixpanel_project_id: extra.mixpanel_project_id || null,
         mixpanel_board_id: extra.mixpanel_board_id || null,
         active: true,
@@ -346,17 +348,19 @@ export async function updateMember(userId: string, data: ProfileUpdate) {
       .eq("account_id", metaAccountId)
       .maybeSingle();
 
+    const extraAccountName = (data as Record<string, unknown>).account_name as string | undefined;
     if (existing) {
       await svc.from("ad_accounts").update({
         user_id: userId,
         mixpanel_project_id: data.mixpanel_project_id || null,
         mixpanel_board_id: data.mixpanel_board_id || null,
+        ...(extraAccountName && { account_name: extraAccountName }),
       }).eq("id", existing.id);
     } else {
       await svc.from("ad_accounts").insert({
         account_id: metaAccountId,
         user_id: userId,
-        account_name: metaAccountId,
+        account_name: extraAccountName || metaAccountId,
         mixpanel_project_id: data.mixpanel_project_id || null,
         mixpanel_board_id: data.mixpanel_board_id || null,
         active: true,

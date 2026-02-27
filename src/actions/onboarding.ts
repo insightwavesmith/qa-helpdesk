@@ -79,6 +79,7 @@ export async function saveAdAccount(data: {
   mixpanelProjectId: string | null;
   mixpanelSecretKey: string | null;
   mixpanelBoardId?: string | null;
+  accountName?: string;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -123,12 +124,13 @@ export async function saveAdAccount(data: {
         active: true,
         mixpanel_project_id: data.mixpanelProjectId || null,
         mixpanel_board_id: data.mixpanelBoardId || null,
+        ...(data.accountName && { account_name: data.accountName }),
       }).eq("id", existing.id);
     } else {
       await svc.from("ad_accounts").insert({
         account_id: data.metaAccountId,
         user_id: user.id,
-        account_name: data.metaAccountId,
+        account_name: data.accountName || data.metaAccountId,
         mixpanel_project_id: data.mixpanelProjectId || null,
         mixpanel_board_id: data.mixpanelBoardId || null,
         active: true,
@@ -156,6 +158,7 @@ export async function syncAdAccount(data: {
   mixpanelProjectId: string | null;
   mixpanelSecretKey: string | null;
   mixpanelBoardId: string | null;
+  accountName?: string;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -176,12 +179,13 @@ export async function syncAdAccount(data: {
         mixpanel_project_id: data.mixpanelProjectId || null,
         mixpanel_board_id: data.mixpanelBoardId || null,
         active: true,
+        ...(data.accountName && { account_name: data.accountName }),
       }).eq("id", existing.id);
     } else {
       await svc.from("ad_accounts").insert({
         account_id: data.metaAccountId,
         user_id: user.id,
-        account_name: data.metaAccountId,
+        account_name: data.accountName || data.metaAccountId,
         mixpanel_project_id: data.mixpanelProjectId || null,
         mixpanel_board_id: data.mixpanelBoardId || null,
         active: true,

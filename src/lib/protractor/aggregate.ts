@@ -106,20 +106,90 @@ export function toSummaryCards(
 }
 
 // ============================================================
-// TOP 5 광고 (원본 get_top5_ads와 동일)
+// 비율 지표 역산 누적 & 재계산 (공유 유틸)
 // ============================================================
 
+/** 역산 누적용 내부 타입 */
+interface RatioAccum {
+  _totalReactions: number;
+  _totalComments: number;
+  _totalShares: number;
+  _totalSaves: number;
+  _totalEngagement: number;
+  _totalP3s: number;
+  _totalThruplay: number;
+  _totalP100: number;
+  _totalCheckout: number;
+}
+
+/** row 1건에서 역산 raw 값 추출 */
+function initAccum(row: AdInsightRow): RatioAccum {
+  const imp = row.impressions || 0;
+  const clicks = row.clicks || 0;
+  const p3sRaw = (row.video_p3s_rate ?? 0) / 100 * imp;
+  return {
+    _totalReactions: (row.reactions_per_10k ?? 0) / 10000 * imp,
+    _totalComments: (row.comments_per_10k ?? 0) / 10000 * imp,
+    _totalShares: (row.shares_per_10k ?? 0) / 10000 * imp,
+    _totalSaves: (row.saves_per_10k ?? 0) / 10000 * imp,
+    _totalEngagement: (row.engagement_per_10k ?? 0) / 10000 * imp,
+    _totalP3s: p3sRaw,
+    _totalThruplay: (row.thruplay_rate ?? 0) / 100 * imp,
+    _totalP100: (row.retention_rate ?? 0) / 100 * p3sRaw,
+    _totalCheckout: (row.click_to_checkout_rate ?? 0) / 100 * clicks,
+  };
+}
+
+/** 기존 누적에 row 1건 추가 */
+function addAccum(acc: RatioAccum, row: AdInsightRow): void {
+  const imp = row.impressions || 0;
+  const clicks = row.clicks || 0;
+  const p3sRaw = (row.video_p3s_rate ?? 0) / 100 * imp;
+  acc._totalReactions += (row.reactions_per_10k ?? 0) / 10000 * imp;
+  acc._totalComments += (row.comments_per_10k ?? 0) / 10000 * imp;
+  acc._totalShares += (row.shares_per_10k ?? 0) / 10000 * imp;
+  acc._totalSaves += (row.saves_per_10k ?? 0) / 10000 * imp;
+  acc._totalEngagement += (row.engagement_per_10k ?? 0) / 10000 * imp;
+  acc._totalP3s += p3sRaw;
+  acc._totalThruplay += (row.thruplay_rate ?? 0) / 100 * imp;
+  acc._totalP100 += (row.retention_rate ?? 0) / 100 * p3sRaw;
+  acc._totalCheckout += (row.click_to_checkout_rate ?? 0) / 100 * clicks;
+}
+
 /**
- * ad_id별로 그루핑 (기간 선택 시 합산 필요) → spend DESC LIMIT 5
- * 원본은 단일 날짜라 그루핑 없이 ORDER BY spend DESC LIMIT 5
+ * 누적된 절대값 + raw 누적으로 비율 지표 재계산.
+ * aggregate.ts / ad-metrics-table.tsx 양쪽에서 사용.
  */
-export function getTop5Ads(insights: AdInsightRow[]): AdInsightRow[] {
-  const map = new Map<string, AdInsightRow>();
+export function recalculateRatioMetrics(row: AdInsightRow, acc: RatioAccum): void {
+  const imp = row.impressions;
+  const clicks = row.clicks;
+  row.ctr = imp > 0 ? +((clicks / imp) * 100).toFixed(2) : 0;
+  row.roas = row.spend > 0 ? +(row.purchase_value / row.spend).toFixed(2) : 0;
+  row.reactions_per_10k = imp > 0 ? +(acc._totalReactions / imp * 10000).toFixed(2) : 0;
+  row.comments_per_10k = imp > 0 ? +(acc._totalComments / imp * 10000).toFixed(2) : 0;
+  row.shares_per_10k = imp > 0 ? +(acc._totalShares / imp * 10000).toFixed(2) : 0;
+  row.saves_per_10k = imp > 0 ? +(acc._totalSaves / imp * 10000).toFixed(2) : 0;
+  row.engagement_per_10k = imp > 0 ? +(acc._totalEngagement / imp * 10000).toFixed(2) : 0;
+  row.video_p3s_rate = imp > 0 ? +(acc._totalP3s / imp * 100).toFixed(2) : 0;
+  row.thruplay_rate = imp > 0 ? +(acc._totalThruplay / imp * 100).toFixed(2) : 0;
+  row.retention_rate = acc._totalP3s > 0 ? +(acc._totalP100 / acc._totalP3s * 100).toFixed(2) : 0;
+  row.click_to_purchase_rate = clicks > 0 ? +(row.purchases / clicks * 100).toFixed(2) : 0;
+  row.click_to_checkout_rate = clicks > 0 ? +(acc._totalCheckout / clicks * 100).toFixed(2) : 0;
+  row.checkout_to_purchase_rate = acc._totalCheckout > 0 ? +(row.purchases / acc._totalCheckout * 100).toFixed(2) : 0;
+}
+
+/**
+ * ad_id별 그루핑 + 비율 지표 역산 재계산.
+ * aggregate.ts / ad-metrics-table.tsx 양쪽에서 사용하는 공용 함수.
+ */
+export function aggregateInsightsByAd(insights: AdInsightRow[]): AdInsightRow[] {
+  const map = new Map<string, AdInsightRow & { _acc: RatioAccum }>();
 
   for (const row of insights) {
     const existing = map.get(row.ad_id);
     if (!existing) {
-      map.set(row.ad_id, { ...row });
+      const acc = initAccum(row);
+      map.set(row.ad_id, { ...row, _acc: acc });
     } else {
       existing.impressions += row.impressions || 0;
       existing.reach += row.reach || 0;
@@ -127,17 +197,27 @@ export function getTop5Ads(insights: AdInsightRow[]): AdInsightRow[] {
       existing.spend += row.spend || 0;
       existing.purchases += row.purchases || 0;
       existing.purchase_value += row.purchase_value || 0;
-      // 비율 지표 재계산 (원본 get_top5_ads와 동일한 방식)
-      existing.ctr = existing.impressions > 0
-        ? +((existing.clicks / existing.impressions) * 100).toFixed(2)
-        : 0;
-      existing.roas = existing.spend > 0
-        ? +(existing.purchase_value / existing.spend).toFixed(2)
-        : 0;
+      addAccum(existing._acc, row);
     }
   }
 
-  return Array.from(map.values())
+  return Array.from(map.values()).map((entry) => {
+    recalculateRatioMetrics(entry, entry._acc);
+    const { _acc, ...clean } = entry;
+    return clean as AdInsightRow;
+  });
+}
+
+// ============================================================
+// TOP 5 광고 (원본 get_top5_ads와 동일)
+// ============================================================
+
+/**
+ * ad_id별로 그루핑 (기간 선택 시 합산 필요) → spend DESC LIMIT 5
+ * 비율 지표(per_10k, rate)를 역산 방식으로 정확히 재계산
+ */
+export function getTop5Ads(insights: AdInsightRow[]): AdInsightRow[] {
+  return aggregateInsightsByAd(insights)
     .sort((a, b) => b.spend - a.spend)
     .slice(0, 5);
 }
