@@ -20,14 +20,14 @@ async function fetchMixpanelRevenue(
   const headers = { Authorization: `Basic ${auth}` };
   const baseUrl = "https://mixpanel.com/api/2.0/segmentation";
 
-  // 1. 토탈매출: event=purchase, type=sum, on=properties["$amount"]
+  // 1. 토탈매출: event=purchase, type=sum, on=properties["value"]
   const revenueParams = new URLSearchParams({
     project_id: projectId,
     event: "purchase",
     from_date: date,
     to_date: date,
     type: "general",
-    on: 'properties["$amount"]',
+    on: 'properties["value"]',
   });
 
   const revenueRes = await fetch(`${baseUrl}?${revenueParams}`, {
