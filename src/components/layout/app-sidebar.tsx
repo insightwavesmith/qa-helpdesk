@@ -66,6 +66,7 @@ const adminNavItems: NavItem[] = [
   { label: "콘텐츠 관리", href: "/admin/content", icon: FileText },
   { label: "지식 베이스", href: "/admin/knowledge", icon: Brain },
   { label: "총가치각도기 관리", href: "/admin/protractor", icon: Crosshair },
+  { label: "벤치마크 관리", href: "/admin/protractor/benchmarks", icon: BarChart3 },
   { label: "광고계정 관리", href: "/admin/accounts", icon: Monitor },
   { label: "내 광고계정", href: "/admin/owner-accounts", icon: BarChart3 },
 ];
