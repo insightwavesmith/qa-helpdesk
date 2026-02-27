@@ -472,7 +472,7 @@ export function ContentRanking({
   if (insights.length === 0 || top5.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-xl border border-gray-100 bg-white py-20 text-gray-400">
-        <p className="text-base font-medium">광고 데이터가 없습니다</p>
+        <p className="text-base font-medium">벤치마크 데이터 없음</p>
       </div>
     );
   }

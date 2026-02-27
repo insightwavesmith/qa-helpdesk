@@ -39,6 +39,7 @@ interface T3Data {
     adCount: number;
   } | null;
   message?: string;
+  hasBenchmarkData?: boolean;
 }
 
 interface TotalValueGaugeProps {
@@ -157,6 +158,19 @@ export function TotalValueGauge({ data, isLoading }: TotalValueGaugeProps) {
         <CardContent className="flex items-center justify-center py-12">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           <span className="ml-2 text-sm text-muted-foreground">T3 점수 계산 중...</span>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // 벤치마크 데이터 없음
+  if (data && data.hasBenchmarkData === false) {
+    return (
+      <Card className="bg-white border border-gray-200">
+        <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+          <Info className="h-6 w-6 mb-2" />
+          <p className="text-sm font-medium">벤치마크 데이터 없음</p>
+          <p className="text-xs mt-1">벤치마크 관리 탭에서 수집하세요.</p>
         </CardContent>
       </Card>
     );

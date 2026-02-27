@@ -164,6 +164,7 @@ export async function GET(request: NextRequest) {
 
     // ── 3. 벤치마크 조회 ──
     const benchMap = await fetchBenchmarks(svc, dominantCT);
+    const hasBenchmarkData = Object.keys(benchMap).length > 0;
 
     // ── 4. T3 점수 계산 (엔진) ──
     const t3Result = calculateT3Score(metricValues, benchMap);
@@ -176,6 +177,8 @@ export async function GET(request: NextRequest) {
       grade: t3Result.grade,
       diagnostics: t3Result.diagnostics,
       metrics: t3Result.metrics,
+      hasBenchmarkData,
+      message: hasBenchmarkData ? undefined : "벤치마크 데이터 없음. 벤치마크 관리 탭에서 수집하세요.",
       summary: {
         spend: Math.round(totalSpend),
         impressions: totalImpressions,
