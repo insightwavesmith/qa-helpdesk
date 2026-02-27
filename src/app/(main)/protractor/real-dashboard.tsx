@@ -5,8 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { type AdAccount } from "./components/account-selector";
 import { type AdInsightRow, type BenchmarkRow } from "./components/ad-metrics-table";
 import { PeriodTabs, type DateRange as PeriodDateRange } from "./components/period-tabs";
-import { Top5AdCards } from "./components/top5-ad-cards";
-import { BenchmarkCompare } from "./components/benchmark-compare";
+import { ContentRanking } from "./components/content-ranking";
+import { BenchmarkAdmin } from "./components/benchmark-admin";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, ArrowRight, BarChart3, LinkIcon } from "lucide-react";
@@ -17,9 +17,6 @@ import {
   SummaryCards,
   TotalValueGauge,
   DiagnosticPanel,
-  DailyMetricsTable,
-  PerformanceTrendChart,
-  ConversionFunnel,
   OverlapAnalysis,
   type OverlapData,
 } from "@/components/protractor";
@@ -27,9 +24,6 @@ import {
 import {
   aggregateSummary,
   toSummaryCards,
-  toDailyMetrics,
-  toDailyTrend,
-  toFunnelData,
 } from "@/lib/protractor/aggregate";
 
 // 어제 날짜 (기본값)
@@ -78,30 +72,6 @@ interface T3Response {
   message?: string;
 }
 
-// 진단 결과 원본 타입 (diagnose API 응답)
-interface RawDiagnosisMetric {
-  name: string;
-  my_value: number | null;
-  above_avg: number | null;
-  average_avg: number | null;
-  verdict: string;
-}
-
-interface RawDiagnosisPart {
-  part_num: number;
-  part_name: string;
-  verdict: string;
-  metrics: RawDiagnosisMetric[];
-}
-
-interface RawDiagnosis {
-  ad_id: string;
-  ad_name: string;
-  overall_verdict: string;
-  one_line_diagnosis: string;
-  parts: RawDiagnosisPart[];
-}
-
 export default function RealDashboard() {
   const searchParams = useSearchParams();
   const accountParam = searchParams.get("account");
@@ -112,19 +82,17 @@ export default function RealDashboard() {
   const [dateRange, setDateRange] = useState<PeriodDateRange>(yesterday());
   const [periodNum, setPeriodNum] = useState(1); // 기간 (일수)
   const [insights, setInsights] = useState<AdInsightRow[]>([]);
-  const [rawDiagnoses, setRawDiagnoses] = useState<RawDiagnosis[] | null>(null);
   const [totalValue, setTotalValue] = useState<T3Response | null>(null);
 
   const [benchmarks, setBenchmarks] = useState<BenchmarkRow[]>([]);
 
-  const [activeTab, setActiveTab] = useState<"summary" | "overlap" | "content">("summary");
+  const [activeTab, setActiveTab] = useState<"summary" | "content" | "benchmark">("summary");
   const [overlapData, setOverlapData] = useState<OverlapData | null>(null);
   const [loadingOverlap, setLoadingOverlap] = useState(false);
   const [overlapError, setOverlapError] = useState<string | null>(null);
 
   const [loadingAccounts, setLoadingAccounts] = useState(true);
   const [loadingData, setLoadingData] = useState(false);
-  const [loadingDiagnosis, setLoadingDiagnosis] = useState(false);
   const [loadingTotalValue, setLoadingTotalValue] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -206,38 +174,7 @@ export default function RealDashboard() {
     fetchData();
   }, [fetchData]);
 
-  // 3) 진단 호출 (insights 로드 완료 후)
-  useEffect(() => {
-    if (!selectedAccountId || insights.length === 0) {
-      setRawDiagnoses(null);
-      return;
-    }
-
-    (async () => {
-      setLoadingDiagnosis(true);
-      try {
-        const res = await fetch("/api/diagnose", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            accountId: selectedAccountId,
-            startDate: dateRange.start,
-            endDate: dateRange.end,
-          }),
-        });
-        const json = await res.json();
-        if (res.ok && json.diagnoses) {
-          setRawDiagnoses(json.diagnoses as RawDiagnosis[]);
-        }
-      } catch {
-        // 진단 실패해도 대시보드는 표시
-      } finally {
-        setLoadingDiagnosis(false);
-      }
-    })();
-  }, [selectedAccountId, insights, dateRange]);
-
-  // 4) 총가치수준 T3 호출 (period 포함)
+  // 3) 총가치수준 T3 호출 (period 포함)
   useEffect(() => {
     if (!selectedAccountId) {
       setTotalValue(null);
@@ -268,17 +205,11 @@ export default function RealDashboard() {
     })();
   }, [selectedAccountId, dateRange, periodNum]);
 
-  // 5) 타겟중복 분석 (overlap 탭 활성 + 7일 이상일 때)
+  // 4) 타겟중복 분석 — 7일 이상 + 계정 선택 시 자동 fetch
   const fetchOverlap = useCallback(
     async (force = false) => {
       if (!selectedAccountId) return;
-      const days =
-        Math.round(
-          (new Date(dateRange.end).getTime() -
-            new Date(dateRange.start).getTime()) /
-            (1000 * 60 * 60 * 24)
-        ) + 1;
-      if (days < 7) return;
+      if (periodNum < 7) return;
 
       setLoadingOverlap(true);
       setOverlapError(null);
@@ -300,14 +231,15 @@ export default function RealDashboard() {
         setLoadingOverlap(false);
       }
     },
-    [selectedAccountId, dateRange]
+    [selectedAccountId, dateRange, periodNum]
   );
 
+  // 7일 이상일 때 성과 요약 탭에서 자동 fetch
   useEffect(() => {
-    if (activeTab === "overlap") {
+    if (periodNum >= 7 && selectedAccountId) {
       fetchOverlap();
     }
-  }, [activeTab, fetchOverlap]);
+  }, [periodNum, selectedAccountId, fetchOverlap]);
 
   const handlePeriodChange = (range: PeriodDateRange, days: number) => {
     setDateRange(range);
@@ -324,6 +256,9 @@ export default function RealDashboard() {
   // 실데이터 집계
   const summary = insights.length > 0 ? aggregateSummary(insights) : null;
   const summaryCards = summary ? toSummaryCards(summary) : undefined;
+
+  // 현재 선택 계정의 믹스패널 정보
+  const selectedAccount = accounts.find((a) => a.account_id === selectedAccountId);
 
   return (
     <div className="flex flex-col gap-6">
@@ -375,17 +310,18 @@ export default function RealDashboard() {
         </div>
       )}
 
-      {/* 3. 탭 구조: 성과 요약 / 타겟중복 */}
+      {/* 3. 탭 구조: 성과 요약 / 콘텐츠 / 벤치마크 관리 */}
       <Tabs
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v as "summary" | "overlap" | "content")}
+        onValueChange={(v) => setActiveTab(v as "summary" | "content" | "benchmark")}
       >
         <TabsList>
           <TabsTrigger value="summary">성과 요약</TabsTrigger>
-          <TabsTrigger value="overlap">타겟중복</TabsTrigger>
           <TabsTrigger value="content">콘텐츠</TabsTrigger>
+          <TabsTrigger value="benchmark">벤치마크 관리</TabsTrigger>
         </TabsList>
 
+        {/* ── 성과 요약 탭 ── */}
         <TabsContent value="summary" className="mt-6 space-y-6">
           {/* 로딩 */}
           {loadingData && (
@@ -407,7 +343,7 @@ export default function RealDashboard() {
             </div>
           )}
 
-          {/* 데이터 표시 — 목업 순서: 게이지 → 요약카드 → TOP5 광고 (항상 표시) */}
+          {/* 데이터 표시 */}
           {selectedAccountId && !loadingData && (
             <>
               {/* 3a. TotalValueGauge (T3 엔진) */}
@@ -424,57 +360,32 @@ export default function RealDashboard() {
                 <DiagnosticPanel t3Diagnostics={totalValue.diagnostics} />
               )}
 
-              {/* 3d. Top5AdCards (항상 표시, 토글 없음) */}
-              {loadingDiagnosis ? (
-                <Skeleton className="h-[200px] w-full rounded-lg" />
-              ) : (
-                <Top5AdCards
-                  insights={insights}
-                  accountId={selectedAccountId ?? undefined}
-                  mixpanelProjectId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_project_id}
-                  mixpanelBoardId={accounts.find(a => a.account_id === selectedAccountId)?.mixpanel_board_id}
-                  diagnoses={rawDiagnoses ?? undefined}
+              {/* 3d. 타겟중복 (7일 이상일 때만) */}
+              {periodNum >= 7 && (
+                <OverlapAnalysis
+                  accountId={selectedAccountId}
+                  dateRange={dateRange}
+                  overlapData={overlapData}
+                  isLoading={loadingOverlap}
+                  onRefresh={() => fetchOverlap(true)}
+                  error={overlapError}
                 />
-              )}
-
-              {/* 3e. 일별 성과 테이블 */}
-              {insights.length > 0 && (
-                <DailyMetricsTable data={toDailyMetrics(insights)} />
               )}
             </>
           )}
         </TabsContent>
 
-        <TabsContent value="overlap" className="mt-6">
-          <OverlapAnalysis
-            accountId={selectedAccountId}
-            dateRange={dateRange}
-            overlapData={overlapData}
-            isLoading={loadingOverlap}
-            onRefresh={() => fetchOverlap(true)}
-            error={overlapError}
-          />
-        </TabsContent>
-
-        <TabsContent value="content" className="mt-6 space-y-6">
+        {/* ── 콘텐츠 탭 ── */}
+        <TabsContent value="content" className="mt-6">
           {selectedAccountId && insights.length > 0 ? (
-            <>
-              {/* 성과 추이 + 전환 퍼널 */}
-              <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
-                <div className="xl:col-span-3">
-                  <PerformanceTrendChart data={toDailyTrend(insights)} />
-                </div>
-                <div className="xl:col-span-2">
-                  <ConversionFunnel
-                    steps={toFunnelData(insights).steps}
-                    overallRate={toFunnelData(insights).overallRate}
-                  />
-                </div>
-              </div>
-
-              {/* 벤치마크 비교 */}
-              <BenchmarkCompare insights={insights} benchmarks={benchmarks} />
-            </>
+            <ContentRanking
+              insights={insights}
+              benchmarks={benchmarks}
+              accountId={selectedAccountId}
+              periodNum={periodNum}
+              mixpanelProjectId={selectedAccount?.mixpanel_project_id}
+              mixpanelBoardId={selectedAccount?.mixpanel_board_id}
+            />
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
               <BarChart3 className="h-10 w-10" />
@@ -483,6 +394,11 @@ export default function RealDashboard() {
               </p>
             </div>
           )}
+        </TabsContent>
+
+        {/* ── 벤치마크 관리 탭 ── */}
+        <TabsContent value="benchmark" className="mt-6">
+          <BenchmarkAdmin />
         </TabsContent>
       </Tabs>
     </div>
