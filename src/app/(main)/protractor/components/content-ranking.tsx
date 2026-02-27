@@ -286,7 +286,7 @@ interface BenchMetric {
   format: "pct" | "decimal" | "per10k";
 }
 
-const BENCH_METRICS: { part: string; metrics: BenchMetric[] }[] = [
+const BENCH_METRICS: { part: string; metrics: BenchMetric[]; hasSummary?: boolean; summaryMetric?: BenchMetric }[] = [
   {
     part: "기반점수",
     metrics: [
@@ -297,17 +297,21 @@ const BENCH_METRICS: { part: string; metrics: BenchMetric[] }[] = [
   },
   {
     part: "참여율",
+    hasSummary: true,
     metrics: [
       { label: "반응", adKey: "reactions_per_10k", benchKey: "avg_reactions_per_10k", benchSource: "eng", format: "per10k" },
       { label: "댓글", adKey: "comments_per_10k", benchKey: "avg_comments_per_10k", benchSource: "eng", format: "per10k" },
       { label: "공유", adKey: "shares_per_10k", benchKey: "avg_shares_per_10k", benchSource: "eng", format: "per10k" },
       { label: "저장", adKey: "saves_per_10k", benchKey: "avg_saves_per_10k", benchSource: "eng", format: "per10k" },
     ],
+    summaryMetric: { label: "참여합계", adKey: "engagement_per_10k", benchKey: "avg_engagement_per_10k", benchSource: "eng", format: "per10k" },
   },
   {
     part: "전환율",
     metrics: [
       { label: "CTR", adKey: "ctr", benchKey: "avg_ctr", benchSource: "conv", format: "pct" },
+      { label: "결제시작율", adKey: "click_to_checkout_rate", benchKey: "avg_click_to_checkout_rate", benchSource: "conv", format: "pct" },
+      { label: "결제→구매율", adKey: "checkout_to_purchase_rate", benchKey: "avg_checkout_to_purchase_rate", benchSource: "conv", format: "pct" },
       { label: "클릭→구매", adKey: "click_to_purchase_rate", benchKey: "avg_click_to_purchase_rate", benchSource: "conv", format: "pct" },
       { label: "ROAS", adKey: "roas", benchKey: "avg_roas", benchSource: "conv", format: "decimal" },
     ],
@@ -327,10 +331,54 @@ function BenchmarkCompareGrid({
     return <p className="text-sm text-gray-400">벤치마크 데이터 없음</p>;
   }
 
+  function renderMetricRow(m: BenchMetric, isSummary?: boolean) {
+    const myVal = ad[m.adKey] as number | undefined | null;
+    const bench = m.benchSource === "eng" ? engAbove : convAbove;
+    const benchVal = bench ? (bench[m.benchKey] as number | undefined) : undefined;
+
+    if (myVal == null && benchVal == null) return null;
+
+    const style = calcVerdictStyle(myVal ?? null, benchVal ?? null);
+    const emoji = calcVerdictEmoji(myVal ?? null, benchVal ?? null);
+
+    const myDisplay =
+      myVal == null ? "-"
+        : m.format === "pct" ? fmtCtr(myVal)
+        : m.format === "per10k" ? fmtDecimal(myVal)
+        : fmtDecimal(myVal, 2);
+
+    const benchDisplay =
+      benchVal == null ? "-"
+        : m.format === "pct" ? fmtCtr(benchVal)
+        : m.format === "per10k" ? fmtDecimal(benchVal)
+        : fmtDecimal(benchVal, 2);
+
+    return (
+      <div
+        key={m.label}
+        className="flex items-center justify-between rounded-md bg-white/70 px-2 py-1.5"
+      >
+        <span className={`text-xs ${isSummary ? "font-semibold text-gray-700" : "text-gray-600"}`}>{m.label}</span>
+        <div className="flex items-center gap-1.5">
+          <span className={`${isSummary ? "text-sm font-bold" : "text-xs font-medium"} ${style.text}`}>
+            {myDisplay}
+            {benchDisplay !== "-" && (
+              <span className="text-gray-400"> / {benchDisplay}</span>
+            )}
+          </span>
+          <span className="text-[10px]">{emoji}</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       {BENCH_METRICS.map((group) => {
-        const hasAnyData = group.metrics.some((m) => {
+        const allMetrics = group.hasSummary && group.summaryMetric
+          ? [...group.metrics, group.summaryMetric]
+          : group.metrics;
+        const hasAnyData = allMetrics.some((m) => {
           const bench = m.benchSource === "eng" ? engAbove : convAbove;
           return ad[m.adKey] != null || (bench && bench[m.benchKey] != null);
         });
@@ -342,46 +390,17 @@ function BenchmarkCompareGrid({
               <span className="text-sm font-bold text-gray-700">{group.part}</span>
             </div>
             <div className="space-y-2">
-              {group.metrics.map((m) => {
-                const myVal = ad[m.adKey] as number | undefined | null;
-                const bench = m.benchSource === "eng" ? engAbove : convAbove;
-                const benchVal = bench ? (bench[m.benchKey] as number | undefined) : undefined;
-
-                if (myVal == null && benchVal == null) return null;
-
-                const style = calcVerdictStyle(myVal ?? null, benchVal ?? null);
-                const emoji = calcVerdictEmoji(myVal ?? null, benchVal ?? null);
-
-                const myDisplay =
-                  myVal == null ? "-"
-                    : m.format === "pct" ? fmtCtr(myVal)
-                    : m.format === "per10k" ? fmtDecimal(myVal)
-                    : fmtDecimal(myVal, 2);
-
-                const benchDisplay =
-                  benchVal == null ? "-"
-                    : m.format === "pct" ? fmtCtr(benchVal)
-                    : m.format === "per10k" ? fmtDecimal(benchVal)
-                    : fmtDecimal(benchVal, 2);
-
+              {group.metrics.map((m) => renderMetricRow(m))}
+              {group.hasSummary && group.summaryMetric && (() => {
+                const row = renderMetricRow(group.summaryMetric, true);
+                if (!row) return null;
                 return (
-                  <div
-                    key={m.label}
-                    className="flex items-center justify-between rounded-md bg-white/70 px-2 py-1.5"
-                  >
-                    <span className="text-xs text-gray-600">{m.label}</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className={`text-xs font-medium ${style.text}`}>
-                        {myDisplay}
-                        {benchDisplay !== "-" && (
-                          <span className="text-gray-400"> / {benchDisplay}</span>
-                        )}
-                      </span>
-                      <span className="text-[10px]">{emoji}</span>
-                    </div>
-                  </div>
+                  <>
+                    <hr className="my-1 border-gray-200" />
+                    {row}
+                  </>
                 );
-              })}
+              })()}
             </div>
           </div>
         );
@@ -415,7 +434,7 @@ function AdRankCard({
   engAbove: BenchmarkRow | undefined;
   convAbove: BenchmarkRow | undefined;
 }) {
-  const metaUrl = `https://adsmanager.facebook.com/adsmanager/manage/ads?act=${accountId}&selected_ad_ids=${ad.ad_id}`;
+  const metaUrl = `https://adsmanager.facebook.com/adsmanager/manage/ads/insights?act=${accountId}&selected_ad_ids=${ad.ad_id}&nav_source=no_referrer`;
   const mixpanelUrl = mixpanelProjectId
     ? mixpanelBoardId
       ? `https://mixpanel.com/project/${mixpanelProjectId}/view/${mixpanelBoardId}/app/boards`
@@ -524,6 +543,7 @@ export function ContentRanking({
   const top5 = getTop5Ads(insights);
   const [diagnoses, setDiagnoses] = useState<RawDiagnosis[] | null>(null);
   const [loadingDiagnosis, setLoadingDiagnosis] = useState(false);
+  const [diagnosisError, setDiagnosisError] = useState<string | null>(null);
 
   // 진단 API 호출 (insights 로드 완료 후)
   useEffect(() => {
@@ -539,6 +559,7 @@ export function ContentRanking({
 
     (async () => {
       setLoadingDiagnosis(true);
+      setDiagnosisError(null);
       try {
         const res = await fetch("/api/diagnose", {
           method: "POST",
@@ -553,6 +574,11 @@ export function ContentRanking({
 
         if (!res.ok) {
           console.warn(`[ContentRanking] diagnose API ${res.status}`);
+          if (res.status === 404) {
+            setDiagnosisError("해당 기간에 데이터가 없습니다");
+          } else {
+            setDiagnosisError("진단 데이터를 불러올 수 없습니다");
+          }
           return;
         }
 
@@ -561,6 +587,7 @@ export function ContentRanking({
           json = await res.json();
         } catch {
           console.warn("[ContentRanking] diagnose non-JSON response");
+          setDiagnosisError("진단 데이터를 불러올 수 없습니다");
           return;
         }
 
@@ -568,7 +595,7 @@ export function ContentRanking({
           setDiagnoses(json.diagnoses as RawDiagnosis[]);
         }
       } catch {
-        // 진단 실패해도 카드는 표시
+        setDiagnosisError("진단 데이터를 불러올 수 없습니다");
       } finally {
         setLoadingDiagnosis(false);
       }
@@ -608,6 +635,13 @@ export function ContentRanking({
         <div className="mb-4 space-y-3">
           <Skeleton className="h-[80px] w-full rounded-xl" />
           <Skeleton className="h-[80px] w-full rounded-xl" />
+        </div>
+      )}
+
+      {/* 진단 에러 메시지 (벤치마크 비교는 계속 표시됨) */}
+      {!loadingDiagnosis && diagnosisError && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
+          {diagnosisError}
         </div>
       )}
 

@@ -288,6 +288,114 @@ export async function GET(req: NextRequest) {
         console.error(`Meta error [${account.account_id}]:`, e);
       }
 
+      // ── overlap 수집 ──────────────────────────────────────────
+      try {
+        const { fetchActiveAdsets, fetchCombinedReach, makePairKey } = await import("@/lib/protractor/overlap-utils");
+
+        const adsets = await fetchActiveAdsets(account.account_id);
+        if (adsets.length > 0) {
+          // 개별 reach — 당일 DB 데이터 사용
+          const { data: reachRows } = await svc
+            .from("daily_ad_insights")
+            .select("adset_id, reach")
+            .eq("account_id", account.account_id)
+            .eq("date", yesterday)
+            .in("adset_id", adsets.map((a) => a.id));
+
+          const reachByAdset: Record<string, number> = {};
+          for (const row of (reachRows ?? []) as { adset_id: string; reach: number | null }[]) {
+            if (!row.adset_id) continue;
+            reachByAdset[row.adset_id] = (reachByAdset[row.adset_id] ?? 0) + (row.reach ?? 0);
+          }
+
+          const activeAdsets = adsets.filter((a) => (reachByAdset[a.id] ?? 0) > 0);
+          if (activeAdsets.length > 0) {
+            const individualSum = activeAdsets.reduce((sum, a) => sum + (reachByAdset[a.id] ?? 0), 0);
+
+            // 전체 unique reach (Meta API)
+            let totalUnique: number;
+            try {
+              totalUnique = await fetchCombinedReach(
+                account.account_id,
+                activeAdsets.map((a) => a.id),
+                yesterday,
+                yesterday
+              );
+            } catch {
+              totalUnique = individualSum;
+            }
+
+            const overallRate =
+              individualSum > 0
+                ? Math.max(0, ((individualSum - totalUnique) / individualSum) * 100)
+                : 0;
+
+            // pair별 overlap 계산 (상위 8개 adset, 최대 28조합)
+            const sortedAdsets = [...activeAdsets].sort(
+              (a, b) => (reachByAdset[b.id] ?? 0) - (reachByAdset[a.id] ?? 0)
+            );
+            const cappedAdsets = sortedAdsets.slice(0, 8);
+            const pairs: Array<{
+              adset_a_name: string;
+              adset_b_name: string;
+              campaign_a: string;
+              campaign_b: string;
+              overlap_rate: number;
+            }> = [];
+
+            for (let i = 0; i < cappedAdsets.length; i++) {
+              for (let j = i + 1; j < cappedAdsets.length; j++) {
+                const a = cappedAdsets[i];
+                const b = cappedAdsets[j];
+                const pairSum = (reachByAdset[a.id] ?? 0) + (reachByAdset[b.id] ?? 0);
+                if (pairSum === 0) continue;
+                // makePairKey는 사용되지 않는 변수 방지용
+                void makePairKey(a.id, b.id);
+                try {
+                  const combinedUnique = await fetchCombinedReach(
+                    account.account_id,
+                    [a.id, b.id],
+                    yesterday,
+                    yesterday
+                  );
+                  const pairOverlap = Math.max(0, ((pairSum - combinedUnique) / pairSum) * 100);
+                  pairs.push({
+                    adset_a_name: a.name,
+                    adset_b_name: b.name,
+                    campaign_a: a.campaignName,
+                    campaign_b: b.campaignName,
+                    overlap_rate: Math.round(pairOverlap * 10) / 10,
+                  });
+                } catch {
+                  continue;
+                }
+              }
+            }
+
+            // daily_overlap_insights UPSERT
+            await svc
+              .from("daily_overlap_insights" as never)
+              .upsert(
+                {
+                  account_id: account.account_id,
+                  date: yesterday,
+                  overall_rate: Math.round(overallRate * 10) / 10,
+                  total_unique_reach: totalUnique,
+                  individual_sum: individualSum,
+                  pairs: pairs,
+                  collected_at: new Date().toISOString(),
+                } as never,
+                { onConflict: "account_id,date" }
+              );
+
+            accountResult.overlap_rate = Math.round(overallRate * 10) / 10;
+          }
+        }
+      } catch (overlapErr) {
+        console.error(`overlap 수집 실패 (${account.account_id}):`, overlapErr);
+        // 실패해도 다른 수집에 영향 없게 격리
+      }
+
       results.push(accountResult);
     }
 

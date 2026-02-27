@@ -99,6 +99,69 @@ function T3DiagnosticView({ diagnostics }: { diagnostics: Record<string, T3Diagn
               <div className="flex flex-col gap-2 p-3">
                 {part.metrics.length === 0 ? (
                   <p className="py-2 text-center text-xs text-muted-foreground">데이터 없음</p>
+                ) : part.label === "참여율" ? (
+                  // 참여율 파트: 개별 4개 지표 + 구분선 + 합계
+                  (() => {
+                    const summaryMetric = part.metrics.find((m) => m.key === "engagement_per_10k");
+                    const individualMetrics = part.metrics.filter((m) => m.key !== "engagement_per_10k");
+                    return (
+                      <>
+                        {individualMetrics.map((m) => {
+                          const mStyle = m.score != null ? scoreToStyle(m.score) : { text: "text-gray-500" };
+                          const fmtVal = m.value != null
+                            ? m.unit === "%" ? m.value.toFixed(2) + "%" : m.value.toFixed(1)
+                            : "-";
+                          return (
+                            <div key={m.key} className="rounded-md border border-border bg-white p-2.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-card-foreground">{m.name}</span>
+                                <span className="text-xs">{m.status}</span>
+                              </div>
+                              <div className="mt-1 flex items-baseline gap-2">
+                                <span className={`text-base font-bold ${mStyle.text}`}>{fmtVal}</span>
+                                {m.score != null && (
+                                  <span className="text-[10px] text-muted-foreground">{m.score}점</span>
+                                )}
+                              </div>
+                              <div className="mt-1 text-[10px] text-muted-foreground">
+                                {m.aboveAvg != null ? `기준선: ${fmtMetric(m.aboveAvg)}` : ""}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {summaryMetric && (
+                          <>
+                            <hr className="my-1 border-gray-200" />
+                            <div className="rounded-md border border-border bg-white p-2.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-card-foreground">{summaryMetric.name}</span>
+                                <span className="text-xs">{summaryMetric.status}</span>
+                              </div>
+                              <div className="mt-1 flex items-baseline gap-2">
+                                {(() => {
+                                  const sStyle = summaryMetric.score != null ? scoreToStyle(summaryMetric.score) : { text: "text-gray-500" };
+                                  const fmtVal = summaryMetric.value != null
+                                    ? summaryMetric.unit === "%" ? summaryMetric.value.toFixed(2) + "%" : summaryMetric.value.toFixed(1)
+                                    : "-";
+                                  return (
+                                    <>
+                                      <span className={`text-base font-bold ${sStyle.text}`}>{fmtVal}</span>
+                                      {summaryMetric.score != null && (
+                                        <span className="text-[10px] text-muted-foreground">{summaryMetric.score}점</span>
+                                      )}
+                                    </>
+                                  );
+                                })()}
+                              </div>
+                              <div className="mt-1 text-[10px] text-muted-foreground">
+                                {summaryMetric.aboveAvg != null ? `기준선: ${fmtMetric(summaryMetric.aboveAvg)}` : ""}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    );
+                  })()
                 ) : (
                   part.metrics.map((m) => {
                     const mStyle = m.score != null ? scoreToStyle(m.score) : { text: "text-gray-500" };

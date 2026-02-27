@@ -48,15 +48,15 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
       <div className="max-w-6xl mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
+        <div className="relative flex items-center justify-between">
           {/* 로고 */}
-          <Link href="/dashboard" className="flex items-center">
+          <Link href="/dashboard" className="flex flex-1 items-center">
             <Image src="/logo.png" alt="자사몰사관학교" width={32} height={32} className="rounded-lg object-cover" />
             <span className="ml-2 text-xl font-bold text-gray-900 font-accent [word-spacing:-3px]">자사몰사관학교</span>
           </Link>
-          
-          {/* 데스크탑 네비게이션 */}
-          <nav className="hidden md:flex space-x-8">
+
+          {/* 데스크탑 네비게이션 — 완전 가운데 정렬 */}
+          <nav className="absolute left-1/2 hidden -translate-x-1/2 md:flex space-x-8">
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -71,9 +71,9 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
               </Link>
             ))}
           </nav>
-          
+
           {/* 프로필 & 모바일 메뉴 */}
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-1 items-center justify-end space-x-4">
             {/* 프로필 드롭다운 */}
             <div className="relative">
               <button

@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireProtractorAccess, verifyAccountOwnership } from "../_shared";
+import {
+  fetchActiveAdsets,
+  fetchCombinedReach,
+  makePairKey,
+  type OverlapPair,
+} from "@/lib/protractor/overlap-utils";
 
 export const maxDuration = 300;
 
 // ── 타입 ────────────────────────────────────────────────────────
-interface OverlapPair {
-  adset_a_name: string;
-  adset_b_name: string;
-  campaign_a: string;
-  campaign_b: string;
-  overlap_rate: number;
-}
+// OverlapPair는 overlap-utils.ts에서 re-export
+export type { OverlapPair };
 
 interface OverlapResponse {
   overall_rate: number;
@@ -19,110 +20,6 @@ interface OverlapResponse {
   cached_at: string;
   pairs: OverlapPair[];
   truncated?: boolean;
-}
-
-interface AdsetInfo {
-  id: string;
-  name: string;
-  campaignName: string;
-}
-
-// ── 헬퍼: Meta Graph API 호출 ───────────────────────────────────
-const META_API = "https://graph.facebook.com/v21.0";
-
-function getToken(): string {
-  const token = process.env.META_ACCESS_TOKEN;
-  if (!token) throw new Error("META_ACCESS_TOKEN not set");
-  return token;
-}
-
-async function metaGet(path: string, params: Record<string, string>) {
-  const url = new URL(`${META_API}/${path}`);
-  url.searchParams.set("access_token", getToken());
-  for (const [k, v] of Object.entries(params)) {
-    url.searchParams.set(k, v);
-  }
-  const res = await fetch(url.toString(), {
-    signal: AbortSignal.timeout(30_000),
-  });
-  const data = await res.json();
-  if (data.error) {
-    throw new Error(`Meta API: ${data.error.message ?? "Unknown error"}`);
-  }
-  return data;
-}
-
-// ── 활성 OUTCOME_SALES 캠페인의 광고세트 목록 ──────────────────
-async function fetchActiveAdsets(accountId: string): Promise<AdsetInfo[]> {
-  // 1) 활성 캠페인 (OUTCOME_SALES)
-  const campaignsData = await metaGet(`act_${accountId}/campaigns`, {
-    effective_status: '["ACTIVE"]',
-    fields: "id,name,objective",
-    limit: "100",
-  });
-
-  const salesCampaigns = (
-    (campaignsData.data ?? []) as {
-      id: string;
-      name: string;
-      objective: string;
-    }[]
-  ).filter((c) => c.objective === "OUTCOME_SALES");
-
-  if (salesCampaigns.length === 0) return [];
-
-  // 2) 각 캠페인의 활성 광고세트
-  const adsets: AdsetInfo[] = [];
-  for (const campaign of salesCampaigns) {
-    const adsetsData = await metaGet(`${campaign.id}/adsets`, {
-      effective_status: '["ACTIVE"]',
-      fields: "id,name",
-      limit: "100",
-    });
-    for (const adset of (adsetsData.data ?? []) as {
-      id: string;
-      name: string;
-    }[]) {
-      adsets.push({
-        id: adset.id,
-        name: adset.name,
-        campaignName: campaign.name,
-      });
-    }
-  }
-
-  return adsets;
-}
-
-// ── 조합 reach 조회 (Meta Insights API) ─────────────────────────
-async function fetchCombinedReach(
-  accountId: string,
-  adsetIds: string[],
-  dateStart: string,
-  dateEnd: string
-): Promise<number> {
-  const filtering = JSON.stringify([
-    {
-      field: "adset.id",
-      operator: "IN",
-      value: adsetIds,
-    },
-  ]);
-
-  const data = await metaGet(`act_${accountId}/insights`, {
-    filtering,
-    fields: "reach",
-    time_range: JSON.stringify({ since: dateStart, until: dateEnd }),
-    level: "account",
-  });
-
-  const rows = (data.data ?? []) as { reach?: string }[];
-  return rows.length > 0 ? parseInt(rows[0].reach ?? "0", 10) : 0;
-}
-
-// ── adset_pair 키 생성 (항상 정렬) ──────────────────────────────
-function makePairKey(a: string, b: string): string {
-  return [a, b].sort().join("_");
 }
 
 // ── 캐시 TTL: 24시간 ───────────────────────────────────────────
@@ -163,8 +60,29 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // ── 캐시 확인 ─────────────────────────────────────────────
+    // ── DB 조회 우선 ──────────────────────────────────────────
     if (!force) {
+      const { data: dbData } = await svc
+        .from("daily_overlap_insights" as never)
+        .select("*")
+        .eq("account_id", accountId)
+        .gte("date", dateStart)
+        .lte("date", dateEnd)
+        .order("date", { ascending: false })
+        .limit(1);
+
+      if (dbData && (dbData as Record<string, unknown>[]).length > 0) {
+        const row = (dbData as Record<string, unknown>[])[0];
+        return NextResponse.json({
+          overall_rate: Number(row.overall_rate) || 0,
+          total_unique: Number(row.total_unique_reach) || 0,
+          individual_sum: Number(row.individual_sum) || 0,
+          cached_at: (row.collected_at as string) || new Date().toISOString(),
+          pairs: (row.pairs || []) as OverlapPair[],
+        } satisfies OverlapResponse);
+      }
+
+      // DB에 없으면 기존 adset_overlap_cache 확인
       const ttlCutoff = new Date();
       ttlCutoff.setHours(ttlCutoff.getHours() - CACHE_TTL_HOURS);
 
@@ -176,7 +94,7 @@ export async function GET(request: NextRequest) {
         .eq("period_end", dateEnd)
         .gte("cached_at", ttlCutoff.toISOString());
 
-      if (cachedRows && cachedRows.length > 0) {
+      if (cachedRows && (cachedRows as unknown[]).length > 0) {
         return buildResponseFromCache(
           cachedRows as {
             adset_pair: string;
@@ -187,7 +105,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── 캐시 MISS: Meta API + 계산 ───────────────────────────
+    // ── 폴백: DB에 데이터 없을 때 Meta API + 계산 ────────────
     // 1) 활성 광고세트 목록
     const adsets = await fetchActiveAdsets(accountId);
     if (adsets.length === 0) {

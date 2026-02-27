@@ -333,15 +333,19 @@ export async function removeAdAccount(accountId: string) {
   const svc = createServiceClient();
 
   // ad_accounts 비활성화
-  await svc.from("ad_accounts").update({ active: false }).eq("account_id", accountId).eq("user_id", user.id);
+  const { error: updateError } = await svc.from("ad_accounts").update({ active: false }).eq("account_id", accountId).eq("user_id", user.id);
+  if (updateError) return { error: `계정 삭제 실패: ${updateError.message}` };
 
-  // service_secrets 삭제
-  await svc
+  // service_secrets 삭제 (실패해도 계속 진행 — 경고 로그만)
+  const { error: secretError } = await svc
     .from("service_secrets" as never)
     .delete()
     .eq("user_id" as never, user.id)
     .eq("service" as never, "mixpanel")
     .eq("key_name" as never, `secret_${accountId}`);
+  if (secretError) {
+    console.warn(`service_secrets 삭제 실패 (account: ${accountId}):`, secretError.message);
+  }
 
   // 대표 계정이었으면 다른 활성 계정으로 교체
   const { data: profile } = await svc.from("profiles").select("meta_account_id").eq("id", user.id).single();

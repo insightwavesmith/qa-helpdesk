@@ -53,6 +53,10 @@ export const T3_PARTS: Record<string, { label: string; metrics: T3MetricDef[] }>
   engagement: {
     label: "참여율",
     metrics: [
+      { name: "좋아요/만노출", key: "reactions_per_10k", ascending: true, unit: "" },
+      { name: "댓글/만노출", key: "comments_per_10k", ascending: true, unit: "" },
+      { name: "공유/만노출", key: "shares_per_10k", ascending: true, unit: "" },
+      { name: "저장/만노출", key: "saves_per_10k", ascending: true, unit: "" },
       { name: "참여합계/만노출", key: "engagement_per_10k", ascending: true, unit: "" },
     ],
   },

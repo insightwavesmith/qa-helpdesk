@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Users, DollarSign, TrendingUp, ShoppingCart, ArrowUpDown, Award } from "lucide-react";
+import { Users, DollarSign, TrendingUp, ShoppingCart, ArrowUpDown, Award, Store } from "lucide-react";
 import type { StudentPerformanceRow, PerformanceSummary } from "@/actions/performance";
 
 interface Props {
@@ -35,7 +35,7 @@ interface Props {
   initialPeriod?: number;
 }
 
-type SortKey = "roas" | "spend" | "revenue" | "purchases" | "t3Score";
+type SortKey = "roas" | "spend" | "revenue" | "purchases" | "t3Score" | "mixpanelRevenue";
 
 const PERIOD_OPTIONS = [
   { value: "7", label: "7일" },
@@ -141,6 +141,8 @@ export function PerformanceClient({
       let diff: number;
       if (sortKey === "t3Score") {
         diff = (a.t3Score ?? -1) - (b.t3Score ?? -1);
+      } else if (sortKey === "mixpanelRevenue") {
+        diff = (a.mixpanelRevenue ?? 0) - (b.mixpanelRevenue ?? 0);
       } else {
         diff = a[sortKey] - b[sortKey];
       }
@@ -185,6 +187,19 @@ export function PerformanceClient({
       iconColor: "text-[#F75D5D]",
     },
   ];
+
+  // E9: 총 자사몰매출 카드 추가
+  const totalMixpanelRevenue = summary.totalMixpanelRevenue ?? rows.reduce((s, r) => s + (r.mixpanelRevenue ?? 0), 0);
+  if (totalMixpanelRevenue > 0) {
+    statCards.push({
+      label: `총 자사몰매출 ${periodLabel}`,
+      value: formatKRW(totalMixpanelRevenue),
+      icon: Store,
+      accentColor: "border-l-teal-500",
+      iconBg: "bg-teal-50",
+      iconColor: "text-teal-500",
+    });
+  }
 
   // T4: 평균 T3 점수 카드 추가
   const t3Rows = rows.filter((r) => r.t3Score != null && r.t3Score > 0);
@@ -239,7 +254,7 @@ export function PerformanceClient({
       </div>
 
       {/* 요약 카드 */}
-      <div className={`grid gap-4 sm:grid-cols-2 ${avgT3 != null ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
+      <div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-${Math.min(statCards.length, 6)}`}>
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
@@ -330,6 +345,17 @@ export function PerformanceClient({
                     variant="ghost"
                     size="sm"
                     className="h-auto p-0 text-xs font-medium text-gray-500 uppercase hover:text-gray-700"
+                    onClick={() => handleSort("mixpanelRevenue")}
+                  >
+                    자사몰매출
+                    <ArrowUpDown className="ml-1 h-3 w-3" />
+                  </Button>
+                </TableHead>
+                <TableHead className="text-xs font-medium text-gray-500 uppercase">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 text-xs font-medium text-gray-500 uppercase hover:text-gray-700"
                     onClick={() => handleSort("t3Score")}
                   >
                     T3 점수
@@ -382,6 +408,12 @@ export function PerformanceClient({
                     </TableCell>
                     <TableCell className="text-sm text-gray-900 font-mono">
                       {row.purchases > 0 ? row.purchases.toLocaleString() : "-"}
+                    </TableCell>
+                    {/* E9: 자사몰매출 */}
+                    <TableCell className="text-sm text-gray-900 font-mono">
+                      {row.mixpanelRevenue != null && row.mixpanelRevenue > 0
+                        ? `₩${Math.round(row.mixpanelRevenue).toLocaleString()}`
+                        : "-"}
                     </TableCell>
                     {/* T4: T3 점수 */}
                     <TableCell className="text-sm font-mono">

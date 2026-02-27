@@ -21,11 +21,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertTriangle,
-  RefreshCw,
   ChevronDown,
   ChevronUp,
   BarChart3,
@@ -56,7 +54,7 @@ interface OverlapAnalysisProps {
   dateRange: { start: string; end: string };
   overlapData: OverlapData | null;
   isLoading: boolean;
-  onRefresh: () => void;
+  onRefresh?: () => void;
   error: string | null;
 }
 
@@ -98,7 +96,6 @@ export function OverlapAnalysis({
   dateRange,
   overlapData,
   isLoading,
-  onRefresh,
   error,
 }: OverlapAnalysisProps) {
   const [sortKey, setSortKey] = useState<"rate" | "name">("rate");
@@ -157,10 +154,7 @@ export function OverlapAnalysis({
           <AlertTriangle className="h-4 w-4" />
           {error}
         </div>
-        <Button variant="outline" size="sm" onClick={onRefresh}>
-          <RefreshCw className="mr-2 h-3.5 w-3.5" />
-          다시 시도
-        </Button>
+        <p className="text-sm text-muted-foreground">크론 수집 후 표시됩니다</p>
       </div>
     );
   }
@@ -170,11 +164,7 @@ export function OverlapAnalysis({
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-20 text-muted-foreground">
         <BarChart3 className="h-10 w-10" />
-        <p className="mt-3 text-base font-medium">분석 데이터가 없습니다</p>
-        <Button variant="outline" size="sm" onClick={onRefresh}>
-          <RefreshCw className="mr-2 h-3.5 w-3.5" />
-          분석 시작
-        </Button>
+        <p className="mt-3 text-base font-medium">크론 수집 후 표시됩니다</p>
       </div>
     );
   }

@@ -278,7 +278,7 @@ function AdCard({
   mixpanelBoardId?: string | null;
   diagnosis?: RawDiagnosis;
 }) {
-  const metaUrl = `https://adsmanager.facebook.com/adsmanager/manage/ads?act=${accountId}&selected_ad_ids=${ad.ad_id}`;
+  const metaUrl = `https://adsmanager.facebook.com/adsmanager/manage/ads/insights?act=${accountId}&selected_ad_ids=${ad.ad_id}&nav_source=no_referrer`;
   const mixpanelUrl = mixpanelProjectId
     ? mixpanelBoardId
       ? `https://mixpanel.com/project/${mixpanelProjectId}/view/${mixpanelBoardId}/app/boards`

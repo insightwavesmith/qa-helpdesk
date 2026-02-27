@@ -29,10 +29,12 @@ export default async function SettingsPage() {
     .order("created_at", { ascending: true });
 
   return (
-    <SettingsForm
-      profile={profile}
-      userId={user.id}
-      accounts={adAccounts ?? []}
-    />
+    <div className="max-w-3xl mx-auto">
+      <SettingsForm
+        profile={profile}
+        userId={user.id}
+        accounts={adAccounts ?? []}
+      />
+    </div>
   );
 }

@@ -10,13 +10,13 @@ export async function POST(request: Request) {
   const { svc, user, profile } = auth;
 
   // 2. 요청 파싱
-  const body = await request.json();
-  const { accountId, startDate, endDate, limit = 5 } = body as {
-    accountId?: string;
-    startDate?: string;
-    endDate?: string;
-    limit?: number;
-  };
+  let body: { accountId?: string; startDate?: string; endDate?: string; limit?: number };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: '요청 본문 파싱 실패' }, { status: 400 });
+  }
+  const { accountId, startDate, endDate, limit = 5 } = body;
 
   if (!accountId) {
     return NextResponse.json({ error: 'accountId required' }, { status: 400 });

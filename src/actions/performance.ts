@@ -21,6 +21,8 @@ export interface StudentPerformanceRow {
   purchases: number;
   t3Score: number | null;
   t3Grade: string | null;
+  mixpanelRevenue: number;
+  mixpanelPurchases: number;
 }
 
 export interface PerformanceSummary {
@@ -28,6 +30,7 @@ export interface PerformanceSummary {
   totalSpend: number;
   avgRoas: number;
   totalRevenue: number;
+  totalMixpanelRevenue: number;
 }
 
 export interface StudentPerformanceResult {
@@ -85,16 +88,16 @@ export async function getStudentPerformance(
   if (!students || students.length === 0) {
     return {
       rows: [],
-      summary: { totalStudents: 0, totalSpend: 0, avgRoas: 0, totalRevenue: 0 },
+      summary: { totalStudents: 0, totalSpend: 0, avgRoas: 0, totalRevenue: 0, totalMixpanelRevenue: 0 },
       cohorts: cohorts ?? [],
     };
   }
 
-  // 3. 학생별 ad_accounts 조회
+  // 3. 학생별 ad_accounts 조회 (mixpanel_project_id 포함)
   const studentIds = students.map((s) => s.id);
   const { data: adAccounts } = await supabase
     .from("ad_accounts")
-    .select("account_id, user_id")
+    .select("account_id, user_id, mixpanel_project_id")
     .in("user_id", studentIds)
     .eq("active", true);
 
@@ -110,10 +113,12 @@ export async function getStudentPerformance(
       purchases: 0,
       t3Score: null,
       t3Grade: null,
+      mixpanelRevenue: 0,
+      mixpanelPurchases: 0,
     }));
     return {
       rows,
-      summary: { totalStudents: students.length, totalSpend: 0, avgRoas: 0, totalRevenue: 0 },
+      summary: { totalStudents: students.length, totalSpend: 0, avgRoas: 0, totalRevenue: 0, totalMixpanelRevenue: 0 },
       cohorts: cohorts ?? [],
     };
   }
@@ -131,10 +136,16 @@ export async function getStudentPerformance(
     .in("account_id", accountIds)
     .gte("date", periodStart);
 
-  // 5. 계정 → 학생 매핑
+  // 5. 계정 → 학생 매핑 + mixpanel_project_id 매핑
   const accountToUser = new Map<string, string>();
+  const projectIdToUser = new Map<string, string>();
   for (const a of adAccounts) {
-    if (a.user_id) accountToUser.set(a.account_id, a.user_id);
+    if (a.user_id) {
+      accountToUser.set(a.account_id, a.user_id);
+      if (a.mixpanel_project_id) {
+        projectIdToUser.set(a.mixpanel_project_id, a.user_id);
+      }
+    }
   }
 
   // 6. 학생별 집계 (성과 + T3용 raw rows)
@@ -167,6 +178,29 @@ export async function getStudentPerformance(
   // T4: 벤치마크 한 번만 조회
   const benchMap = await fetchBenchmarksForT3(supabase);
 
+  // Mixpanel 데이터 조회 (daily_mixpanel_insights)
+  const projectIds = adAccounts
+    .map((a) => a.mixpanel_project_id)
+    .filter((id): id is string => id != null);
+
+  const userMixpanel = new Map<string, { revenue: number; purchases: number }>();
+  if (projectIds.length > 0) {
+    const { data: mixpanelRows } = await supabase
+      .from("daily_mixpanel_insights" as never)
+      .select("project_id, total_revenue, purchase_count")
+      .in("project_id" as never, projectIds)
+      .gte("date" as never, periodStart);
+
+    for (const row of (mixpanelRows ?? []) as { project_id: string; total_revenue: number | null; purchase_count: number | null }[]) {
+      const userId = projectIdToUser.get(row.project_id);
+      if (!userId) continue;
+      const curr = userMixpanel.get(userId) ?? { revenue: 0, purchases: 0 };
+      curr.revenue += Number(row.total_revenue) || 0;
+      curr.purchases += Number(row.purchase_count) || 0;
+      userMixpanel.set(userId, curr);
+    }
+  }
+
   const rows: StudentPerformanceRow[] = students.map((s) => {
     const agg = userAgg.get(s.id);
     const rawRows = userRawRows.get(s.id);
@@ -184,6 +218,7 @@ export async function getStudentPerformance(
       t3Grade = t3Result.grade.grade;
     }
 
+    const mixpanel = userMixpanel.get(s.id);
     return {
       userId: s.id,
       name: s.name,
@@ -195,11 +230,14 @@ export async function getStudentPerformance(
       purchases: agg?.purchases ?? 0,
       t3Score,
       t3Grade,
+      mixpanelRevenue: mixpanel?.revenue ?? 0,
+      mixpanelPurchases: mixpanel?.purchases ?? 0,
     };
   });
 
   const totalSpend = rows.reduce((s, r) => s + r.spend, 0);
   const totalRevenue = rows.reduce((s, r) => s + r.revenue, 0);
+  const totalMixpanelRevenue = rows.reduce((s, r) => s + r.mixpanelRevenue, 0);
   const roasValues = rows.filter((r) => r.roas > 0);
   const avgRoas =
     roasValues.length > 0
@@ -213,6 +251,7 @@ export async function getStudentPerformance(
       totalSpend,
       avgRoas,
       totalRevenue,
+      totalMixpanelRevenue,
     },
     cohorts: cohorts ?? [],
   };
