@@ -5,6 +5,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import nodemailer from "nodemailer";
 import type { Database } from "@/types/database";
 import { requireAdmin, requireStaff } from "@/lib/auth-utils";
+import { encrypt } from "@/lib/crypto";
 
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
@@ -121,7 +122,7 @@ export async function approveMember(
           user_id: userId,
           service: "mixpanel",
           key_name: `secret_${extra.meta_account_id}`,
-          key_value: extra.mixpanel_secret_key,
+          key_value: encrypt(extra.mixpanel_secret_key),
         } as never, { onConflict: "user_id,service,key_name" } as never);
     }
   }
@@ -454,7 +455,7 @@ export async function addAdAccount(data: {
         user_id: data.userId,
         service: "mixpanel",
         key_name: `secret_${data.accountId}`,
-        key_value: data.mixpanelSecretKey,
+        key_value: encrypt(data.mixpanelSecretKey),
       } as never, { onConflict: "user_id,service,key_name" } as never);
   }
 
@@ -483,7 +484,7 @@ export async function updateAdAccount(
           user_id: acc.user_id,
           service: "mixpanel",
           key_name: `secret_${acc.account_id}`,
-          key_value: secretKey,
+          key_value: encrypt(secretKey),
         } as never, { onConflict: "user_id,service,key_name" } as never);
     }
   }

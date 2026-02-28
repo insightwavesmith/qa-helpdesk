@@ -8,10 +8,17 @@
  * 3. to-do #1/2 항목 (내용 있는 것만)
  */
 
+import "dotenv/config";
+
 const NOTION_TOKEN = process.env.NOTION_TOKEN;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const SUPABASE_URL = "https://symvlrsmkjlztoopbnht.supabase.co";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!NOTION_TOKEN) throw new Error("NOTION_TOKEN 환경변수가 필요합니다.");
+if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY 환경변수가 필요합니다.");
+if (!SUPABASE_URL) throw new Error("NEXT_PUBLIC_SUPABASE_URL 환경변수가 필요합니다.");
+if (!SUPABASE_KEY) throw new Error("SUPABASE_SERVICE_ROLE_KEY 환경변수가 필요합니다.");
 
 // Notion DB IDs
 const MEMBER_DB_ID = "e8b2d7e8-2b75-4224-8490-878e7ae07f29";

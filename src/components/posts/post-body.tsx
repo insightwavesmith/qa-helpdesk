@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect } from "react";
+import { sanitizeHtml } from "@/lib/sanitize";
 import "./post-body.css";
 
 interface PostBodyProps {
@@ -143,7 +144,7 @@ function markdownToHtml(md: string): string {
 
 export function PostBody({ content }: PostBodyProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const html = markdownToHtml(content);
+  const html = sanitizeHtml(markdownToHtml(content));
 
   useEffect(() => {
     if (!ref.current) return;

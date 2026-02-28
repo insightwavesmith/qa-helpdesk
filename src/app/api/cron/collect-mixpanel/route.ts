@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { decrypt } from "@/lib/crypto";
 
 // ── Vercel Cron 인증 ──────────────────────────────────────────
 function verifyCron(req: NextRequest): boolean {
@@ -146,7 +147,7 @@ export async function GET(req: NextRequest) {
         .single();
 
       if (secretRow) {
-        secretKey = (secretRow as { key_value: string }).key_value;
+        secretKey = decrypt((secretRow as { key_value: string }).key_value);
       }
 
       if (!secretKey) {

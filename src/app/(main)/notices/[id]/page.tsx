@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getNoticeById } from "@/actions/posts";
 import { mdToHtml } from "@/lib/markdown";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return "";
@@ -25,7 +26,7 @@ export default async function NoticeDetailPage({
     notFound();
   }
 
-  const bodyHtml = mdToHtml(notice.body_md || "");
+  const bodyHtml = sanitizeHtml(mdToHtml(notice.body_md || ""));
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">

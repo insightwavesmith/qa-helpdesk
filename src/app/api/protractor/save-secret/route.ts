@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { encrypt } from "@/lib/crypto";
 
 // POST /api/protractor/save-secret
 // 인증된 사용자만 자신의 시크릿 저장 가능
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
         user_id: user.id,
         service: "mixpanel",
         key_name: `secret_${metaAccountId}`,
-        key_value: mixpanelSecret,
+        key_value: encrypt(mixpanelSecret),
       } as never, { onConflict: "user_id,service,key_name" });
 
     if (error) {

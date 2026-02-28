@@ -2,6 +2,7 @@
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
+import { encrypt } from "@/lib/crypto";
 
 // 현재 프로필 조회 (온보딩 페이지용)
 export async function getOnboardingProfile() {
@@ -144,7 +145,7 @@ export async function saveAdAccount(data: {
           user_id: user.id,
           service: "mixpanel",
           key_name: `secret_${data.metaAccountId}`,
-          key_value: data.mixpanelSecretKey,
+          key_value: encrypt(data.mixpanelSecretKey),
         } as never, { onConflict: "user_id,service,key_name" } as never);
     }
   }
@@ -199,7 +200,7 @@ export async function syncAdAccount(data: {
           user_id: user.id,
           service: "mixpanel",
           key_name: `secret_${data.metaAccountId}`,
-          key_value: data.mixpanelSecretKey,
+          key_value: encrypt(data.mixpanelSecretKey),
         } as never, { onConflict: "user_id,service,key_name" } as never);
     }
   } else {
@@ -258,7 +259,7 @@ export async function addAdAccount(data: {
         user_id: user.id,
         service: "mixpanel",
         key_name: `secret_${data.metaAccountId}`,
-        key_value: data.mixpanelSecretKey,
+        key_value: encrypt(data.mixpanelSecretKey),
       } as never, { onConflict: "user_id,service,key_name" } as never);
   }
 
@@ -317,7 +318,7 @@ export async function updateAdAccount(data: {
         user_id: user.id,
         service: "mixpanel",
         key_name: `secret_${data.metaAccountId}`,
-        key_value: data.mixpanelSecretKey,
+        key_value: encrypt(data.mixpanelSecretKey),
       } as never, { onConflict: "user_id,service,key_name" } as never);
   }
 
