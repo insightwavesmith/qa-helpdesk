@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireProtractorAccess } from "../_shared";
 
+const ADMIN_ONLY_ROLES = ["admin"] as const;
+
 /**
  * 벤치마크 API — GCP wide format 직접 반환 (T7 재작성)
  *
@@ -47,13 +49,19 @@ function toFrontendRow(row: Record<string, unknown>): Record<string, unknown> {
 }
 
 // GET /api/protractor/benchmarks
-// student 이상만 접근 가능
+// admin만 접근 가능 — raw 벤치마크 수치 포함 (벤치마크 관리 페이지용)
 export async function GET() {
   try {
     const auth = await requireProtractorAccess();
     if ("response" in auth) return auth.response;
     const { svc, profile } = auth;
-    const isAdmin = profile.role === "admin";
+
+    if (!ADMIN_ONLY_ROLES.includes(profile.role as typeof ADMIN_ONLY_ROLES[number])) {
+      return NextResponse.json(
+        { error: "관리자 권한이 필요합니다." },
+        { status: 403 },
+      );
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const benchSvc = svc as any;
@@ -93,21 +101,7 @@ export async function GET() {
       );
     }
 
-    const rows = (data as Record<string, unknown>[] ?? []).map((r) => {
-      const row = toFrontendRow(r);
-      if (!isAdmin) {
-        // T3: 비관리자에게 벤치마크 raw 수치 숨김
-        return {
-          id: row.id,
-          creative_type: row.creative_type,
-          ranking_type: row.ranking_type,
-          ranking_group: row.ranking_group,
-          sample_count: row.sample_count,
-          calculated_at: row.calculated_at,
-        };
-      }
-      return row;
-    });
+    const rows = (data as Record<string, unknown>[] ?? []).map(toFrontendRow);
     return NextResponse.json({ data: rows });
   } catch {
     return NextResponse.json(

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { type AdAccount } from "./components/account-selector";
-import { type AdInsightRow, type BenchmarkRow } from "./components/ad-metrics-table";
+import { type AdInsightRow } from "./components/ad-metrics-table";
 import { PeriodTabs, type DateRange as PeriodDateRange } from "./components/period-tabs";
 import { ContentRanking } from "./components/content-ranking";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -85,8 +85,6 @@ export default function RealDashboard() {
   const [insights, setInsights] = useState<AdInsightRow[]>([]);
   const [totalValue, setTotalValue] = useState<T3Response | null>(null);
 
-  const [benchmarks, setBenchmarks] = useState<BenchmarkRow[]>([]);
-
   const [activeTab, setActiveTab] = useState<"summary" | "content">("summary");
   const [overlapData, setOverlapData] = useState<OverlapData | null>(null);
   const [loadingOverlap, setLoadingOverlap] = useState(false);
@@ -129,21 +127,6 @@ export default function RealDashboard() {
       setSelectedAccountId(accounts[0].account_id);
     }
   }, [accounts, selectedAccountId]);
-
-  // 1-b) 벤치마크 로드 (한 번만)
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/protractor/benchmarks");
-        const json = await res.json();
-        if (res.ok && json.data) {
-          setBenchmarks(json.data);
-        }
-      } catch {
-        // 벤치마크 없어도 대시보드 표시 가능
-      }
-    })();
-  }, []);
 
   // 2) 계정 + 기간 변경 시 데이터 로드
   const fetchData = useCallback(async () => {
