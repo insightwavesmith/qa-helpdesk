@@ -1,8 +1,8 @@
 /**
- * 공통 지표 그룹 정의 (13개)
+ * 공통 지표 그룹 정의 (14개)
  * t3-engine, content-ranking, benchmark-compare 3곳에서 공유.
  *
- * 영상(3) + 참여(5) + 전환(5) = 13
+ * 영상(3) + 참여(5) + 전환(6) = 14
  */
 
 export type MetricUnit = "pct" | "per10k" | "decimal";
@@ -55,6 +55,7 @@ export const METRIC_GROUPS: MetricGroupDef[] = [
       { key: "click_to_purchase_rate", label: "구매전환율", ascending: true, unit: "pct", benchKey: "avg_click_to_purchase_rate", benchGroup: "conversion" },
       { key: "checkout_to_purchase_rate", label: "결제→구매율", ascending: true, unit: "pct", benchKey: "avg_checkout_to_purchase_rate", benchGroup: "conversion" },
       { key: "reach_to_purchase_rate", label: "노출당구매확률", ascending: true, unit: "pct", benchKey: "avg_reach_to_purchase_rate", benchGroup: "conversion" },
+      { key: "roas", label: "ROAS", ascending: true, unit: "decimal", benchKey: "avg_roas", benchGroup: "conversion" },
     ],
   },
 ];

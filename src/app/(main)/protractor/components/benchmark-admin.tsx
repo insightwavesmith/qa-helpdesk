@@ -39,7 +39,6 @@ const METRIC_DEFS: { label: string; key: string }[] = [
     ...g.metrics.map((m) => ({ label: m.label, key: `avg_${m.key}` })),
     ...(g.summaryMetric ? [{ label: g.summaryMetric.label, key: `avg_${g.summaryMetric.key}` }] : []),
   ]),
-  { label: "ROAS", key: "avg_roas" },
 ];
 
 const CREATIVE_TYPES = ["VIDEO", "IMAGE", "CATALOG"] as const;
