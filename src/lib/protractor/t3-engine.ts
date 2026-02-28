@@ -39,38 +39,26 @@ export interface T3Result {
   metrics: MetricResult[];
 }
 
-// ─── 상수 ───────────────────────────────────────────────
+// ─── 상수 (공통 metric-groups.ts에서 파생) ──────────────
 
-export const T3_PARTS: Record<string, { label: string; metrics: T3MetricDef[] }> = {
-  foundation: {
-    label: "기반점수",
-    metrics: [
-      { name: "3초시청률", key: "video_p3s_rate", ascending: true, unit: "%" },
-      { name: "ThruPlay율", key: "thruplay_rate", ascending: true, unit: "%" },
-      { name: "지속비율", key: "retention_rate", ascending: true, unit: "%" },
-    ],
-  },
-  engagement: {
-    label: "참여율",
-    metrics: [
-      { name: "좋아요/만노출", key: "reactions_per_10k", ascending: true, unit: "" },
-      { name: "댓글/만노출", key: "comments_per_10k", ascending: true, unit: "" },
-      { name: "공유/만노출", key: "shares_per_10k", ascending: true, unit: "" },
-      { name: "저장/만노출", key: "saves_per_10k", ascending: true, unit: "" },
-      { name: "참여합계/만노출", key: "engagement_per_10k", ascending: true, unit: "" },
-    ],
-  },
-  conversion: {
-    label: "전환율",
-    metrics: [
-      { name: "CTR", key: "ctr", ascending: true, unit: "%" },
-      { name: "결제시작율", key: "click_to_checkout_rate", ascending: true, unit: "%" },
-      { name: "구매전환율", key: "click_to_purchase_rate", ascending: true, unit: "%" },
-      { name: "결제→구매율", key: "checkout_to_purchase_rate", ascending: true, unit: "%" },
-      { name: "도달당구매율", key: "reach_to_purchase_rate", ascending: true, unit: "%" },
-    ],
-  },
-};
+import { METRIC_GROUPS, type MetricUnit } from "./metric-groups";
+
+const UNIT_MAP: Record<MetricUnit, string> = { pct: "%", per10k: "", decimal: "" };
+
+export const T3_PARTS: Record<string, { label: string; metrics: T3MetricDef[] }> = Object.fromEntries(
+  METRIC_GROUPS.map((g) => [
+    g.groupKey,
+    {
+      label: g.label,
+      metrics: [...g.metrics, ...(g.summaryMetric ? [g.summaryMetric] : [])].map((m) => ({
+        name: m.label,
+        key: m.key,
+        ascending: m.ascending,
+        unit: UNIT_MAP[m.unit],
+      })),
+    },
+  ]),
+);
 
 export const ALL_METRIC_DEFS = Object.values(T3_PARTS).flatMap((p) => p.metrics);
 
@@ -193,7 +181,7 @@ export function computeMetricValues(rows: Record<string, unknown>[]): Record<str
     click_to_checkout_rate: totalClicks > 0 ? (totalInitiateCheckout / totalClicks) * 100 : null,
     click_to_purchase_rate: totalClicks > 0 ? (totalPurchases / totalClicks) * 100 : null,
     checkout_to_purchase_rate: totalInitiateCheckout > 0 ? (totalPurchases / totalInitiateCheckout) * 100 : null,
-    reach_to_purchase_rate: totalReach > 0 ? (totalPurchases / totalReach) * 100 : null,
+    reach_to_purchase_rate: totalImpressions > 0 ? (totalPurchases / totalImpressions) * 100 : null,
   };
 }
 

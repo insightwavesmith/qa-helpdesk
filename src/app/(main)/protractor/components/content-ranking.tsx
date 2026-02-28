@@ -5,6 +5,7 @@ import { ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AdInsightRow, BenchmarkRow } from "./ad-metrics-table";
 import { getTop5Ads } from "@/lib/protractor/aggregate";
+import { METRIC_GROUPS, type CommonMetricDef } from "@/lib/protractor/metric-groups";
 import { findAboveAvg } from "./utils";
 
 // ============================================================
@@ -278,46 +279,7 @@ function DiagnosisDetail({ parts, ad, periodNum, engAbove }: DiagnosisDetailProp
 // 벤치마크 비교 (진단 없을 때 fallback)
 // ============================================================
 
-interface BenchMetric {
-  label: string;
-  adKey: keyof AdInsightRow;
-  benchKey: string;
-  benchSource: "eng" | "conv";
-  format: "pct" | "decimal" | "per10k";
-}
-
-const BENCH_METRICS: { part: string; metrics: BenchMetric[]; hasSummary?: boolean; summaryMetric?: BenchMetric }[] = [
-  {
-    part: "기반점수",
-    metrics: [
-      { label: "3초 시청률", adKey: "video_p3s_rate", benchKey: "avg_video_p3s_rate", benchSource: "eng", format: "pct" },
-      { label: "ThruPlay률", adKey: "thruplay_rate", benchKey: "avg_thruplay_rate", benchSource: "eng", format: "pct" },
-      { label: "유지율", adKey: "retention_rate", benchKey: "avg_retention_rate", benchSource: "eng", format: "pct" },
-    ],
-  },
-  {
-    part: "참여율",
-    hasSummary: true,
-    metrics: [
-      { label: "반응", adKey: "reactions_per_10k", benchKey: "avg_reactions_per_10k", benchSource: "eng", format: "per10k" },
-      { label: "댓글", adKey: "comments_per_10k", benchKey: "avg_comments_per_10k", benchSource: "eng", format: "per10k" },
-      { label: "공유", adKey: "shares_per_10k", benchKey: "avg_shares_per_10k", benchSource: "eng", format: "per10k" },
-      { label: "저장", adKey: "saves_per_10k", benchKey: "avg_saves_per_10k", benchSource: "eng", format: "per10k" },
-    ],
-    summaryMetric: { label: "참여합계", adKey: "engagement_per_10k", benchKey: "avg_engagement_per_10k", benchSource: "eng", format: "per10k" },
-  },
-  {
-    part: "전환율",
-    metrics: [
-      { label: "CTR", adKey: "ctr", benchKey: "avg_ctr", benchSource: "conv", format: "pct" },
-      { label: "결제시작율", adKey: "click_to_checkout_rate", benchKey: "avg_click_to_checkout_rate", benchSource: "conv", format: "pct" },
-      { label: "결제→구매율", adKey: "checkout_to_purchase_rate", benchKey: "avg_checkout_to_purchase_rate", benchSource: "conv", format: "pct" },
-      { label: "클릭→구매", adKey: "click_to_purchase_rate", benchKey: "avg_click_to_purchase_rate", benchSource: "conv", format: "pct" },
-      { label: "도달당구매율", adKey: "reach_to_purchase_rate", benchKey: "avg_reach_to_purchase_rate", benchSource: "conv", format: "pct" },
-      { label: "ROAS", adKey: "roas", benchKey: "avg_roas", benchSource: "conv", format: "decimal" },
-    ],
-  },
-];
+// METRIC_GROUPS 공통 상수에서 파생 (영상3 + 참여5 + 전환5 = 13개)
 
 function BenchmarkCompareGrid({
   ad,
@@ -332,9 +294,16 @@ function BenchmarkCompareGrid({
     return <p className="text-sm text-gray-400">벤치마크 데이터 없음</p>;
   }
 
-  function renderMetricRow(m: BenchMetric, isSummary?: boolean) {
-    const myVal = ad[m.adKey] as number | undefined | null;
-    const bench = m.benchSource === "eng" ? engAbove : convAbove;
+  function formatVal(v: number | null, m: CommonMetricDef): string {
+    if (v == null) return "-";
+    if (m.unit === "pct") return fmtCtr(v);
+    if (m.unit === "per10k") return fmtDecimal(v);
+    return fmtDecimal(v, 2);
+  }
+
+  function renderMetricRow(m: CommonMetricDef, isSummary?: boolean) {
+    const myVal = ad[m.key as keyof AdInsightRow] as number | undefined | null;
+    const bench = m.benchGroup === "engagement" ? engAbove : convAbove;
     const benchVal = bench ? (bench[m.benchKey] as number | undefined) : undefined;
 
     if (myVal == null && benchVal == null) return null;
@@ -342,29 +311,17 @@ function BenchmarkCompareGrid({
     const style = calcVerdictStyle(myVal ?? null, benchVal ?? null);
     const emoji = calcVerdictEmoji(myVal ?? null, benchVal ?? null);
 
-    const myDisplay =
-      myVal == null ? "-"
-        : m.format === "pct" ? fmtCtr(myVal)
-        : m.format === "per10k" ? fmtDecimal(myVal)
-        : fmtDecimal(myVal, 2);
-
-    const benchDisplay =
-      benchVal == null ? "-"
-        : m.format === "pct" ? fmtCtr(benchVal)
-        : m.format === "per10k" ? fmtDecimal(benchVal)
-        : fmtDecimal(benchVal, 2);
-
     return (
       <div
-        key={m.label}
+        key={m.key}
         className="flex items-center justify-between rounded-md bg-white/70 px-2 py-1.5"
       >
         <span className={`text-xs ${isSummary ? "font-semibold text-gray-700" : "text-gray-600"}`}>{m.label}</span>
         <div className="flex items-center gap-1.5">
           <span className={`${isSummary ? "text-sm font-bold" : "text-xs font-medium"} ${style.text}`}>
-            {myDisplay}
-            {benchDisplay !== "-" && (
-              <span className="text-gray-400"> / {benchDisplay}</span>
+            {formatVal(myVal ?? null, m)}
+            {benchVal != null && (
+              <span className="text-gray-400"> / {formatVal(benchVal, m)}</span>
             )}
           </span>
           <span className="text-[10px]">{emoji}</span>
@@ -375,24 +332,22 @@ function BenchmarkCompareGrid({
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-      {BENCH_METRICS.map((group) => {
-        const allMetrics = group.hasSummary && group.summaryMetric
-          ? [...group.metrics, group.summaryMetric]
-          : group.metrics;
+      {METRIC_GROUPS.map((group) => {
+        const allMetrics = [...group.metrics, ...(group.summaryMetric ? [group.summaryMetric] : [])];
         const hasAnyData = allMetrics.some((m) => {
-          const bench = m.benchSource === "eng" ? engAbove : convAbove;
-          return ad[m.adKey] != null || (bench && bench[m.benchKey] != null);
+          const bench = m.benchGroup === "engagement" ? engAbove : convAbove;
+          return ad[m.key as keyof AdInsightRow] != null || (bench && bench[m.benchKey] != null);
         });
         if (!hasAnyData) return null;
 
         return (
-          <div key={group.part} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+          <div key={group.groupKey} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-sm font-bold text-gray-700">{group.part}</span>
+              <span className="text-sm font-bold text-gray-700">{group.label}</span>
             </div>
             <div className="space-y-2">
               {group.metrics.map((m) => renderMetricRow(m))}
-              {group.hasSummary && group.summaryMetric && (() => {
+              {group.summaryMetric && (() => {
                 const row = renderMetricRow(group.summaryMetric, true);
                 if (!row) return null;
                 return (
@@ -501,29 +456,14 @@ function AdRankCard({
         </div>
       )}
 
-      {/* 진단 상세 (항상 펼침) */}
+      {/* 지표 비교 (1~5등 동일 구조: 영상3 + 참여5 + 전환5) */}
       <div className="border-t border-gray-100 px-5 py-4">
-        {diagnosis ? (
-          <>
-            {diagnosis.one_line_diagnosis && (
-              <p className="mb-4 text-sm font-medium text-gray-600">
-                {diagnosis.overall_verdict} {diagnosis.one_line_diagnosis}
-              </p>
-            )}
-            {parts.length > 0 ? (
-              <DiagnosisDetail
-                parts={parts}
-                ad={ad}
-                periodNum={periodNum}
-                engAbove={engAbove}
-              />
-            ) : (
-              <BenchmarkCompareGrid ad={ad} engAbove={engAbove} convAbove={convAbove} />
-            )}
-          </>
-        ) : (
-          <BenchmarkCompareGrid ad={ad} engAbove={engAbove} convAbove={convAbove} />
+        {diagnosis?.one_line_diagnosis && (
+          <p className="mb-4 text-sm font-medium text-gray-600">
+            {diagnosis.overall_verdict} {diagnosis.one_line_diagnosis}
+          </p>
         )}
+        <BenchmarkCompareGrid ad={ad} engAbove={engAbove} convAbove={convAbove} />
       </div>
     </div>
   );

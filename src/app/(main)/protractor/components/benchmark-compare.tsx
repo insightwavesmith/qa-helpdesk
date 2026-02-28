@@ -13,6 +13,7 @@ import { Inbox, Ruler } from "lucide-react";
 import type { AdInsightRow, BenchmarkRow } from "./ad-metrics-table";
 import { findAboveAvg, getVerdict, fmtPercent } from "./utils";
 import { VerdictDot } from "./verdict-dot";
+import { METRIC_GROUPS, type CommonMetricDef, type MetricGroupDef } from "@/lib/protractor/metric-groups";
 
 // 인사이트에서 기간 평균 계산
 function calcAverage(
@@ -26,128 +27,13 @@ function calcAverage(
   return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
-// 지표 행 정의
-interface MetricDef {
-  label: string;
-  insightKey: keyof AdInsightRow;
-  benchKey: string;
-  benchGroup: "engagement" | "conversion";
-  higherBetter: boolean;
-  format: (n: number | null) => string;
+// METRIC_GROUPS 공통 상수에서 포맷 함수 매핑
+function fmtMetricValue(m: CommonMetricDef, n: number | null): string {
+  if (n == null) return "-";
+  if (m.unit === "pct") return fmtPercent(n);
+  if (m.unit === "per10k") return n.toFixed(1);
+  return n.toFixed(2);
 }
-
-const VIDEO_METRICS: MetricDef[] = [
-  {
-    label: "3초 시청률",
-    insightKey: "video_p3s_rate",
-    benchKey: "avg_video_p3s_rate",
-    benchGroup: "engagement",
-    higherBetter: true,
-    format: fmtPercent,
-  },
-  {
-    label: "ThruPlay율",
-    insightKey: "thruplay_rate",
-    benchKey: "avg_thruplay_rate",
-    benchGroup: "engagement",
-    higherBetter: true,
-    format: fmtPercent,
-  },
-  {
-    label: "지속 비율",
-    insightKey: "retention_rate",
-    benchKey: "avg_retention_rate",
-    benchGroup: "engagement",
-    higherBetter: true,
-    format: fmtPercent,
-  },
-];
-
-const ENGAGEMENT_METRICS: MetricDef[] = [
-  {
-    label: "좋아요/만노출",
-    insightKey: "reactions_per_10k",
-    benchKey: "avg_reactions_per_10k",
-    benchGroup: "engagement",
-    higherBetter: true,
-    format: (n) => (n != null ? n.toFixed(1) : "-"),
-  },
-  {
-    label: "댓글/만노출",
-    insightKey: "comments_per_10k",
-    benchKey: "avg_comments_per_10k",
-    benchGroup: "engagement",
-    higherBetter: true,
-    format: (n) => (n != null ? n.toFixed(2) : "-"),
-  },
-  {
-    label: "공유/만노출",
-    insightKey: "shares_per_10k",
-    benchKey: "avg_shares_per_10k",
-    benchGroup: "engagement",
-    higherBetter: true,
-    format: (n) => (n != null ? n.toFixed(1) : "-"),
-  },
-  {
-    label: "저장/만노출",
-    insightKey: "saves_per_10k",
-    benchKey: "avg_saves_per_10k",
-    benchGroup: "engagement",
-    higherBetter: true,
-    format: (n) => (n != null ? n.toFixed(1) : "-"),
-  },
-];
-
-const CONVERSION_METRICS: MetricDef[] = [
-  {
-    label: "CTR",
-    insightKey: "ctr",
-    benchKey: "avg_ctr",
-    benchGroup: "conversion",
-    higherBetter: true,
-    format: fmtPercent,
-  },
-  {
-    label: "클릭→결제시작",
-    insightKey: "click_to_checkout_rate",
-    benchKey: "avg_click_to_checkout_rate",
-    benchGroup: "conversion",
-    higherBetter: true,
-    format: fmtPercent,
-  },
-  {
-    label: "결제→구매",
-    insightKey: "checkout_to_purchase_rate",
-    benchKey: "avg_checkout_to_purchase_rate",
-    benchGroup: "conversion",
-    higherBetter: true,
-    format: fmtPercent,
-  },
-  {
-    label: "클릭→구매",
-    insightKey: "click_to_purchase_rate",
-    benchKey: "avg_click_to_purchase_rate",
-    benchGroup: "conversion",
-    higherBetter: true,
-    format: fmtPercent,
-  },
-  {
-    label: "도달당구매율",
-    insightKey: "reach_to_purchase_rate",
-    benchKey: "avg_reach_to_purchase_rate",
-    benchGroup: "conversion",
-    higherBetter: true,
-    format: fmtPercent,
-  },
-  {
-    label: "ROAS",
-    insightKey: "roas",
-    benchKey: "avg_roas",
-    benchGroup: "conversion",
-    higherBetter: true,
-    format: (n) => (n != null ? n.toFixed(2) : "-"),
-  },
-];
 
 interface BenchmarkCompareProps {
   insights: AdInsightRow[];
@@ -196,61 +82,40 @@ export function BenchmarkCompare({
       </CardHeader>
       <CardContent>
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* 영상 기반점수 */}
-          <MetricSection
-            title="기반점수 (영상)"
-            badge="Engagement 기준"
-            metrics={VIDEO_METRICS}
-            insights={insights}
-            engBench={engBench}
-            convBench={convBench}
-          />
-
-          {/* 참여율 */}
-          <MetricSection
-            title="참여율"
-            badge="Engagement 기준"
-            metrics={ENGAGEMENT_METRICS}
-            insights={insights}
-            engBench={engBench}
-            convBench={convBench}
-          />
-
-          {/* 전환율 */}
-          <MetricSection
-            title="전환율"
-            badge="Conversion 기준"
-            metrics={CONVERSION_METRICS}
-            insights={insights}
-            engBench={engBench}
-            convBench={convBench}
-          />
+          {METRIC_GROUPS.map((group) => (
+            <MetricSection
+              key={group.groupKey}
+              group={group}
+              insights={insights}
+              engBench={engBench}
+              convBench={convBench}
+            />
+          ))}
         </div>
       </CardContent>
     </Card>
   );
 }
 
-// 지표 섹션 (3열 중 하나)
+// 지표 섹션 (3열 중 하나) — METRIC_GROUPS 공통 상수 사용
 function MetricSection({
-  title,
-  badge,
-  metrics,
+  group,
   insights,
   engBench,
   convBench,
 }: {
-  title: string;
-  badge: string;
-  metrics: MetricDef[];
+  group: MetricGroupDef;
   insights: AdInsightRow[];
   engBench: BenchmarkRow | undefined;
   convBench: BenchmarkRow | undefined;
 }) {
+  const badge = group.metrics[0]?.benchGroup === "engagement" ? "Engagement 기준" : "Conversion 기준";
+  const allMetrics = [...group.metrics, ...(group.summaryMetric ? [group.summaryMetric] : [])];
+
   return (
     <div>
       <div className="mb-3 flex items-center gap-2">
-        <span className="text-sm font-semibold">{title}</span>
+        <span className="text-sm font-semibold">{group.label}</span>
         <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
           {badge}
         </span>
@@ -265,25 +130,25 @@ function MetricSection({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {metrics.map((m) => {
-            const myVal = calcAverage(insights, m.insightKey);
+          {allMetrics.map((m) => {
+            const myVal = calcAverage(insights, m.key as keyof AdInsightRow);
             const bench = m.benchGroup === "engagement" ? engBench : convBench;
             const benchVal = bench
               ? (bench[m.benchKey] as number | undefined)
               : undefined;
-            const v = getVerdict(myVal, benchVal ?? null, m.higherBetter);
+            const v = getVerdict(myVal, benchVal ?? null, m.ascending);
 
             return (
-              <TableRow key={m.label}>
+              <TableRow key={m.key}>
                 <TableCell className="text-xs">{m.label}</TableCell>
                 <TableCell
                   className={`text-right text-xs font-medium ${v.className}`}
                 >
-                  {m.format(myVal)}
+                  {fmtMetricValue(m, myVal)}
                 </TableCell>
                 <TableCell className="text-center"><VerdictDot label={v.label} /></TableCell>
                 <TableCell className="text-right text-[11px] text-muted-foreground">
-                  {benchVal != null ? m.format(benchVal) : "-"}
+                  {benchVal != null ? fmtMetricValue(m, benchVal) : "-"}
                 </TableCell>
               </TableRow>
             );

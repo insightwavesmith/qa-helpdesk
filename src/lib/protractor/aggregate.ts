@@ -176,7 +176,7 @@ export function recalculateRatioMetrics(row: AdInsightRow, acc: RatioAccum): voi
   row.click_to_purchase_rate = clicks > 0 ? +(row.purchases / clicks * 100).toFixed(2) : 0;
   row.click_to_checkout_rate = clicks > 0 ? +(acc._totalCheckout / clicks * 100).toFixed(2) : 0;
   row.checkout_to_purchase_rate = acc._totalCheckout > 0 ? +(row.purchases / acc._totalCheckout * 100).toFixed(2) : 0;
-  row.reach_to_purchase_rate = row.reach > 0 ? +(row.purchases / row.reach * 100).toFixed(2) : 0;
+  row.reach_to_purchase_rate = row.impressions > 0 ? +(row.purchases / row.impressions * 100).toFixed(2) : 0;
 }
 
 /**
