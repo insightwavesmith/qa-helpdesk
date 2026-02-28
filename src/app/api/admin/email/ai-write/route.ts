@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { heavyLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limiter";
 
 interface ContentSection {
   title: string;
@@ -70,6 +71,9 @@ ${bodyContent}
 }
 
 export async function POST(request: NextRequest) {
+  const rl = heavyLimiter.check(getClientIp(request));
+  if (!rl.success) return rateLimitResponse(rl);
+
   try {
     // 인증 + admin 권한 확인
     const supabase = await createClient();

@@ -24,8 +24,11 @@ MSG="[에이전트팀 세션 종료] ${LAST_COMMIT} (변경 ${CHANGED_FILES}파�
   2>/dev/null || true
 
 # 2. 모찌 세션 wake
-/opt/homebrew/bin/openclaw cron wake \
-  --text "$MSG" \
+/opt/homebrew/bin/openclaw message send \
+  --channel slack \
+  --account mozzi \
+  --target U06BP49UEJD \
+  --message "[모찌확인] $MSG" \
   2>/dev/null || true
 
 # 3. macOS 알림

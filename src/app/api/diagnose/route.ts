@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { requireProtractorAccess, verifyAccountOwnership } from '@/app/api/protractor/_shared';
 import { diagnoseAd, Verdict, PART_METRICS, type GCPBenchmarks } from '@/lib/diagnosis';
+import { heavyLimiter, getClientIp, rateLimitResponse } from '@/lib/rate-limiter';
 
 // diagnosis label → DB column key 역매핑 (T3: 클라이언트에 key 전달용)
 const labelToKeyMap = new Map<string, string>();
@@ -10,7 +11,10 @@ for (const partConfig of Object.values(PART_METRICS)) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const rl = heavyLimiter.check(getClientIp(request));
+  if (!rl.success) return rateLimitResponse(rl);
+
   // 1. 인증 확인
   const auth = await requireProtractorAccess();
   if ('response' in auth) return auth.response;

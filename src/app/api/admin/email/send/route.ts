@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { renderEmail, type TemplateName } from "@/lib/email-renderer";
 import { makeUnsubscribeUrl, replaceUnsubscribeUrl } from "@/lib/email-templates";
+import { heavyLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limiter";
 
 const BATCH_SIZE = 50;
 const BATCH_DELAY_MS = 1000;
@@ -13,6 +14,9 @@ function sleep(ms: number) {
 }
 
 export async function POST(request: NextRequest) {
+  const rl = heavyLimiter.check(getClientIp(request));
+  if (!rl.success) return rateLimitResponse(rl);
+
   try {
     // 인증 + admin 권한 확인
     const supabase = await createClient();

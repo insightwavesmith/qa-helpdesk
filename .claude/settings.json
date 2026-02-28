@@ -47,11 +47,6 @@
             "type": "command",
             "command": "~/.claude/scripts/save-leader-memory.sh",
             "timeout": 15
-          },
-          {
-            "type": "command",
-            "command": "/Users/smith/projects/qa-helpdesk/.claude/hooks/notify-openclaw.sh",
-            "timeout": 15
           }
         ]
       }
@@ -82,15 +77,6 @@
           {
             "type": "command",
             "command": "/Users/smith/projects/qa-helpdesk/.claude/scripts/validate-features.sh"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Users/smith/projects/qa-helpdesk/.claude/hooks/notify-task-completed.sh",
-            "timeout": 15
           }
         ]
       }

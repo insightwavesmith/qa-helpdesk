@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { publicLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limiter";
 
 /**
  * POST /api/invite/validate
@@ -7,6 +8,9 @@ import { NextRequest, NextResponse } from "next/server";
  * service role로 invite_codes 테이블 직접 조회 (RLS 우회)
  */
 export async function POST(request: NextRequest) {
+  const rl = publicLimiter.check(getClientIp(request));
+  if (!rl.success) return rateLimitResponse(rl);
+
   try {
     const body = await request.json();
     const { code } = body as { code?: string };

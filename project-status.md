@@ -1,6 +1,6 @@
 # BS CAMP QA Helpdesk — PDCA 프로젝트 현황
 
-> 최종 업데이트: 2026-02-27 18:12 KST
+> 최종 업데이트: 2026-02-28 20:13 KST
 > 프로젝트: https://bscamp.vercel.app
 > GitHub: https://github.com/insightwavesmith/qa-helpdesk
 
@@ -28,6 +28,34 @@
 - account_name ID 저장 버그 4곳 수정 → `9304b34`
 - roleLabels에 assistant 추가
 - per_10k 지표 재계산 로직
+
+### 아키텍처 재설계 A1~C3 (완료)
+- A1: collect-daily INSERT→UPSERT 중복 방지 → `1f00900`
+- A2: retention_rate = p100/p3s 통일
+- A3: collect-benchmarks GCP 방식 (creative.fields)
+- A4: benchmarks date 컬럼 + 이력 보존
+- B1: DiagnosisDetail 데드코드 제거
+- B2: 라벨 통일 (노출당구매확률)
+- B3: METRIC_KEYS reach_to_purchase_rate 추가
+- C3: diagnose API 분모 버그 수정 (totalReach→totalImpressions)
+
+### D1+D2 (완료)
+- D1: 노출당구매확률 벤치마크 컬럼 추가 → `6e7d19a`
+- D2: 수강생 성과 카드 컴팩트화
+- DB: ad_insights_classified + benchmarks에 reach_to_purchase_rate 컬럼
+- 옛 unique index(date 없는) 삭제
+
+### 인프라 (완료)
+- mozzi-reports Basic Auth 미들웨어 추가
+- hook 알림 중복 제거 (프로젝트 레벨 hook 제거 + [모찌확인] 중복 제거)
+- Notification(idle_prompt) hook 추가
+- agent-send.sh 스크립트 (tmux 긴 텍스트 방지)
+- --dangerously-skip-permissions 모드 전환
+
+### 통합개선 T1+T2 (완료)
+- T1: ROAS 지표 복원 (13→14개), unit=decimal, benchmark-admin 중복 제거 → `5e8a6cf`
+- T2: 노션 캠프반 파이프라인 자동화 (sync-notion API + vercel 크론)
+- PDCA validate-design.sh hook + 설계서 18건 현행화
 - 타겟중복/overlap 7일 제한 제거
 
 ### 인프라

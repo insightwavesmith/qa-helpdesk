@@ -243,3 +243,26 @@ embed-pipeline.ts → gemini.ts → chunk-utils.ts
 - refactor: 리팩토링
 - style: UI/스타일
 - chore: 설정/빌드
+
+## 단계별 강제 보고 (절대 규칙)
+
+작업 단계 완료 시 반드시 보고 스크립트를 실행해야 합니다.
+보고 없이 다음 단계로 넘어가면 시스템이 차단합니다.
+
+```bash
+# 코드리뷰 완료 시
+~/.claude/scripts/report-stage.sh REVIEW_DONE "리뷰 요약"
+
+# 개발 + 커밋 완료 시
+~/.claude/scripts/report-stage.sh DEV_DONE "커밋해시 변경사항"
+
+# 자체 QA 완료 시
+~/.claude/scripts/report-stage.sh QA_DONE "QA 결과 요약"
+
+# npm run build 성공 시
+~/.claude/scripts/report-stage.sh BUILD_PASS "빌드 성공"
+```
+
+순서: REVIEW_DONE → DEV_DONE → QA_DONE → BUILD_PASS
+- REVIEW_DONE 없이 git commit → 차단
+- QA_DONE + BUILD_PASS 없이 git push → 차단

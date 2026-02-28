@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { publicLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limiter";
 
 export async function GET(request: NextRequest) {
+  const rl = publicLimiter.check(getClientIp(request));
+  if (!rl.success) return rateLimitResponse(rl);
+
   const query = request.nextUrl.searchParams.get("query");
   if (!query) {
     return NextResponse.json({ error: "query is required" }, { status: 400 });
