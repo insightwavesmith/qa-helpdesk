@@ -117,7 +117,8 @@ export async function GET(request: NextRequest) {
       .select("*")
       .eq("account_id", accountId)
       .gte("date", dateStart)
-      .lte("date", dateEnd);
+      .lte("date", dateEnd)
+      .limit(1000);
 
     const rows = rawData as unknown as Record<string, unknown>[] | null;
 

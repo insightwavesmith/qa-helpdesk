@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { searchChunks } from "@/lib/knowledge";
+import { requireAdmin } from "../../_shared";
 
 export const maxDuration = 300;
 
@@ -8,32 +8,9 @@ const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 
 export async function POST(request: NextRequest) {
   try {
-    // 인증 + admin 권한 확인
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "인증이 필요합니다." },
-        { status: 401 }
-      );
-    }
-
-    const svc = createServiceClient();
-    const { data: profile } = await svc
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role !== "admin" && profile?.role !== "assistant") {
-      return NextResponse.json(
-        { error: "관리자 권한이 필요합니다." },
-        { status: 403 }
-      );
-    }
+    const auth = await requireAdmin(["admin", "assistant"]);
+    if ("response" in auth) return auth.response;
+    const { svc } = auth;
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {

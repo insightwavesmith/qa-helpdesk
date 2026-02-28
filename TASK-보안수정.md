@@ -61,6 +61,26 @@
 **목표**: 기본 rate limiting 적용
 **세부**: Next.js middleware 또는 upstash/ratelimit 사용
 
+## T7. 무제한 쿼리 방어 (Medium)
+**현재**: diagnose + total-value API에서 daily_ad_insights 쿼리에 .limit() 없음. 대량 데이터 시 서버 메모리 과부하 가능.
+**목표**: 서버 측 .limit() 추가
+**파일**:
+- `src/app/api/diagnose/route.ts` (line ~97): `.limit(1000)` 추가
+- `src/app/api/protractor/total-value/route.ts` (line ~116): `.limit(1000)` 추가
+
+## T8. requireAdmin 유틸 추출 (Low)
+**현재**: 11개 admin API 라우트에 동일한 인증+권한 확인 코드 복붙 (~20줄 × 11). 보안 로직 수정 시 11곳 모두 변경 필요.
+**목표**: `requireAdmin()` 헬퍼 함수 추출, 11개 라우트에서 호출
+**파일**:
+- `src/app/api/admin/_shared.ts` (신규): requireAdmin() 헬퍼
+- 11개 admin 라우트 파일에서 기존 인증 코드를 requireAdmin() 호출로 교체
+
+## T9. 미사용 API 정리 (Low)
+**현재**: notifications API는 TODO 스텁으로 코드베이스 어디서도 호출되지 않음
+**목표**: 미사용 스텁 라우트 제거
+**파일**:
+- `src/app/api/notifications/route.ts` — 삭제
+
 ---
 
 ## 실행 순서
@@ -70,6 +90,9 @@
 4. T4 (XSS)
 5. T5 (암호화)
 6. T6 (Rate Limit)
+7. T7 (무제한 쿼리 방어) — 2파일, 각 1줄
+8. T8 (requireAdmin 추출) — 1 신규 + 11 수정
+9. T9 (미사용 API 제거) — 1파일 삭제
 
 ## 리뷰 결과
 - 리뷰 보고서: /Users/smith/projects/mozzi-reports/public/reports/security/2026-02-28-security-fix-review.html

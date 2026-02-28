@@ -1,34 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { requireAdmin } from "../../_shared";
 
 export async function GET() {
   try {
-    // 인증 + admin 권한 확인
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "인증이 필요합니다." },
-        { status: 401 }
-      );
-    }
-
-    const svc = createServiceClient();
-    const { data: profile } = await svc
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role !== "admin") {
-      return NextResponse.json(
-        { error: "관리자 권한이 필요합니다." },
-        { status: 403 }
-      );
-    }
+    const auth = await requireAdmin();
+    if ("response" in auth) return auth.response;
+    const { svc } = auth;
 
     // 1) 전체 계정 목록
     const { data: accounts, error: accountsError } = await svc

@@ -101,6 +101,7 @@ export async function POST(request: NextRequest) {
 
     if (startDate) query = query.gte('date', startDate);
     if (endDate) query = query.lte('date', endDate);
+    query = query.limit(1000);
 
     const { data: rawData } = await query;
     const rawInsights = rawData as unknown as Record<string, unknown>[] | null;
