@@ -1,23 +1,17 @@
 import { NextResponse } from "next/server";
-import { requireProtractorAccess } from "../_shared";
-
-const ADMIN_ONLY_ROLES = ["admin"] as const;
+import { requireAdmin } from "../../admin/_shared";
 
 /**
- * 벤치마크 API — GCP wide format 직접 반환 (T7 재작성)
+ * 벤치마크 API — admin 전용 (raw 벤치마크 수치 포함)
+ * 벤치마크 관리 페이지(benchmark-admin.tsx)에서만 사용
  *
  * DB: benchmarks 테이블 (wide format)
- *   creative_type × ranking_type × ranking_group 조합, 13개 지표 컬럼
- *
- * 프론트엔드(BenchmarkRow)와 호환을 위해:
- *   - ranking_group: "ABOVE_AVERAGE" → "above_avg" (lowercase) 변환
- *   - 지표 필드: DB 컬럼명(ctr) → avg_ prefix 추가(avg_ctr) 변환
+ *   creative_type × ranking_type × ranking_group 조합, 14개 지표 컬럼
  */
 
-// DB wide-format → BenchmarkRow 변환
+// DB wide-format → BenchmarkRow 변환 (avg_ prefix 추가)
 function toFrontendRow(row: Record<string, unknown>): Record<string, unknown> {
   const rankingGroup = (row.ranking_group as string ?? "").toLowerCase().replace(/_/g, "_");
-  // ABOVE_AVERAGE → above_avg, AVERAGE → average, etc.
   const groupAlias = rankingGroup === "above_average" ? "above_avg"
     : rankingGroup === "median_all" ? "median_all"
     : rankingGroup;
@@ -29,7 +23,6 @@ function toFrontendRow(row: Record<string, unknown>): Record<string, unknown> {
     ranking_group: groupAlias,
     sample_count: row.sample_count,
     calculated_at: row.calculated_at,
-    // 13개 지표: avg_ prefix 추가
     avg_video_p3s_rate: row.video_p3s_rate,
     avg_thruplay_rate: row.thruplay_rate,
     avg_retention_rate: row.retention_rate,
@@ -48,20 +41,12 @@ function toFrontendRow(row: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
-// GET /api/protractor/benchmarks
-// admin만 접근 가능 — raw 벤치마크 수치 포함 (벤치마크 관리 페이지용)
+// GET /api/protractor/benchmarks — admin 전용
 export async function GET() {
   try {
-    const auth = await requireProtractorAccess();
+    const auth = await requireAdmin();
     if ("response" in auth) return auth.response;
-    const { svc, profile } = auth;
-
-    if (!ADMIN_ONLY_ROLES.includes(profile.role as typeof ADMIN_ONLY_ROLES[number])) {
-      return NextResponse.json(
-        { error: "관리자 권한이 필요합니다." },
-        { status: 403 },
-      );
-    }
+    const { svc } = auth;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const benchSvc = svc as any;
