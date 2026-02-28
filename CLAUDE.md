@@ -223,6 +223,12 @@ embed-pipeline.ts → gemini.ts → chunk-utils.ts
 - `student_registry` — 수강생 명단 (78명, profiles와 미연결)
 - `cohorts` — 기수 정보
 
+## 총가치각도기 (Protractor) 지표 규칙
+- **지표 정의 single source of truth**: `src/lib/protractor/metric-groups.ts`
+- 지표 추가/수정/삭제 시 이 파일만 수정. 다른 곳에 하드코딩 금지.
+- 설계서: `docs/02-design/features/protractor-refactoring.design.md`
+- 설계서 갱신 안 하면 commit 차단됨 (validate-design.sh)
+
 ## 기술 스택
 - Next.js 15 (App Router)
 - TypeScript
