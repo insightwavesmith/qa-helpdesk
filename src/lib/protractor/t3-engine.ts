@@ -131,6 +131,7 @@ export function computeMetricValues(rows: Record<string, unknown>[]): Record<str
   let totalPurchases = 0;
   let totalVideoP3s = 0;
   let totalThruplay = 0;
+  let totalVideoP100 = 0;
   let totalReactions = 0;
   let totalComments = 0;
   let totalShares = 0;
@@ -155,6 +156,11 @@ export function computeMetricValues(rows: Record<string, unknown>[]): Record<str
     const thruplayRate = Number(row.thruplay_rate) || 0;
     totalThruplay += (thruplayRate / 100) * imp;
 
+    // retention_rate = p100 / p3s → p100 역산 (aggregate.ts 패턴)
+    const p3sRaw = (p3sRate / 100) * imp;
+    const retentionRate = Number(row.retention_rate) || 0;
+    totalVideoP100 += (retentionRate / 100) * p3sRaw;
+
     const reactPer10k = Number(row.reactions_per_10k) || 0;
     const commentPer10k = Number(row.comments_per_10k) || 0;
     const sharePer10k = Number(row.shares_per_10k) || 0;
@@ -168,7 +174,7 @@ export function computeMetricValues(rows: Record<string, unknown>[]): Record<str
   return {
     video_p3s_rate: totalImpressions > 0 ? (totalVideoP3s / totalImpressions) * 100 : null,
     thruplay_rate: totalImpressions > 0 ? (totalThruplay / totalImpressions) * 100 : null,
-    retention_rate: totalVideoP3s > 0 ? (totalThruplay / totalVideoP3s) * 100 : null,
+    retention_rate: totalVideoP3s > 0 ? (totalVideoP100 / totalVideoP3s) * 100 : null,
     reactions_per_10k: totalImpressions > 0 ? (totalReactions / totalImpressions) * 10000 : null,
     comments_per_10k: totalImpressions > 0 ? (totalComments / totalImpressions) * 10000 : null,
     shares_per_10k: totalImpressions > 0 ? (totalShares / totalImpressions) * 10000 : null,
@@ -181,6 +187,7 @@ export function computeMetricValues(rows: Record<string, unknown>[]): Record<str
     click_to_checkout_rate: totalClicks > 0 ? (totalInitiateCheckout / totalClicks) * 100 : null,
     click_to_purchase_rate: totalClicks > 0 ? (totalPurchases / totalClicks) * 100 : null,
     checkout_to_purchase_rate: totalInitiateCheckout > 0 ? (totalPurchases / totalInitiateCheckout) * 100 : null,
+    // reach_to_purchase_rate: 이름과 달리 분모는 impressions (= purchases / impressions × 100)
     reach_to_purchase_rate: totalImpressions > 0 ? (totalPurchases / totalImpressions) * 100 : null,
   };
 }

@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { METRIC_GROUPS } from "@/lib/protractor/metric-groups";
 
 // ============================================================
 // 타입 정의
@@ -25,40 +26,19 @@ interface BenchmarkAdminRow {
   ranking_group: string;
   sample_count?: number;
   calculated_at?: string;
-  // 13개 지표 (avg_ prefix)
-  avg_video_p3s_rate?: number;
-  avg_thruplay_rate?: number;
-  avg_retention_rate?: number;
-  avg_reactions_per_10k?: number;
-  avg_comments_per_10k?: number;
-  avg_shares_per_10k?: number;
-  avg_saves_per_10k?: number;
-  avg_engagement_per_10k?: number;
-  avg_ctr?: number;
-  avg_click_to_checkout_rate?: number;
-  avg_click_to_purchase_rate?: number;
-  avg_checkout_to_purchase_rate?: number;
-  avg_roas?: number;
+  // reach_to_purchase_rate: 이름과 달리 분모는 impressions (= purchases / impressions × 100)
   [key: string]: string | number | undefined;
 }
 
 // ============================================================
-// 지표 목록
+// 지표 목록 — metric-groups.ts에서 파생 (single source of truth)
 // ============================================================
 
 const METRIC_DEFS: { label: string; key: string }[] = [
-  { label: "3초 시청률", key: "avg_video_p3s_rate" },
-  { label: "ThruPlay율", key: "avg_thruplay_rate" },
-  { label: "지속 비율", key: "avg_retention_rate" },
-  { label: "좋아요/만노출", key: "avg_reactions_per_10k" },
-  { label: "댓글/만노출", key: "avg_comments_per_10k" },
-  { label: "공유/만노출", key: "avg_shares_per_10k" },
-  { label: "저장/만노출", key: "avg_saves_per_10k" },
-  { label: "참여/만노출", key: "avg_engagement_per_10k" },
-  { label: "CTR", key: "avg_ctr" },
-  { label: "클릭→결제시작", key: "avg_click_to_checkout_rate" },
-  { label: "클릭→구매", key: "avg_click_to_purchase_rate" },
-  { label: "결제→구매", key: "avg_checkout_to_purchase_rate" },
+  ...METRIC_GROUPS.flatMap((g) => [
+    ...g.metrics.map((m) => ({ label: m.label, key: `avg_${m.key}` })),
+    ...(g.summaryMetric ? [{ label: g.summaryMetric.label, key: `avg_${g.summaryMetric.key}` }] : []),
+  ]),
   { label: "ROAS", key: "avg_roas" },
 ];
 

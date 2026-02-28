@@ -132,9 +132,9 @@ export async function POST(request: Request) {
         const totalRevenue = existing.purchase_value as number;
         existing.ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
         existing.roas = totalSpend > 0 ? totalRevenue / totalSpend : 0;
-        const totalReach = existing.reach as number;
         const totalPurchases = existing.purchases as number;
-        existing.reach_to_purchase_rate = totalReach > 0 ? (totalPurchases / totalReach) * 100 : 0;
+        // reach_to_purchase_rate: 이름과 달리 분모는 impressions (= purchases / impressions × 100)
+        existing.reach_to_purchase_rate = totalImpressions > 0 ? (totalPurchases / totalImpressions) * 100 : 0;
       }
     }
 

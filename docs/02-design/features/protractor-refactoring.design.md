@@ -1,6 +1,6 @@
 # 총가치각도기 (Protractor) 설계서
 
-> 최종 갱신: 2026-02-28 (코드 기준 현행화)
+> 최종 갱신: 2026-02-28 (아키텍처 재설계 A1~A4, B1~B3, C1~C3 반영)
 
 ---
 
@@ -9,7 +9,8 @@
 ```
 [Meta API] → /api/cron/collect-daily → daily_ad_insights (DB)
                                       → daily_overlap_insights (DB)
-[Meta API] → /api/cron/collect-benchmarks → ad_insights_classified → benchmarks (DB)
+[Meta API /ads] → /api/cron/collect-benchmarks → ad_insights_classified → benchmarks (DB)
+  └ /ads endpoint + creative.fields(object_type,product_set_id) + nested insights.date_preset(last_7d)
 [Mixpanel API] → /api/cron/collect-mixpanel → daily_mixpanel_insights (DB)
 
 daily_ad_insights + benchmarks
@@ -30,7 +31,7 @@ UI:
 |--------|------|-----------|
 | daily_ad_insights | 일별 광고 지표 | date, account_id, ad_id, 13개 지표 + spend/impressions/reach/clicks/purchases 등 |
 | daily_overlap_insights | 광고셋 중복도 | date, account_id, overall_rate, pairs(jsonb) |
-| benchmarks | ABOVE_AVERAGE 기준 평균 | creative_type, ranking_type, ranking_group, 13개 지표 |
+| benchmarks | ABOVE_AVERAGE 기준 평균 | creative_type, ranking_type, ranking_group, date, 14개 지표 |
 | ad_insights_classified | 벤치마크 원본 분류 | ad_id, account_id, creative_type, ranking 3종, 13개 지표 |
 | daily_mixpanel_insights | Mixpanel 매출 | date, account_id, project_id, total_revenue, purchase_count |
 
@@ -128,15 +129,16 @@ UI:
 - null 지표: T3 계산에서 제외 (점수 없음 = ⚪)
 - 벤치마크 없음: 기본 50점 반환 + "벤치마크 데이터 없음" 메시지
 - creative_type 매칭 실패: "ALL" 폴백
+- creative_type 판별 (GCP 방식): VIDEO=object_type VIDEO|PRIVACY_CHECK_FAIL, CATALOG=SHARE|(IMAGE+product_set_id), IMAGE=나머지
 - 데이터 없음: score: null + "내일부터 확인 가능합니다"
 
 ## 8. 구현 완료 항목
 
 - [x] metric-groups.ts — 13개 지표 single source (영상3 + 참여5 + 전환5)
-- [x] t3-engine.ts — ratio 기반 점수 (GCP 방식)
+- [x] t3-engine.ts — ratio 기반 점수 (GCP 방식, A2: retention_rate=p100/p3s 통일)
 - [x] total-value API — 기간별 T3 점수
-- [x] collect-daily — 일일 Meta 수집 + overlap
-- [x] collect-benchmarks — ABOVE_AVERAGE 그룹 평균
+- [x] collect-daily — 일일 Meta 수집 + overlap (A1: upsert 전환)
+- [x] collect-benchmarks — GCP 방식 /ads 엔드포인트 + nested insights (A3: creative_type 정확 판별, A4: date+upsert 이력 보존, B3: reach_to_purchase_rate 포함 14개 지표)
 - [x] collect-mixpanel — Mixpanel 매출 수집
 - [x] benchmark-compare.tsx — 성과요약 UI
 - [x] content-ranking.tsx — 콘텐츠 순위 UI

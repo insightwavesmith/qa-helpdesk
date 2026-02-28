@@ -29,7 +29,8 @@ export const PART_METRICS: Record<number, PartConfig> = {
       { key: 'click_to_checkout_rate', label: '결제시작율', reverse: false },
       { key: 'click_to_purchase_rate', label: '구매전환율', reverse: false },
       { key: 'checkout_to_purchase_rate', label: '결제→구매율', reverse: false },
-      { key: 'reach_to_purchase_rate', label: '도달당구매율', reverse: false },
+      // reach_to_purchase_rate: 이름과 달리 분모는 impressions (= purchases / impressions × 100)
+      { key: 'reach_to_purchase_rate', label: '노출당구매확률', reverse: false },
       { key: 'roas', label: 'ROAS', reverse: false },
     ],
   },

@@ -21,6 +21,7 @@ function verifyCron(req: NextRequest): boolean {
 const EXCLUDED_ACCOUNTS: string[] = [];
 
 // 최종 13개 지표 키
+// reach_to_purchase_rate: 이름과 달리 분모는 impressions (= purchases / impressions × 100)
 const METRIC_KEYS = [
   "video_p3s_rate",
   "thruplay_rate",
@@ -34,6 +35,7 @@ const METRIC_KEYS = [
   "click_to_checkout_rate",
   "click_to_purchase_rate",
   "checkout_to_purchase_rate",
+  "reach_to_purchase_rate",
   "roas",
 ] as const;
 
@@ -63,6 +65,8 @@ interface ClassifiedAd {
   click_to_checkout_rate: number | null;
   click_to_purchase_rate: number | null;
   checkout_to_purchase_rate: number | null;
+  // reach_to_purchase_rate: 이름과 달리 분모는 impressions (= purchases / impressions × 100)
+  reach_to_purchase_rate: number | null;
   roas: number | null;
   collected_at: string;
 }
@@ -102,12 +106,50 @@ function normalizeRanking(raw: string | undefined | null): string {
   return "UNKNOWN";
 }
 
+// ── GCP 방식 /ads 엔드포인트 필드 ─────────────────────────────
+// AD_FIELDS: id, name, adset_id, creative.fields(object_type,product_set_id)
+const AD_FIELDS = [
+  "id",
+  "name",
+  "adset_id",
+  "creative.fields(object_type,product_set_id)",
+].join(",");
+
+// INSIGHT_FIELDS: nested insights 안에 들어갈 지표 필드
+const INSIGHT_FIELDS = [
+  "impressions",
+  "clicks",
+  "spend",
+  "reach",
+  "ctr",
+  "actions",
+  "action_values",
+  "video_thruplay_watched_actions",
+  "video_p100_watched_actions",
+  "quality_ranking",
+  "engagement_rate_ranking",
+  "conversion_rate_ranking",
+].join(",");
+
+// creative.object_type + product_set_id → creative_type (GCP 방식)
+// VIDEO = object_type VIDEO | PRIVACY_CHECK_FAIL
+// CATALOG = object_type SHARE 또는 (IMAGE + product_set_id 존재)
+// IMAGE = 나머지
+function getCreativeType(ad: Record<string, unknown>): string {
+  const creative = ad.creative as { object_type?: string; product_set_id?: string } | undefined;
+  const objectType = creative?.object_type ?? "UNKNOWN";
+  const productSetId = creative?.product_set_id;
+
+  if (objectType === "VIDEO" || objectType === "PRIVACY_CHECK_FAIL") return "VIDEO";
+  if (objectType === "SHARE") return "CATALOG";
+  if (objectType === "IMAGE" && productSetId) return "CATALOG";
+  if (objectType === "IMAGE") return "IMAGE";
+  return "IMAGE"; // fallback
+}
+
 // 광고 인사이트 → 13개 지표 계산 (GCP 스펙 기준)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function calculateMetrics(insight: Record<string, any>, accountId: string, collectedAt: string): ClassifiedAd | null {
-  const adId = insight.ad_id as string;
-  if (!adId) return null;
-
+function calculateMetrics(insight: Record<string, any>, accountId: string, collectedAt: string, creativeType: string): ClassifiedAd | null {
   const impressions = Math.trunc(safeFloat(insight.impressions));
   if (impressions < 3500) return null; // 최소 노출 필터
 
@@ -140,11 +182,8 @@ function calculateMetrics(insight: Record<string, any>, accountId: string, colle
   const ctr = safeFloat(insight.ctr);
   const roas = spend > 0 ? purchaseValue / spend : 0;
 
-  // Creative type: VIDEO / IMAGE (CATALOG은 추후 확장)
-  const creativeType = videoP3s > 0 || thruplay > 0 ? "VIDEO" : "IMAGE";
-
   return {
-    ad_id: adId,
+    ad_id: insight.ad_id as string,
     ad_name: (insight.ad_name as string) ?? null,
     account_id: accountId,
     creative_type: creativeType,
@@ -172,9 +211,20 @@ function calculateMetrics(insight: Record<string, any>, accountId: string, colle
     click_to_purchase_rate: clicks > 0 ? round((purchases / clicks) * 100, 4) : null,
     checkout_to_purchase_rate:
       initiateCheckout > 0 ? round((purchases / initiateCheckout) * 100, 4) : null,
+    // reach_to_purchase_rate: 이름과 달리 분모는 impressions (= purchases / impressions × 100)
+    reach_to_purchase_rate: impressions > 0 ? round((purchases / impressions) * 100, 6) : null,
     roas: round(roas, 4),
     collected_at: collectedAt,
   };
+}
+
+// 해당 주의 월요일 날짜 (ISO: YYYY-MM-DD)
+function getMondayOfWeek(d: Date = new Date()): string {
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(d);
+  monday.setDate(diff);
+  return monday.toISOString().slice(0, 10);
 }
 
 // 429 exponential backoff fetch
@@ -260,25 +310,12 @@ export async function GET(req: NextRequest) {
     }
 
     // ────────────────────────────────────────────────────────
-    // STEP 1-2: 계정별 광고 인사이트 수집 (상위 10개, impressions >= 3500)
+    // STEP 1-2: 계정별 /ads 엔드포인트 + nested insights 수집 (GCP 방식)
+    //   AD_FIELDS + insights.date_preset(last_7d){INSIGHT_FIELDS}
+    //   → creative.object_type + product_set_id로 정확한 creative_type 판별
     // ────────────────────────────────────────────────────────
-    const insightsFields = [
-      "ad_id",
-      "ad_name",
-      "impressions",
-      "clicks",
-      "spend",
-      "reach",
-      "ctr",
-      "actions",
-      "action_values",
-      "video_play_actions",
-      "video_thruplay_watched_actions",
-      "video_p100_watched_actions",
-      "quality_ranking",
-      "engagement_rate_ranking",
-      "conversion_rate_ranking",
-    ].join(",");
+    const insightSpec = `insights.date_preset(last_7d){${INSIGHT_FIELDS}}`;
+    const adsFields = `${AD_FIELDS},${insightSpec}`;
 
     const allClassified: ClassifiedAd[] = [];
     let accountsProcessed = 0;
@@ -288,37 +325,56 @@ export async function GET(req: NextRequest) {
       await new Promise((r) => setTimeout(r, 200));
 
       try {
-        const insightsUrl = new URL(
-          `https://graph.facebook.com/v21.0/act_${account.cleanId}/insights`
+        const adsUrl = new URL(
+          `https://graph.facebook.com/v21.0/act_${account.cleanId}/ads`
         );
-        insightsUrl.searchParams.set("access_token", token);
-        insightsUrl.searchParams.set("fields", insightsFields);
-        insightsUrl.searchParams.set("date_preset", "last_7d");
-        insightsUrl.searchParams.set("level", "ad");
-        insightsUrl.searchParams.set("limit", "500");
-        insightsUrl.searchParams.set("sort", "spend_descending");
-        insightsUrl.searchParams.set(
+        adsUrl.searchParams.set("access_token", token);
+        adsUrl.searchParams.set("fields", adsFields);
+        adsUrl.searchParams.set("limit", "500");
+        adsUrl.searchParams.set(
           "filtering",
           JSON.stringify([
-            { field: "ad.effective_status", operator: "IN", value: ["ACTIVE"] },
+            { field: "effective_status", operator: "IN", value: ["ACTIVE"] },
           ])
         );
 
-        const insightsRes = await fetchWithRetry(insightsUrl.toString());
-        const insightsJson = await insightsRes.json();
+        const adsRes = await fetchWithRetry(adsUrl.toString());
+        const adsJson = await adsRes.json();
 
-        if (insightsJson.error) {
-          console.error(`[${account.cleanId}] Meta API error:`, insightsJson.error.message);
+        if (adsJson.error) {
+          console.error(`[${account.cleanId}] Meta API error:`, adsJson.error.message);
           continue;
         }
 
-        const rawAds: Record<string, unknown>[] = insightsJson.data ?? [];
-        // 상위 10개만 처리
-        for (const ad of rawAds.slice(0, 10)) {
+        const rawAds: Record<string, unknown>[] = adsJson.data ?? [];
+
+        // insights가 있는 광고만 필터 + spend 기준 상위 10개
+        const adsWithInsights = rawAds
+          .filter((ad) => {
+            const ins = ad.insights as { data?: unknown[] } | undefined;
+            return ins?.data && ins.data.length > 0;
+          })
+          .sort((a, b) => {
+            const insA = (a.insights as { data: Record<string, unknown>[] }).data[0];
+            const insB = (b.insights as { data: Record<string, unknown>[] }).data[0];
+            return safeFloat(insB.spend) - safeFloat(insA.spend);
+          })
+          .slice(0, 10);
+
+        for (const ad of adsWithInsights) {
+          const insight = (ad.insights as { data: Record<string, unknown>[] }).data[0];
+          // ad 최상위에서 ad_id/ad_name 가져오기 (nested insights에는 없을 수 있음)
+          const enrichedInsight = {
+            ...insight,
+            ad_id: insight.ad_id ?? ad.id,
+            ad_name: insight.ad_name ?? ad.name,
+          };
+          const creativeType = getCreativeType(ad);
           const row = calculateMetrics(
-            ad as Record<string, unknown>,
+            enrichedInsight,
             account.cleanId,
-            collectedAt
+            collectedAt,
+            creativeType,
           );
           if (row) allClassified.push(row);
         }
@@ -366,6 +422,7 @@ export async function GET(req: NextRequest) {
     const rankingGroups = ["ABOVE_AVERAGE", "AVERAGE", "BELOW_AVERAGE"] as const;
 
     const benchmarkRows: Record<string, unknown>[] = [];
+    const weekDate = getMondayOfWeek(); // A4: 해당 주의 월요일
 
     for (const ct of creativeTypes) {
       for (const rankingType of rankingTypes) {
@@ -383,6 +440,7 @@ export async function GET(req: NextRequest) {
               ranking_group: rankingGroup,
               sample_count: filtered.length,
               calculated_at: collectedAt,
+              date: weekDate,
             })
           );
         }
@@ -405,28 +463,21 @@ export async function GET(req: NextRequest) {
             ranking_group: "MEDIAN_ALL",
             sample_count: ctAds.length,
             calculated_at: collectedAt,
+            date: weekDate,
           })
         );
       }
     }
 
     // ────────────────────────────────────────────────────────
-    // benchmarks 테이블 전체 교체 (DELETE → INSERT)
+    // benchmarks 테이블 UPSERT (A4: 이력 보존)
     // ────────────────────────────────────────────────────────
     if (benchmarkRows.length > 0) {
-      const { error: deleteBenchErr } = await anySvc
-        .from("benchmarks")
-        .delete()
-        .not("id", "is", null);
-
-      if (deleteBenchErr) {
-        console.error("benchmarks delete error:", deleteBenchErr);
-        // non-fatal
-      }
-
       const { error: insertBenchErr } = await anySvc
         .from("benchmarks")
-        .insert(benchmarkRows);
+        .upsert(benchmarkRows, {
+          onConflict: "creative_type,ranking_type,ranking_group,date",
+        });
 
       if (insertBenchErr) {
         console.error("benchmarks insert error:", insertBenchErr);
@@ -443,6 +494,7 @@ export async function GET(req: NextRequest) {
       creative_type_breakdown: {
         VIDEO: allClassified.filter((r) => r.creative_type === "VIDEO").length,
         IMAGE: allClassified.filter((r) => r.creative_type === "IMAGE").length,
+        CATALOG: allClassified.filter((r) => r.creative_type === "CATALOG").length,
       },
       collected_at: collectedAt,
     });

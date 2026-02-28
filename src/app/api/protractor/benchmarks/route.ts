@@ -40,6 +40,8 @@ function toFrontendRow(row: Record<string, unknown>): Record<string, unknown> {
     avg_click_to_checkout_rate: row.click_to_checkout_rate,
     avg_click_to_purchase_rate: row.click_to_purchase_rate,
     avg_checkout_to_purchase_rate: row.checkout_to_purchase_rate,
+    // reach_to_purchase_rate: 이름과 달리 분모는 impressions (= purchases / impressions × 100)
+    avg_reach_to_purchase_rate: row.reach_to_purchase_rate,
     avg_roas: row.roas,
   };
 }

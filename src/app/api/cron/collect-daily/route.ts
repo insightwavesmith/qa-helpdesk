@@ -150,6 +150,7 @@ function calculateMetrics(insight: Record<string, any>) {
     click_to_checkout_rate: clicks > 0 ? round(initiateCheckout / clicks * 100, 4) : null,
     click_to_purchase_rate: clicks > 0 ? round(purchases / clicks * 100, 4) : null,
     checkout_to_purchase_rate: initiateCheckout > 0 ? round(purchases / initiateCheckout * 100, 4) : null,
+    // reach_to_purchase_rate: 이름과 달리 분모는 impressions (= purchases / impressions × 100)
     reach_to_purchase_rate: impressions > 0 ? round(purchases / impressions * 100, 6) : null,
   };
 }
@@ -272,7 +273,7 @@ export async function GET(req: NextRequest) {
 
           const { error: insertErr } = await svc
             .from("daily_ad_insights")
-            .insert(rows as never[]);
+            .upsert(rows as never[], { onConflict: "account_id,date,ad_id" });
 
           if (insertErr) {
             console.error(
