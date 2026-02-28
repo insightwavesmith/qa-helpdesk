@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>콘텐츠 허브 v3 — 최종 목업</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f9fa; color: #1a1a2e; }
+  
+  .page-label { background: #00b894; color: white; text-align: center; padding: 10px; font-size: 13px; font-weight: 600; }
+
+  .container { display: flex; min-height: 560px; border: 1px solid #e0e0e0; background: white; margin: 0 0 40px; border-radius: 0 0 12px 12px; overflow: hidden; }
+  
+  .sidebar { width: 200px; background: #fafbfc; border-right: 1px solid #e8e8e8; padding: 16px 0; flex-shrink: 0; }
+  .sidebar-brand { padding: 0 16px 16px; border-bottom: 1px solid #eee; margin-bottom: 12px; }
+  .sidebar-brand h3 { font-size: 15px; color: #2d3436; }
+  .sidebar-brand span { font-size: 11px; color: #999; }
+  .nav-section { padding: 0 8px; margin-bottom: 16px; }
+  .nav-section-title { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; padding: 4px 8px; margin-bottom: 4px; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 6px; font-size: 13px; color: #555; }
+  .nav-item.active { background: #6c5ce7; color: white; }
+  .nav-item.sub { background: #ede7f6; color: #6c5ce7; }
+  .nav-item.removed { text-decoration: line-through; color: #ccc; }
+
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .topbar { padding: 14px 24px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+  .topbar h1 { font-size: 17px; }
+  .avatar { width: 30px; height: 30px; background: #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #666; }
+  .content { padding: 24px; flex: 1; overflow-y: auto; }
+
+  .hub-tabs { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; }
+  .hub-tab { padding: 11px 18px; font-size: 14px; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; color: #999; }
+  .hub-tab.active { color: #6c5ce7; border-bottom-color: #6c5ce7; font-weight: 600; }
+  .hub-tab .cnt { background: #eee; color: #666; font-size: 11px; padding: 1px 6px; border-radius: 8px; margin-left: 4px; }
+  .hub-tab.active .cnt { background: #ede7f6; color: #6c5ce7; }
+
+  .stats { display: flex; gap: 10px; margin-bottom: 18px; }
+  .stat { flex: 1; background: #f8f9fa; border: 1px solid #eee; border-radius: 8px; padding: 10px; text-align: center; }
+  .stat .l { font-size: 11px; color: #999; }
+  .stat .v { font-size: 20px; font-weight: 700; color: #2d3436; margin-top: 2px; }
+  .stat .c { font-size: 11px; color: #00b894; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 10px; color: #999; font-weight: 500; font-size: 11px; border-bottom: 2px solid #eee; }
+  td { padding: 10px; border-bottom: 1px solid #f0f0f0; }
+  tr.hl { background: #f5f3ff; }
+  .b { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+  .b-pub { background: #d4edda; color: #155724; }
+  .b-draft { background: #fff3cd; color: #856404; }
+  .b-sent { background: #d1ecf1; color: #0c5460; }
+  .b-edu { background: #f3e5f5; color: #7b1fa2; }
+  .b-info { background: #e8eaf6; color: #3f51b5; }
+  .b-fail { background: #f8d7da; color: #721c24; }
+
+  .btn { padding: 7px 14px; border-radius: 6px; font-size: 13px; border: 1px solid #ddd; cursor: pointer; background: white; display: inline-flex; align-items: center; gap: 4px; }
+  .btn-primary { background: #6c5ce7; color: white; border-color: #6c5ce7; }
+  .btn-success { background: #00b894; color: white; border-color: #00b894; }
+  .btn-outline { background: white; color: #6c5ce7; border-color: #6c5ce7; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+  .back { font-size: 13px; color: #6c5ce7; margin-bottom: 8px; }
+  .d-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
+  .d-header h1 { font-size: 19px; margin-bottom: 4px; }
+  .d-meta { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+  .d-tabs { display: flex; border-bottom: 2px solid #eee; margin-bottom: 18px; }
+  .d-tab { padding: 10px 18px; font-size: 14px; border-bottom: 2px solid transparent; margin-bottom: -2px; color: #999; }
+  .d-tab.active { color: #6c5ce7; border-bottom-color: #6c5ce7; font-weight: 600; }
+
+  .d-layout { display: flex; gap: 20px; }
+  .d-main { flex: 1; min-width: 0; }
+  .d-side { width: 220px; flex-shrink: 0; }
+  .meta-card { background: #f8f9fa; border: 1px solid #eee; border-radius: 8px; padding: 14px; margin-bottom: 14px; }
+  .meta-card h4 { font-size: 11px; color: #999; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .meta-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; }
+  .meta-row .ml { color: #999; }
+  .meta-row .mv { font-weight: 500; }
+
+  .thumb { width: 100%; height: 90px; background: linear-gradient(135deg, #6c5ce7, #a29bfe); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; margin-bottom: 8px; }
+
+  /* WYSIWYG editor */
+  .wysiwyg-toolbar { display: flex; gap: 3px; padding: 8px; background: #f8f9fa; border: 1px solid #eee; border-radius: 8px 8px 0 0; flex-wrap: wrap; }
+  .wysiwyg-toolbar button { padding: 4px 7px; border: 1px solid #ddd; background: white; border-radius: 4px; font-size: 12px; cursor: pointer; color: #555; }
+  .wysiwyg-toolbar button.hl { background: #ede7f6; color: #6c5ce7; border-color: #d1c4e9; }
+  .wysiwyg { border: 1px solid #eee; border-top: none; border-radius: 0 0 8px 8px; min-height: 320px; padding: 24px; font-size: 15px; line-height: 1.8; color: #2d3436; }
+  .wysiwyg h1 { font-size: 22px; margin-bottom: 12px; }
+  .wysiwyg h2 { font-size: 17px; margin: 20px 0 8px; color: #2d3436; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+  .wysiwyg p { margin-bottom: 10px; }
+  .wysiwyg strong { color: #6c5ce7; }
+  .wysiwyg .img-ph { background: #f0f0f0; height: 120px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 13px; margin: 16px 0; border: 2px dashed #ddd; }
+  .wysiwyg .img-ph:hover { border-color: #6c5ce7; background: #f5f3ff; }
+  .wysiwyg table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  .wysiwyg table th, .wysiwyg table td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; }
+  .wysiwyg table th { background: #f8f9fa; font-weight: 600; }
+  .wysiwyg blockquote { border-left: 3px solid #6c5ce7; padding: 8px 16px; margin: 12px 0; background: #f8f7ff; color: #555; font-style: italic; }
+
+  .wysiwyg-label { position: absolute; top: 8px; right: 12px; background: #6c5ce7; color: white; font-size: 10px; padding: 2px 8px; border-radius: 4px; }
+
+  /* Drag */
+  .drag-row { display: flex; align-items: center; padding: 10px 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; background: white; }
+  .drag-row:hover { border-color: #6c5ce7; }
+  .drag-handle { color: #ccc; font-size: 16px; margin-right: 10px; cursor: grab; }
+  .drag-num { width: 26px; height: 26px; background: #f0f0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #666; margin-right: 12px; }
+  .drag-title { flex: 1; font-size: 13px; }
+  .drag-badges { display: flex; gap: 4px; align-items: center; }
+
+  .chart-ph { background: #f8f9fa; border: 1px dashed #ddd; border-radius: 8px; height: 160px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 13px; margin-bottom: 16px; }
+  .perf { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 18px; }
+  .perf-c { background: #f8f9fa; border: 1px solid #eee; border-radius: 8px; padding: 10px; text-align: center; }
+  .perf-c .pv { font-size: 18px; font-weight: 700; }
+  .perf-c .pl { font-size: 11px; color: #999; margin-top: 2px; }
+
+  /* New content dialog */
+  .new-dialog { border: 2px solid #6c5ce7; border-radius: 12px; padding: 20px; background: #faf9ff; }
+  .new-dialog h3 { font-size: 15px; margin-bottom: 16px; color: #6c5ce7; }
+  .mode-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .mode-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; background: white; cursor: pointer; text-align: center; transition: all 0.15s; }
+  .mode-card:hover { border-color: #6c5ce7; box-shadow: 0 2px 8px rgba(108,92,231,0.15); }
+  .mode-card.selected { border-color: #6c5ce7; background: #f5f3ff; }
+  .mode-icon { font-size: 28px; margin-bottom: 8px; }
+  .mode-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .mode-desc { font-size: 11px; color: #999; }
+
+  .note { background: #fff9c4; border-left: 3px solid #f9a825; padding: 8px 12px; margin: 12px 0; font-size: 12px; color: #666; border-radius: 0 6px 6px 0; }
+  .note strong { color: #e65100; }
+
+  .section-title { text-align: center; padding: 24px 16px 8px; }
+  .section-title h2 { font-size: 18px; color: #6c5ce7; }
+  .section-title p { color: #999; font-size: 12px; }
+
+  .wrapper { max-width: 1060px; margin: 0 auto; padding: 20px; }
+
+  /* Email split */
+  .email-split { display: flex; gap: 16px; }
+  .email-edit { flex: 1; }
+  .email-preview { flex: 1; border: 1px solid #eee; border-radius: 8px; padding: 16px; background: #fafbfc; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<div class="section-title" style="padding-top:0">
+  <h2>콘텐츠 허브 v3 — 최종</h2>
+  <p>허브 3탭(콘텐츠/정보공유/이메일) + 상세 3탭(정보공유WYSIWYG/뉴스레터/설정) + AI 생성</p>
+</div>
+
+<!-- ========== 1. 콘텐츠 탭 ========== -->
+<div class="page-label">1. 콘텐츠 관리 → 콘텐츠 탭</div>
+<div class="container" style="min-height:440px">
+  <div class="sidebar">
+    <div class="sidebar-brand"><h3>BS CAMP</h3><span>Ad Analytics</span></div>
+    <div class="nav-section">
+      <div class="nav-item">📊 대시보드</div>
+      <div class="nav-item">❓ Q&A</div>
+      <div class="nav-item">📄 정보공유</div>
+      <div class="nav-item">📢 공지사항</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">관리</div>
+      <div class="nav-item active">📝 콘텐츠 관리</div>
+      <div class="nav-item">👥 회원 관리</div>
+      <div class="nav-item removed">📧 이메일 발송</div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="topbar"><h1>콘텐츠 관리</h1><div class="avatar">SM</div></div>
+    <div class="content">
+      <div class="hub-tabs">
+        <div class="hub-tab active">콘텐츠 <span class="cnt">10</span></div>
+        <div class="hub-tab">정보공유 <span class="cnt">6</span></div>
+        <div class="hub-tab">이메일 <span class="cnt">4</span></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <div class="stats" style="flex:1; margin-bottom:0; margin-right:12px;">
+          <div class="stat"><div class="l">전체</div><div class="v">10</div></div>
+          <div class="stat"><div class="l">게시완료</div><div class="v">6</div></div>
+          <div class="stat"><div class="l">초안</div><div class="v">4</div></div>
+          <div class="stat"><div class="l">발송됨</div><div class="v">0</div></div>
+        </div>
+        <button class="btn btn-primary">+ 새 콘텐츠</button>
+      </div>
+      <table>
+        <tr><th>제목</th><th>카테고리</th><th>정보공유</th><th>뉴스레터</th><th>날짜</th></tr>
+        <tr class="hl"><td><strong>메타 광고 크리에이티브 실전 가이드</strong></td><td><span class="b b-edu">교육</span></td><td><span class="b b-pub">게시완료</span></td><td><span class="b b-draft">미발송</span></td><td style="color:#999;font-size:12px">2월 7일</td></tr>
+        <tr><td>픽셀과 전환 API 완전정복</td><td><span class="b b-edu">교육</span></td><td><span class="b b-pub">게시완료</span></td><td><span class="b b-draft">미발송</span></td><td style="color:#999;font-size:12px">2월 7일</td></tr>
+        <tr><td>메타 캠페인 목표 설정 완전 가이드</td><td><span class="b b-edu">교육</span></td><td><span class="b b-pub">게시완료</span></td><td><span class="b b-draft">미발송</span></td><td style="color:#999;font-size:12px">2월 7일</td></tr>
+        <tr><td>메타 광고 타겟팅 완전 가이드</td><td><span class="b b-edu">교육</span></td><td><span class="b b-draft">초안</span></td><td>—</td><td style="color:#999;font-size:12px">2월 7일</td></tr>
+      </table>
+      <div class="note"><strong>행 클릭 → /admin/content/[id] 상세 페이지.</strong> "새 콘텐츠" → AI 생성 다이얼로그.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 2. 새 콘텐츠 (AI 생성) ========== -->
+<div class="page-label">2. "새 콘텐츠" 클릭 → AI 콘텐츠 생성</div>
+<div class="container" style="min-height:420px">
+  <div class="sidebar">
+    <div class="sidebar-brand"><h3>BS CAMP</h3><span>Ad Analytics</span></div>
+    <div class="nav-section">
+      <div class="nav-item">📊 대시보드</div>
+      <div class="nav-item">📄 정보공유</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">관리</div>
+      <div class="nav-item active">📝 콘텐츠 관리</div>
+      <div class="nav-item">👥 회원 관리</div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="topbar"><h1>콘텐츠 관리</h1><div class="avatar">SM</div></div>
+    <div class="content">
+      <div class="new-dialog">
+        <h3>새 콘텐츠 만들기</h3>
+        <div class="mode-grid">
+          <div class="mode-card selected">
+            <div class="mode-icon">🔗</div>
+            <div class="mode-title">URL에서 가져오기</div>
+            <div class="mode-desc">웹 페이지 내용을 수집해서<br>마켓핏랩 스타일로 가공</div>
+          </div>
+          <div class="mode-card">
+            <div class="mode-icon">✨</div>
+            <div class="mode-title">AI로 작성</div>
+            <div class="mode-desc">주제나 지시를 입력하면<br>AI가 교육 콘텐츠 작성</div>
+          </div>
+          <div class="mode-card">
+            <div class="mode-icon">📎</div>
+            <div class="mode-title">파일 업로드</div>
+            <div class="mode-desc">PDF/문서에서 텍스트 추출 후<br>교육 콘텐츠로 가공</div>
+          </div>
+          <div class="mode-card">
+            <div class="mode-icon">✏️</div>
+            <div class="mode-title">직접 작성</div>
+            <div class="mode-desc">빈 에디터에서<br>직접 글 작성</div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px; padding:16px; background:white; border:1px solid #eee; border-radius:8px;">
+          <label style="font-size:12px; color:#999; display:block; margin-bottom:6px;">URL 입력</label>
+          <div style="display:flex; gap:8px;">
+            <input style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;" value="https://www.facebook.com/business/blog/meta-ads-2026" placeholder="블로그, 뉴스 등 URL">
+            <button class="btn btn-sm btn-outline">미리보기</button>
+          </div>
+          <label style="font-size:12px; color:#999; display:block; margin:12px 0 6px;">추가 지시 (선택)</label>
+          <textarea style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px; height:50px; resize:none;" placeholder="예: 초보자 눈높이로, 표 많이 써줘, ~해요 체로">~해요 체로 써줘. 표를 많이 활용하고 실전 체크리스트도 넣어줘.</textarea>
+          <div style="margin-top:12px; display:flex; justify-content:flex-end; gap:8px;">
+            <button class="btn">취소</button>
+            <button class="btn btn-primary">🤖 AI로 생성하기</button>
+          </div>
+        </div>
+      </div>
+      <div class="note" style="margin-top:12px;">
+        <strong>AI 생성 결과:</strong> 정보공유 본문(body_md) + 뉴스레터 요약(email_summary) + 헤더 이미지 → 전부 draft로 저장.<br>
+        생성 후 상세 페이지로 이동하여 편집 가능.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 3. 정보공유 탭 ========== -->
+<div class="page-label">3. 콘텐츠 관리 → 정보공유 탭 (순서 + 성과)</div>
+<div class="container" style="min-height:480px">
+  <div class="sidebar">
+    <div class="sidebar-brand"><h3>BS CAMP</h3><span>Ad Analytics</span></div>
+    <div class="nav-section">
+      <div class="nav-item">📊 대시보드</div>
+      <div class="nav-item">📄 정보공유</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">관리</div>
+      <div class="nav-item active">📝 콘텐츠 관리</div>
+      <div class="nav-item">👥 회원 관리</div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="topbar"><h1>콘텐츠 관리</h1><div class="avatar">SM</div></div>
+    <div class="content">
+      <div class="hub-tabs">
+        <div class="hub-tab">콘텐츠 <span class="cnt">10</span></div>
+        <div class="hub-tab active">정보공유 <span class="cnt">6</span></div>
+        <div class="hub-tab">이메일 <span class="cnt">4</span></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="l">게시중</div><div class="v">6</div></div>
+        <div class="stat"><div class="l">총 조회수</div><div class="v">18</div></div>
+        <div class="stat"><div class="l">이번 주</div><div class="v">12</div><div class="c">+33%</div></div>
+        <div class="stat"><div class="l">구독자</div><div class="v">1,215</div></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="font-size:14px;">게시 순서</h3>
+        <div style="display:flex;gap:6px;"><button class="btn btn-sm btn-outline">순서 저장</button><button class="btn btn-sm">카테고리 ▾</button></div>
+      </div>
+      <div class="drag-row"><span class="drag-handle">⠿</span><div class="drag-num">1</div><div class="drag-title"><strong>메타 광고 크리에이티브 실전 가이드</strong></div><div class="drag-badges"><span class="b b-pub">게시완료</span><span style="font-size:11px;color:#999;margin-left:6px">조회 10</span></div></div>
+      <div class="drag-row"><span class="drag-handle">⠿</span><div class="drag-num">2</div><div class="drag-title">픽셀과 전환 API 완전정복</div><div class="drag-badges"><span class="b b-pub">게시완료</span><span style="font-size:11px;color:#999;margin-left:6px">조회 0</span></div></div>
+      <div class="drag-row"><span class="drag-handle">⠿</span><div class="drag-num">3</div><div class="drag-title">메타 캠페인 목표 설정 완전 가이드</div><div class="drag-badges"><span class="b b-pub">게시완료</span><span style="font-size:11px;color:#999;margin-left:6px">조회 2</span></div></div>
+      <div class="drag-row"><span class="drag-handle">⠿</span><div class="drag-num">4</div><div class="drag-title">어드밴티지+ 쇼핑 캠페인으로 성과 극대화하기</div><div class="drag-badges"><span class="b b-pub">게시완료</span><span style="font-size:11px;color:#999;margin-left:6px">조회 1</span></div></div>
+      <div class="drag-row"><span class="drag-handle">⠿</span><div class="drag-num">5</div><div class="drag-title">메타 광고 구조 완전 이해하기</div><div class="drag-badges"><span class="b b-pub">게시완료</span><span style="font-size:11px;color:#999;margin-left:6px">조회 0</span></div></div>
+      <div class="drag-row"><span class="drag-handle">⠿</span><div class="drag-num">6</div><div class="drag-title">메타 광고 2026 베스트 프랙티스 총정리</div><div class="drag-badges"><span class="b b-pub">게시완료</span><span style="font-size:11px;color:#999;margin-left:6px">조회 5</span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 4. 이메일 탭 ========== -->
+<div class="page-label">4. 콘텐츠 관리 → 이메일 탭 (발송이력 + 성과)</div>
+<div class="container" style="min-height:460px">
+  <div class="sidebar">
+    <div class="sidebar-brand"><h3>BS CAMP</h3><span>Ad Analytics</span></div>
+    <div class="nav-section">
+      <div class="nav-item">📊 대시보드</div>
+      <div class="nav-item">📄 정보공유</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">관리</div>
+      <div class="nav-item active">📝 콘텐츠 관리</div>
+      <div class="nav-item">👥 회원 관리</div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="topbar"><h1>콘텐츠 관리</h1><div class="avatar">SM</div></div>
+    <div class="content">
+      <div class="hub-tabs">
+        <div class="hub-tab">콘텐츠 <span class="cnt">10</span></div>
+        <div class="hub-tab">정보공유 <span class="cnt">6</span></div>
+        <div class="hub-tab active">이메일 <span class="cnt">4</span></div>
+      </div>
+      <div class="perf">
+        <div class="perf-c"><div class="pv">4</div><div class="pl">총 발송</div></div>
+        <div class="perf-c"><div class="pv">3,892</div><div class="pl">발송 건수</div></div>
+        <div class="perf-c"><div class="pv">42.3%</div><div class="pl">평균 오픈율</div></div>
+        <div class="perf-c"><div class="pv">8.7%</div><div class="pl">평균 클릭률</div></div>
+      </div>
+      <div class="chart-ph">📊 오픈율 / 클릭률 추이 차트</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h3 style="font-size:14px;">발송 이력</h3>
+        <button class="btn btn-sm btn-primary">+ 새 이메일</button>
+      </div>
+      <table>
+        <tr><th>제목</th><th>대상</th><th>발송</th><th>오픈율</th><th>클릭률</th><th>날짜</th></tr>
+        <tr><td><strong>[BS CAMP] QA 테스트</strong></td><td><span class="b b-info">custom</span></td><td>1</td><td>100%</td><td>0%</td><td style="color:#999;font-size:12px">2/8</td></tr>
+        <tr><td>[BS CAMP] React Email Test</td><td><span class="b b-info">custom</span></td><td>1</td><td>100%</td><td>100%</td><td style="color:#999;font-size:12px">2/7</td></tr>
+        <tr><td>[BS CAMP] 테스트 이메일 2</td><td><span class="b b-info">custom</span></td><td>1</td><td>100%</td><td>0%</td><td style="color:#999;font-size:12px">2/6</td></tr>
+        <tr><td style="color:#999">[BS CAMP] 테스트 이메일</td><td><span class="b b-info">custom</span></td><td><span class="b b-fail">실패</span></td><td>—</td><td>—</td><td style="color:#999;font-size:12px">2/6</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 5. 상세: 정보공유 (WYSIWYG) ========== -->
+<div class="page-label">5. 콘텐츠 상세 → 정보공유 탭 (WYSIWYG — 보이는 그대로 편집)</div>
+<div class="container" style="min-height:580px">
+  <div class="sidebar">
+    <div class="sidebar-brand"><h3>BS CAMP</h3><span>Ad Analytics</span></div>
+    <div class="nav-section">
+      <div class="nav-item">📊 대시보드</div>
+      <div class="nav-item">📄 정보공유</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">관리</div>
+      <div class="nav-item sub">📝 콘텐츠 관리</div>
+      <div class="nav-item">👥 회원 관리</div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="topbar"><h1>콘텐츠 관리</h1><div class="avatar">SM</div></div>
+    <div class="content">
+      <div class="d-header">
+        <div>
+          <div class="back">← 콘텐츠 목록</div>
+          <h1>메타 광고 크리에이티브 실전 가이드</h1>
+          <div class="d-meta"><span class="b b-edu">교육</span><span class="b b-pub">게시완료</span><span style="font-size:12px;color:#999">2026.02.07</span></div>
+        </div>
+        <div style="display:flex;gap:8px"><button class="btn btn-outline">미리보기</button><button class="btn btn-success">저장</button></div>
+      </div>
+      <div class="d-tabs">
+        <div class="d-tab active">정보공유</div>
+        <div class="d-tab">뉴스레터</div>
+        <div class="d-tab">설정</div>
+      </div>
+      <div class="d-layout">
+        <div class="d-main" style="position:relative">
+          <div class="wysiwyg-toolbar">
+            <button><b>B</b></button><button><i>I</i></button><button>H1</button><button>H2</button><button>H3</button><button>—</button><button>📋</button><button>🔢</button><button>📊 표</button><button>🖼 이미지</button><button>🔗</button><button>💬 인용</button>
+          </div>
+          <div class="wysiwyg">
+            <div class="img-ph">🖼 헤더 이미지 (클릭하여 교체)</div>
+            <h1>메타 광고 크리에이티브 실전 가이드</h1>
+            <p>같은 예산, 같은 타겟인데 왜 어떤 광고는 ROAS 5배이고 어떤 광고는 1배도 안 될까요? 답은 <strong>크리에이티브</strong>에 있어요.</p>
+            
+            <h2>1. 왜 크리에이티브가 가장 중요한가</h2>
+            <p>2022년까지는 "얼마나 정교하게 타겟팅하느냐"가 메타 광고의 승부처였어요. 맞춤 타겟, 유사 타겟, 관심사 타겟을 얼마나 잘 설정하느냐에 따라 성과가 갈렸죠.</p>
+            <p>그런데 iOS 14.5 이후 상황이 완전히 바뀌었어요. 메타는 <strong>AI 기반 자동 타겟팅</strong>을 전면에 내세웠어요.</p>
+            
+            <blockquote>광고 경매 공식: 총 가치 = 입찰가 × 추정 행동률 × 광고 품질. 여기서 '추정 행동률'과 '광고 품질' 모두 크리에이티브에 의해 좌우돼요.</blockquote>
+
+            <h2>2. 동영상 3초 법칙</h2>
+            <table>
+              <tr><th>3초 시청률</th><th>판단</th><th>액션</th></tr>
+              <tr><td>40% 이상</td><td>훅 성공</td><td>이 패턴을 다른 소재에도 적용</td></tr>
+              <tr><td>25~40%</td><td>보통</td><td>첫 1초를 더 강하게</td></tr>
+              <tr><td>25% 미만</td><td>훅 실패</td><td>완전히 다른 오프닝으로 교체</td></tr>
+            </table>
+
+            <h2>3. UGC 스타일이 프로 영상을 이기는 이유</h2>
+            <p>핸드폰으로 찍은 리뷰나 언박싱 영상이 더 높은 전환율을 보여주고 있어요...</p>
+          </div>
+        </div>
+        <div class="d-side">
+          <div class="meta-card">
+            <h4>썸네일</h4>
+            <div class="thumb">🖼 헤더 이미지</div>
+            <button class="btn btn-sm" style="width:100%">이미지 변경</button>
+          </div>
+          <div class="meta-card">
+            <h4>게시 정보</h4>
+            <div class="meta-row"><span class="ml">상태</span><span class="mv"><span class="b b-pub">게시완료</span></span></div>
+            <div class="meta-row"><span class="ml">카테고리</span><span class="mv">교육</span></div>
+            <div class="meta-row"><span class="ml">조회수</span><span class="mv">10</span></div>
+            <div class="meta-row"><span class="ml">게시일</span><span class="mv">2026.02.07</span></div>
+          </div>
+          <div class="meta-card">
+            <h4>뉴스레터</h4>
+            <div class="meta-row"><span class="ml">상태</span><span class="mv"><span class="b b-draft">미발송</span></span></div>
+            <button class="btn btn-sm btn-outline" style="width:100%;margin-top:6px">뉴스레터 탭 →</button>
+          </div>
+        </div>
+      </div>
+      <div class="note" style="margin-top:12px"><strong>MDXEditor WYSIWYG:</strong> 별도 미리보기 없음. 편집 화면 = 최종 결과물. 테이블/이미지/인용문 클릭하여 바로 수정.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 6. 상세: 뉴스레터 ========== -->
+<div class="page-label">6. 콘텐츠 상세 → 뉴스레터 탭 (MDXEditor 통일 + 이메일 미리보기)</div>
+<div class="container" style="min-height:520px">
+  <div class="sidebar">
+    <div class="sidebar-brand"><h3>BS CAMP</h3><span>Ad Analytics</span></div>
+    <div class="nav-section">
+      <div class="nav-item">📊 대시보드</div>
+      <div class="nav-item">📄 정보공유</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">관리</div>
+      <div class="nav-item sub">📝 콘텐츠 관리</div>
+      <div class="nav-item">👥 회원 관리</div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="topbar"><h1>콘텐츠 관리</h1><div class="avatar">SM</div></div>
+    <div class="content">
+      <div class="d-header">
+        <div>
+          <div class="back">← 콘텐츠 목록</div>
+          <h1>메타 광고 크리에이티브 실전 가이드</h1>
+          <div class="d-meta"><span class="b b-edu">교육</span><span class="b b-pub">게시완료</span></div>
+        </div>
+        <div style="display:flex;gap:8px"><button class="btn btn-outline">테스트 발송</button><button class="btn btn-primary">발송하기 (1,000명)</button></div>
+      </div>
+      <div class="d-tabs">
+        <div class="d-tab">정보공유</div>
+        <div class="d-tab active">뉴스레터</div>
+        <div class="d-tab">설정</div>
+      </div>
+
+      <!-- 발송 설정 -->
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <div style="flex:1"><label style="font-size:11px;color:#999;display:block;margin-bottom:4px">수신 대상</label><select style="width:100%;padding:7px;border:1px solid #ddd;border-radius:6px;font-size:13px"><option>전체 리드 (1,000명)</option></select></div>
+        <div style="flex:1"><label style="font-size:11px;color:#999;display:block;margin-bottom:4px">템플릿</label><select style="width:100%;padding:7px;border:1px solid #ddd;border-radius:6px;font-size:13px"><option>최신정보</option></select></div>
+      </div>
+      <div style="margin-bottom:12px"><label style="font-size:11px;color:#999;display:block;margin-bottom:4px">제목</label><input style="width:100%;padding:7px;border:1px solid #ddd;border-radius:6px;font-size:13px" value="[BS CAMP] 메타 광고 크리에이티브 실전 가이드"></div>
+
+      <!-- MDXEditor + 이메일 미리보기 분할 -->
+      <div class="email-split">
+        <div class="email-edit">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:12px;font-weight:600;color:#555">마크다운 편집</span>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-sm hl" style="border-color:#d1c4e9">📄 정보공유에서 가져오기</button>
+              <button class="btn btn-sm hl" style="border-color:#d1c4e9">✨ AI 요약</button>
+            </div>
+          </div>
+          <div class="wysiwyg-toolbar">
+            <button><b>B</b></button><button><i>I</i></button><button>H1</button><button>H2</button><button>H3</button><button>—</button><button>📋</button><button>🔢</button><button>📊 표</button><button>🖼 이미지</button><button>🔗</button><button>💬 인용</button>
+          </div>
+          <div class="wysiwyg" style="min-height:240px">
+            <p>메타 광고에서 가장 중요한 변수가 뭔지 아시나요?</p>
+            <p>타겟팅? 예산? 아니에요. 바로 <strong>크리에이티브</strong>예요.</p>
+
+            <h2>핵심 요약</h2>
+            <p>광고 성과의 56~70%가 소재 품질로 결정돼요. iOS 14.5 이후 타겟팅보다 크리에이티브가 더 중요해졌어요.</p>
+
+            <blockquote>광고 경매 공식: 총 가치 = 입찰가 × 추정 행동률 × 광고 품질</blockquote>
+
+            <h2>실전 체크리스트</h2>
+            <table>
+              <tr><th>항목</th><th>기준</th></tr>
+              <tr><td>3초 시청률</td><td>40% 이상이면 훅 성공</td></tr>
+              <tr><td>CTR</td><td>1.5% 이상 목표</td></tr>
+              <tr><td>소재 교체 주기</td><td>2주마다 리프레시</td></tr>
+            </table>
+
+            <p>자세한 내용은 아래 버튼을 눌러 확인하세요.</p>
+          </div>
+          <div class="note" style="margin-top:8px;font-size:11px"><strong>정보공유 탭과 동일한 MDXEditor.</strong> "정보공유에서 가져오기" → body_md 전체를 email_summary로 복사. "AI 요약" → 긴 본문을 뉴스레터용 짧은 요약으로 자동 변환.</div>
+        </div>
+        <div class="email-preview">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:-16px -16px 12px;padding:8px 12px;background:#f0f0f0;border-radius:6px 6px 0 0">
+            <span style="font-size:12px;font-weight:600;color:#555">이메일 미리보기</span>
+            <span style="font-size:10px;color:#999">@react-email/markdown 렌더링</span>
+          </div>
+          <div style="text-align:center;padding:10px;background:#6c5ce7;color:white;border-radius:6px 6px 0 0;font-size:13px;font-weight:600">BS CAMP</div>
+          <div style="border:1px solid #eee;border-top:none;border-radius:0 0 6px 6px;padding:16px">
+            <div style="background:#e8e8e8;height:80px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px;margin-bottom:12px">🖼 헤더 이미지</div>
+            <h3 style="font-size:15px;margin-bottom:8px">메타 광고 크리에이티브 실전 가이드</h3>
+            <p style="font-size:12px;line-height:1.7;color:#555;margin-bottom:6px">메타 광고에서 가장 중요한 변수가 뭔지 아시나요?</p>
+            <p style="font-size:12px;line-height:1.7;color:#555;margin-bottom:8px">타겟팅? 예산? 아니에요. 바로 <strong style="color:#6c5ce7">크리에이티브</strong>예요.</p>
+            <div style="border-left:3px solid #6c5ce7;padding:6px 10px;margin:10px 0;background:#f8f7ff;font-size:11px;color:#555;font-style:italic">광고 경매 공식: 총 가치 = 입찰가 × 추정 행동률 × 광고 품질</div>
+            <h4 style="font-size:13px;margin:10px 0 6px">핵심 요약</h4>
+            <p style="font-size:12px;line-height:1.7;color:#555;margin-bottom:6px">광고 성과의 56~70%가 소재 품질로 결정돼요...</p>
+            <table style="width:100%;border-collapse:collapse;margin:8px 0;font-size:11px">
+              <tr><th style="border:1px solid #ddd;padding:5px 8px;background:#f8f9fa;text-align:left">항목</th><th style="border:1px solid #ddd;padding:5px 8px;background:#f8f9fa;text-align:left">기준</th></tr>
+              <tr><td style="border:1px solid #ddd;padding:5px 8px">3초 시청률</td><td style="border:1px solid #ddd;padding:5px 8px">40% 이상</td></tr>
+              <tr><td style="border:1px solid #ddd;padding:5px 8px">CTR</td><td style="border:1px solid #ddd;padding:5px 8px">1.5% 이상</td></tr>
+            </table>
+            <div style="text-align:center;margin:14px 0"><button class="btn btn-sm btn-primary" style="pointer-events:none">자세히 읽기 →</button></div>
+            <hr style="margin:12px 0;border:none;border-top:1px solid #eee">
+            <p style="font-size:10px;color:#999;text-align:center">자사몰 사관학교 · 수신거부</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

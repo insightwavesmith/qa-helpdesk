@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RAG 엔진 아키텍처 리뷰 보고서</title>
+  <style>
+    :root { --primary: #F75D5D; --bg: #fff; --text: #1a1a1a; --muted: #6b7280; --border: #e5e7eb; --code-bg: #f3f4f6; --green: #16a34a; --green-bg: #dcfce7; --blue: #2563eb; --blue-bg: #dbeafe; --amber: #d97706; --amber-bg: #fef3c7; --red: #dc2626; --red-bg: #fee2e2; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+    h2 { font-size: 22px; font-weight: 700; margin-top: 48px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--primary); }
+    h3 { font-size: 17px; font-weight: 700; margin-top: 28px; margin-bottom: 10px; }
+    h4 { font-size: 15px; font-weight: 600; margin-top: 20px; margin-bottom: 8px; }
+    p, li { font-size: 15px; }
+    .subtitle { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+    .box { padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 20px 0; font-size: 14px; }
+    .blue { background: var(--blue-bg); border-left: 4px solid var(--blue); }
+    .amber { background: var(--amber-bg); border-left: 4px solid var(--amber); }
+    .green { background: var(--green-bg); border-left: 4px solid var(--green); }
+    .red { background: var(--red-bg); border-left: 4px solid var(--red); }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+    th, td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; }
+    th { background: var(--code-bg); font-weight: 600; }
+    code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', monospace; }
+    pre { background: var(--code-bg); padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 12px 0; }
+    pre code { background: none; padding: 0; }
+    ul, ol { padding-left: 24px; margin: 8px 0; }
+    li { margin: 4px 0; }
+    .score { display: inline-block; font-size: 40px; font-weight: 800; color: var(--primary); margin-right: 12px; vertical-align: middle; }
+    .score-label { display: inline-block; vertical-align: middle; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+    .badge-green { background: var(--green-bg); color: var(--green); }
+    .badge-amber { background: var(--amber-bg); color: var(--amber); }
+    .badge-red { background: var(--red-bg); color: var(--red); }
+    .badge-blue { background: var(--blue-bg); color: var(--blue); }
+    .mermaid { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin: 16px 0; text-align: center; }
+  </style>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'neutral', flowchart: { curve: 'basis' } });
+  </script>
+</head>
+<body>
+
+<h1>RAG 엔진 아키텍처 리뷰 보고서</h1>
+<p class="subtitle">rag-engine-architecture.md vs 실제 코드 대조 | 2026-02-16 | 리뷰어: 에이전트팀</p>
+
+<!-- ============================== 1. 종합 평가 ============================== -->
+<h2>1. 종합 평가</h2>
+
+<div>
+  <span class="score">82</span>
+  <span class="score-label">
+    <strong>/ 100</strong><br>
+    <span style="font-size:14px; color:var(--muted)">아키텍처 문서 ↔ 실제 코드 일치도</span>
+  </span>
+</div>
+
+<div class="box blue">
+  <strong>핵심 결론</strong><br>
+  RAG 엔진 아키텍처 문서는 현재 코드를 <strong>정확하게 분석</strong>하고 있으며, 목표 아키텍처의 방향도 타당하다.<br>
+  현재 knowledge.ts의 generate() 함수가 이미 <strong>암묵적 5단계 파이프라인</strong>으로 구성되어 있고,
+  6개 인터페이스 중 <strong>4개가 암묵적으로 구현</strong>되어 있다.
+  주요 간극은 (1) rag.ts 중복 코드, (2) summarize 라우트의 KS 우회, (3) 에러 메시지 불일치.
+</div>
+
+<h3>모델 사용 현황 (정확한 구분)</h3>
+
+<table>
+  <tr><th>역할</th><th>모델</th><th>파일</th><th>API</th></tr>
+  <tr>
+    <td><strong>임베딩</strong></td>
+    <td>Gemini <code>gemini-embedding-001</code> (768차원)</td>
+    <td><code>src/lib/gemini.ts:4</code></td>
+    <td>generativelanguage.googleapis.com</td>
+  </tr>
+  <tr>
+    <td><strong>생성 (KS)</strong></td>
+    <td>Anthropic <code>claude-opus-4-6</code></td>
+    <td><code>src/lib/knowledge.ts:174</code></td>
+    <td>api.anthropic.com/v1/messages</td>
+  </tr>
+  <tr>
+    <td><strong>요약 (KS 우회)</strong></td>
+    <td>Google <code>gemini-2.0-flash</code></td>
+    <td><code>api/admin/content/summarize/route.ts</code></td>
+    <td>generativelanguage.googleapis.com</td>
+  </tr>
+</table>
+
+<div class="box amber">
+  <strong>주의</strong>: Gemini는 <strong>임베딩만</strong> 담당한다. 생성(LLM)은 <strong>Anthropic Opus 4.6</strong>이다.
+  유일한 예외는 summarize 라우트가 Gemini Flash를 직접 호출하는 것이며, 이는 KS를 우회하는 문제 케이스다.
+</div>
+
+<table>
+  <tr><th>항목</th><th>점수</th><th>세부</th></tr>
+  <tr><td>AS-IS 분석 정확성</td><td><span class="badge badge-green">95</span></td><td>파일 맵, 호출 체인, 잘 된 것/개선점 모두 정확</td></tr>
+  <tr><td>인터페이스 매핑</td><td><span class="badge badge-green">85</span></td><td>6개 중 4개 암묵적 구현, 2개 미구현 (문서에 명시)</td></tr>
+  <tr><td>파이프라인 매핑</td><td><span class="badge badge-green">90</span></td><td>5단계가 generate()에 순서대로 존재</td></tr>
+  <tr><td>확장 시나리오 현실성</td><td><span class="badge badge-green">85</span></td><td>8개 중 6개 즉시 가능, 2개 인프라 추가 필요</td></tr>
+  <tr><td>ADR 판단</td><td><span class="badge badge-green">90</span></td><td>6개 모두 현실적이고 코드 검증 가능</td></tr>
+  <tr><td>코드 버그 반영</td><td><span class="badge badge-amber">60</span></td><td>에러 메시지 불일치, tokenBudget 글자수 기준 문제 미언급</td></tr>
+</table>
+
+<!-- ============================== 2. 인터페이스 매핑 ============================== -->
+<h2>2. 인터페이스 매핑 검증 (T1)</h2>
+
+<h3>2-1. 6개 인터페이스 매핑표</h3>
+
+<table>
+  <tr><th>문서 인터페이스</th><th>현재 코드 매핑</th><th>상태</th><th>세부 분석</th></tr>
+  <tr>
+    <td><strong>EmbeddingProvider</strong><br><code>embed(text): number[]</code><br><code>dimensions: 768</code><br><code>modelName: string</code></td>
+    <td><code>gemini.ts:14</code><br><code>generateEmbedding(text)</code></td>
+    <td><span class="badge badge-green">암묵적 구현</span></td>
+    <td>
+      함수 시그니처 일치: <code>text &rarr; number[]</code><br>
+      dimensions=768 하드코딩 (gemini.ts:26)<br>
+      modelName은 상수 <code>EMBEDDING_MODEL</code>로 존재<br>
+      <strong>분리 가능</strong>: 함수를 class로 래핑하면 인터페이스 구현 완료
+    </td>
+  </tr>
+  <tr>
+    <td><strong>ChunkStore</strong><br><code>search(embedding, options): ChunkResult[]</code><br><code>upsert, delete, count</code></td>
+    <td><code>knowledge.ts:147-170</code><br><code>searchChunks()</code> (인라인)<br>+ Supabase RPC <code>match_lecture_chunks</code></td>
+    <td><span class="badge badge-amber">부분 구현</span></td>
+    <td>
+      <code>search</code>: &#10003; searchChunks()로 구현<br>
+      <code>upsert</code>: &#10007; 미구현 (현재 Supabase 직접 INSERT)<br>
+      <code>delete</code>: &#10007; 미구현<br>
+      <code>count</code>: &#10007; 미구현<br>
+      <strong>분리 가능</strong>: search만 추출해도 핵심 기능 커버
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Retriever</strong><br><code>retrieve(query, config): ChunkResult[]</code></td>
+    <td><code>knowledge.ts:207</code><br><code>searchChunks(query, limit, threshold, sourceTypes)</code><br>+ <code>truncateToTokenBudget()</code> (L186)</td>
+    <td><span class="badge badge-green">암묵적 구현</span></td>
+    <td>
+      embed &rarr; search &rarr; filter &rarr; budget trim 순서 존재<br>
+      rerank 미구현 (문서에 명시적으로 "현재 없음" 표기)<br>
+      <strong>분리 가능</strong>: searchChunks + truncate를 Retriever 클래스로 래핑
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Generator</strong><br><code>generate(params): GenerateResult</code><br><code>modelName: string</code></td>
+    <td><code>knowledge.ts:228-253</code><br>Anthropic API fetch 블록</td>
+    <td><span class="badge badge-green">암묵적 구현</span></td>
+    <td>
+      <code>MODEL = "claude-opus-4-6"</code> (L174)<br>
+      <code>API_URL = "https://api.anthropic.com/v1/messages"</code> (L175)<br>
+      systemPrompt, userContent, temperature, maxTokens, timeout 모두 파라미터화<br>
+      <strong>분리 가능</strong>: fetch 블록을 AnthropicGenerator 클래스로 추출
+    </td>
+  </tr>
+  <tr>
+    <td><strong>ContextProvider</strong><br><code>name: string</code><br><code>getContext(): string | null</code></td>
+    <td>&mdash;</td>
+    <td><span class="badge badge-red">미구현</span></td>
+    <td>
+      문서에 PerformanceContextProvider, UserHistoryContext 제안<br>
+      현재 코드에 컨텍스트 확장점 없음<br>
+      단, <code>systemPromptOverride</code>가 유사 역할 수행 중<br>
+      <strong>구현 필요</strong>: Phase B-1에서 구현 예정 (문서 계획대로)
+    </td>
+  </tr>
+  <tr>
+    <td><strong>UsageLogger</strong><br><code>log(entry): void</code> (fire-and-forget)</td>
+    <td><code>knowledge.ts:270-282</code><br>fire-and-forget INSERT to <code>knowledge_usage</code></td>
+    <td><span class="badge badge-green">암묵적 구현</span></td>
+    <td>
+      fire-and-forget 패턴 정확 구현<br>
+      <code>Promise.resolve(...).catch()</code>로 에러 격리<br>
+      consumer_type, tokens, model, duration_ms 기록<br>
+      <strong>분리 가능</strong>: INSERT 블록을 UsageLogger 클래스로 추출
+    </td>
+  </tr>
+</table>
+
+<div class="box green">
+  <strong>결론</strong>: 6개 인터페이스 중 <strong>4개가 암묵적으로 이미 구현</strong>되어 있다.
+  인터페이스 추출은 기존 코드를 class로 래핑하는 작업이며, 로직 변경 없이 가능하다.
+  ContextProvider만 신규 구현이 필요하다.
+</div>
+
+<h3>2-2. rag.ts 중복 분석</h3>
+
+<table>
+  <tr><th>함수</th><th>knowledge.ts 대응</th><th>차이점</th><th>판정</th></tr>
+  <tr>
+    <td><code>rag.ts:29-55</code><br><code>searchRelevantChunks()</code></td>
+    <td><code>knowledge.ts:147-170</code><br><code>searchChunks()</code></td>
+    <td>
+      동일 로직: createServiceClient &rarr; generateEmbedding &rarr; rpc("match_lecture_chunks")<br>
+      파라미터명 차이만 존재 (<code>questionText</code> vs <code>queryText</code>)
+    </td>
+    <td><span class="badge badge-red">완전 중복</span></td>
+  </tr>
+  <tr>
+    <td><code>rag.ts:60-81</code><br><code>generateRAGAnswer()</code></td>
+    <td><code>knowledge.ts:192</code><br><code>generate()</code></td>
+    <td>
+      title+content 결합 &rarr; <code>ksGenerate({ consumerType: "qa" })</code> 호출<br>
+      반환값 변환만 수행 (content &rarr; answer 리네임)
+    </td>
+    <td><span class="badge badge-amber">얇은 래퍼</span></td>
+  </tr>
+  <tr>
+    <td><code>rag.ts:87-124</code><br><code>createAIAnswerForQuestion()</code></td>
+    <td>&mdash;</td>
+    <td>
+      generateRAGAnswer() + answers 테이블 INSERT<br>
+      is_ai=true, is_approved=false 설정
+    </td>
+    <td><span class="badge badge-blue">유일 기능</span></td>
+  </tr>
+</table>
+
+<div class="box amber">
+  <strong>제안</strong>: 문서 Phase A-1 계획 동의. <code>searchRelevantChunks()</code>는 삭제하고,
+  <code>generateRAGAnswer()</code>는 knowledge.ts의 generate() 위임으로 유지 (이미 그렇게 되어 있음).
+  <code>createAIAnswerForQuestion()</code>은 <code>actions/questions.ts</code>로 이동하거나 rag.ts를 re-export 전용으로 변경.
+</div>
+
+<!-- ============================== 3. 파이프라인 검증 ============================== -->
+<h2>3. 파이프라인 5단계 검증 (T2)</h2>
+
+<h3>3-1. generate() 함수 내부 &rarr; 5단계 매핑</h3>
+
+<div class="mermaid">
+<pre class="mermaid">
+graph LR
+  Q[Query] --> S1["1. Preprocessor<br/>L199-204<br/>config 해석"]
+  S1 --> S2["2. Retriever<br/>L207<br/>searchChunks()"]
+  S2 --> S3["3. Assembler<br/>L210-221<br/>contextText + userContent"]
+  S3 --> S4["4. Generator<br/>L228-253<br/>Anthropic Opus 4.6"]
+  S4 --> S5["5. PostProcessor<br/>L261-284<br/>sourceRefs + logging"]
+  S5 --> R[Response]
+
+  style S1 fill:#dbeafe,stroke:#2563eb
+  style S2 fill:#dcfce7,stroke:#16a34a
+  style S3 fill:#fef3c7,stroke:#d97706
+  style S4 fill:#fee2e2,stroke:#dc2626
+  style S5 fill:#f3e8ff,stroke:#7c3aed
+</pre>
+</div>
+
+<table>
+  <tr><th>단계</th><th>문서 정의</th><th>코드 위치</th><th>일치도</th><th>분리 가능성</th></tr>
+  <tr>
+    <td><strong>1. Preprocessor</strong></td>
+    <td>쿼리 정규화, HyDE, 언어 감지</td>
+    <td><code>knowledge.ts:199-204</code><br>config 파라미터 해석 (<code>??</code> 연산자 체인)</td>
+    <td><span class="badge badge-amber">부분</span></td>
+    <td>
+      현재: identity (query 그대로 사용) &mdash; 문서도 "현재: 없음"으로 인정<br>
+      config 해석은 Preprocessor보다 Config Resolution에 가까움<br>
+      <strong>분리 가능</strong>: config &rarr; 별도 함수, query preprocessing &rarr; 빈 함수에서 시작
+    </td>
+  </tr>
+  <tr>
+    <td><strong>2. Retriever</strong></td>
+    <td>embed &rarr; search &rarr; filter &rarr; rerank &rarr; budget trim</td>
+    <td><code>knowledge.ts:207</code> (searchChunks)<br><code>knowledge.ts:210-216</code> (budget trim)</td>
+    <td><span class="badge badge-green">높음</span></td>
+    <td>
+      2a. Embed: generateEmbedding(queryText) (gemini.ts)<br>
+      2b. Search: rpc("match_lecture_chunks")<br>
+      2c. Filter: filter_source_types + threshold<br>
+      2d. Rerank: 미구현 (문서에 명시)<br>
+      2e. Budget: truncateToTokenBudget()<br>
+      <strong>분리 가능</strong>: searchChunks를 VectorRetriever 클래스로 추출
+    </td>
+  </tr>
+  <tr>
+    <td><strong>3. Assembler</strong></td>
+    <td>systemPrompt + contextProviders + chunks + query &rarr; userContent</td>
+    <td><code>knowledge.ts:210-221</code></td>
+    <td><span class="badge badge-amber">부분</span></td>
+    <td>
+      chunks 포맷: <code>"[강의명 - 주차]\n내용"</code> 형식 구현됨<br>
+      userContent: <code>"## 참고 강의 자료\n{context}\n\n## 질문\n{query}"</code> 구현됨<br>
+      contextProviders: 미구현 (문서 제안 사항)<br>
+      빈 context 시: query만 전달 구현됨<br>
+      <strong>분리 가능</strong>: context 조합 로직을 assembleContext() 함수로 추출
+    </td>
+  </tr>
+  <tr>
+    <td><strong>4. Generator</strong></td>
+    <td>systemPrompt + userContent &rarr; Anthropic API &rarr; content + tokens</td>
+    <td><code>knowledge.ts:228-253</code></td>
+    <td><span class="badge badge-green">높음</span></td>
+    <td>
+      AbortController + timeout: 280s 구현됨<br>
+      에러 핸들링 (401/403): 구현됨<br>
+      temperature, max_tokens, model 파라미터화 구현됨<br>
+      <strong>분리 가능</strong>: fetch 블록을 AnthropicGenerator 클래스로 추출<br>
+      <span class="badge badge-red">버그</span> L287 에러 메시지 "55초" &larr; 실제 280s
+    </td>
+  </tr>
+  <tr>
+    <td><strong>5. PostProcessor</strong></td>
+    <td>sourceRefs + 토큰 합산 + 로깅 + (확장) 품질 체크</td>
+    <td><code>knowledge.ts:261-284</code></td>
+    <td><span class="badge badge-green">높음</span></td>
+    <td>
+      sourceRefs 생성: chunks.map() (L261-266)<br>
+      토큰 합산: input + output (L257-258)<br>
+      fire-and-forget 로깅: Promise.resolve().catch() (L270-282)<br>
+      품질 체크/캐싱: 미구현 (문서의 "확장 가능" 항목)<br>
+      <strong>분리 가능</strong>: PostProcessor 함수로 추출 가능
+    </td>
+  </tr>
+</table>
+
+<div class="box green">
+  <strong>결론</strong>: generate() 함수는 이미 <strong>5단계 순서를 정확히 따르고</strong> 있다.
+  각 단계가 인라인이지만 코드 블록이 명확하게 구분되어 있어 분리 가능성이 높다.
+  문서의 파이프라인 설계는 현재 코드의 <strong>자연스러운 리팩터링 방향</strong>을 제시하고 있다.
+</div>
+
+<h3>3-2. KS 우회 분석 &mdash; summarize 라우트</h3>
+
+<table>
+  <tr><th>항목</th><th>KS 경유 (정상)</th><th>summarize 라우트 (우회)</th></tr>
+  <tr><td>모델</td><td>Anthropic Opus 4.6</td><td><strong>Gemini 2.0 Flash</strong></td></tr>
+  <tr><td>RAG 검색</td><td>consumerConfig에 따름</td><td>없음 (본문만 요약)</td></tr>
+  <tr><td>knowledge_usage 로깅</td><td>fire-and-forget INSERT</td><td><strong>로깅 없음</strong></td></tr>
+  <tr><td>프롬프트 관리</td><td>CONSUMER_CONFIGS 중앙 관리</td><td>라우트 내부 하드코딩</td></tr>
+  <tr><td>에러 핸들링</td><td>통합 (401/403/timeout)</td><td>개별 구현</td></tr>
+  <tr><td>비용 추적</td><td>토큰 기록</td><td><strong>추적 불가</strong></td></tr>
+</table>
+
+<div class="box red">
+  <strong>문제</strong>: summarize 라우트는 파이프라인 설계와 충돌한다.<br>
+  1) 비용 추적 누락 &mdash; knowledge_usage에 기록되지 않아 전체 LLM 비용 파악 불가<br>
+  2) 프롬프트 분산 &mdash; 라우트 내부에 프롬프트가 하드코딩되어 중앙 관리 불가<br>
+  3) 모델 분기 미관리 &mdash; Gemini Flash 사용이 KS 밖에서 발생<br><br>
+  <strong>문서 제안 (Phase A-3) 동의</strong>: <code>"summary"</code> consumer를 추가하되,
+  <strong>Opus 대신 Gemini Flash를 쓸 수 있는 Generator 분기</strong>가 필요.
+  이는 ADR-R4 (소비자별 모델 분기)의 첫 번째 실제 적용 사례가 된다.
+</div>
+
+<h3>3-3. 전체 호출 체인 다이어그램</h3>
+
+<div class="mermaid">
+<pre class="mermaid">
+graph TB
+  subgraph "질문 등록 QA"
+    QA1["actions/questions.ts<br/>createQuestion()"] --> QA2["after()"]
+    QA2 --> QA3["rag.ts<br/>createAIAnswerForQuestion()"]
+    QA3 --> QA4["rag.ts<br/>generateRAGAnswer()"]
+    QA4 --> KS["knowledge.ts<br/>generate consumerType=qa"]
+  end
+
+  subgraph "콘텐츠 수정 AI Edit"
+    CE1["ai-edit-panel.tsx"] --> CE2["actions/contents.ts<br/>reviseContentWithAI()"]
+    CE2 --> KS2["knowledge.ts<br/>generate limit=0 + override"]
+  end
+
+  subgraph "콘텐츠 생성"
+    CG1["detail-sidebar.tsx"] --> CG2["actions/contents.ts<br/>generateContentWithAI()"]
+    CG2 --> KS3["knowledge.ts<br/>generate education/webinar"]
+  end
+
+  subgraph "뉴스레터 요약 KS 우회"
+    NS1["newsletter-edit-panel"] --> NS2["api/admin/content/<br/>summarize/route.ts"]
+    NS2 --> GF["Gemini 2.0 Flash<br/>직접 호출"]
+  end
+
+  KS --> EMB["gemini.ts<br/>generateEmbedding()"]
+  KS --> ANTHR["Anthropic API<br/>Opus 4.6"]
+  KS --> LOG["knowledge_usage<br/>INSERT"]
+
+  KS2 --> ANTHR
+  KS2 --> LOG
+  KS3 --> EMB
+  KS3 --> ANTHR
+  KS3 --> LOG
+
+  style GF fill:#fee2e2,stroke:#dc2626
+  style NS2 fill:#fee2e2,stroke:#dc2626
+</pre>
+</div>
+
+<!-- ============================== 4. 확장 시나리오 검증 ============================== -->
+<h2>4. 확장 시나리오 검증 (T3)</h2>
+
+<table>
+  <tr><th>#</th><th>시나리오</th><th>현실성</th><th>코드 변경량</th><th>검증 결과</th></tr>
+  <tr>
+    <td>4-1</td>
+    <td><strong>새 소스 타입 추가</strong><br>(webinar_recording)</td>
+    <td><span class="badge badge-green">즉시 가능</span></td>
+    <td>타입 1줄 + 설정 1줄</td>
+    <td>
+      <code>SourceType</code> union에 값 추가 (knowledge.ts:18-23)<br>
+      <code>match_lecture_chunks</code> RPC의 <code>filter_source_types</code>가 동적이라 변경 불필요<br>
+      <code>lecture_chunks.source_type</code>에 새 값 INSERT만으로 검색 가능
+    </td>
+  </tr>
+  <tr>
+    <td>4-2</td>
+    <td><strong>새 소비자 추가</strong><br>(lead_nurture)</td>
+    <td><span class="badge badge-green">즉시 가능</span></td>
+    <td>타입 1줄 + config 블록</td>
+    <td>
+      6개 소비자가 이미 동일 패턴으로 동작 중 &mdash; 검증됨<br>
+      <code>ConsumerType</code> union + <code>CONSUMER_CONFIGS</code> 추가만으로 완료<br>
+      <code>reviseContentWithAI()</code>의 <code>CONTENT_TO_CONSUMER</code> 매핑도 동일 패턴
+    </td>
+  </tr>
+  <tr>
+    <td>4-3</td>
+    <td><strong>임베딩 모델 교체</strong><br>(OpenAI text-embedding-3-large)</td>
+    <td><span class="badge badge-amber">가능 (작업 필요)</span></td>
+    <td>Provider 1개 + 전체 재임베딩</td>
+    <td>
+      <code>generateEmbedding()</code>이 분리되어 있어 교체 용이<br>
+      차원 변경 시 pgvector 인덱스 + RPC 수정 필요 (768 &rarr; 3072)<br>
+      기존 lecture_chunks 전체 재임베딩 필수 (비용 + 시간)<br>
+      이전 deprecation 경험 (text-embedding-004 &rarr; embedding-001) &mdash; 문서에 정확히 반영
+    </td>
+  </tr>
+  <tr>
+    <td>4-4</td>
+    <td><strong>LLM 모델 교체/분기</strong><br>(소비자별 다른 모델)</td>
+    <td><span class="badge badge-amber">인프라 추가 필요</span></td>
+    <td>Generator 추출 + 설정 확장</td>
+    <td>
+      현재 <code>MODEL = "claude-opus-4-6"</code> 하드코딩 (L174)<br>
+      Generator 인터페이스 추출이 선행되어야 함<br>
+      summarize 라우트의 Gemini Flash가 첫 번째 분기 대상 후보<br>
+      <strong>제안</strong>: ConsumerConfig에 <code>generator: "anthropic-opus" | "gemini-flash"</code> 추가
+    </td>
+  </tr>
+  <tr>
+    <td>4-5</td>
+    <td><strong>하이브리드 검색</strong><br>(vector + keyword)</td>
+    <td><span class="badge badge-amber">인프라 추가 필요</span></td>
+    <td>RPC 확장 + Retriever 구현</td>
+    <td>
+      현재 벡터 검색만 (pgvector cosine similarity)<br>
+      tsvector 컬럼 + GIN 인덱스 추가 필요 (L0 변경)<br>
+      Retriever 인터페이스가 분리되면 HybridRetriever로 교체 가능<br>
+      기존 VectorRetriever는 폴백으로 유지
+    </td>
+  </tr>
+  <tr>
+    <td>4-6</td>
+    <td><strong>성과 데이터 &rarr; QA 연결</strong></td>
+    <td><span class="badge badge-green">즉시 가능</span></td>
+    <td>설정 수정</td>
+    <td>
+      <code>systemPromptOverride</code>가 이미 존재하고 실제 사용 중 (reviseContentWithAI)<br>
+      ContextProvider 없이도 systemPromptOverride로 성과 텍스트 주입 가능<br>
+      <code>getPerformanceContext()</code> 구현 후 프롬프트에 append하면 됨
+    </td>
+  </tr>
+  <tr>
+    <td>4-7</td>
+    <td><strong>QA &rarr; 지식 베이스 피드백</strong></td>
+    <td><span class="badge badge-amber">부분 구현</span></td>
+    <td>승인 후 훅 추가</td>
+    <td>
+      <code>lecture_chunks.source_type = "qa_archive"</code> 이미 지원됨<br>
+      qa consumer의 sourceTypes에 <code>"qa_archive"</code> 포함 (L89)<br>
+      승인 시 자동 임베딩+INSERT 로직은 미구현<br>
+      <strong>필요</strong>: answers 승인 액션에 lecture_chunks INSERT + generateEmbedding 훅
+    </td>
+  </tr>
+  <tr>
+    <td>4-8</td>
+    <td><strong>소비자 제거</strong><br>(webinar)</td>
+    <td><span class="badge badge-green">즉시 가능</span></td>
+    <td>설정 삭제 + 호출부 정리</td>
+    <td>
+      소비자 간 독립성 확인됨 &mdash; 다른 소비자 무영향<br>
+      CONSUMER_CONFIGS에서 삭제 + ConsumerType union에서 제거<br>
+      TypeScript 컴파일러가 호출부 자동 검출
+    </td>
+  </tr>
+</table>
+
+<!-- ============================== 5. ADR 의견 ============================== -->
+<h2>5. ADR 검증 의견</h2>
+
+<h3>ADR-R1: 단일 generate() 함수 유지</h3>
+<div class="box green">
+  <strong>의견: 강하게 동의</strong><br>
+  현재 6개 소비자 + reviseContentWithAI(limit:0) + generateContentWithAI가 <strong>모두 동일 generate() 함수</strong>를 사용하고 있다.
+  로깅, 에러 처리, 타임아웃이 한 곳에서 관리되는 구조가 검증됨.<br>
+  문서의 "완전히 다른 파이프라인이 필요하면 generateStream() 분리" 판단도 올바름.
+  현재 스트리밍이 필요한 소비자가 없으므로 단일 함수 유지.
+</div>
+
+<h3>ADR-R2: 인라인 검색 유지 (순환 의존성 방지)</h3>
+<div class="box green">
+  <strong>의견: 동의</strong><br>
+  rag.ts &rarr; knowledge.ts 의존 방향이 고정 (rag.ts:6에서 <code>import { generate as ksGenerate }</code>).<br>
+  knowledge.ts가 rag.ts를 import하면 순환. 인라인 searchChunks는 <strong>올바른 의사결정</strong>.<br>
+  문서의 대안 "search-service.ts 분리"도 언급되었으나, 현재 규모에서 과도하다는 판단에 동의.
+  rag.ts 중복 코드 제거(Phase A-1) 후에는 이 문제 자체가 해소됨.
+</div>
+
+<h3>ADR-R3: 임베딩 Gemini + 생성 Anthropic</h3>
+<div class="box green">
+  <strong>의견: 동의</strong><br>
+  <strong>임베딩</strong>: Gemini embedding-001은 한국어 멀티링구얼 지원 + 비용 저렴 ($0.00025/1K tokens)<br>
+  <strong>생성</strong>: Anthropic Opus 4.6은 한국어 코칭 톤 최적 &mdash; QA_SYSTEM_PROMPT의 자연스러운 톤을 잘 구현<br>
+  각 분야 최선의 모델을 조합하는 전략이 합리적.<br>
+  Gemini embedding deprecation 리스크는 문서에 정확히 기록됨 (text-embedding-004 &rarr; embedding-001 경험).
+</div>
+
+<h3>ADR-R4: 소스 우선순위는 설정으로 관리</h3>
+<div class="box amber">
+  <strong>의견: 동의 (단, 우선순위 낮음)</strong><br>
+  현재 유사도 순서 그대로 사용하고 있으며 실제 품질 문제 보고 없음.<br>
+  재랭킹은 "있으면 좋지만 없어도 동작하는" 최적화.<br>
+  <strong>제안</strong>: Phase B-3 계획대로 진행하되, 검색 품질 모니터링(문서 &sect;9-1)을 먼저 구축하여
+  재랭킹 필요성을 <strong>데이터로 판단</strong>한 후 구현.
+</div>
+
+<h3>ADR-R5: ContextProvider는 Optional이고 Graceful</h3>
+<div class="box green">
+  <strong>의견: 강하게 동의</strong><br>
+  "부가 컨텍스트는 보너스이지 필수가 아님" &mdash; 이 원칙이 핵심.<br>
+  현재 <code>systemPromptOverride</code>가 유사 역할을 수행하고 있어,
+  ContextProvider는 <code>systemPromptOverride</code>의 <strong>구조화된 확장</strong>으로 볼 수 있다.<br>
+  null 반환 시 자동 스킵, 에러 시 catch 후 스킵 &mdash; 이 설계로 KS 핵심 동작이 항상 보장됨.
+</div>
+
+<h3>ADR-R6: 캐싱은 임베딩 레벨에서만</h3>
+<div class="box green">
+  <strong>의견: 동의</strong><br>
+  임베딩 캐싱: 동일 쿼리 반복 시 Gemini API 호출 절약. 구현 간단 (in-memory LRU).<br>
+  응답 캐싱 안 하는 이유: 지식 베이스 업데이트 시 같은 질문에도 다른 답변이 나와야 함 &mdash; 옳은 판단.<br>
+  QA 빈도가 낮아(일 수십 건 수준) 응답 캐싱의 비용 절감 효과가 크지 않음.
+</div>
+
+<!-- ============================== 6. 버그 및 불일치 ============================== -->
+<h2>6. 코드 버그 및 문서 불일치</h2>
+
+<table>
+  <tr><th>#</th><th>위치</th><th>내용</th><th>심각도</th><th>수정 제안</th></tr>
+  <tr>
+    <td>1</td>
+    <td><code>knowledge.ts:287</code></td>
+    <td>
+      에러 메시지: <code>"AI 응답 시간 초과 (55초)"</code><br>
+      실제 TIMEOUT_MS: <code>280_000</code> (280초)<br>
+      <strong>불일치</strong>: 이전 55초에서 280초로 변경했으나 에러 메시지 미수정
+    </td>
+    <td><span class="badge badge-red">버그</span></td>
+    <td><code>"AI 응답 시간 초과 (280초)"</code>로 수정</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><code>knowledge.ts:186-190</code></td>
+    <td>
+      <code>truncateToTokenBudget()</code>: <strong>글자수 기준</strong>으로 자름<br>
+      한국어는 1글자 &asymp; 2-3 토큰이므로 <strong>토큰 예산과 글자수가 불일치</strong><br>
+      tokenBudget=3000일 때 실제 토큰은 6000-9000 사용 가능
+    </td>
+    <td><span class="badge badge-amber">경고</span></td>
+    <td>
+      문서 &sect;1-4에 이 문제를 정확히 지적했으나, 비용 모델(&sect;8)에서는 반영 안 됨.<br>
+      현재는 과소 추정보다 과대 예산이므로 기능상 문제는 없음 (안전한 방향)
+    </td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><code>knowledge.ts:45-50</code></td>
+    <td>
+      <code>KnowledgeResponse</code>에 <code>metadata</code> 필드 없음<br>
+      문서 &sect;2-2에서 <code>retrievalTimeMs, generationTimeMs, chunksRetrieved, chunksUsed</code> 제안<br>
+      현재 로깅에도 이 필드 누락 (knowledge_usage에 chunks_retrieved, retrieval_ms 컬럼은 존재하나 미사용)
+    </td>
+    <td><span class="badge badge-amber">누락</span></td>
+    <td>Phase A에서 metadata 추가 시 로깅도 동시 보강</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><code>knowledge.ts:25-36</code></td>
+    <td>
+      <code>KnowledgeRequest</code>에 <code>contextProviders?: string[]</code> 미포함<br>
+      문서 &sect;2-2에서 제안한 필드. 현재 미구현은 정상 (Phase B 계획)
+    </td>
+    <td><span class="badge badge-blue">계획</span></td>
+    <td>Phase B-1에서 ContextProvider 구현 시 추가</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>문서 &sect;2-3</td>
+    <td>
+      ConsumerConfig 구조가 현재 코드와 다름:<br>
+      문서: <code>{ retriever: {...}, generator: {...} }</code> (중첩)<br>
+      코드: <code>{ limit, threshold, tokenBudget, temperature, systemPrompt }</code> (평탄)
+    </td>
+    <td><span class="badge badge-blue">차이</span></td>
+    <td>문서는 TO-BE 구조. 현재 평탄 구조가 더 단순. 분기 필요해질 때 중첩으로 전환</td>
+  </tr>
+</table>
+
+<h3>엣지 케이스 검증</h3>
+
+<table>
+  <tr><th>시나리오</th><th>코드 확인 결과</th></tr>
+  <tr>
+    <td>lecture_chunks 0건</td>
+    <td><code>knowledge.ts:211-221</code> &mdash; chunks.length === 0이면 contextText="" &rarr; <code>userContent = request.query</code> (query만 전달). LLM이 컨텍스트 없이 답변 시도.</td>
+  </tr>
+  <tr>
+    <td>임베딩 API 실패</td>
+    <td><code>gemini.ts:31-33</code> &mdash; throw Error 전파 &rarr; <code>searchChunks</code>에서 catch &rarr; 빈 배열 반환 (L164-167). generate()는 빈 컨텍스트로 계속 진행.</td>
+  </tr>
+  <tr>
+    <td>Anthropic API 타임아웃</td>
+    <td>AbortController 280s &rarr; DOMException("AbortError") &rarr; <span class="badge badge-red">메시지 "55초"로 잘못 표시</span></td>
+  </tr>
+  <tr>
+    <td>systemPromptOverride + consumerType</td>
+    <td><code>knowledge.ts:203</code> &mdash; <code>??</code> 연산자로 override 우선. contents.ts에서 실제로 이 패턴 사용 중 (reviseContentWithAI).</td>
+  </tr>
+  <tr>
+    <td>limit: 0 (RAG 스킵)</td>
+    <td><code>searchChunks(query, 0, ...)</code> &rarr; <code>match_count: 0</code> &rarr; 빈 배열 반환 &rarr; contextText="" &rarr; query만 전달. reviseContentWithAI에서 검증됨.</td>
+  </tr>
+</table>
+
+<!-- ============================== 7. 마이그레이션 경로 검증 ============================== -->
+<h2>7. 마이그레이션 경로 검증</h2>
+
+<table>
+  <tr><th>Phase</th><th>작업</th><th>의존</th><th>판단</th></tr>
+  <tr>
+    <td><strong>A-1</strong></td>
+    <td>rag.ts &rarr; knowledge.ts 위임 (중복 제거)</td>
+    <td>없음</td>
+    <td>
+      <span class="badge badge-green">즉시 가능</span><br>
+      searchRelevantChunks 삭제 + re-export.<br>
+      createAIAnswerForQuestion은 유지 (유일 기능)
+    </td>
+  </tr>
+  <tr>
+    <td><strong>A-2</strong></td>
+    <td>types/knowledge.ts에 인터페이스 추출</td>
+    <td>없음</td>
+    <td>
+      <span class="badge badge-green">즉시 가능</span><br>
+      기존 KnowledgeRequest/Response + 새 인터페이스 6개
+    </td>
+  </tr>
+  <tr>
+    <td><strong>A-3</strong></td>
+    <td>summarize &rarr; KS consumer "summary"</td>
+    <td>A-2 (Generator 분기 필요)</td>
+    <td>
+      <span class="badge badge-amber">선행 조건</span><br>
+      Generator 인터페이스 추출이 먼저 &mdash; Gemini Flash Generator 구현 필요<br>
+      <strong>순서 수정 제안</strong>: A-2 &rarr; A-3 (Generator 분기 포함)
+    </td>
+  </tr>
+  <tr>
+    <td><strong>B-1</strong></td>
+    <td>ContextProvider 인터페이스 + 레지스트리</td>
+    <td>A-2</td>
+    <td><span class="badge badge-green">적절</span> &mdash; A-2 인터페이스 기반 위에 구축</td>
+  </tr>
+  <tr>
+    <td><strong>B-2</strong></td>
+    <td>PerformanceContextProvider</td>
+    <td>B-1 + PerformanceService</td>
+    <td><span class="badge badge-amber">외부 의존</span> &mdash; 통합 아키텍처의 Phase 2(PS 통합) 완료 필요</td>
+  </tr>
+  <tr>
+    <td><strong>B-3</strong></td>
+    <td>재랭킹 로직</td>
+    <td>A-2</td>
+    <td><span class="badge badge-green">독립</span> &mdash; 검색 품질 모니터링 데이터 확보 후 판단</td>
+  </tr>
+  <tr>
+    <td><strong>C-1</strong></td>
+    <td>승인 답변 &rarr; qa_archive 임베딩</td>
+    <td>없음</td>
+    <td><span class="badge badge-green">독립</span> &mdash; Phase A/B와 무관하게 구현 가능</td>
+  </tr>
+  <tr>
+    <td><strong>C-2</strong></td>
+    <td>검색 품질 모니터링 대시보드</td>
+    <td>B-3 or 독립</td>
+    <td><span class="badge badge-green">독립</span> &mdash; knowledge_usage 데이터 기반</td>
+  </tr>
+  <tr>
+    <td><strong>C-3</strong></td>
+    <td>사용량/비용 분석 뷰</td>
+    <td>없음</td>
+    <td><span class="badge badge-green">독립</span> &mdash; knowledge_usage 테이블 이미 존재</td>
+  </tr>
+</table>
+
+<div class="box blue">
+  <strong>마이그레이션 순서 조정 제안</strong><br>
+  1. <strong>A-1 (rag.ts 정리)</strong> &mdash; 즉시, 독립<br>
+  2. <strong>C-1 (qa_archive 피드백)</strong> &mdash; 즉시, 독립 (가치 높음: QA 품질 자동 개선)<br>
+  3. <strong>A-2 (인터페이스 추출)</strong> &mdash; A-3의 선행 조건<br>
+  4. <strong>A-3 (summarize 통합)</strong> &mdash; Generator 분기 포함<br>
+  5. <strong>C-3 (비용 분석)</strong> &mdash; knowledge_usage 기반, 독립<br>
+  6. <strong>B-1~B-3</strong> &mdash; 확장 인프라 (필요할 때)<br><br>
+  핵심 변경: <strong>C-1을 Phase A 직후가 아닌 A-1과 병렬로 추진</strong>.
+  QA 피드백 루프는 기존 인프라만으로 구현 가능하고, 답변 품질 향상 효과가 즉각적이다.
+</div>
+
+<!-- ============================== 8. 비용 모델 검증 ============================== -->
+<h2>8. 비용 모델 검증</h2>
+
+<table>
+  <tr><th>항목</th><th>문서 추정</th><th>실제 코드 확인</th><th>판정</th></tr>
+  <tr>
+    <td>QA 1건 임베딩</td>
+    <td>~100 tokens &rarr; $0.000025</td>
+    <td>질문 텍스트만 임베딩 (gemini.ts:14). 100 tokens 합리적 추정</td>
+    <td><span class="badge badge-green">일치</span></td>
+  </tr>
+  <tr>
+    <td>생성 입력</td>
+    <td>~4,000 tokens &rarr; $0.06</td>
+    <td>tokenBudget=3000 <strong>글자수</strong> 기준. 한국어 3000자 &asymp; 6000-9000 tokens + system prompt.<br>실제 입력 토큰은 <strong>8000-12000</strong>일 수 있음</td>
+    <td><span class="badge badge-amber">과소 추정</span></td>
+  </tr>
+  <tr>
+    <td>생성 출력</td>
+    <td>~500 tokens &rarr; $0.0375</td>
+    <td>max_tokens=8192이지만 QA 답변은 보통 300-800 tokens. 500 합리적</td>
+    <td><span class="badge badge-green">일치</span></td>
+  </tr>
+  <tr>
+    <td>합계</td>
+    <td>~$0.10/건</td>
+    <td>입력 토큰 과소 추정 반영 시 <strong>$0.15-0.20/건</strong>이 더 정확</td>
+    <td><span class="badge badge-amber">수정 필요</span></td>
+  </tr>
+</table>
+
+<div class="box amber">
+  <strong>비용 모델 수정 제안</strong><br>
+  <code>truncateToTokenBudget()</code>이 글자수 기준이라 토큰 예산이 실제보다 낮게 설정됨.<br>
+  knowledge_usage 테이블의 <code>input_tokens</code>/<code>output_tokens</code> 실측값으로 비용 모델을 보정할 것.
+  이는 Phase C-3 (비용 분석 뷰)에서 자동화 가능.
+</div>
+
+<!-- ============================== 9. 결론 ============================== -->
+<h2>9. 결론 및 권고</h2>
+
+<h3>즉시 수정 (코드)</h3>
+<ol>
+  <li><code>knowledge.ts:287</code> &mdash; 에러 메시지 "55초" &rarr; <strong>"280초"</strong>로 수정</li>
+</ol>
+
+<h3>즉시 수정 (문서)</h3>
+<ol>
+  <li>&sect;8-2 비용 모델 &mdash; 입력 토큰 추정 <strong>4,000 &rarr; 8,000-12,000</strong>으로 수정</li>
+  <li>&sect;6-3 마이그레이션 &mdash; A-3에 Generator 분기 선행 조건 명시</li>
+  <li>&sect;2-3 ConsumerConfig &mdash; 현재 코드의 평탄 구조와의 차이 주석 추가</li>
+</ol>
+
+<h3>단기 권고 (다음 스프린트)</h3>
+<ol>
+  <li><strong>Phase A-1</strong>: rag.ts searchRelevantChunks 제거 (중복 코드 해소)</li>
+  <li><strong>Phase C-1</strong>: 승인 답변 &rarr; qa_archive 자동 임베딩 (QA 품질 자동 개선)</li>
+  <li><strong>Phase C-3</strong>: knowledge_usage 기반 비용 분석 (실측 데이터로 비용 모델 보정)</li>
+</ol>
+
+<h3>중기 권고</h3>
+<ol>
+  <li><strong>Phase A-2~A-3</strong>: 인터페이스 추출 + summarize 통합 (Generator 분기 포함)</li>
+  <li><strong>Phase B-1</strong>: ContextProvider 구현 (PerformanceContext 연결)</li>
+  <li><strong>임베딩 캐싱 (ADR-R6)</strong>: in-memory LRU (TTL 1시간) 구현</li>
+</ol>
+
+<div class="box green">
+  <strong>최종 판단</strong><br>
+  RAG 엔진 아키텍처 문서는 <strong>현재 코드를 정확하게 분석</strong>하고 있으며,
+  목표 아키텍처의 방향도 <strong>현실적이고 점진적</strong>이다.<br><br>
+  특히 핵심 강점:
+  <ul>
+    <li>현재 코드가 이미 <strong>암묵적 파이프라인</strong>으로 구성되어 리팩터링 비용이 낮음</li>
+    <li><strong>마이그레이션 원칙</strong> "작동하는 코드는 유지, 새 파일로 확장" &mdash; 위험 최소화</li>
+    <li><strong>Consumer 패턴</strong>이 6개 소비자로 검증됨 &mdash; 확장성 입증</li>
+    <li><strong>인터페이스 분리</strong>가 교체 대비 (Gemini embedding deprecation 경험 반영)</li>
+  </ul>
+  <br>
+  주요 개선점: (1) 에러 메시지 버그 수정, (2) summarize KS 통합, (3) 비용 모델 보정, (4) rag.ts 중복 제거.<br>
+  이 보고서의 권고사항을 반영하면 아키텍처 일치도를 <strong>82점 &rarr; 95점+</strong>로 끌어올릴 수 있다.
+</div>
+
+<hr style="margin-top: 48px; border: none; border-top: 1px solid var(--border);">
+<p style="font-size: 12px; color: var(--muted); margin-top: 16px;">
+  생성일: 2026-02-16 | 대상 문서: docs/01-plan/rag-engine-architecture.md |
+  분석 범위: knowledge.ts, rag.ts, gemini.ts, contents.ts, summarize/route.ts | 코드 변경: 없음
+</p>
+
+</body>
+</html>

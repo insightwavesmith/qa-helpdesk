@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="date" content="2026-02-17">
+<meta name="project" content="qa-helpdesk">
+<meta name="status" content="pending">
+<title>리뷰: 뉴스레터 배너키 구조 수정</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #333; line-height: 1.6; }
+h1 { border-bottom: 3px solid #F75D5D; padding-bottom: 12px; }
+h2 { color: #F75D5D; margin-top: 32px; }
+.critical { background: #FEF2F2; border-left: 4px solid #F75D5D; padding: 16px; margin: 16px 0; border-radius: 4px; }
+.ok { background: #F0FDF4; border-left: 4px solid #22C55E; padding: 16px; margin: 16px 0; border-radius: 4px; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+th, td { border: 1px solid #e5e7eb; padding: 10px 14px; text-align: left; }
+th { background: #f9fafb; font-weight: 600; }
+code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<h1>리뷰: 뉴스레터 배너키 구조 수정</h1>
+<p><strong>날짜:</strong> 2026-02-17 | <strong>리뷰어:</strong> 모찌 (PM) | <strong>대상:</strong> TASK.md</p>
+
+<h2>1. 문제 요약</h2>
+
+<div class="critical">
+<strong>심각도: Critical</strong> — AI가 생성하는 뉴스레터가 3개 템플릿(education/webinar/case_study) 모두에서 디자인된 배너키 구조와 불일치. 실제 발송 시 브랜드 일관성 붕괴.
+</div>
+
+<h2>2. 수정 범위 분석</h2>
+
+<table>
+<tr><th>항목</th><th>현재</th><th>수정 후</th><th>위험도</th></tr>
+<tr>
+  <td>education 배너키</td>
+  <td>INSIGHT 01/02/03 + KEY POINT + CHECKLIST (5개)</td>
+  <td>INSIGHT + KEY POINT + CHECKLIST (3개)</td>
+  <td>낮음 — 배너키 줄임</td>
+</tr>
+<tr>
+  <td>webinar 배너키</td>
+  <td>INSIGHT + 웨비나 일정 + 핵심 주제 + 이런 분들 + 성과 + CHECKLIST + KEY POINT (7개)</td>
+  <td>웨비나 일정 안내 + INSIGHT + KEY POINT + CHECKLIST + 이런 분들을 위해 (5개)</td>
+  <td>낮음 — 불필요 키 제거, 순서 수정</td>
+</tr>
+<tr>
+  <td>case_study 배너키</td>
+  <td>성과 + INSIGHT 01/02/03 + 핵심 변화 + CHECKLIST + KEY POINT (7개)</td>
+  <td>성과 + INTERVIEW + 핵심 변화 (3개)</td>
+  <td>낮음 — 대폭 간소화</td>
+</tr>
+<tr>
+  <td>AI 프롬프트</td>
+  <td>배너키만 나열, 포맷 예시 없음, 강제 규칙 없음</td>
+  <td>절대 규칙 + 포맷 예시 + 타입별 동적 구조</td>
+  <td>낮음 — 프롬프트 텍스트 변경</td>
+</tr>
+</table>
+
+<h2>3. 리뷰 결과</h2>
+
+<div class="ok">
+<strong>수정 범위 적절:</strong> <code>src/actions/contents.ts</code> 단일 파일, 딕셔너리 값 + 프롬프트 문자열 변경만. 파서(markdownToEmailHtml), 빌더(buildDesignFromSummary), BANNER_MAP 수정 불필요 확인.
+</div>
+
+<h3>확인 사항</h3>
+<ul>
+<li>✅ BANNER_MAP에 필요한 키(INSIGHT, KEY POINT, CHECKLIST, 웨비나 일정, 이런 분들을 위해, 성과, INTERVIEW, 핵심 변화) 모두 등록되어 있음</li>
+<li>✅ "웨비나 일정 안내"는 includes("웨비나 일정")로 banner-schedule.png 정상 매핑</li>
+<li>✅ markdownToEmailHtml의 ✅+bold=넘버카드, ✅만=체크카드 렌더링 로직 정상</li>
+<li>✅ buildDesignFromSummary의 webinar → TEMPLATE_B 매핑 정상</li>
+<li>✅ generateEmailSummary의 ksGenerate 호출 구조 — query + systemPromptOverride 수정만으로 충분</li>
+</ul>
+
+<h3>주의 사항</h3>
+<ul>
+<li>⚠️ education의 INSIGHT 01/02/03 → 단일 INSIGHT 변경 시, 기존에 INSIGHT 01/02/03으로 생성된 email_summary가 있다면 재생성 필요</li>
+<li>⚠️ case_study에서 INTERVIEW 배너키를 처음 사용 — BANNER_MAP에 "INTERVIEW" → "banner-interview" 이미 등록 확인됨</li>
+<li>⚠️ 프롬프트 강화해도 AI가 100% 따르지 않을 가능성 — 근본적 해결은 후처리 검증이지만, 현재 단계에서는 프롬프트 강화로 충분</li>
+</ul>
+
+<h2>4. 결론</h2>
+<p><strong>승인 권고.</strong> 수정 범위가 명확하고 위험도 낮음. T1(배너키 재정의) + T2(프롬프트 강화) 실행 후 3개 유형 모두 테스트 필요.</p>
+
+</body>
+</html>

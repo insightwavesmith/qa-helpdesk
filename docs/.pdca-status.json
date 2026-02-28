@@ -1,0 +1,218 @@
+{
+  "version": "3.0",
+  "lastUpdated": "2026-02-25T18:00:00.000Z",
+  "features": {
+    "타겟중복": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/타겟중복.plan.md",
+        "design": "02-design/features/타겟중복.design.md",
+        "analysis": "03-analysis/타겟중복-code-review.analysis.md"
+      },
+      "notes": "T1 마이그레이션 + T2 API + T3 컴포넌트+탭 구현 완료. 빌드 성공."
+    },
+    "qa-ux-redesign": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/qa-ux-redesign.plan.md",
+        "design": "02-design/features/qa-ux-redesign.design.md",
+        "analysis": "03-analysis/qa-ux-redesign.analysis.md"
+      },
+      "completedAt": "2026-02-06"
+    },
+    "auth-rls": {
+      "phase": "completed",
+      "matchRate": 92,
+      "documents": {
+        "plan": "01-plan/features/auth-rls.plan.md",
+        "design": "02-design/features/auth-rls.design.md",
+        "analysis": "03-analysis/auth-rls.analysis.md"
+      },
+      "completedAt": "2026-02-06"
+    },
+    "home-dashboard": {
+      "phase": "completed",
+      "matchRate": 90,
+      "documents": {
+        "plan": "01-plan/features/home-dashboard.plan.md",
+        "design": "02-design/features/home-dashboard.design.md",
+        "analysis": "03-analysis/home-dashboard.analysis.md"
+      },
+      "completedAt": "2026-02-07"
+    },
+    "answer-approval": {
+      "phase": "completed",
+      "matchRate": 93,
+      "documents": {
+        "plan": "01-plan/features/answer-approval.plan.md",
+        "design": "02-design/features/answer-approval.design.md",
+        "analysis": "03-analysis/answer-approval.analysis.md"
+      },
+      "completedAt": "2026-02-06"
+    },
+    "rag-ai-answer": {
+      "phase": "completed",
+      "matchRate": 88,
+      "documents": {
+        "plan": "01-plan/features/rag-ai-answer.plan.md",
+        "design": "02-design/features/rag-ai-answer.design.md",
+        "analysis": "03-analysis/rag-ai-answer.analysis.md"
+      },
+      "completedAt": "2026-02-06"
+    },
+    "image-attachment": {
+      "phase": "completed",
+      "matchRate": 90,
+      "documents": {
+        "plan": "01-plan/features/image-attachment.plan.md",
+        "design": "02-design/features/image-attachment.design.md",
+        "analysis": "03-analysis/image-attachment.analysis.md"
+      },
+      "completedAt": "2026-02-07"
+    },
+    "ui-redesign-v2": {
+      "phase": "completed",
+      "matchRate": 91,
+      "documents": {
+        "plan": "01-plan/features/ui-redesign-v2.plan.md",
+        "design": "02-design/features/ui-redesign-v2.design.md"
+      },
+      "completedAt": "2026-02-08"
+    },
+    "content-pipeline": {
+      "phase": "completed",
+      "matchRate": 85,
+      "documents": {
+        "plan": "01-plan/features/content-pipeline.plan.md",
+        "design": "02-design/features/content-pipeline.design.md",
+        "analysis": "03-analysis/content-pipeline.analysis.md"
+      },
+      "completedAt": "2026-02-09",
+      "notes": "앱 코드 완료. 콘텐츠 관리 UX 개선은 content-hub-redesign으로 분리."
+    },
+    "inline-editor": {
+      "phase": "check",
+      "matchRate": 70,
+      "documents": {
+        "plan": "01-plan/features/inline-editor.plan.md",
+        "design": "02-design/features/inline-editor.design.md",
+        "analysis": "03-analysis/inline-editor.analysis.md"
+      },
+      "notes": "TipTap 포맷 손실 문제. MDXEditor 교체 → content-hub-redesign에 통합."
+    },
+    "content-hub-redesign": {
+      "phase": "design",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/content-hub-redesign.plan.md",
+        "mockup": "mockup/content-hub-mockup.html",
+        "design": "02-design/features/content-hub-redesign.design.md"
+      },
+      "notes": "v2 목업 승인. Plan+Design 완료. AI 콘텐츠 생성 포함. TASK.md 작성 → 에이전트팀 구현 예정."
+    },
+    "newsletter-editor": {
+      "phase": "completed",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/newsletter-editor.plan.md",
+        "design": "02-design/features/newsletter-editor.design.md"
+      },
+      "completedAt": "2026-02-12",
+      "notes": "Phase 1 완료: MDXEditor → Unlayer 전환. Phase 2는 newsletter-template-upgrade로 분리."
+    },
+    "newsletter-template-upgrade": {
+      "phase": "completed",
+      "matchRate": 90,
+      "documents": {
+        "plan": "01-plan/features/newsletter-template-upgrade.plan.md",
+        "design": "02-design/features/newsletter-template-upgrade.design.md"
+      },
+      "notes": "배너 13종 B안(1200x160), 프로필 카드, 배너 부분매칭(includes), max-width:600px, 체크마크 정렬. 커밋 71946eb.",
+      "completedAt": "2026-02-15"
+    },
+    "newsletter-unlayer-templates": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/newsletter-unlayer-templates.plan.md",
+        "design": "02-design/features/newsletter-unlayer-templates.design.md"
+      },
+      "notes": "T1 AI 프롬프트 재작성 완료 (systemPromptOverride template별 분리, BANNER_KEYS_BY_TYPE 보강)"
+    },
+    "content-pipeline-qa": {
+      "phase": "plan",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/content-pipeline-qa.plan.md",
+        "design": "02-design/features/content-pipeline-qa.design.md"
+      },
+      "notes": "v3 아키텍처: 5계층(0a RAG→0b Bridge→1a 생성→1b 검증→2 배포). QA 이슈 5건. 통합 지식 서비스 구조. 리뷰 보고서: docs/review/2026-02-15-content-pipeline-architecture-v3.html"
+    },
+    "signup-refactor": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/signup-refactor.plan.md",
+        "design": "02-design/features/signup-refactor.design.md"
+      },
+      "notes": "T1: 가입 폼 리팩토링 — 초대코드 student/lead 모드 분기"
+    },
+    "invite-api": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/invite-api.plan.md",
+        "design": "02-design/features/invite-api.design.md"
+      },
+      "notes": "T2: 초대코드 검증 API + student_registry 매칭. route.ts + invites.ts 구현 완료."
+    },
+    "dashboard-routing": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/dashboard-routing.plan.md",
+        "design": "02-design/features/dashboard-routing.design.md"
+      },
+      "completedAt": "2026-02-20",
+      "notes": "T6: 대시보드 역할별 라우팅 + Sidebar 메뉴 필터링. dashboard/page.tsx, Sidebar.tsx, layout.tsx 수정."
+    }
+  },
+  "phaseMapping": {
+    "phase1": {
+      "name": "구조 정리 + 콘텐츠 관리 핵심",
+      "status": "completed",
+      "features": [
+        "qa-ux-redesign",
+        "auth-rls",
+        "home-dashboard",
+        "answer-approval",
+        "rag-ai-answer",
+        "image-attachment",
+        "ui-redesign-v2"
+      ]
+    },
+    "phase2": {
+      "name": "콘텐츠 파이프라인",
+      "status": "completed",
+      "features": [
+        "content-pipeline"
+      ]
+    },
+    "phase3": {
+      "name": "콘텐츠 완성 + 전환 퍼널",
+      "status": "in-progress",
+      "features": [
+        "inline-editor",
+        "content-hub-redesign",
+        "student-signup",
+        "admin-role-transfer",
+        "member-cta",
+        "leads-tracking",
+        "newsletter-template-upgrade",
+        "content-pipeline-qa"
+      ]
+    }
+  }
+}

@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>콘텐츠 파이프라인 v3.1 아키텍처 보고서</title>
+  <meta property="og:title" content="콘텐츠 파이프라인 v3.1 아키텍처 보고서">
+  <meta property="og:description" content="Smith님 피드백 3건 반영 — Knowledge Service 중심 통합, Opus 4.6 단일 모델, 소스 타입별 분기. ADR 3건 개정/신설, Mermaid 4종.">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#FEF2F2',
+        primaryBorderColor: '#F75D5D',
+        primaryTextColor: '#1a1a1a',
+        lineColor: '#9ca3af',
+        fontSize: '13px',
+        edgeLabelBackground: '#ffffff'
+      },
+      flowchart: { htmlLabels: true, curve: 'basis' },
+      sequence: { mirrorActors: false, messageAlign: 'center' }
+    });
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #F75D5D;
+      --primary-hover: #E54949;
+      --bg: #ffffff;
+      --text: #1a1a1a;
+      --text-sub: #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --border: #e5e7eb;
+      --surface: #f8f9fc;
+      --surface-warm: #FEF2F2;
+      --sidebar-w: 220px;
+    }
+    body {
+      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.7;
+    }
+    /* Sidebar */
+    .sidebar {
+      position: fixed; top: 0; left: 0; width: var(--sidebar-w); height: 100vh;
+      background: var(--surface); border-right: 1px solid var(--border);
+      padding: 24px 16px; overflow-y: auto; z-index: 100;
+    }
+    .sidebar-title { font-size: 13px; font-weight: 800; color: var(--primary); margin-bottom: 16px; letter-spacing: 1px; text-transform: uppercase; }
+    .sidebar nav a {
+      display: block; padding: 5px 10px; font-size: 12.5px; color: var(--text-muted);
+      text-decoration: none; border-left: 2px solid transparent; border-radius: 0 4px 4px 0;
+      transition: all .15s;
+    }
+    .sidebar nav a:hover { color: var(--text); background: var(--surface-warm); }
+    .sidebar nav a.active { color: var(--primary); border-left-color: var(--primary); font-weight: 600; background: var(--surface-warm); }
+    .sidebar nav .sep { height: 1px; background: var(--border); margin: 8px 10px; }
+    /* Main */
+    .main { margin-left: var(--sidebar-w); padding: 40px 48px 80px; max-width: 920px; }
+    /* Typography */
+    h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+    h2 { font-size: 18px; font-weight: 700; margin: 40px 0 14px; padding-bottom: 8px; border-bottom: 2px solid var(--primary); scroll-margin-top: 24px; }
+    h3 { font-size: 15px; font-weight: 700; margin: 20px 0 8px; color: var(--text-sub); }
+    h4 { font-size: 14px; font-weight: 700; margin: 16px 0 6px; }
+    p, li { font-size: 14px; color: var(--text-sub); }
+    p { margin-bottom: 12px; }
+    ul, ol { padding-left: 20px; margin-bottom: 12px; }
+    li { margin-bottom: 4px; }
+    /* Badges */
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .badge-proposed { background: #DBEAFE; color: #1E40AF; }
+    .badge-ok { background: #DCFCE7; color: #166534; }
+    .badge-warn { background: #FEF9C3; color: #854D0E; }
+    .badge-danger { background: #FEE2E2; color: #991B1B; }
+    .badge-info { background: #DBEAFE; color: #1E40AF; }
+    .badge-purple { background: #F3E8FF; color: #6B21A8; }
+    .badge-p0 { background: #FEE2E2; color: #991B1B; font-weight: 700; }
+    .badge-p1 { background: #FEF9C3; color: #854D0E; font-weight: 700; }
+    .badge-p2 { background: #DBEAFE; color: #1E40AF; font-weight: 700; }
+    .badge-superseded { background: #F3F4F6; color: #6B7280; font-weight: 600; text-decoration: line-through; }
+    .badge-new { background: #DCFCE7; color: #166534; font-weight: 700; border: 1px solid #86EFAC; }
+    .badge-revised { background: #FEF9C3; color: #854D0E; font-weight: 700; border: 1px solid #FDE68A; }
+    /* Meta */
+    .meta { font-size: 13px; color: var(--text-faint); margin-bottom: 28px; display: flex; flex-wrap: wrap; gap: 16px; }
+    /* Summary Box */
+    .summary-box { background: var(--surface-warm); border-left: 4px solid var(--primary); padding: 16px 20px; border-radius: 0 8px 8px 0; margin-bottom: 24px; }
+    .summary-box strong { color: var(--primary); }
+    /* Code */
+    pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin-bottom: 16px; }
+    code { font-family: "SF Mono", "Fira Code", monospace; font-size: 13px; }
+    pre code { color: var(--text-sub); }
+    p code, li code, td code { background: #f3f4f6; padding: 1px 6px; border-radius: 4px; color: var(--primary-hover); font-size: 12px; }
+    /* Table */
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+    th, td { border: 1px solid var(--border); padding: 10px 12px; text-align: left; }
+    th { background: var(--surface-warm); font-weight: 600; color: var(--text-muted); }
+    /* ADR */
+    .adr { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+    .adr-header { padding: 14px 20px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .adr-num { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 24px; border-radius: 6px; background: var(--primary); color: #fff; font-size: 12px; font-weight: 700; padding: 0 8px; }
+    .adr-title { font-size: 14px; font-weight: 700; }
+    .adr-body { padding: 20px; }
+    .adr-section { margin-bottom: 16px; }
+    .adr-section:last-child { margin-bottom: 0; }
+    .adr-section-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .consequence { padding: 4px 0; font-size: 13px; }
+    .consequence .plus { color: #166534; font-weight: 700; }
+    .consequence .minus { color: #991B1B; font-weight: 700; }
+    .consequence .neutral { color: #854D0E; font-weight: 700; }
+    /* Impact */
+    .impact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0; }
+    .impact-card { border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-align: center; }
+    .impact-card .num { font-size: 28px; font-weight: 800; color: var(--primary); }
+    .impact-card .label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    /* Layer */
+    .layer-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; margin-right: 4px; }
+    .layer-0a { background: #DBEAFE; color: #1E40AF; }
+    .layer-0b { background: #E0E7FF; color: #3730A3; }
+    .layer-1a { background: #FEF9C3; color: #854D0E; }
+    .layer-1b { background: #FFEDD5; color: #9A3412; }
+    .layer-2 { background: #F3E8FF; color: #6B21A8; }
+    /* Roadmap */
+    .roadmap-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 16px 0; }
+    .roadmap-card { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .roadmap-card-header { padding: 12px 16px; font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    .roadmap-card-header.p0 { background: #FEE2E2; color: #991B1B; }
+    .roadmap-card-header.p1 { background: #FEF9C3; color: #854D0E; }
+    .roadmap-card-header.p2 { background: #DBEAFE; color: #1E40AF; }
+    .roadmap-card-body { padding: 16px; font-size: 13px; }
+    .roadmap-card-body .file-tag { display: inline-block; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: 11px; margin: 2px; font-family: "SF Mono", monospace; }
+    /* Edge */
+    .edge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+    .edge-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+    .edge-card .edge-id { font-size: 11px; font-weight: 700; color: var(--primary); }
+    .edge-card .edge-title { font-size: 13px; font-weight: 600; margin: 4px 0; }
+    .edge-card .edge-desc { font-size: 12px; color: var(--text-muted); }
+    /* Spec */
+    .spec-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    /* Consumer Card */
+    .consumer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 16px 0; }
+    .consumer-card { border: 1px solid var(--border); border-radius: 10px; padding: 16px; background: var(--bg); }
+    .consumer-card .consumer-id { font-size: 11px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+    .consumer-card .consumer-name { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+    .consumer-card .consumer-detail { font-size: 12px; color: var(--text-muted); }
+    .consumer-card .consumer-detail strong { color: var(--text-sub); }
+    /* Diff highlight */
+    .diff-highlight { background: #FEF9C3; border-left: 3px solid #F59E0B; padding: 12px 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+    .diff-highlight strong { color: #92400E; }
+    .diff-del { background: #FEE2E2; color: #991B1B; text-decoration: line-through; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+    .diff-add { background: #DCFCE7; color: #166534; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+    /* Version tag */
+    .version-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+    .version-v3 { background: #F3F4F6; color: #6B7280; }
+    .version-v31 { background: #DCFCE7; color: #166534; }
+    .mermaid { margin: 16px 0 24px; }
+    footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-faint); }
+    @media (max-width: 800px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 24px 16px 60px; }
+      .impact-grid, .roadmap-grid { grid-template-columns: 1fr; }
+      .edge-grid { grid-template-columns: 1fr; }
+      .consumer-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================== Sidebar ============================== -->
+<aside class="sidebar">
+  <div class="sidebar-title">v3.1 Architecture</div>
+  <nav id="toc">
+    <a href="#summary">1. 요약</a>
+    <a href="#change-overview">2. v3&rarr;v3.1 변경 개요</a>
+    <div class="sep"></div>
+    <a href="#knowledge-service">3. Knowledge Service</a>
+    <a href="#schema-migration">4. 스키마 마이그레이션</a>
+    <a href="#source-type-filter">5. 소스 타입별 필터링</a>
+    <a href="#opus-integration">6. Opus 4.6 통합</a>
+    <a href="#consumer-rag-params">7. Consumer RAG 파라미터</a>
+    <div class="sep"></div>
+    <a href="#diagram-system">8. 시스템 다이어그램</a>
+    <a href="#diagram-migration">9. 마이그레이션 시퀀스</a>
+    <a href="#diagram-dataflow">10. 데이터 흐름도</a>
+    <a href="#diagram-consumer">11. Consumer 분기</a>
+    <div class="sep"></div>
+    <a href="#adr-6-revised">12. ADR-6 (개정)</a>
+    <a href="#adr-7-revised">13. ADR-7 (개정)</a>
+    <a href="#adr-8-new">14. ADR-8 (신규)</a>
+    <div class="sep"></div>
+    <a href="#roadmap">15. 구현 로드맵</a>
+    <a href="#risks">16. 리스크 &amp; 엣지 케이스</a>
+  </nav>
+</aside>
+
+<!-- ============================== Main ============================== -->
+<div class="main">
+
+  <!-- Header -->
+  <section id="header">
+    <h1>콘텐츠 파이프라인 v3.1 아키텍처 보고서</h1>
+    <p style="font-size:16px;font-weight:600;color:var(--primary);margin-bottom:4px;">Smith님 피드백 3건 반영 &mdash; Knowledge Service 통합 + Opus 4.6 단일 모델 + 소스 타입별 분기</p>
+    <div class="meta">
+      <span>작성일: 2026-02-15</span>
+      <span>작성: leader (에이전트)</span>
+      <span>기반 문서: v3 아키텍처 보고서 (동일자)</span>
+      <span><span class="badge badge-revised">v3.1 REVISED</span></span>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- Part 1: 요약 + 변경 개요                                          -->
+  <!-- ================================================================ -->
+
+  <!-- 1. 요약 -->
+  <h2 id="summary">1. 요약 (Executive Summary)</h2>
+
+  <div class="summary-box">
+    <strong>v3.1 핵심:</strong> v3 보고서의 가정 오류(<span class="diff-del">청크 ~200개</span> &rarr; <span class="diff-add">실제 664개</span>)를 교정하고,
+    Smith님 피드백 3건을 반영합니다. 가장 큰 변화는 <strong>KnowledgeService 중심 아키텍처</strong>로 QA/콘텐츠/정보공유 등
+    모든 지식 기반 기능을 단일 서비스로 통합하는 것입니다.
+  </div>
+
+  <h3>v3 &rarr; v3.1 델타 3건</h3>
+
+  <div class="impact-grid">
+    <div class="impact-card">
+      <div class="num" style="font-size:20px;">Knowledge<br>Service</div>
+      <div class="label">파편화 해소, 5 Consumer 통합</div>
+    </div>
+    <div class="impact-card">
+      <div class="num" style="font-size:20px;">Opus 4.6<br>단일</div>
+      <div class="label">3-LLM &rarr; 1-LLM 전환</div>
+    </div>
+    <div class="impact-card">
+      <div class="num" style="font-size:20px;">소스 타입<br>분기</div>
+      <div class="label">664개 청크, 즉시 필터링 도입</div>
+    </div>
+  </div>
+
+  <h3>v3 vs v3.1 비교</h3>
+  <table>
+    <thead>
+      <tr><th>항목</th><th><span class="version-tag version-v3">v3</span></th><th><span class="version-tag version-v31">v3.1</span></th><th>변경 이유</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>LLM 구성</td>
+        <td>Gemini Flash (QA) + Claude Sonnet (콘텐츠) + Gemini Embedding</td>
+        <td><strong>Opus 4.6 (전체 생성)</strong> + Gemini Embedding (유지)</td>
+        <td>품질 일관성, API 관리 단순화</td>
+      </tr>
+      <tr>
+        <td>아키텍처</td>
+        <td>5-Layer 파이프라인 (RAG Bridge 추가)</td>
+        <td><strong>KnowledgeService 중심</strong>, 5 Consumer 패턴</td>
+        <td>QA/콘텐츠/정보공유 통합 지식 서비스</td>
+      </tr>
+      <tr>
+        <td>청크 수 추정</td>
+        <td><span class="diff-del">~200개</span></td>
+        <td><span class="diff-add">664개</span> (실측)</td>
+        <td>Phase 2 트리거(500개) 이미 초과</td>
+      </tr>
+      <tr>
+        <td>메타데이터 필터링</td>
+        <td><span class="diff-del">500개 초과 시 도입</span> (ADR-7 YAGNI)</td>
+        <td><span class="diff-add">즉시 도입</span> (source_type + metadata jsonb)</td>
+        <td>664개로 이미 Phase 2 진입</td>
+      </tr>
+      <tr>
+        <td>ADR-6 우선순위</td>
+        <td><span class="diff-del">P2 / 미래</span></td>
+        <td><span class="diff-add">P0 / 즉시</span></td>
+        <td>KS 통합의 전제 조건</td>
+      </tr>
+      <tr>
+        <td>ADR-7 결정</td>
+        <td><span class="diff-del">"YAGNI &mdash; 500개까지 대기"</span></td>
+        <td><span class="diff-add">"즉시 도입"</span></td>
+        <td>500개 기준 이미 초과</td>
+      </tr>
+      <tr>
+        <td>예상 소요</td>
+        <td>P0 즉시 ~ P2 3-5일</td>
+        <td><strong>Day 1-2</strong> DB + KS, <strong>Day 2-3</strong> 통합, <strong>Day 4-5</strong> UX</td>
+        <td>DB 마이그레이션이 최우선</td>
+      </tr>
+      <tr>
+        <td>월 비용 영향</td>
+        <td>미산출</td>
+        <td><strong>+$39/월</strong> (Opus 전환분)</td>
+        <td>QA 50건/일 × Opus 단가 기준</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 2. 변경 개요 -->
+  <h2 id="change-overview">2. v3 &rarr; v3.1 변경 개요</h2>
+
+  <h3>Smith님 피드백 원문 인용</h3>
+
+  <div class="spec-box">
+    <h4>피드백 1: Knowledge Service가 중심</h4>
+    <blockquote style="border-left:3px solid var(--primary);padding-left:12px;margin:8px 0;font-style:italic;color:var(--text-sub);">
+      "QA도, 콘텐츠도, 정보공유도 결국 동일한 지식 서비스를 쓰는 거야.
+      Knowledge Service를 중심에 놓고, 나머지는 Consumer로 붙이는 구조가 맞아."
+    </blockquote>
+    <p><strong>반영:</strong> KnowledgeService 인터페이스를 중심에 놓고 5종 Consumer(QA, 뉴스레터, 정보공유, 웨비나, 챗봇)가 각각의 RAG 파라미터로 호출하는 구조 설계.</p>
+  </div>
+
+  <div class="spec-box">
+    <h4>피드백 2: Opus 4.6 단일 모델</h4>
+    <blockquote style="border-left:3px solid var(--primary);padding-left:12px;margin:8px 0;font-style:italic;color:var(--text-sub);">
+      "Gemini Flash랑 Claude Sonnet이랑 파편화되어 있잖아.
+      그냥 Opus 4.6 하나로 통일하자. 비용은 수용 가능해."
+    </blockquote>
+    <p><strong>반영:</strong> ADR-6을 P2/미래에서 P0/즉시로 격상. 모든 생성 작업을 Opus 4.6으로 통합. Gemini는 임베딩(text-embedding-004)만 유지.</p>
+  </div>
+
+  <div class="spec-box">
+    <h4>피드백 3: 소스 타입별 분기</h4>
+    <blockquote style="border-left:3px solid var(--primary);padding-left:12px;margin:8px 0;font-style:italic;color:var(--text-sub);">
+      "강의는 강의대로, 신규정보는 신규정보대로 검색해야지.
+      섞여서 나오면 노이즈가 심해져."
+    </blockquote>
+    <p><strong>반영:</strong> ADR-7의 "500개 대기" 결정 무효화 (실제 664개). <code>source_type</code> 컬럼 즉시 추가 + Consumer별 기본 필터 적용.</p>
+  </div>
+
+  <h3>ADR 상태 업데이트</h3>
+  <table>
+    <thead>
+      <tr><th>ADR</th><th>제목</th><th>v3 상태</th><th>v3.1 상태</th><th>변경</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>ADR-1~5</strong></td>
+        <td>RAG 주입, 타입 매핑, 검증, 미리보기, 토큰 예산</td>
+        <td><span class="badge badge-proposed">PROPOSED</span></td>
+        <td><span class="badge badge-ok">유지</span></td>
+        <td>변경 없음</td>
+      </tr>
+      <tr style="background:#FEF2F2;">
+        <td><strong>ADR-6</strong></td>
+        <td>LLM 통합 (Gemini &rarr; Opus)</td>
+        <td><span class="badge badge-p2">P2 / 미래</span></td>
+        <td><span class="badge badge-p0">P0 / 즉시</span></td>
+        <td>우선순위 격상</td>
+      </tr>
+      <tr style="background:#FEF2F2;">
+        <td><strong>ADR-7</strong></td>
+        <td>메타데이터 필터링</td>
+        <td><span class="badge-superseded">YAGNI &mdash; 500개 대기</span></td>
+        <td><span class="badge badge-danger">즉시 도입</span></td>
+        <td>결정 변경 (664개 초과)</td>
+      </tr>
+      <tr style="background:#DCFCE7;">
+        <td><strong>ADR-8</strong></td>
+        <td>마이그레이션 전략</td>
+        <td>&mdash;</td>
+        <td><span class="badge-new">NEW</span></td>
+        <td>신규 추가</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ================================================================ -->
+  <!-- Part 2: 핵심 설계 (5개 섹션)                                       -->
+  <!-- ================================================================ -->
+
+  <!-- 3. Knowledge Service 통합 아키텍처 -->
+  <h2 id="knowledge-service">3. Knowledge Service 통합 아키텍처</h2>
+
+  <h3>3-LLM 파편화 진단</h3>
+
+  <div class="diff-highlight">
+    <strong>현재 파편화 상태:</strong> 동일한 강의 지식(lecture_chunks)을 기반으로 하지만,
+    3개 LLM이 각각 다른 파이프라인에서 독립적으로 동작합니다.
+    프롬프트 엔지니어링, 에러 핸들링, 토큰 관리가 모두 분산되어 있습니다.
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>기능</th><th>현재 LLM</th><th>파일</th><th>문제</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>QA AI 답변</td>
+        <td>Gemini 2.5 Flash</td>
+        <td><code>gemini.ts:44</code> &rarr; <code>rag.ts:55</code></td>
+        <td>프롬프트가 gemini.ts에 하드코딩, 품질 중~하</td>
+      </tr>
+      <tr>
+        <td>콘텐츠 생성</td>
+        <td>Claude Sonnet 4</td>
+        <td><code>contents.ts:637</code></td>
+        <td>RAG 미연결 (v3 이슈 #1), Anthropic 포맷</td>
+      </tr>
+      <tr>
+        <td>임베딩 생성</td>
+        <td>Gemini text-embedding-004</td>
+        <td><code>gemini.ts:15</code></td>
+        <td>문제 없음 (유지)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>KnowledgeService 인터페이스</h3>
+
+  <pre><code>// src/lib/knowledge.ts (신규)
+
+interface KnowledgeRequest {
+  query: string;
+  consumerType: ConsumerType;
+  sourceTypes?: SourceType[];    // 소스 필터 (기본값: Consumer별 설정)
+  limit?: number;                // 청크 수 제한
+  threshold?: number;            // 유사도 임계값
+  tokenBudget?: number;          // RAG 컨텍스트 토큰 예산
+  temperature?: number;          // 생성 온도
+  systemPromptOverride?: string; // Consumer별 시스템 프롬프트
+}
+
+interface KnowledgeResponse {
+  content: string;               // 생성된 텍스트
+  sourceRefs: SourceRef[];       // 참조 출처
+  tokensUsed: number;            // 사용된 토큰
+  model: string;                 // 사용 모델 (항상 "claude-opus-4-6")
+}
+
+type ConsumerType = "qa" | "newsletter" | "education" | "webinar" | "chatbot";
+type SourceType = "lecture" | "qa_archive" | "crawl" | "meeting" | "manual";
+
+class KnowledgeService {
+  async generate(request: KnowledgeRequest): Promise&lt;KnowledgeResponse&gt;;
+  async search(query: string, filters?: SearchFilters): Promise&lt;LectureChunk[]&gt;;
+}</code></pre>
+
+  <h3>Consumer 5종 정의</h3>
+
+  <div class="consumer-grid">
+    <div class="consumer-card">
+      <div class="consumer-id">C1</div>
+      <div class="consumer-name">QA AI 답변</div>
+      <div class="consumer-detail">
+        <strong>현재:</strong> <code>rag.ts</code> &rarr; <code>gemini.ts</code><br>
+        <strong>v3.1:</strong> KnowledgeService.generate({consumerType: "qa"})<br>
+        <strong>출력:</strong> 마크다운 답변 + sourceRefs
+      </div>
+    </div>
+    <div class="consumer-card">
+      <div class="consumer-id">C2</div>
+      <div class="consumer-name">뉴스레터 콘텐츠</div>
+      <div class="consumer-detail">
+        <strong>현재:</strong> <code>contents.ts:623</code><br>
+        <strong>v3.1:</strong> KnowledgeService.generate({consumerType: "newsletter"})<br>
+        <strong>출력:</strong> title + bodyMd + emailSummary
+      </div>
+    </div>
+    <div class="consumer-card">
+      <div class="consumer-id">C3</div>
+      <div class="consumer-name">교육 정보공유</div>
+      <div class="consumer-detail">
+        <strong>현재:</strong> <code>contents.ts</code> (education 타입)<br>
+        <strong>v3.1:</strong> KnowledgeService.generate({consumerType: "education"})<br>
+        <strong>출력:</strong> title + bodyMd
+      </div>
+    </div>
+    <div class="consumer-card">
+      <div class="consumer-id">C4</div>
+      <div class="consumer-name">웨비나 모집글</div>
+      <div class="consumer-detail">
+        <strong>현재:</strong> <code>contents.ts</code> (webinar 타입)<br>
+        <strong>v3.1:</strong> KnowledgeService.generate({consumerType: "webinar"})<br>
+        <strong>출력:</strong> title + bodyMd + 일정 정보
+      </div>
+    </div>
+    <div class="consumer-card">
+      <div class="consumer-id">C5</div>
+      <div class="consumer-name">향후 확장 (챗봇)</div>
+      <div class="consumer-detail">
+        <strong>현재:</strong> 미구현<br>
+        <strong>v3.1:</strong> KnowledgeService.generate({consumerType: "chatbot"})<br>
+        <strong>출력:</strong> 스트리밍 답변
+      </div>
+    </div>
+  </div>
+
+  <h3>파일 구조 변경</h3>
+
+  <table>
+    <thead>
+      <tr><th>파일</th><th>v3 (현재)</th><th>v3.1 (제안)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>src/lib/knowledge.ts</code></td>
+        <td>&mdash; (미존재)</td>
+        <td><span class="badge-new">NEW</span> KnowledgeService 클래스, generate(), search()</td>
+      </tr>
+      <tr>
+        <td><code>src/lib/gemini.ts</code></td>
+        <td>generateEmbedding() + generateAnswer()</td>
+        <td>generateEmbedding() <strong>만 유지</strong>, <span class="diff-del">generateAnswer() 제거</span></td>
+      </tr>
+      <tr>
+        <td><code>src/lib/rag.ts</code></td>
+        <td>searchRelevantChunks() + generateRAGAnswer() + createAIAnswerForQuestion()</td>
+        <td>searchRelevantChunks() <strong>유지</strong> (KS에서 위임), <span class="diff-del">generateRAGAnswer() 제거</span></td>
+      </tr>
+      <tr>
+        <td><code>src/actions/contents.ts</code></td>
+        <td>TYPE_PROMPTS + generateContentWithAI() (Claude Sonnet 직접 호출)</td>
+        <td>TYPE_PROMPTS <strong>유지</strong>, generateContentWithAI() &rarr; <strong>KS.generate() 위임</strong></td>
+      </tr>
+      <tr>
+        <td><code>src/actions/questions.ts</code></td>
+        <td>createAIAnswerForQuestion() &rarr; rag.ts &rarr; gemini.ts</td>
+        <td>createAIAnswerForQuestion() &rarr; <strong>KS.generate({consumerType: "qa"})</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <!-- 4. lecture_chunks 스키마 마이그레이션 -->
+  <h2 id="schema-migration">4. lecture_chunks 스키마 마이그레이션</h2>
+
+  <h3>현재 스키마 (7컬럼)</h3>
+
+  <div class="diff-highlight">
+    <strong>핵심 발견:</strong> v3에서 청크 수를 <span class="diff-del">~200개</span>로 추정했으나,
+    실제 <span class="diff-add">664개</span>입니다. ADR-7의 Phase 2 트리거(500개)를 이미 초과하여
+    YAGNI 결정이 무효화되었습니다.
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>컬럼</th><th>타입</th><th>설명</th><th>v3.1 변경</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>id</code></td><td>uuid</td><td>PK</td><td>유지</td></tr>
+      <tr><td><code>lecture_name</code></td><td>text</td><td>강의명</td><td>유지</td></tr>
+      <tr><td><code>week</code></td><td>text</td><td>주차</td><td>유지</td></tr>
+      <tr><td><code>chunk_index</code></td><td>integer</td><td>청크 순서</td><td>유지</td></tr>
+      <tr><td><code>content</code></td><td>text</td><td>청크 본문</td><td>유지</td></tr>
+      <tr><td><code>embedding</code></td><td>vector(768)</td><td>임베딩 벡터</td><td>유지</td></tr>
+      <tr><td><code>created_at</code></td><td>timestamptz</td><td>생성일</td><td>유지</td></tr>
+      <tr style="background:#DCFCE7;">
+        <td><code>source_type</code></td><td>text</td><td>소스 타입 (5종)</td><td><span class="badge-new">NEW</span></td>
+      </tr>
+      <tr style="background:#DCFCE7;">
+        <td><code>metadata</code></td><td>jsonb</td><td>확장 메타데이터</td><td><span class="badge-new">NEW</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>데이터 분석 (664행 분포 추정)</h3>
+
+  <table>
+    <thead>
+      <tr><th>source_type</th><th>추정 행 수</th><th>비율</th><th>lecture_name 패턴</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>lecture</code></td>
+        <td>~600</td>
+        <td>90%</td>
+        <td>자사몰사관학교 강의 자료</td>
+      </tr>
+      <tr>
+        <td><code>qa_archive</code></td>
+        <td>~40</td>
+        <td>6%</td>
+        <td>기존 QA 답변 아카이브 (있는 경우)</td>
+      </tr>
+      <tr>
+        <td><code>manual</code></td>
+        <td>~24</td>
+        <td>4%</td>
+        <td>수동 추가 콘텐츠</td>
+      </tr>
+      <tr>
+        <td><code>crawl</code></td>
+        <td>0</td>
+        <td>0%</td>
+        <td>향후 유입 예정</td>
+      </tr>
+      <tr>
+        <td><code>meeting</code></td>
+        <td>0</td>
+        <td>0%</td>
+        <td>향후 유입 예정</td>
+      </tr>
+      <tr style="font-weight:700;">
+        <td>합계</td>
+        <td>664</td>
+        <td>100%</td>
+        <td>&mdash;</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>마이그레이션 SQL (4단계)</h3>
+
+  <div class="spec-box">
+    <h4>Step 1: 컬럼 추가 (즉시 반영, 테이블 리라이트 없음)</h4>
+    <pre><code>-- Step 1: 컬럼 추가
+ALTER TABLE lecture_chunks
+  ADD COLUMN source_type text NOT NULL DEFAULT 'lecture',
+  ADD COLUMN metadata jsonb NOT NULL DEFAULT '{}'::jsonb;</code></pre>
+  </div>
+
+  <div class="spec-box">
+    <h4>Step 2: 기존 664행 backfill</h4>
+    <pre><code>-- Step 2: 기존 데이터 source_type 태깅
+-- 모든 기존 데이터는 강의 자료이므로 'lecture'로 설정
+UPDATE lecture_chunks
+SET
+  source_type = 'lecture',
+  metadata = jsonb_build_object(
+    'migrated_at', now()::text,
+    'original_lecture_name', lecture_name
+  )
+WHERE source_type = 'lecture';  -- DEFAULT로 이미 설정됨, 안전 장치</code></pre>
+  </div>
+
+  <div class="spec-box">
+    <h4>Step 3: 인덱스 생성</h4>
+    <pre><code>-- Step 3: 인덱스
+CREATE INDEX idx_chunks_source_type
+  ON lecture_chunks (source_type);
+
+CREATE INDEX idx_chunks_metadata_gin
+  ON lecture_chunks USING gin (metadata);</code></pre>
+  </div>
+
+  <div class="spec-box">
+    <h4>Step 4: RPC 함수 확장</h4>
+    <pre><code>-- Step 4: match_lecture_chunks RPC 확장
+CREATE OR REPLACE FUNCTION match_lecture_chunks(
+  query_embedding vector(768),
+  match_threshold float DEFAULT 0.5,
+  match_count int DEFAULT 5,
+  filter_source_types text[] DEFAULT NULL  -- NEW: 소스 타입 필터
+)
+RETURNS TABLE (
+  id uuid,
+  lecture_name text,
+  week text,
+  chunk_index int,
+  content text,
+  source_type text,       -- NEW
+  metadata jsonb,         -- NEW
+  similarity float
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    lc.id, lc.lecture_name, lc.week, lc.chunk_index,
+    lc.content, lc.source_type, lc.metadata,
+    1 - (lc.embedding &lt;=&gt; query_embedding) AS similarity
+  FROM lecture_chunks lc
+  WHERE 1 - (lc.embedding &lt;=&gt; query_embedding) > match_threshold
+    AND (filter_source_types IS NULL
+         OR lc.source_type = ANY(filter_source_types))
+  ORDER BY lc.embedding &lt;=&gt; query_embedding
+  LIMIT match_count;
+END;
+$$;</code></pre>
+  </div>
+
+  <h3>향후 소스 증가 예상 (1,100 ~ 1,500)</h3>
+
+  <table>
+    <thead>
+      <tr><th>source_type</th><th>현재</th><th>3개월 후</th><th>6개월 후</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>lecture</code></td><td>~600</td><td>~700</td><td>~800</td></tr>
+      <tr><td><code>qa_archive</code></td><td>~40</td><td>~100</td><td>~200</td></tr>
+      <tr><td><code>crawl</code></td><td>0</td><td>~200</td><td>~350</td></tr>
+      <tr><td><code>meeting</code></td><td>0</td><td>~30</td><td>~80</td></tr>
+      <tr><td><code>manual</code></td><td>~24</td><td>~40</td><td>~70</td></tr>
+      <tr style="font-weight:700;"><td>합계</td><td>664</td><td>~1,070</td><td>~1,500</td></tr>
+    </tbody>
+  </table>
+
+
+  <!-- 5. 소스 타입별 필터링 검색 -->
+  <h2 id="source-type-filter">5. 소스 타입별 필터링 검색</h2>
+
+  <h3>source_type 5종 정의</h3>
+
+  <table>
+    <thead>
+      <tr><th>source_type</th><th>설명</th><th>예시</th><th>품질</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>lecture</code></td>
+        <td>자사몰사관학교 공식 강의 자료</td>
+        <td>메타 광고 기초, ROAS 최적화</td>
+        <td><span class="badge badge-ok">최상</span></td>
+      </tr>
+      <tr>
+        <td><code>qa_archive</code></td>
+        <td>관리자 승인된 QA 답변 아카이브</td>
+        <td>기존 질문-답변 쌍</td>
+        <td><span class="badge badge-ok">상</span></td>
+      </tr>
+      <tr>
+        <td><code>crawl</code></td>
+        <td>외부 크롤링 데이터 (블로그, 뉴스)</td>
+        <td>메타 공식 블로그, 업계 뉴스</td>
+        <td><span class="badge badge-warn">중</span></td>
+      </tr>
+      <tr>
+        <td><code>meeting</code></td>
+        <td>미팅/상담 녹취록</td>
+        <td>수강생 상담, 내부 회의</td>
+        <td><span class="badge badge-warn">중</span></td>
+      </tr>
+      <tr>
+        <td><code>manual</code></td>
+        <td>관리자 수동 추가 콘텐츠</td>
+        <td>FAQ, 가이드 문서</td>
+        <td><span class="badge badge-ok">상</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>searchRelevantChunks 시그니처 확장</h3>
+
+  <pre><code>// src/lib/rag.ts 변경
+
+export async function searchRelevantChunks(
+  questionText: string,
+  limit: number = 5,
+  threshold: number = 0.5,
+  sourceTypes?: SourceType[]    // NEW: 소스 타입 필터
+): Promise&lt;LectureChunk[]&gt; {
+  const supabase = createServiceClient();
+  const embedding = await generateEmbedding(questionText);
+
+  const { data, error } = await (supabase.rpc as any)("match_lecture_chunks", {
+    query_embedding: embedding,
+    match_threshold: threshold,
+    match_count: limit,
+    filter_source_types: sourceTypes || null,  // NEW
+  });
+
+  if (error) {
+    console.error("Vector search error:", error);
+    return [];
+  }
+  return data || [];
+}</code></pre>
+
+  <h3>Consumer별 기본 필터</h3>
+
+  <table>
+    <thead>
+      <tr><th>Consumer</th><th>기본 sourceTypes</th><th>이유</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>QA AI 답변 (C1)</td>
+        <td><code>["lecture", "qa_archive", "manual"]</code></td>
+        <td>신뢰도 높은 소스만. 크롤링/미팅 제외</td>
+      </tr>
+      <tr>
+        <td>뉴스레터 콘텐츠 (C2)</td>
+        <td><code>["lecture", "crawl"]</code></td>
+        <td>강의 기반 + 최신 외부 정보 결합</td>
+      </tr>
+      <tr>
+        <td>교육 정보공유 (C3)</td>
+        <td><code>["lecture"]</code></td>
+        <td>강의 자료만 참조 (정확성 최우선)</td>
+      </tr>
+      <tr>
+        <td>웨비나 모집글 (C4)</td>
+        <td><code>["lecture", "crawl"]</code></td>
+        <td>강의 주제 + 시장 트렌드</td>
+      </tr>
+      <tr>
+        <td>챗봇 (C5, 향후)</td>
+        <td><code>null</code> (전체 검색)</td>
+        <td>가능한 넓은 지식 범위</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <!-- 6. Opus 4.6 통합 LLM 전환 -->
+  <h2 id="opus-integration">6. Opus 4.6 통합 LLM 전환</h2>
+
+  <h3>현재 3-LLM 매핑</h3>
+
+  <table>
+    <thead>
+      <tr><th>기능</th><th>LLM</th><th>API</th><th>모델 ID</th><th>월 비용 (추정)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>QA AI 답변</td>
+        <td>Gemini 2.5 Flash</td>
+        <td>Google AI</td>
+        <td><code>gemini-2.5-flash-preview-05-20</code></td>
+        <td>~$5</td>
+      </tr>
+      <tr>
+        <td>콘텐츠 생성</td>
+        <td>Claude Sonnet 4</td>
+        <td>Anthropic</td>
+        <td><code>claude-sonnet-4-20250514</code></td>
+        <td>~$15</td>
+      </tr>
+      <tr>
+        <td>임베딩</td>
+        <td>Gemini text-embedding-004</td>
+        <td>Google AI</td>
+        <td><code>text-embedding-004</code></td>
+        <td>~$1</td>
+      </tr>
+      <tr style="font-weight:700;"><td colspan="4">현재 합계</td><td>~$21/월</td></tr>
+    </tbody>
+  </table>
+
+  <h3>v3.1 단일 매핑</h3>
+
+  <table>
+    <thead>
+      <tr><th>기능</th><th>LLM</th><th>API</th><th>모델 ID</th><th>월 비용 (추정)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>QA AI 답변</td>
+        <td><strong>Opus 4.6</strong></td>
+        <td>Anthropic</td>
+        <td><code>claude-opus-4-6</code></td>
+        <td>~$35</td>
+      </tr>
+      <tr>
+        <td>콘텐츠 생성</td>
+        <td><strong>Opus 4.6</strong></td>
+        <td>Anthropic</td>
+        <td><code>claude-opus-4-6</code></td>
+        <td>~$20</td>
+      </tr>
+      <tr>
+        <td>임베딩</td>
+        <td>Gemini text-embedding-004 <strong>(유지)</strong></td>
+        <td>Google AI</td>
+        <td><code>text-embedding-004</code></td>
+        <td>~$1</td>
+      </tr>
+      <tr style="font-weight:700;background:#FEF2F2;"><td colspan="4">v3.1 합계</td><td>~$56/월 <span class="diff-add">+$35</span></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>비용 영향 요약:</strong> 월 <span class="diff-add">+$35</span> 증가. QA 답변이 Flash &rarr; Opus로 전환되면서 가장 큰 비용 증가 (건당 ~10x).
+    그러나 일 50건 기준 월 $35로 브랜드 신뢰도 대비 충분히 수용 가능.</p>
+
+  <h3>전환 5단계</h3>
+
+  <table>
+    <thead>
+      <tr><th>#</th><th>단계</th><th>파일</th><th>내용</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>KnowledgeService 생성</td>
+        <td><code>src/lib/knowledge.ts</code></td>
+        <td>Opus 4.6 API 호출 래퍼, Consumer 파라미터 처리</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>QA 답변 전환</td>
+        <td><code>src/lib/rag.ts</code></td>
+        <td><code>generateRAGAnswer()</code> &rarr; KS.generate({consumerType: "qa"})</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>콘텐츠 생성 전환</td>
+        <td><code>src/actions/contents.ts</code></td>
+        <td><code>generateContentWithAI()</code> &rarr; KS.generate({consumerType: "newsletter"})</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Gemini 생성 함수 제거</td>
+        <td><code>src/lib/gemini.ts</code></td>
+        <td><code>generateAnswer()</code> 삭제, <code>generateEmbedding()</code> 유지</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>환경변수 정리</td>
+        <td><code>.env</code></td>
+        <td><code>GEMINI_API_KEY</code> 유지 (임베딩), <code>ANTHROPIC_API_KEY</code> 유지 (Opus)</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <!-- 7. Consumer별 RAG 파라미터 -->
+  <h2 id="consumer-rag-params">7. Consumer별 RAG 파라미터</h2>
+
+  <p>각 Consumer는 KnowledgeService를 호출할 때 용도에 맞는 RAG 파라미터를 사용합니다.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Consumer</th>
+        <th>limit</th>
+        <th>threshold</th>
+        <th>budget</th>
+        <th>sourceTypes</th>
+        <th>temperature</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>C1: QA 답변</strong></td>
+        <td>5</td>
+        <td>0.4</td>
+        <td>3,000자</td>
+        <td>lecture, qa_archive, manual</td>
+        <td>0.3</td>
+      </tr>
+      <tr>
+        <td><strong>C2: 뉴스레터</strong></td>
+        <td>5</td>
+        <td>0.4</td>
+        <td>3,000자</td>
+        <td>lecture, crawl</td>
+        <td>0.5</td>
+      </tr>
+      <tr>
+        <td><strong>C3: 교육 정보공유</strong></td>
+        <td>7</td>
+        <td>0.5</td>
+        <td>5,000자</td>
+        <td>lecture</td>
+        <td>0.3</td>
+      </tr>
+      <tr>
+        <td><strong>C4: 웨비나 모집글</strong></td>
+        <td>3</td>
+        <td>0.4</td>
+        <td>2,000자</td>
+        <td>lecture, crawl</td>
+        <td>0.6</td>
+      </tr>
+      <tr>
+        <td><strong>C5: 챗봇</strong> (향후)</td>
+        <td>5</td>
+        <td>0.3</td>
+        <td>4,000자</td>
+        <td>전체 (null)</td>
+        <td>0.4</td>
+      </tr>
+      <tr>
+        <td><strong>C6: 프로모션</strong> (향후)</td>
+        <td>3</td>
+        <td>0.5</td>
+        <td>2,000자</td>
+        <td>lecture, manual</td>
+        <td>0.7</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>파라미터 설계 근거</h3>
+  <ul>
+    <li><strong>QA (C1):</strong> 정확성 최우선 &rarr; 낮은 temperature(0.3), 높은 신뢰도 소스만</li>
+    <li><strong>뉴스레터 (C2):</strong> 강의 기반 + 외부 트렌드 &rarr; 중간 temperature(0.5), crawl 포함</li>
+    <li><strong>교육 (C3):</strong> 깊은 강의 참조 필요 &rarr; limit 7, budget 5,000자로 확대</li>
+    <li><strong>웨비나 (C4):</strong> 짧고 임팩트 있는 콘텐츠 &rarr; limit 3, 높은 temperature(0.6)</li>
+    <li><strong>챗봇 (C5):</strong> 넓은 지식 범위 &rarr; 전체 소스, 낮은 threshold(0.3)</li>
+  </ul>
+
+
+  <!-- ================================================================ -->
+  <!-- Part 3: Mermaid 다이어그램 (4종)                                    -->
+  <!-- ================================================================ -->
+
+  <!-- 8. Knowledge Service 중심 시스템 다이어그램 -->
+  <h2 id="diagram-system">8. Knowledge Service 중심 시스템 다이어그램</h2>
+
+  <p>KnowledgeService가 중심에 위치하고, 좌측에 Data Sources, 우측에 5개 Consumer가 연결되는 구조입니다.</p>
+
+  <pre class="mermaid">
+graph LR
+  subgraph Sources["Data Sources"]
+    S1["lecture_chunks\n(강의 자료, ~600)"]
+    S2["qa_archive\n(QA 답변, ~40)"]
+    S3["manual\n(수동 추가, ~24)"]
+    S4["crawl\n(외부 크롤링, 향후)"]
+    S5["meeting\n(미팅 녹취, 향후)"]
+  end
+
+  subgraph KS["Knowledge Service"]
+    EMB["Gemini\ntext-embedding-004\n(임베딩)"]
+    PGV["pgvector\n+ source_type 필터"]
+    OPUS["Opus 4.6\n(생성)"]
+    KSI["KnowledgeService\n(통합 인터페이스)"]
+    EMB --> PGV
+    PGV -->|"filtered chunks"| KSI
+    KSI -->|"prompt + context"| OPUS
+    OPUS -->|"response"| KSI
+  end
+
+  subgraph Consumers["Consumers (5종)"]
+    C1["C1: QA AI 답변\n(answers 테이블)"]
+    C2["C2: 뉴스레터\n(contents + emailSummary)"]
+    C3["C3: 교육 정보공유\n(contents 게시)"]
+    C4["C4: 웨비나 모집글\n(contents + 일정)"]
+    C5["C5: 챗봇\n(향후 확장)"]
+  end
+
+  S1 --> EMB
+  S2 --> EMB
+  S3 --> EMB
+  S4 -.-> EMB
+  S5 -.-> EMB
+
+  KSI --> C1
+  KSI --> C2
+  KSI --> C3
+  KSI --> C4
+  KSI -.-> C5
+
+  style KS fill:#FEF2F2,stroke:#F75D5D,stroke-width:2px
+  style KSI fill:#FEE2E2,stroke:#F75D5D
+  style OPUS fill:#DBEAFE,stroke:#1E40AF
+  style EMB fill:#E0E7FF,stroke:#3730A3
+  </pre>
+
+
+  <!-- 9. 마이그레이션 시퀀스 -->
+  <h2 id="diagram-migration">9. 마이그레이션 시퀀스 다이어그램</h2>
+
+  <p>Phase 0(DB 마이그레이션) &rarr; Phase 1(KS 구현) &rarr; Phase 2(최적화) 순서입니다.</p>
+
+  <pre class="mermaid">
+sequenceDiagram
+  actor Dev as 개발자
+  participant DB as Supabase DB
+  participant KS as KnowledgeService
+  participant RAG as rag.ts
+  participant GEM as gemini.ts
+  participant CNT as contents.ts
+  participant QA as questions.ts
+
+  Note over Dev,DB: Phase 0 — DB 마이그레이션 (Day 1)
+  Dev->>DB: ALTER TABLE ADD source_type, metadata
+  DB-->>Dev: OK (664행 기존 데이터 보존)
+  Dev->>DB: UPDATE 664행 backfill (source_type='lecture')
+  DB-->>Dev: 664 rows updated
+  Dev->>DB: CREATE INDEX idx_chunks_source_type
+  Dev->>DB: CREATE INDEX idx_chunks_metadata_gin
+  Dev->>DB: CREATE OR REPLACE match_lecture_chunks (v2)
+  DB-->>Dev: RPC 확장 완료
+
+  Note over Dev,QA: Phase 1 — KnowledgeService 구현 (Day 1-2)
+  Dev->>KS: knowledge.ts 신규 생성
+  Dev->>KS: Opus 4.6 API 래퍼 구현
+  Dev->>KS: Consumer 파라미터 처리
+  Dev->>RAG: searchRelevantChunks에 sourceTypes 파라미터 추가
+  Dev->>QA: createAIAnswerForQuestion → KS.generate() 위임
+  Dev->>CNT: generateContentWithAI → KS.generate() 위임
+  Dev->>GEM: generateAnswer() 제거
+
+  Note over Dev,QA: Phase 2 — 최적화 + UX (Day 3-5)
+  Dev->>CNT: TYPE_PROMPTS + emailSummaryGuide 강화
+  Dev->>KS: Consumer별 RAG 파라미터 튜닝
+  Dev->>Dev: Preview UX 구현 (v3 ADR-3,4 반영)
+  Dev->>Dev: 비용 모니터링 대시보드 추가
+  </pre>
+
+
+  <!-- 10. 데이터 흐름도 -->
+  <h2 id="diagram-dataflow">10. 데이터 흐름도</h2>
+
+  <p>쿼리가 Consumer 타입과 함께 KnowledgeService에 도달하고, 소스 필터링 &rarr; RAG 검색 &rarr; Opus 생성을 거쳐 Consumer별 출력으로 변환됩니다.</p>
+
+  <pre class="mermaid">
+graph TB
+  subgraph Input["입력"]
+    Q["query (사용자 입력)"]
+    CT["consumerType\n(qa|newsletter|education|...)"]
+  end
+
+  subgraph Filter["필터링 (v3.1 NEW)"]
+    SF["sourceTypes 결정\n(Consumer별 기본값)"]
+    CT --> SF
+  end
+
+  subgraph Search["RAG 검색"]
+    EMB2["generateEmbedding(query)\n(Gemini text-embedding-004)"]
+    PGV2["match_lecture_chunks\n(pgvector + source_type WHERE)"]
+    CHK2["필터링된 청크\n(limit, threshold 적용)"]
+    Q --> EMB2 --> PGV2
+    SF -->|"filter_source_types"| PGV2
+    PGV2 --> CHK2
+  end
+
+  subgraph Generation["Opus 4.6 생성"]
+    BUD["토큰 예산 적용\n(Consumer별 budget)"]
+    SYS2["system prompt 구성\n(Consumer별 + RAG context)"]
+    OPUS2["Opus 4.6\n(claude-opus-4-6)"]
+    RESP["KnowledgeResponse"]
+    CHK2 --> BUD --> SYS2
+    CT -->|"prompt override"| SYS2
+    SYS2 --> OPUS2 --> RESP
+  end
+
+  subgraph Output["Consumer별 출력"]
+    O1["QA: 마크다운 답변\n+ sourceRefs"]
+    O2["뉴스레터: title +\nbodyMd + emailSummary"]
+    O3["교육: title + bodyMd"]
+    O4["웨비나: title +\nbodyMd + 일정"]
+    RESP --> O1
+    RESP --> O2
+    RESP --> O3
+    RESP --> O4
+  end
+
+  style Filter fill:#DCFCE7,stroke:#166534,stroke-width:2px
+  style SF fill:#DCFCE7,stroke:#166534
+  style OPUS2 fill:#DBEAFE,stroke:#1E40AF
+  </pre>
+
+
+  <!-- 11. Consumer RAG 분기 -->
+  <h2 id="diagram-consumer">11. Consumer RAG 분기 다이어그램</h2>
+
+  <p>Consumer 타입에 따라 서로 다른 RAG 파라미터가 적용되고, 소스 필터링 후 Opus가 각각에 맞는 응답을 생성합니다.</p>
+
+  <pre class="mermaid">
+graph TB
+  START["KnowledgeService.generate(request)"]
+
+  START --> SWITCH{"consumerType?"}
+
+  SWITCH -->|"qa"| QA_CFG["limit: 5, threshold: 0.4\nbudget: 3000, temp: 0.3\nsources: lecture, qa_archive, manual"]
+  SWITCH -->|"newsletter"| NL_CFG["limit: 5, threshold: 0.4\nbudget: 3000, temp: 0.5\nsources: lecture, crawl"]
+  SWITCH -->|"education"| ED_CFG["limit: 7, threshold: 0.5\nbudget: 5000, temp: 0.3\nsources: lecture"]
+  SWITCH -->|"webinar"| WB_CFG["limit: 3, threshold: 0.4\nbudget: 2000, temp: 0.6\nsources: lecture, crawl"]
+
+  QA_CFG --> SEARCH["searchRelevantChunks\n(source_type 필터 적용)"]
+  NL_CFG --> SEARCH
+  ED_CFG --> SEARCH
+  WB_CFG --> SEARCH
+
+  SEARCH --> BUILD["RAG context 구성\n(budget 내 청크 조합)"]
+  BUILD --> OPUS3["Opus 4.6\n생성"]
+
+  OPUS3 --> QA_OUT["QA 응답\n(답변 + 출처)"]
+  OPUS3 --> NL_OUT["뉴스레터\n(title + body + email)"]
+  OPUS3 --> ED_OUT["교육 콘텐츠\n(title + body)"]
+  OPUS3 --> WB_OUT["웨비나 안내\n(title + body + 일정)"]
+
+  style SWITCH fill:#FEF9C3,stroke:#854D0E
+  style SEARCH fill:#E0E7FF,stroke:#3730A3
+  style OPUS3 fill:#DBEAFE,stroke:#1E40AF
+  style BUILD fill:#F3E8FF,stroke:#6B21A8
+  </pre>
+
+
+  <!-- ================================================================ -->
+  <!-- Part 4: ADR 3건                                                   -->
+  <!-- ================================================================ -->
+
+  <!-- 12. ADR-6 개정 -->
+  <h2 id="adr-6-revised">12. ADR-6: LLM 통합 <span class="badge badge-revised">v3.1 개정</span></h2>
+
+  <div class="adr">
+    <div class="adr-header">
+      <span class="adr-num">ADR-6</span>
+      <span class="adr-title">모든 생성 작업을 Opus 4.6으로 통합</span>
+      <span class="badge badge-revised">v3.1 개정</span>
+    </div>
+    <div class="adr-body">
+      <div class="adr-section">
+        <div class="adr-section-title">v3 &rarr; v3.1 변경</div>
+        <div class="diff-highlight">
+          <strong>우선순위 변경:</strong> <span class="diff-del">P2 / 미래</span> &rarr; <span class="diff-add">P0 / 즉시</span><br>
+          <strong>이유:</strong> Smith님 피드백 &mdash; "파편화 해소하고 Opus 하나로 통일. 비용 수용 가능."
+          KnowledgeService 통합의 전제 조건이므로 P0으로 격상.
+        </div>
+      </div>
+
+      <div class="adr-section">
+        <div class="adr-section-title">맥락 (Context)</div>
+        <p>현재 3개 LLM이 각각 다른 파이프라인에서 동작합니다:</p>
+        <ul>
+          <li><strong>QA 답변:</strong> Gemini 2.5 Flash (<code>gemini.ts:44</code>)</li>
+          <li><strong>콘텐츠 생성:</strong> Claude Sonnet 4 (<code>contents.ts:645</code>)</li>
+          <li><strong>임베딩:</strong> Gemini text-embedding-004 (<code>gemini.ts:15</code>) &mdash; 유지</li>
+        </ul>
+        <p>동일한 지식 기반(lecture_chunks)을 사용하지만 프롬프트 엔지니어링, 에러 핸들링, 품질이 모두 분산되어 있습니다.</p>
+      </div>
+
+      <div class="adr-section">
+        <div class="adr-section-title">결정 (Decision)</div>
+        <p><strong>Opus 4.6 단일화</strong> (v3 동일, 우선순위만 변경)</p>
+        <ul>
+          <li>모든 텍스트 생성을 <code>claude-opus-4-6</code>으로 통합</li>
+          <li>임베딩은 Gemini text-embedding-004 유지 (교체 불필요, 768차원 호환)</li>
+          <li>KnowledgeService가 단일 Opus API 호출 래퍼 역할</li>
+        </ul>
+      </div>
+
+      <div class="adr-section">
+        <div class="adr-section-title">비용 영향</div>
+        <table>
+          <thead><tr><th>항목</th><th>v3 (현재)</th><th>v3.1 (Opus)</th><th>차이</th></tr></thead>
+          <tbody>
+            <tr><td>QA 답변 (50건/일)</td><td>~$5/월 (Flash)</td><td>~$35/월 (Opus)</td><td>+$30</td></tr>
+            <tr><td>콘텐츠 생성 (5건/일)</td><td>~$15/월 (Sonnet)</td><td>~$20/월 (Opus)</td><td>+$5</td></tr>
+            <tr><td>임베딩</td><td>~$1/월</td><td>~$1/월</td><td>$0</td></tr>
+            <tr style="font-weight:700;background:#FEF2F2;">
+              <td>합계</td><td>~$21/월</td><td>~$56/월</td><td><span class="diff-add">+$35/월</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="adr-section">
+        <div class="adr-section-title">결과 (Consequences)</div>
+        <div class="consequence"><span class="plus">[+]</span> QA 답변 품질 대폭 향상 (Flash &rarr; Opus, 최고 수준)</div>
+        <div class="consequence"><span class="plus">[+]</span> 프롬프트 엔지니어링 단일 관리 (Anthropic 형식 통일)</div>
+        <div class="consequence"><span class="plus">[+]</span> KnowledgeService로 코드 응집도 향상, Gemini 생성 의존성 제거</div>
+        <div class="consequence"><span class="minus">[-]</span> 월 비용 +$35 증가 (수용 확인됨)</div>
+        <div class="consequence"><span class="minus">[-]</span> Opus 응답 지연 2-5초 (Flash 0.5-1초 대비), QA UX에 스피너 필요</div>
+        <div class="consequence"><span class="neutral">[~]</span> GEMINI_API_KEY 유지 (임베딩 전용), ANTHROPIC_API_KEY 유지</div>
+      </div>
+
+      <div class="adr-section">
+        <div class="adr-section-title">관련 코드</div>
+        <p>
+          <code>src/lib/knowledge.ts</code> &mdash; 신규 파일 (KnowledgeService + Opus 래퍼)<br>
+          <code>src/lib/gemini.ts:44-90</code> &mdash; <span class="diff-del">generateAnswer() 제거</span><br>
+          <code>src/lib/gemini.ts:15-38</code> &mdash; generateEmbedding() 유지<br>
+          <code>src/lib/rag.ts:55-98</code> &mdash; generateRAGAnswer() &rarr; KS 위임<br>
+          <code>src/actions/contents.ts:623-698</code> &mdash; generateContentWithAI() &rarr; KS 위임
+        </p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 13. ADR-7 개정 -->
+  <h2 id="adr-7-revised">13. ADR-7: 메타데이터 필터링 <span class="badge badge-revised">v3.1 개정</span></h2>
+
+  <div class="adr">
+    <div class="adr-header">
+      <span class="adr-num">ADR-7</span>
+      <span class="adr-title">RAG 진화: 메타데이터 필터링 즉시 도입</span>
+      <span class="badge badge-revised">v3.1 개정</span>
+    </div>
+    <div class="adr-body">
+      <div class="adr-section">
+        <div class="adr-section-title">v3 &rarr; v3.1 변경</div>
+        <div class="diff-highlight">
+          <strong>결정 변경:</strong> <span class="diff-del">"YAGNI &mdash; 500개 초과 시 전환"</span> &rarr; <span class="diff-add">"즉시 도입"</span><br>
+          <strong>이유:</strong> v3 작성 시 청크 수를 ~200개로 추정했으나 실제 <strong>664개</strong>로 확인.
+          Phase 2 트리거(500개)를 이미 초과하여 YAGNI 결정의 전제가 무효화됨.
+          Smith님 피드백 &mdash; "강의는 강의대로, 신규정보는 신규정보대로 검색해야 한다."
+        </div>
+      </div>
+
+      <div class="adr-section">
+        <div class="adr-section-title">맥락 (Context)</div>
+        <p><code>lecture_chunks</code> 테이블에 현재 <strong>664개</strong> 행이 존재합니다.
+          v3에서 설정한 Phase 2 트리거(500개 초과)를 이미 <strong>33%</strong> 초과했습니다.
+          향후 3개월 내 QA 아카이브와 크롤링 데이터 유입으로 <strong>1,000개+ 예상</strong>됩니다.</p>
+        <table>
+          <thead><tr><th>지표</th><th>v3 추정</th><th>v3.1 실측</th><th>Phase 2 기준</th><th>판정</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>총 청크 수</td>
+              <td><span class="diff-del">~200</span></td>
+              <td><span class="diff-add">664</span></td>
+              <td>&gt; 500</td>
+              <td><span class="badge badge-danger">초과</span></td>
+            </tr>
+            <tr>
+              <td>데이터 소스 종류</td>
+              <td>강의만</td>
+              <td>강의 + 일부 수동</td>
+              <td>2종류 이상</td>
+              <td><span class="badge badge-warn">경계</span></td>
+            </tr>
+            <tr>
+              <td>검색 노이즈율</td>
+              <td>낮음</td>
+              <td>중간 (소스 혼재)</td>
+              <td>&gt; 20%</td>
+              <td><span class="badge badge-warn">경계</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="adr-section">
+        <div class="adr-section-title">결정 (Decision)</div>
+        <p><strong>즉시 도입:</strong> <code>source_type</code> 컬럼 + <code>metadata</code> jsonb 추가 &rarr; RPC WHERE 절 확장</p>
+        <ul>
+          <li>ADR-8(마이그레이션 전략)에 따라 4단계 마이그레이션 실행</li>
+          <li>기존 664행은 <code>source_type = 'lecture'</code>로 backfill</li>
+          <li>Consumer별 기본 필터 적용 (섹션 5 참조)</li>
+          <li><code>match_lecture_chunks</code> RPC에 <code>filter_source_types</code> 파라미터 추가</li>
+        </ul>
+      </div>
+
+      <div class="adr-section">
+        <div class="adr-section-title">결과 (Consequences)</div>
+        <div class="consequence"><span class="plus">[+]</span> 소스 타입별 정밀 검색으로 노이즈 감소</div>
+        <div class="consequence"><span class="plus">[+]</span> Consumer별 최적화된 결과 제공 가능</div>
+        <div class="consequence"><span class="plus">[+]</span> 향후 크롤링/미팅 데이터 유입 시 즉시 필터링 가능</div>
+        <div class="consequence"><span class="minus">[-]</span> DB 마이그레이션 비용 (1회성, Day 1에 실행)</div>
+        <div class="consequence"><span class="minus">[-]</span> RPC 함수 수정 필요 (하위 호환 유지: filter_source_types DEFAULT NULL)</div>
+        <div class="consequence"><span class="neutral">[~]</span> GIN 인덱스로 jsonb 쿼리 성능 확보</div>
+      </div>
+
+      <div class="adr-section">
+        <div class="adr-section-title">관련 코드</div>
+        <p>
+          <code>src/types/database.ts:335-364</code> &mdash; lecture_chunks 스키마 (source_type, metadata 추가)<br>
+          <code>src/lib/rag.ts:26-50</code> &mdash; searchRelevantChunks() sourceTypes 파라미터 추가<br>
+          Supabase RPC: <code>match_lecture_chunks</code> &mdash; filter_source_types 파라미터 추가
+        </p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 14. ADR-8 신규 -->
+  <h2 id="adr-8-new">14. ADR-8: 마이그레이션 전략 <span class="badge-new">NEW</span></h2>
+
+  <div class="adr">
+    <div class="adr-header">
+      <span class="adr-num">ADR-8</span>
+      <span class="adr-title">lecture_chunks 스키마 마이그레이션: jsonb 추가 + backfill + 롤백 계획</span>
+      <span class="badge-new">NEW</span>
+    </div>
+    <div class="adr-body">
+      <div class="adr-section">
+        <div class="adr-section-title">맥락 (Context)</div>
+        <p>ADR-7(v3.1 개정)에 따라 <code>lecture_chunks</code> 테이블에 <code>source_type</code>과
+          <code>metadata</code> 컬럼을 즉시 추가해야 합니다. 기존 664행의 데이터 무결성을 보존하면서
+          마이그레이션을 수행하는 전략이 필요합니다.</p>
+        <p>PostgreSQL에서 <code>ALTER TABLE ADD COLUMN ... DEFAULT</code>는 테이블 리라이트 없이
+          즉시 반영되므로 다운타임이 없습니다. 그러나 GIN 인덱스 생성은 테이블 규모에 비례한
+          시간이 소요됩니다 (664행 기준 &lt; 1초).</p>
+      </div>
+
+      <div class="adr-section">
+        <div class="adr-section-title">선택지 (Options)</div>
+        <table>
+          <thead><tr><th>옵션</th><th>설명</th><th>장점</th><th>단점</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>A. jsonb 컬럼 추가 + backfill</strong></td>
+              <td>source_type text + metadata jsonb 추가, 기존 데이터 태깅</td>
+              <td>단순, 하위 호환, 롤백 용이</td>
+              <td>jsonb 스키마 유연성 &rarr; 타입 안전성 약함</td>
+            </tr>
+            <tr>
+              <td>B. 정규화 컬럼 추가</td>
+              <td>source_type, cohort, topic, quality_score 개별 컬럼</td>
+              <td>타입 안전, 인덱스 효율적</td>
+              <td>미래 요구사항 예측 필요, 컬럼 추가 반복</td>
+            </tr>
+            <tr>
+              <td>C. 별도 메타데이터 테이블</td>
+              <td>chunk_metadata 테이블 생성, FK로 연결</td>
+              <td>원본 테이블 변경 없음</td>
+              <td>JOIN 비용, RPC 복잡도 증가</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="adr-section">
+        <div class="adr-section-title">결정 (Decision)</div>
+        <p><strong>옵션 A: jsonb 컬럼 추가 + backfill</strong></p>
+        <ul>
+          <li><code>source_type text NOT NULL DEFAULT 'lecture'</code> &mdash; 빠른 필터링용 독립 컬럼</li>
+          <li><code>metadata jsonb NOT NULL DEFAULT '{}'</code> &mdash; 확장 가능한 유연 저장소</li>
+          <li>source_type은 독립 컬럼으로 분리하여 인덱스 효율성 확보 (가장 빈번한 필터)</li>
+          <li>나머지 메타(cohort, topic, quality_score)는 metadata jsonb에 저장</li>
+        </ul>
+      </div>
+
+      <div class="adr-section">
+        <div class="adr-section-title">마이그레이션 4단계</div>
+        <table>
+          <thead><tr><th>단계</th><th>SQL</th><th>영향</th><th>롤백</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Step 1: 컬럼 추가</td>
+              <td><code>ALTER TABLE ... ADD COLUMN</code></td>
+              <td>다운타임 0, 즉시 반영</td>
+              <td><code>ALTER TABLE ... DROP COLUMN</code></td>
+            </tr>
+            <tr>
+              <td>Step 2: backfill</td>
+              <td><code>UPDATE ... SET source_type, metadata</code></td>
+              <td>664행, &lt; 1초</td>
+              <td><code>UPDATE ... SET source_type='lecture', metadata='{}'</code></td>
+            </tr>
+            <tr>
+              <td>Step 3: 인덱스</td>
+              <td><code>CREATE INDEX</code> (2개)</td>
+              <td>664행, &lt; 1초</td>
+              <td><code>DROP INDEX</code></td>
+            </tr>
+            <tr>
+              <td>Step 4: RPC 확장</td>
+              <td><code>CREATE OR REPLACE FUNCTION</code></td>
+              <td>하위 호환 (DEFAULT NULL)</td>
+              <td>이전 버전 RPC로 재생성</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="adr-section">
+        <div class="adr-section-title">롤백 계획</div>
+        <pre><code>-- 롤백 (역순)
+-- Step 4: RPC 원복
+CREATE OR REPLACE FUNCTION match_lecture_chunks(
+  query_embedding vector(768),
+  match_threshold float DEFAULT 0.5,
+  match_count int DEFAULT 5
+) ... -- 기존 3-파라미터 버전
+
+-- Step 3: 인덱스 제거
+DROP INDEX IF EXISTS idx_chunks_source_type;
+DROP INDEX IF EXISTS idx_chunks_metadata_gin;
+
+-- Step 2: 데이터 원복 (불필요 - Step 1에서 컬럼 제거 시 자동)
+
+-- Step 1: 컬럼 제거
+ALTER TABLE lecture_chunks
+  DROP COLUMN IF EXISTS source_type,
+  DROP COLUMN IF EXISTS metadata;</code></pre>
+      </div>
+
+      <div class="adr-section">
+        <div class="adr-section-title">결과 (Consequences)</div>
+        <div class="consequence"><span class="plus">[+]</span> source_type 독립 컬럼으로 B-tree 인덱스 활용, 빠른 필터링</div>
+        <div class="consequence"><span class="plus">[+]</span> metadata jsonb로 향후 메타데이터 추가 시 스키마 변경 불필요</div>
+        <div class="consequence"><span class="plus">[+]</span> 하위 호환 유지 (filter_source_types DEFAULT NULL)</div>
+        <div class="consequence"><span class="plus">[+]</span> 4단계 각각 독립 롤백 가능, 리스크 최소화</div>
+        <div class="consequence"><span class="minus">[-]</span> metadata jsonb 내부 데이터의 타입 안전성은 애플리케이션 레벨에서 검증 필요</div>
+        <div class="consequence"><span class="neutral">[~]</span> 664행 규모에서 성능 이슈 없음, 1,000행+ 시 모니터링 필요</div>
+      </div>
+
+      <div class="adr-section">
+        <div class="adr-section-title">관련 코드</div>
+        <p>
+          <code>src/types/database.ts:335-364</code> &mdash; lecture_chunks 스키마 업데이트<br>
+          Supabase Migration: <code>supabase/migrations/YYYYMMDD_add_chunk_metadata.sql</code><br>
+          Supabase RPC: <code>match_lecture_chunks</code> v2
+        </p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ================================================================ -->
+  <!-- Part 5: 로드맵 + 리스크                                           -->
+  <!-- ================================================================ -->
+
+  <!-- 15. 구현 로드맵 재정의 -->
+  <h2 id="roadmap">15. 구현 로드맵 재정의</h2>
+
+  <div class="summary-box">
+    <strong>핵심 변경:</strong> v3의 P0/P1/P2 우선순위 체계에서 <strong>Day 기반 6일 로드맵</strong>으로 전환.
+    DB 마이그레이션이 최우선(Day 1)이며, KS 프레임워크(Day 1-2) &rarr; <strong>QA 먼저 연결+검증(Day 2-3)</strong> &rarr; 콘텐츠 연결+정리(Day 3-4) &rarr; UX+최적화(Day 5-6) 순서.
+  </div>
+
+  <div class="diff-highlight">
+    <strong>v3.1 로드맵 수정 (Smith님 피드백):</strong> 기존 P1에서 rag.ts, gemini.ts, contents.ts, questions.ts를
+    한 번에 KS로 전환하는 것은 <strong>빅뱅 전환</strong>이며, RISK-4(단일 장애점)를 전환 과정에서 스스로 유발합니다.
+    QA 파이프라인(Gemini&rarr;Opus, 벤더 전환)이 콘텐츠 파이프라인(Sonnet&rarr;Opus, 같은 Anthropic)보다 리스크가 높으므로,
+    <strong>QA 먼저 연결 &rarr; 검증 &rarr; 콘텐츠 연결</strong> 순서로 단계적 전환합니다.
+  </div>
+
+  <div class="roadmap-grid" style="grid-template-columns: repeat(2, 1fr);">
+    <div class="roadmap-card">
+      <div class="roadmap-card-header p0">
+        <span class="badge badge-p0">P0</span> Day 1-2
+      </div>
+      <div class="roadmap-card-body">
+        <h4 style="margin-top:0;">DB 마이그레이션 + KS 프레임워크</h4>
+        <p>예상 변경: <strong>~150줄</strong></p>
+        <p>의존성: 없음 (최우선)</p>
+        <p style="margin-bottom:8px;">수정 파일:</p>
+        <span class="file-tag">migration SQL</span>
+        <span class="file-tag">knowledge.ts (신규)</span>
+        <span class="file-tag">database.ts</span>
+        <p style="margin-top:12px;">Day 1:</p>
+        <ul style="font-size:12px;">
+          <li>lecture_chunks에 source_type + metadata 컬럼 추가</li>
+          <li>664행 backfill (source_type='lecture')</li>
+          <li>인덱스 2개 생성 (B-tree + GIN)</li>
+          <li>match_lecture_chunks RPC v2 배포</li>
+        </ul>
+        <p style="margin-top:8px;">Day 2:</p>
+        <ul style="font-size:12px;">
+          <li>KnowledgeService 클래스 생성 (knowledge.ts)</li>
+          <li>Opus 4.6 API 래퍼 구현</li>
+          <li>Consumer 파라미터 설정 (6종)</li>
+          <li>database.ts 타입 업데이트</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="roadmap-card">
+      <div class="roadmap-card-header p1">
+        <span class="badge badge-p1">P1a</span> Day 2-3
+      </div>
+      <div class="roadmap-card-body">
+        <h4 style="margin-top:0;">QA 파이프라인 먼저 연결</h4>
+        <p>예상 변경: <strong>~70줄</strong></p>
+        <p>의존성: P0 완료</p>
+        <p style="margin-bottom:8px;">수정 파일:</p>
+        <span class="file-tag">rag.ts</span>
+        <span class="file-tag">questions.ts</span>
+        <p style="margin-top:12px;">변경 내용:</p>
+        <ul style="font-size:12px;">
+          <li>searchRelevantChunks()에 sourceTypes 파라미터 추가</li>
+          <li>generateRAGAnswer() &rarr; KS.generate({consumerType: "qa"})</li>
+          <li>questions.ts: createAIAnswerForQuestion() KS 경유</li>
+          <li style="color:#991B1B;font-weight:600;">gemini.ts generateAnswer()는 아직 제거하지 않음 (롤백 안전망)</li>
+        </ul>
+        <p style="margin-top:12px;font-weight:600;color:#166534;">검증 게이트:</p>
+        <ul style="font-size:12px;">
+          <li>QA 질문 3~5건 생성 &rarr; AI 답변 품질 확인</li>
+          <li>Opus 응답 시간 측정 (2-5초 허용 범위 내 확인)</li>
+          <li>sourceRefs 정상 반환 확인</li>
+          <li style="color:#991B1B;">검증 실패 시: rag.ts import만 원복 &rarr; 30초 내 Gemini 롤백 가능</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="roadmap-card">
+      <div class="roadmap-card-header p1">
+        <span class="badge badge-p1">P1b</span> Day 3-4
+      </div>
+      <div class="roadmap-card-body">
+        <h4 style="margin-top:0;">QA 안정 확인 후 콘텐츠 연결</h4>
+        <p>예상 변경: <strong>~60줄</strong></p>
+        <p>의존성: <strong>P1a 검증 통과</strong></p>
+        <p style="margin-bottom:8px;">수정 파일:</p>
+        <span class="file-tag">contents.ts</span>
+        <span class="file-tag">gemini.ts</span>
+        <p style="margin-top:12px;">변경 내용:</p>
+        <ul style="font-size:12px;">
+          <li>generateContentWithAI() &rarr; KS.generate({consumerType: "newsletter"})</li>
+          <li>기존 TYPE_PROMPTS를 KS Consumer 설정으로 이관</li>
+          <li>QA + 콘텐츠 둘 다 KS 경유 정상 확인 후:<br>
+            <span style="color:#991B1B;font-weight:600;">gemini.ts generateAnswer() 최종 제거</span></li>
+        </ul>
+        <p style="margin-top:12px;font-weight:600;color:#166534;">검증 게이트:</p>
+        <ul style="font-size:12px;">
+          <li>콘텐츠 타입별 생성 테스트 (education, webinar, case_study)</li>
+          <li>emailSummary ### 헤딩 구조 확인</li>
+          <li>QA + 콘텐츠 병행 동작 확인</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="roadmap-card">
+      <div class="roadmap-card-header p2">
+        <span class="badge badge-p2">P2</span> Day 5-6
+      </div>
+      <div class="roadmap-card-body">
+        <h4 style="margin-top:0;">UX + 최적화</h4>
+        <p>예상 변경: <strong>~200줄</strong></p>
+        <p>의존성: P0 + P1a + P1b 완료</p>
+        <p style="margin-bottom:8px;">수정 파일:</p>
+        <span class="file-tag">new-content-modal.tsx</span>
+        <span class="file-tag">email-template-utils.ts</span>
+        <span class="file-tag">contents.ts</span>
+        <p style="margin-top:12px;">변경 내용:</p>
+        <ul style="font-size:12px;">
+          <li>v3 ADR-1~5 구현 (타입 매핑, emailSummaryGuide 강화 등)</li>
+          <li>Preview 스텝 UI (FlowStep에 "preview" 추가)</li>
+          <li>email_summary 검증 (soft + hard)</li>
+          <li>Consumer별 RAG 파라미터 튜닝</li>
+          <li>QA 응답 UX 개선 (Opus 지연 대응 스피너)</li>
+          <li>비용 모니터링 로그 추가</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h3>P1a/P1b 분리 근거: LLM 전환 리스크 비교</h3>
+
+  <table>
+    <thead>
+      <tr><th>비교 항목</th><th>P1a: QA 파이프라인</th><th>P1b: 콘텐츠 파이프라인</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>LLM 변경</td>
+        <td><span class="badge badge-danger">Gemini Flash &rarr; Opus (벤더 전환)</span></td>
+        <td><span class="badge badge-warn">Sonnet &rarr; Opus (같은 Anthropic)</span></td>
+      </tr>
+      <tr>
+        <td>API 포맷</td>
+        <td><span class="badge badge-danger">Google AI &rarr; Anthropic (포맷 전환)</span></td>
+        <td><span class="badge badge-ok">Anthropic &rarr; Anthropic (동일)</span></td>
+      </tr>
+      <tr>
+        <td>출력 형식</td>
+        <td>마크다운 답변 + sourceRefs</td>
+        <td>title + bodyMd + emailSummary</td>
+      </tr>
+      <tr>
+        <td>프롬프트 톤</td>
+        <td><span class="badge badge-danger">완전히 새로 작성 필요</span></td>
+        <td><span class="badge badge-ok">TYPE_PROMPTS 재활용</span></td>
+      </tr>
+      <tr>
+        <td>검증 방법</td>
+        <td>QA 답변 품질 + 응답 시간 직접 확인</td>
+        <td>콘텐츠 생성 + 이메일 미리보기</td>
+      </tr>
+      <tr>
+        <td>롤백 전략</td>
+        <td>rag.ts import 원복 &rarr; Gemini 즉시 복원</td>
+        <td>contents.ts Claude 직접 호출 원복</td>
+      </tr>
+      <tr style="font-weight:700;background:#FEF2F2;">
+        <td>전환 리스크</td>
+        <td><span class="badge badge-danger">높음</span> &mdash; 먼저 전환+검증</td>
+        <td><span class="badge badge-warn">중간</span> &mdash; QA 안정 후 전환</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>롤백 안전망: gemini.ts generateAnswer() 유지 타이밍</h3>
+
+  <table>
+    <thead>
+      <tr><th>시점</th><th>generateAnswer() 상태</th><th>롤백 가능성</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>P1a 진행 중</td>
+        <td><span class="badge badge-ok">유지</span> (사용되지 않지만 코드 존재)</td>
+        <td>rag.ts import 원복으로 <strong>30초 내 Gemini 롤백</strong></td>
+      </tr>
+      <tr>
+        <td>P1a 검증 통과</td>
+        <td><span class="badge badge-ok">유지</span> (P1b 안전망)</td>
+        <td>QA 롤백 + 콘텐츠 원복 모두 가능</td>
+      </tr>
+      <tr>
+        <td>P1b 검증 통과</td>
+        <td><span class="badge badge-danger">최종 제거</span></td>
+        <td>KS가 전체 담당, Gemini 생성 의존성 완전 제거</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>전체 타임라인</h3>
+  <table>
+    <thead>
+      <tr><th>Day</th><th>우선순위</th><th>작업</th><th>파일</th><th>예상 변경</th><th>검증</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><span class="badge badge-p0">P0</span></td>
+        <td>DB 마이그레이션 (ADR-8)</td>
+        <td>Supabase migration SQL</td>
+        <td>~40줄 SQL</td>
+        <td>SELECT count, source_type 확인</td>
+      </tr>
+      <tr>
+        <td>1-2</td>
+        <td><span class="badge badge-p0">P0</span></td>
+        <td>KnowledgeService 프레임워크</td>
+        <td><code>knowledge.ts</code>, <code>database.ts</code></td>
+        <td>~110줄</td>
+        <td>단위 테스트 (QA Consumer)</td>
+      </tr>
+      <tr style="background:#FEF2F2;">
+        <td>2-3</td>
+        <td><span class="badge badge-p1">P1a</span></td>
+        <td>QA 파이프라인 KS 연결</td>
+        <td><code>rag.ts</code>, <code>questions.ts</code></td>
+        <td>~70줄</td>
+        <td style="font-weight:600;color:#166534;">QA 3-5건 테스트 &rarr; 품질+시간 검증 게이트</td>
+      </tr>
+      <tr style="background:#FEF2F2;">
+        <td>3-4</td>
+        <td><span class="badge badge-p1">P1b</span></td>
+        <td>콘텐츠 파이프라인 KS 연결 + generateAnswer() 제거</td>
+        <td><code>contents.ts</code>, <code>gemini.ts</code></td>
+        <td>~60줄</td>
+        <td>콘텐츠 타입별 생성 테스트 + QA 병행 확인</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><span class="badge badge-p2">P2</span></td>
+        <td>v3 ADR-1~5 구현</td>
+        <td><code>contents.ts</code>, <code>email-template-utils.ts</code></td>
+        <td>~80줄</td>
+        <td>emailSummary 배너 매칭 확인</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><span class="badge badge-p2">P2</span></td>
+        <td>Preview UX + 최적화</td>
+        <td><code>new-content-modal.tsx</code></td>
+        <td>~120줄</td>
+        <td>모달 UI QA (데스크탑 + 모바일)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>v3 로드맵과의 비교</h3>
+  <table>
+    <thead>
+      <tr><th>항목</th><th><span class="version-tag version-v3">v3</span></th><th><span class="version-tag version-v31">v3.1</span></th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>P0 (즉시)</td>
+        <td>타입 매핑 + emailSummaryGuide (~35줄)</td>
+        <td><strong>DB 마이그레이션 + KS 프레임워크 (~150줄)</strong></td>
+      </tr>
+      <tr>
+        <td>P1 (1-2일)</td>
+        <td>RAG 연결 (~50줄)</td>
+        <td><strong>P1a: QA 먼저 (~70줄) &rarr; 검증 &rarr; P1b: 콘텐츠 (~60줄)</strong></td>
+      </tr>
+      <tr>
+        <td>P2 (3-5일)</td>
+        <td>미리보기 UX (~175줄)</td>
+        <td><strong>v3 ADR-1~5 구현 + Preview UX (~200줄)</strong></td>
+      </tr>
+      <tr style="font-weight:700;">
+        <td>총 예상 변경</td>
+        <td>~260줄</td>
+        <td><strong>~480줄</strong></td>
+      </tr>
+      <tr style="font-weight:700;">
+        <td>소요일</td>
+        <td>3~5일</td>
+        <td><strong>6일</strong> (+1일, 검증 게이트 포함)</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <!-- 16. 리스크 및 엣지 케이스 -->
+  <h2 id="risks">16. 리스크 및 엣지 케이스</h2>
+
+  <h3>주요 리스크 3건</h3>
+
+  <div class="edge-grid">
+    <div class="edge-card" style="border-left:3px solid #991B1B;">
+      <div class="edge-id">RISK-1 (높음)</div>
+      <div class="edge-title">Opus 응답 지연 (2-5초)</div>
+      <div class="edge-desc">
+        <strong>시나리오:</strong> QA 답변 생성 시 Gemini Flash(0.5-1초) 대비 Opus(2-5초) 지연<br>
+        <strong>영향:</strong> 사용자가 QA 응답을 기다리는 체감 시간 증가<br>
+        <strong>대응:</strong>
+        <ul style="margin:4px 0;padding-left:16px;">
+          <li>QA 답변 생성 시 로딩 스피너 + "AI가 답변을 준비 중입니다" 메시지</li>
+          <li>백그라운드 생성 (질문 등록 후 비동기, 현재 패턴 유지)</li>
+          <li>캐시 레이어 도입 검토 (유사 질문 답변 재활용)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="edge-card" style="border-left:3px solid #991B1B;">
+      <div class="edge-id">RISK-2 (높음)</div>
+      <div class="edge-title">마이그레이션 실패 시 롤백</div>
+      <div class="edge-desc">
+        <strong>시나리오:</strong> Step 2(backfill) 또는 Step 4(RPC) 실행 중 에러<br>
+        <strong>영향:</strong> 기존 RAG 검색 동작 중단 가능<br>
+        <strong>대응:</strong>
+        <ul style="margin:4px 0;padding-left:16px;">
+          <li>각 Step 실행 전 <code>pg_dump</code>으로 백업</li>
+          <li>ADR-8 롤백 계획에 따라 역순 실행</li>
+          <li>RPC v2는 하위 호환 (filter_source_types DEFAULT NULL)</li>
+          <li>Supabase 대시보드에서 즉시 수동 실행 가능</li>
+        </ul>
+      </div>
+    </div>
+    <div class="edge-card" style="border-left:3px solid #854D0E;">
+      <div class="edge-id">RISK-3 (중간)</div>
+      <div class="edge-title">비용 모니터링 부재</div>
+      <div class="edge-desc">
+        <strong>시나리오:</strong> Opus 전환 후 예상(~$56/월)보다 높은 비용 발생<br>
+        <strong>영향:</strong> 월 비용 초과<br>
+        <strong>대응:</strong>
+        <ul style="margin:4px 0;padding-left:16px;">
+          <li>KnowledgeService에 호출 로그 추가 (consumer, tokens, cost)</li>
+          <li>Anthropic 대시보드 비용 알림 설정 ($100/월 경고)</li>
+          <li>비용 초과 시 QA를 Sonnet으로 다운그레이드 옵션 (ADR-6 옵션 D)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="edge-card" style="border-left:3px solid #854D0E;">
+      <div class="edge-id">RISK-4 (중간)</div>
+      <div class="edge-title">KnowledgeService 단일 장애점</div>
+      <div class="edge-desc">
+        <strong>시나리오:</strong> knowledge.ts에 버그 시 QA + 콘텐츠 전체 장애<br>
+        <strong>영향:</strong> 통합으로 인한 폭발 반경 확대<br>
+        <strong>대응:</strong>
+        <ul style="margin:4px 0;padding-left:16px;">
+          <li>Consumer별 독립 에러 핸들링 (한 Consumer 실패가 다른 Consumer에 전파 방지)</li>
+          <li>Opus API 에러 시 fallback: 에러 메시지 반환 (자동 재시도 없음)</li>
+          <li>기존 코드 즉시 롤백 가능하도록 git branch 전략</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h3>엣지 케이스 (v3 EC-1~7 유지 + v3.1 추가 3건)</h3>
+
+  <table>
+    <thead>
+      <tr><th>ID</th><th>시나리오</th><th>대응</th><th>출처</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>EC-1</td><td>RAG 검색 결과 0건</td><td>RAG 컨텍스트 없이 기존 동작 유지</td><td>v3 유지</td></tr>
+      <tr><td>EC-2</td><td>email_summary에 ### 헤딩 0개</td><td>Hard validation + 재생성 권유</td><td>v3 유지</td></tr>
+      <tr><td>EC-3</td><td>BANNER_MAP에 없는 ### 키</td><td>Soft validation + gradient fallback</td><td>v3 유지</td></tr>
+      <tr><td>EC-4</td><td>EMAIL_SUMMARY 구분자 미생성</td><td>빈 문자열 fallback + Preview 경고</td><td>v3 유지</td></tr>
+      <tr><td>EC-5</td><td>기존 notice 콘텐츠 뉴스레터</td><td>저장된 email_design_json 우선</td><td>v3 유지</td></tr>
+      <tr><td>EC-6</td><td>RAG 검색 지연 5초+</td><td>3초 타임아웃 + fallback</td><td>v3 유지</td></tr>
+      <tr><td>EC-7</td><td>email_summary 길이 초과</td><td>가이드에 800~1,200자 명시</td><td>v3 유지</td></tr>
+      <tr style="background:#DCFCE7;">
+        <td>EC-8</td>
+        <td>source_type 미설정 신규 청크</td>
+        <td>DEFAULT 'lecture' + 인서트 시 source_type 필수 검증</td>
+        <td><span class="badge-new">v3.1</span></td>
+      </tr>
+      <tr style="background:#DCFCE7;">
+        <td>EC-9</td>
+        <td>Opus API 키 미설정 상태에서 QA 호출</td>
+        <td>ANTHROPIC_API_KEY 없으면 명확한 에러 메시지 반환, 기존 Gemini fallback 없음</td>
+        <td><span class="badge-new">v3.1</span></td>
+      </tr>
+      <tr style="background:#DCFCE7;">
+        <td>EC-10</td>
+        <td>metadata jsonb에 잘못된 형식 저장</td>
+        <td>KnowledgeService 레벨에서 Zod 스키마 검증 후 저장</td>
+        <td><span class="badge-new">v3.1</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <!-- Footer -->
+  <footer id="footer">
+    <p>생성일: 2026-02-15 &nbsp;|&nbsp; 작성: leader (에이전트) &nbsp;|&nbsp; 기반: v3 아키텍처 보고서 (동일자)</p>
+    <p>참조 파일:</p>
+    <ul style="margin:4px 0;">
+      <li><code>docs/review/2026-02-15-content-pipeline-architecture-v3.html</code> &mdash; v3 원본 보고서 (보존)</li>
+      <li><code>src/lib/knowledge.ts</code> &mdash; KnowledgeService (v3.1 제안, 신규 파일)</li>
+      <li><code>src/lib/gemini.ts</code> &mdash; generateEmbedding (L15-38, 유지), generateAnswer (L44-90, 제거 대상)</li>
+      <li><code>src/lib/rag.ts</code> &mdash; searchRelevantChunks (L26-50), generateRAGAnswer (L55-98, KS 위임)</li>
+      <li><code>src/actions/contents.ts</code> &mdash; TYPE_PROMPTS (L519-621), generateContentWithAI (L623-698, KS 위임)</li>
+      <li><code>src/types/database.ts</code> &mdash; lecture_chunks 스키마 (L335-364, source_type/metadata 추가)</li>
+      <li><code>src/lib/email-template-utils.ts</code> &mdash; BANNER_MAP (L6-20), buildDesignFromSummary (L250-351)</li>
+      <li><code>src/components/content/new-content-modal.tsx</code> &mdash; FlowStep UI (L1-375)</li>
+    </ul>
+    <p style="margin-top:8px;"><strong>Smith님 피드백 반영 사항:</strong></p>
+    <ol style="margin:4px 0;">
+      <li>Knowledge Service 중심 아키텍처 (섹션 3, 8)</li>
+      <li>Opus 4.6 단일 모델 (섹션 6, ADR-6 개정)</li>
+      <li>소스 타입별 분기 (섹션 4-5, ADR-7 개정, ADR-8 신규)</li>
+    </ol>
+  </footer>
+
+</div><!-- .main -->
+
+<!-- Scroll Spy -->
+<script>
+(function() {
+  var links = document.querySelectorAll('#toc a');
+  var sections = [];
+  links.forEach(function(link) {
+    var id = link.getAttribute('href');
+    if (id) {
+      var el = document.getElementById(id.replace('#', ''));
+      if (el) sections.push({ el: el, link: link });
+    }
+  });
+  if (!sections.length) return;
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        links.forEach(function(l) { l.classList.remove('active'); });
+        for (var i = 0; i < sections.length; i++) {
+          if (sections[i].el === entry.target) {
+            sections[i].link.classList.add('active');
+            break;
+          }
+        }
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach(function(s) { observer.observe(s.el); });
+})();
+</script>
+
+</body>
+</html>

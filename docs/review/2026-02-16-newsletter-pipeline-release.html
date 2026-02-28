@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Release Report — 뉴스레터 2단계 파이프라인 구현</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Pretendard', -apple-system, sans-serif; background: #f8f9fa; color: #1a1a2e; line-height: 1.7; }
+  .container { max-width: 860px; margin: 0 auto; padding: 40px 24px; }
+  h1 { font-size: 28px; font-weight: 800; margin-bottom: 4px; }
+  .subtitle { font-size: 14px; color: #6b7280; margin-bottom: 32px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+  .badge-ok { background: #dcfce7; color: #15803d; }
+  .badge-feat { background: #ede9fe; color: #7c3aed; }
+  .badge-fix { background: #fef3c7; color: #b45309; }
+  .badge-warn { background: #fef9c3; color: #854d0e; }
+  .badge-none { background: #f3f4f6; color: #6b7280; }
+  section { background: #fff; border-radius: 12px; padding: 28px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  section h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #F75D5D; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 10px 12px; background: #f9fafb; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+  .mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat-card { background: #f9fafb; border-radius: 8px; padding: 16px; text-align: center; }
+  .stat-card .num { font-size: 28px; font-weight: 800; color: #F75D5D; }
+  .stat-card .label { font-size: 12px; color: #6b7280; margin-top: 2px; }
+  .check { color: #22c55e; }
+  .cross { color: #ef4444; }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 6px; font-size: 14px; }
+  .review-item { padding: 12px 16px; border-left: 3px solid #F75D5D; background: #fef2f2; border-radius: 0 8px 8px 0; margin-bottom: 10px; font-size: 13px; }
+  .review-item strong { color: #dc2626; }
+  .footer { text-align: center; font-size: 12px; color: #9ca3af; margin-top: 32px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Release Report</h1>
+<p class="subtitle">뉴스레터 2단계 생성 + 템플릿 매핑 수정 + 콘텐츠 성과 추적 &mdash; 2026-02-16</p>
+
+<!-- 빌드 결과 요약 -->
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="num">7</div>
+    <div class="label">태스크 완료</div>
+  </div>
+  <div class="stat-card">
+    <div class="num">7</div>
+    <div class="label">커밋</div>
+  </div>
+  <div class="stat-card">
+    <div class="num">11</div>
+    <div class="label">변경 파일</div>
+  </div>
+  <div class="stat-card">
+    <div class="num">+386 / -37</div>
+    <div class="label">추가 / 삭제</div>
+  </div>
+</div>
+
+<!-- 1. 태스크별 변경 요약 -->
+<section>
+  <h2>1. 태스크별 변경 요약</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>태스크</th>
+        <th>유형</th>
+        <th>설명</th>
+        <th>변경 파일</th>
+        <th>+/-</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>T1</td>
+        <td><span class="badge badge-feat">feat</span></td>
+        <td>
+          <code>generateContentWithAI()</code> 반환에서 <code>emailSummary</code> 제거.<br>
+          프롬프트에서 <code>---EMAIL_SUMMARY---</code> 구분자, <code>emailSummaryGuide</code>, <code>BANNER_KEYS_GUIDE</code> 삭제.
+          <code>new-content-modal.tsx</code> handleGenerate()에서 emailSummary 전달 제거.
+        </td>
+        <td class="mono">contents.ts<br>new-content-modal.tsx</td>
+        <td class="mono">+6 / -18</td>
+      </tr>
+      <tr>
+        <td>T2</td>
+        <td><span class="badge badge-feat">feat</span></td>
+        <td>
+          <code>generateEmailSummary(contentId)</code> 서버 액션 신규 추가.<br>
+          타입별 배너키 필수 조합 프롬프트 (<code>BANNER_KEYS_BY_TYPE</code>).<br>
+          body_md를 컨텍스트로 KS generate 호출 (limit:0, RAG 검색 스킵).<br>
+          생성 후 DB <code>email_summary</code> 자동 업데이트.
+        </td>
+        <td class="mono">contents.ts</td>
+        <td class="mono">+110</td>
+      </tr>
+      <tr>
+        <td>T3</td>
+        <td><span class="badge badge-feat">feat</span></td>
+        <td>
+          콘텐츠 상세 뉴스레터 탭에 생성/재생성 버튼 추가.<br>
+          email_summary 유무에 따라 primary/outline 스타일 분기.<br>
+          로딩 스피너 + toast 알림 포함.
+        </td>
+        <td class="mono">content/[id]/page.tsx</td>
+        <td class="mono">+43 / -2</td>
+      </tr>
+      <tr>
+        <td>T4</td>
+        <td><span class="badge badge-fix">fix</span></td>
+        <td>
+          <code>buildDesignFromSummary()</code>에서 <code>webinar</code> &rarr; <code>BS_CAMP_TEMPLATE_B</code> 매핑 추가.<br>
+          기존: webinar가 <code>DEFAULT_TEMPLATE</code>로 fallback.
+        </td>
+        <td class="mono">email-template-utils.ts</td>
+        <td class="mono">+1 / -1</td>
+      </tr>
+      <tr>
+        <td>T5</td>
+        <td><span class="badge badge-feat">feat</span></td>
+        <td>
+          <code>GET /api/email/track</code> 추적 API 신규.<br>
+          <code>?t=open</code>: 1x1 투명 GIF 반환 + <code>opened_at</code> 업데이트.<br>
+          <code>?t=click</code>: 302 redirect + <code>clicked_at</code> 업데이트.<br>
+          email_logs 집계 갱신 (subject 매칭 COUNT &rarr; total_opens/total_clicks UPDATE).<br>
+          마이그레이션 00012: email_sends에 <code>content_id</code>, email_logs에 <code>total_opens</code>/<code>total_clicks</code>.
+        </td>
+        <td class="mono">email/track/route.ts<br>00012_email_tracking.sql</td>
+        <td class="mono">+122</td>
+      </tr>
+      <tr>
+        <td>T6</td>
+        <td><span class="badge badge-feat">feat</span></td>
+        <td>
+          이메일 발송 시 추적 코드 자동 삽입.<br>
+          email_sends INSERT &rarr; send ID 확보 &rarr; CTA 링크 wrapping &rarr; tracking pixel &rarr; 발송.<br>
+          수신거부 URL (unsubscribe/mailto)은 wrapping 제외.
+        </td>
+        <td class="mono">admin/email/send/route.ts</td>
+        <td class="mono">+79 / -12</td>
+      </tr>
+      <tr>
+        <td>T7</td>
+        <td><span class="badge badge-feat">feat</span></td>
+        <td>
+          관리자 콘텐츠 목록: <code>view_count</code> 조회수 컬럼 추가.<br>
+          이메일 발송 이력: 열람수/클릭수 컬럼 추가 (opened_at/clicked_at 집계).<br>
+          Content 타입에 <code>view_count</code> 필드 추가.
+        </td>
+        <td class="mono">content/page.tsx<br>email/page.tsx<br>types/content.ts</td>
+        <td class="mono">+25 / -6</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 2. Agent Teams 활용 현황 -->
+<section>
+  <h2>2. Agent Teams 활용 현황</h2>
+  <table>
+    <thead>
+      <tr><th>항목</th><th>내용</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>팀 구성</td>
+        <td>이번 세션은 <strong>단독 에이전트 실행</strong>으로 진행 (Agent Teams 미사용)</td>
+      </tr>
+      <tr>
+        <td>리더 역할</td>
+        <td>사용자(Smith)가 직접 TASK.md 기반 지시. Claude가 T1~T7 순차 구현.</td>
+      </tr>
+      <tr>
+        <td>Delegate 횟수</td>
+        <td>0회 &mdash; 단일 에이전트가 backend + frontend + migration 전부 처리</td>
+      </tr>
+      <tr>
+        <td>역할 분배</td>
+        <td>
+          TASK.md 기준 역할 배정: T1,T2,T4,T5,T6 &rarr; backend-dev / T3,T7 &rarr; frontend-dev<br>
+          실제: 단일 에이전트가 모든 역할 수행 (팀 스폰 없음)
+        </td>
+      </tr>
+      <tr>
+        <td>사유</td>
+        <td>7개 태스크가 순차 의존성 높고, 파일 충돌 위험 낮아 병렬화 불필요 판단</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 3. bkit 사용 여부 -->
+<section>
+  <h2>3. bkit PDCA 사용 여부</h2>
+  <table>
+    <thead>
+      <tr><th>항목</th><th>상태</th><th>비고</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Plan 문서</td>
+        <td><span class="badge badge-none">N/A</span></td>
+        <td>TASK.md가 Plan 역할 대체 (사용자 직접 작성)</td>
+      </tr>
+      <tr>
+        <td>Design 문서</td>
+        <td><span class="badge badge-none">N/A</span></td>
+        <td>TASK.md &sect;현재코드, &sect;태스크에 설계 수준 명세 포함</td>
+      </tr>
+      <tr>
+        <td>PDCA 스킬</td>
+        <td><span class="badge badge-none">미사용</span></td>
+        <td>사용자가 "순서대로 구현해"로 직접 지시 &rarr; PDCA 자동 트리거 미발동</td>
+      </tr>
+      <tr>
+        <td>Gap 분석</td>
+        <td><span class="badge badge-none">미실행</span></td>
+        <td>사용자 요청 시 gap-detector 실행 가능</td>
+      </tr>
+      <tr>
+        <td>리뷰 보고서</td>
+        <td><span class="badge badge-ok">본 문서</span></td>
+        <td>릴리스 보고서로 대체</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 4. 리뷰 반영 3건 -->
+<section>
+  <h2>4. 리뷰 반영 사항 (3건)</h2>
+  <p style="font-size:13px; color:#6b7280; margin-bottom:14px;">
+    docs/review/2026-02-16-newsletter-pipeline.html 리뷰에서 발견된 심각 이슈 3건, 모두 TASK.md에 반영 후 구현 완료.
+  </p>
+
+  <div class="review-item">
+    <strong>[심각1] 마이그레이션 번호 충돌</strong><br>
+    원본 TASK.md: <code>00008_email_tracking.sql</code><br>
+    문제: 최신 마이그레이션이 <code>00011_drop_category_check.sql</code>이라 번호 충돌.<br>
+    반영: <code>00012_email_tracking.sql</code>로 수정 &rarr; <span class="check">&#10003;</span> 적용 완료
+  </div>
+
+  <div class="review-item">
+    <strong>[심각2] email_logs 집계 갱신 메커니즘 누락</strong><br>
+    원본 TASK.md: 추적 API에서 email_sends만 업데이트, email_logs 집계 방법 미정의.<br>
+    반영: 추적 API(<code>/api/email/track</code>)에서 subject 매칭 COUNT 쿼리 &rarr; email_logs.total_opens/total_clicks 직접 UPDATE &rarr; <span class="check">&#10003;</span> 적용 완료
+  </div>
+
+  <div class="review-item">
+    <strong>[심각3] 수신거부 URL 추적 wrapping 손상</strong><br>
+    원본 TASK.md: 모든 &lt;a&gt; href를 일괄 wrapping &rarr; 수신거부 링크도 추적 URL로 감싸져 기능 파손.<br>
+    반영: <code>wrapCtaLinks()</code>에서 <code>unsubscribe</code>, <code>수신거부</code>, <code>mailto:</code> 패턴 포함 URL은 wrapping 제외 &rarr; <span class="check">&#10003;</span> 적용 완료
+  </div>
+</section>
+
+<!-- 5. 빌드/tsc 결과 -->
+<section>
+  <h2>5. 빌드 / 타입체크 결과</h2>
+  <table>
+    <thead>
+      <tr><th>검증</th><th>결과</th><th>상세</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>npx tsc --noEmit</code></td>
+        <td><span class="badge badge-ok">PASS</span></td>
+        <td>타입 에러 0건 (T1~T7 각 태스크 후 검증)</td>
+      </tr>
+      <tr>
+        <td><code>npm run build</code></td>
+        <td><span class="badge badge-ok">PASS</span></td>
+        <td>Next.js 빌드 성공. 새 라우트 <code>/api/email/track</code> 정상 등록.</td>
+      </tr>
+      <tr>
+        <td>lint</td>
+        <td><span class="badge badge-ok">PASS</span></td>
+        <td>eslint-disable 주석 2건 (any 타입 — 마이그레이션 미반영 컬럼 대응)</td>
+      </tr>
+      <tr>
+        <td>git push</td>
+        <td><span class="badge badge-ok">PASS</span></td>
+        <td><code>feature/newsletter-pipeline</code> &rarr; origin 푸시 완료</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 브랜치/커밋 요약 -->
+<section>
+  <h2>6. 커밋 히스토리</h2>
+  <table>
+    <thead>
+      <tr><th>해시</th><th>메시지</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="mono">44df661</td><td>feat(T1): generateContentWithAI에서 email_summary 분리</td></tr>
+      <tr><td class="mono">c9fa3e7</td><td>feat(T2): generateEmailSummary(contentId) 서버 액션 추가</td></tr>
+      <tr><td class="mono">3bf01df</td><td>feat(T3): 콘텐츠 상세 뉴스레터 탭에 생성/재생성 버튼 추가</td></tr>
+      <tr><td class="mono">1fb0f4e</td><td>fix(T4): 웨비나 타입 → BS_CAMP_TEMPLATE_B 매핑 추가</td></tr>
+      <tr><td class="mono">5da2bd5</td><td>feat(T5): 이메일 열람/클릭 추적 API + DB 마이그레이션</td></tr>
+      <tr><td class="mono">f03c86b</td><td>feat(T6): 이메일 발송 시 추적 코드 삽입</td></tr>
+      <tr><td class="mono">b9850ac</td><td>feat(T7): 관리자 콘텐츠/이메일 목록에 성과 컬럼 추가</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:13px; color:#6b7280; margin-top:12px;">
+    브랜치: <code>feature/newsletter-pipeline</code> &mdash;
+    PR 생성: <a href="https://github.com/insightwavesmith/qa-helpdesk/pull/new/feature/newsletter-pipeline">GitHub에서 열기</a>
+  </p>
+</section>
+
+<p class="footer">Generated by Claude Opus 4.6 &mdash; 2026-02-16</p>
+</div>
+</body>
+</html>

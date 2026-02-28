@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P2 리뷰 보고서 — 뉴스레터 미리보기 + QA 로딩 + 비용 로깅</title>
+<style>
+  :root { --primary: #F75D5D; --hover: #E54949; --bg: #fff; --text: #1a1a1a; --muted: #6b7280; --border: #e5e7eb; --code-bg: #f3f4f6; --green: #16a34a; --green-bg: #dcfce7; --blue: #2563eb; --blue-bg: #dbeafe; --amber: #d97706; --amber-bg: #fef3c7; --red: #dc2626; --red-bg: #fee2e2; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+  h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+  h2 { font-size: 22px; font-weight: 700; margin-top: 48px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--primary); }
+  h3 { font-size: 17px; font-weight: 700; margin-top: 28px; margin-bottom: 10px; }
+  p, li { font-size: 15px; color: var(--text); }
+  .subtitle { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+  .summary-box { background: var(--blue-bg); border-left: 4px solid var(--blue); padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 20px 0; font-size: 14px; }
+  .warn-box { background: var(--amber-bg); border-left: 4px solid var(--amber); padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 20px 0; font-size: 14px; }
+  .risk-box { background: var(--red-bg); border-left: 4px solid var(--red); padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 20px 0; font-size: 14px; }
+  .ok-box { background: var(--green-bg); border-left: 4px solid var(--green); padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 20px 0; font-size: 14px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th, td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; }
+  th { background: var(--code-bg); font-weight: 600; }
+  code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace; }
+  pre { background: var(--code-bg); padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 12px 0; }
+  pre code { background: none; padding: 0; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+  .badge-new { background: var(--green-bg); color: var(--green); }
+  .badge-mod { background: var(--blue-bg); color: var(--blue); }
+  .badge-risk { background: var(--amber-bg); color: var(--amber); }
+  .task-card { border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 16px 0; }
+  .task-card h3 { margin-top: 0; }
+  .impact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .impact-item { border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+  .impact-item h4 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .impact-item p { font-size: 13px; color: var(--muted); }
+  ul, ol { padding-left: 24px; margin: 8px 0; }
+  li { margin: 4px 0; }
+  .mermaid { background: var(--code-bg); padding: 20px; border-radius: 8px; margin: 16px 0; text-align: center; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: 'neutral' });</script>
+</head>
+<body>
+
+<h1>P2 리뷰 보고서</h1>
+<p class="subtitle">뉴스레터 미리보기 + QA 로딩 + 비용 로깅 + email_summary 재생성<br>2026-02-16 | KnowledgeService v3.1 P2 | 리뷰어: 에이전트팀</p>
+
+<!-- ========== 1. 요약 ========== -->
+<h2>1. 요약</h2>
+
+<div class="summary-box">
+  <strong>P2는 KnowledgeService P1 완료 기반의 UX 개선 + 운영 도구 4건입니다.</strong><br>
+  핵심 비즈니스 로직(knowledge.ts) 변경 없이, 프론트엔드 UX 2건(T1, T2) + 백엔드 운영 도구 2건(T3, T4)으로 구성.
+  기존 코드 변경은 최소화하고 신규 파일 추가 중심.
+</div>
+
+<table>
+  <thead>
+    <tr><th>태스크</th><th>유형</th><th>담당</th><th>신규 파일</th><th>수정 파일</th><th>위험도</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>T1</strong> 뉴스레터 미리보기</td>
+      <td>Frontend</td>
+      <td>frontend-dev</td>
+      <td><code>newsletter-preview-panel.tsx</code></td>
+      <td><code>admin/content/[id]/page.tsx</code></td>
+      <td><span class="badge badge-new">Low</span></td>
+    </tr>
+    <tr>
+      <td><strong>T2</strong> QA 답변 스피너</td>
+      <td>Frontend</td>
+      <td>frontend-dev</td>
+      <td>&mdash;</td>
+      <td><code>questions/[id]/page.tsx</code></td>
+      <td><span class="badge badge-risk">Medium</span></td>
+    </tr>
+    <tr>
+      <td><strong>T3</strong> KS 비용 로깅</td>
+      <td>Backend</td>
+      <td>backend-dev</td>
+      <td><code>knowledge_usage.sql</code></td>
+      <td><code>knowledge.ts</code></td>
+      <td><span class="badge badge-new">Low</span></td>
+    </tr>
+    <tr>
+      <td><strong>T4</strong> email_summary 재생성</td>
+      <td>Full-stack</td>
+      <td>backend-dev</td>
+      <td><code>regenerate-summaries/route.ts</code></td>
+      <td><code>contents.ts</code>, <code>admin/content/page.tsx</code></td>
+      <td><span class="badge badge-risk">Medium</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ========== 2. 각 태스크 변경 계획 ========== -->
+<h2>2. 각 태스크 변경 계획</h2>
+
+<!-- T1 -->
+<div class="task-card">
+  <h3>T1. 뉴스레터 미리보기 UI</h3>
+
+  <p><strong>목표:</strong> 콘텐츠 상세 페이지의 "뉴스레터" 탭에서 email_summary 기반 렌더링된 뉴스레터를 iframe으로 미리보기.</p>
+
+  <h4>변경 계획</h4>
+  <table>
+    <tr><th>파일</th><th>변경</th><th>설명</th></tr>
+    <tr>
+      <td><code>newsletter-preview-panel.tsx</code></td>
+      <td><span class="badge badge-new">NEW</span></td>
+      <td>미리보기 버튼 + PC/모바일 토글 + iframe(srcDoc). <code>/api/admin/email/preview</code> POST 호출로 렌더링된 HTML 수신.</td>
+    </tr>
+    <tr>
+      <td><code>admin/content/[id]/page.tsx</code></td>
+      <td><span class="badge badge-mod">MOD</span></td>
+      <td>뉴스레터 탭 내부에 <code>NewsletterPreviewPanel</code> 컴포넌트 추가 (기존 <code>NewsletterEditPanel</code> 아래).</td>
+    </tr>
+  </table>
+
+  <h4>호출 흐름</h4>
+  <pre><code>미리보기 버튼 클릭
+  → POST /api/admin/email/preview { template: "newsletter", subject, templateProps: { bodyHtml } }
+  → email-renderer.ts renderEmail("newsletter", { subject, bodyHtml })
+  → HTML 반환 → iframe srcDoc에 주입</code></pre>
+
+  <div class="ok-box">
+    <strong>안전:</strong> 기존 <code>/api/admin/email/preview</code> API를 그대로 사용. <code>email-renderer.ts</code>, <code>email-template-utils.ts</code> 수정 없음.
+    iframe <code>sandbox="allow-same-origin"</code>으로 XSS 차단.
+  </div>
+
+  <h4>주의: email_summary → bodyHtml 변환</h4>
+  <p>현재 <code>/api/admin/email/preview</code>는 <code>bodyHtml</code>(HTML 문자열)을 받습니다. 그러나 <code>email_summary</code>는 마크다운입니다.
+  따라서 미리보기 패널에서 <code>email-template-utils.ts</code>의 <code>markdownToEmailHtml()</code>을 호출하여 마크다운→HTML 변환 후 전달해야 합니다.
+  다만 <code>markdownToEmailHtml</code>은 서버 사이드 유틸이므로, 클라이언트 컴포넌트에서 직접 import할 수 없습니다.
+  두 가지 방안:</p>
+  <ol>
+    <li><strong>(권장)</strong> API 라우트에 <code>emailSummaryMd</code> 필드를 추가하여 서버에서 변환 처리</li>
+    <li>별도 server action으로 변환 후 HTML 반환</li>
+  </ol>
+</div>
+
+<!-- T2 -->
+<div class="task-card">
+  <h3>T2. QA 답변 생성 로딩 표시</h3>
+
+  <p><strong>목표:</strong> 질문 등록 직후 상세 페이지에서 AI 답변 생성 진행 중을 시각적으로 안내.</p>
+
+  <h4>변경 계획</h4>
+  <table>
+    <tr><th>파일</th><th>변경</th><th>설명</th></tr>
+    <tr>
+      <td><code>questions/[id]/page.tsx</code></td>
+      <td><span class="badge badge-mod">MOD</span></td>
+      <td>Server Component → Client Component 전환 필요. 또는 스피너 부분만 별도 Client Component로 분리.</td>
+    </tr>
+  </table>
+
+  <div class="warn-box">
+    <strong>아키텍처 이슈:</strong> 현재 <code>questions/[id]/page.tsx</code>는 <strong>Server Component</strong>입니다 (async function, <code>notFound()</code> 사용).
+    10초 간격 폴링은 <code>setInterval</code> + <code>useState</code>가 필요하므로 Client Component에서만 가능합니다.<br><br>
+    <strong>권장 접근:</strong> 답변 섹션만 별도 Client Component(<code>AnswerSection.tsx</code>)로 분리하여 폴링 로직 격리.
+    page.tsx는 Server Component로 유지하고, 초기 데이터를 props로 전달.
+  </div>
+
+  <h4>상태 판단 로직</h4>
+  <pre><code>// page.tsx (Server Component)에서 초기 데이터 전달
+&lt;AnswerSection
+  questionId={id}
+  questionStatus={question.status}
+  initialAnswers={approvedAnswers}
+  isAdmin={isAdmin}
+/&gt;
+
+// AnswerSection.tsx (Client Component)
+- answers.length === 0 && status !== "answered" → 스피너
+- 10초 폴링: getAnswersByQuestionId(questionId) 호출
+- 60초 타임아웃 → "시간이 걸리고 있습니다" 메시지</code></pre>
+
+  <div class="warn-box">
+    <strong>status 값 주의:</strong> TASK.md에서 <code>status === "pending"</code>을 기준으로 하지만,
+    실제 코드에서 questions의 status는 <code>"open"</code> / <code>"answered"</code> / <code>"closed"</code>입니다
+    (<code>questions.ts:49-51</code> 참조). <code>"pending"</code> 상태는 존재하지 않습니다.<br>
+    → 구현 시 <code>status !== "answered"</code> 조건 사용 권장.
+  </div>
+</div>
+
+<!-- T3 -->
+<div class="task-card">
+  <h3>T3. KS 비용 로깅</h3>
+
+  <p><strong>목표:</strong> KnowledgeService 호출마다 토큰 사용량을 DB에 기록하여 월별 비용 집계 가능하게.</p>
+
+  <h4>변경 계획</h4>
+  <table>
+    <tr><th>파일</th><th>변경</th><th>설명</th></tr>
+    <tr>
+      <td><code>knowledge_usage.sql</code></td>
+      <td><span class="badge badge-new">NEW</span></td>
+      <td><code>knowledge_usage</code> 테이블 + 인덱스 2개 생성. Supabase SQL Editor에서 실행.</td>
+    </tr>
+    <tr>
+      <td><code>knowledge.ts</code></td>
+      <td><span class="badge badge-mod">MOD</span></td>
+      <td><code>generate()</code> 함수 return 직전에 fire-and-forget INSERT. KnowledgeRequest에 <code>questionId?</code>, <code>contentId?</code> 추가.</td>
+    </tr>
+  </table>
+
+  <h4>로깅 삽입 위치</h4>
+  <pre><code>// knowledge.ts generate() — L248 return 직전
+const inputTokens = data.usage?.input_tokens || 0;
+const outputTokens = data.usage?.output_tokens || 0;
+
+// fire-and-forget: 로깅 실패해도 응답에 영향 없음
+supabase.from("knowledge_usage").insert({
+  consumer_type: request.consumerType,
+  source_types: sourceTypes || [],
+  input_tokens: inputTokens,
+  output_tokens: outputTokens,
+  total_tokens: inputTokens + outputTokens,
+  model: MODEL,
+  question_id: request.questionId || null,
+  content_id: request.contentId || null,
+  duration_ms: Date.now() - startTime,
+}).then(() =&gt; {}).catch(err =&gt; console.error("[KS] Usage log failed:", err));</code></pre>
+
+  <div class="ok-box">
+    <strong>안전:</strong> <code>knowledge.ts</code>에 이미 <code>createServiceClient</code> import가 있으므로 추가 의존성 없음.
+    fire-and-forget 패턴으로 KS 응답 속도에 영향 없음. <code>KnowledgeRequest</code> 인터페이스에 optional 필드 추가는 하위 호환.
+  </div>
+</div>
+
+<!-- T4 -->
+<div class="task-card">
+  <h3>T4. email_summary 일괄 재생성</h3>
+
+  <p><strong>목표:</strong> 배너키 누락된 기존 콘텐츠의 email_summary를 KS로 일괄 재생성.</p>
+
+  <h4>변경 계획</h4>
+  <table>
+    <tr><th>파일</th><th>변경</th><th>설명</th></tr>
+    <tr>
+      <td><code>regenerate-summaries/route.ts</code></td>
+      <td><span class="badge badge-new">NEW</span></td>
+      <td>SSE(Server-Sent Events) 엔드포인트. 콘텐츠 순차 처리 + 진행률 스트리밍.</td>
+    </tr>
+    <tr>
+      <td><code>contents.ts</code></td>
+      <td><span class="badge badge-mod">MOD</span></td>
+      <td>재생성 로직 함수 추가 (또는 API 라우트에 인라인).</td>
+    </tr>
+    <tr>
+      <td><code>admin/content/page.tsx</code></td>
+      <td><span class="badge badge-mod">MOD</span></td>
+      <td>"email_summary 재생성" 버튼 + confirm + EventSource 연결 + toast.</td>
+    </tr>
+  </table>
+
+  <div class="warn-box">
+    <strong>Vercel maxDuration 주의:</strong> 13건 순차 처리 시 건당 Opus 응답 ~20-30초 × 13 = <strong>최대 6분+</strong>.
+    Vercel Pro 최대 60초이므로 단일 요청으로는 불가합니다.<br><br>
+    <strong>권장 접근:</strong>
+    <ol>
+      <li><strong>클라이언트 루프:</strong> 프론트엔드에서 1건씩 순차 호출 (confirm → for loop → 각 건 API 호출). 각 호출이 60초 이내이면 OK.</li>
+      <li>SSE 대신 단순 POST API (<code>/api/admin/content/[id]/regenerate-summary</code>)로 1건씩 처리. 프론트에서 순회.</li>
+    </ol>
+  </div>
+
+  <div class="risk-box">
+    <strong>비용 주의:</strong> 13건 × Opus 4.6 (newsletter consumer) = 약 13회 API 호출.
+    input ~3000자 + 5 chunks RAG = 예상 토큰 ~5,000 input + ~2,000 output/건.
+    총 ~90,000 토큰. Opus 가격 기준 약 $2~4 예상.
+  </div>
+</div>
+
+<!-- ========== 3. 영향 범위 ========== -->
+<h2>3. 영향 범위</h2>
+
+<div class="impact-grid">
+  <div class="impact-item">
+    <h4>신규 파일 (3건)</h4>
+    <p>
+      <code>newsletter-preview-panel.tsx</code><br>
+      <code>knowledge_usage.sql</code><br>
+      <code>regenerate-summaries/route.ts</code>
+    </p>
+  </div>
+  <div class="impact-item">
+    <h4>수정 파일 (5건)</h4>
+    <p>
+      <code>admin/content/[id]/page.tsx</code> — T1<br>
+      <code>questions/[id]/page.tsx</code> — T2<br>
+      <code>knowledge.ts</code> — T3<br>
+      <code>contents.ts</code> — T4<br>
+      <code>admin/content/page.tsx</code> — T4
+    </p>
+  </div>
+  <div class="impact-item">
+    <h4>수정 금지 파일</h4>
+    <p>
+      <code>email-renderer.ts</code><br>
+      <code>email-template-utils.ts</code><br>
+      <code>gemini.ts</code> (generateEmbedding)<br>
+      <code>knowledge.ts</code> 핵심 로직
+    </p>
+  </div>
+  <div class="impact-item">
+    <h4>DB 변경</h4>
+    <p>
+      <code>knowledge_usage</code> 테이블 신규 생성<br>
+      기존 테이블 스키마 변경 없음
+    </p>
+  </div>
+</div>
+
+<h3>의존성 관계</h3>
+<table>
+  <tr><th>태스크</th><th>의존</th><th>이유</th></tr>
+  <tr><td>T1</td><td>없음</td><td>기존 preview API + email-renderer 활용</td></tr>
+  <tr><td>T2</td><td>없음</td><td>기존 getAnswersByQuestionId 활용</td></tr>
+  <tr><td>T3</td><td>T3 SQL 먼저</td><td>knowledge_usage 테이블이 있어야 INSERT 가능</td></tr>
+  <tr><td>T4</td><td>T3 (선택)</td><td>재생성도 KS 호출이므로 로깅되면 좋음</td></tr>
+</table>
+
+<p><strong>T1, T2는 독립적으로 병렬 작업 가능. T3 SQL → T3 코드 → T4 순서 권장.</strong></p>
+
+<!-- ========== 4. 아키텍처 다이어그램 ========== -->
+<h2>4. 아키텍처 다이어그램</h2>
+
+<h3>4-1. 전체 시스템 흐름 (P2 변경 포함)</h3>
+
+<pre class="mermaid">
+graph TB
+  subgraph Frontend["프론트엔드"]
+    T1_BTN["미리보기 버튼<br/>(T1 NEW)"]
+    T1_IFRAME["iframe 렌더링<br/>(PC/모바일 토글)"]
+    T2_SPIN["스피너 카드<br/>(T2 NEW)"]
+    T2_POLL["10초 폴링<br/>(Client Component)"]
+    T4_BTN["재생성 버튼<br/>(T4 NEW)"]
+    T4_PROG["진행률 표시<br/>(1건씩 순차)"]
+  end
+
+  subgraph API["API 라우트"]
+    PREV["/api/admin/email/preview<br/>(기존)"]
+    REGEN["/api/admin/content/[id]<br/>/regenerate-summary<br/>(T4 NEW)"]
+  end
+
+  subgraph Backend["백엔드"]
+    KS["KnowledgeService<br/>knowledge.ts"]
+    RENDERER["email-renderer.ts<br/>(수정 금지)"]
+    ANSWERS["getAnswersByQuestionId<br/>answers.ts"]
+  end
+
+  subgraph DB["데이터베이스"]
+    CONTENTS["contents 테이블"]
+    QA["questions + answers"]
+    USAGE["knowledge_usage<br/>(T3 NEW)"]
+  end
+
+  T1_BTN -->|POST| PREV
+  PREV --> RENDERER
+  RENDERER --> T1_IFRAME
+
+  T2_SPIN --> T2_POLL
+  T2_POLL -->|fetch| ANSWERS
+  ANSWERS --> QA
+
+  T4_BTN --> T4_PROG
+  T4_PROG -->|1건씩 POST| REGEN
+  REGEN --> KS
+  KS --> CONTENTS
+
+  KS -.->|fire-and-forget INSERT| USAGE
+
+  style T1_BTN fill:#DCFCE7,stroke:#166534
+  style T2_SPIN fill:#DCFCE7,stroke:#166534
+  style T4_BTN fill:#DCFCE7,stroke:#166534
+  style USAGE fill:#DCFCE7,stroke:#166534
+  style REGEN fill:#DCFCE7,stroke:#166534
+</pre>
+
+<h3>4-2. T2 QA 스피너 상태 흐름</h3>
+
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> 스피너: answers=0 AND status≠answered
+  스피너 --> 폴링: 10초 간격 재조회
+  폴링 --> 답변표시: 답변 도착
+  폴링 --> 스피너: 답변 없음 (60초 미만)
+  폴링 --> 타임아웃메시지: 60초 경과
+  답변표시 --> [*]
+  타임아웃메시지 --> [*]
+</pre>
+
+<h3>4-3. T3 비용 로깅 데이터 흐름</h3>
+
+<pre class="mermaid">
+sequenceDiagram
+  participant C as Consumer (QA/Content)
+  participant KS as KnowledgeService
+  participant API as Anthropic API
+  participant DB as knowledge_usage
+
+  C->>KS: generate({ consumerType, questionId? })
+  Note right of KS: startTime = Date.now()
+  KS->>API: POST /v1/messages (Opus 4.6)
+  API-->>KS: { content, usage: { input_tokens, output_tokens } }
+  KS-->>C: KnowledgeResponse
+  KS--)DB: INSERT (fire-and-forget)
+  Note right of DB: consumer_type, tokens,<br/>duration_ms, question_id
+</pre>
+
+<!-- ========== 5. 우려 사항 / 제안 ========== -->
+<h2>5. 우려 사항 및 제안</h2>
+
+<h3>5-1. 우려 사항</h3>
+
+<table>
+  <thead>
+    <tr><th>#</th><th>이슈</th><th>심각도</th><th>상세</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td><strong>T2: Server→Client 전환</strong></td>
+      <td><span class="badge badge-risk">Medium</span></td>
+      <td><code>questions/[id]/page.tsx</code>는 현재 Server Component. 폴링을 위해 전체를 Client Component로 바꾸면 SEO/성능 저하. <strong>답변 섹션만 Client Component로 분리 필수.</strong></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><strong>T2: status 값 불일치</strong></td>
+      <td><span class="badge badge-risk">Medium</span></td>
+      <td>TASK.md에서 <code>status === "pending"</code>으로 기술하나, 실제 DB/코드에서 questions.status는 <code>"open"</code>/<code>"answered"</code>/<code>"closed"</code>. <code>"pending"</code>은 존재하지 않음. <strong><code>status !== "answered"</code> 조건 사용 필요.</strong></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><strong>T4: Vercel 60초 제한</strong></td>
+      <td><span class="badge badge-risk">Medium</span></td>
+      <td>13건 순차 KS 호출은 단일 요청으로 60초 초과 확실. SSE 방식도 60초에 끊김. <strong>클라이언트 루프로 1건씩 호출하는 방식 필수.</strong></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><strong>T1: markdown→HTML 변환 위치</strong></td>
+      <td><span class="badge badge-new">Low</span></td>
+      <td><code>markdownToEmailHtml()</code>은 서버 유틸. 클라이언트 컴포넌트에서 직접 사용 불가. preview API에 md 변환 로직 추가 또는 별도 server action 필요.</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><strong>T3: knowledge.ts "핵심 로직 변경 금지"</strong></td>
+      <td><span class="badge badge-new">Low</span></td>
+      <td>로깅 INSERT를 <code>generate()</code> 함수 내부에 추가하는 것이 "핵심 로직 변경"에 해당하는지 해석 여지. return 직전 fire-and-forget이므로 실질적 로직 변경은 아니나, 래퍼 함수로 분리하면 더 안전.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>5-2. 제안</h3>
+
+<div class="ok-box">
+  <strong>제안 1 — T2 컴포넌트 분리 패턴:</strong>
+  <pre><code>// questions/[id]/page.tsx (Server Component 유지)
+&lt;AnswerSection
+  questionId={id}
+  questionStatus={question.status}
+  initialAnswers={approvedAnswers}
+  isAdmin={isAdmin}
+/&gt;
+
+// components/questions/AnswerSection.tsx ("use client")
+// - initialAnswers props로 초기 렌더
+// - status !== "answered" && answers.length === 0 → 스피너 + 폴링
+// - 폴링은 server action 호출 (getAnswersByQuestionId)</code></pre>
+</div>
+
+<div class="ok-box">
+  <strong>제안 2 — T4 클라이언트 루프 패턴:</strong>
+  <pre><code>// admin/content/page.tsx
+async function handleRegenerate() {
+  const targets = contents.filter(c => c.body_md);
+  for (let i = 0; i &lt; targets.length; i++) {
+    setProgress(`${i + 1}/${targets.length}`);
+    await fetch(`/api/admin/content/${targets[i].id}/regenerate-summary`, { method: "POST" });
+  }
+  toast("완료");
+}
+
+// API: /api/admin/content/[id]/regenerate-summary/route.ts
+// - 1건만 처리, maxDuration 60초 이내
+// - KS newsletter consumer로 email_summary 재생성 → DB UPDATE</code></pre>
+</div>
+
+<div class="ok-box">
+  <strong>제안 3 — T3 래퍼 패턴 (제약 준수):</strong>
+  <pre><code>// knowledge.ts — generate() 함수는 그대로 두고, 래퍼 함수 추가
+export async function generateWithLogging(
+  request: KnowledgeRequest
+): Promise&lt;KnowledgeResponse&gt; {
+  const startTime = Date.now();
+  const result = await generate(request);
+  // fire-and-forget 로깅
+  logUsage(request, result, Date.now() - startTime);
+  return result;
+}
+
+// rag.ts, contents.ts에서 generate → generateWithLogging으로 교체</code></pre>
+</div>
+
+<h3>5-3. 실행 순서 권장</h3>
+
+<table>
+  <thead>
+    <tr><th>순서</th><th>태스크</th><th>이유</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>1</td><td><strong>T3 SQL</strong> (Smith님 실행)</td><td>knowledge_usage 테이블 생성</td></tr>
+    <tr><td>2a</td><td><strong>T1</strong> (frontend-dev)</td><td>독립적, 즉시 시작 가능</td></tr>
+    <tr><td>2b</td><td><strong>T3 코드</strong> (backend-dev)</td><td>T1과 병렬 진행 가능</td></tr>
+    <tr><td>3</td><td><strong>T2</strong> (frontend-dev)</td><td>Server/Client 분리 필요, 설계 확인 후</td></tr>
+    <tr><td>4</td><td><strong>T4</strong> (backend-dev)</td><td>T3 완료 후 (로깅 연동), Vercel 제한 확인 후</td></tr>
+  </tbody>
+</table>
+
+</body>
+</html>

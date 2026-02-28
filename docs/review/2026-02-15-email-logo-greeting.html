@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="date" content="2026-02-15">
+  <meta name="project" content="qa-helpdesk">
+  <meta name="status" content="pending">
+  <meta property="og:title" content="이메일 로고/인사말 리뷰 보고서 — 2026-02-15">
+  <meta property="og:description" content="로고 v3→v4(투명배경) 교체, 인사말 블록 삭제, 체크리스트 모바일 반응형 수정 — 자사몰사관학교 QA Helpdesk">
+  <title>이메일 로고/인사말 리뷰 보고서 — 2026-02-15</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Pretendard', 'system-ui', 'sans-serif'] },
+          colors: {
+            primary: '#F75D5D',
+            'primary-hover': '#E54949',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @media print {
+      body { font-size: 11pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print { display: none !important; }
+      .page-break { page-break-before: always; }
+      .shadow-lg, .shadow-md, .shadow-sm { box-shadow: none !important; }
+      .bg-gray-50 { background: #fff !important; }
+      section { page-break-inside: avoid; }
+      .mockup-card { border: 1px solid #d1d5db !important; }
+    }
+    body { font-family: 'Pretendard', system-ui, sans-serif; }
+    .badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; }
+    .arrow-right { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+  <!-- ─── 헤더 ─── -->
+  <header class="bg-white border-b border-gray-200">
+    <div class="max-w-4xl mx-auto px-6 py-8">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold">이메일 로고/인사말 리뷰 보고서</h1>
+          <p class="text-sm text-gray-500">자사몰사관학교 QA Helpdesk</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-4 text-sm text-gray-600">
+        <span class="flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          2026년 2월 15일
+        </span>
+        <span class="flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          작성: 에이전트팀
+        </span>
+        <span class="flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          대상: 모찌(PM)
+        </span>
+      </div>
+
+      <!-- 태스크 요약 -->
+      <div class="mt-6 bg-gray-50 rounded-lg p-4">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">변경 태스크</p>
+        <div class="space-y-2 text-sm">
+          <div class="flex items-center gap-2">
+            <span class="badge bg-blue-100 text-blue-700">T1</span>
+            <span>로고 v3 &rarr; v4 교체 (투명 배경, 높이 64px &rarr; 48px)</span>
+            <span class="badge bg-yellow-100 text-yellow-700 ml-auto">구현 전</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="badge bg-blue-100 text-blue-700">T2</span>
+            <span>인사말 블록(row-greeting) 완전 삭제</span>
+            <span class="badge bg-yellow-100 text-yellow-700 ml-auto">구현 전</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="badge bg-blue-100 text-blue-700">T3</span>
+            <span>체크리스트 모바일 반응형 수정 (table-layout:fixed 제거)</span>
+            <span class="badge bg-yellow-100 text-yellow-700 ml-auto">구현 전</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-6 py-8 space-y-10">
+
+    <!-- ─── 섹션 1: 모찌용 요약 ─── -->
+    <section>
+      <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+        <span class="w-7 h-7 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
+        한눈에 보는 변경 사항
+      </h2>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+          <div class="bg-red-50 rounded-lg p-4 text-center">
+            <div class="text-3xl font-bold text-primary">3가지</div>
+            <div class="text-sm text-gray-600 mt-1">이메일 변경</div>
+          </div>
+          <div class="bg-blue-50 rounded-lg p-4 text-center">
+            <div class="text-3xl font-bold text-blue-600">2개</div>
+            <div class="text-sm text-gray-600 mt-1">수정 파일</div>
+          </div>
+          <div class="bg-purple-50 rounded-lg p-4 text-center">
+            <div class="text-3xl font-bold text-purple-600">3개</div>
+            <div class="text-sm text-gray-600 mt-1">태스크</div>
+          </div>
+        </div>
+
+        <div class="border-t border-gray-100 pt-4">
+          <p class="text-gray-700 leading-relaxed">
+            <strong>모찌에게 드리는 요약:</strong> Smith님 피드백을 반영해서 3가지를 바꿉니다.
+          </p>
+          <ol class="mt-3 space-y-3 text-gray-700">
+            <li class="flex items-start gap-2">
+              <span class="text-primary font-bold text-lg">1.</span>
+              <div>
+                <strong>로고 배경이 투명해져요.</strong><br>
+                <span class="text-sm text-gray-600">지금 로고(v3)는 빨간 배경이 깔려 있어서, 이메일의 흰 바탕과 어울리지 않았어요. 새 로고(v4)는 투명 배경이라 흰 이메일 위에서 자연스럽게 보입니다. 빨간 마크 + "자사몰사관학교" 검정 텍스트만 깔끔하게 표시돼요.</span>
+              </div>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-primary font-bold text-lg">2.</span>
+              <div>
+                <strong>"안녕하세요! 대표님" 인사말이 삭제돼요.</strong><br>
+                <span class="text-sm text-gray-600">모든 이메일 템플릿에서 "안녕하세요! 대표님, 자사몰사관학교의 스미스코치입니다." 문구가 사라집니다. 로고 다음에 바로 본문 내용이 나오게 됩니다.</span>
+              </div>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-primary font-bold text-lg">3.</span>
+              <div>
+                <strong>체크리스트가 모바일에서 깨지지 않아요.</strong><br>
+                <span class="text-sm text-gray-600">이메일 본문에 체크리스트(&#10003; 항목들)가 들어갈 때, 모바일 화면에서 텍스트가 잘리거나 밀리는 문제가 있었어요. 테이블 구조를 간소화해서 375px 작은 화면에서도 정상 표시되도록 수정합니다.</span>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── 섹션 2: Before / After — 로고 ─── -->
+    <section>
+      <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+        <span class="w-7 h-7 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
+        Before / After 비교
+      </h2>
+
+      <!-- 2-1. 로고 교체 -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+        <div class="bg-gray-800 text-white px-6 py-3 flex items-center justify-between">
+          <span class="font-semibold">T1. 로고 v3 &rarr; v4 교체</span>
+          <span class="badge bg-yellow-400 text-gray-900">구현 전</span>
+        </div>
+        <div class="p-6">
+          <p class="text-sm text-gray-600 mb-1"><strong>문제:</strong> v3 로고에 빨간 배경색이 포함되어 이메일 흰 배경과 불일치</p>
+          <p class="text-sm text-gray-600 mb-4"><strong>해결:</strong> 투명 배경 v4 로고로 교체. 모든 템플릿(Default / A / B / C) 공통 적용.</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Before: v3 -->
+            <div class="mockup-card border border-gray-200 rounded-lg overflow-hidden">
+              <div class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 text-center uppercase tracking-wider">Before &mdash; v3 (현재)</div>
+              <div class="bg-white p-6 flex flex-col items-center justify-center" style="min-height:160px;">
+                <div style="display:flex; align-items:center; justify-content:center; height:64px;">
+                  <img
+                    src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v3.png"
+                    alt="자사몰사관학교 로고 v3"
+                    style="height:64px; width:auto;"
+                  />
+                </div>
+                <div class="mt-4 w-full space-y-1 text-center">
+                  <div class="text-xs text-gray-500">460 &times; 95 px (@2x)</div>
+                  <div class="text-xs text-gray-500">표시 높이: <strong>64px</strong></div>
+                  <div class="text-xs font-mono text-gray-400">logo-email-v3.png</div>
+                  <div class="mt-2 inline-block px-2 py-0.5 bg-red-50 rounded text-xs text-red-600 border border-red-200">빨간 배경 포함 &rarr; 흰 바탕과 불일치</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- After: v4 -->
+            <div class="mockup-card border-2 border-primary rounded-lg overflow-hidden">
+              <div class="bg-primary text-white text-xs font-bold px-3 py-1.5 text-center uppercase tracking-wider">After &mdash; v4 (변경 후)</div>
+              <div class="bg-white p-6 flex flex-col items-center justify-center" style="min-height:160px;">
+                <div style="display:flex; align-items:center; justify-content:center; height:48px;">
+                  <img
+                    src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v4.png"
+                    alt="자사몰사관학교 로고 v4"
+                    style="height:48px; width:auto;"
+                  />
+                </div>
+                <div class="mt-4 w-full space-y-1 text-center">
+                  <div class="text-xs text-gray-600 font-semibold">503 &times; 132 px (투명 배경)</div>
+                  <div class="text-xs text-gray-600">표시 높이: <strong>48px</strong></div>
+                  <div class="text-xs font-mono text-gray-400">logo-email-v4.png</div>
+                  <div class="mt-2 inline-block px-2 py-0.5 bg-green-50 rounded text-xs text-green-600 border border-green-200">투명 배경 &rarr; 흰 바탕에 자연스럽게 표시</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 로고 변경 이력 -->
+          <div class="mt-5 bg-gray-50 rounded-lg p-4">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">로고 변경 이력</p>
+            <div class="flex items-center gap-2 text-sm overflow-x-auto pb-1">
+              <div class="flex-shrink-0 text-center px-3 py-2 bg-white rounded border border-gray-200 min-w-[80px]">
+                <div class="font-mono text-xs text-gray-400">v1</div>
+                <div class="text-xs mt-1">156&times;49</div>
+                <div class="text-xs text-gray-400">1x, vercel</div>
+              </div>
+              <svg class="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              <div class="flex-shrink-0 text-center px-3 py-2 bg-white rounded border border-gray-200 min-w-[80px]">
+                <div class="font-mono text-xs text-gray-400">v2</div>
+                <div class="text-xs mt-1">460&times;95</div>
+                <div class="text-xs text-gray-400">@2x, h48</div>
+              </div>
+              <svg class="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              <div class="flex-shrink-0 text-center px-3 py-2 bg-white rounded border border-gray-200 min-w-[80px]">
+                <div class="font-mono text-xs text-gray-400">v3 (현재)</div>
+                <div class="text-xs mt-1">460&times;95</div>
+                <div class="text-xs text-red-400">빨간 배경, h64</div>
+              </div>
+              <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              <div class="flex-shrink-0 text-center px-3 py-2 bg-primary/10 rounded border-2 border-primary min-w-[80px]">
+                <div class="font-mono text-xs text-primary font-bold">v4 (변경 후)</div>
+                <div class="text-xs mt-1 font-semibold">503&times;132</div>
+                <div class="text-xs text-primary">투명 배경, h48</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 스펙 비교 표 -->
+          <div class="mt-4">
+            <table class="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+              <thead>
+                <tr class="bg-gray-50">
+                  <th class="text-left px-4 py-2 font-semibold text-gray-600 border-b">항목</th>
+                  <th class="text-center px-4 py-2 font-semibold text-red-600 border-b">Before (v3)</th>
+                  <th class="text-center px-4 py-2 font-semibold text-primary border-b">After (v4)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b border-gray-100">
+                  <td class="px-4 py-2 font-medium">파일명</td>
+                  <td class="px-4 py-2 text-center font-mono text-xs">logo-email-v3.png</td>
+                  <td class="px-4 py-2 text-center font-mono text-xs">logo-email-v4.png</td>
+                </tr>
+                <tr class="border-b border-gray-100">
+                  <td class="px-4 py-2 font-medium">해상도</td>
+                  <td class="px-4 py-2 text-center">460 &times; 95 px</td>
+                  <td class="px-4 py-2 text-center">503 &times; 132 px</td>
+                </tr>
+                <tr class="border-b border-gray-100">
+                  <td class="px-4 py-2 font-medium">배경</td>
+                  <td class="px-4 py-2 text-center"><span class="inline-block w-4 h-4 rounded" style="background:#F75D5D; vertical-align:middle;"></span> 빨간색</td>
+                  <td class="px-4 py-2 text-center"><span class="inline-block w-4 h-4 rounded border border-gray-300" style="background:repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 50%/8px 8px; vertical-align:middle;"></span> 투명</td>
+                </tr>
+                <tr class="border-b border-gray-100">
+                  <td class="px-4 py-2 font-medium">표시 높이</td>
+                  <td class="px-4 py-2 text-center">64px</td>
+                  <td class="px-4 py-2 text-center">48px</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 font-medium">구성</td>
+                  <td class="px-4 py-2 text-center text-xs text-gray-500">빨간 바탕 + 흰색 텍스트</td>
+                  <td class="px-4 py-2 text-center text-xs text-gray-500">빨간 마크 + 검정 텍스트</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2-2. 인사말 삭제 -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+        <div class="bg-gray-800 text-white px-6 py-3 flex items-center justify-between">
+          <span class="font-semibold">T2. 인사말 블록 삭제</span>
+          <span class="badge bg-yellow-400 text-gray-900">구현 전</span>
+        </div>
+        <div class="p-6">
+          <p class="text-sm text-gray-600 mb-1"><strong>문제:</strong> Smith님 피드백 &mdash; 인사말 텍스트가 불필요</p>
+          <p class="text-sm text-gray-600 mb-4"><strong>해결:</strong> Template A/B/C의 row-greeting 행 완전 삭제, Default의 인사말 텍스트 제거</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Before: 인사말 있음 -->
+            <div class="mockup-card border border-gray-200 rounded-lg overflow-hidden">
+              <div class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 text-center uppercase tracking-wider">Before (현재)</div>
+              <div class="bg-white">
+                <!-- 로고 영역 -->
+                <div style="padding:24px 24px 0; text-align:center;">
+                  <img
+                    src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v3.png"
+                    alt="로고 v3"
+                    style="height:48px; width:auto; display:inline-block;"
+                  />
+                </div>
+                <!-- 인사말 -->
+                <div style="padding:24px 24px 8px; border-left:3px solid #F75D5D; margin:16px 24px; background:#FFF5F5; border-radius:0 8px 8px 0;">
+                  <p style="font-size:14px; line-height:170%; color:#1a1a1a; margin:0;">
+                    안녕하세요! <strong>대표</strong>님<br>
+                    <a href="#" style="color:#F75D5D; font-weight:600; text-decoration:none;">자사몰사관학교</a><span style="color:#1a1a1a;">의 스미스코치입니다.</span>
+                  </p>
+                </div>
+                <!-- 본문 시작 -->
+                <div style="padding:16px 24px 24px;">
+                  <div style="height:8px; background:#f3f4f6; border-radius:4px; width:100%; margin-bottom:8px;"></div>
+                  <div style="height:8px; background:#f3f4f6; border-radius:4px; width:85%; margin-bottom:8px;"></div>
+                  <div style="height:8px; background:#f3f4f6; border-radius:4px; width:92%;"></div>
+                  <p style="font-size:11px; color:#9ca3af; margin-top:8px; text-align:center;">본문 내용...</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- After: 인사말 없음 -->
+            <div class="mockup-card border-2 border-primary rounded-lg overflow-hidden">
+              <div class="bg-primary text-white text-xs font-bold px-3 py-1.5 text-center uppercase tracking-wider">After (변경 후)</div>
+              <div class="bg-white">
+                <!-- 로고 영역 (v4) -->
+                <div style="padding:24px 24px 0; text-align:center;">
+                  <img
+                    src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v4.png"
+                    alt="로고 v4"
+                    style="height:48px; width:auto; display:inline-block;"
+                  />
+                </div>
+                <!-- 인사말 삭제됨 &rarr; 바로 본문 -->
+                <div style="padding:24px 24px; position:relative;">
+                  <div style="position:absolute; top:8px; right:24px;">
+                    <span style="background:#DEF7EC; color:#03543F; font-size:10px; font-weight:600; padding:2px 8px; border-radius:9999px;">인사말 삭제됨</span>
+                  </div>
+                  <div style="height:8px; background:#f3f4f6; border-radius:4px; width:100%; margin-bottom:8px;"></div>
+                  <div style="height:8px; background:#f3f4f6; border-radius:4px; width:85%; margin-bottom:8px;"></div>
+                  <div style="height:8px; background:#f3f4f6; border-radius:4px; width:92%; margin-bottom:8px;"></div>
+                  <div style="height:8px; background:#f3f4f6; border-radius:4px; width:78%;"></div>
+                  <p style="font-size:11px; color:#9ca3af; margin-top:8px; text-align:center;">본문 내용 바로 시작...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 삭제 대상 상세 -->
+          <div class="mt-5 bg-red-50 border border-red-200 rounded-lg p-4">
+            <p class="text-xs font-semibold text-red-700 uppercase tracking-wider mb-2">삭제되는 인사말 텍스트</p>
+            <div style="background:#fff; border:1px solid #fecaca; border-radius:8px; padding:16px 20px; font-family:'Pretendard',sans-serif;">
+              <p style="font-size:15px; line-height:170%; color:#1a1a1a; margin:0; text-decoration: line-through; opacity:0.6;">
+                안녕하세요! <strong>대표</strong>님<br>
+                <span style="color:#F75D5D; font-weight:600;">자사몰사관학교</span><span style="color:#1a1a1a;">의 스미스코치입니다.</span>
+              </p>
+            </div>
+            <p class="text-xs text-red-600 mt-2">위 인사말이 4개 템플릿 모두에서 제거됩니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2-3. 체크리스트 모바일 반응형 -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+        <div class="bg-gray-800 text-white px-6 py-3 flex items-center justify-between">
+          <span class="font-semibold">T3. 체크리스트 모바일 반응형 수정</span>
+          <span class="badge bg-yellow-400 text-gray-900">구현 전</span>
+        </div>
+        <div class="p-6">
+          <p class="text-sm text-gray-600 mb-1"><strong>문제:</strong> <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">table-layout:fixed</code> + 고정 width가 모바일(375px)에서 텍스트 밀림/잘림 유발</p>
+          <p class="text-sm text-gray-600 mb-4"><strong>해결:</strong> 중첩 테이블 제거, 아이콘 인라인 처리, 고정 너비 제거</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Before: 모바일 깨짐 -->
+            <div class="mockup-card border border-gray-200 rounded-lg overflow-hidden">
+              <div class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 text-center uppercase tracking-wider">Before (현재) &mdash; 375px 모바일</div>
+              <div class="bg-white p-4">
+                <!-- 모바일 프레임 -->
+                <div style="max-width:320px; margin:0 auto; border:2px solid #e5e7eb; border-radius:16px; overflow:hidden; background:#fff;">
+                  <!-- 상태바 -->
+                  <div style="background:#f9fafb; padding:4px 12px; font-size:10px; color:#9ca3af; text-align:center; border-bottom:1px solid #e5e7eb;">9:41 AM</div>
+                  <!-- 체크리스트 (문제 재현) -->
+                  <div style="padding:12px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed; border:1px solid #FECACA; border-radius:8px; overflow:hidden;">
+                      <tr>
+                        <td style="padding:10px 14px; border-bottom:1px solid #FEE2E2;">
+                          <table cellpadding="0" cellspacing="0" width="100%" style="table-layout:fixed;">
+                            <tr>
+                              <td style="width:36px; vertical-align:middle;">
+                                <div style="width:20px; height:20px; border-radius:6px; background:#F75D5D; text-align:center; line-height:20px; color:#fff; font-size:12px; font-weight:700;">&#10003;</div>
+                              </td>
+                              <td style="vertical-align:middle; font-size:13px; color:#374151; line-height:1.4; overflow:hidden; text-overflow:ellipsis;">
+                                <span style="color:#F75D5D; font-weight:600;">메타 광고 캠페인</span> 성과 데이터를 주간 리포트로 자동 발송
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:10px 14px;">
+                          <table cellpadding="0" cellspacing="0" width="100%" style="table-layout:fixed;">
+                            <tr>
+                              <td style="width:36px; vertical-align:middle;">
+                                <div style="width:20px; height:20px; border-radius:6px; background:#F75D5D; text-align:center; line-height:20px; color:#fff; font-size:12px; font-weight:700;">&#10003;</div>
+                              </td>
+                              <td style="vertical-align:middle; font-size:13px; color:#374151; line-height:1.4; overflow:hidden; text-overflow:ellipsis;">
+                                구매 전환율 <span style="color:#F75D5D; font-weight:600;">ROAS 3.5배</span> 달성 가능한 최적화 전략
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                    <!-- 문제 표시 -->
+                    <div style="margin-top:8px; padding:6px 10px; background:#FEF2F2; border-radius:6px; border:1px dashed #F75D5D;">
+                      <p style="font-size:11px; color:#DC2626; margin:0; font-weight:600;">table-layout:fixed + width:36px</p>
+                      <p style="font-size:10px; color:#9B1C1C; margin:2px 0 0;">중첩 테이블이 모바일에서 텍스트 영역을 압축 &rarr; 밀림/잘림 발생</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- After: 모바일 정상 -->
+            <div class="mockup-card border-2 border-primary rounded-lg overflow-hidden">
+              <div class="bg-primary text-white text-xs font-bold px-3 py-1.5 text-center uppercase tracking-wider">After (변경 후) &mdash; 375px 모바일</div>
+              <div class="bg-white p-4">
+                <!-- 모바일 프레임 -->
+                <div style="max-width:320px; margin:0 auto; border:2px solid #F75D5D; border-radius:16px; overflow:hidden; background:#fff;">
+                  <!-- 상태바 -->
+                  <div style="background:#f9fafb; padding:4px 12px; font-size:10px; color:#9ca3af; text-align:center; border-bottom:1px solid #e5e7eb;">9:41 AM</div>
+                  <!-- 체크리스트 (수정 후) -->
+                  <div style="padding:12px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #FECACA; border-radius:8px; overflow:hidden;">
+                      <tr>
+                        <td style="padding:10px 14px; border-bottom:1px solid #FEE2E2;">
+                          <div style="font-size:13px; color:#374151; line-height:1.5;">
+                            <span style="display:inline-block; width:16px; height:16px; border-radius:4px; background:#F75D5D; text-align:center; line-height:16px; color:#fff; font-size:10px; font-weight:700; vertical-align:middle; margin-right:8px;">&#10003;</span>
+                            <span style="color:#F75D5D; font-weight:600;">메타 광고 캠페인</span> 성과 데이터를 주간 리포트로 자동 발송
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:10px 14px;">
+                          <div style="font-size:13px; color:#374151; line-height:1.5;">
+                            <span style="display:inline-block; width:16px; height:16px; border-radius:4px; background:#F75D5D; text-align:center; line-height:16px; color:#fff; font-size:10px; font-weight:700; vertical-align:middle; margin-right:8px;">&#10003;</span>
+                            구매 전환율 <span style="color:#F75D5D; font-weight:600;">ROAS 3.5배</span> 달성 가능한 최적화 전략
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                    <!-- 개선 표시 -->
+                    <div style="margin-top:8px; padding:6px 10px; background:#DEF7EC; border-radius:6px; border:1px dashed #03543F;">
+                      <p style="font-size:11px; color:#03543F; margin:0; font-weight:600;">table-layout:fixed 제거 + 인라인 아이콘</p>
+                      <p style="font-size:10px; color:#065F46; margin:2px 0 0;">중첩 테이블 없이 단일 td 안에서 자연스럽게 줄바꿈 &rarr; 모바일 정상</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 기술 변경 요약 -->
+          <div class="mt-5 bg-gray-50 rounded-lg p-4">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">수정 내용 (email-template-utils.ts)</p>
+            <div class="space-y-2 text-sm">
+              <div class="flex items-start gap-2">
+                <span class="text-red-500 font-bold flex-shrink-0">-</span>
+                <div>
+                  <span class="font-medium text-red-700">제거:</span>
+                  <span class="text-gray-600"> 외부 테이블 <code class="bg-red-50 px-1 rounded text-xs">table-layout:fixed</code>, 내부 중첩 테이블, <code class="bg-red-50 px-1 rounded text-xs">width:36px</code> 고정</span>
+                </div>
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="text-green-600 font-bold flex-shrink-0">+</span>
+                <div>
+                  <span class="font-medium text-green-700">추가:</span>
+                  <span class="text-gray-600"> 체크 아이콘을 <code class="bg-green-50 px-1 rounded text-xs">display:inline-block</code> 인라인 처리, 텍스트와 같은 td에 배치</span>
+                </div>
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="text-green-600 font-bold flex-shrink-0">+</span>
+                <div>
+                  <span class="font-medium text-green-700">번호 카드:</span>
+                  <span class="text-gray-600"> <code class="bg-green-50 px-1 rounded text-xs">width:44px</code> 고정 &rarr; <code class="bg-green-50 px-1 rounded text-xs">min-width:44px</code>로 유연하게 변경</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2-4. 이메일 전체 흐름 비교 -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-gray-800 text-white px-6 py-3">
+          <span class="font-semibold">이메일 구성 흐름 비교</span>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Before 흐름 -->
+            <div>
+              <p class="text-xs font-semibold text-red-600 uppercase tracking-wider mb-3">Before (현재 구조)</p>
+              <div class="space-y-2">
+                <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200 text-sm">
+                  <span class="w-5 h-5 bg-gray-300 rounded text-white text-xs flex items-center justify-center font-bold">1</span>
+                  <span>로고 (v3, 빨간 배경)</span>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-2 bg-red-50 rounded border border-red-300 text-sm">
+                  <span class="w-5 h-5 bg-red-400 rounded text-white text-xs flex items-center justify-center font-bold">2</span>
+                  <span class="text-red-700">"안녕하세요! 대표님..."</span>
+                  <span class="badge bg-red-100 text-red-600 ml-auto text-[10px]">삭제 예정</span>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200 text-sm">
+                  <span class="w-5 h-5 bg-gray-300 rounded text-white text-xs flex items-center justify-center font-bold">3</span>
+                  <span>제목 / 훅 인용구</span>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200 text-sm">
+                  <span class="w-5 h-5 bg-gray-300 rounded text-white text-xs flex items-center justify-center font-bold">4</span>
+                  <span>본문</span>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200 text-sm">
+                  <span class="w-5 h-5 bg-gray-300 rounded text-white text-xs flex items-center justify-center font-bold">5</span>
+                  <span>CTA 버튼 / 푸터</span>
+                </div>
+              </div>
+            </div>
+            <!-- After 흐름 -->
+            <div>
+              <p class="text-xs font-semibold text-primary uppercase tracking-wider mb-3">After (변경 후 구조)</p>
+              <div class="space-y-2">
+                <div class="flex items-center gap-2 px-3 py-2 bg-primary/5 rounded border-2 border-primary/30 text-sm">
+                  <span class="w-5 h-5 bg-primary rounded text-white text-xs flex items-center justify-center font-bold">1</span>
+                  <span class="font-medium">로고 (v4, 투명 배경)</span>
+                  <span class="badge bg-green-100 text-green-700 ml-auto text-[10px]">변경</span>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200 text-sm">
+                  <span class="w-5 h-5 bg-gray-300 rounded text-white text-xs flex items-center justify-center font-bold">2</span>
+                  <span>제목 / 훅 인용구</span>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200 text-sm">
+                  <span class="w-5 h-5 bg-gray-300 rounded text-white text-xs flex items-center justify-center font-bold">3</span>
+                  <span>본문</span>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200 text-sm">
+                  <span class="w-5 h-5 bg-gray-300 rounded text-white text-xs flex items-center justify-center font-bold">4</span>
+                  <span>CTA 버튼 / 푸터</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── 섹션 3: 변경 영향 범위 ─── -->
+    <section class="page-break">
+      <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+        <span class="w-7 h-7 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
+        변경 영향 범위
+      </h2>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-200">
+              <th class="text-left px-4 py-3 font-semibold text-gray-600">변경 사항</th>
+              <th class="text-center px-3 py-3 font-semibold text-gray-600">Default<br><span class="font-normal text-xs text-gray-400">일반</span></th>
+              <th class="text-center px-3 py-3 font-semibold text-gray-600">Template A<br><span class="font-normal text-xs text-gray-400">교육형</span></th>
+              <th class="text-center px-3 py-3 font-semibold text-gray-600">Template B<br><span class="font-normal text-xs text-gray-400">웨비나/공지</span></th>
+              <th class="text-center px-3 py-3 font-semibold text-gray-600">Template C<br><span class="font-normal text-xs text-gray-400">수강후기</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-gray-100">
+              <td class="px-4 py-3 font-medium">
+                로고 v3 &rarr; v4<br>
+                <span class="text-xs text-gray-400">URL + height 변경 (4곳)</span>
+              </td>
+              <td class="text-center px-3 py-3"><span class="text-primary text-lg font-bold">&#9679;</span></td>
+              <td class="text-center px-3 py-3"><span class="text-primary text-lg font-bold">&#9679;</span></td>
+              <td class="text-center px-3 py-3"><span class="text-primary text-lg font-bold">&#9679;</span></td>
+              <td class="text-center px-3 py-3"><span class="text-primary text-lg font-bold">&#9679;</span></td>
+            </tr>
+            <tr class="border-b border-gray-100 bg-red-50/50">
+              <td class="px-4 py-3 font-medium">
+                row-greeting 삭제<br>
+                <span class="text-xs text-gray-400">인사말 행 완전 제거</span>
+              </td>
+              <td class="text-center px-3 py-3"><span class="text-xs text-gray-400">텍스트만<br>제거*</span></td>
+              <td class="text-center px-3 py-3"><span class="text-red-500 text-lg font-bold">&#10005;</span></td>
+              <td class="text-center px-3 py-3"><span class="text-red-500 text-lg font-bold">&#10005;</span></td>
+              <td class="text-center px-3 py-3"><span class="text-red-500 text-lg font-bold">&#10005;</span></td>
+            </tr>
+            <tr class="border-b border-gray-100 bg-purple-50/50">
+              <td class="px-4 py-3 font-medium">
+                체크리스트 모바일 반응형<br>
+                <span class="text-xs text-gray-400">table-layout:fixed 제거</span>
+              </td>
+              <td class="text-center px-3 py-3" colspan="4">
+                <span class="text-purple-600 text-sm font-medium">모든 템플릿 공통 &mdash; email-template-utils.ts (렌더링 로직)</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-4 py-3 bg-gray-50 text-xs text-gray-500 border-t border-gray-100">
+          <span class="text-primary font-bold">&#9679;</span> = 변경됨 &nbsp;&middot;&nbsp;
+          <span class="text-red-500 font-bold">&#10005;</span> = 행 삭제 &nbsp;&middot;&nbsp;
+          * Default는 별도 row-greeting이 없고 본문(content-body-text-1) 내 인사말 텍스트만 제거
+          &nbsp;&middot;&nbsp; T3은 렌더링 로직이므로 모든 템플릿에 동일 적용
+        </div>
+      </div>
+
+      <!-- 수정 파일 -->
+      <div class="mt-4 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">수정 대상 파일 (2개)</p>
+        <div class="space-y-2 text-sm">
+          <div class="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded">
+            <span class="font-mono text-xs bg-gray-200 px-2 py-0.5 rounded">T1 T2</span>
+            <code class="text-xs">src/lib/email-default-template.ts</code>
+            <span class="text-xs text-gray-400 ml-auto">로고 URL 4곳 + greeting 삭제 3곳 + Default 인사말 텍스트</span>
+          </div>
+          <div class="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded">
+            <span class="font-mono text-xs bg-gray-200 px-2 py-0.5 rounded">T3</span>
+            <code class="text-xs">src/lib/email-template-utils.ts</code>
+            <span class="text-xs text-gray-400 ml-auto">체크리스트 table-layout:fixed 제거 + 중첩 테이블 제거 + 번호 카드 min-width</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── 섹션 4: 엣지 케이스 & 검증 체크리스트 ─── -->
+    <section>
+      <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+        <span class="w-7 h-7 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold">4</span>
+        검증 체크리스트
+      </h2>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-200">
+              <th class="text-center px-3 py-3 font-semibold text-gray-600 w-12">#</th>
+              <th class="text-left px-4 py-3 font-semibold text-gray-600">검증 항목</th>
+              <th class="text-center px-3 py-3 font-semibold text-gray-600 w-20">상태</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-gray-100">
+              <td class="text-center px-3 py-3 text-gray-400">1</td>
+              <td class="px-4 py-3">npm run build 성공</td>
+              <td class="text-center px-3 py-3"><span class="badge bg-gray-100 text-gray-500">대기</span></td>
+            </tr>
+            <tr class="border-b border-gray-100">
+              <td class="text-center px-3 py-3 text-gray-400">2</td>
+              <td class="px-4 py-3">4개 템플릿 Unlayer 에디터에서 v4 로고 투명 배경 표시 확인</td>
+              <td class="text-center px-3 py-3"><span class="badge bg-gray-100 text-gray-500">대기</span></td>
+            </tr>
+            <tr class="border-b border-gray-100">
+              <td class="text-center px-3 py-3 text-gray-400">3</td>
+              <td class="px-4 py-3">Template A/B/C에서 "안녕하세요! 대표님" 인사말 안 보임</td>
+              <td class="text-center px-3 py-3"><span class="badge bg-gray-100 text-gray-500">대기</span></td>
+            </tr>
+            <tr class="border-b border-gray-100">
+              <td class="text-center px-3 py-3 text-gray-400">4</td>
+              <td class="px-4 py-3">Default 템플릿: 인사말 없이 placeholder만 표시</td>
+              <td class="text-center px-3 py-3"><span class="badge bg-gray-100 text-gray-500">대기</span></td>
+            </tr>
+            <tr class="border-b border-gray-100">
+              <td class="text-center px-3 py-3 text-gray-400">5</td>
+              <td class="px-4 py-3">기존 배너/프로필카드/CTA 버튼 렌더링 정상</td>
+              <td class="text-center px-3 py-3"><span class="badge bg-gray-100 text-gray-500">대기</span></td>
+            </tr>
+            <tr class="border-b border-gray-100">
+              <td class="text-center px-3 py-3 text-gray-400">6</td>
+              <td class="px-4 py-3">테스트 이메일 발송 &rarr; Gmail에서 로고가 흰 배경과 자연스럽게 표시</td>
+              <td class="text-center px-3 py-3"><span class="badge bg-gray-100 text-gray-500">대기</span></td>
+            </tr>
+            <tr class="border-b border-gray-100">
+              <td class="text-center px-3 py-3 text-gray-400">7</td>
+              <td class="px-4 py-3">테스트 이메일에서 "스미스코치입니다" 텍스트 안 보임</td>
+              <td class="text-center px-3 py-3"><span class="badge bg-gray-100 text-gray-500">대기</span></td>
+            </tr>
+            <tr class="border-b border-gray-100 bg-purple-50/30">
+              <td class="text-center px-3 py-3 text-purple-400 font-semibold" colspan="3">T3. 체크리스트 모바일 반응형</td>
+            </tr>
+            <tr class="border-b border-gray-100">
+              <td class="text-center px-3 py-3 text-gray-400">8</td>
+              <td class="px-4 py-3">모바일(375px)에서 체크리스트 텍스트 밀림/잘림 없이 정상 표시</td>
+              <td class="text-center px-3 py-3"><span class="badge bg-gray-100 text-gray-500">대기</span></td>
+            </tr>
+            <tr class="border-b border-gray-100">
+              <td class="text-center px-3 py-3 text-gray-400">9</td>
+              <td class="px-4 py-3">번호 카드(bold &#10003;) 모바일에서 번호/텍스트 정상 배치</td>
+              <td class="text-center px-3 py-3"><span class="badge bg-gray-100 text-gray-500">대기</span></td>
+            </tr>
+            <tr>
+              <td class="text-center px-3 py-3 text-gray-400">10</td>
+              <td class="px-4 py-3">Gmail 모바일 앱에서 체크리스트 렌더링 정상</td>
+              <td class="text-center px-3 py-3"><span class="badge bg-gray-100 text-gray-500">대기</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 엣지 케이스 -->
+      <div class="mt-4 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">엣지 케이스</p>
+        <div class="space-y-2 text-sm">
+          <div class="flex items-start gap-2 px-3 py-2 bg-yellow-50 rounded border border-yellow-200">
+            <span class="text-yellow-600 font-bold mt-0.5">!</span>
+            <div>
+              <span class="font-medium">Unlayer에서 기존 저장된 콘텐츠 열기:</span>
+              <span class="text-gray-600"> greeting row가 없으므로 로고 &rarr; 훅인용구/본문이 바로 연결됩니다.</span>
+            </div>
+          </div>
+          <div class="flex items-start gap-2 px-3 py-2 bg-yellow-50 rounded border border-yellow-200">
+            <span class="text-yellow-600 font-bold mt-0.5">!</span>
+            <div>
+              <span class="font-medium">buildDesignFromSummary 자동 생성:</span>
+              <span class="text-gray-600"> greeting이 없으므로 로고 &rarr; hookQuote &rarr; body 순서. 기존 로직 변경 없음.</span>
+            </div>
+          </div>
+          <div class="flex items-start gap-2 px-3 py-2 bg-yellow-50 rounded border border-yellow-200">
+            <span class="text-yellow-600 font-bold mt-0.5">!</span>
+            <div>
+              <span class="font-medium">이메일 클라이언트(Gmail/Outlook):</span>
+              <span class="text-gray-600"> PNG 투명 배경은 주요 클라이언트에서 정상 지원됩니다.</span>
+            </div>
+          </div>
+          <div class="flex items-start gap-2 px-3 py-2 bg-yellow-50 rounded border border-yellow-200">
+            <span class="text-yellow-600 font-bold mt-0.5">!</span>
+            <div>
+              <span class="font-medium">체크리스트 테이블 구조 변경:</span>
+              <span class="text-gray-600"> 중첩 테이블 제거로 Outlook에서 렌더링이 달라질 수 있음. Gmail/Apple Mail은 정상. Outlook은 인라인 스타일 우선 적용.</span>
+            </div>
+          </div>
+          <div class="flex items-start gap-2 px-3 py-2 bg-yellow-50 rounded border border-yellow-200">
+            <span class="text-yellow-600 font-bold mt-0.5">!</span>
+            <div>
+              <span class="font-medium">기존 발송된 이메일 영향 없음:</span>
+              <span class="text-gray-600"> 이미 발송된 이메일은 HTML이 고정되어 있으므로 T3 수정 영향 없음. 새로 생성하는 이메일부터 적용.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── 푸터 ─── -->
+    <footer class="border-t border-gray-200 pt-6 mt-10 text-center text-xs text-gray-400 space-y-1 pb-8">
+      <p>자사몰사관학교 QA Helpdesk &mdash; 이메일 로고/인사말 리뷰 보고서</p>
+      <p>작성일: 2026-02-15 &middot; 작성: 에이전트팀</p>
+      <p class="no-print mt-2 text-gray-300">Ctrl+P (또는 Cmd+P)로 PDF 저장 가능합니다.</p>
+    </footer>
+
+  </main>
+</body>
+</html>

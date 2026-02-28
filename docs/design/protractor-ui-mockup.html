@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>총가치각도기 UI 목업 v2</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<script>
+tailwind.config={theme:{extend:{colors:{primary:'#F75D5D',dark:'#0f172a',card:'#1e293b',cardhover:'#253347',border:'#334155'},fontFamily:{sans:['Pretendard','-apple-system','sans-serif']}}}}
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard',-apple-system,sans-serif;background:#0f172a;color:#e2e8f0}
+.glass{background:rgba(30,41,59,.7);backdrop-filter:blur(12px);border:1px solid rgba(51,65,85,.6)}
+.glass-hover:hover{background:rgba(37,51,71,.9);transform:translateY(-2px);transition:all .2s}
+.glow{box-shadow:0 0 20px rgba(247,93,93,.15)}
+.glow-green{box-shadow:0 0 15px rgba(34,197,94,.12)}
+.glow-red{box-shadow:0 0 15px rgba(239,68,68,.12)}
+.btn-meta{background:linear-gradient(135deg,#1877f2,#0d65d9);transition:all .2s}
+.btn-meta:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(24,119,242,.4)}
+.btn-mixpanel{background:linear-gradient(135deg,#7c3aed,#6d28d9);transition:all .2s}
+.btn-mixpanel:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(124,58,237,.4)}
+.verdict-card{transition:all .2s}.verdict-card:hover{transform:scale(1.03)}
+.tab-active{background:linear-gradient(135deg,#F75D5D,#e04545);color:#fff;border-color:transparent}
+.fade-in{animation:fadeIn .5s ease-out}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.nav-active{border-bottom:2px solid #F75D5D;color:#F75D5D}
+.screen-section{display:none}.screen-section.active{display:block}
+.gauge-bar{height:8px;border-radius:4px;background:#1e293b;overflow:hidden;position:relative}
+.gauge-fill{height:100%;border-radius:4px;transition:width .8s ease-out}
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- Navigation -->
+<nav class="sticky top-0 z-50 glass border-b border-border">
+<div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-sm">BS</div>
+<span class="font-bold text-white text-lg">BS School</span>
+</div>
+<div class="flex gap-1">
+<button onclick="showScreen('student')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition" id="nav-student">수강생 대시보드</button>
+<button onclick="showScreen('overlap')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition" id="nav-overlap">타겟중복</button>
+<button onclick="showScreen('detail')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition" id="nav-detail">광고 상세 진단</button>
+<button onclick="showScreen('admin')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition" id="nav-admin">관리자 대시보드</button>
+<button onclick="showScreen('onboarding')" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition" id="nav-onboarding">수강생 온보딩</button>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-orange-400 flex items-center justify-center text-xs text-white font-bold">김</div>
+</div>
+</div>
+</nav>
+
+<!-- ============================================================ -->
+<!-- SCREEN 1: 수강생 대시보드 -->
+<!-- ============================================================ -->
+<div id="screen-student" class="screen-section active">
+<div class="max-w-7xl mx-auto px-4 py-6">
+
+<!-- Header -->
+<div class="glass rounded-2xl p-6 mb-6 glow fade-in">
+<div class="flex justify-between items-start">
+<div>
+<h1 class="text-2xl font-extrabold text-white mb-1">총가치각도기</h1>
+<p class="text-slate-400">유비드 · act_2020994295183430 · 피드백반 1기</p>
+</div>
+<div class="text-right">
+<p class="text-xs text-slate-500">데이터 기준</p>
+<p class="text-sm font-semibold text-white">2026-02-24</p>
+</div>
+</div>
+</div>
+
+<!-- Period Tabs -->
+<div class="glass rounded-xl p-3 mb-6 flex items-center gap-2 flex-wrap fade-in">
+<button class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-white/5 border border-border">어제</button>
+<button class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-white/5 border border-border">7일</button>
+<button class="px-4 py-2 rounded-lg text-sm font-semibold tab-active">14일</button>
+<button class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-white/5 border border-border">30일</button>
+<button class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-white/5 border border-border">직접선택</button>
+<span class="ml-auto text-xs text-slate-500 bg-slate-800/50 px-3 py-1 rounded-full">2/11 ~ 2/24 (14일)</span>
+</div>
+
+<!-- ★ 총가치 수준 게이지 (핵심 신규) -->
+<div class="glass rounded-2xl p-6 mb-6 fade-in glow" style="background:linear-gradient(135deg,rgba(30,41,59,.9),rgba(30,41,59,.7))">
+<div class="flex items-start gap-6">
+<!-- 좌측: 등급 + 요약 -->
+<div class="flex-shrink-0 text-center" style="min-width:140px">
+<p class="text-xs text-slate-400 mb-2 font-semibold">총가치 수준</p>
+<div class="w-24 h-24 mx-auto rounded-full border-4 border-emerald-500/50 flex items-center justify-center mb-2" style="background:radial-gradient(circle,rgba(34,197,94,.15),transparent)">
+<span class="text-4xl font-black text-emerald-400">B</span>
+</div>
+<p class="text-xs text-slate-400">14일 기준</p>
+<p class="text-sm font-bold text-white mt-1">총 광고비 ₩834,500</p>
+<p class="text-[10px] text-slate-500 mt-1">전체 광고 합산 기준</p>
+</div>
+<!-- 우측: 6개 지표 카드 -->
+<div class="flex-1 grid grid-cols-3 gap-3">
+<!-- 3초훅 -->
+<div class="bg-slate-800/60 rounded-xl p-3 border border-border">
+<div class="flex justify-between items-center mb-2">
+<p class="text-[10px] text-slate-400 font-medium">3초 시청률</p>
+<span class="text-xs font-bold text-green-400">🟢</span>
+</div>
+<p class="text-xl font-extrabold text-white">38.2%</p>
+<div class="gauge-bar mt-2"><div class="gauge-fill bg-green-500" style="width:76%"></div></div>
+<div class="flex justify-between mt-1"><span class="text-[9px] text-slate-500">벤치 p50: 28%</span><span class="text-[9px] text-green-400">p75 이상</span></div>
+</div>
+<!-- CTR -->
+<div class="bg-slate-800/60 rounded-xl p-3 border border-border">
+<div class="flex justify-between items-center mb-2">
+<p class="text-[10px] text-slate-400 font-medium">CTR</p>
+<span class="text-xs font-bold text-green-400">🟢</span>
+</div>
+<p class="text-xl font-extrabold text-white">2.84%</p>
+<div class="gauge-bar mt-2"><div class="gauge-fill bg-green-500" style="width:82%"></div></div>
+<div class="flex justify-between mt-1"><span class="text-[9px] text-slate-500">벤치 p50: 2.1%</span><span class="text-[9px] text-green-400">p75 이상</span></div>
+</div>
+<!-- 참여합계 -->
+<div class="bg-slate-800/60 rounded-xl p-3 border border-border">
+<div class="flex justify-between items-center mb-2">
+<p class="text-[10px] text-slate-400 font-medium">참여합계 /만노출</p>
+<span class="text-xs font-bold text-yellow-400">🟡</span>
+</div>
+<p class="text-xl font-extrabold text-white">18.5</p>
+<div class="gauge-bar mt-2"><div class="gauge-fill bg-yellow-500" style="width:58%"></div></div>
+<div class="flex justify-between mt-1"><span class="text-[9px] text-slate-500">벤치 p50: 15.2</span><span class="text-[9px] text-yellow-400">p50~p75</span></div>
+</div>
+<!-- 결제시작율 -->
+<div class="bg-slate-800/60 rounded-xl p-3 border border-border">
+<div class="flex justify-between items-center mb-2">
+<p class="text-[10px] text-slate-400 font-medium">결제시작율</p>
+<span class="text-xs font-bold text-red-400">🔴</span>
+</div>
+<p class="text-xl font-extrabold text-white">5.2%</p>
+<div class="gauge-bar mt-2"><div class="gauge-fill bg-red-500" style="width:38%"></div></div>
+<div class="flex justify-between mt-1"><span class="text-[9px] text-slate-500">벤치 p50: 6.8%</span><span class="text-[9px] text-red-400">p50 미만</span></div>
+</div>
+<!-- 구매전환율 -->
+<div class="bg-slate-800/60 rounded-xl p-3 border border-border">
+<div class="flex justify-between items-center mb-2">
+<p class="text-[10px] text-slate-400 font-medium">구매전환율</p>
+<span class="text-xs font-bold text-green-400">🟢</span>
+</div>
+<p class="text-xl font-extrabold text-white">3.1%</p>
+<div class="gauge-bar mt-2"><div class="gauge-fill bg-green-500" style="width:74%"></div></div>
+<div class="flex justify-between mt-1"><span class="text-[9px] text-slate-500">벤치 p50: 2.2%</span><span class="text-[9px] text-green-400">p75 이상</span></div>
+</div>
+<!-- 노출대비 구매전환율 -->
+<div class="bg-slate-800/60 rounded-xl p-3 border border-border">
+<div class="flex justify-between items-center mb-2">
+<p class="text-[10px] text-slate-400 font-medium">노출→구매</p>
+<span class="text-xs font-bold text-yellow-400">🟡</span>
+</div>
+<p class="text-xl font-extrabold text-white">0.09%</p>
+<div class="gauge-bar mt-2"><div class="gauge-fill bg-yellow-500" style="width:55%"></div></div>
+<div class="flex justify-between mt-1"><span class="text-[9px] text-slate-500">벤치 p50: 0.07%</span><span class="text-[9px] text-yellow-400">p50~p75</span></div>
+</div>
+</div>
+</div>
+<!-- 한줄 진단 -->
+<div class="mt-4 bg-slate-800/40 rounded-xl px-5 py-3 border border-emerald-500/20">
+<p class="text-sm text-slate-300"><span class="text-emerald-400 font-bold">B등급</span> — 3초훅·CTR·구매전환율은 우수하나, <span class="text-red-400 font-semibold">결제시작율이 벤치마크 미달</span>. 클릭 후 결제 페이지 진입 단계에서 이탈이 집중되고 있습니다.</p>
+</div>
+</div>
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-4 gap-4 mb-6 fade-in">
+<div class="glass rounded-xl p-5 text-center glass-hover">
+<p class="text-2xl font-extrabold text-white">₩834,500</p>
+<p class="text-xs text-slate-400 mt-1">총 광고비</p>
+<p class="text-[10px] text-green-400">↑ 8% vs 이전 14일</p>
+</div>
+<div class="glass rounded-xl p-5 text-center glass-hover">
+<p class="text-2xl font-extrabold text-white">4,280</p>
+<p class="text-xs text-slate-400 mt-1">총 클릭</p>
+<p class="text-[10px] text-green-400">↑ 12%</p>
+</div>
+<div class="glass rounded-xl p-5 text-center glass-hover">
+<p class="text-2xl font-extrabold text-white">132</p>
+<p class="text-xs text-slate-400 mt-1">총 구매</p>
+<p class="text-[10px] text-green-400">↑ 18%</p>
+</div>
+<div class="glass rounded-xl p-5 text-center glass-hover glow" style="background:linear-gradient(135deg,rgba(247,93,93,.15),rgba(247,93,93,.05))">
+<p class="text-2xl font-extrabold text-primary">2.85</p>
+<p class="text-xs text-slate-400 mt-1">ROAS</p>
+<p class="text-[10px] text-green-400">↑ 5%</p>
+</div>
+</div>
+
+<!-- TOP 5 광고 -->
+<div class="glass rounded-2xl p-6 mb-6 fade-in">
+<h2 class="text-lg font-bold text-white mb-5">TOP 5 광고 <span class="text-xs text-slate-400 font-normal ml-2">14일 광고비 합산 기준</span></h2>
+
+<!-- Ad Card 1 (펼침) -->
+<div class="bg-slate-800/50 rounded-xl p-5 mb-4 border border-border hover:border-primary/30 transition">
+<div class="flex justify-between items-start mb-4 pb-4 border-b border-border">
+<div>
+<p class="text-xs font-semibold text-primary mb-1">#1</p>
+<p class="text-lg font-bold text-white">홈케어 세트 - 체험 후기 30초 영상</p>
+</div>
+<div class="flex gap-2">
+<a href="#" class="btn-meta px-3 py-1.5 rounded-lg text-xs font-semibold text-white inline-flex items-center gap-1">
+<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+광고 통계</a>
+<a href="#" class="btn-mixpanel px-3 py-1.5 rounded-lg text-xs font-semibold text-white inline-flex items-center gap-1">
+<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
+믹스패널</a>
+</div>
+</div>
+<div class="grid grid-cols-5 gap-3 mb-4">
+<div class="bg-slate-900/60 rounded-lg p-3 text-center"><p class="text-lg font-bold text-white">₩289,200</p><p class="text-[10px] text-slate-400">지출</p></div>
+<div class="bg-slate-900/60 rounded-lg p-3 text-center"><p class="text-lg font-bold text-white">58,420</p><p class="text-[10px] text-slate-400">노출</p></div>
+<div class="bg-slate-900/60 rounded-lg p-3 text-center"><p class="text-lg font-bold text-white">1,659</p><p class="text-[10px] text-slate-400">클릭</p></div>
+<div class="bg-slate-900/60 rounded-lg p-3 text-center"><p class="text-lg font-bold text-white">2.84%</p><p class="text-[10px] text-slate-400">CTR</p></div>
+<div class="bg-slate-900/60 rounded-lg p-3 text-center"><p class="text-lg font-bold text-white">52</p><p class="text-[10px] text-slate-400">구매</p></div>
+</div>
+
+<!-- 3 Part Verdict (LP 제거됨) -->
+<div class="grid grid-cols-3 gap-3 mb-4">
+<div class="verdict-card rounded-xl p-3 text-center bg-green-500/10 border border-green-500/20">
+<p class="text-xl mb-0.5">🟢</p><p class="text-xs font-semibold text-slate-300">기반점수</p>
+</div>
+<div class="verdict-card rounded-xl p-3 text-center bg-yellow-500/10 border border-yellow-500/20">
+<p class="text-xl mb-0.5">🟡</p><p class="text-xs font-semibold text-slate-300">참여율</p>
+</div>
+<div class="verdict-card rounded-xl p-3 text-center bg-green-500/10 border border-green-500/20">
+<p class="text-xl mb-0.5">🟢</p><p class="text-xs font-semibold text-slate-300">전환율</p>
+</div>
+</div>
+
+<!-- Detail 3-column (LP 없음, 장바구니 없음) -->
+<div class="grid grid-cols-3 gap-3">
+<div>
+<div class="bg-indigo-500/10 rounded-lg px-3 py-2 mb-2 text-xs font-semibold text-indigo-400">기반점수</div>
+<table class="w-full text-[11px]">
+<tr class="border-b border-border"><th class="py-1.5 text-slate-400 font-medium text-left">지표</th><th class="text-right text-slate-400">수치</th><th class="w-6 text-center">판정</th></tr>
+<tr class="border-b border-border/50"><td class="py-1.5">3초 시청률</td><td class="text-right font-semibold text-green-400">42.3%</td><td class="text-center">🟢</td></tr>
+<tr class="border-b border-border/50"><td class="py-1.5">ThruPlay율</td><td class="text-right font-semibold text-yellow-400">8.2%</td><td class="text-center">🟡</td></tr>
+<tr><td class="py-1.5">지속비율</td><td class="text-right font-semibold text-green-400">56.1%</td><td class="text-center">🟢</td></tr>
+</table>
+</div>
+<div>
+<div class="bg-amber-500/10 rounded-lg px-3 py-2 mb-2 text-xs font-semibold text-amber-400">참여율</div>
+<table class="w-full text-[11px]">
+<tr class="border-b border-border"><th class="py-1.5 text-slate-400 font-medium text-left">지표</th><th class="text-right text-slate-400">실제/기대</th><th class="w-6 text-center">판정</th></tr>
+<tr class="border-b border-border/50"><td class="py-1.5">좋아요</td><td class="text-right font-semibold text-green-400">28/22</td><td class="text-center">🟢</td></tr>
+<tr class="border-b border-border/50"><td class="py-1.5">댓글</td><td class="text-right font-semibold text-red-400">2/5</td><td class="text-center">🔴</td></tr>
+<tr class="border-b border-border/50"><td class="py-1.5">공유</td><td class="text-right font-semibold text-yellow-400">4/6</td><td class="text-center">🟡</td></tr>
+<tr><td class="py-1.5">참여합계</td><td class="text-right font-semibold text-green-400">34/33</td><td class="text-center">🟢</td></tr>
+</table>
+</div>
+<div>
+<div class="bg-emerald-500/10 rounded-lg px-3 py-2 mb-2 text-xs font-semibold text-emerald-400">전환율</div>
+<table class="w-full text-[11px]">
+<tr class="border-b border-border"><th class="py-1.5 text-slate-400 font-medium text-left">지표</th><th class="text-right text-slate-400">수치</th><th class="w-6 text-center">판정</th></tr>
+<tr class="border-b border-border/50"><td class="py-1.5">CTR</td><td class="text-right font-semibold text-green-400">2.84%</td><td class="text-center">🟢</td></tr>
+<tr class="border-b border-border/50"><td class="py-1.5">결제시작율</td><td class="text-right font-semibold text-red-400">5.2%</td><td class="text-center">🔴</td></tr>
+<tr class="border-b border-border/50"><td class="py-1.5">구매전환율</td><td class="text-right font-semibold text-green-400">3.1%</td><td class="text-center">🟢</td></tr>
+<tr class="border-b border-border/50"><td class="py-1.5">노출→구매</td><td class="text-right font-semibold text-yellow-400">0.09%</td><td class="text-center">🟡</td></tr>
+<tr class="bg-emerald-500/5"><td class="py-1.5 font-bold">ROAS</td><td class="text-right font-bold text-emerald-400 text-sm">3.21</td><td class="text-center">🟢</td></tr>
+</table>
+</div>
+</div>
+</div>
+
+<!-- Ad Card 2 (접힘) -->
+<div class="bg-slate-800/50 rounded-xl p-5 mb-4 border border-border hover:border-primary/30 transition">
+<div class="flex justify-between items-start">
+<div><p class="text-xs font-semibold text-primary">#2</p><p class="text-lg font-bold text-white">프리미엄 세럼 - 비포애프터 15초</p></div>
+<div class="flex gap-2">
+<a href="#" class="btn-meta px-3 py-1.5 rounded-lg text-xs font-semibold text-white">광고 통계</a>
+<a href="#" class="btn-mixpanel px-3 py-1.5 rounded-lg text-xs font-semibold text-white">믹스패널</a>
+</div>
+</div>
+<div class="grid grid-cols-5 gap-3 mt-3">
+<div class="text-center"><p class="text-sm font-bold text-white">₩207,800</p><p class="text-[10px] text-slate-400">지출</p></div>
+<div class="text-center"><p class="text-sm font-bold text-white">42,200</p><p class="text-[10px] text-slate-400">노출</p></div>
+<div class="text-center"><p class="text-sm font-bold text-white">1,224</p><p class="text-[10px] text-slate-400">클릭</p></div>
+<div class="text-center"><p class="text-sm font-bold text-white">2.90%</p><p class="text-[10px] text-slate-400">CTR</p></div>
+<div class="text-center"><p class="text-sm font-bold text-white">38</p><p class="text-[10px] text-slate-400">구매</p></div>
+</div>
+<div class="grid grid-cols-3 gap-2 mt-3">
+<div class="rounded-lg p-2 text-center bg-green-500/10 text-xs">🟢 기반점수</div>
+<div class="rounded-lg p-2 text-center bg-green-500/10 text-xs">🟢 참여율</div>
+<div class="rounded-lg p-2 text-center bg-yellow-500/10 text-xs">🟡 전환율</div>
+</div>
+</div>
+
+<!-- Ad Card 3 (접힘) -->
+<div class="bg-slate-800/50 rounded-xl p-5 mb-4 border border-border hover:border-primary/30 transition">
+<div class="flex justify-between items-start">
+<div><p class="text-xs font-semibold text-primary">#3</p><p class="text-lg font-bold text-white">여름 신상 - 모델컷 카탈로그</p></div>
+<div class="flex gap-2">
+<a href="#" class="btn-meta px-3 py-1.5 rounded-lg text-xs font-semibold text-white">광고 통계</a>
+<a href="#" class="btn-mixpanel px-3 py-1.5 rounded-lg text-xs font-semibold text-white">믹스패널</a>
+</div>
+</div>
+<div class="grid grid-cols-5 gap-3 mt-3">
+<div class="text-center"><p class="text-sm font-bold text-white">₩178,500</p><p class="text-[10px] text-slate-400">지출</p></div>
+<div class="text-center"><p class="text-sm font-bold text-white">35,800</p><p class="text-[10px] text-slate-400">노출</p></div>
+<div class="text-center"><p class="text-sm font-bold text-white">893</p><p class="text-[10px] text-slate-400">클릭</p></div>
+<div class="text-center"><p class="text-sm font-bold text-white">2.49%</p><p class="text-[10px] text-slate-400">CTR</p></div>
+<div class="text-center"><p class="text-sm font-bold text-white">28</p><p class="text-[10px] text-slate-400">구매</p></div>
+</div>
+<div class="grid grid-cols-3 gap-2 mt-3">
+<div class="rounded-lg p-2 text-center bg-yellow-500/10 text-xs">🟡 기반점수</div>
+<div class="rounded-lg p-2 text-center bg-green-500/10 text-xs">🟢 참여율</div>
+<div class="rounded-lg p-2 text-center bg-yellow-500/10 text-xs">🟡 전환율</div>
+</div>
+</div>
+
+</div>
+
+<!-- Legend -->
+<div class="glass rounded-xl p-4 flex justify-center gap-6 text-xs text-slate-400 fade-in">
+<span>🟢 우수 (≥ p75)</span>
+<span>🟡 보통 (p50~p75)</span>
+<span>🔴 미달 (&lt; p50)</span>
+</div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN: 타겟중복 v3 — 심플 (전체 중복률 + 위험 경고만) -->
+<!-- ============================================================ -->
+<div id="screen-overlap" class="screen-section">
+<div class="max-w-7xl mx-auto px-4 py-6">
+
+<!-- Header -->
+<div class="glass rounded-2xl p-6 mb-6 fade-in">
+<div class="flex justify-between items-start">
+<div>
+<h1 class="text-2xl font-extrabold text-white mb-1">타겟중복 분석</h1>
+<p class="text-slate-400">유비드 · act_2020994295183430</p>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-xs text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg">2/18 ~ 2/24 (7일)</span>
+<button class="bg-gradient-to-r from-primary to-red-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20 flex items-center gap-2">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+새로 분석
+</button>
+</div>
+</div>
+</div>
+
+<!-- ★ 히어로: 전체 중복률 크게 -->
+<div class="glass rounded-2xl p-8 mb-6 fade-in" style="background:linear-gradient(135deg,rgba(30,41,59,.9),rgba(15,23,42,.95))">
+<div class="flex items-center gap-10">
+<!-- 도넛 차트 (큼직하게) -->
+<div class="flex-shrink-0 relative" style="width:200px;height:200px">
+<svg viewBox="0 0 200 200" style="transform:rotate(-90deg)">
+<circle cx="100" cy="100" r="75" fill="none" stroke="#1e293b" stroke-width="24"/>
+<circle cx="100" cy="100" r="75" fill="none" stroke="#ef4444" stroke-width="24" stroke-dasharray="138 333" stroke-linecap="round" opacity="0.85"/>
+<circle cx="100" cy="100" r="75" fill="none" stroke="#22c55e" stroke-width="24" stroke-dasharray="333 0" stroke-dashoffset="-138" stroke-linecap="round" opacity="0.2"/>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<p class="text-5xl font-black text-primary leading-none">29.3%</p>
+<p class="text-xs text-slate-400 mt-1">전체 중복률</p>
+</div>
+</div>
+<!-- 요약 수치 -->
+<div class="flex-1">
+<div class="grid grid-cols-3 gap-4 mb-5">
+<div class="bg-slate-800/60 rounded-xl p-4 text-center">
+<p class="text-2xl font-extrabold text-white">418,457</p>
+<p class="text-[10px] text-slate-400 mt-1">실제 도달 (Unique)</p>
+</div>
+<div class="bg-slate-800/60 rounded-xl p-4 text-center">
+<p class="text-2xl font-extrabold text-slate-500">591,837</p>
+<p class="text-[10px] text-slate-400 mt-1">개별 도달 합계</p>
+</div>
+<div class="bg-slate-800/60 rounded-xl p-4 text-center">
+<p class="text-2xl font-extrabold text-red-400">-173,380</p>
+<p class="text-[10px] text-slate-400 mt-1">중복 낭비</p>
+</div>
+</div>
+<div class="bg-slate-800/40 rounded-xl px-5 py-3 border border-yellow-500/20">
+<p class="text-sm text-slate-300">활성 세트 <span class="text-white font-bold">7개</span> 중 <span class="text-red-400 font-bold">5개 조합</span>이 60% 이상 중복. 동일 타겟에 광고비가 분산되고 있습니다.</p>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ★ 위험 경고: 60% 이상 중복 조합만 표시 -->
+<div class="glass rounded-2xl p-6 mb-6 fade-in">
+<div class="flex items-center gap-3 mb-5">
+<div class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
+<svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.27 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+</div>
+<div>
+<h2 class="text-lg font-bold text-white">중복 경고</h2>
+<p class="text-xs text-slate-400">60% 이상 겹치는 세트 조합. 같은 사람에게 광고비를 이중 지출합니다.</p>
+</div>
+</div>
+
+<div class="space-y-3">
+
+<!-- 경고 1 -->
+<div class="bg-red-500/5 border border-red-500/20 rounded-xl overflow-hidden">
+<div class="flex items-stretch">
+<div class="flex-shrink-0 w-24 bg-red-500/15 flex flex-col items-center justify-center p-3">
+<p class="text-2xl font-black text-red-400">86.8%</p>
+<p class="text-[9px] text-red-400/60 mt-0.5">위험</p>
+</div>
+<div class="flex-1 p-4">
+<div class="flex items-center gap-3">
+<div class="flex-1">
+<p class="text-[10px] text-slate-500 mb-0.5">튠사렌_값극대화_0210</p>
+<p class="text-sm font-semibold text-white">튠사렌_ABO_30초_광범위+_M</p>
+</div>
+<span class="text-slate-600 text-lg px-2">↔</span>
+<div class="flex-1">
+<p class="text-[10px] text-slate-500 mb-0.5">튠사렌_수최적화_0215</p>
+<p class="text-sm font-semibold text-white">튠사렌_CBO_리뷰컷_광범위+</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- 경고 2 -->
+<div class="bg-red-500/5 border border-red-500/20 rounded-xl overflow-hidden">
+<div class="flex items-stretch">
+<div class="flex-shrink-0 w-24 bg-red-500/15 flex flex-col items-center justify-center p-3">
+<p class="text-2xl font-black text-red-400">82.8%</p>
+<p class="text-[9px] text-red-400/60 mt-0.5">위험</p>
+</div>
+<div class="flex-1 p-4">
+<div class="flex items-center gap-3">
+<div class="flex-1">
+<p class="text-[10px] text-slate-500 mb-0.5">튠사렌_수최적화_0215</p>
+<p class="text-sm font-semibold text-white">퓨어렌_CBO_성분_광범위+</p>
+</div>
+<span class="text-slate-600 text-lg px-2">↔</span>
+<div class="flex-1">
+<p class="text-[10px] text-slate-500 mb-0.5">튠사렌_수최적화_0215</p>
+<p class="text-sm font-semibold text-white">튠사렌_CBO_리뷰컷_광범위+</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- 경고 3 -->
+<div class="bg-red-500/5 border border-red-500/20 rounded-xl overflow-hidden">
+<div class="flex items-stretch">
+<div class="flex-shrink-0 w-24 bg-red-500/15 flex flex-col items-center justify-center p-3">
+<p class="text-2xl font-black text-red-400">74.5%</p>
+<p class="text-[9px] text-red-400/60 mt-0.5">위험</p>
+</div>
+<div class="flex-1 p-4">
+<div class="flex items-center gap-3">
+<div class="flex-1">
+<p class="text-[10px] text-slate-500 mb-0.5">튠사렌_값극대화_0210</p>
+<p class="text-sm font-semibold text-white">튠사렌_ABO_30초_광범위+_M</p>
+</div>
+<span class="text-slate-600 text-lg px-2">↔</span>
+<div class="flex-1">
+<p class="text-[10px] text-slate-500 mb-0.5">튠사렌_수최적화_0215</p>
+<p class="text-sm font-semibold text-white">오일미스트_CBO_효과_광범위+</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- 경고 4 -->
+<div class="bg-red-500/5 border border-red-500/20 rounded-xl overflow-hidden">
+<div class="flex items-stretch">
+<div class="flex-shrink-0 w-24 bg-red-500/15 flex flex-col items-center justify-center p-3">
+<p class="text-2xl font-black text-red-400">69.0%</p>
+<p class="text-[9px] text-red-400/60 mt-0.5">위험</p>
+</div>
+<div class="flex-1 p-4">
+<div class="flex items-center gap-3">
+<div class="flex-1">
+<p class="text-[10px] text-slate-500 mb-0.5">튠사렌_값극대화_0210</p>
+<p class="text-sm font-semibold text-white">튠사렌_ABO_30초_광범위+_M</p>
+</div>
+<span class="text-slate-600 text-lg px-2">↔</span>
+<div class="flex-1">
+<p class="text-[10px] text-slate-500 mb-0.5">튠사렌_수최적화_0215</p>
+<p class="text-sm font-semibold text-white">퓨어렌_CBO_성분_광범위+</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- 경고 5 -->
+<div class="bg-yellow-500/5 border border-yellow-500/20 rounded-xl overflow-hidden">
+<div class="flex items-stretch">
+<div class="flex-shrink-0 w-24 bg-yellow-500/10 flex flex-col items-center justify-center p-3">
+<p class="text-2xl font-black text-yellow-400">66.9%</p>
+<p class="text-[9px] text-yellow-400/60 mt-0.5">주의</p>
+</div>
+<div class="flex-1 p-4">
+<div class="flex items-center gap-3">
+<div class="flex-1">
+<p class="text-[10px] text-slate-500 mb-0.5">튠사렌_수최적화_0215</p>
+<p class="text-sm font-semibold text-white">오일미스트_CBO_효과_광범위+</p>
+</div>
+<span class="text-slate-600 text-lg px-2">↔</span>
+<div class="flex-1">
+<p class="text-[10px] text-slate-500 mb-0.5">튠사렌_수최적화_0215</p>
+<p class="text-sm font-semibold text-white">튠사렌_CBO_리뷰컷_광범위+</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<!-- ★ 전체 세트 목록 (아코디언, 접힌 상태) -->
+<div class="glass rounded-2xl p-6 mb-6 fade-in">
+<div class="flex items-center justify-between">
+<h2 class="text-sm font-bold text-white">전체 세트 현황 (7개)</h2>
+</div>
+
+<div id="all-sets-detail" class="mt-5">
+<table class="w-full text-xs">
+<thead>
+<tr class="border-b border-border">
+<th class="py-2 text-left text-slate-400 font-medium">캠페인명</th>
+<th class="text-left text-slate-400 font-medium">광고세트명</th>
+<th class="text-right text-slate-400 font-medium">Reach</th>
+<th class="text-right text-slate-400 font-medium">최고 중복</th>
+<th class="text-center text-slate-400 font-medium">상태</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-border/50">
+<td class="py-2.5 text-slate-400">튠사렌_값극대화_0210</td>
+<td class="font-semibold text-white">튠사렌_ABO_30초_광범위+_M</td>
+<td class="text-right font-semibold text-white">16,083</td>
+<td class="text-right font-bold text-red-400">86.8%</td>
+<td class="text-center"><span class="bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded text-[10px] font-bold">위험</span></td>
+</tr>
+<tr class="border-b border-border/50">
+<td class="py-2.5 text-slate-400">퓨어렌_콘텐츠조회_리타겟</td>
+<td class="font-semibold text-white">퓨어렌_맞춤타겟_구매자</td>
+<td class="text-right font-semibold text-white">93,251</td>
+<td class="text-right font-bold text-yellow-400">33.8%</td>
+<td class="text-center"><span class="bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded text-[10px] font-bold">양호</span></td>
+</tr>
+<tr class="border-b border-border/50">
+<td class="py-2.5 text-slate-400">살성크림_콘텐츠조회_0201</td>
+<td class="font-semibold text-white">살성크림_관심사_뷰티_F</td>
+<td class="text-right font-semibold text-white">125,879</td>
+<td class="text-right font-bold text-green-400">12.6%</td>
+<td class="text-center"><span class="bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded text-[10px] font-bold">양호</span></td>
+</tr>
+<tr class="border-b border-border/50">
+<td class="py-2.5 text-slate-400">튠사렌_수최적화_0215</td>
+<td class="font-semibold text-white">퓨어렌_CBO_성분_광범위+</td>
+<td class="text-right font-semibold text-white">69,223</td>
+<td class="text-right font-bold text-red-400">82.8%</td>
+<td class="text-center"><span class="bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded text-[10px] font-bold">위험</span></td>
+</tr>
+<tr class="border-b border-border/50">
+<td class="py-2.5 text-slate-400">튠사렌_수최적화_0215</td>
+<td class="font-semibold text-white">오일미스트_CBO_효과_광범위+</td>
+<td class="text-right font-semibold text-white">108,201</td>
+<td class="text-right font-bold text-red-400">74.5%</td>
+<td class="text-center"><span class="bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded text-[10px] font-bold">위험</span></td>
+</tr>
+<tr class="border-b border-border/50">
+<td class="py-2.5 text-slate-400">튠사렌_수최적화_0215</td>
+<td class="font-semibold text-white">튠사렌_CBO_리뷰컷_광범위+</td>
+<td class="text-right font-semibold text-white">179,200</td>
+<td class="text-right font-bold text-red-400">86.8%</td>
+<td class="text-center"><span class="bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded text-[10px] font-bold">위험</span></td>
+</tr>
+</tbody>
+</table>
+<p class="text-[10px] text-slate-500 mt-3">* 최고 중복: 해당 세트와 가장 많이 겹치는 다른 세트와의 중복률</p>
+</div>
+</div>
+
+<!-- Tip / 해석 가이드 -->
+<div class="glass rounded-xl p-4 fade-in">
+<div class="flex items-start gap-3">
+<div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+<svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+</div>
+<div class="text-xs text-slate-400">
+<p class="font-semibold text-slate-300 mb-1">타겟중복이란?</p>
+<p>두 광고세트가 같은 사람에게 동시에 노출되면 경매에서 자기 자신과 경쟁하게 됩니다. 중복률이 60% 이상이면 세트 통합이나 타겟 분리를 권장합니다. 기간을 7일 미만으로 설정하면 샘플이 부족해 정확도가 떨어질 수 있습니다.</p>
+</div>
+</div>
+<p class="text-[10px] text-slate-500 mt-3 text-right">마지막 분석: 2026-02-25 01:34 KST · 대시보드 기간 필터 연동</p>
+</div>
+
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 2: 광고 상세 진단 -->
+<!-- ============================================================ -->
+<div id="screen-detail" class="screen-section">
+<div class="max-w-7xl mx-auto px-4 py-6">
+<div class="glass rounded-2xl p-6 mb-6 fade-in">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-xs text-primary font-semibold mb-1">광고 상세 진단</p>
+<h1 class="text-xl font-extrabold text-white">홈케어 세트 - 체험 후기 30초 영상</h1>
+<p class="text-sm text-slate-400 mt-1">ad_id: 23861234567890 · VIDEO · ₩289,200 지출 (14일)</p>
+</div>
+<div class="flex gap-2">
+<a href="#" class="btn-meta px-4 py-2 rounded-lg text-sm font-semibold text-white">Meta 광고관리자</a>
+<a href="#" class="btn-mixpanel px-4 py-2 rounded-lg text-sm font-semibold text-white">Mixpanel LP분석</a>
+</div>
+</div>
+</div>
+
+<!-- 3 Part Detail (LP 제거됨) -->
+<div class="grid grid-cols-3 gap-4 mb-6 fade-in">
+<!-- Part 0: 기반점수 -->
+<div class="glass rounded-xl p-5 glow-green">
+<div class="flex items-center gap-2 mb-3"><span class="text-2xl">🟢</span><span class="font-bold text-white">기반점수</span></div>
+<div class="space-y-2 text-xs">
+<div class="flex justify-between"><span class="text-slate-400">3초 시청률</span><span class="text-green-400 font-semibold">42.3% 🟢</span></div>
+<div class="flex justify-between"><span class="text-slate-400">ThruPlay율</span><span class="text-yellow-400 font-semibold">8.2% 🟡</span></div>
+<div class="flex justify-between"><span class="text-slate-400">지속비율</span><span class="text-green-400 font-semibold">56.1% 🟢</span></div>
+</div>
+</div>
+
+<!-- Part 1: 참여율 -->
+<div class="glass rounded-xl p-5">
+<div class="flex items-center gap-2 mb-3"><span class="text-2xl">🟡</span><span class="font-bold text-white">참여율</span></div>
+<div class="space-y-2 text-xs">
+<div class="flex justify-between"><span class="text-slate-400">좋아요/만노출</span><span class="text-green-400 font-semibold">15.2 🟢</span></div>
+<div class="flex justify-between"><span class="text-slate-400">댓글/만노출</span><span class="text-red-400 font-semibold">1.1 🔴</span></div>
+<div class="flex justify-between"><span class="text-slate-400">공유/만노출</span><span class="text-yellow-400 font-semibold">2.2 🟡</span></div>
+<div class="flex justify-between"><span class="text-slate-400">참여합계</span><span class="text-green-400 font-semibold">18.5 🟢</span></div>
+</div>
+</div>
+
+<!-- Part 2: 전환율 (장바구니 제거, 노출→구매 추가) -->
+<div class="glass rounded-xl p-5 glow-green">
+<div class="flex items-center gap-2 mb-3"><span class="text-2xl">🟢</span><span class="font-bold text-white">전환율</span></div>
+<div class="space-y-2 text-xs">
+<div class="flex justify-between"><span class="text-slate-400">CTR</span><span class="text-green-400 font-semibold">2.84% 🟢</span></div>
+<div class="flex justify-between"><span class="text-slate-400">결제시작율</span><span class="text-red-400 font-semibold">5.2% 🔴</span></div>
+<div class="flex justify-between"><span class="text-slate-400">구매전환율</span><span class="text-green-400 font-semibold">3.1% 🟢</span></div>
+<div class="flex justify-between"><span class="text-slate-400">노출→구매</span><span class="text-yellow-400 font-semibold">0.09% 🟡</span></div>
+<div class="flex justify-between border-t border-border pt-2"><span class="text-white font-bold">ROAS</span><span class="text-emerald-400 font-bold text-sm">3.21 🟢</span></div>
+</div>
+</div>
+</div>
+
+<!-- 개선 제안 -->
+<div class="glass rounded-2xl p-6 fade-in">
+<h2 class="text-lg font-bold text-white mb-4">개선 제안</h2>
+<div class="space-y-3">
+<div class="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+<div class="flex items-center gap-2 mb-1"><span class="text-xs font-bold bg-red-500/20 text-red-400 px-2 py-0.5 rounded">심각</span><span class="text-sm font-semibold text-white">결제시작율 벤치마크 76% 수준</span></div>
+<p class="text-xs text-slate-400">클릭 후 결제 페이지 진입 전 이탈 집중. LP의 결제 CTA 위치와 가격 표시 점검.</p>
+</div>
+<div class="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
+<div class="flex items-center gap-2 mb-1"><span class="text-xs font-bold bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded">주의</span><span class="text-sm font-semibold text-white">댓글 수 기대치 40% 수준</span></div>
+<p class="text-xs text-slate-400">댓글 유도형 CTA 또는 댓글 이벤트 진행 고려.</p>
+</div>
+<div class="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
+<div class="flex items-center gap-2 mb-1"><span class="text-xs font-bold bg-green-500/20 text-green-400 px-2 py-0.5 rounded">양호</span><span class="text-sm font-semibold text-white">ROAS 3.21 벤치마크 초과</span></div>
+<p class="text-xs text-slate-400">전반적으로 우수. 예산 스케일업 고려.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 3: 관리자 대시보드 -->
+<!-- ============================================================ -->
+<div id="screen-admin" class="screen-section">
+<div class="max-w-7xl mx-auto px-4 py-6">
+
+<!-- Header -->
+<div class="glass rounded-2xl p-6 mb-6 fade-in">
+<div class="flex justify-between items-center">
+<div>
+<h1 class="text-2xl font-extrabold text-white">수강생 성과 대시보드</h1>
+<p class="text-slate-400 text-sm mt-1">기수별 관리 · 우수/미달 식별 · 성과 비교</p>
+</div>
+<div class="flex gap-2">
+<select class="bg-slate-800 border border-border rounded-lg px-3 py-2 text-sm text-white">
+<option>전체 기수</option><option>피드백반 1기</option><option>피드백반 2기</option>
+</select>
+<select class="bg-slate-800 border border-border rounded-lg px-3 py-2 text-sm text-white">
+<option>이번 주</option><option>지난 주</option><option>이번 달</option>
+</select>
+</div>
+</div>
+</div>
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-4 gap-4 mb-6 fade-in">
+<div class="glass rounded-xl p-5 text-center"><p class="text-3xl font-extrabold text-white">12</p><p class="text-xs text-slate-400 mt-1">관리 수강생</p></div>
+<div class="glass rounded-xl p-5 text-center"><p class="text-3xl font-extrabold text-white">₩2.8M</p><p class="text-xs text-slate-400 mt-1">총 광고비</p><p class="text-[10px] text-green-400">↑ 12%</p></div>
+<div class="glass rounded-xl p-5 text-center glow"><p class="text-3xl font-extrabold text-primary">2.34</p><p class="text-xs text-slate-400 mt-1">평균 ROAS</p><p class="text-[10px] text-green-400">↑ 8%</p></div>
+<div class="glass rounded-xl p-5 text-center"><p class="text-3xl font-extrabold text-white">₩6.5M</p><p class="text-xs text-slate-400 mt-1">총 매출</p><p class="text-[10px] text-green-400">↑ 15%</p></div>
+</div>
+
+<!-- 수강생 성과 테이블 -->
+<div class="glass rounded-2xl p-6 mb-6 fade-in">
+<div class="flex justify-between items-center mb-4">
+<h3 class="text-sm font-bold text-white">수강생별 성과 비교</h3>
+<div class="flex gap-2 text-[10px]">
+<button class="bg-primary/20 text-primary px-2 py-1 rounded">ROAS순</button>
+<button class="bg-white/5 text-slate-400 px-2 py-1 rounded">광고비순</button>
+</div>
+</div>
+<table class="w-full text-xs">
+<thead><tr class="border-b border-border">
+<th class="py-2 text-left text-slate-400">수강생</th><th class="text-left text-slate-400">브랜드</th><th class="text-right text-slate-400">광고비</th><th class="text-right text-slate-400">매출</th><th class="text-right text-slate-400">ROAS</th><th class="text-right text-slate-400">CTR</th><th class="text-center text-slate-400">상태</th>
+</tr></thead>
+<tbody>
+<tr class="border-b border-border/50"><td class="py-2.5 font-semibold text-white">서현석</td><td>유비드</td><td class="text-right">₩890K</td><td class="text-right">₩3,747K</td><td class="text-right font-bold text-green-400">4.21</td><td class="text-right">3.2%</td><td class="text-center">🟢</td></tr>
+<tr class="border-b border-border/50"><td class="py-2.5 font-semibold text-white">이민규</td><td>현대보감</td><td class="text-right">₩420K</td><td class="text-right">₩1,504K</td><td class="text-right font-bold text-green-400">3.58</td><td class="text-right">2.9%</td><td class="text-center">🟢</td></tr>
+<tr class="border-b border-border/50"><td class="py-2.5 font-semibold text-white">성용협</td><td>스틸박스</td><td class="text-right">₩890K</td><td class="text-right">₩534K</td><td class="text-right font-bold text-red-400">0.60</td><td class="text-right">1.2%</td><td class="text-center">🔴</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ★ 관리자 광고계정 테이블 (총가치각도기와 무관) -->
+<div class="glass rounded-2xl p-6 mb-6 fade-in" style="border:1px solid rgba(124,58,237,.3)">
+<h3 class="text-sm font-bold text-purple-400 mb-1">내 광고계정 관리</h3>
+<p class="text-[10px] text-slate-500 mb-4">총가치각도기와 별개. 접근 가능한 전체 계정의 수치적 근거 관리용.</p>
+
+<div class="grid grid-cols-3 gap-4 mb-4">
+<div class="bg-purple-500/10 rounded-xl p-4 text-center border border-purple-500/20">
+<p class="text-2xl font-extrabold text-purple-400">28</p>
+<p class="text-[10px] text-slate-400 mt-1">총 접근 가능 계정</p>
+</div>
+<div class="bg-primary/10 rounded-xl p-4 text-center border border-primary/20">
+<p class="text-2xl font-extrabold text-primary">₩47.2M</p>
+<p class="text-[10px] text-slate-400 mt-1">총 관리 광고비</p>
+</div>
+<div class="bg-emerald-500/10 rounded-xl p-4 text-center border border-emerald-500/20">
+<p class="text-2xl font-extrabold text-emerald-400">2.34</p>
+<p class="text-[10px] text-slate-400 mt-1">전체 평균 ROAS</p>
+</div>
+</div>
+
+<table class="w-full text-xs">
+<thead><tr class="border-b border-border">
+<th class="py-2 text-left text-slate-400">계정</th><th class="text-left text-slate-400">구분</th><th class="text-right text-slate-400">광고비</th><th class="text-right text-slate-400">매출</th><th class="text-right text-slate-400">ROAS</th><th class="text-right text-slate-400">구매</th>
+</tr></thead>
+<tbody>
+<tr class="border-b border-border/50"><td class="py-2 text-white font-semibold">스킨스쿨</td><td><span class="text-[10px] bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded">본인</span></td><td class="text-right">₩12.5M</td><td class="text-right">₩38.2M</td><td class="text-right font-bold text-green-400">3.06</td><td class="text-right">1,842</td></tr>
+<tr class="border-b border-border/50"><td class="py-2 text-white font-semibold">유비드</td><td><span class="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">수강생</span></td><td class="text-right">₩4.2M</td><td class="text-right">₩17.7M</td><td class="text-right font-bold text-green-400">4.21</td><td class="text-right">856</td></tr>
+<tr class="border-b border-border/50"><td class="py-2 text-white font-semibold">현대보감</td><td><span class="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">수강생</span></td><td class="text-right">₩2.1M</td><td class="text-right">₩7.5M</td><td class="text-right font-bold text-green-400">3.58</td><td class="text-right">423</td></tr>
+<tr class="border-b border-border/50"><td class="py-2 text-white font-semibold">외부 클라이언트 A</td><td><span class="text-[10px] bg-slate-500/20 text-slate-400 px-1.5 py-0.5 rounded">외부</span></td><td class="text-right">₩8.3M</td><td class="text-right">₩18.1M</td><td class="text-right font-bold text-yellow-400">2.18</td><td class="text-right">967</td></tr>
+</tbody>
+</table>
+<p class="text-[10px] text-slate-500 mt-3 text-center">* owner_ad_summaries 테이블 기반. 주 1회 자동 수집.</p>
+</div>
+
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 4: 수강생 온보딩 -->
+<!-- ============================================================ -->
+<div id="screen-onboarding" class="screen-section">
+<div class="max-w-3xl mx-auto px-4 py-6">
+
+<div class="glass rounded-2xl p-8 fade-in glow">
+<div class="text-center mb-8">
+<h1 class="text-2xl font-extrabold text-white">수강생 전환</h1>
+<p class="text-slate-400 mt-2">김민수님을 수강생으로 전환합니다. 아래 정보를 입력하면 총가치각도기 데이터가 자동으로 연결됩니다.</p>
+</div>
+
+<div class="space-y-5">
+<!-- 회원 정보 -->
+<div class="bg-slate-800/50 rounded-xl p-4 border border-border">
+<p class="text-xs text-slate-400 mb-2">회원 정보</p>
+<div class="grid grid-cols-2 gap-3 text-sm">
+<div><span class="text-slate-400">이름:</span> <span class="text-white font-semibold">김민수</span></div>
+<div><span class="text-slate-400">이메일:</span> <span class="text-white">minsu@brand.com</span></div>
+</div>
+</div>
+
+<!-- 기수 -->
+<div>
+<label class="block text-sm font-medium text-slate-300 mb-2">기수 *</label>
+<select class="w-full bg-slate-800 border border-border rounded-xl px-4 py-3 text-white text-sm outline-none">
+<option>피드백반 1기</option><option>피드백반 2기</option>
+</select>
+</div>
+
+<!-- Meta 광고계정 -->
+<div>
+<label class="block text-sm font-medium text-slate-300 mb-2">Meta 광고계정 ID *</label>
+<input type="text" value="act_1234567890123" class="w-full bg-slate-800 border border-border rounded-xl px-4 py-3 text-white text-sm outline-none">
+</div>
+
+<!-- Mixpanel -->
+<div class="bg-purple-500/5 rounded-xl p-5 border border-purple-500/20">
+<p class="text-sm font-semibold text-purple-400 mb-3">Mixpanel 연동 정보</p>
+<div class="grid grid-cols-2 gap-4">
+<div><label class="block text-xs text-slate-400 mb-1">프로젝트 ID *</label><input type="text" value="3803228" class="w-full bg-slate-800 border border-border rounded-lg px-3 py-2.5 text-white text-sm outline-none"></div>
+<div><label class="block text-xs text-slate-400 mb-1">Secret Key *</label><input type="password" value="abcdef12345" class="w-full bg-slate-800 border border-border rounded-lg px-3 py-2.5 text-white text-sm outline-none"></div>
+</div>
+<div class="mt-3">
+<label class="block text-xs text-slate-400 mb-1">Board ID * <span class="text-green-400 text-[10px] ml-1">NEW</span></label>
+<input type="text" value="4641590" class="w-full bg-slate-800 border border-border rounded-lg px-3 py-2.5 text-white text-sm outline-none">
+</div>
+</div>
+
+<!-- 자동 연결 안내 -->
+<div class="bg-blue-500/5 rounded-xl p-4 border border-blue-500/20">
+<p class="text-xs font-semibold text-blue-400 mb-2">자동으로 처리되는 작업</p>
+<ul class="text-xs text-slate-400 space-y-1">
+<li>profiles → role="student", cohort, 광고계정 정보</li>
+<li>ad_accounts → 광고계정 자동 등록 (user_id 연결)</li>
+<li>service_secrets → Mixpanel 인증정보 저장</li>
+<li>다음 크론 실행 시 데이터 수집 자동 시작</li>
+</ul>
+</div>
+
+<div class="flex gap-3 pt-2">
+<button class="flex-1 bg-slate-700 text-white py-3 rounded-xl font-semibold text-sm">취소</button>
+<button class="flex-1 bg-gradient-to-r from-primary to-red-500 text-white py-3 rounded-xl font-semibold text-sm shadow-lg shadow-primary/20">수강생으로 전환하기</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Footer -->
+<footer class="text-center py-8 text-xs text-slate-600">
+총가치각도기 UI 목업 v3.0 · 2026-02-25 · 타겟중복 심플 UI (전체 중복률 + 위험 경고 + 아코디언 상세)
+</footer>
+
+<script>
+function showScreen(name) {
+  document.querySelectorAll('.screen-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => {b.classList.remove('text-primary','border-b-2','border-primary');b.classList.add('text-slate-400')});
+  document.getElementById('screen-'+name).classList.add('active');
+  const btn=document.getElementById('nav-'+name);
+  btn.classList.remove('text-slate-400');btn.classList.add('text-primary','border-b-2','border-primary');
+}
+showScreen('student');
+</script>
+</body>
+</html>

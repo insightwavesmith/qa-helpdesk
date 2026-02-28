@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>뉴스레터 렌더링 파이프라인 구조 재설계</title>
+  <meta property="og:title" content="뉴스레터 렌더링 파이프라인 구조 재설계">
+  <meta property="og:description" content="email_summary → Unlayer JSON 변환 파이프라인의 구조적 문제 분석 + 배너키별 동적 row 생성 설계">
+  <meta name="date" content="2026-02-17">
+  <meta name="project" content="qa-helpdesk">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#FEF2F2',
+        primaryBorderColor: '#F75D5D',
+        primaryTextColor: '#1a1a1a',
+        lineColor: '#9ca3af',
+        fontSize: '13px',
+        edgeLabelBackground: '#ffffff'
+      },
+      flowchart: { htmlLabels: true, curve: 'basis' },
+      sequence: { mirrorActors: false, messageAlign: 'center' }
+    });
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #F75D5D;
+      --primary-hover: #E54949;
+      --bg: #ffffff;
+      --text: #1a1a1a;
+      --text-sub: #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --border: #e5e7eb;
+      --surface: #f8f9fc;
+      --surface-warm: #FEF2F2;
+      --sidebar-w: 220px;
+    }
+    body {
+      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.7;
+    }
+    .sidebar {
+      position: fixed; top: 0; left: 0; width: var(--sidebar-w); height: 100vh;
+      background: var(--surface); border-right: 1px solid var(--border);
+      padding: 24px 16px; overflow-y: auto; z-index: 100;
+    }
+    .sidebar-title { font-size: 13px; font-weight: 800; color: var(--primary); margin-bottom: 16px; letter-spacing: 1px; text-transform: uppercase; }
+    .sidebar nav a {
+      display: block; padding: 5px 10px; font-size: 12.5px; color: var(--text-muted);
+      text-decoration: none; border-left: 2px solid transparent; border-radius: 0 4px 4px 0;
+      transition: all .15s;
+    }
+    .sidebar nav a:hover { color: var(--text); background: var(--surface-warm); }
+    .sidebar nav a.active { color: var(--primary); border-left-color: var(--primary); font-weight: 600; background: var(--surface-warm); }
+    .sidebar nav .sep { height: 1px; background: var(--border); margin: 8px 10px; }
+    .main { margin-left: var(--sidebar-w); padding: 40px 48px 80px; max-width: 920px; }
+    h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+    h2 { font-size: 18px; font-weight: 700; margin: 40px 0 14px; padding-bottom: 8px; border-bottom: 2px solid var(--primary); scroll-margin-top: 24px; }
+    h3 { font-size: 15px; font-weight: 700; margin: 20px 0 8px; color: var(--text-sub); }
+    h4 { font-size: 14px; font-weight: 700; margin: 16px 0 6px; }
+    p, li { font-size: 14px; color: var(--text-sub); }
+    p { margin-bottom: 12px; }
+    ul, ol { padding-left: 20px; margin-bottom: 12px; }
+    li { margin-bottom: 4px; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .badge-danger { background: #FEE2E2; color: #991B1B; }
+    .badge-warn { background: #FEF9C3; color: #854D0E; }
+    .badge-ok { background: #DCFCE7; color: #166534; }
+    .badge-info { background: #DBEAFE; color: #1E40AF; }
+    .badge-proposed { background: #EDE9FE; color: #5B21B6; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin: 12px 0; }
+    .card-danger { background: #FEF2F2; border-color: #FECACA; }
+    .card-warn { background: #FFFBEB; border-color: #FDE68A; }
+    .card-ok { background: #F0FDF4; border-color: #BBF7D0; }
+    .card-info { background: #EFF6FF; border-color: #BFDBFE; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+    th, td { border: 1px solid var(--border); padding: 10px 14px; text-align: left; }
+    th { background: var(--surface); font-weight: 600; color: var(--text-muted); font-size: 12px; }
+    code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: "SF Mono", "Fira Code", monospace; }
+    pre { background: #1e1e2e; color: #cdd6f4; padding: 16px 20px; border-radius: 8px; overflow-x: auto; margin: 12px 0; font-size: 13px; line-height: 1.6; }
+    pre code { background: transparent; padding: 0; color: inherit; }
+    .meta { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+    .mermaid { margin: 16px 0; }
+    .file-ref { font-size: 12px; color: var(--text-faint); margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-title">목차</div>
+  <nav>
+    <a href="#overview">개요</a>
+    <a href="#current-flow">현재 흐름</a>
+    <div class="sep"></div>
+    <a href="#problem-1">P1: email_summary 생성 실패</a>
+    <a href="#problem-2">P2: 단일 텍스트 블록</a>
+    <a href="#problem-3">P3: 템플릿 row 미분리</a>
+    <a href="#problem-4">P4: 에러 핸들링 부재</a>
+    <a href="#problem-5">P5: design_json 재생성</a>
+    <div class="sep"></div>
+    <a href="#solution">해결 방안</a>
+    <a href="#new-flow">재설계 흐름</a>
+    <a href="#row-factory">Row 팩토리 설계</a>
+    <a href="#error-handling">에러 핸들링</a>
+    <a href="#edge-cases">엣지 케이스</a>
+    <a href="#implementation">구현 순서</a>
+  </nav>
+</div>
+
+<div class="main">
+
+<h1>뉴스레터 렌더링 파이프라인 구조 재설계</h1>
+<p class="meta">2026-02-17 | 분석: code-reviewer | 대상: email_summary → Unlayer JSON 파이프라인</p>
+
+<!-- ─── 1. 개요 ─── -->
+<h2 id="overview">1. 개요</h2>
+
+<p>AI가 생성한 <code>email_summary</code> 마크다운이 Unlayer JSON 디자인으로 변환되는 과정에서 구조적 한계가 발견되었다. 배너키 매핑을 고친 것만으로는 해결할 수 없는 <strong>5가지 근본 문제</strong>를 분석하고, <strong>배너키별 동적 Unlayer row 생성</strong> 방안을 설계한다.</p>
+
+<div class="card">
+  <strong>핵심 파일 4개</strong>
+  <table>
+    <tr><th>파일</th><th>역할</th><th>수정 필요</th></tr>
+    <tr><td><code>src/actions/contents.ts</code></td><td>generateEmailSummary — AI 호출 + DB 저장</td><td><span class="badge badge-warn">개선</span></td></tr>
+    <tr><td><code>src/lib/email-template-utils.ts</code></td><td>buildDesignFromSummary — email_summary → Unlayer JSON</td><td><span class="badge badge-danger">재설계</span></td></tr>
+    <tr><td><code>src/lib/email-default-template.ts</code></td><td>4개 Unlayer 템플릿 (DEFAULT/A/B/C)</td><td><span class="badge badge-info">참조</span></td></tr>
+    <tr><td><code>src/components/content/newsletter-edit-panel.tsx</code></td><td>Unlayer 에디터 로드 + 초기 디자인 주입</td><td><span class="badge badge-warn">개선</span></td></tr>
+  </table>
+</div>
+
+<!-- ─── 2. 현재 흐름 ─── -->
+<h2 id="current-flow">2. 현재 데이터 흐름</h2>
+
+<div class="mermaid">
+sequenceDiagram
+    participant Admin as 관리자
+    participant Panel as newsletter-edit-panel
+    participant Action as contents.ts
+    participant AI as Gemini AI
+    participant DB as Supabase
+    participant Builder as buildDesignFromSummary
+    participant Unlayer as Unlayer 에디터
+
+    Admin->>Panel: "AI 뉴스레터 생성" 클릭
+    Panel->>Action: generateEmailSummary(contentId)
+    Action->>DB: contents.select(body_md, type)
+    DB-->>Action: content 데이터
+    Action->>AI: ksGenerate(body_md + bannerGuide)
+    AI-->>Action: email_summary (마크다운)
+    Action->>DB: contents.update(email_summary)
+    Action-->>Panel: { emailSummary }
+
+    Admin->>Panel: "뉴스레터 편집" 탭 클릭
+    Panel->>Panel: email_design_json 확인
+    alt email_design_json 있음
+        Panel->>Unlayer: 기존 디자인 로드
+    else email_summary만 있음
+        Panel->>Builder: buildDesignFromSummary(content)
+        Builder->>Builder: 템플릿 선택 (A/B/C)
+        Builder->>Builder: placeholder row 제거
+        Builder->>Builder: content-body-text-1에 전체 HTML 삽입
+        Builder-->>Panel: Unlayer JSON
+        Panel->>Unlayer: 변환된 디자인 로드
+    else 둘 다 없음
+        Panel->>Unlayer: BS_CAMP_DEFAULT_TEMPLATE 로드
+    end
+</div>
+
+<!-- ─── 3. 문제점 분석 ─── -->
+<h2 id="problem-1">3-1. 문제 1: email_summary 생성 실패 <span class="badge badge-danger">Critical</span></h2>
+
+<div class="card card-danger">
+  <strong>현상</strong>: 웨비나 콘텐츠 <code>3f460957</code>의 <code>email_summary</code>가 NULL → <code>buildDesignFromSummary</code> 미호출 → 기본 placeholder 템플릿 노출
+</div>
+
+<h4>원인 분석</h4>
+<ul>
+  <li><code>generateEmailSummary</code>에서 AI 호출이 실패(타임아웃 등)해도 <strong>에러가 UI에 표시되지 않음</strong></li>
+  <li><code>ksGenerate</code>의 <code>result.content</code>가 빈 문자열이면 에러 반환하지만, AI가 빈 줄만 반환하거나 파싱 불가 응답을 줄 경우 DB에 의미 없는 값 저장 가능</li>
+  <li>newsletter-edit-panel에서 <code>email_summary</code>가 NULL일 때 사용자에게 "AI 생성이 필요합니다" 안내 없이 placeholder만 보임</li>
+</ul>
+
+<h4>영향</h4>
+<p>관리자가 placeholder 템플릿을 실제 뉴스레터로 착각하여 그대로 발송할 위험</p>
+
+<h2 id="problem-2">3-2. 문제 2: 단일 텍스트 블록 구조 <span class="badge badge-danger">Critical</span></h2>
+
+<div class="card card-danger">
+  <strong>현상</strong>: <code>buildDesignFromSummary</code>가 <code>email_summary</code> 전체를 <code>content-body-text-1</code> 하나에 HTML로 넣음 → 배너키가 Unlayer의 별도 row가 아닌 <strong>인라인 HTML</strong>로 들어감
+</div>
+
+<h4>코드 위치</h4>
+<p class="file-ref">src/lib/email-template-utils.ts L310~318</p>
+<pre><code>const bodyText1 = findContentById(rows, "content-body-text-1");
+if (bodyText1 && content.email_summary) {
+  let bodyMd = content.email_summary;
+  if (hookQuote) {
+    const idx = bodyMd.indexOf("\n\n");
+    bodyMd = idx !== -1 ? bodyMd.slice(idx + 2) : "";
+  }
+  bodyText1.values.text = bodyMd ? markdownToEmailHtml(bodyMd) : "";
+}</code></pre>
+
+<h4>결과</h4>
+<ul>
+  <li><code>markdownToEmailHtml</code>이 배너 이미지 + 넘버카드 + 체크리스트 등을 잘 변환하지만, <strong>모두 단일 text 블록 안에 들어감</strong></li>
+  <li>Unlayer 에디터에서 배너키별 row를 개별 편집/이동/삭제 불가</li>
+  <li>이메일 클라이언트에서 긴 단일 블록은 렌더링 차이 발생 (Outlook 등)</li>
+</ul>
+
+<h2 id="problem-3">3-3. 문제 3: 템플릿별 Unlayer row 미분리 <span class="badge badge-warn">Major</span></h2>
+
+<div class="card card-warn">
+  <strong>현상</strong>: 4개 Unlayer 템플릿(DEFAULT/A/B/C)은 정적 row 구조. 배너키별로 동적 row를 생성하는 로직이 없음
+</div>
+
+<h4>현재 템플릿 row 구조</h4>
+<table>
+  <tr><th>Row ID</th><th>DEFAULT</th><th>A (education)</th><th>B (webinar)</th><th>C (case_study)</th></tr>
+  <tr><td>row-header</td><td>O</td><td>O</td><td>O</td><td>O</td></tr>
+  <tr><td>row-title</td><td>O</td><td>-</td><td>-</td><td>-</td></tr>
+  <tr><td>row-hero</td><td>-</td><td>-</td><td>O</td><td>-</td></tr>
+  <tr><td>row-hook-quote</td><td>-</td><td>O</td><td>O</td><td>O</td></tr>
+  <tr><td>row-body-text-1</td><td>O (본문 전체)</td><td>-</td><td>-</td><td>-</td></tr>
+  <tr><td>placeholder rows</td><td>O (image, body-text-2)</td><td>O (toc, infographic, quote, bullet-list)</td><td>O (section-banner, slide-preview, program-list, info-block, cta-outline)</td><td>O (student-profile, ba-card, section-banner, quote, bullet-list, infographic)</td></tr>
+  <tr><td>row-profile</td><td>O (공통)</td><td>O (공통)</td><td>O (공통)</td><td>O (공통)</td></tr>
+  <tr><td>row-cta</td><td>O</td><td>-</td><td>O</td><td>O</td></tr>
+  <tr><td>row-footer</td><td>O</td><td>-</td><td>-</td><td>-</td></tr>
+</table>
+
+<p>문제: placeholder row를 제거한 후 남는 건 header/hook-quote/profile/cta/footer 뿐. <strong>배너키별 콘텐츠 row가 없으므로</strong> 모든 내용이 body-text-1 하나에 들어갈 수밖에 없음.</p>
+
+<h2 id="problem-4">3-4. 문제 4: 에러 핸들링 부재 <span class="badge badge-warn">Major</span></h2>
+
+<div class="card card-warn">
+  <strong>현상</strong>: AI 생성 실패, 배너키 누락, 저장 실패 등의 에러가 사용자에게 전달되지 않음
+</div>
+
+<ul>
+  <li><code>generateEmailSummary</code>: try-catch에서 에러 반환하지만, 호출하는 UI 측에서 토스트만 표시하고 재시도 UI 없음</li>
+  <li>AI가 금지된 배너키를 생성해도 <strong>검증 로직 없이 그대로 저장</strong></li>
+  <li><code>buildDesignFromSummary</code>에서 <code>email_summary</code>가 예상 포맷이 아닌 경우 (배너키 없음 등) <strong>조용히 빈 텍스트 블록 생성</strong></li>
+</ul>
+
+<h2 id="problem-5">3-5. 문제 5: design_json 재생성 불가 <span class="badge badge-info">Minor</span></h2>
+
+<div class="card card-info">
+  <strong>현상</strong>: <code>email_design_json</code>이 저장된 후 AI 재생성하면 <code>email_summary</code>만 업데이트 → 에디터에는 이전 design_json이 로드됨
+</div>
+
+<p class="file-ref">src/components/content/newsletter-edit-panel.tsx L72~76</p>
+<pre><code>const initialDesign = content.email_design_json
+  ? (content.email_design_json as object)         // ← 항상 이전 design_json 우선
+  : content.email_summary
+    ? buildDesignFromSummary(content)
+    : defaultTemplate;</code></pre>
+
+<p><code>email_design_json</code>이 존재하면 <code>buildDesignFromSummary</code>가 호출되지 않아, AI 재생성 결과가 반영되지 않음.</p>
+
+<!-- ─── 4. 해결 방안 ─── -->
+<h2 id="solution">4. 해결 방안</h2>
+
+<div class="card card-ok">
+  <strong>핵심 아이디어</strong>: <code>buildDesignFromSummary</code>에서 <code>email_summary</code>를 <code>### 배너키</code> 기준으로 파싱 → 각 섹션마다 <strong>Unlayer row를 동적 생성</strong>하여 template.body.rows에 삽입
+</div>
+
+<h3>4-1. 아키텍처 변경 요약</h3>
+<table>
+  <tr><th>#</th><th>변경</th><th>파일</th><th>설명</th></tr>
+  <tr><td>S1</td><td>email_summary 파서</td><td>email-template-utils.ts</td><td><code>parseSummaryToSections(md)</code> — ### 기준 섹션 분리, { key, content }[] 반환</td></tr>
+  <tr><td>S2</td><td>Row 팩토리</td><td>email-template-utils.ts</td><td><code>createBannerRow(key, content)</code> — 배너키별 Unlayer row JSON 생성</td></tr>
+  <tr><td>S3</td><td>buildDesignFromSummary 개편</td><td>email-template-utils.ts</td><td>파싱 → row 생성 → template.body.rows에 동적 삽입 (header ~ profile/cta/footer 사이)</td></tr>
+  <tr><td>S4</td><td>배너키 검증</td><td>contents.ts</td><td>AI 응답에서 배너키 추출 → BANNER_KEYS_BY_TYPE과 대조 → 불일치 시 경고/재생성</td></tr>
+  <tr><td>S5</td><td>재생성 시 design_json 초기화</td><td>contents.ts + newsletter-edit-panel.tsx</td><td>AI 재생성 → <code>email_design_json = null</code> + <code>email_summary</code> 업데이트</td></tr>
+  <tr><td>S6</td><td>에러 핸들링 UI</td><td>newsletter-edit-panel.tsx</td><td>생성 실패 → 에러 메시지 + 재시도 버튼, 배너키 누락 → 경고 배너</td></tr>
+</table>
+
+<!-- ─── 5. 재설계 흐름 ─── -->
+<h2 id="new-flow">5. 재설계 데이터 흐름</h2>
+
+<div class="mermaid">
+flowchart TD
+    A["관리자: AI 뉴스레터 생성 클릭"] --> B["generateEmailSummary(contentId)"]
+    B --> C["AI 호출 (ksGenerate)"]
+    C --> D{"AI 응답 성공?"}
+    D -->|실패/타임아웃| E["에러 반환 + UI 재시도 버튼"]
+    D -->|성공| F["email_summary 마크다운 수신"]
+    F --> G["validateBannerKeys(summary, type)"]
+    G --> H{"배너키 검증 통과?"}
+    H -->|불일치| I["경고 반환 (누락/금지 키 목록)"]
+    H -->|통과| J["DB 저장: email_summary + email_design_json=null"]
+
+    J --> K["관리자: 뉴스레터 편집 탭 클릭"]
+    K --> L{"email_design_json 존재?"}
+    L -->|있음| M["기존 design_json 로드"]
+    L -->|없음| N["buildDesignFromSummary(content)"]
+
+    N --> O["parseSummaryToSections(email_summary)"]
+    O --> P["sections: {key, content}[]"]
+    P --> Q["타입별 기본 template 로드 (A/B/C)"]
+    Q --> R["header + hook-quote row 교체"]
+    R --> S["각 section → createBannerRow(key, content)"]
+    S --> T["동적 row 삽입 (header ~ profile 사이)"]
+    T --> U["profile + CTA + footer row 유지"]
+    U --> V["완성된 Unlayer JSON → 에디터 로드"]
+
+    style A fill:#DBEAFE,stroke:#3B82F6
+    style E fill:#FEE2E2,stroke:#EF4444
+    style I fill:#FEF9C3,stroke:#F59E0B
+    style V fill:#DCFCE7,stroke:#22C55E
+</div>
+
+<!-- ─── 6. Row 팩토리 설계 ─── -->
+<h2 id="row-factory">6. Row 팩토리 설계</h2>
+
+<h3>6-1. parseSummaryToSections</h3>
+<pre><code>interface SummarySection {
+  key: string;      // 배너키 (예: "INSIGHT", "KEY POINT")
+  content: string;  // ### 아래 마크다운 텍스트
+}
+
+function parseSummaryToSections(md: string): SummarySection[] {
+  // 1. ### 헤딩 기준으로 split
+  // 2. 첫 번째 ### 이전 텍스트는 hook-quote용으로 별도 보관
+  // 3. 각 섹션의 key와 content 추출
+  // 예: "### INSIGHT\n텍스트..." → { key: "INSIGHT", content: "텍스트..." }
+}</code></pre>
+
+<h3>6-2. createBannerRow</h3>
+<p>배너키 하나에 대해 <strong>2개 Unlayer row</strong>를 생성:</p>
+
+<table>
+  <tr><th>Row</th><th>구성</th><th>설명</th></tr>
+  <tr>
+    <td>배너 이미지 row</td>
+    <td>image content (type: "image")</td>
+    <td>BANNER_MAP에서 이미지 URL 조회. 매핑 없으면 CSS gradient fallback (type: "text")</td>
+  </tr>
+  <tr>
+    <td>콘텐츠 row</td>
+    <td>text content (type: "text")</td>
+    <td><code>markdownToEmailHtml(section.content)</code>로 변환된 HTML</td>
+  </tr>
+</table>
+
+<pre><code>function createBannerRow(section: SummarySection): UnlayerRow[] {
+  const bannerFile = findBannerImage(section.key); // BANNER_MAP 조회
+
+  const bannerRow: UnlayerRow = {
+    id: `row-banner-${slugify(section.key)}`,
+    cells: [1],
+    columns: [{
+      contents: [{
+        type: bannerFile ? "image" : "text",
+        values: bannerFile
+          ? { src: { url: `${BANNER_BASE_URL}/${bannerFile}.png` }, ... }
+          : { text: `&lt;gradient fallback for ${section.key}&gt;` }
+      }]
+    }]
+  };
+
+  const contentRow: UnlayerRow = {
+    id: `row-content-${slugify(section.key)}`,
+    cells: [1],
+    columns: [{
+      contents: [{
+        type: "text",
+        values: { text: markdownToEmailHtml(section.content) }
+      }]
+    }]
+  };
+
+  return [bannerRow, contentRow];
+}</code></pre>
+
+<h3>6-3. 최종 row 배치</h3>
+
+<table>
+  <tr><th>순서</th><th>Row</th><th>출처</th></tr>
+  <tr><td>1</td><td>row-header (로고)</td><td>기존 템플릿</td></tr>
+  <tr><td>2</td><td>row-hero (웨비나만)</td><td>기존 템플릿 B</td></tr>
+  <tr><td>3</td><td>row-title / row-hook-quote</td><td>기존 템플릿 (동적 교체)</td></tr>
+  <tr><td>4~N</td><td>row-banner-{key} + row-content-{key}</td><td><strong>동적 생성 (NEW)</strong></td></tr>
+  <tr><td>N+1</td><td>row-profile (스미스 코치)</td><td>기존 SMITH_PROFILE_ROW</td></tr>
+  <tr><td>N+2</td><td>row-cta</td><td>기존 템플릿 (동적 교체)</td></tr>
+  <tr><td>N+3</td><td>row-footer</td><td>기존 템플릿</td></tr>
+</table>
+
+<!-- ─── 7. 에러 핸들링 ─── -->
+<h2 id="error-handling">7. 에러 핸들링 방안</h2>
+
+<table>
+  <tr><th>시나리오</th><th>현재</th><th>개선 후</th></tr>
+  <tr>
+    <td>AI 호출 타임아웃</td>
+    <td>email_summary NULL → placeholder 노출</td>
+    <td>에러 반환 → UI "생성 실패" 토스트 + <strong>재시도 버튼</strong></td>
+  </tr>
+  <tr>
+    <td>AI가 금지 배너키 생성</td>
+    <td>CSS gradient fallback</td>
+    <td><code>validateBannerKeys</code> → 경고 반환 + "수동 수정" 또는 "자동 재생성" 선택</td>
+  </tr>
+  <tr>
+    <td>배너키 일부 누락</td>
+    <td>해당 섹션 없이 렌더링</td>
+    <td>누락 배너키 목록 경고 배너 표시 (에디터 상단)</td>
+  </tr>
+  <tr>
+    <td>email_summary 포맷 이상</td>
+    <td>빈 텍스트 블록</td>
+    <td>파서가 ### 없으면 전체를 단일 텍스트 블록으로 처리 (graceful degradation)</td>
+  </tr>
+  <tr>
+    <td>design_json 저장 후 재생성</td>
+    <td>이전 design_json 로드</td>
+    <td>재생성 시 <code>email_design_json = null</code> 초기화 → buildDesignFromSummary 재실행</td>
+  </tr>
+  <tr>
+    <td>배너 이미지 URL 깨짐</td>
+    <td>이미지 안 보임</td>
+    <td>Unlayer image type에 <code>altText</code> + CSS gradient fallback 배경</td>
+  </tr>
+</table>
+
+<h3>validateBannerKeys 설계</h3>
+<pre><code>interface ValidationResult {
+  valid: boolean;
+  missing: string[];    // 필수인데 누락된 배너키
+  forbidden: string[];  // 금지된 배너키 사용
+}
+
+function validateBannerKeys(summary: string, type: string): ValidationResult {
+  const expectedKeys = BANNER_KEYS_BY_TYPE[type]; // 파싱하여 키 목록 추출
+  const actualKeys = summary.match(/^### (.+)$/gm)?.map(m => m.slice(4).trim()) || [];
+
+  const missing = expectedKeys.filter(k => !actualKeys.includes(k));
+  const forbidden = actualKeys.filter(k => !expectedKeys.includes(k));
+
+  return { valid: missing.length === 0 && forbidden.length === 0, missing, forbidden };
+}</code></pre>
+
+<!-- ─── 8. 엣지 케이스 ─── -->
+<h2 id="edge-cases">8. 엣지 케이스</h2>
+
+<table>
+  <tr><th>ID</th><th>상황</th><th>현재 동작</th><th>개선 후 동작</th></tr>
+  <tr><td>E1</td><td>AI 타임아웃</td><td>email_summary NULL → placeholder</td><td>에러 표시 + 재시도 버튼</td></tr>
+  <tr><td>E2</td><td>AI가 금지 배너키 생성</td><td>CSS gradient fallback</td><td>검증 → 재생성 요청</td></tr>
+  <tr><td>E3</td><td>email_summary에 ### 없음</td><td>배너 없이 텍스트만</td><td>전체를 단일 row에 넣기 (graceful)</td></tr>
+  <tr><td>E4</td><td>design_json 저장 후 재생성</td><td>이전 design_json 유지</td><td>design_json 초기화 + 재적용</td></tr>
+  <tr><td>E5</td><td>배너 이미지 깨짐</td><td>이미지 안 보임</td><td>CSS gradient fallback + alt 텍스트</td></tr>
+  <tr><td>E6</td><td>body_md가 매우 짧음</td><td>모든 섹션 간결</td><td>AI 프롬프트에 "모든 배너키 유지" 강제</td></tr>
+  <tr><td>E7</td><td>webinar에 일정 정보 없음</td><td>날짜 생략</td><td>"추후 공지 예정" placeholder 허용</td></tr>
+</table>
+
+<!-- ─── 9. 구현 순서 ─── -->
+<h2 id="implementation">9. 구현 순서</h2>
+
+<div class="card">
+  <strong>Phase 1: 파서 + Row 팩토리</strong> (email-template-utils.ts)
+  <ol>
+    <li><code>parseSummaryToSections(md)</code> 구현</li>
+    <li><code>createBannerRow(section)</code> 구현</li>
+    <li><code>buildDesignFromSummary</code> 개편 — 동적 row 삽입</li>
+    <li>기존 PLACEHOLDER_ROW_IDS 제거 로직 정리</li>
+  </ol>
+</div>
+
+<div class="card">
+  <strong>Phase 2: 검증 + 에러 핸들링</strong> (contents.ts + newsletter-edit-panel.tsx)
+  <ol>
+    <li><code>validateBannerKeys</code> 구현</li>
+    <li>generateEmailSummary에서 검증 로직 추가</li>
+    <li>재생성 시 <code>email_design_json = null</code> 초기화</li>
+    <li>newsletter-edit-panel에 에러/경고 UI 추가</li>
+  </ol>
+</div>
+
+<div class="card">
+  <strong>Phase 3: 테스트 + QA</strong>
+  <ol>
+    <li>education / webinar / case_study 3종 AI 생성 테스트</li>
+    <li>Unlayer 에디터에서 개별 row 편집/이동/삭제 가능 확인</li>
+    <li>이메일 발송 후 Gmail/Outlook 렌더링 확인</li>
+    <li>엣지 케이스 E1~E7 수동 검증</li>
+  </ol>
+</div>
+
+<h3>의존성</h3>
+<div class="mermaid">
+flowchart LR
+    P1["Phase 1: 파서 + Row 팩토리"] --> P2["Phase 2: 검증 + 에러 핸들링"]
+    P2 --> P3["Phase 3: 테스트 + QA"]
+
+    style P1 fill:#DBEAFE,stroke:#3B82F6
+    style P2 fill:#FEF9C3,stroke:#F59E0B
+    style P3 fill:#DCFCE7,stroke:#22C55E
+</div>
+
+</div><!-- /.main -->
+
+<script>
+// Sidebar active state on scroll
+document.addEventListener('DOMContentLoaded', () => {
+  const links = document.querySelectorAll('.sidebar nav a');
+  const sections = [...links].map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+
+  function updateActive() {
+    let current = '';
+    for (const s of sections) {
+      if (s.getBoundingClientRect().top <= 80) current = s.id;
+    }
+    links.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  }
+
+  window.addEventListener('scroll', updateActive);
+  updateActive();
+});
+</script>
+
+</body>
+</html>

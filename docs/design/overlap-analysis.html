@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>튼사렌 타겟중복율 분석</title>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--border:#334155;--text:#e2e8f0;--muted:#94a3b8;--primary:#F75D5D;--green:#22c55e;--yellow:#eab308;--red:#ef4444;--blue:#3b82f6}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:2rem;max-width:1200px;margin:0 auto}
+h1{font-size:1.8rem;color:white;margin-bottom:.3rem}
+h2{font-size:1.3rem;margin:2.5rem 0 1rem;padding-bottom:.5rem;border-bottom:2px solid var(--primary);color:white}
+h3{font-size:1.05rem;margin:1.5rem 0 .7rem;color:#cbd5e1}
+.subtitle{color:var(--muted);margin-bottom:2rem}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1rem 0}
+.card-red{border-left:4px solid var(--red)}
+.card-green{border-left:4px solid var(--green)}
+.card-yellow{border-left:4px solid var(--yellow)}
+.card-blue{border-left:4px solid var(--blue)}
+table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.85rem}
+th,td{padding:.5rem .6rem;text-align:left;border-bottom:1px solid var(--border)}
+th{background:rgba(255,255,255,.05);font-weight:600;color:#cbd5e1}
+.highlight{background:rgba(247,93,93,.1);border:1px solid rgba(247,93,93,.3);border-radius:8px;padding:1rem 1.2rem;margin:1rem 0}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600}
+.tag-red{background:rgba(239,68,68,.3);color:#fca5a5}
+.tag-green{background:rgba(34,197,94,.3);color:#86efac}
+.tag-yellow{background:rgba(234,179,8,.3);color:#fde047}
+.tag-gray{background:rgba(148,163,184,.2);color:#94a3b8}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin:1rem 0}
+.summary-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center}
+.summary-card .num{font-size:1.8rem;font-weight:700}
+.summary-card .label{font-size:.8rem;color:var(--muted);margin-top:.2rem}
+.matrix-table td,.matrix-table th{text-align:center;padding:.4rem .3rem;font-size:.78rem}
+.overlap-high{background:rgba(239,68,68,.2);color:#fca5a5;font-weight:700}
+.overlap-mid{background:rgba(234,179,8,.15);color:#fde047}
+.overlap-low{background:rgba(34,197,94,.15);color:#86efac}
+.overlap-na{color:#64748b;font-style:italic}
+.code{background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;font-family:monospace;font-size:.85rem;color:#fbbf24}
+</style>
+</head>
+<body>
+
+<h1>튼사렌 타겟중복율 분석</h1>
+<p class="subtitle">2026-02-25 · 계정: act_651779406944934 · 기간: 2026-02-18 ~ 02-24 (7일) · Meta Insights API 실측 데이터</p>
+
+<!-- 전체 요약 -->
+<div class="summary-grid">
+<div class="summary-card"><div class="num" style="color:white">3</div><div class="label">활성 판매 캠페인</div></div>
+<div class="summary-card"><div class="num" style="color:white">7</div><div class="label">활성 광고세트</div></div>
+<div class="summary-card"><div class="num" style="color:var(--primary)">418,457</div><div class="label">합산 Unique Reach</div></div>
+<div class="summary-card"><div class="num" style="color:var(--red)">29.3%</div><div class="label">전체 중복율</div></div>
+</div>
+
+<div class="highlight">
+<strong>분석 방법:</strong> Meta Insights API에서 <span class="code">level=account</span> + adset 필터링으로 합산 unique reach를 조회. 개별 reach 합과 비교하여 중복 인원 및 중복율 산출.
+</div>
+
+<!-- 캠페인/세트 구조 -->
+<h2>1. 캠페인별 광고세트 구조</h2>
+
+<h3>캠페인1: 전환[값극대화]</h3>
+<div class="card card-blue">
+<table>
+<tr><th>코드</th><th>광고세트명</th><th>Reach</th><th>Impressions</th><th>Frequency</th><th>Spend</th></tr>
+<tr><td><strong>A</strong></td><td>2026.1.12_튼사렌_가치조정OFF_상세광범위+</td><td style="text-align:right">16,078</td><td style="text-align:right">43,027</td><td style="text-align:right">2.68</td><td style="text-align:right">₩1,006,160</td></tr>
+</table>
+</div>
+
+<h3>캠페인2: 전환수최적화+[콘텐츠조회]+증대기여</h3>
+<div class="card card-blue">
+<table>
+<tr><th>코드</th><th>광고세트명</th><th>Reach</th><th>Impressions</th><th>Frequency</th><th>Spend</th></tr>
+<tr><td><strong>B</strong></td><td>2025.1.30_퓨어렌_가치조정OFF_콘텐츠조회+증대기여</td><td style="text-align:right">1,006</td><td style="text-align:right">1,208</td><td style="text-align:right">1.20</td><td style="text-align:right">₩8,489</td></tr>
+<tr><td><strong>C</strong></td><td>2025.12.10_튼사렌살성크림_가치조정OFF_콘텐츠조회+증대기여</td><td style="text-align:right">125,595</td><td style="text-align:right">149,295</td><td style="text-align:right">1.19</td><td style="text-align:right">₩962,767</td></tr>
+<tr><td><strong>D</strong></td><td>2025.01.12_튼사렌미스트_가치조정OFF_콘텐츠조회+증대기여</td><td style="text-align:right">92,482</td><td style="text-align:right">148,844</td><td style="text-align:right">1.61</td><td style="text-align:right">₩276,547</td></tr>
+</table>
+</div>
+
+<h3>캠페인3: 전환[수최적화]</h3>
+<div class="card card-blue">
+<table>
+<tr><th>코드</th><th>광고세트명</th><th>Reach</th><th>Impressions</th><th>Frequency</th><th>Spend</th></tr>
+<tr><td><strong>E</strong></td><td>2025.1.31_퓨어렌_가치조정OFF_상세광범위+</td><td style="text-align:right">69,239</td><td style="text-align:right">300,903</td><td style="text-align:right">4.35</td><td style="text-align:right">₩3,733,638</td></tr>
+<tr><td><strong>F</strong></td><td>2026.1.9_튼사렌오일미스트_가치조정OFF_상세광범위+</td><td style="text-align:right">108,230</td><td style="text-align:right">302,370</td><td style="text-align:right">2.79</td><td style="text-align:right">₩3,461,822</td></tr>
+<tr><td><strong>G</strong></td><td>2025.11.23_튼사렌_가치조정OFF_상세광범위+</td><td style="text-align:right">179,207</td><td style="text-align:right">586,194</td><td style="text-align:right">3.27</td><td style="text-align:right">₩6,839,882</td></tr>
+</table>
+</div>
+
+<!-- 전체 합산 -->
+<h2>2. 전체 합산</h2>
+<div class="card card-red">
+<table>
+<tr><th>지표</th><th>값</th></tr>
+<tr><td>개별 Reach 단순 합산</td><td style="text-align:right"><strong>591,837</strong></td></tr>
+<tr><td>전체 세트 합산 Unique Reach (API)</td><td style="text-align:right"><strong>418,457</strong></td></tr>
+<tr><td>중복 인원 추정</td><td style="text-align:right;color:#fca5a5"><strong>173,380명</strong></td></tr>
+<tr><td>전체 중복율</td><td style="text-align:right;color:#fca5a5;font-size:1.2rem"><strong>29.3%</strong></td></tr>
+<tr><td>전체 Impressions</td><td style="text-align:right">1,531,841</td></tr>
+<tr><td>전체 Frequency</td><td style="text-align:right">3.66</td></tr>
+</table>
+</div>
+
+<!-- 중복율 매트릭스 -->
+<h2>3. 중복율 매트릭스</h2>
+
+<p style="margin-bottom:1rem;color:var(--muted);font-size:.9rem">
+<span class="tag tag-red">60%+</span> 매우 높음 &nbsp;
+<span class="tag tag-yellow">30~59%</span> 주의 &nbsp;
+<span class="tag tag-green">&lt;30%</span> 양호 &nbsp;
+<span class="tag tag-gray">측불가</span> 샘플링 오차
+</p>
+
+<div class="card" style="overflow-x:auto">
+<table class="matrix-table">
+<tr>
+<th></th>
+<th>A<br><span style="font-size:.65rem;color:var(--muted)">튼사렌<br>값극대화</span></th>
+<th>B<br><span style="font-size:.65rem;color:var(--muted)">퓨어렌<br>콘텐츠조회</span></th>
+<th>C<br><span style="font-size:.65rem;color:var(--muted)">살성크림<br>콘텐츠조회</span></th>
+<th>D<br><span style="font-size:.65rem;color:var(--muted)">미스트<br>콘텐츠조회</span></th>
+<th>E<br><span style="font-size:.65rem;color:var(--muted)">퓨어렌<br>수최적화</span></th>
+<th>F<br><span style="font-size:.65rem;color:var(--muted)">오일미스트<br>수최적화</span></th>
+<th>G<br><span style="font-size:.65rem;color:var(--muted)">튼사렌<br>수최적화</span></th>
+</tr>
+<tr>
+<th>A</th>
+<td>—</td>
+<td class="overlap-na">측불가</td>
+<td class="overlap-low">6.6%</td>
+<td class="overlap-na">측불가</td>
+<td class="overlap-high">69.0%</td>
+<td class="overlap-high">74.5%</td>
+<td class="overlap-high">86.8%</td>
+</tr>
+<tr>
+<th>B</th>
+<td></td>
+<td>—</td>
+<td class="overlap-na">측불가</td>
+<td class="overlap-na">측불가</td>
+<td class="overlap-mid">33.0%</td>
+<td class="overlap-low">11.7%</td>
+<td class="overlap-mid">33.8%</td>
+</tr>
+<tr>
+<th>C</th>
+<td></td><td></td>
+<td>—</td>
+<td class="overlap-na">측불가</td>
+<td class="overlap-low">12.6%</td>
+<td class="overlap-low">8.1%</td>
+<td class="overlap-low">12.4%</td>
+</tr>
+<tr>
+<th>D</th>
+<td></td><td></td><td></td>
+<td>—</td>
+<td class="overlap-na">측불가</td>
+<td class="overlap-na">측불가</td>
+<td class="overlap-na">측불가</td>
+</tr>
+<tr>
+<th>E</th>
+<td></td><td></td><td></td><td></td>
+<td>—</td>
+<td class="overlap-high">59.8%</td>
+<td class="overlap-high">82.8%</td>
+</tr>
+<tr>
+<th>F</th>
+<td></td><td></td><td></td><td></td><td></td>
+<td>—</td>
+<td class="overlap-high">66.9%</td>
+</tr>
+<tr>
+<th>G</th>
+<td></td><td></td><td></td><td></td><td></td><td></td>
+<td>—</td>
+</tr>
+</table>
+</div>
+
+<!-- 조합 상세 -->
+<h2>4. 조합별 상세 (측정 가능한 13개)</h2>
+
+<div class="card">
+<table>
+<tr><th>조합</th><th>개별 Reach 합</th><th>합산 Unique Reach</th><th>중복 인원</th><th>중복율</th><th>판정</th></tr>
+<tr><td>A + G</td><td style="text-align:right">195,285</td><td style="text-align:right">181,327</td><td style="text-align:right;color:#fca5a5">13,958</td><td style="text-align:right"><strong>86.8%</strong></td><td><span class="tag tag-red">매우높음</span></td></tr>
+<tr><td>E + G</td><td style="text-align:right">248,446</td><td style="text-align:right">191,133</td><td style="text-align:right;color:#fca5a5">57,313</td><td style="text-align:right"><strong>82.8%</strong></td><td><span class="tag tag-red">매우높음</span></td></tr>
+<tr><td>A + F</td><td style="text-align:right">124,308</td><td style="text-align:right">112,333</td><td style="text-align:right;color:#fca5a5">11,975</td><td style="text-align:right"><strong>74.5%</strong></td><td><span class="tag tag-red">매우높음</span></td></tr>
+<tr><td>A + E</td><td style="text-align:right">85,317</td><td style="text-align:right">74,225</td><td style="text-align:right;color:#fca5a5">11,092</td><td style="text-align:right"><strong>69.0%</strong></td><td><span class="tag tag-red">매우높음</span></td></tr>
+<tr><td>F + G</td><td style="text-align:right">287,437</td><td style="text-align:right">214,989</td><td style="text-align:right;color:#fca5a5">72,448</td><td style="text-align:right"><strong>66.9%</strong></td><td><span class="tag tag-red">매우높음</span></td></tr>
+<tr><td>E + F</td><td style="text-align:right">177,469</td><td style="text-align:right">136,078</td><td style="text-align:right;color:#fca5a5">41,391</td><td style="text-align:right"><strong>59.8%</strong></td><td><span class="tag tag-yellow">주의</span></td></tr>
+<tr><td>B + G</td><td style="text-align:right">180,213</td><td style="text-align:right">179,873</td><td style="text-align:right">340</td><td style="text-align:right"><strong>33.8%</strong></td><td><span class="tag tag-yellow">주의</span></td></tr>
+<tr><td>B + E</td><td style="text-align:right">70,245</td><td style="text-align:right">69,913</td><td style="text-align:right">332</td><td style="text-align:right"><strong>33.0%</strong></td><td><span class="tag tag-yellow">주의</span></td></tr>
+<tr><td>C + E</td><td style="text-align:right">194,834</td><td style="text-align:right">186,099</td><td style="text-align:right">8,735</td><td style="text-align:right"><strong>12.6%</strong></td><td><span class="tag tag-green">양호</span></td></tr>
+<tr><td>C + G</td><td style="text-align:right">304,802</td><td style="text-align:right">289,198</td><td style="text-align:right">15,604</td><td style="text-align:right"><strong>12.4%</strong></td><td><span class="tag tag-green">양호</span></td></tr>
+<tr><td>B + F</td><td style="text-align:right">109,236</td><td style="text-align:right">109,118</td><td style="text-align:right">118</td><td style="text-align:right"><strong>11.7%</strong></td><td><span class="tag tag-green">양호</span></td></tr>
+<tr><td>C + F</td><td style="text-align:right">233,825</td><td style="text-align:right">225,093</td><td style="text-align:right">8,732</td><td style="text-align:right"><strong>8.1%</strong></td><td><span class="tag tag-green">양호</span></td></tr>
+<tr><td>A + C</td><td style="text-align:right">141,673</td><td style="text-align:right">140,617</td><td style="text-align:right">1,056</td><td style="text-align:right"><strong>6.6%</strong></td><td><span class="tag tag-green">양호</span></td></tr>
+</table>
+</div>
+
+<!-- 측정불가 조합 -->
+<h2>5. 측정불가 조합 (8개)</h2>
+<div class="card card-yellow">
+<p style="margin-bottom:.8rem;color:var(--muted)">합산 unique reach가 개별 reach 단순 합보다 큰 경우. Meta API가 샘플링 기반 추정치를 반환하기 때문에 소규모 오차(±2,000명 내외) 발생. D세트가 관련된 조합에서 집중 발생.</p>
+<table>
+<tr><th>조합</th><th>단순합</th><th>API 합산 Reach</th><th>초과량</th></tr>
+<tr><td>D + G</td><td style="text-align:right">271,689</td><td style="text-align:right">273,712</td><td style="text-align:right;color:var(--yellow)">+2,023</td></tr>
+<tr><td>C + D</td><td style="text-align:right">218,077</td><td style="text-align:right">219,491</td><td style="text-align:right;color:var(--yellow)">+1,414</td></tr>
+<tr><td>B + D</td><td style="text-align:right">93,488</td><td style="text-align:right">94,183</td><td style="text-align:right;color:var(--yellow)">+695</td></tr>
+<tr><td>A + D</td><td style="text-align:right">108,560</td><td style="text-align:right">109,222</td><td style="text-align:right;color:var(--yellow)">+662</td></tr>
+<tr><td>B + C</td><td style="text-align:right">126,601</td><td style="text-align:right">127,215</td><td style="text-align:right;color:var(--yellow)">+614</td></tr>
+<tr><td>D + F</td><td style="text-align:right">200,712</td><td style="text-align:right">201,144</td><td style="text-align:right;color:var(--yellow)">+432</td></tr>
+<tr><td>D + E</td><td style="text-align:right">161,721</td><td style="text-align:right">161,948</td><td style="text-align:right;color:var(--yellow)">+227</td></tr>
+<tr><td>A + B</td><td style="text-align:right">17,084</td><td style="text-align:right">17,309</td><td style="text-align:right;color:var(--yellow)">+225</td></tr>
+</table>
+<p style="margin-top:.8rem;color:var(--muted)">D세트(튼사렌미스트)가 6/8건에 포함 — D세트의 Reach 추정치가 불안정한 것으로 보임.</p>
+</div>
+
+<!-- 인사이트 -->
+<h2>6. 인사이트</h2>
+
+<div class="card card-red">
+<h3>캠페인3 "상세광범위+" 세트 간 중복 심각</h3>
+<ul>
+<li>E(퓨어렌) + G(튼사렌): <strong>82.8%</strong> — 거의 같은 사람에게 노출</li>
+<li>F(오일미스트) + G(튼사렌): <strong>66.9%</strong></li>
+<li>E(퓨어렌) + F(오일미스트): <strong>59.8%</strong></li>
+<li>3개 세트가 비슷한 오디언스 풀을 나눠 쓰고 있음</li>
+</ul>
+</div>
+
+<div class="card card-red">
+<h3>캠페인1 세트A, 캠페인3 세트와 크로스 중복</h3>
+<ul>
+<li>A + G: <strong>86.8%</strong> — 캠페인이 다른데도 타겟이 거의 동일</li>
+<li>A + F: <strong>74.5%</strong>, A + E: <strong>69.0%</strong></li>
+<li>세트A(값극대화)가 캠페인3 세트들과 같은 오디언스를 타겟하고 있음</li>
+</ul>
+</div>
+
+<div class="card card-green">
+<h3>캠페인2 "콘텐츠조회" 세트는 분리 양호</h3>
+<ul>
+<li>C(살성크림) + F(오일미스트): <strong>8.1%</strong></li>
+<li>A(값극대화) + C(살성크림): <strong>6.6%</strong></li>
+<li>C(살성크림) + G(튼사렌): <strong>12.4%</strong></li>
+<li>콘텐츠조회 최적화 세트가 수최적화 세트와 다른 오디언스를 잡고 있음</li>
+</ul>
+</div>
+
+<div class="highlight">
+<strong>결론:</strong> 타겟중복율 기능은 Meta Insights API (<span class="code">level=account</span> 필터링)로 실측 데이터 기반 구현 가능. 일부 조합에서 샘플링 오차 발생하나 대다수 조합에서 유의미한 중복율 산출 확인.
+</div>
+
+</body>
+</html>

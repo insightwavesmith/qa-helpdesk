@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TASK 3 타겟중복 코드리뷰 보고서</title>
+<style>
+:root{--primary:#F75D5D;--bg:#0f172a;--card:#1e293b;--border:#334155;--text:#e2e8f0;--muted:#94a3b8;--green:#22c55e;--yellow:#eab308;--red:#ef4444;--blue:#3b82f6}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:2rem;max-width:1100px;margin:0 auto}
+h1{font-size:1.8rem;margin-bottom:.3rem;color:#fff}
+h2{font-size:1.3rem;margin:2rem 0 1rem;padding-bottom:.5rem;border-bottom:2px solid var(--primary);color:#fff}
+h3{font-size:1.05rem;margin:1.5rem 0 .7rem;color:#cbd5e1}
+.subtitle{color:var(--muted);margin-bottom:2rem}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1rem 0}
+.card-red{border-left:4px solid var(--red)}
+.card-yellow{border-left:4px solid var(--yellow)}
+.card-green{border-left:4px solid var(--green)}
+.card-blue{border-left:4px solid var(--blue)}
+table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.9rem}
+th,td{padding:.6rem .8rem;text-align:left;border-bottom:1px solid var(--border)}
+th{background:rgba(255,255,255,.05);font-weight:600;color:#cbd5e1}
+code{background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;font-family:monospace;font-size:.85rem;color:#fbbf24}
+ul,ol{padding-left:1.5rem;margin:.5rem 0}
+li{margin:.3rem 0}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600}
+.tag-low{background:rgba(34,197,94,.3);color:#86efac}
+.tag-med{background:rgba(234,179,8,.3);color:#fde047}
+.tag-high{background:rgba(239,68,68,.3);color:#fca5a5}
+pre{background:#0c1322;padding:1rem;border-radius:8px;font-size:.85rem;color:#93c5fd;margin:.5rem 0;white-space:pre-wrap}
+.highlight{background:rgba(247,93,93,.1);border:1px solid rgba(247,93,93,.3);border-radius:8px;padding:1rem 1.2rem;margin:1rem 0}
+</style>
+</head>
+<body>
+
+<h1>TASK 3 타겟중복 코드리뷰 보고서</h1>
+<p class="subtitle">분석일: 2026-02-25 | 신규 3개 + 수정 3개 파일</p>
+
+<div class="highlight">
+<strong>핵심 위험 3건</strong>
+<ol style="margin-top:.5rem">
+<li><strong>Meta API rate limit</strong> — adset 10개=45조합, 20개=190조합. rate limit 초과 위험</li>
+<li><strong>real-dashboard.tsx 탭 구조</strong> — 기존 성과 요약 깨지지 않도록 주의</li>
+<li><strong>TASK SQL에 RLS 누락</strong> — 보안 정책 추가 필수</li>
+</ol>
+</div>
+
+<h2>T1. adset_overlap_cache 테이블</h2>
+<p><span class="tag tag-low">위험 LOW</span></p>
+
+<div class="card card-blue">
+<h3>신규 파일</h3>
+<ul>
+<li><code>supabase/migrations/00026_adset_overlap_cache.sql</code> (~20줄)</li>
+<li><code>database.ts</code>에 Row/Insert/Update 타입 추가</li>
+</ul>
+
+<h3>리뷰 발견사항</h3>
+<ul>
+<li><strong>RLS 누락</strong>: TASK SQL에 RLS 없음 → SELECT: service_role 또는 본인, INSERT/UPDATE: service_role only</li>
+<li><strong>adset_pair 형식</strong>: 두 ID 정렬 조합 (예: <code>"123_456"</code>) → TASK에 명시 안 됨, 구현 시 정의 필요</li>
+<li><strong>TTL</strong>: cached_at 기반 만료 로직 TASK에 없음 → 24시간 권장</li>
+</ul>
+</div>
+
+<h2>T2. 타겟중복 API</h2>
+<p><span class="tag tag-high">위험 HIGH</span> (Meta API rate limit)</p>
+
+<div class="card card-red">
+<h3>신규 파일</h3>
+<p><code>src/app/api/protractor/overlap/route.ts</code> (~150줄)</p>
+
+<h3>재사용 가능한 기존 패턴</h3>
+<ul>
+<li>인증: <code>_shared.ts</code>의 <code>requireProtractorAccess()</code> + <code>verifyAccountOwnership()</code></li>
+<li>Meta API: <code>collect-daily/route.ts:120-146</code>의 <code>fetchAccountInsights()</code></li>
+<li>토큰: <code>process.env.META_ACCESS_TOKEN</code> (전역)</li>
+</ul>
+
+<h3>핵심 위험: API rate limit</h3>
+<table>
+<tr><th>adset 수</th><th>조합 수</th><th>총 API 호출</th><th>위험</th></tr>
+<tr><td>5개</td><td>10</td><td>~16</td><td><span class="tag tag-low">안전</span></td></tr>
+<tr><td>10개</td><td>45</td><td>~50</td><td><span class="tag tag-med">주의</span></td></tr>
+<tr><td>20개</td><td>190</td><td>~200</td><td><span class="tag tag-high">초과</span></td></tr>
+</table>
+<p style="margin-top:.8rem"><strong>대안</strong>: 개별 adset reach는 <code>daily_ad_insights</code>에서 DB 조회 (이미 adset_id, reach 컬럼 존재). 2개씩 조합 overlap만 Meta API 호출로 제한.</p>
+
+<h3>추가 리뷰</h3>
+<ul>
+<li>0 나누기 방지 + 음수 방지 (<code>Math.max(0, rate)</code>)</li>
+<li>기간 7일 미만 → 400 에러 + 안내</li>
+<li>응답에 <code>cached_at</code> 포함 → 프론트 "마지막 분석 시각" 표시</li>
+<li><code>force=true</code> 파라미터 → 캐시 무시 재호출</li>
+<li>총 제한시간 설정 필요 (기존 패턴: <code>AbortSignal.timeout(60_000)</code>)</li>
+</ul>
+</div>
+
+<h2>T3. OverlapAnalysis 컴포넌트</h2>
+<p><span class="tag tag-med">위험 MEDIUM</span></p>
+
+<div class="card card-yellow">
+<h3>신규 + 수정 파일</h3>
+<table>
+<tr><th>파일</th><th>작업</th><th>예상</th></tr>
+<tr><td><code>OverlapAnalysis.tsx</code></td><td>신규</td><td>~250줄</td></tr>
+<tr><td><code>index.ts</code></td><td>export 추가</td><td>1줄</td></tr>
+<tr><td><code>real-dashboard.tsx</code></td><td>탭 구조 + state + effect</td><td>~40줄 수정</td></tr>
+</table>
+
+<h3>탭 구조</h3>
+<ul>
+<li>Header + PeriodSelector는 탭 <strong>밖에</strong> (공통)</li>
+<li><code>shadcn/ui Tabs</code> 이미 설치됨</li>
+<li>기존 JSX를 <code>TabsContent value="summary"</code>로 감싸기만</li>
+</ul>
+
+<h3>UI 구현</h3>
+<ul>
+<li>도넛: <code>recharts PieChart</code> + <code>innerRadius</code> (이미 설치됨)</li>
+<li>위험경고: 60%↑만, 캠페인명+세트명 그대로</li>
+<li>테이블: <code>ad-metrics-table.tsx</code> 구조 참고</li>
+<li>기간 7일 미만 시 PeriodSelector "어제" 프리셋 비활성 또는 안내 필요</li>
+</ul>
+</div>
+
+<h2>종합</h2>
+
+<div class="card">
+<table>
+<tr><th>태스크</th><th>복잡도</th><th>위험</th><th>핵심</th></tr>
+<tr><td>T1 (DB)</td><td>LOW</td><td><span class="tag tag-low">LOW</span></td><td>RLS 추가 필요</td></tr>
+<tr><td>T2 (API)</td><td>HIGH</td><td><span class="tag tag-high">HIGH</span></td><td>rate limit 대응</td></tr>
+<tr><td>T3 (UI)</td><td>MEDIUM</td><td><span class="tag tag-med">MED</span></td><td>탭 구조 변경</td></tr>
+</table>
+</div>
+
+</body>
+</html>

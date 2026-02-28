@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8"><title>P1a 핫픽스 리뷰 — 타임아웃 수정</title></head>
+<body>
+<h1>P1a 핫픽스 리뷰</h1>
+<p><strong>날짜:</strong> 2026-02-16</p>
+<p><strong>범위:</strong> 상수값 2개 + export 1줄</p>
+<h2>변경 사항</h2>
+<ul>
+<li>knowledge.ts TIMEOUT_MS: 30_000 → 55_000</li>
+<li>knowledge.ts 에러 메시지: "(30초)" → "(55초)"</li>
+<li>questions.ts: maxDuration = 60 export 추가</li>
+</ul>
+<h2>리스크 평가</h2>
+<p>LOW — 상수값 변경만. 로직 변경 없음.</p>
+<h2>판정: PASS</h2>
+</body>
+</html>

@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>통합 데이터 아키텍처 리뷰 보고서</title>
+  <style>
+    :root { --primary: #F75D5D; --bg: #fff; --text: #1a1a1a; --muted: #6b7280; --border: #e5e7eb; --code-bg: #f3f4f6; --green: #16a34a; --green-bg: #dcfce7; --blue: #2563eb; --blue-bg: #dbeafe; --amber: #d97706; --amber-bg: #fef3c7; --red: #dc2626; --red-bg: #fee2e2; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+    h2 { font-size: 22px; font-weight: 700; margin-top: 48px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--primary); }
+    h3 { font-size: 17px; font-weight: 700; margin-top: 28px; margin-bottom: 10px; }
+    h4 { font-size: 15px; font-weight: 600; margin-top: 20px; margin-bottom: 8px; }
+    p, li { font-size: 15px; }
+    .subtitle { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+    .box { padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 20px 0; font-size: 14px; }
+    .blue { background: var(--blue-bg); border-left: 4px solid var(--blue); }
+    .amber { background: var(--amber-bg); border-left: 4px solid var(--amber); }
+    .green { background: var(--green-bg); border-left: 4px solid var(--green); }
+    .red { background: var(--red-bg); border-left: 4px solid var(--red); }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+    th, td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; }
+    th { background: var(--code-bg); font-weight: 600; }
+    code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', monospace; }
+    pre { background: var(--code-bg); padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 12px 0; }
+    pre code { background: none; padding: 0; }
+    ul, ol { padding-left: 24px; margin: 8px 0; }
+    li { margin: 4px 0; }
+    .score { display: inline-block; font-size: 40px; font-weight: 800; color: var(--primary); margin-right: 12px; vertical-align: middle; }
+    .score-label { display: inline-block; vertical-align: middle; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+    .badge-green { background: var(--green-bg); color: var(--green); }
+    .badge-amber { background: var(--amber-bg); color: var(--amber); }
+    .badge-red { background: var(--red-bg); color: var(--red); }
+    .badge-blue { background: var(--blue-bg); color: var(--blue); }
+    .mermaid { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin: 16px 0; text-align: center; }
+  </style>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'neutral', flowchart: { curve: 'basis' } });
+  </script>
+</head>
+<body>
+
+<h1>통합 데이터 아키텍처 리뷰 보고서</h1>
+<p class="subtitle">unified-data-architecture.md vs 실제 코드 대조 | 2026-02-16 | 리뷰어: 에이전트팀</p>
+
+<!-- ============================== 1. 요약 ============================== -->
+<h2>1. 종합 평가</h2>
+
+<div>
+  <span class="score">75</span>
+  <span class="score-label">
+    <strong>/ 100</strong><br>
+    <span style="font-size:14px; color:var(--muted)">아키텍처 문서 ↔ 실제 코드 일치도</span>
+  </span>
+</div>
+
+<div class="box blue">
+  <strong>핵심 결론</strong><br>
+  아키텍처 문서(unified-data-architecture.md)는 <strong>방향성은 올바르나, 현재 코드와의 간극이 존재</strong>한다.<br>
+  L0(Data)와 L1(Services)은 잘 분리되어 있으나, L3(Distribution)에서 L0을 직접 호출하는 <strong>레이어 역전 7건</strong> 발견.
+  제안된 3개 서비스 중 <strong>KnowledgeService만 구현 완료</strong>. PerformanceService와 CustomerService는 미구현.
+</div>
+
+<table>
+  <tr><th>항목</th><th>점수</th><th>세부</th></tr>
+  <tr><td>레이어 분리 준수</td><td><span class="badge badge-amber">70</span></td><td>L0/L1 우수, L3→L0 역전 7건</td></tr>
+  <tr><td>서비스 구현도</td><td><span class="badge badge-amber">33%</span></td><td>KS 완료, PS/CS 미구현 (문서에 ★ 신규 명시)</td></tr>
+  <tr><td>데이터 도메인 정합성</td><td><span class="badge badge-green">90</span></td><td>7개 도메인 대부분 일치</td></tr>
+  <tr><td>ADR 현실 반영</td><td><span class="badge badge-green">85</span></td><td>ADR-1~2 이행 완료, ADR-3~6 미착수</td></tr>
+  <tr><td>피드백 루프 구현</td><td><span class="badge badge-amber">50%</span></td><td>Loop1(QA) 완료, Loop2~4 부분/미구현</td></tr>
+</table>
+
+<!-- ============================== 2. 레이어 매핑 ============================== -->
+<h2>2. 레이어 매핑 분석 (T1)</h2>
+
+<h3>2-1. 파일별 레이어 할당표</h3>
+
+<table>
+  <tr><th>레이어</th><th>경로 패턴</th><th>주요 파일</th><th>상태</th></tr>
+  <tr>
+    <td><strong>L0: Data</strong></td>
+    <td><code>src/lib/supabase/*</code><br><code>src/types/*</code></td>
+    <td>
+      <code>client.ts</code> — 브라우저 클라이언트 (ANON_KEY)<br>
+      <code>server.ts</code> — 서버 팩토리 (createClient + createServiceClient)<br>
+      <code>database.ts</code> — 자동생성 타입<br>
+      <code>supabase.ts</code> — 클라이언트 타입
+    </td>
+    <td><span class="badge badge-green">정상</span></td>
+  </tr>
+  <tr>
+    <td><strong>L1: Services</strong></td>
+    <td><code>src/lib/*.ts</code><br><code>src/lib/protractor/*</code><br><code>src/lib/diagnosis/*</code></td>
+    <td>
+      <code>knowledge.ts</code> — KnowledgeService (RAG + Opus 4.6)<br>
+      <code>gemini.ts</code> — 임베딩 생성<br>
+      <code>rag.ts</code> — RAG 오케스트레이션<br>
+      <code>email-renderer.ts</code> — 이메일 템플릿 렌더링<br>
+      <code>email-templates.ts</code> — 템플릿 + URL 유틸<br>
+      <code>markdown.ts</code>, <code>html-to-markdown.ts</code> — 변환 유틸<br>
+      <code>protractor/aggregate.ts</code> — 성과 집계 함수<br>
+      <code>diagnosis/*</code> — 진단 엔진
+    </td>
+    <td><span class="badge badge-green">정상</span></td>
+  </tr>
+  <tr>
+    <td><strong>L2: Use Cases</strong></td>
+    <td><code>src/actions/*.ts</code><br><code>src/app/api/*/route.ts</code></td>
+    <td>
+      <code>actions/questions.ts</code> — Q&A 유스케이스<br>
+      <code>actions/contents.ts</code> — 콘텐츠 유스케이스<br>
+      <code>actions/admin.ts</code> — 관리자 유스케이스<br>
+      <code>api/protractor/*</code> — 성과 데이터 API<br>
+      <code>api/admin/email/*</code> — 이메일 발송 API<br>
+      <code>api/diagnose/*</code> — AI 진단 API
+    </td>
+    <td><span class="badge badge-amber">부분 역전</span></td>
+  </tr>
+  <tr>
+    <td><strong>L3: Distribution</strong></td>
+    <td><code>src/app/(main)/*</code><br><code>src/components/*</code></td>
+    <td>
+      <code>/dashboard</code> — 홈 대시보드<br>
+      <code>/questions/*</code> — Q&A 게시판<br>
+      <code>/posts/*</code> — 정보공유<br>
+      <code>/protractor/*</code> — 총가치각도기<br>
+      <code>/admin/*</code> — 관리자 페이지<br>
+      <code>components/ui/*</code> — 디자인 시스템<br>
+      <code>components/content/*</code> — 콘텐츠 편집 UI
+    </td>
+    <td><span class="badge badge-red">역전 다수</span></td>
+  </tr>
+</table>
+
+<h3>2-2. 레이어 역전 목록 (7건)</h3>
+
+<table>
+  <tr><th>#</th><th>파일</th><th>역전 유형</th><th>심각도</th><th>내용</th></tr>
+  <tr>
+    <td>1</td>
+    <td><code>components/content/<br>mdx-editor-wrapper.tsx</code></td>
+    <td>L3 → L0</td>
+    <td><span class="badge badge-red">HIGH</span></td>
+    <td>이미지 업로드 시 <code>createClient()</code>로 Supabase Storage 직접 접근 (L29, L36-58)</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><code>components/content/<br>detail-sidebar.tsx</code></td>
+    <td>L3 → L0</td>
+    <td><span class="badge badge-red">HIGH</span></td>
+    <td>썸네일 업로드에서 동일한 Storage 직접 접근 패턴</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><code>components/layout/<br>student-header.tsx</code></td>
+    <td>L3 → L0</td>
+    <td><span class="badge badge-amber">MEDIUM</span></td>
+    <td><code>supabase.auth.signOut()</code> 직접 호출 (L25-30)</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><code>components/layout/<br>app-sidebar.tsx</code></td>
+    <td>L3 → L0</td>
+    <td><span class="badge badge-amber">MEDIUM</span></td>
+    <td>동일한 로그아웃 직접 호출 패턴</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><code>components/dashboard/<br>Sidebar.tsx</code></td>
+    <td>L3 → L0</td>
+    <td><span class="badge badge-amber">MEDIUM</span></td>
+    <td>동일한 로그아웃 직접 호출 패턴</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td><code>api/admin/email/<br>send/route.ts</code></td>
+    <td>L3에 L1 로직</td>
+    <td><span class="badge badge-red">HIGH</span></td>
+    <td>200줄+ 이메일 발송 비즈니스 로직이 API 라우트에 직접 포함</td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td><code>api/posts/<br>route.ts</code></td>
+    <td>L2 미위임</td>
+    <td><span class="badge badge-amber">MEDIUM</span></td>
+    <td>actions/posts.ts 위임 없이 DB 직접 INSERT</td>
+  </tr>
+</table>
+
+<div class="box amber">
+  <strong>핵심 패턴</strong>: 역전의 대부분은 두 가지 유형<br>
+  1) <strong>클라이언트 컴포넌트의 Storage/Auth 직접 접근</strong> — <code>actions/storage.ts</code>, <code>actions/auth.ts</code>로 추출 가능<br>
+  2) <strong>API 라우트의 비즈니스 로직 내장</strong> — L2(actions) 또는 L1(service)으로 추출 필요
+</div>
+
+<!-- ============================== 3. 아키텍처 다이어그램 ============================== -->
+<h2>3. 아키텍처 다이어그램</h2>
+
+<h3>3-1. 현재 레이어 구조 + 역전 표시</h3>
+
+<div class="mermaid">
+<pre class="mermaid">
+graph TB
+  subgraph L3["Layer 3: Distribution"]
+    UI["웹 UI (pages)"]
+    COMP["Components"]
+    API["API Routes"]
+  end
+
+  subgraph L2["Layer 2: Use Cases"]
+    ACT["Server Actions<br/>questions.ts, contents.ts, admin.ts"]
+  end
+
+  subgraph L1["Layer 1: Services"]
+    KS["KnowledgeService<br/>knowledge.ts ✅"]
+    PS["PerformanceService<br/>aggregate.ts 🔧 분산"]
+    CS["CustomerService<br/>❌ 미구현"]
+    EMAIL["EmailRenderer<br/>email-renderer.ts"]
+    DIAG["DiagnosisEngine<br/>diagnosis/*"]
+  end
+
+  subgraph L0["Layer 0: Data Store"]
+    DB["Supabase PostgreSQL"]
+    VEC["Vector Store<br/>lecture_chunks"]
+    STOR["Supabase Storage"]
+    AUTH["Supabase Auth"]
+  end
+
+  UI --> ACT
+  COMP --> ACT
+  API --> ACT
+  ACT --> KS
+  ACT --> PS
+  ACT --> EMAIL
+  ACT --> DIAG
+  KS --> VEC
+  KS --> DB
+  PS --> DB
+  EMAIL --> DB
+
+  COMP -.->|"❌ 역전 #1-2<br/>Storage 직접 접근"| STOR
+  COMP -.->|"❌ 역전 #3-5<br/>Auth 직접 호출"| AUTH
+  API -.->|"❌ 역전 #6<br/>이메일 로직 내장"| DB
+
+  style L3 fill:#dbeafe,stroke:#2563eb
+  style L2 fill:#fef3c7,stroke:#d97706
+  style L1 fill:#dcfce7,stroke:#16a34a
+  style L0 fill:#f3f4f6,stroke:#6b7280
+</pre>
+</div>
+
+<h3>3-2. 데이터 도메인 연결도</h3>
+
+<div class="mermaid">
+<pre class="mermaid">
+erDiagram
+  profiles ||--o{ ad_accounts : "user_id"
+  profiles ||--o{ questions : "author_id"
+  profiles ||--o{ answers : "author_id"
+  profiles ||--o{ contents : "author_id"
+  profiles }o--|| cohorts : "cohort (문자열 ═ FK 없음)"
+
+  ad_accounts ||--o{ daily_ad_insights : "account_id"
+  ad_accounts ||--o{ daily_lp_metrics : "account_id"
+
+  contents ||--o{ email_logs : "content_id"
+  contents ||--o{ content_sources : "content_id"
+  email_logs ||--o{ email_sends : "log_id"
+
+  questions ||--o{ answers : "question_id"
+
+  lecture_chunks ||--|| knowledge_usage : "KS가 검색+로깅"
+</pre>
+</div>
+
+<h3>3-3. 피드백 루프 현황</h3>
+
+<div class="mermaid">
+<pre class="mermaid">
+graph LR
+  subgraph Loop1["Loop 1: QA 피드백 ✅ 구현됨"]
+    Q1[질문] --> AI1[AI 답변] --> AP1[관리자 승인] --> RE1[qa_archive 재임베딩]
+    RE1 -.-> AI1
+  end
+
+  subgraph Loop2["Loop 2: 콘텐츠 성과 ⚠️ 부분 구현"]
+    PUB[콘텐츠 발행] --> SEND[이메일 발송] --> TRACK[열람/클릭 추적]
+    TRACK -.->|"❌ 미구현"| NEXT[다음 콘텐츠 개선]
+  end
+
+  subgraph Loop3["Loop 3: 성과→콘텐츠 ❌ 미구현"]
+    PERF[수강생 성과] -.->|"getPerformanceContext() 없음"| CONT[콘텐츠 소재]
+  end
+
+  subgraph Loop4["Loop 4: 리드→수강생 ❌ 미구현"]
+    LEAD[리드 유입] -.->|"UTM 추적 없음"| CONV[가입 전환]
+  end
+
+  style Loop1 fill:#dcfce7,stroke:#16a34a
+  style Loop2 fill:#fef3c7,stroke:#d97706
+  style Loop3 fill:#fee2e2,stroke:#dc2626
+  style Loop4 fill:#fee2e2,stroke:#dc2626
+</pre>
+</div>
+
+<!-- ============================== 4. ADR 의견 ============================== -->
+<h2>4. ADR 검증 의견 (T2)</h2>
+
+<h3>ADR-3: PerformanceService 통합</h3>
+
+<table>
+  <tr><th>문서</th><th>현재 코드</th></tr>
+  <tr>
+    <td>aggregate.ts + API 라우트를 단일 PerformanceService로 통합</td>
+    <td>
+      <code>aggregate.ts</code> — 순수 집계 함수 (AccountSummary, SummaryCards, Top5Ads, DailyTrend, Funnel)<br>
+      <code>api/protractor/insights/route.ts</code> — daily_ad_insights 조회<br>
+      <code>api/protractor/lp-metrics/route.ts</code> — daily_lp_metrics 조회<br>
+      <code>api/protractor/benchmarks/route.ts</code> — EAV 피벗 + 매핑<br>
+      <code>api/protractor/accounts/route.ts</code> — 계정 목록 + 권한 체크
+    </td>
+  </tr>
+</table>
+
+<div class="box green">
+  <strong>의견: 동의 (조건부)</strong><br>
+  성과 로직이 3개 API 라우트 + 유틸 파일에 분산되어 있어 통합 가치가 있다.
+  단, <strong>현재 aggregate.ts의 순수 함수 구조는 장점</strong>이므로, 통합 시에도 집계 함수는 순수 함수로 유지하고
+  DB 접근 + 인증만 PerformanceService 클래스로 래핑하는 방식을 권장.
+  <br><br>
+  <strong>제안 구조:</strong><br>
+  <code>src/lib/performance.ts</code> (Service) → <code>aggregate.ts</code> (순수 함수) 임포트<br>
+  API 라우트는 <code>performance.ts</code>만 호출
+</div>
+
+<h3>ADR-4: 성과 → 콘텐츠 연결 (systemPromptOverride)</h3>
+
+<table>
+  <tr><th>문서</th><th>현재 코드</th></tr>
+  <tr>
+    <td><code>getPerformanceContext()</code>로 성과 텍스트 생성 → KS 시스템 프롬프트에 주입</td>
+    <td>
+      <code>systemPromptOverride</code>: <strong>이미 구현됨</strong> (knowledge.ts:33, 203)<br>
+      <code>getPerformanceContext()</code>: <strong>미구현</strong><br>
+      실제 사용: <code>actions/contents.ts</code>에서 reviseContentWithAI 시 systemPromptOverride 주입 중
+    </td>
+  </tr>
+</table>
+
+<div class="box green">
+  <strong>의견: 강하게 동의</strong><br>
+  인프라는 이미 준비되어 있다. <code>systemPromptOverride</code>가 knowledge.ts에 구현 완료되었고,
+  contents.ts에서 실제로 사용 중이다.<br>
+  <strong>남은 작업:</strong> <code>getPerformanceContext()</code> 함수 구현만 하면 KS 코어 변경 없이 바로 연결 가능.
+  문서의 대안(lecture_chunks에 성과 데이터 임베딩) 기각 결정도 옳다.
+</div>
+
+<h3>ADR-5: cohort FK 강화</h3>
+
+<table>
+  <tr><th>문서</th><th>현재 코드</th></tr>
+  <tr>
+    <td><code>profiles.cohort</code> (문자열) → <code>profiles.cohort_id</code> (FK) 마이그레이션</td>
+    <td>
+      <code>profiles.cohort</code>: <strong>string | null</strong>, FK 제약 없음<br>
+      <code>cohorts</code> 테이블: id, name, short_name, is_active 존재<br>
+      다른 테이블(<code>assignments</code>, <code>curriculum</code>): 이미 <code>cohort_id</code> FK 사용
+    </td>
+  </tr>
+</table>
+
+<div class="box amber">
+  <strong>의견: 동의 (우선순위 상향 필요)</strong><br>
+  profiles.cohort만 문자열 매칭이고, assignments/curriculum 등은 이미 cohort_id FK를 사용하여 <strong>스키마 불일치</strong>가 존재한다.
+  기수별 통계(getCohortStats)와 수강 전후 비교(getBeforeAfter)의 정확성을 위해 반드시 필요.
+  <br><br>
+  <strong>주의:</strong> 기존 profiles에 cohort=NULL인 레코드가 있을 수 있으므로, 마이그레이션 시 NULL 허용 + 기본값 설정 전략 필요.
+  <br>
+  <strong>로드맵 제안:</strong> 현재 Phase 6 → <strong>Phase 1로 앞당길 것</strong> (데이터 정합성은 모든 서비스의 기반)
+</div>
+
+<h3>ADR-6: role_changed_at 추가</h3>
+
+<table>
+  <tr><th>문서</th><th>현재 코드</th></tr>
+  <tr>
+    <td>profiles에 <code>role_changed_at</code> 컬럼 추가, 역할 변경 시 자동 갱신</td>
+    <td>
+      <code>role_changed_at</code>: <strong>미구현</strong><br>
+      역할 변경: <code>actions/admin.ts</code>의 <code>approveMember()</code>, <code>rejectMember()</code>에서 role 값만 업데이트<br>
+      타임스탬프 기록: <code>updated_at</code>만 존재 (role 전용 아님)
+    </td>
+  </tr>
+</table>
+
+<div class="box green">
+  <strong>의견: 동의</strong><br>
+  수강 전후 비교(Before/After)의 기준점으로 필수. 현재는 "언제 수강생이 되었는지" 알 수 없다.
+  <code>updated_at</code>은 프로필 수정마다 갱신되므로 역할 변경 시점 추적에 부적합.
+  <br><br>
+  별도 <code>role_history</code> 테이블 대안은 문서 판단대로 과도함. 단일 컬럼이면 충분.
+  <br>
+  <strong>구현:</strong> ADR-5와 함께 L0 스키마 패치로 묶어 진행 권장.
+</div>
+
+<!-- ============================== 5. 누락 분석 ============================== -->
+<h2>5. 누락 사항 분석 (T3)</h2>
+
+<h3>5-1. 구현 누락</h3>
+
+<table>
+  <tr><th>#</th><th>문서 정의</th><th>현재 상태</th><th>영향</th></tr>
+  <tr>
+    <td>1</td>
+    <td><code>PerformanceService</code> — 통합 성과 서비스</td>
+    <td>❌ 미구현 (aggregate.ts + API 라우트에 분산)</td>
+    <td>Phase 2~7 전체 블로킹</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><code>CustomerService</code> — 고객 여정 관리</td>
+    <td>❌ 미구현 (admin actions + API 라우트에 분산)</td>
+    <td>회원 상세 + 성과 연동 불가</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><code>getPerformanceContext()</code> — 성과 통계 텍스트</td>
+    <td>❌ 미구현 (systemPromptOverride 인프라는 완료)</td>
+    <td>Loop 3 (성과→콘텐츠) 연결 불가</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><code>chatbot</code> consumer — 실시간 챗봇</td>
+    <td>⚠️ CONSUMER_CONFIGS에 정의만 존재, 호출부 없음</td>
+    <td>낮음 (향후 기능)</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><code>email_sends.opened_at/clicked_at</code> — 열람/클릭 추적</td>
+    <td>⚠️ 컬럼 존재하나 <strong>데이터 미수집</strong> (sent_at만 기록)</td>
+    <td>Loop 2 (콘텐츠 성과) 피드백 불가</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>리드 UTM 추적 — 유입 경로 분석</td>
+    <td>❌ 미구현</td>
+    <td>Loop 4 (리드→수강생) 추적 불가</td>
+  </tr>
+</table>
+
+<h3>5-2. 문서 정확성 확인</h3>
+
+<table>
+  <tr><th>항목</th><th>문서</th><th>실제</th><th>판정</th></tr>
+  <tr>
+    <td><code>content_sources</code> 테이블</td>
+    <td>Domain D에 정의</td>
+    <td>✅ database.ts에 존재 (id, name, url, feed_type, is_active, last_crawled_at 등)</td>
+    <td><span class="badge badge-green">일치</span></td>
+  </tr>
+  <tr>
+    <td>KS Consumer 패턴</td>
+    <td>qa, newsletter, education, chatbot</td>
+    <td>✅ + webinar, promo 추가 (문서에 미기재)</td>
+    <td><span class="badge badge-amber">문서 업데이트 필요</span></td>
+  </tr>
+  <tr>
+    <td>KS 모델</td>
+    <td>Anthropic API</td>
+    <td>Gemini API (gemini-2.5-flash-preview-05-20) 사용</td>
+    <td><span class="badge badge-red">문서 오류</span></td>
+  </tr>
+  <tr>
+    <td><code>knowledge_usage</code> 테이블</td>
+    <td>Domain C에 정의</td>
+    <td>✅ 최근 구현 완료 (fire-and-forget logging)</td>
+    <td><span class="badge badge-green">일치</span></td>
+  </tr>
+  <tr>
+    <td><code>student_registry</code></td>
+    <td>Domain A에 정의</td>
+    <td>✅ 테이블 존재, matched_profile_id로 profiles 연결</td>
+    <td><span class="badge badge-green">일치</span></td>
+  </tr>
+  <tr>
+    <td>cohort 연결</td>
+    <td>문자열 매칭, FK 없음 (═══ 약한 연결로 표기)</td>
+    <td>✅ 정확 — profiles.cohort는 문자열, FK 없음</td>
+    <td><span class="badge badge-green">일치</span></td>
+  </tr>
+</table>
+
+<div class="box red">
+  <strong>문서 오류 발견</strong><br>
+  문서 §3-1에서 KnowledgeService 의존성을 "Anthropic API (생성)"으로 기술하나,
+  실제 코드는 <strong>Gemini API (gemini-2.5-flash-preview-05-20)</strong>를 사용한다.
+  임베딩도 <strong>gemini-embedding-001</strong>. 문서 수정 필요.
+</div>
+
+<h3>5-3. 엣지 케이스 검증</h3>
+
+<table>
+  <tr><th>시나리오</th><th>문서 예상</th><th>실제 코드 확인</th></tr>
+  <tr>
+    <td>ad_accounts 미연결 수강생</td>
+    <td>빈 값 graceful 처리</td>
+    <td>✅ protractor API 라우트에서 ad_accounts 없으면 빈 배열 반환. UI에서 "계정 미연결" 표시.</td>
+  </tr>
+  <tr>
+    <td>cohort=NULL인 profiles</td>
+    <td>NULL 허용 여부 확인</td>
+    <td>⚠️ <code>profiles.cohort: string | null</code> — NULL 허용. 마이그레이션 시 기본 cohort 또는 NULL FK 전략 필요.</td>
+  </tr>
+  <tr>
+    <td>다중 ad_accounts</td>
+    <td>합산 vs 개별 결정</td>
+    <td>⚠️ 현재 코드: account_id별 개별 조회. 통합 뷰 미구현. PerformanceService에서 정책 결정 필요.</td>
+  </tr>
+  <tr>
+    <td>lecture_chunks 0건</td>
+    <td>프롬프트만으로 답변</td>
+    <td>✅ knowledge.ts: 검색 결과 0건이면 빈 컨텍스트로 generate 진행. 시스템 프롬프트만으로 답변 생성.</td>
+  </tr>
+</table>
+
+<!-- ============================== 6. 로드맵 조정 ============================== -->
+<h2>6. 로드맵 순서 검토</h2>
+
+<h3>문서 원안 vs 조정 제안</h3>
+
+<table>
+  <tr><th>Phase</th><th>문서 원안</th><th>조정 제안</th><th>이유</th></tr>
+  <tr>
+    <td>1</td>
+    <td>PerformanceService 통합</td>
+    <td><strong>cohort FK + role_changed_at</strong> (원 Phase 6)</td>
+    <td>L0 데이터 정합성이 모든 서비스의 기반. FK 없이 서비스 통합하면 나중에 마이그레이션 비용 증가</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>회원 상세 + 성과 연동</td>
+    <td><strong>PerformanceService 통합</strong> (원 Phase 1)</td>
+    <td>L0 정비 후 L1 서비스 구축이 순서</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>getPerformanceContext()</td>
+    <td><strong>getPerformanceContext()</strong> (원안 유지)</td>
+    <td>Phase 2 의존</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>QA/콘텐츠에 성과 주입</td>
+    <td><strong>QA/콘텐츠에 성과 주입</strong> (원안 유지)</td>
+    <td>Phase 3 의존</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>수강생 비교 테이블</td>
+    <td><strong>회원 상세 + 성과 연동</strong> (원 Phase 2)</td>
+    <td>Phase 2 서비스 기반으로 UI 구축</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>cohort FK + role_changed_at</td>
+    <td><strong>수강 전후 비교</strong> (원 Phase 7)</td>
+    <td>Phase 1에서 cohort/role 정비 완료되었으므로 바로 가능</td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td>수강 전후 비교</td>
+    <td><strong>수강생 비교 테이블</strong> (원 Phase 5)</td>
+    <td>UI 계층이므로 서비스 완성 후 진행</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td>콘텐츠 → 리드 UTM 추적</td>
+    <td><strong>이메일 열람/클릭 + UTM 추적</strong> (Phase 8+9 통합)</td>
+    <td>Distribution 레이어 작업을 한번에 묶어 효율화</td>
+  </tr>
+  <tr>
+    <td>9</td>
+    <td>이메일 열람/클릭 분석</td>
+    <td><strong>레이어 역전 정리</strong> (신규)</td>
+    <td>기술 부채 해소. Storage/Auth 직접 접근 제거</td>
+  </tr>
+</table>
+
+<div class="box blue">
+  <strong>핵심 변경: Phase 6 → Phase 1</strong><br>
+  데이터 계층(L0) 정비를 먼저 해야 서비스(L1) 구축이 안정적이다.
+  cohort FK 없이 getCohortStats()를 구현하면 문자열 매칭 오류 위험이 있고,
+  role_changed_at 없이 getBeforeAfter()를 구현하면 기준점이 없다.
+  <br><br>
+  <strong>추가 제안: Phase 9에 "레이어 역전 정리" 신설</strong><br>
+  7건의 레이어 역전은 기능에는 영향 없지만, 아키텍처 일관성과 유지보수성을 위해 정리 필요.
+</div>
+
+<!-- ============================== 7. 결론 ============================== -->
+<h2>7. 결론 및 권고</h2>
+
+<h3>즉시 조치 (문서 수정)</h3>
+<ol>
+  <li>§3-1 KS 의존성: "Anthropic API" → <strong>"Gemini API (gemini-2.5-flash-preview-05-20)"</strong></li>
+  <li>§3-1 Consumer 표: <code>webinar</code>, <code>promo</code> consumer 추가</li>
+  <li>§8 로드맵: Phase 6(cohort FK)을 Phase 1로 재배치</li>
+</ol>
+
+<h3>단기 권고 (다음 스프린트)</h3>
+<ol>
+  <li><strong>L0 스키마 패치</strong>: cohort_id FK 마이그레이션 + role_changed_at 추가</li>
+  <li><strong>이메일 발송 로직 추출</strong>: api/admin/email/send → actions/email.ts (역전 #6 해소)</li>
+  <li><strong>email_sends 추적 구현</strong>: opened_at/clicked_at 수집 로직 (Loop 2 완성)</li>
+</ol>
+
+<h3>중기 권고</h3>
+<ol>
+  <li><strong>PerformanceService 통합</strong>: aggregate.ts 순수 함수 유지 + DB 접근 래핑</li>
+  <li><strong>getPerformanceContext()</strong> 구현 → KS systemPromptOverride 주입</li>
+  <li><strong>Storage/Auth 역전 정리</strong>: actions/storage.ts, actions/auth.ts 추출</li>
+</ol>
+
+<div class="box green">
+  <strong>최종 판단</strong><br>
+  통합 데이터 아키텍처 문서는 <strong>올바른 방향을 제시</strong>하고 있으며,
+  특히 Clean Architecture 4레이어 분리, Consumer 패턴, systemPromptOverride를 통한 확장 방식은 <strong>현재 코드에서 검증됨</strong>.
+  <br><br>
+  주요 개선점: (1) 로드맵 순서 조정 (L0 먼저), (2) 문서 오류 3건 수정, (3) 레이어 역전 7건 해소.
+  <br>
+  이 보고서의 권고사항을 반영하면 아키텍처 일치도를 <strong>75점 → 90점+</strong>로 끌어올릴 수 있다.
+</div>
+
+<hr style="margin-top: 48px; border: none; border-top: 1px solid var(--border);">
+<p style="font-size: 12px; color: var(--muted); margin-top: 16px;">
+  생성일: 2026-02-16 | 대상 문서: docs/01-plan/unified-data-architecture.md |
+  분석 범위: src/ 전체 | 코드 변경: 없음
+</p>
+
+</body>
+</html>

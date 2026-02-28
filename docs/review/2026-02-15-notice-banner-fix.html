@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>코드 리뷰 — 웨비나 템플릿 배너 부분매칭 + PC뷰 크기 수정</title>
+  <meta property="og:title" content="코드 리뷰 — 배너 부분매칭 + PC뷰 크기 수정">
+  <meta property="og:description" content="TASK.md T1 태스크 사전 리뷰 보고서. 정확매칭→includes 부분매칭, max-width:600px 추가.">
+  <meta name="date" content="2026-02-15">
+  <meta name="project" content="qa-helpdesk">
+  <meta name="status" content="pending">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 40px 20px;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+    h2 { font-size: 18px; font-weight: 700; margin: 32px 0 12px; padding-bottom: 8px; border-bottom: 2px solid #F75D5D; }
+    h3 { font-size: 15px; font-weight: 700; margin: 20px 0 8px; color: #374151; }
+    p, li { font-size: 14px; color: #374151; }
+    p { margin-bottom: 12px; }
+    ul, ol { padding-left: 20px; margin-bottom: 12px; }
+    li { margin-bottom: 4px; }
+
+    .meta { font-size: 13px; color: #9ca3af; margin-bottom: 24px; }
+    .meta span { margin-right: 16px; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-ok { background: #DCFCE7; color: #166534; }
+    .badge-warn { background: #FEF9C3; color: #854D0E; }
+    .badge-danger { background: #FEE2E2; color: #991B1B; }
+    .badge-info { background: #DBEAFE; color: #1E40AF; }
+
+    .summary-box {
+      background: #FEF2F2;
+      border-left: 4px solid #F75D5D;
+      padding: 16px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 24px;
+    }
+    .summary-box strong { color: #F75D5D; }
+
+    pre {
+      background: #f8f9fc;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+    }
+    pre code { color: #374151; }
+    p code, li code {
+      background: #f3f4f6;
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: #E54949;
+    }
+
+    .diff-add { color: #166534; background: #DCFCE7; }
+    .diff-del { color: #991B1B; background: #FEE2E2; text-decoration: line-through; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 10px 12px;
+      text-align: left;
+    }
+    th { background: #FEF2F2; font-weight: 600; color: #6b7280; }
+
+    .issue-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .issue-card h4 {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .issue-card p { margin-bottom: 4px; }
+
+    footer {
+      margin-top: 48px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e7eb;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    /* 목업 섹션 */
+    .mockup-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin: 16px 0 24px;
+    }
+    @media (max-width: 700px) {
+      .mockup-grid { grid-template-columns: 1fr; }
+    }
+    .mockup-panel {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .mockup-panel-header {
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mockup-panel-header.as-is {
+      background: #FEE2E2;
+      color: #991B1B;
+    }
+    .mockup-panel-header.to-be {
+      background: #DCFCE7;
+      color: #166534;
+    }
+    .mockup-email {
+      background: #ffffff;
+      padding: 20px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .mockup-email-header {
+      text-align: center;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #f3f4f6;
+      margin-bottom: 16px;
+    }
+    .mockup-email-header p {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-bottom: 2px;
+    }
+    .mockup-email-header h3 {
+      font-size: 14px;
+      color: #1a1a1a;
+      margin: 0;
+    }
+    .mockup-label {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 4px;
+    }
+    .mockup-label.fail { background: #FEE2E2; color: #991B1B; }
+    .mockup-label.pass { background: #DCFCE7; color: #166534; }
+    .mockup-caption {
+      font-size: 11px;
+      color: #9ca3af;
+      text-align: center;
+      margin-top: 4px;
+      margin-bottom: 16px;
+    }
+    .mockup-note {
+      background: #f8f9fc;
+      border: 1px dashed #d1d5db;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-top: 16px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .mockup-note code {
+      font-size: 11px;
+      background: #e5e7eb;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    .mockup-ruler {
+      margin: 8px 0;
+      position: relative;
+      height: 20px;
+    }
+    .mockup-ruler-line {
+      position: absolute;
+      top: 9px;
+      height: 2px;
+      background: #F75D5D;
+    }
+    .mockup-ruler-label {
+      position: absolute;
+      top: 0;
+      font-size: 10px;
+      font-weight: 700;
+      color: #F75D5D;
+    }
+  </style>
+</head>
+<body>
+  <h1>코드 리뷰 보고서</h1>
+  <p style="font-size:16px;font-weight:600;color:#F75D5D;margin-bottom:4px;">웨비나 템플릿 배너 부분매칭 + PC뷰 크기 수정</p>
+  <div class="meta">
+    <span>리뷰일: 2026-02-15</span>
+    <span>리뷰어: code-reviewer (에이전트)</span>
+    <span>대상: TASK.md T1</span>
+    <span><span class="badge badge-info">사전 리뷰</span></span>
+  </div>
+
+  <!-- 요약 -->
+  <div class="summary-box">
+    <strong>요약:</strong> <code>src/lib/email-template-utils.ts</code> 1개 파일, h3 배너 매칭 블록(82~93행) 수정.
+    정확매칭 → <code>includes()</code> 부분매칭 전환 + <code>max-width:600px</code> 추가.
+    BANNER_MAP 키 자체는 변경 없음.
+    <strong>이슈 1건</strong> 발견 (스킬 문서 파일명 불일치).
+  </div>
+
+  <!-- 1. 변경 이해 -->
+  <h2>1. 변경 이해 요약</h2>
+  <table>
+    <thead>
+      <tr><th>항목</th><th>AS-IS</th><th>TO-BE</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>배너 매칭</td>
+        <td>정확매칭 <code>BANNER_MAP[bannerKey]</code></td>
+        <td>부분매칭 <code>bannerKey.includes(key)</code>, 긴 키 우선</td>
+      </tr>
+      <tr>
+        <td>img 스타일</td>
+        <td><code>width:100%; height:auto;</code></td>
+        <td><code>width:100%; max-width:600px; height:auto;</code></td>
+      </tr>
+      <tr>
+        <td>fallback div</td>
+        <td>max-width 없음</td>
+        <td><code>max-width:600px</code> 추가 필요</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>변경 동기</h3>
+  <ul>
+    <li><strong>부분매칭:</strong> notice 타입 콘텐츠의 <code>email_summary</code>에서 h3 텍스트가 "웨비나에서 다루는 핵심 주제"처럼 긴 문장인 경우, BANNER_MAP 키 "핵심 주제"와 정확매칭 실패 → CSS gradient fallback으로 렌더링됨.</li>
+    <li><strong>PC 크기:</strong> 배너 원본 1200×160px인데, <code>width:100%</code>만 적용되어 PC 넓은 화면에서 600px 이상으로 과대 렌더링.</li>
+  </ul>
+
+  <!-- 2. AS-IS vs TO-BE 코드 비교 -->
+  <h2>2. 코드 비교 (AS-IS → TO-BE)</h2>
+
+  <h3>변경 1 — 부분매칭 (85행)</h3>
+  <pre><code><span class="diff-del">// AS-IS: 정확매칭
+const bannerFile = BANNER_MAP[bannerKey];</span>
+
+<span class="diff-add">// TO-BE: 부분매칭 (긴 키 우선)
+const matchedKey = Object.keys(BANNER_MAP)
+  .filter(key => bannerKey.includes(key))
+  .sort((a, b) => b.length - a.length)[0];
+const bannerFile = matchedKey ? BANNER_MAP[matchedKey] : undefined;</span></code></pre>
+
+  <h3>변경 2 — img 스타일 (87행)</h3>
+  <pre><code><span class="diff-del">// AS-IS
+style="display:block;width:100%;height:auto;border-radius:6px 6px 0 0;margin:24px 0 0;"</span>
+
+<span class="diff-add">// TO-BE
+style="display:block;width:100%;max-width:600px;height:auto;border-radius:6px 6px 0 0;margin:24px 0 0;"</span></code></pre>
+
+  <h3>변경 3 — fallback div 스타일 (90행)</h3>
+  <pre><code><span class="diff-del">// AS-IS: max-width 없음
+&lt;div style="height:80px;line-height:80px;background:linear-gradient(...)..."&gt;</span>
+
+<span class="diff-add">// TO-BE: max-width:600px 추가
+&lt;div style="max-width:600px;height:80px;line-height:80px;background:linear-gradient(...)..."&gt;</span></code></pre>
+
+  <!-- 3. 영향 범위 -->
+  <h2>3. 영향 범위</h2>
+  <table>
+    <thead>
+      <tr><th>항목</th><th>상세</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>수정 파일</td><td><code>src/lib/email-template-utils.ts</code> — 1개</td></tr>
+      <tr><td>수정 함수</td><td><code>markdownToEmailHtml()</code> 내 h3 배너 매칭 블록 (82~93행)</td></tr>
+      <tr><td>호출 경로</td><td><code>buildDesignFromSummary()</code> → <code>markdownToEmailHtml()</code> → 뉴스레터 패널</td></tr>
+      <tr><td>영향 콘텐츠 타입</td><td>모든 타입 (education, notice, case_study) — 공통 파서</td></tr>
+      <tr><td>BANNER_MAP 키 변경</td><td>없음 (기존 13개 유지)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>타입별 배너 키 분류</h3>
+  <table>
+    <thead>
+      <tr><th>콘텐츠 타입</th><th>사용 배너 키</th><th>부분매칭 영향</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>education</td>
+        <td>INSIGHT, INSIGHT 01~03, KEY POINT, CHECKLIST</td>
+        <td><span class="badge badge-ok">안전</span> — 영문 대문자 키, h3도 동일 포맷</td>
+      </tr>
+      <tr>
+        <td>notice (웨비나)</td>
+        <td>강의 미리보기, 핵심 주제, 이런 분들을 위해, 웨비나 일정</td>
+        <td><span class="badge badge-ok">개선</span> — 부분매칭으로 긴 h3 텍스트 매칭 가능</td>
+      </tr>
+      <tr>
+        <td>case_study</td>
+        <td>INTERVIEW, 핵심 변화, 성과</td>
+        <td><span class="badge badge-warn">주의</span> — "성과" 키가 짧아 오매칭 가능성 있음</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 4. 발견 이슈 -->
+  <h2>4. 발견 이슈</h2>
+
+  <div class="issue-card">
+    <h4><span class="badge badge-danger">Issue #1</span> 스킬 문서 파일명 불일치</h4>
+    <p><strong>위치:</strong> <code>.claude/skills/email-parser.md</code> 21~24행 vs <code>src/lib/email-template-utils.ts</code> 12~15행</p>
+    <p><strong>설명:</strong> 스킬 문서에 기록된 배너 파일명이 실제 코드의 BANNER_MAP 값과 다릅니다.</p>
+    <table>
+      <thead>
+        <tr><th>BANNER_MAP 키</th><th>코드 (실제)</th><th>스킬 문서 (잘못됨)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>강의 미리보기</td><td><code>banner-preview</code></td><td><code>banner-lecture-preview</code></td></tr>
+        <tr><td>핵심 주제</td><td><code>banner-topics</code></td><td><code>banner-core-topics</code></td></tr>
+        <tr><td>이런 분들을 위해</td><td><code>banner-target</code></td><td><code>banner-target-audience</code></td></tr>
+        <tr><td>웨비나 일정</td><td><code>banner-schedule</code></td><td><code>banner-webinar-schedule</code></td></tr>
+        <tr><td>핵심 변화</td><td><code>banner-change</code></td><td><code>banner-key-changes</code></td></tr>
+      </tbody>
+    </table>
+    <p><strong>영향:</strong> 에이전트가 스킬 문서를 참조하여 잘못된 파일명을 사용할 수 있음.</p>
+    <p><strong>조치 권고:</strong> T1 구현 전에 스킬 문서를 코드 기준으로 수정, 또는 코드 기준이 맞는지 Supabase Storage 확인.</p>
+  </div>
+
+  <div class="issue-card">
+    <h4><span class="badge badge-warn">Issue #2</span> fallback div에 max-width 누락 가능성</h4>
+    <p><strong>위치:</strong> <code>email-template-utils.ts:90</code></p>
+    <p><strong>설명:</strong> TASK.md에서 fallback div에도 <code>max-width:600px</code>를 적용하라고 명시(T1 완료 기준 4번째 항목). 구현 시 누락하지 않도록 주의.</p>
+    <p><strong>조치 권고:</strong> 구현 체크리스트에 포함 확인.</p>
+  </div>
+
+  <div class="issue-card">
+    <h4><span class="badge badge-warn">Issue #3</span> "성과" 키 오매칭 주의</h4>
+    <p><strong>설명:</strong> "성과"는 2글자로 짧아, "성과 분석", "성과 보고서" 등 의도하지 않은 h3 텍스트에도 매칭될 수 있음.</p>
+    <p><strong>현재 판단:</strong> <code>email_summary</code>는 Gemini가 생성하며, h3 텍스트 포맷이 통제되므로 실제 오매칭 확률은 낮음. 다만, TASK.md T2 코드 리뷰 시 검증 필요.</p>
+    <p><strong>조치 권고:</strong> T2 리뷰에서 case_study 콘텐츠의 h3 텍스트를 실제 DB 데이터로 확인.</p>
+  </div>
+
+  <!-- 5. 엣지 케이스 검증 계획 -->
+  <h2>5. 엣지 케이스 검증 계획</h2>
+  <table>
+    <thead>
+      <tr><th>#</th><th>시나리오</th><th>입력 (h3 텍스트)</th><th>기대 결과</th><th>검증 방법</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>E1</td>
+        <td>notice 부분매칭</td>
+        <td>"웨비나에서 다루는 핵심 주제"</td>
+        <td><code>banner-topics.png</code> 매칭</td>
+        <td>뉴스레터 탭 미리보기</td>
+      </tr>
+      <tr>
+        <td>E2</td>
+        <td>notice 부분매칭</td>
+        <td>"이런 분들을 위해 준비했어요"</td>
+        <td><code>banner-target.png</code> 매칭</td>
+        <td>뉴스레터 탭 미리보기</td>
+      </tr>
+      <tr>
+        <td>E3</td>
+        <td>notice 부분매칭</td>
+        <td>"웨비나 일정 안내"</td>
+        <td><code>banner-schedule.png</code> 매칭</td>
+        <td>뉴스레터 탭 미리보기</td>
+      </tr>
+      <tr>
+        <td>E4</td>
+        <td>긴 키 우선 매칭</td>
+        <td>"INSIGHT 01"</td>
+        <td><code>banner-insight-01.png</code> (INSIGHT보다 우선)</td>
+        <td>education 콘텐츠 확인</td>
+      </tr>
+      <tr>
+        <td>E5</td>
+        <td>정확매칭 호환</td>
+        <td>"INSIGHT"</td>
+        <td><code>banner-insight.png</code></td>
+        <td>education 콘텐츠 확인</td>
+      </tr>
+      <tr>
+        <td>E6</td>
+        <td>매칭 키 없음</td>
+        <td>"새로운 섹션"</td>
+        <td>CSS gradient fallback</td>
+        <td>임의 h3 추가 테스트</td>
+      </tr>
+      <tr>
+        <td>E7</td>
+        <td>짧은 키 오매칭</td>
+        <td>"성과 분석 리포트"</td>
+        <td><code>banner-results.png</code> 매칭 (의도적?)</td>
+        <td>case_study DB 데이터 확인</td>
+      </tr>
+      <tr>
+        <td>E8</td>
+        <td>PC 뷰 크기</td>
+        <td>넓은 화면 (1920px)</td>
+        <td>배너 max-width 600px 제한</td>
+        <td>개발자 도구 확인</td>
+      </tr>
+      <tr>
+        <td>E9</td>
+        <td>모바일 뷰 크기</td>
+        <td>375px 뷰포트</td>
+        <td>width:100%로 화면 맞춤 (기존과 동일)</td>
+        <td>모바일 뷰포트 테스트</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 6. 구현 목업 디자인 -->
+  <h2>6. 구현 목업 (Before / After)</h2>
+  <p>notice 타입 웨비나 콘텐츠의 배너 영역을 시뮬레이션합니다. 실제 <code>markdownToEmailHtml()</code> 출력 스타일과 BANNER_MAP 이미지 URL을 사용합니다.</p>
+
+  <!-- 6-1. 배너 매칭: gradient fallback vs 이미지 -->
+  <h3>6-1. 배너 매칭 비교 — 정확매칭(실패) vs 부분매칭(성공)</h3>
+  <p>h3 텍스트: <code>"웨비나에서 다루는 핵심 주제"</code> → BANNER_MAP 키 <code>"핵심 주제"</code></p>
+
+  <div class="mockup-grid">
+    <!-- AS-IS -->
+    <div class="mockup-panel">
+      <div class="mockup-panel-header as-is">
+        <span class="badge badge-danger">AS-IS</span> 정확매칭 실패 → gradient fallback
+      </div>
+      <div class="mockup-email">
+        <div class="mockup-email-header">
+          <p>뉴스레터 미리보기</p>
+          <h3>메타 광고 성과를 2배로 — 무료 웨비나</h3>
+        </div>
+        <span class="mockup-label fail">BANNER_MAP["웨비나에서 다루는 핵심 주제"] → undefined</span>
+        <div style="height:80px;line-height:80px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);margin:8px 0;border-radius:4px 0 0 4px;">
+          <span style="padding-left:32px;color:#fff;font-size:18px;font-weight:700;letter-spacing:1px;">웨비나에서 다루는 핵심 주제</span>
+        </div>
+        <p style="font-size:13px;color:#374151;line-height:1.7;margin:8px 0;">메타 광고의 최신 알고리즘 변화와 실전 최적화 전략을 다룹니다...</p>
+
+        <span class="mockup-label fail">BANNER_MAP["이런 분들을 위해 준비했어요"] → undefined</span>
+        <div style="height:80px;line-height:80px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);margin:8px 0;border-radius:4px 0 0 4px;">
+          <span style="padding-left:32px;color:#fff;font-size:18px;font-weight:700;letter-spacing:1px;">이런 분들을 위해 준비했어요</span>
+        </div>
+        <p style="font-size:13px;color:#374151;line-height:1.7;margin:8px 0;">광고 성과가 정체된 자사몰 운영자, ROAS 개선이 필요한 분...</p>
+
+        <span class="mockup-label fail">BANNER_MAP["웨비나 일정 안내"] → undefined</span>
+        <div style="height:80px;line-height:80px;background:linear-gradient(135deg,#F75D5D 0%,#E54949 60%,transparent 60%);margin:8px 0;border-radius:4px 0 0 4px;">
+          <span style="padding-left:32px;color:#fff;font-size:18px;font-weight:700;letter-spacing:1px;">웨비나 일정 안내</span>
+        </div>
+        <p style="font-size:13px;color:#374151;line-height:1.7;margin:8px 0;">2026년 2월 20일 (목) 오후 8시 | Zoom 라이브</p>
+
+        <div class="mockup-note">
+          4개 배너 모두 gradient fallback으로 렌더링됨. 디자인 의도와 다름.
+        </div>
+      </div>
+    </div>
+
+    <!-- TO-BE -->
+    <div class="mockup-panel">
+      <div class="mockup-panel-header to-be">
+        <span class="badge badge-ok">TO-BE</span> 부분매칭 성공 → 이미지 배너
+      </div>
+      <div class="mockup-email">
+        <div class="mockup-email-header">
+          <p>뉴스레터 미리보기</p>
+          <h3>메타 광고 성과를 2배로 — 무료 웨비나</h3>
+        </div>
+        <span class="mockup-label pass">"웨비나에서 다루는 핵심 주제".includes("핵심 주제") → banner-topics</span>
+        <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-topics.png"
+             alt="핵심 주제"
+             style="display:block;width:100%;max-width:600px;height:auto;border-radius:6px 6px 0 0;margin:8px 0 0;" />
+        <p style="font-size:13px;color:#374151;line-height:1.7;margin:8px 0;">메타 광고의 최신 알고리즘 변화와 실전 최적화 전략을 다룹니다...</p>
+
+        <span class="mockup-label pass">"이런 분들을 위해 준비했어요".includes("이런 분들을 위해") → banner-target</span>
+        <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-target.png"
+             alt="이런 분들을 위해"
+             style="display:block;width:100%;max-width:600px;height:auto;border-radius:6px 6px 0 0;margin:8px 0 0;" />
+        <p style="font-size:13px;color:#374151;line-height:1.7;margin:8px 0;">광고 성과가 정체된 자사몰 운영자, ROAS 개선이 필요한 분...</p>
+
+        <span class="mockup-label pass">"웨비나 일정 안내".includes("웨비나 일정") → banner-schedule</span>
+        <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-schedule.png"
+             alt="웨비나 일정"
+             style="display:block;width:100%;max-width:600px;height:auto;border-radius:6px 6px 0 0;margin:8px 0 0;" />
+        <p style="font-size:13px;color:#374151;line-height:1.7;margin:8px 0;">2026년 2월 20일 (목) 오후 8시 | Zoom 라이브</p>
+
+        <div class="mockup-note">
+          부분매칭으로 3개 배너 모두 이미지 렌더링. <code>max-width:600px</code> 적용.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6-2. PC 크기 비교 -->
+  <h3>6-2. PC 뷰 크기 비교 — width:100% vs max-width:600px</h3>
+  <p>배너 원본: 1200×160px (@2x). 아래 목업은 보고서 내 컨테이너 폭에서 차이를 시뮬레이션합니다.</p>
+
+  <div class="mockup-grid">
+    <!-- AS-IS: 제한 없이 늘어남 -->
+    <div class="mockup-panel">
+      <div class="mockup-panel-header as-is">
+        <span class="badge badge-danger">AS-IS</span> width:100% — 컨테이너 전체 채움
+      </div>
+      <div class="mockup-email" style="padding:16px;">
+        <span class="mockup-label fail">max-width 없음 → PC에서 과대 렌더링</span>
+        <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-preview.png"
+             alt="강의 미리보기"
+             style="display:block;width:100%;height:auto;border-radius:6px 6px 0 0;margin:8px 0 0;" />
+        <div class="mockup-caption">width:100% — 부모 요소 폭 전체를 채움 (PC에서 800px+ 가능)</div>
+
+        <div class="mockup-note">
+          이메일 본문 컨테이너가 넓은 경우 (Outlook 데스크톱 등)<br>
+          배너가 600px 이상으로 렌더링 → 의도된 600×80px 비율 깨짐
+        </div>
+      </div>
+    </div>
+
+    <!-- TO-BE: 600px 제한 -->
+    <div class="mockup-panel">
+      <div class="mockup-panel-header to-be">
+        <span class="badge badge-ok">TO-BE</span> max-width:600px — 크기 제한
+      </div>
+      <div class="mockup-email" style="padding:16px;">
+        <span class="mockup-label pass">max-width:600px 적용</span>
+        <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-preview.png"
+             alt="강의 미리보기"
+             style="display:block;width:100%;max-width:600px;height:auto;border-radius:6px 6px 0 0;margin:8px 0 0;" />
+        <div class="mockup-caption">max-width:600px — 최대 600px, 좁은 화면에서는 100% 유지</div>
+
+        <div class="mockup-note">
+          <code>max-width:600px</code> 추가로 PC에서도 배너가 600px 이하로 제한.<br>
+          모바일(375px 이하)에서는 <code>width:100%</code>가 우선 → 기존 동작 유지.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6-3. 전체 4개 배너 목업 -->
+  <h3>6-3. notice 배너 4종 — TO-BE 최종 렌더링</h3>
+  <p>부분매칭 + <code>max-width:600px</code> 적용 후 notice 웨비나 이메일의 전체 배너 영역입니다.</p>
+
+  <div class="mockup-panel" style="max-width:640px;margin:0 auto 24px;">
+    <div class="mockup-panel-header to-be">
+      <span class="badge badge-ok">TO-BE</span> notice 웨비나 이메일 — 배너 영역 전체
+    </div>
+    <div class="mockup-email" style="background:#f8f9fc;">
+
+      <!-- 배너 1: 강의 미리보기 -->
+      <div style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          <span class="mockup-label pass">h3="강의 미리보기 세션" → includes("강의 미리보기")</span>
+        </div>
+        <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-preview.png"
+             alt="강의 미리보기"
+             style="display:block;width:100%;max-width:600px;height:auto;border-radius:6px 6px 0 0;" />
+        <div style="background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 6px 6px;padding:12px 16px;">
+          <p style="font-size:13px;color:#374151;line-height:1.7;margin:0;">이번 웨비나에서는 메타 광고의 핵심 성과 지표를 분석하고, 실제 캠페인 데이터를 기반으로 최적화 전략을 공유합니다.</p>
+        </div>
+      </div>
+
+      <!-- 배너 2: 핵심 주제 -->
+      <div style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          <span class="mockup-label pass">h3="웨비나에서 다루는 핵심 주제" → includes("핵심 주제")</span>
+        </div>
+        <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-topics.png"
+             alt="핵심 주제"
+             style="display:block;width:100%;max-width:600px;height:auto;border-radius:6px 6px 0 0;" />
+        <div style="background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 6px 6px;padding:12px 16px;">
+          <p style="font-size:13px;color:#374151;line-height:1.7;margin:0;">
+            <strong style="color:#F75D5D;">1.</strong> 메타 광고 알고리즘 최신 변화<br>
+            <strong style="color:#F75D5D;">2.</strong> ROAS 200% 달성 실전 전략<br>
+            <strong style="color:#F75D5D;">3.</strong> 자사몰 맞춤 타겟팅 세팅법
+          </p>
+        </div>
+      </div>
+
+      <!-- 배너 3: 이런 분들을 위해 -->
+      <div style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          <span class="mockup-label pass">h3="이런 분들을 위해 준비했어요" → includes("이런 분들을 위해")</span>
+        </div>
+        <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-target.png"
+             alt="이런 분들을 위해"
+             style="display:block;width:100%;max-width:600px;height:auto;border-radius:6px 6px 0 0;" />
+        <div style="background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 6px 6px;padding:12px 16px;">
+          <table style="margin:0;font-size:13px;" cellpadding="0" cellspacing="0">
+            <tr><td style="border:none;padding:4px 0;"><span style="display:inline-block;width:16px;height:16px;border-radius:4px;background:#F75D5D;text-align:center;line-height:16px;color:#fff;font-size:10px;font-weight:700;vertical-align:middle;margin-right:8px;">&#10003;</span>광고 성과가 정체된 자사몰 운영자</td></tr>
+            <tr><td style="border:none;padding:4px 0;"><span style="display:inline-block;width:16px;height:16px;border-radius:4px;background:#F75D5D;text-align:center;line-height:16px;color:#fff;font-size:10px;font-weight:700;vertical-align:middle;margin-right:8px;">&#10003;</span>ROAS 개선이 시급한 마케터</td></tr>
+            <tr><td style="border:none;padding:4px 0;"><span style="display:inline-block;width:16px;height:16px;border-radius:4px;background:#F75D5D;text-align:center;line-height:16px;color:#fff;font-size:10px;font-weight:700;vertical-align:middle;margin-right:8px;">&#10003;</span>메타 광고를 처음 시작하는 대표님</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- 배너 4: 웨비나 일정 -->
+      <div style="margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          <span class="mockup-label pass">h3="웨비나 일정 안내" → includes("웨비나 일정")</span>
+        </div>
+        <img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-schedule.png"
+             alt="웨비나 일정"
+             style="display:block;width:100%;max-width:600px;height:auto;border-radius:6px 6px 0 0;" />
+        <div style="background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 6px 6px;padding:12px 16px;">
+          <table style="margin:0;font-size:13px;width:100%;" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="border:none;padding:6px 0;font-weight:600;color:#6b7280;width:80px;">일시</td>
+              <td style="border:none;padding:6px 0;color:#374151;">2026년 2월 20일 (목) 오후 8시</td>
+            </tr>
+            <tr>
+              <td style="border:none;padding:6px 0;font-weight:600;color:#6b7280;">장소</td>
+              <td style="border:none;padding:6px 0;color:#374151;">Zoom 라이브 (링크 별도 안내)</td>
+            </tr>
+            <tr>
+              <td style="border:none;padding:6px 0;font-weight:600;color:#6b7280;">참가비</td>
+              <td style="border:none;padding:6px 0;color:#374151;"><strong style="color:#F75D5D;">무료</strong></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="mockup-note" style="margin-bottom:24px;">
+    <strong>목업 렌더링 참고:</strong> 위 목업은 실제 Supabase Storage의 배너 이미지 URL을 사용합니다.
+    이미지가 표시되지 않는 경우, 해당 파일명(<code>banner-preview.png</code>, <code>banner-topics.png</code>, <code>banner-target.png</code>, <code>banner-schedule.png</code>)이
+    Storage에 존재하는지 확인이 필요합니다. (Issue #1 스킬 문서 불일치와 관련)
+  </div>
+
+  <!-- 7. 구현 체크리스트 -->
+  <h2>7. 구현 전 체크리스트</h2>
+  <table>
+    <thead>
+      <tr><th>상태</th><th>항목</th><th>비고</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>☐</td><td>스킬 문서 파일명 불일치 해소 (Issue #1)</td><td>T1 전 또는 후 수정</td></tr>
+      <tr><td>☐</td><td>부분매칭 로직 — <code>Object.keys().filter().sort()</code></td><td>T1 핵심</td></tr>
+      <tr><td>☐</td><td>img 태그에 <code>max-width:600px</code></td><td>T1 핵심</td></tr>
+      <tr><td>☐</td><td>fallback div에도 <code>max-width:600px</code></td><td>Issue #2, TASK.md 명시</td></tr>
+      <tr><td>☐</td><td>education INSIGHT 01/02/03 우선 매칭 확인</td><td>엣지 케이스 E4</td></tr>
+      <tr><td>☐</td><td>"성과" 키 오매칭 DB 검증</td><td>Issue #3, T2에서 수행</td></tr>
+      <tr><td>☐</td><td><code>npm run build</code> 성공</td><td>절대 규칙</td></tr>
+      <tr><td>☐</td><td>TypeScript 에러 0, ESLint 에러 0</td><td>절대 규칙</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 8. 리뷰 결론 -->
+  <h2>8. 리뷰 결론</h2>
+  <div class="summary-box">
+    <p><strong>판정: <span class="badge badge-ok">승인 (조건부)</span></strong></p>
+    <p>TASK.md의 변경 설계는 타당하며, 영향 범위가 1개 파일의 제한된 블록(82~93행)으로 안전합니다.</p>
+    <p><strong>조건:</strong></p>
+    <ul style="margin-top:8px;">
+      <li>Issue #1 (스킬 문서 불일치) — T1 구현 시 코드 기준 파일명이 맞는지 Supabase Storage에서 확인 후, 스킬 문서 수정</li>
+      <li>Issue #2 (fallback max-width) — 구현 시 누락하지 않도록 체크</li>
+      <li>Issue #3 ("성과" 오매칭) — T2 코드 리뷰에서 실제 DB 데이터 기반 검증</li>
+    </ul>
+  </div>
+
+  <footer>
+    <p>QA Helpdesk 프로젝트 — 코드 리뷰 보고서 | 생성: 2026-02-15 | 리뷰어: code-reviewer 에이전트</p>
+  </footer>
+</body>
+</html>

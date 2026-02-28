@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BS CAMP 서비스 아키텍처 보고서</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{font-size:15px}
+  body{font-family:'Pretendard',system-ui,sans-serif;color:#1a1a2e;background:#fff;line-height:1.75}
+
+  /* 레이아웃 */
+  .cover{background:linear-gradient(135deg,#F75D5D 0%,#E54949 100%);color:#fff;padding:80px 48px 60px;text-align:center}
+  .cover h1{font-size:2.4rem;font-weight:800;margin-bottom:12px}
+  .cover .sub{font-size:1.1rem;opacity:.9}
+  .cover .date{margin-top:24px;font-size:.95rem;opacity:.7}
+  .wrap{max-width:820px;margin:0 auto;padding:0 24px}
+  section{padding:48px 0 24px}
+  section+section{border-top:1px solid #eee}
+  h2{font-size:1.5rem;color:#F75D5D;margin-bottom:20px;font-weight:700}
+  h3{font-size:1.15rem;color:#333;margin:28px 0 12px;font-weight:700}
+  h4{font-size:1rem;color:#555;margin:20px 0 8px;font-weight:600}
+  p{margin-bottom:14px}
+  ul,ol{margin-bottom:14px;padding-left:22px}
+  li{margin-bottom:4px}
+  strong{color:#E54949}
+  code{background:#f5f5f5;padding:2px 6px;border-radius:4px;font-size:.85rem;font-family:'SF Mono',monospace}
+
+  /* 목차 */
+  .toc{padding:40px 0}
+  .toc h2{font-size:1.3rem;border-bottom:2px solid #F75D5D;padding-bottom:8px;margin-bottom:16px}
+  .toc ol{padding-left:24px}
+  .toc li{margin-bottom:6px}
+  .toc a{color:#E54949;text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+
+  /* 테이블 */
+  table{width:100%;border-collapse:collapse;margin:16px 0 24px;font-size:.85rem}
+  th{background:#F75D5D;color:#fff;padding:10px 12px;text-align:left;font-weight:600}
+  td{padding:8px 12px;border-bottom:1px solid #eee;vertical-align:top}
+  tr:hover td{background:#fff5f5}
+
+  /* 정보 박스 */
+  .box{background:#FFF5F5;border-left:4px solid #F75D5D;padding:16px 20px;margin:16px 0;border-radius:0 8px 8px 0}
+  .box.blue{background:#F0F7FF;border-left-color:#4A90D9}
+  .box.green{background:#F0FFF4;border-left-color:#38A169}
+  .box.yellow{background:#FFFBEB;border-left-color:#D69E2E}
+  .box .bl{font-weight:700;font-size:.85rem;margin-bottom:4px}
+
+  /* 흐름 배지 */
+  .flow-badge{display:inline-block;background:#F75D5D;color:#fff;font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:12px;margin-right:6px;vertical-align:middle}
+
+  /* 다이어그램 */
+  .dia{overflow-x:auto;margin:20px 0;text-align:center}
+  .dia svg{max-width:100%;height:auto}
+  .dia-cap{text-align:center;font-size:.85rem;color:#888;margin-top:8px}
+
+  /* 인쇄 */
+  .pb{page-break-after:always;break-after:page}
+  @media print{
+    body{font-size:11px;color:#000}
+    .cover{padding:30px 20px 20px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .wrap{max-width:100%;padding:0 16px}
+    section{padding:20px 0}
+    h2{font-size:14pt}
+    table{font-size:8pt;page-break-inside:avoid}
+    .box,.flow-badge{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .dia svg{max-width:100%}
+    a{color:#000;text-decoration:none}
+    .pb{page-break-after:always}
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ 표지 ═══════════════════ -->
+<div class="cover">
+  <h1>BS CAMP 서비스 아키텍처 보고서</h1>
+  <div class="sub">자사몰사관학교 &mdash; 고객 여정 중심 기술 구조 분석</div>
+  <div class="date">2026년 2월 16일 기준 &middot; 코드 실사 보고서 &middot; v2</div>
+</div>
+
+<div class="wrap">
+
+<!-- ═══════════════════ 목차 ═══════════════════ -->
+<div class="toc">
+  <h2>목차</h2>
+  <ol>
+    <li><a href="#s0">고객 여정 전체 흐름도 — 한 장으로 보는 BS CAMP</a></li>
+    <li><a href="#s1">시스템 개요</a></li>
+    <li><a href="#s2">데이터 저장소 — 29개 테이블 구조</a></li>
+    <li><a href="#s3">A 학습 지원 — AI가 강의를 찾아 답변하는 과정</a></li>
+    <li><a href="#s4">B 성과 진단 — 광고 데이터 자동 수집과 진단</a></li>
+    <li><a href="#s5">C 콘텐츠·뉴스레터 — 만들고 보내는 과정</a></li>
+    <li><a href="#s6">API 전체 맵 — 22개 기능 접점</a></li>
+    <li><a href="#s7">외부 서비스 연동</a></li>
+    <li><a href="#s8">현재 한계점과 개선 기회</a></li>
+  </ol>
+</div>
+</div>
+<div class="pb"></div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- 섹션 0: 고객 여정 전체 흐름도 (핵심)          -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="wrap">
+<section id="s0">
+<h2>고객 여정 전체 흐름도 — 한 장으로 보는 BS CAMP</h2>
+<p>아래 그림은 <strong>잠재 고객이 처음 접하는 순간부터, 수강생이 되어 성과를 진단받고, 뉴스레터를 수신하기까지</strong> 데이터가 흐르는 전체 경로입니다. 이후 각 섹션은 이 흐름의 특정 구간을 상세히 설명합니다.</p>
+
+<div class="dia">
+<svg viewBox="0 0 800 920" xmlns="http://www.w3.org/2000/svg" style="font-family:Pretendard,sans-serif">
+<defs>
+  <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#E54949"/></marker>
+  <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#38A169"/></marker>
+  <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#4A90D9"/></marker>
+  <marker id="ay" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#D69E2E"/></marker>
+  <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/></marker>
+</defs>
+
+<!-- ════════ 1단: 유입 ════════ -->
+<rect x="0" y="0" width="800" height="88" rx="12" fill="#FFF5F5" stroke="#F75D5D" stroke-width="1.2"/>
+<text x="16" y="22" font-size="11" font-weight="800" fill="#F75D5D">유입</text>
+
+<rect x="20" y="34" width="160" height="44" rx="8" fill="#fff" stroke="#F75D5D" stroke-width="1.5"/>
+<text x="100" y="54" text-anchor="middle" font-size="11" font-weight="700">잠재 고객</text>
+<text x="100" y="68" text-anchor="middle" font-size="9" fill="#888">SNS · 광고 · 소개</text>
+
+<line x1="180" y1="56" x2="224" y2="56" stroke="#E54949" stroke-width="2" marker-end="url(#ar)"/>
+
+<rect x="226" y="34" width="180" height="44" rx="8" fill="#fff" stroke="#F75D5D" stroke-width="1.5"/>
+<text x="316" y="54" text-anchor="middle" font-size="11" font-weight="700">뉴스레터 구독</text>
+<text x="316" y="68" text-anchor="middle" font-size="9" fill="#888">leads 테이블 저장</text>
+
+<line x1="406" y1="56" x2="450" y2="56" stroke="#E54949" stroke-width="2" marker-end="url(#ar)"/>
+
+<rect x="452" y="34" width="140" height="44" rx="8" fill="#fff" stroke="#F75D5D" stroke-width="1.5"/>
+<text x="522" y="54" text-anchor="middle" font-size="11" font-weight="700">회원가입</text>
+<text x="522" y="68" text-anchor="middle" font-size="9" fill="#888">role: "lead" (대기)</text>
+
+<line x1="592" y1="56" x2="636" y2="56" stroke="#E54949" stroke-width="2" marker-end="url(#ar)"/>
+
+<rect x="638" y="34" width="148" height="44" rx="8" fill="#E54949"/>
+<text x="712" y="54" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">관리자 승인</text>
+<text x="712" y="68" text-anchor="middle" font-size="9" fill="rgba(255,255,255,.8)">role → "student"</text>
+
+<!-- ════════ 분기점 ════════ -->
+<line x1="400" y1="88" x2="400" y2="118" stroke="#E54949" stroke-width="2" marker-end="url(#ar)"/>
+
+<rect x="310" y="120" width="180" height="36" rx="18" fill="#F75D5D"/>
+<text x="400" y="143" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">수강생이 되면 3가지 경험</text>
+
+<!-- 3갈래 분기선 -->
+<line x1="340" y1="156" x2="130" y2="190" stroke="#4A90D9" stroke-width="2" marker-end="url(#ab)"/>
+<line x1="400" y1="156" x2="400" y2="190" stroke="#38A169" stroke-width="2" marker-end="url(#ag)"/>
+<line x1="460" y1="156" x2="670" y2="190" stroke="#D69E2E" stroke-width="2" marker-end="url(#ay)"/>
+
+<!-- ════════ 2단: A 학습 지원 (좌) ════════ -->
+<rect x="10" y="192" width="250" height="310" rx="12" fill="#F0F7FF" stroke="#4A90D9" stroke-width="1.2"/>
+<text x="26" y="214" font-size="11" font-weight="800" fill="#4A90D9">A. 학습 지원 (→ 섹션 3)</text>
+
+<rect x="30" y="228" width="210" height="36" rx="6" fill="#fff" stroke="#4A90D9"/>
+<text x="135" y="250" text-anchor="middle" font-size="10" font-weight="600">수강생이 질문 등록</text>
+
+<line x1="135" y1="264" x2="135" y2="280" stroke="#4A90D9" stroke-width="1.2" marker-end="url(#ab)"/>
+
+<rect x="30" y="282" width="210" height="36" rx="6" fill="#E8F0FE" stroke="#4A90D9"/>
+<text x="135" y="304" text-anchor="middle" font-size="10" font-weight="600">Gemini가 질문을 벡터로 변환</text>
+
+<line x1="135" y1="318" x2="135" y2="334" stroke="#4A90D9" stroke-width="1.2" marker-end="url(#ab)"/>
+
+<rect x="30" y="336" width="210" height="42" rx="6" fill="#E8F0FE" stroke="#4A90D9"/>
+<text x="135" y="354" text-anchor="middle" font-size="10" font-weight="600">강의 자료 664개 청크에서</text>
+<text x="135" y="368" text-anchor="middle" font-size="10" font-weight="600">가장 유사한 내용 5개 검색</text>
+
+<line x1="135" y1="378" x2="135" y2="394" stroke="#4A90D9" stroke-width="1.2" marker-end="url(#ab)"/>
+
+<rect x="30" y="396" width="210" height="42" rx="6" fill="#4A90D9"/>
+<text x="135" y="414" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">AI(Opus 4.6)가</text>
+<text x="135" y="428" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">강의 기반 답변 생성</text>
+
+<line x1="135" y1="438" x2="135" y2="454" stroke="#4A90D9" stroke-width="1.2" marker-end="url(#ab)"/>
+
+<rect x="30" y="456" width="210" height="36" rx="6" fill="#fff" stroke="#4A90D9"/>
+<text x="135" y="478" text-anchor="middle" font-size="10" font-weight="600">관리자 승인 후 수강생에게 표시</text>
+
+<!-- ════════ 2단: B 성과 진단 (중) ════════ -->
+<rect x="275" y="192" width="250" height="310" rx="12" fill="#F0FFF4" stroke="#38A169" stroke-width="1.2"/>
+<text x="291" y="214" font-size="11" font-weight="800" fill="#38A169">B. 성과 진단 (→ 섹션 4)</text>
+
+<rect x="295" y="228" width="210" height="36" rx="6" fill="#fff" stroke="#38A169"/>
+<text x="400" y="250" text-anchor="middle" font-size="10" font-weight="600">광고 계정 연결 (Meta ID 입력)</text>
+
+<line x1="400" y1="264" x2="400" y2="280" stroke="#38A169" stroke-width="1.2" marker-end="url(#ag)"/>
+
+<rect x="295" y="282" width="210" height="42" rx="6" fill="#E6FFFA" stroke="#38A169"/>
+<text x="400" y="300" text-anchor="middle" font-size="10" font-weight="600">매일 자동 수집 (Cron)</text>
+<text x="400" y="314" text-anchor="middle" font-size="9" fill="#888">Meta 광고 + Mixpanel LP</text>
+
+<line x1="400" y1="324" x2="400" y2="340" stroke="#38A169" stroke-width="1.2" marker-end="url(#ag)"/>
+
+<rect x="295" y="342" width="210" height="42" rx="6" fill="#E6FFFA" stroke="#38A169"/>
+<text x="400" y="360" text-anchor="middle" font-size="10" font-weight="600">벤치마크 계산 (매주 월요일)</text>
+<text x="400" y="374" text-anchor="middle" font-size="9" fill="#888">전체 수강생 평균 산출</text>
+
+<line x1="400" y1="384" x2="400" y2="400" stroke="#38A169" stroke-width="1.2" marker-end="url(#ag)"/>
+
+<rect x="295" y="402" width="210" height="42" rx="6" fill="#38A169"/>
+<text x="400" y="420" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">4파트 27개 지표 진단</text>
+<text x="400" y="434" text-anchor="middle" font-size="9" fill="rgba(255,255,255,.8)">소재·LP·참여·전환</text>
+
+<line x1="400" y1="444" x2="400" y2="460" stroke="#38A169" stroke-width="1.2" marker-end="url(#ag)"/>
+
+<rect x="295" y="462" width="210" height="36" rx="6" fill="#fff" stroke="#38A169"/>
+<text x="400" y="484" text-anchor="middle" font-size="10" font-weight="600">진단 결과 + 개선 방향 표시</text>
+
+<!-- ════════ 2단: C 콘텐츠 (우) ════════ -->
+<rect x="540" y="192" width="250" height="310" rx="12" fill="#FFFBEB" stroke="#D69E2E" stroke-width="1.2"/>
+<text x="556" y="214" font-size="11" font-weight="800" fill="#D69E2E">C. 콘텐츠 소비 (→ 섹션 5)</text>
+
+<rect x="560" y="228" width="210" height="36" rx="6" fill="#fff" stroke="#D69E2E"/>
+<text x="665" y="250" text-anchor="middle" font-size="10" font-weight="600">교육 콘텐츠 · 공지 · 사례 열람</text>
+
+<line x1="665" y1="264" x2="665" y2="280" stroke="#D69E2E" stroke-width="1.2" marker-end="url(#ay)"/>
+
+<rect x="560" y="282" width="210" height="42" rx="6" fill="#FFF8DC" stroke="#D69E2E"/>
+<text x="665" y="300" text-anchor="middle" font-size="10" font-weight="600">운영진이 AI 보조로</text>
+<text x="665" y="314" text-anchor="middle" font-size="10" font-weight="600">콘텐츠 작성 (5종류)</text>
+
+<line x1="665" y1="324" x2="665" y2="340" stroke="#D69E2E" stroke-width="1.2" marker-end="url(#ay)"/>
+
+<rect x="560" y="342" width="210" height="42" rx="6" fill="#FFF8DC" stroke="#D69E2E"/>
+<text x="665" y="360" text-anchor="middle" font-size="10" font-weight="600">마크다운 → 이메일 HTML 변환</text>
+<text x="665" y="374" text-anchor="middle" font-size="9" fill="#888">배너 이미지 + 디자인 자동 적용</text>
+
+<line x1="665" y1="384" x2="665" y2="400" stroke="#D69E2E" stroke-width="1.2" marker-end="url(#ay)"/>
+
+<rect x="560" y="402" width="210" height="42" rx="6" fill="#D69E2E"/>
+<text x="665" y="420" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">뉴스레터 발송</text>
+<text x="665" y="434" text-anchor="middle" font-size="9" fill="rgba(255,255,255,.8)">수강생 + 구독자에게</text>
+
+<line x1="665" y1="444" x2="665" y2="460" stroke="#D69E2E" stroke-width="1.2" marker-end="url(#ay)"/>
+
+<rect x="560" y="462" width="210" height="36" rx="6" fill="#fff" stroke="#D69E2E"/>
+<text x="665" y="484" text-anchor="middle" font-size="10" font-weight="600">이메일 열람 · 클릭 추적</text>
+
+<!-- ════════ 3단: 연결선 (A↔B↔C 횡단) ════════ -->
+<line x1="240" y1="410" x2="275" y2="410" stroke="#7C3AED" stroke-width="1.5" stroke-dasharray="6 3" marker-end="url(#ap)"/>
+<text x="258" y="402" text-anchor="middle" font-size="7.5" fill="#7C3AED">지식 공유</text>
+
+<line x1="505" y1="310" x2="540" y2="310" stroke="#7C3AED" stroke-width="1.5" stroke-dasharray="6 3" marker-end="url(#ap)"/>
+<text x="522" y="302" text-anchor="middle" font-size="7.5" fill="#7C3AED">성과 사례화</text>
+
+<!-- ════════ 4단: 순환 ════════ -->
+<rect x="160" y="530" width="480" height="60" rx="30" fill="#F75D5D" opacity=".08" stroke="#F75D5D" stroke-width="1.5"/>
+<text x="400" y="558" text-anchor="middle" font-size="13" font-weight="800" fill="#E54949">학습 → 실행 → 성과 진단 → 개선 → 재학습 : 순환 구조</text>
+<text x="400" y="576" text-anchor="middle" font-size="10" fill="#E54949">모든 데이터가 Supabase(29개 테이블)에 저장되고, 22개 API로 연결됩니다</text>
+
+<!-- 순환 화살표 (좌→중→우→좌) -->
+<path d="M135,500 C80,530 80,580 200,570" stroke="#E54949" stroke-width="1.5" fill="none" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+<path d="M665,500 C720,530 720,580 600,570" stroke="#E54949" stroke-width="1.5" fill="none" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+
+<!-- ════════ 5단: 데이터 저장소 ════════ -->
+<rect x="0" y="610" width="800" height="115" rx="12" fill="#F5F5F5" stroke="#ccc" stroke-width="1"/>
+<text x="16" y="632" font-size="11" font-weight="800" fill="#888">데이터 저장소 (→ 섹션 2)</text>
+
+<rect x="20" y="645" width="120" height="65" rx="6" fill="#fff" stroke="#ddd"/>
+<text x="80" y="665" text-anchor="middle" font-size="9.5" font-weight="700">회원 영역</text>
+<text x="80" y="680" text-anchor="middle" font-size="8.5" fill="#888">profiles · leads</text>
+<text x="80" y="693" text-anchor="middle" font-size="8.5" fill="#888">student_registry</text>
+<text x="80" y="705" text-anchor="middle" font-size="8.5" fill="#888">service_secrets</text>
+
+<rect x="155" y="645" width="120" height="65" rx="6" fill="#fff" stroke="#ddd"/>
+<text x="215" y="665" text-anchor="middle" font-size="9.5" font-weight="700">QA 영역</text>
+<text x="215" y="680" text-anchor="middle" font-size="8.5" fill="#888">questions · answers</text>
+<text x="215" y="693" text-anchor="middle" font-size="8.5" fill="#888">lecture_chunks(664)</text>
+<text x="215" y="705" text-anchor="middle" font-size="8.5" fill="#888">knowledge_usage</text>
+
+<rect x="290" y="645" width="130" height="65" rx="6" fill="#fff" stroke="#ddd"/>
+<text x="355" y="665" text-anchor="middle" font-size="9.5" font-weight="700">성과 영역</text>
+<text x="355" y="680" text-anchor="middle" font-size="8.5" fill="#888">ad_accounts</text>
+<text x="355" y="693" text-anchor="middle" font-size="8.5" fill="#888">daily_ad_insights</text>
+<text x="355" y="705" text-anchor="middle" font-size="8.5" fill="#888">daily_lp_metrics</text>
+
+<rect x="435" y="645" width="120" height="65" rx="6" fill="#fff" stroke="#ddd"/>
+<text x="495" y="665" text-anchor="middle" font-size="9.5" font-weight="700">콘텐츠 영역</text>
+<text x="495" y="680" text-anchor="middle" font-size="8.5" fill="#888">contents</text>
+<text x="495" y="693" text-anchor="middle" font-size="8.5" fill="#888">distributions</text>
+<text x="495" y="705" text-anchor="middle" font-size="8.5" fill="#888">email_logs/sends</text>
+
+<rect x="570" y="645" width="100" height="65" rx="6" fill="#fff" stroke="#ddd"/>
+<text x="620" y="665" text-anchor="middle" font-size="9.5" font-weight="700">커리큘럼</text>
+<text x="620" y="680" text-anchor="middle" font-size="8.5" fill="#888">cohorts</text>
+<text x="620" y="693" text-anchor="middle" font-size="8.5" fill="#888">curriculum</text>
+<text x="620" y="705" text-anchor="middle" font-size="8.5" fill="#888">blocks · schedules</text>
+
+<rect x="685" y="645" width="100" height="65" rx="6" fill="#fff" stroke="#ddd"/>
+<text x="735" y="665" text-anchor="middle" font-size="9.5" font-weight="700">기타</text>
+<text x="735" y="680" text-anchor="middle" font-size="8.5" fill="#888">qa_categories</text>
+<text x="735" y="693" text-anchor="middle" font-size="8.5" fill="#888">comments · likes</text>
+<text x="735" y="705" text-anchor="middle" font-size="8.5" fill="#888">benchmarks</text>
+
+<!-- ════════ 6단: 외부 서비스 ════════ -->
+<rect x="0" y="745" width="800" height="70" rx="12" fill="#fff" stroke="#aaa" stroke-width="1" stroke-dasharray="6 3"/>
+<text x="16" y="767" font-size="11" font-weight="800" fill="#aaa">외부 서비스 (→ 섹션 7)</text>
+
+<rect x="20" y="782" width="130" height="24" rx="4" fill="#4267B2"/>
+<text x="85" y="798" text-anchor="middle" font-size="9.5" font-weight="600" fill="#fff">Meta Graph API</text>
+<rect x="165" y="782" width="110" height="24" rx="4" fill="#7856FF"/>
+<text x="220" y="798" text-anchor="middle" font-size="9.5" font-weight="600" fill="#fff">Mixpanel API</text>
+<rect x="290" y="782" width="130" height="24" rx="4" fill="#D97706"/>
+<text x="355" y="798" text-anchor="middle" font-size="9.5" font-weight="600" fill="#fff">Anthropic Opus 4.6</text>
+<rect x="435" y="782" width="130" height="24" rx="4" fill="#1A73E8"/>
+<text x="500" y="798" text-anchor="middle" font-size="9.5" font-weight="600" fill="#fff">Gemini 임베딩</text>
+<rect x="580" y="782" width="100" height="24" rx="4" fill="#3ECF8E"/>
+<text x="630" y="798" text-anchor="middle" font-size="9.5" font-weight="600" fill="#fff">Supabase</text>
+<rect x="695" y="782" width="90" height="24" rx="4" fill="#333"/>
+<text x="740" y="798" text-anchor="middle" font-size="9.5" font-weight="600" fill="#fff">Vercel</text>
+
+<!-- 범례 -->
+<rect x="0" y="840" width="800" height="70" rx="8" fill="#FAFAFA" stroke="#eee"/>
+<text x="20" y="862" font-size="10" font-weight="700" fill="#666">범례</text>
+<line x1="60" y1="858" x2="90" y2="858" stroke="#4A90D9" stroke-width="2"/>
+<text x="96" y="862" font-size="9" fill="#666">A. 학습 지원</text>
+<line x1="170" y1="858" x2="200" y2="858" stroke="#38A169" stroke-width="2"/>
+<text x="206" y="862" font-size="9" fill="#666">B. 성과 진단</text>
+<line x1="280" y1="858" x2="310" y2="858" stroke="#D69E2E" stroke-width="2"/>
+<text x="316" y="862" font-size="9" fill="#666">C. 콘텐츠</text>
+<line x1="380" y1="858" x2="410" y2="858" stroke="#7C3AED" stroke-width="2" stroke-dasharray="6 3"/>
+<text x="416" y="862" font-size="9" fill="#666">A↔B↔C 횡단 연결</text>
+<line x1="520" y1="858" x2="550" y2="858" stroke="#E54949" stroke-width="2" stroke-dasharray="5 3"/>
+<text x="556" y="862" font-size="9" fill="#666">순환 흐름</text>
+<text x="20" y="895" font-size="9" fill="#999">지식 공유: QA 답변에 사용된 AI 지식이 콘텐츠 작성에도 재활용됩니다 (같은 lecture_chunks 참조)</text>
+<text x="20" y="908" font-size="9" fill="#999">성과 사례화: 수강생 광고 성과(daily_ad_insights)가 우수하면 콘텐츠(case_study)로 변환됩니다</text>
+</svg>
+<div class="dia-cap">그림 0-1. BS CAMP 고객 여정 전체 흐름도 — 3개 파이프라인이 하나의 순환으로 연결됨</div>
+</div>
+
+<div class="box">
+  <div class="bl">이 그림이 핵심입니다</div>
+  BS CAMP는 단순한 QA 게시판이 아닙니다. <strong>학습(A) → 실행 → 성과 진단(B) → 개선 → 재학습</strong>의 순환 구조를 데이터로 연결하고, 그 과정에서 생산된 콘텐츠를 <strong>뉴스레터(C)로 외부 잠재 고객</strong>에게 보내 새로운 수강생으로 전환합니다. 3개 파이프라인이 <strong>같은 데이터 저장소(29개 테이블)</strong>를 공유하며 유기적으로 동작합니다.
+</div>
+</section>
+<div class="pb"></div>
+
+<!-- ═══════════════════ 섹션 1: 시스템 개요 ═══════════════════ -->
+<section id="s1">
+<h2>1. 시스템 개요</h2>
+
+<p>BS CAMP는 메타 광고를 배우는 자사몰 사장님(수강생)을 위한 <strong>통합 학습·성과 관리 플랫폼</strong>입니다. 별도 서버 없이 운영되는 서버리스(Serverless) 구조로, 사용량에 따라 비용이 결정됩니다.</p>
+
+<table>
+  <tr><th>구분</th><th>사용 기술</th><th>쉬운 설명</th></tr>
+  <tr><td>웹 프레임워크</td><td>Next.js 16 (App Router)</td><td>화면과 서버 로직을 한 곳에서 만드는 도구</td></tr>
+  <tr><td>프로그래밍 언어</td><td>TypeScript 5.9</td><td>오류를 미리 잡아주는 안전한 자바스크립트</td></tr>
+  <tr><td>화면 디자인</td><td>TailwindCSS 4 + shadcn/ui</td><td>미리 만들어진 디자인 부품 모음</td></tr>
+  <tr><td>데이터 저장</td><td>Supabase (PostgreSQL + pgvector)</td><td>데이터베이스 + AI 벡터 검색</td></tr>
+  <tr><td>회원 인증</td><td>Supabase Auth</td><td>회원가입·로그인·권한 관리</td></tr>
+  <tr><td>파일 저장</td><td>Supabase Storage</td><td>이미지, 첨부파일 보관소</td></tr>
+  <tr><td>AI 답변 생성</td><td>Anthropic Claude Opus 4.6</td><td>강의 기반 AI 답변 작성</td></tr>
+  <tr><td>AI 텍스트 변환</td><td>Gemini gemini-embedding-001</td><td>텍스트를 숫자로 변환하여 유사도 비교</td></tr>
+  <tr><td>웹 호스팅</td><td>Vercel</td><td>웹사이트를 인터넷에 올려주는 서비스</td></tr>
+  <tr><td>자동 작업</td><td>Vercel Cron (2개)</td><td>매일/매주 자동으로 데이터 수집</td></tr>
+</table>
+
+<h3>자동화 예약 작업</h3>
+<table>
+  <tr><th>작업</th><th>실행 시간</th><th>하는 일</th></tr>
+  <tr><td><code>collect-daily</code></td><td>매일 03:00 UTC (정오 KST)</td><td>모든 수강생의 어제 Meta 광고 데이터 + Mixpanel LP 행동 데이터 자동 수집</td></tr>
+  <tr><td><code>collect-benchmarks</code></td><td>매주 월 02:00 UTC</td><td>전체 수강생 성과를 모아 평균 기준값(벤치마크) 재계산</td></tr>
+</table>
+
+<h3>회원 권한 5단계</h3>
+<p>흐름도의 <span class="flow-badge">유입</span> 구간에 해당합니다.</p>
+<table>
+  <tr><th>단계</th><th>역할명</th><th>접근 가능 기능</th></tr>
+  <tr><td>1</td><td>lead (가입 대기)</td><td>/pending 대기 페이지만 표시</td></tr>
+  <tr><td>2</td><td>member (일반 회원)</td><td>대시보드 · 게시판 · 공지사항</td></tr>
+  <tr><td>3</td><td>student (수강생)</td><td>+ QA 질문 · 성과 진단(총각치각도기) · 설정</td></tr>
+  <tr><td>4</td><td>alumni (졸업생)</td><td>student와 동일 (수료 후에도 접근 유지)</td></tr>
+  <tr><td>5</td><td>admin (관리자)</td><td>전체 기능 + 관리자 패널</td></tr>
+</table>
+</section>
+
+<!-- ═══════════════════ 섹션 2: DB 구조 ═══════════════════ -->
+<section id="s2">
+<h2>2. 데이터 저장소 — 29개 테이블 구조</h2>
+<p>흐름도 하단 <span class="flow-badge">데이터 저장소</span> 영역에 해당합니다. 모든 파이프라인이 이 저장소를 공유합니다.</p>
+
+<h3>영역별 테이블 목록</h3>
+
+<h4>회원·인증 (6개 테이블)</h4>
+<table>
+  <tr><th>테이블</th><th>역할</th><th>주요 컬럼</th><th>연결</th></tr>
+  <tr><td><code>profiles</code></td><td>회원 프로필 (중심 테이블)</td><td>email · name · role(5단계) · shop_name · cohort · meta_account_id</td><td>auth.users → FK</td></tr>
+  <tr><td><code>leads</code></td><td>뉴스레터 구독자·잠재 고객</td><td>email · name · status · email_opted_out</td><td>독립</td></tr>
+  <tr><td><code>student_registry</code></td><td>수강 대장 (운영 기록)</td><td>name · email · cohort · shop_name</td><td>matched_profile_id → profiles</td></tr>
+  <tr><td><code>service_secrets</code></td><td>외부 서비스 비밀키 보관</td><td>service(mixpanel 등) · key_name · key_value</td><td>user_id → profiles</td></tr>
+  <tr><td><code>notification_preferences</code></td><td>알림 설정</td><td>email_enabled · notify_new_post · notify_answer</td><td>user_id → profiles</td></tr>
+  <tr><td><code>progress</code></td><td>학습 진도</td><td>completed · updated_at</td><td>독립</td></tr>
+</table>
+
+<h4>QA·학습 (5개 테이블)</h4>
+<table>
+  <tr><th>테이블</th><th>역할</th><th>주요 컬럼</th><th>연결</th></tr>
+  <tr><td><code>questions</code></td><td>수강생 질문</td><td>title · content · image_urls · embedding(벡터) · status(open/answered/closed)</td><td>author_id → profiles, category_id → qa_categories</td></tr>
+  <tr><td><code>answers</code></td><td>답변 (사람 + AI)</td><td>content · is_ai · is_approved · source_refs(출처)</td><td>question_id → questions, author_id → profiles</td></tr>
+  <tr><td><code>lecture_chunks</code></td><td>강의 지식 저장소 (664개)</td><td>lecture_name · week · content · embedding(768차원) · source_type(5종)</td><td>독립</td></tr>
+  <tr><td><code>knowledge_usage</code></td><td>AI 사용량 기록</td><td>consumer_type(6종) · tokens · model · duration_ms</td><td>question_id → questions, content_id → contents</td></tr>
+  <tr><td><code>qa_categories</code></td><td>질문 카테고리</td><td>name · slug · sort_order</td><td>독립</td></tr>
+</table>
+
+<h4>광고 성과 (4개 테이블)</h4>
+<table>
+  <tr><th>테이블</th><th>역할</th><th>주요 컬럼</th><th>연결</th></tr>
+  <tr><td><code>ad_accounts</code></td><td>수강생 광고 계정</td><td>account_id · account_name · mixpanel_project_id · active</td><td>user_id → profiles</td></tr>
+  <tr><td><code>daily_ad_insights</code></td><td>일별 Meta 광고 지표</td><td>date · roas · spend · impressions · clicks · purchases · ctr + 4개</td><td>account_id → ad_accounts</td></tr>
+  <tr><td><code>daily_lp_metrics</code></td><td>일별 LP 행동 지표</td><td>total_users · bounce_1s/10s_rate · avg_time · scroll_25/50/75 + 5개</td><td>account_id → ad_accounts</td></tr>
+  <tr><td><code>benchmarks</code></td><td>주간 벤치마크</td><td>metric_name · p50 · p75 · p90 · avg · sample_size</td><td>독립 (매주 재계산)</td></tr>
+</table>
+
+<h4>콘텐츠·이메일 (5개 테이블)</h4>
+<table>
+  <tr><th>테이블</th><th>역할</th><th>주요 컬럼</th><th>연결</th></tr>
+  <tr><td><code>contents</code></td><td>모든 콘텐츠 (교육·공지·사례·웨비나·프로모)</td><td>title · body_md · type(5종) · status(5단계) · email_html · email_design_json</td><td>author_id → profiles</td></tr>
+  <tr><td><code>distributions</code></td><td>콘텐츠 배포 기록</td><td>channel · status · rendered_body</td><td>content_id → contents</td></tr>
+  <tr><td><code>email_logs</code></td><td>이메일 발송 기록 (전체)</td><td>subject · html_body · recipient_count · status</td><td>content_id → contents</td></tr>
+  <tr><td><code>email_sends</code></td><td>이메일 발송 기록 (건별)</td><td>recipient_email · status · opened_at · clicked_at</td><td>독립</td></tr>
+  <tr><td><code>content_sources</code></td><td>외부 콘텐츠 크롤링 소스</td><td>url · feed_type(rss/html/api) · crawl_frequency</td><td>독립</td></tr>
+</table>
+
+<h4>커리큘럼 (5개 테이블)</h4>
+<table>
+  <tr><th>테이블</th><th>역할</th><th>연결</th></tr>
+  <tr><td><code>cohorts</code></td><td>기수 관리 (1기, 2기...)</td><td>독립</td></tr>
+  <tr><td><code>assignments</code></td><td>주차별 과제</td><td>cohort_id → cohorts</td></tr>
+  <tr><td><code>schedules</code></td><td>수업 시간표</td><td>cohort_id → cohorts</td></tr>
+  <tr><td><code>categories</code></td><td>수업 과목 분류</td><td>독립</td></tr>
+  <tr><td><code>blocks</code></td><td>수업 블록 (강의 단위)</td><td>category_id → categories, parent_id → blocks(자기참조)</td></tr>
+</table>
+
+<h4>기타 (4개)</h4>
+<table>
+  <tr><th>테이블</th><th>역할</th></tr>
+  <tr><td><code>curriculum</code></td><td>기수-블록 편성표 (cohort_id + block_id 연결)</td></tr>
+  <tr><td><code>comments</code></td><td>질문에 달린 댓글</td></tr>
+  <tr><td><code>likes</code></td><td>질문·답변 좋아요</td></tr>
+  <tr><td><code>structure_comments</code></td><td>구조 관련 메모</td></tr>
+</table>
+
+<h3>데이터베이스 내장 함수 (RPC)</h3>
+<table>
+  <tr><th>함수</th><th>하는 일</th><th>사용 위치</th></tr>
+  <tr><td><code>match_lecture_chunks</code></td><td>입력 벡터와 가장 유사한 강의 청크 반환 (코사인 유사도)</td><td>rag.ts, knowledge.ts</td></tr>
+  <tr><td><code>is_admin</code> / <code>is_student_or_above</code></td><td>현재 로그인한 사용자의 역할 확인 (행 보안 정책에 사용)</td><td>RLS 정책</td></tr>
+  <tr><td><code>get_user_role</code></td><td>현재 사용자의 역할 문자열 반환</td><td>RLS 정책</td></tr>
+</table>
+</section>
+<div class="pb"></div>
+
+<!-- ═══════════════════ 섹션 3: A 학습 지원 ═══════════════════ -->
+<section id="s3">
+<h2><span class="flow-badge">A</span> 3. 학습 지원 — AI가 강의를 찾아 답변하는 과정</h2>
+<p>흐름도의 <strong>파란색 A 영역</strong>에 해당합니다. 수강생이 질문하면 AI가 강의 내용에서 관련 부분을 찾아 자동 답변합니다.</p>
+
+<h3>작동 원리 (6단계)</h3>
+<table>
+  <tr><th>단계</th><th>일어나는 일</th><th>사용 기술</th><th>저장 위치</th></tr>
+  <tr><td><strong>1</strong></td><td>수강생이 질문을 작성합니다</td><td>웹 폼</td><td><code>questions</code> 테이블</td></tr>
+  <tr><td><strong>2</strong></td><td>질문 텍스트를 768개의 숫자(벡터)로 변환합니다</td><td>Gemini 임베딩 API</td><td>(메모리)</td></tr>
+  <tr><td><strong>3</strong></td><td>강의 자료 664개 조각(청크) 중 가장 비슷한 5개를 찾습니다</td><td>pgvector 코사인 유사도</td><td><code>lecture_chunks</code></td></tr>
+  <tr><td><strong>4</strong></td><td>찾은 강의 내용(최대 3,000자)과 질문을 합쳐서 AI에게 보냅니다</td><td>Anthropic Opus 4.6</td><td>(API 호출)</td></tr>
+  <tr><td><strong>5</strong></td><td>AI가 "대표 Smith 말투"로 답변을 생성합니다 (미승인 상태)</td><td>시스템 프롬프트</td><td><code>answers</code> (is_approved=false)</td></tr>
+  <tr><td><strong>6</strong></td><td>관리자가 검토 후 승인하면 수강생에게 공개됩니다</td><td>관리자 패널</td><td><code>answers</code> (is_approved=true)</td></tr>
+</table>
+
+<h3>강의 지식 소스 5종류</h3>
+<p><code>lecture_chunks</code> 테이블의 <code>source_type</code> 컬럼으로 구분됩니다.</p>
+<table>
+  <tr><th>소스</th><th>설명</th><th>예시</th></tr>
+  <tr><td><strong>lecture</strong></td><td>강의 녹취록·슬라이드</td><td>메타 광고 구조 3주차</td></tr>
+  <tr><td><strong>qa_archive</strong></td><td>과거 우수 QA 답변</td><td>축적된 질문·답변</td></tr>
+  <tr><td><strong>crawl</strong></td><td>외부 웹 크롤링</td><td>메타 공식 도움말</td></tr>
+  <tr><td><strong>meeting</strong></td><td>미팅/세미나 녹취</td><td>라이브 세션 기록</td></tr>
+  <tr><td><strong>manual</strong></td><td>운영진 직접 입력</td><td>자주 묻는 질문</td></tr>
+</table>
+
+<h3>6가지 용도별 AI 설정 (KnowledgeService)</h3>
+<p>같은 지식 저장소를 <strong>용도에 따라 다르게</strong> 검색합니다. 이것이 A↔C 횡단 연결(지식 공유)의 핵심입니다.</p>
+<table>
+  <tr><th>용도</th><th>검색 수</th><th>유사도 기준</th><th>글자 예산</th><th>창의성</th><th>사용 소스</th></tr>
+  <tr><td><strong>qa</strong> (수강생 질문 답변)</td><td>5</td><td>0.4</td><td>3,000</td><td>0.3 보수적</td><td>lecture, qa_archive, manual</td></tr>
+  <tr><td><strong>newsletter</strong> (뉴스레터)</td><td>5</td><td>0.4</td><td>3,000</td><td>0.5 중립</td><td>lecture, crawl</td></tr>
+  <tr><td><strong>education</strong> (교육 콘텐츠)</td><td>7</td><td>0.5</td><td>5,000</td><td>0.3 보수적</td><td>lecture</td></tr>
+  <tr><td><strong>webinar</strong> (웨비나 자료)</td><td>3</td><td>0.4</td><td>2,000</td><td>0.6 유연</td><td>lecture, crawl</td></tr>
+  <tr><td><strong>chatbot</strong> (실시간 챗봇)</td><td>5</td><td>0.3</td><td>4,000</td><td>0.4 중립</td><td>전체</td></tr>
+  <tr><td><strong>promo</strong> (프로모션 문구)</td><td>3</td><td>0.5</td><td>2,000</td><td>0.7 창의적</td><td>lecture, manual</td></tr>
+</table>
+<p style="font-size:.85rem;color:#888">파일: <code>src/lib/knowledge.ts</code> · <code>src/lib/rag.ts</code> · <code>src/lib/gemini.ts</code></p>
+
+<div class="box blue">
+  <div class="bl">관리자 승인 워크플로우</div>
+  AI 답변은 자동 생성되지만 <strong>바로 공개되지 않습니다</strong>. 관리자가 검토 후 승인·수정·삭제 중 선택해야 수강생에게 표시됩니다. AI 품질을 보장하는 안전장치입니다.
+</div>
+</section>
+<div class="pb"></div>
+
+<!-- ═══════════════════ 섹션 4: B 성과 진단 ═══════════════════ -->
+<section id="s4">
+<h2><span class="flow-badge" style="background:#38A169">B</span> 4. 성과 진단 — 광고 데이터 자동 수집과 진단</h2>
+<p>흐름도의 <strong>초록색 B 영역</strong>에 해당합니다. 수강생의 실제 광고 성과를 매일 자동으로 수집하고, 다른 수강생들의 평균과 비교하여 진단합니다.</p>
+
+<h3>데이터 수집 (매일 자동)</h3>
+
+<h4>Meta 광고 데이터 (daily_ad_insights)</h4>
+<table>
+  <tr><th>항목</th><th>상세</th></tr>
+  <tr><td>API</td><td>Meta Graph API v21.0 · <code>act_{accountId}/insights</code></td></tr>
+  <tr><td>수집 단위</td><td>광고(ad) 레벨 · 어제 날짜 · 최대 500건</td></tr>
+  <tr><td>수집 지표 10개</td><td>spend · impressions · reach · clicks · ctr · purchases · purchase_value · roas · add_to_cart · initiate_checkout</td></tr>
+  <tr><td>저장</td><td><code>daily_ad_insights</code> 테이블에 캠페인→광고세트→광고 이름과 함께 저장</td></tr>
+</table>
+
+<h4>Mixpanel LP 행동 데이터 (daily_lp_metrics)</h4>
+<table>
+  <tr><th>항목</th><th>상세</th></tr>
+  <tr><td>API</td><td>Mixpanel Segmentation API v2.0</td></tr>
+  <tr><td>필터</td><td>utm_source가 meta/facebook/fb/ig/instagram인 트래픽만 (Meta 광고 유입만 분석)</td></tr>
+  <tr><td>수집 지표 12개</td><td>total_users · bounce_1s/10s_rate · avg_time_on_page · scroll_25/50/75_rate · review_click_rate · total_button_clicks · session_to_cart/checkout/purchase · checkout_to_purchase</td></tr>
+  <tr><td>최소 조건</td><td>세션 10 미만이면 저장하지 않음 (데이터 신뢰도 확보)</td></tr>
+</table>
+
+<h3>벤치마크 계산 (매주 월요일 자동)</h3>
+<p>수집된 전체 데이터를 3개 그룹(상위·중간·하위)으로 나눠 평균을 구합니다. <code>benchmarks</code> 테이블에 저장됩니다.</p>
+
+<h3>진단 엔진 — 4파트 27개 지표</h3>
+<p>수강생의 지표를 벤치마크와 비교하여 3단계(GOOD·NORMAL·POOR)로 판정합니다.</p>
+<table>
+  <tr><th>파트</th><th>이름</th><th>측정 내용</th><th>지표 수</th><th>데이터 출처</th></tr>
+  <tr><td><strong>0</strong></td><td>기반점수 (소재 품질)</td><td>3초 시청률 · ThruPlay율 · 지속비율</td><td>3</td><td>daily_ad_insights</td></tr>
+  <tr><td><strong>1</strong></td><td>LP 품질</td><td>이탈률 · 체류시간 · 스크롤 깊이 · 리뷰 클릭 · 버튼 클릭</td><td>10</td><td>daily_lp_metrics</td></tr>
+  <tr><td><strong>2</strong></td><td>참여율</td><td>좋아요·댓글·공유·참여합계 (만 노출당)</td><td>4</td><td>daily_ad_insights</td></tr>
+  <tr><td><strong>3</strong></td><td>전환율</td><td>CTR · 클릭→장바구니/결제/구매 · LP세션→장바구니/결제/구매</td><td>10</td><td>양쪽 모두</td></tr>
+</table>
+
+<div class="box green">
+  <div class="bl">비즈니스 가치</div>
+  수강생은 자기 광고 성과를 <strong>다른 수강생 평균과 자동 비교</strong>받을 수 있습니다. 어떤 부분이 약한지 한눈에 보이고, 그에 맞는 강의(A 학습 지원)를 다시 찾아볼 수 있습니다. 이것이 흐름도의 <strong>"순환 구조"</strong>입니다.
+</div>
+<p style="font-size:.85rem;color:#888">파일: <code>src/lib/diagnosis/engine.ts</code> · <code>src/lib/diagnosis/metrics.ts</code> · <code>src/app/api/cron/collect-daily/route.ts</code></p>
+</section>
+<div class="pb"></div>
+
+<!-- ═══════════════════ 섹션 5: C 콘텐츠 ═══════════════════ -->
+<section id="s5">
+<h2><span class="flow-badge" style="background:#D69E2E">C</span> 5. 콘텐츠·뉴스레터 — 만들고 보내는 과정</h2>
+<p>흐름도의 <strong>노란색 C 영역</strong>에 해당합니다. 운영진이 콘텐츠를 만들고, 수강생과 구독자에게 이메일로 발송합니다.</p>
+
+<h3>콘텐츠 제작 흐름 (5단계)</h3>
+<table>
+  <tr><th>단계</th><th>일어나는 일</th><th>파일</th></tr>
+  <tr><td><strong>1</strong></td><td>관리자가 마크다운으로 콘텐츠 작성 (Tiptap 에디터)</td><td>contents.body_md</td></tr>
+  <tr><td><strong>2</strong></td><td>AI가 요약문 생성 · 글 작성 보조 (선택)</td><td>api/admin/content/summarize · ai-write</td></tr>
+  <tr><td><strong>3</strong></td><td>상태 관리: draft → review → ready → published</td><td>contents.status</td></tr>
+  <tr><td><strong>4</strong></td><td>발행 시 마크다운 → 이메일 HTML 자동 변환 (배너 이미지, 디자인 템플릿 적용)</td><td>email-template-utils.ts</td></tr>
+  <tr><td><strong>5</strong></td><td>게시판에 공개 + 뉴스레터 발송 가능 상태</td><td>contents.published_at</td></tr>
+</table>
+
+<h3>콘텐츠 유형 5가지</h3>
+<table>
+  <tr><th>유형</th><th>설명</th><th>이메일 디자인</th></tr>
+  <tr><td><strong>education</strong></td><td>교육 콘텐츠 (강의 정리, 팁)</td><td>템플릿 A (기본형)</td></tr>
+  <tr><td><strong>notice</strong></td><td>공지사항</td><td>템플릿 B (서브타이틀 + 히어로)</td></tr>
+  <tr><td><strong>case_study</strong></td><td>수강생 성공 사례</td><td>템플릿 C (케이스 스터디형)</td></tr>
+  <tr><td><strong>webinar</strong></td><td>웨비나·라이브 안내</td><td>다크 테마 (등록 유도)</td></tr>
+  <tr><td><strong>promo</strong></td><td>프로모션·마케팅</td><td>레드 헤더 (혜택 강조)</td></tr>
+</table>
+
+<h3>뉴스레터 발송 흐름</h3>
+<table>
+  <tr><th>단계</th><th>일어나는 일</th><th>API</th></tr>
+  <tr><td><strong>1</strong></td><td>수신자 선택: 전체(all) · 구독자만(leads) · 수강생만(students) · 일반회원(members) · 직접입력(custom)</td><td>/api/admin/email/recipients</td></tr>
+  <tr><td><strong>2</strong></td><td>이메일 미리보기 확인</td><td>/api/admin/email/preview</td></tr>
+  <tr><td><strong>3</strong></td><td>발송 실행 (이메일 중복 자동 제거)</td><td>/api/admin/email/send</td></tr>
+  <tr><td><strong>4</strong></td><td>발송 기록 저장 · 건별 추적</td><td>email_logs + email_sends</td></tr>
+</table>
+
+<div class="box yellow">
+  <div class="bl">A↔B↔C 횡단 연결</div>
+  <ul style="margin:0">
+    <li><strong>지식 공유 (A→C)</strong>: QA 답변에 사용한 강의 지식(lecture_chunks)을 뉴스레터 작성에도 재활용합니다. newsletter Consumer가 같은 지식 저장소를 참조합니다.</li>
+    <li><strong>성과 사례화 (B→C)</strong>: 수강생의 우수 광고 성과(daily_ad_insights)를 case_study 콘텐츠로 변환하여 다른 수강생에게 공유합니다.</li>
+    <li><strong>뉴스레터 → 유입 (C→유입)</strong>: 구독자(leads)에게 발송된 뉴스레터가 새 수강생 유입으로 이어지는 전환 경로입니다.</li>
+  </ul>
+</div>
+</section>
+<div class="pb"></div>
+
+<!-- ═══════════════════ 섹션 6: API 전체 맵 ═══════════════════ -->
+<section id="s6">
+<h2>6. API 전체 맵 — 22개 기능 접점</h2>
+<p>각 API가 흐름도의 어느 영역에 속하는지 표시했습니다.</p>
+
+<h4>공개 API (5개)</h4>
+<table>
+  <tr><th>#</th><th>경로</th><th>하는 일</th><th>흐름도 영역</th></tr>
+  <tr><td>1</td><td><code>GET /api/posts</code></td><td>공개 게시글 목록 조회</td><td>C 콘텐츠</td></tr>
+  <tr><td>2</td><td><code>POST /api/posts</code></td><td>게시글 작성</td><td>C 콘텐츠</td></tr>
+  <tr><td>3</td><td><code>GET /api/sales-summary</code></td><td>대시보드 매출 요약</td><td>B 성과</td></tr>
+  <tr><td>4</td><td><code>POST /api/verify-business</code></td><td>사업자등록번호 확인</td><td>유입</td></tr>
+  <tr><td>5</td><td><code>POST /api/notifications</code></td><td>알림 전송</td><td>전체</td></tr>
+</table>
+
+<h4>수강생 API (6개) — B 성과 진단 영역</h4>
+<table>
+  <tr><th>#</th><th>경로</th><th>하는 일</th></tr>
+  <tr><td>6</td><td><code>GET /api/protractor/accounts</code></td><td>내 광고 계정 목록</td></tr>
+  <tr><td>7</td><td><code>GET /api/protractor/insights</code></td><td>기간별 광고 성과 조회</td></tr>
+  <tr><td>8</td><td><code>GET /api/protractor/lp-metrics</code></td><td>LP 행동 지표 조회</td></tr>
+  <tr><td>9</td><td><code>GET /api/protractor/benchmarks</code></td><td>벤치마크 비교 데이터</td></tr>
+  <tr><td>10</td><td><code>POST /api/protractor/save-secret</code></td><td>Mixpanel 비밀키 저장</td></tr>
+  <tr><td>11</td><td><code>POST /api/diagnose</code></td><td>4파트 27지표 진단 실행</td></tr>
+</table>
+
+<h4>관리자 API (10개)</h4>
+<table>
+  <tr><th>#</th><th>경로</th><th>하는 일</th><th>흐름도 영역</th></tr>
+  <tr><td>12</td><td><code>GET /api/admin/accounts</code></td><td>전체 광고 계정 현황</td><td>B 성과</td></tr>
+  <tr><td>13</td><td><code>PUT /api/admin/accounts/assign</code></td><td>수강생에 계정 할당</td><td>B 성과</td></tr>
+  <tr><td>14</td><td><code>GET /api/admin/protractor/status</code></td><td>수강생 데이터 수집 현황</td><td>B 성과</td></tr>
+  <tr><td>15</td><td><code>POST /api/admin/content/summarize</code></td><td>콘텐츠 AI 요약 생성</td><td>C 콘텐츠</td></tr>
+  <tr><td>16</td><td><code>PATCH /api/admin/content/[id]/newsletter</code></td><td>뉴스레터 HTML 변환</td><td>C 콘텐츠</td></tr>
+  <tr><td>17</td><td><code>GET /api/admin/email/recipients</code></td><td>수신자 목록·통계</td><td>C 콘텐츠</td></tr>
+  <tr><td>18</td><td><code>POST /api/admin/email/ai-write</code></td><td>AI 이메일 본문 작성</td><td>A+C</td></tr>
+  <tr><td>19</td><td><code>POST /api/admin/email/preview</code></td><td>이메일 미리보기</td><td>C 콘텐츠</td></tr>
+  <tr><td>20</td><td><code>POST /api/admin/email/send</code></td><td>이메일 발송 실행</td><td>C 콘텐츠</td></tr>
+  <tr><td>21</td><td><code>POST /api/admin/email/upload</code></td><td>이메일 이미지 업로드</td><td>C 콘텐츠</td></tr>
+</table>
+
+<h4>자동화 Cron API (2개)</h4>
+<table>
+  <tr><th>#</th><th>경로</th><th>실행 주기</th><th>하는 일</th></tr>
+  <tr><td>22</td><td><code>POST /api/cron/collect-daily</code></td><td>매일 03:00 UTC</td><td>Meta 광고 + Mixpanel LP 데이터 수집</td></tr>
+  <tr><td>23</td><td><code>POST /api/cron/collect-benchmarks</code></td><td>매주 월 02:00 UTC</td><td>벤치마크 재계산</td></tr>
+</table>
+</section>
+
+<!-- ═══════════════════ 섹션 7: 외부 연동 ═══════════════════ -->
+<section id="s7">
+<h2>7. 외부 서비스 연동</h2>
+<p>흐름도 하단 <span class="flow-badge" style="background:#888">외부 서비스</span> 영역에 해당합니다.</p>
+
+<table>
+  <tr><th>서비스</th><th>하는 일</th><th>흐름도 연결</th><th>호출 빈도</th><th>인증 방식</th></tr>
+  <tr><td><strong>Meta Graph API v21.0</strong></td><td>광고 성과 수집 (10개 지표, ad 레벨)</td><td>B 성과 진단</td><td>매일 Cron</td><td>Long-lived Access Token</td></tr>
+  <tr><td><strong>Mixpanel Segmentation v2.0</strong></td><td>LP 행동 분석 (12개 지표, Meta UTM 필터)</td><td>B 성과 진단</td><td>매일 Cron</td><td>Service Secret (Basic Auth)</td></tr>
+  <tr><td><strong>Anthropic Opus 4.6</strong></td><td>AI 답변·콘텐츠 생성 (max 8,192 토큰, 280초 타임아웃)</td><td>A 학습 + C 콘텐츠</td><td>요청 시</td><td>API Key</td></tr>
+  <tr><td><strong>Google Gemini</strong></td><td>텍스트→768차원 벡터 변환 (유사도 검색용)</td><td>A 학습 (RAG)</td><td>질문·검색 시</td><td>API Key</td></tr>
+  <tr><td><strong>Supabase</strong></td><td>데이터베이스 + 인증 + 파일 저장소</td><td>전체</td><td>모든 요청</td><td>Anon Key + Service Role Key</td></tr>
+  <tr><td><strong>Vercel</strong></td><td>웹 호스팅 + 서버리스 함수 + Cron</td><td>전체</td><td>상시</td><td>Deploy Token + CRON_SECRET</td></tr>
+</table>
+</section>
+<div class="pb"></div>
+
+<!-- ═══════════════════ 섹션 8: 한계점 ═══════════════════ -->
+<section id="s8">
+<h2>8. 현재 한계점과 개선 기회</h2>
+<p>코드에서 직접 확인한 구조적 한계입니다. 현재 서비스 운영에 치명적이지는 않지만, 성장에 따라 개선이 필요한 부분들입니다.</p>
+
+<table>
+  <tr><th>영역</th><th>항목</th><th>현재 상태</th><th>영향</th></tr>
+  <tr><td rowspan="3">B 데이터 수집</td>
+    <td>Meta 토큰 단일 관리</td><td>환경변수 하나로 전체 계정 접근</td><td>토큰 만료 시 전체 중단</td></tr>
+  <tr><td>중복 데이터 방지 없음</td><td>daily_ad_insights에 upsert 없이 단순 insert</td><td>Cron 중복 실행 시 이중 저장</td></tr>
+  <tr><td>최소 세션 10 제한</td><td>세션 10 미만이면 LP 데이터 미저장</td><td>초기 테스트 데이터 누락</td></tr>
+  <tr><td rowspan="3">A AI/RAG</td>
+    <td>임베딩 모델 고정</td><td>gemini-embedding-001 하드코딩</td><td>모델 변경 시 664개 재임베딩 필요</td></tr>
+  <tr><td>타임아웃 280초</td><td>Vercel Pro 300초 제한에 맞춤</td><td>복잡한 질문 시 응답 지연</td></tr>
+  <tr><td>토큰 예산 부정확</td><td>한국어 글자수 기준으로 자름</td><td>실제 토큰과 차이 발생</td></tr>
+  <tr><td rowspan="2">C 이메일</td>
+    <td>열람 추적 미구현</td><td>opened_at, clicked_at 컬럼 존재하나 추적 웹훅 없음</td><td>이메일 성과 측정 불가</td></tr>
+  <tr><td>구독 해지 보안 취약</td><td>이메일을 base64url 인코딩만 (서명 없음)</td><td>URL 추측으로 타인 해지 가능</td></tr>
+  <tr><td rowspan="2">전체 구조</td>
+    <td>RLS 사실상 미활용</td><td>대부분 service_role로 접근 (보안 정책 우회)</td><td>권한 관리가 코드에만 의존</td></tr>
+  <tr><td>타입 정의 이중화</td><td>database.ts와 supabase.ts 두 파일 공존</td><td>스키마 변경 시 양쪽 수정 필요</td></tr>
+</table>
+
+<div class="box">
+  <div class="bl">요약</div>
+  3개 파이프라인(A 학습 · B 성과 · C 콘텐츠)의 <strong>핵심 기능은 모두 동작</strong>합니다. 위 항목들은 서비스가 수강생 수 증가, 데이터 누적에 따라 순차적으로 개선하면 됩니다.
+</div>
+</section>
+
+<!-- 꼬리말 -->
+<section style="text-align:center; padding:40px 0 60px; border-top:2px solid #F75D5D; margin-top:40px;">
+  <p style="font-size:.9rem; color:#888;">이 보고서는 <code>qa-helpdesk</code> 코드베이스를 직접 분석하여 작성되었습니다.</p>
+  <p style="font-size:.85rem; color:#aaa;">분석 기준일: 2026-02-16 · main 브랜치 커밋: 716892e</p>
+  <p style="font-size:.85rem; color:#aaa;">분석 범위: 마이그레이션 11개 · API 라우트 22개 · 라이브러리 15개 · 타입 정의 3개 · 진단 엔진 5개</p>
+</section>
+
+</div><!-- .wrap -->
+</body>
+</html>

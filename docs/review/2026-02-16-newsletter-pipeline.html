@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>리뷰 보고서 — 뉴스레터 2단계 생성 + 템플릿 매핑 + 성과 추적</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Pretendard', -apple-system, sans-serif; color: #1a1a1a; background: #fff; line-height: 1.7; font-size: 15px; }
+
+  /* Print */
+  @media print {
+    body { font-size: 12px; line-height: 1.5; }
+    .page-break { page-break-before: always; }
+    .no-print { display: none; }
+    section { page-break-inside: avoid; }
+    h2 { page-break-after: avoid; }
+    svg { max-height: 90vh; }
+  }
+
+  /* Layout */
+  .container { max-width: 900px; margin: 0 auto; padding: 40px 32px; }
+  header { border-bottom: 3px solid #F75D5D; padding-bottom: 24px; margin-bottom: 40px; }
+  header h1 { font-size: 26px; font-weight: 800; color: #1a1a1a; margin-bottom: 8px; }
+  header .meta { font-size: 13px; color: #6b7280; }
+  header .meta span { display: inline-block; margin-right: 16px; }
+
+  /* Section */
+  section { margin-bottom: 48px; }
+  h2 { font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 16px; padding-left: 14px; border-left: 4px solid #F75D5D; }
+  h3 { font-size: 16px; font-weight: 700; color: #374151; margin: 24px 0 12px; }
+  h4 { font-size: 14px; font-weight: 700; color: #6b7280; margin: 16px 0 8px; }
+  p { margin-bottom: 12px; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 13px; }
+  th { background: #FEF2F2; color: #6b7280; font-weight: 600; text-align: left; padding: 10px 14px; border-bottom: 2px solid #FECACA; }
+  td { padding: 10px 14px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+  tr:hover td { background: #FFFBFB; }
+
+  /* Code */
+  code { font-family: 'JetBrains Mono', monospace; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #DC2626; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 16px 20px; border-radius: 8px; overflow-x: auto; font-size: 12px; line-height: 1.6; margin: 12px 0 24px; }
+  pre code { background: none; color: inherit; padding: 0; }
+
+  /* Card */
+  .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; margin: 12px 0 20px; }
+  .card-warn { background: #FFFBEB; border-color: #FCD34D; }
+  .card-danger { background: #FEF2F2; border-color: #FECACA; }
+  .card-ok { background: #F0FDF4; border-color: #BBF7D0; }
+  .card-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .card-warn .card-label { color: #B45309; }
+  .card-danger .card-label { color: #DC2626; }
+  .card-ok .card-label { color: #16A34A; }
+
+  /* Badge */
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .badge-red { background: #FEE2E2; color: #DC2626; }
+  .badge-yellow { background: #FEF3C7; color: #B45309; }
+  .badge-green { background: #DCFCE7; color: #16A34A; }
+  .badge-blue { background: #DBEAFE; color: #2563EB; }
+  .badge-gray { background: #F3F4F6; color: #6B7280; }
+
+  /* List */
+  ul { padding-left: 24px; margin-bottom: 16px; }
+  li { margin-bottom: 6px; }
+  ol { padding-left: 24px; margin-bottom: 16px; }
+
+  /* Diagram wrapper */
+  .diagram-wrap { margin: 24px 0; overflow-x: auto; }
+  .diagram-wrap svg { display: block; margin: 0 auto; }
+
+  /* Tag */
+  .task-tag { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 4px; margin-right: 4px; }
+  .task-tag.backend { background: #EDE9FE; color: #7C3AED; }
+  .task-tag.frontend { background: #DBEAFE; color: #2563EB; }
+  .task-tag.db { background: #FEF3C7; color: #B45309; }
+
+  /* Summary box */
+  .summary-box { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0 32px; }
+  .summary-item { text-align: center; padding: 16px 12px; border-radius: 10px; background: #f9fafb; border: 1px solid #e5e7eb; }
+  .summary-item .num { font-size: 28px; font-weight: 800; }
+  .summary-item .label { font-size: 12px; color: #6b7280; margin-top: 4px; }
+  .summary-item.primary { background: #FEF2F2; border-color: #FECACA; }
+  .summary-item.primary .num { color: #F75D5D; }
+
+  /* TOC */
+  .toc { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 28px; margin-bottom: 40px; }
+  .toc h3 { margin: 0 0 12px; font-size: 14px; color: #9CA3AF; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+  .toc ol { padding-left: 20px; margin: 0; }
+  .toc li { margin-bottom: 4px; }
+  .toc a { color: #374151; text-decoration: none; font-weight: 500; font-size: 14px; }
+  .toc a:hover { color: #F75D5D; }
+
+  /* Separator */
+  hr { border: none; border-top: 1px solid #e5e7eb; margin: 40px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- HEADER -->
+<header>
+  <h1>뉴스레터 파이프라인 변경 리뷰 보고서</h1>
+  <div class="meta">
+    <span>작성일: 2026-02-16</span>
+    <span>대상: TASK.md</span>
+    <span>상태: <span class="badge badge-yellow">리뷰 중</span></span>
+  </div>
+</header>
+
+<!-- TOC -->
+<nav class="toc">
+  <h3>목차</h3>
+  <ol>
+    <li><a href="#s1">변경 요약</a></li>
+    <li><a href="#s2">데이터 흐름 다이어그램 (현재 vs 변경 후)</a></li>
+    <li><a href="#s3">DB 스키마 변경 계획</a></li>
+    <li><a href="#s4">영향 범위 분석</a></li>
+    <li><a href="#s5">리스크 분석</a></li>
+  </ol>
+</nav>
+
+<!-- Summary Cards -->
+<div class="summary-box">
+  <div class="summary-item primary">
+    <div class="num">7</div>
+    <div class="label">태스크</div>
+  </div>
+  <div class="summary-item">
+    <div class="num">12</div>
+    <div class="label">수정 대상 파일</div>
+  </div>
+  <div class="summary-item">
+    <div class="num">1</div>
+    <div class="label">DB 마이그레이션</div>
+  </div>
+  <div class="summary-item">
+    <div class="num">1</div>
+    <div class="label">신규 API 라우트</div>
+  </div>
+</div>
+
+<!-- ══════════════════ SECTION 1 ══════════════════ -->
+<section id="s1">
+<h2>1. 변경 요약</h2>
+
+<p>이번 TASK는 <strong>뉴스레터(email_summary) 생성 품질 개선</strong>과 <strong>이메일 성과 추적 인프라 구축</strong>을 핵심 목표로 한다. 4개 문제를 7개 태스크로 분해했다.</p>
+
+<h3>해결하려는 4가지 문제</h3>
+<table>
+  <thead>
+    <tr><th>#</th><th>문제</th><th>현재 상태</th><th>해결 방향</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>email_summary 동시 생성</td>
+      <td><code>generateContentWithAI()</code>가 body_md + email_summary를 1회 AI 호출로 <code>---EMAIL_SUMMARY---</code> 구분자 기반 동시 생성 → 템플릿 구조 미준수</td>
+      <td>2단계 분리: 본문 생성 → 본문 기반 뉴스레터 생성</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>웨비나 템플릿 매핑 누락</td>
+      <td><code>buildDesignFromSummary()</code>에 webinar 분기 없음 → DEFAULT_TEMPLATE fallback</td>
+      <td>webinar → TEMPLATE_B 매핑 추가</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>배너키 타입별 미분화</td>
+      <td>13개 배너키 일괄 나열, 타입별 필수 조합 가이드 없음</td>
+      <td>education/case_study/webinar별 필수 배너키 조합 프롬프트</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>콘텐츠 성과 추적 미비</td>
+      <td>view_count 미표시, email_sends에 opened_at/clicked_at 있으나 추적 메커니즘 없음, content_id FK 없음</td>
+      <td>tracking pixel + link wrapping API + 관리자 UI 성과 표시</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>7개 태스크 요약</h3>
+<table>
+  <thead>
+    <tr><th>태스크</th><th>유형</th><th>내용</th><th>담당</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>T1</strong></td>
+      <td><span class="task-tag backend">Backend</span></td>
+      <td>generateContentWithAI에서 email_summary 분리 (반환값에서 emailSummary 제거)</td>
+      <td>backend-dev</td>
+    </tr>
+    <tr>
+      <td><strong>T2</strong></td>
+      <td><span class="task-tag backend">Backend</span></td>
+      <td>신규 <code>generateEmailSummary(contentId)</code> server action</td>
+      <td>backend-dev</td>
+    </tr>
+    <tr>
+      <td><strong>T3</strong></td>
+      <td><span class="task-tag frontend">Frontend</span></td>
+      <td>콘텐츠 상세 페이지에 "뉴스레터 생성/재생성" 버튼 UI</td>
+      <td>frontend-dev</td>
+    </tr>
+    <tr>
+      <td><strong>T4</strong></td>
+      <td><span class="task-tag backend">Backend</span></td>
+      <td>웨비나 → TEMPLATE_B 매핑 (1줄 수정)</td>
+      <td>backend-dev</td>
+    </tr>
+    <tr>
+      <td><strong>T5</strong></td>
+      <td><span class="task-tag backend">Backend</span> <span class="task-tag db">DB</span></td>
+      <td>이메일 추적 API + DB 마이그레이션</td>
+      <td>backend-dev</td>
+    </tr>
+    <tr>
+      <td><strong>T6</strong></td>
+      <td><span class="task-tag backend">Backend</span></td>
+      <td>이메일 발송 시 tracking pixel + link wrapping 삽입</td>
+      <td>backend-dev</td>
+    </tr>
+    <tr>
+      <td><strong>T7</strong></td>
+      <td><span class="task-tag frontend">Frontend</span></td>
+      <td>관리자 목록에 조회수/열람수/클릭수 표시</td>
+      <td>frontend-dev</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>의존성 체인</h3>
+<div class="card">
+  <pre><code>T1 ──→ T2 ──→ T3       (T2의 server action이 있어야 T3 UI가 호출 가능)
+
+T4                      (독립, 1줄 수정)
+
+T5 ──→ T6 ──→ T7       (T5 DB + API → T6 발송 수정 → T7 UI 표시)</code></pre>
+  <p style="margin-top:12px;font-size:13px;color:#6b7280;">3개 체인이 서로 독립이므로 병렬 진행 가능.</p>
+</div>
+</section>
+
+<hr>
+
+<!-- ══════════════════ SECTION 2 ══════════════════ -->
+<section id="s2" class="page-break">
+<h2>2. 데이터 흐름 다이어그램</h2>
+
+<h3>2-1. 현재 상태 (AS-IS)</h3>
+<p>콘텐츠 생성과 뉴스레터 생성이 <strong>1회 AI 호출로 동시에</strong> 이루어진다. 이메일 발송 후 열람/클릭 추적이 불가능하다.</p>
+
+<div class="diagram-wrap">
+<svg viewBox="0 0 780 460" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:780px;">
+  <defs>
+    <marker id="a1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#9CA3AF"/></marker>
+    <marker id="a2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#DC2626"/></marker>
+  </defs>
+
+  <text x="390" y="24" text-anchor="middle" font-size="14" font-weight="700" fill="#374151">AS-IS: 1회 AI 호출 → 본문 + 뉴스레터 동시 생성, 추적 없음</text>
+
+  <!-- Admin -->
+  <rect x="20" y="50" width="130" height="46" rx="8" fill="#FEF2F2" stroke="#FECACA"/>
+  <text x="85" y="70" text-anchor="middle" font-size="11" font-weight="600" fill="#DC2626">관리자</text>
+  <text x="85" y="85" text-anchor="middle" font-size="10" fill="#6b7280">주제 + 유형 선택</text>
+
+  <line x1="150" y1="73" x2="198" y2="73" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#a1)"/>
+
+  <!-- generateContentWithAI -->
+  <rect x="200" y="46" width="230" height="56" rx="8" fill="#FEF2F2" stroke="#DC2626" stroke-width="2"/>
+  <text x="315" y="66" text-anchor="middle" font-size="11" font-weight="700" fill="#DC2626">generateContentWithAI()</text>
+  <text x="315" y="80" text-anchor="middle" font-size="10" fill="#6b7280">1회 KS → body_md +</text>
+  <text x="315" y="92" text-anchor="middle" font-size="10" fill="#6b7280">---EMAIL_SUMMARY--- + email_summary</text>
+
+  <rect x="440" y="50" width="56" height="18" rx="9" fill="#DC2626"/>
+  <text x="468" y="63" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">문제 1,3</text>
+
+  <line x1="315" y1="102" x2="315" y2="136" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#a1)"/>
+
+  <!-- contents -->
+  <rect x="245" y="138" width="140" height="42" rx="6" fill="#EDE9FE" stroke="#C4B5FD"/>
+  <text x="315" y="156" text-anchor="middle" font-size="11" font-weight="600" fill="#7C3AED">contents</text>
+  <text x="315" y="170" text-anchor="middle" font-size="10" fill="#6b7280">body_md + email_summary</text>
+
+  <line x1="315" y1="180" x2="315" y2="214" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#a1)"/>
+
+  <!-- buildDesign -->
+  <rect x="215" y="216" width="200" height="42" rx="8" fill="#DBEAFE" stroke="#93C5FD"/>
+  <text x="315" y="234" text-anchor="middle" font-size="11" font-weight="600" fill="#2563EB">buildDesignFromSummary()</text>
+  <text x="315" y="248" text-anchor="middle" font-size="10" fill="#6b7280">Unlayer JSON 생성</text>
+
+  <rect x="425" y="220" width="56" height="18" rx="9" fill="#DC2626"/>
+  <text x="453" y="233" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">문제 2</text>
+  <text x="490" y="233" font-size="9" fill="#DC2626">webinar→DEFAULT</text>
+
+  <line x1="315" y1="258" x2="315" y2="292" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#a1)"/>
+
+  <!-- Send -->
+  <rect x="235" y="294" width="160" height="42" rx="8" fill="#f9fafb" stroke="#e5e7eb"/>
+  <text x="315" y="312" text-anchor="middle" font-size="11" font-weight="600" fill="#374151">/api/admin/email/send</text>
+  <text x="315" y="326" text-anchor="middle" font-size="10" fill="#6b7280">SMTP 배치 발송</text>
+
+  <line x1="315" y1="336" x2="315" y2="370" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#a1)"/>
+
+  <!-- email_sends -->
+  <rect x="230" y="372" width="170" height="42" rx="6" fill="#EDE9FE" stroke="#C4B5FD"/>
+  <text x="315" y="390" text-anchor="middle" font-size="11" font-weight="600" fill="#7C3AED">email_sends</text>
+  <text x="315" y="404" text-anchor="middle" font-size="10" fill="#6b7280">content_id 없음</text>
+
+  <rect x="410" y="376" width="56" height="18" rx="9" fill="#DC2626"/>
+  <text x="438" y="389" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">문제 4</text>
+
+  <!-- Recipient -->
+  <line x1="395" y1="315" x2="518" y2="315" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#a1)"/>
+  <rect x="520" y="294" width="120" height="42" rx="8" fill="#F0FDF4" stroke="#BBF7D0"/>
+  <text x="580" y="312" text-anchor="middle" font-size="11" font-weight="600" fill="#16A34A">수신자 메일함</text>
+  <text x="580" y="326" text-anchor="middle" font-size="10" fill="#6b7280">열람/클릭 → ?</text>
+
+  <line x1="580" y1="336" x2="580" y2="370" stroke="#DC2626" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="580" y="388" text-anchor="middle" font-size="10" fill="#DC2626" font-weight="600">추적 불가</text>
+
+  <!-- Admin list -->
+  <rect x="560" y="138" width="170" height="42" rx="6" fill="#f9fafb" stroke="#e5e7eb"/>
+  <text x="645" y="156" text-anchor="middle" font-size="11" font-weight="600" fill="#374151">관리자 콘텐츠 목록</text>
+  <text x="645" y="170" text-anchor="middle" font-size="10" fill="#6b7280">view_count 미표시</text>
+  <rect x="674" y="126" width="56" height="18" rx="9" fill="#DC2626"/>
+  <text x="702" y="139" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">문제 4</text>
+</svg>
+</div>
+
+<h3>2-2. 변경 후 (TO-BE)</h3>
+<p>본문 생성과 뉴스레터 생성이 <strong>2단계로 분리</strong>된다. 이메일에 <strong>tracking pixel + link wrapping</strong>이 삽입되어 열람/클릭을 추적할 수 있다.</p>
+
+<div class="diagram-wrap">
+<svg viewBox="0 0 780 570" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:780px;">
+  <defs>
+    <marker id="b1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#9CA3AF"/></marker>
+    <marker id="b2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#16A34A"/></marker>
+  </defs>
+
+  <text x="390" y="24" text-anchor="middle" font-size="14" font-weight="700" fill="#374151">TO-BE: 2단계 분리 + 이메일 추적 인프라</text>
+
+  <!-- === Phase 1 === -->
+  <rect x="10" y="40" width="360" height="126" rx="10" fill="none" stroke="#93C5FD" stroke-dasharray="5,3"/>
+  <text x="28" y="56" font-size="11" font-weight="700" fill="#2563EB">1단계: 본문 생성</text>
+
+  <rect x="28" y="68" width="100" height="40" rx="6" fill="#FEF2F2" stroke="#FECACA"/>
+  <text x="78" y="86" text-anchor="middle" font-size="11" font-weight="600" fill="#DC2626">관리자</text>
+  <text x="78" y="100" text-anchor="middle" font-size="9" fill="#6b7280">주제 입력</text>
+
+  <line x1="128" y1="88" x2="158" y2="88" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#b1)"/>
+
+  <rect x="160" y="68" width="188" height="40" rx="6" fill="#DBEAFE" stroke="#93C5FD"/>
+  <text x="254" y="84" text-anchor="middle" font-size="11" font-weight="600" fill="#2563EB">generateContentWithAI()</text>
+  <text x="254" y="98" text-anchor="middle" font-size="9" fill="#6b7280">T1: { title, bodyMd } 만 반환</text>
+
+  <line x1="254" y1="108" x2="254" y2="130" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#b1)"/>
+  <text x="264" y="124" font-size="9" fill="#16A34A" font-weight="600">email_summary = null</text>
+
+  <rect x="194" y="132" width="120" height="30" rx="6" fill="#EDE9FE" stroke="#C4B5FD"/>
+  <text x="254" y="151" text-anchor="middle" font-size="11" font-weight="600" fill="#7C3AED">contents</text>
+
+  <!-- === Phase 2 === -->
+  <rect x="400" y="40" width="370" height="180" rx="10" fill="none" stroke="#16A34A" stroke-dasharray="5,3"/>
+  <text x="418" y="56" font-size="11" font-weight="700" fill="#16A34A">2단계: 뉴스레터 생성 (신규)</text>
+
+  <rect x="418" y="68" width="134" height="40" rx="6" fill="#F0FDF4" stroke="#BBF7D0"/>
+  <text x="485" y="84" text-anchor="middle" font-size="11" font-weight="600" fill="#16A34A">뉴스레터 생성 버튼</text>
+  <text x="485" y="98" text-anchor="middle" font-size="9" fill="#6b7280">T3: 상세 페이지 UI</text>
+
+  <line x1="552" y1="88" x2="582" y2="88" stroke="#16A34A" stroke-width="1.5" marker-end="url(#b2)"/>
+
+  <rect x="584" y="64" width="166" height="50" rx="6" fill="#F0FDF4" stroke="#16A34A" stroke-width="2"/>
+  <text x="667" y="82" text-anchor="middle" font-size="11" font-weight="700" fill="#16A34A">generateEmailSummary()</text>
+  <text x="667" y="96" text-anchor="middle" font-size="9" fill="#6b7280">T2: body_md 읽고 재가공</text>
+  <text x="667" y="108" text-anchor="middle" font-size="9" fill="#6b7280">타입별 배너키 조합</text>
+
+  <!-- arrow: contents → generateEmailSummary -->
+  <path d="M314,147 L400,147 L400,88 L418,88" fill="none" stroke="#16A34A" stroke-width="1.5" marker-end="url(#b2)"/>
+  <text x="366" y="140" font-size="9" fill="#16A34A" font-weight="600">body_md 조회</text>
+
+  <rect x="584" y="126" width="166" height="36" rx="6" fill="#f9fafb" stroke="#e5e7eb"/>
+  <text x="667" y="141" text-anchor="middle" font-size="10" font-weight="600" fill="#374151">KS generate()</text>
+  <text x="667" y="154" text-anchor="middle" font-size="9" fill="#6b7280">newsletter, limit: 0</text>
+  <line x1="667" y1="114" x2="667" y2="124" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#b1)"/>
+
+  <line x1="667" y1="162" x2="667" y2="180" stroke="#16A34A" stroke-width="1.5" marker-end="url(#b2)"/>
+  <rect x="584" y="182" width="166" height="30" rx="6" fill="#EDE9FE" stroke="#C4B5FD"/>
+  <text x="667" y="201" text-anchor="middle" font-size="10" font-weight="600" fill="#7C3AED">contents UPDATE email_summary</text>
+
+  <!-- === Phase 3: 발송 + 추적 === -->
+  <rect x="10" y="240" width="760" height="320" rx="10" fill="none" stroke="#F59E0B" stroke-dasharray="5,3"/>
+  <text x="28" y="258" font-size="11" font-weight="700" fill="#B45309">발송 + 추적 파이프라인</text>
+
+  <rect x="28" y="272" width="180" height="40" rx="6" fill="#DBEAFE" stroke="#93C5FD"/>
+  <text x="118" y="288" text-anchor="middle" font-size="11" font-weight="600" fill="#2563EB">buildDesignFromSummary()</text>
+  <text x="118" y="302" text-anchor="middle" font-size="9" fill="#6b7280">T4: webinar → TEMPLATE_B</text>
+
+  <line x1="208" y1="292" x2="248" y2="292" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#b1)"/>
+
+  <rect x="250" y="272" width="190" height="40" rx="6" fill="#f9fafb" stroke="#e5e7eb"/>
+  <text x="345" y="288" text-anchor="middle" font-size="11" font-weight="600" fill="#374151">/api/admin/email/send</text>
+  <text x="345" y="302" text-anchor="middle" font-size="9" fill="#6b7280">T6: pixel + link wrap 삽입</text>
+
+  <line x1="440" y1="292" x2="488" y2="292" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#b1)"/>
+
+  <rect x="490" y="272" width="130" height="40" rx="6" fill="#F0FDF4" stroke="#BBF7D0"/>
+  <text x="555" y="288" text-anchor="middle" font-size="11" font-weight="600" fill="#16A34A">수신자 메일함</text>
+  <text x="555" y="302" text-anchor="middle" font-size="9" fill="#6b7280">tracking pixel 포함</text>
+
+  <!-- tracking flow -->
+  <path d="M555,312 L555,350" fill="none" stroke="#16A34A" stroke-width="1.5" marker-end="url(#b2)"/>
+  <text x="568" y="336" font-size="9" fill="#16A34A" font-weight="600">열람/클릭</text>
+
+  <rect x="470" y="352" width="170" height="40" rx="6" fill="#F0FDF4" stroke="#16A34A" stroke-width="2"/>
+  <text x="555" y="368" text-anchor="middle" font-size="11" font-weight="700" fill="#16A34A">/api/email/track</text>
+  <text x="555" y="382" text-anchor="middle" font-size="9" fill="#6b7280">T5: open=1x1 GIF, click=302</text>
+
+  <path d="M555,392 L555,420" fill="none" stroke="#16A34A" stroke-width="1.5" marker-end="url(#b2)"/>
+
+  <rect x="470" y="422" width="170" height="40" rx="6" fill="#EDE9FE" stroke="#C4B5FD"/>
+  <text x="555" y="438" text-anchor="middle" font-size="11" font-weight="600" fill="#7C3AED">email_sends</text>
+  <text x="555" y="452" text-anchor="middle" font-size="9" fill="#6b7280">T5: +content_id, opened/clicked</text>
+
+  <!-- email_sends ← send route -->
+  <path d="M345,312 L345,442 L468,442" fill="none" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="290" y="336" font-size="9" fill="#6b7280">T6: content_id INSERT</text>
+
+  <!-- email_logs -->
+  <rect x="260" y="388" width="160" height="40" rx="6" fill="#EDE9FE" stroke="#C4B5FD"/>
+  <text x="340" y="404" text-anchor="middle" font-size="11" font-weight="600" fill="#7C3AED">email_logs</text>
+  <text x="340" y="418" text-anchor="middle" font-size="9" fill="#6b7280">T5: +total_opens, +total_clicks</text>
+
+  <path d="M470,442 L420,408" fill="none" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#b1)"/>
+
+  <!-- Admin UI -->
+  <rect x="28" y="368" width="190" height="40" rx="6" fill="#f9fafb" stroke="#e5e7eb"/>
+  <text x="123" y="384" text-anchor="middle" font-size="11" font-weight="600" fill="#374151">관리자 목록 페이지</text>
+  <text x="123" y="398" text-anchor="middle" font-size="9" fill="#6b7280">T7: 조회수/열람수/클릭수</text>
+
+  <line x1="260" y1="408" x2="218" y2="388" stroke="#9CA3AF" stroke-width="1.5" marker-end="url(#b1)"/>
+
+  <!-- Legend -->
+  <rect x="28" y="484" width="12" height="12" rx="2" fill="#F0FDF4" stroke="#16A34A"/>
+  <text x="46" y="495" font-size="10" fill="#374151">신규/변경</text>
+  <rect x="120" y="484" width="12" height="12" rx="2" fill="#DBEAFE" stroke="#93C5FD"/>
+  <text x="138" y="495" font-size="10" fill="#374151">수정</text>
+  <rect x="200" y="484" width="12" height="12" rx="2" fill="#EDE9FE" stroke="#C4B5FD"/>
+  <text x="218" y="495" font-size="10" fill="#374151">DB 테이블</text>
+  <rect x="290" y="484" width="12" height="12" rx="2" fill="#f9fafb" stroke="#e5e7eb"/>
+  <text x="308" y="495" font-size="10" fill="#374151">기존 유지</text>
+</svg>
+</div>
+
+</section>
+
+<hr>
+
+<!-- ══════════════════ SECTION 3 ══════════════════ -->
+<section id="s3" class="page-break">
+<h2>3. DB 스키마 변경 계획</h2>
+
+<p>TASK에서 제안한 DB 변경은 마이그레이션 1개이다.</p>
+
+<div class="card card-danger">
+  <div class="card-label">BLOCKER: 마이그레이션 번호 오류</div>
+  <p>TASK.md에 <code>00008_email_tracking.sql</code>로 기재되어 있으나, 현재 마이그레이션 파일이 <code>00001~00011</code>까지 존재한다. <strong>00012_email_tracking.sql</strong>로 생성해야 충돌이 없다.</p>
+</div>
+
+<h3>3-1. email_sends 테이블 변경</h3>
+<table>
+  <thead>
+    <tr><th>변경</th><th>컬럼</th><th>타입</th><th>비고</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="badge badge-green">추가</span></td>
+      <td><code>content_id</code></td>
+      <td><code>uuid REFERENCES contents(id)</code></td>
+      <td>nullable (레거시 호환)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>현재 email_sends 스키마 (<code>src/types/database.ts:846</code> 기준):</p>
+<pre><code>email_sends {
+  id, recipient_email, recipient_type, subject, template,
+  status, sent_at, opened_at, clicked_at,   ← 이미 존재
+  error_message, created_at
+}</code></pre>
+
+<div class="card card-ok">
+  <div class="card-label">확인 사항</div>
+  <p><code>opened_at</code>, <code>clicked_at</code> 컬럼은 이미 존재한다. 마이그레이션에서 다시 추가하면 에러가 난다. 실제 필요한 것은 <code>content_id</code> 추가뿐.</p>
+</div>
+
+<h3>3-2. email_logs 테이블 변경</h3>
+<table>
+  <thead>
+    <tr><th>변경</th><th>컬럼</th><th>타입</th><th>비고</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="badge badge-green">추가</span></td>
+      <td><code>total_opens</code></td>
+      <td><code>integer DEFAULT 0</code></td>
+      <td>열람 집계</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-green">추가</span></td>
+      <td><code>total_clicks</code></td>
+      <td><code>integer DEFAULT 0</code></td>
+      <td>클릭 집계</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>3-3. 실제 마이그레이션 SQL (제안)</h3>
+<pre><code>-- 00012_email_tracking.sql
+
+-- 1. email_sends에 content_id 추가
+ALTER TABLE email_sends
+  ADD COLUMN IF NOT EXISTS content_id uuid REFERENCES contents(id);
+
+CREATE INDEX IF NOT EXISTS idx_email_sends_content_id
+  ON email_sends(content_id);
+
+-- 2. email_logs에 집계 컬럼 추가
+ALTER TABLE email_logs
+  ADD COLUMN IF NOT EXISTS total_opens integer DEFAULT 0;
+ALTER TABLE email_logs
+  ADD COLUMN IF NOT EXISTS total_clicks integer DEFAULT 0;</code></pre>
+
+<h3>3-4. 스키마 변경 요약</h3>
+<table>
+  <thead>
+    <tr><th>테이블</th><th>기존 컬럼</th><th>추가</th><th>파괴적 변경</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>email_sends</td><td>11</td><td>+1</td><td>없음 (nullable)</td></tr>
+    <tr><td>email_logs</td><td>9</td><td>+2</td><td>없음 (DEFAULT 0)</td></tr>
+    <tr><td>contents</td><td>~20</td><td>없음</td><td>없음</td></tr>
+  </tbody>
+</table>
+
+<div class="card card-warn">
+  <div class="card-label">email_sends 테이블 출처 불명</div>
+  <p><code>email_sends</code>의 CREATE TABLE 문이 마이그레이션 파일(00001~00011)에 존재하지 않는다. Supabase 대시보드에서 직접 생성된 것으로 추정된다. ALTER 실행 전에 <code>supabase db dump</code>로 실제 운영 스키마를 확인하는 것이 안전하다.</p>
+</div>
+</section>
+
+<hr>
+
+<!-- ══════════════════ SECTION 4 ══════════════════ -->
+<section id="s4" class="page-break">
+<h2>4. 영향 범위 분석</h2>
+
+<h3>4-1. 수정 대상 파일 (12개)</h3>
+<table>
+  <thead>
+    <tr><th>태스크</th><th>파일</th><th>유형</th><th>변경 내용</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>T1</td>
+      <td><code>src/actions/contents.ts</code></td>
+      <td>수정</td>
+      <td><code>generateContentWithAI()</code> — EMAIL_SUMMARY 구분자/가이드 제거, 반환타입 <code>{ title, bodyMd }</code>로 변경 (L720-772)</td>
+    </tr>
+    <tr>
+      <td>T1</td>
+      <td><code>src/components/content/new-content-modal.tsx</code></td>
+      <td>수정</td>
+      <td><code>handleGenerate()</code>에서 <code>result.emailSummary</code> 전달 제거 (L168). <code>handleCreate</code> 5번째 인자 제거</td>
+    </tr>
+    <tr>
+      <td>T2</td>
+      <td><code>src/actions/contents.ts</code></td>
+      <td>추가</td>
+      <td>새 함수 <code>generateEmailSummary(contentId)</code> 약 50줄</td>
+    </tr>
+    <tr>
+      <td>T3</td>
+      <td><code>src/app/(main)/admin/content/[id]/page.tsx</code></td>
+      <td>수정</td>
+      <td>뉴스레터 탭에 생성/재생성 버튼 + 호출 로직 추가</td>
+    </tr>
+    <tr>
+      <td>T4</td>
+      <td><code>src/lib/email-template-utils.ts</code></td>
+      <td>수정</td>
+      <td>L252-259 템플릿 분기에 <code>webinar</code> 조건 추가 (1줄)</td>
+    </tr>
+    <tr>
+      <td>T5</td>
+      <td><code>src/app/api/email/track/route.ts</code></td>
+      <td><span class="badge badge-green">신규</span></td>
+      <td>GET: open(1x1 GIF) + click(302 redirect), 비인증</td>
+    </tr>
+    <tr>
+      <td>T5</td>
+      <td><code>supabase/migrations/00012_email_tracking.sql</code></td>
+      <td><span class="badge badge-green">신규</span></td>
+      <td>email_sends.content_id + email_logs 집계 컬럼</td>
+    </tr>
+    <tr>
+      <td>T5</td>
+      <td><code>src/types/database.ts</code></td>
+      <td>재생성</td>
+      <td>마이그레이션 후 <code>npx supabase gen types</code></td>
+    </tr>
+    <tr>
+      <td>T6</td>
+      <td><code>src/app/api/admin/email/send/route.ts</code></td>
+      <td>수정</td>
+      <td>HTML body 하단에 tracking pixel 삽입, CTA href wrapping, email_sends INSERT에 content_id 추가 (L224-232)</td>
+    </tr>
+    <tr>
+      <td>T7</td>
+      <td><code>src/app/(main)/admin/content/page.tsx</code></td>
+      <td>수정</td>
+      <td>테이블에 조회수 컬럼 추가 (L241-296)</td>
+    </tr>
+    <tr>
+      <td>T7</td>
+      <td><code>src/app/(main)/admin/email/page.tsx</code></td>
+      <td>수정</td>
+      <td>발송 이력에 열람수/클릭수 컬럼 추가, email_logs 집계 로직</td>
+    </tr>
+    <tr>
+      <td>-</td>
+      <td><code>src/types/content.ts</code></td>
+      <td>확인</td>
+      <td>Content 타입에 email_summary가 optional인지 확인 필요</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>4-2. 영향받지 않는 영역</h3>
+<div class="card">
+  <ul>
+    <li><strong>QA 파이프라인</strong> (questions, answers, RAG) — 완전 무관</li>
+    <li><strong>광고 성과 파이프라인</strong> (ad_accounts, daily_ad_insights, benchmarks, diagnosis) — 무관</li>
+    <li><strong>수강생 인증/프로필</strong> — 무관</li>
+    <li><strong>기존 email_summary 보유 콘텐츠</strong> — T1은 신규 생성만 영향. 기존 데이터 변경 없음</li>
+    <li><strong>Unlayer 에디터</strong> (newsletter-edit-panel) — buildDesignFromSummary 출력만 변경, 에디터 무관</li>
+    <li><strong>reviseContentWithAI</strong> — email_summary 수정 기능 유지, 변경 없음</li>
+    <li><strong>Vercel Cron</strong> (collect-daily, collect-benchmarks) — 무관</li>
+  </ul>
+</div>
+
+<h3>4-3. 잠재적 사이드 이펙트</h3>
+<table>
+  <thead>
+    <tr><th>영역</th><th>사이드 이펙트</th><th>심각도</th><th>대응</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>generateContentWithAI</code> 반환타입 (T1)</td>
+      <td>emailSummary 프로퍼티 접근 시 TS 에러. 호출처 확인: <code>new-content-modal.tsx:handleGenerate</code> 1곳뿐</td>
+      <td><span class="badge badge-green">하</span></td>
+      <td>T1에서 함께 수정</td>
+    </tr>
+    <tr>
+      <td>비인증 tracking API (T5)</td>
+      <td>악의적 호출로 opened_at/clicked_at 조작 가능</td>
+      <td><span class="badge badge-yellow">중</span></td>
+      <td>UUID 추측 불가. 현 규모에서 수용 가능</td>
+    </tr>
+    <tr>
+      <td>Unlayer HTML에 pixel/link 후처리 (T6)</td>
+      <td>이메일 클라이언트 렌더링 깨짐 가능성</td>
+      <td><span class="badge badge-yellow">중</span></td>
+      <td>pixel은 body 하단 1x1px로 안전. link는 테스트 발송 후 확인 필수</td>
+    </tr>
+    <tr>
+      <td>link wrapping 범위 (T6)</td>
+      <td>수신거부 링크까지 wrapping되면 수신거부 기능 손상</td>
+      <td><span class="badge badge-red">상</span></td>
+      <td>CTA 버튼만 wrapping하거나 수신거부 URL 패턴 화이트리스트 제외</td>
+    </tr>
+  </tbody>
+</table>
+</section>
+
+<hr>
+
+<!-- ══════════════════ SECTION 5 ══════════════════ -->
+<section id="s5" class="page-break">
+<h2>5. 리스크 분석</h2>
+
+<h3>5-1. 리스크 매트릭스</h3>
+<table>
+  <thead>
+    <tr><th>#</th><th>리스크</th><th>확률</th><th>영향</th><th>등급</th><th>완화 방안</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>R1</td>
+      <td><strong>마이그레이션 번호 충돌</strong><br>TASK에 <code>00008</code>로 기재, 실제 최신 <code>00011</code></td>
+      <td>높음</td>
+      <td>높음</td>
+      <td><span class="badge badge-red">심각</span></td>
+      <td><code>00012</code>로 수정. 구현 전 반드시 확인</td>
+    </tr>
+    <tr>
+      <td>R2</td>
+      <td><strong>email_logs 집계 동기화 문제</strong><br>total_opens/total_clicks를 언제 어떻게 갱신하는지 TASK에 명시 없음</td>
+      <td>높음</td>
+      <td>중간</td>
+      <td><span class="badge badge-red">심각</span></td>
+      <td>3가지 전략 중 선택 필요: (1) tracking API에서 email_logs도 UPDATE, (2) 조회 시 email_sends COUNT, (3) DB 트리거</td>
+    </tr>
+    <tr>
+      <td>R3</td>
+      <td><strong>link wrapping이 수신거부 URL 손상</strong><br>모든 &lt;a href&gt; 치환 시 수신거부 링크도 wrapping됨</td>
+      <td>중간</td>
+      <td>높음</td>
+      <td><span class="badge badge-red">심각</span></td>
+      <td>CTA만 선택적 wrapping 또는 <code>/api/email/unsubscribe</code> 패턴 제외</td>
+    </tr>
+    <tr>
+      <td>R4</td>
+      <td><strong>Gmail tracking pixel 차단</strong><br>Gmail 외부 이미지 프록싱 + 차단 강화</td>
+      <td>높음</td>
+      <td>낮음</td>
+      <td><span class="badge badge-yellow">주의</span></td>
+      <td>TASK에서 "best-effort" 명시. 관리자에 "실제보다 낮을 수 있음" 안내 추가</td>
+    </tr>
+    <tr>
+      <td>R5</td>
+      <td><strong>KS 호출 2배 (비용)</strong><br>콘텐츠 1개당 KS: 1회 → 2회</td>
+      <td>확실</td>
+      <td>낮음</td>
+      <td><span class="badge badge-green">수용</span></td>
+      <td>월 20~30개 기준 추가 $6~9. 품질 향상 대비 수용 가능</td>
+    </tr>
+    <tr>
+      <td>R6</td>
+      <td><strong>generateEmailSummary 타임아웃</strong><br>장문 body_md 시 300초 제한 근접</td>
+      <td>낮음</td>
+      <td>중간</td>
+      <td><span class="badge badge-yellow">주의</span></td>
+      <td>limit: 0으로 RAG 스킵 + tokenBudget 3000 제한. 대부분 안전하나 모니터링 필요</td>
+    </tr>
+    <tr>
+      <td>R7</td>
+      <td><strong>Tracking API 악용</strong><br>인증 없는 공개 엔드포인트</td>
+      <td>낮음</td>
+      <td>낮음</td>
+      <td><span class="badge badge-green">수용</span></td>
+      <td>UUID 추측 불가. 추후 HMAC 서명 고려</td>
+    </tr>
+    <tr>
+      <td>R8</td>
+      <td><strong>레거시 email_sends (content_id=null)</strong></td>
+      <td>확실</td>
+      <td>낮음</td>
+      <td><span class="badge badge-green">수용</span></td>
+      <td>TASK에서 "IS NOT NULL만 집계, 레거시 0 표시" 명시</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>5-2. 구현 전 반드시 결정해야 할 사항</h3>
+
+<div class="card card-danger">
+  <div class="card-label">결정 필요 1: 마이그레이션 번호</div>
+  <p>TASK의 <code>00008</code> → <strong>00012</strong>로 수정. 기존 <code>00008_category_cleanup.sql</code>과 충돌.</p>
+</div>
+
+<div class="card card-danger">
+  <div class="card-label">결정 필요 2: email_logs 집계 갱신 메커니즘</div>
+  <p>tracking API에서 <code>email_sends.opened_at/clicked_at</code>만 업데이트하면 <code>email_logs.total_opens/total_clicks</code>는 영원히 0이다. TASK T7의 검증 조건("email_logs에서 집계")을 충족하려면 갱신 로직이 필요하다.</p>
+  <ul>
+    <li><strong>방안 A</strong>: tracking API에서 email_logs도 INCREMENT → 실시간이지만 동시성 이슈</li>
+    <li><strong>방안 B</strong>: T7 조회 시 email_sends에서 COUNT → email_logs 컬럼 불필요</li>
+    <li><strong>방안 C</strong>: DB 트리거 (email_sends UPDATE → email_logs 자동 갱신) → 가장 신뢰성 높지만 복잡</li>
+  </ul>
+</div>
+
+<div class="card card-danger">
+  <div class="card-label">결정 필요 3: link wrapping 범위</div>
+  <p>TASK에 "CTA 버튼 href를 wrapping"이라 했지만, 구체적 구현 방법이 2가지:</p>
+  <ul>
+    <li><strong>방안 A</strong>: Unlayer JSON 단계에서 CTA 버튼의 href만 교체 (가장 안전)</li>
+    <li><strong>방안 B</strong>: 최종 HTML에서 특정 패턴 매칭으로 href 치환 (수신거부 제외 로직 필요)</li>
+  </ul>
+</div>
+
+<h3>5-3. 리스크 요약</h3>
+
+<div class="summary-box" style="grid-template-columns: repeat(3, 1fr);">
+  <div class="summary-item" style="background:#FEF2F2;border-color:#FECACA;">
+    <div class="num" style="color:#DC2626;">3</div>
+    <div class="label">심각 (R1, R2, R3)</div>
+  </div>
+  <div class="summary-item" style="background:#FFFBEB;border-color:#FCD34D;">
+    <div class="num" style="color:#B45309;">2</div>
+    <div class="label">주의 (R4, R6)</div>
+  </div>
+  <div class="summary-item" style="background:#F0FDF4;border-color:#BBF7D0;">
+    <div class="num" style="color:#16A34A;">3</div>
+    <div class="label">수용 (R5, R7, R8)</div>
+  </div>
+</div>
+
+<p style="font-size:13px;color:#6b7280;margin-top:40px;">이 보고서는 코드 분석에 기반하며, 코드를 수정하지 않습니다. 리뷰어: Claude Code Agent</p>
+
+</section>
+
+</div>
+</body>
+</html>

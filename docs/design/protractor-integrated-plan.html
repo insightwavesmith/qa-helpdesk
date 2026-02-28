@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>총가치각도기 통합 기획서 v2 — LP/장바구니 제거 + 총가치수준 게이지</title>
+<style>
+  :root { --primary: #F75D5D; --bg: #0f172a; --card: #1e293b; --border: #334155; --text: #e2e8f0; --muted: #94a3b8; --green: #22c55e; --yellow: #eab308; --red: #ef4444; --blue: #3b82f6; --purple: #7c3aed; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem; max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 1.8rem; margin-bottom: 0.3rem; color: white; }
+  h2 { font-size: 1.3rem; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary); color: white; }
+  h3 { font-size: 1.05rem; margin: 1.5rem 0 0.7rem; color: #cbd5e1; }
+  h4 { font-size: 0.95rem; margin: 1rem 0 0.5rem; color: var(--muted); }
+  .subtitle { color: var(--muted); margin-bottom: 2rem; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin: 1rem 0; }
+  .card-red { border-left: 4px solid var(--red); }
+  .card-yellow { border-left: 4px solid var(--yellow); }
+  .card-green { border-left: 4px solid var(--green); }
+  .card-blue { border-left: 4px solid var(--blue); }
+  .card-primary { border-left: 4px solid var(--primary); }
+  .card-purple { border-left: 4px solid var(--purple); }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th, td { padding: 0.6rem 0.8rem; text-align: left; border-bottom: 1px solid var(--border); }
+  th { background: rgba(255,255,255,0.05); font-weight: 600; color: #cbd5e1; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+  .tag-p0 { background: rgba(239,68,68,0.3); color: #fca5a5; }
+  .tag-p1 { background: rgba(234,179,8,0.3); color: #fde047; }
+  .tag-p2 { background: rgba(34,197,94,0.3); color: #86efac; }
+  .tag-new { background: rgba(59,130,246,0.3); color: #93c5fd; }
+  .tag-fix { background: rgba(239,68,68,0.3); color: #fca5a5; }
+  .tag-keep { background: rgba(34,197,94,0.3); color: #86efac; }
+  .tag-del { background: rgba(239,68,68,0.2); color: #fca5a5; }
+  .flow { background: #0c1322; border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin: 1rem 0; font-family: monospace; font-size: 0.85rem; line-height: 1.9; white-space: pre-wrap; color: #93c5fd; }
+  .code { background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace; font-size: 0.85rem; color: #fbbf24; }
+  ul, ol { padding-left: 1.5rem; margin: 0.5rem 0; }
+  li { margin: 0.3rem 0; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0; }
+  .summary-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+  .summary-card .num { font-size: 1.8rem; font-weight: 700; }
+  .summary-card .label { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+  .highlight { background: rgba(247,93,93,0.1); border: 1px solid rgba(247,93,93,0.3); border-radius: 8px; padding: 1rem 1.2rem; margin: 1rem 0; }
+  @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<h1>총가치각도기 통합 기획서 v2</h1>
+<p class="subtitle">2026-02-25 · LP 제거 + 장바구니 제거 + 총가치수준 게이지 + 관리자 광고계정 테이블</p>
+
+<div class="highlight">
+<strong>v2 핵심 변경 (v1 대비):</strong>
+<ul style="margin-top:0.5rem">
+  <li><strong>LP 데이터 완전 제거</strong> — 믹스패널에서 직접 확인. API로 퍼널/코호트 가져오기에 한계</li>
+  <li><strong>장바구니담기 제거</strong> — 카페24 픽셀 오류로 벤치마크 왜곡 (모든 픽셀 미사용 시 비정상 수치)</li>
+  <li><strong>총가치 수준 게이지 추가</strong> — 선택 기간 총 광고비 합산 → 6개 핵심 지표 벤치마크 토탈 수준</li>
+  <li><strong>노출대비 구매전환율 추가</strong></li>
+  <li><strong>관리자 광고계정 별도 테이블</strong> — 총가치각도기와 무관, 수치적 근거용</li>
+  <li><strong>진단 4파트 → 3파트</strong> (기반점수 / 참여율 / 전환율. LP품질 파트 삭제)</li>
+</ul>
+</div>
+
+<!-- ─── 1. 현재 문제 ─── -->
+<h2>1. 현재 문제 — 왜 안 되나</h2>
+
+<div class="summary-grid">
+  <div class="summary-card"><div class="num" style="color:var(--red)">단절</div><div class="label">회원가입 ↔ 각도기</div></div>
+  <div class="summary-card"><div class="num" style="color:var(--red)">누락</div><div class="label">믹스패널/광고통계 버튼</div></div>
+  <div class="summary-card"><div class="num" style="color:var(--red)">없음</div><div class="label">총가치 수준 게이지</div></div>
+  <div class="summary-card"><div class="num" style="color:var(--red)">없음</div><div class="label">관리자 성과 대시보드</div></div>
+</div>
+
+<div class="card card-red">
+<h3>1-1. 회원구조와 각도기가 분리되어 있음</h3>
+<ul>
+  <li><span class="code">approveMember()</span>가 profiles만 업데이트 → ad_accounts/service_secrets 미생성</li>
+  <li>수강생 로그인해도 각도기에 샘플만 보임. 관리자가 별도 계정 배정 필요 (2단계 수작업)</li>
+</ul>
+</div>
+
+<div class="card card-red">
+<h3>1-2. 기존 GCP에 있던 기능이 빠져 있음</h3>
+<ul>
+  <li>광고별 믹스패널/Meta 통계 이동 버튼</li>
+  <li>총가치 수준 토탈 게이지 (전체 광고 합산 → 벤치마크 수준)</li>
+</ul>
+</div>
+
+<div class="card card-yellow">
+<h3>1-3. 제거해야 할 기능</h3>
+<table>
+  <tr><th>항목</th><th>제거 사유</th><th>현재 코드 위치</th></tr>
+  <tr><td><strong>LP 품질 파트 (진단 파트1)</strong></td><td>믹스패널에서 직접 확인. API로 퍼널/코호트 데이터 가져오기 한계</td><td>engine.ts PART_METRICS[1], lp-metrics-card.tsx, lp-metrics/route.ts</td></tr>
+  <tr><td><strong>장바구니 지표</strong></td><td>카페24 픽셀 오류. 해당 픽셀 모두 안 쓰면 벤치마크 매우 높게 측정</td><td>click_to_cart_rate, cart_to_purchase_rate, lp_session_to_cart (벤치마크/진단 양쪽)</td></tr>
+  <tr><td><strong>daily_lp_metrics 수집</strong></td><td>LP 제거에 따라 Mixpanel 수집 크론도 비활성</td><td>collect-daily/route.ts 내 Mixpanel 수집 블록</td></tr>
+</table>
+</div>
+
+<!-- ─── 2. 설계 원칙 ─── -->
+<h2>2. 설계 원칙</h2>
+
+<div class="grid-2">
+<div class="card card-primary">
+<h4>수강생 관점</h4>
+<ol>
+  <li>가입 시 광고계정+믹스패널 정보 입력 → 자동 연결</li>
+  <li><strong>총가치 수준 게이지로 전체 벤치마크 수준 한눈에 파악</strong></li>
+  <li>각 광고에서 믹스패널/Meta로 원클릭 이동</li>
+  <li>LP 분석은 믹스패널 대시보드에서 직접</li>
+</ol>
+</div>
+<div class="card card-blue">
+<h4>관리자 관점</h4>
+<ol>
+  <li>기수별로 수강생 성과를 한눈에 비교</li>
+  <li>우수/미달 성과 식별</li>
+  <li><strong>내 광고계정 별도 관리 (수치적 근거 테이블)</strong></li>
+  <li>수강생 온보딩 상태 모니터링</li>
+</ol>
+</div>
+</div>
+
+<!-- ─── 3. 회원 온보딩 ─── -->
+<h2>3. 회원 온보딩 → 각도기 연결</h2>
+
+<div class="flow"><span style="color:#22c55e">── 수강생 가입 ──</span>
+
+관리자가 "수강생 전환" 클릭
+  │
+  ├─ <span style="color:white">입력 필드 (전환 모달)</span>
+  │   ├─ 기수 (cohort)
+  │   ├─ Meta 광고계정 ID (act_XXXXXXXXX)
+  │   ├─ Mixpanel 프로젝트 ID
+  │   ├─ Mixpanel 보드 ID          ← <span style="color:#eab308">현재 누락</span>
+  │   └─ Mixpanel Service Account Secret
+  │
+  ├─ <span style="color:white">approveMember() 실행</span>
+  │   ├─ ① profiles UPDATE
+  │   ├─ ② ad_accounts UPSERT      ← <span style="color:#ef4444">현재 누락</span>
+  │   └─ ③ service_secrets UPSERT   ← <span style="color:#ef4444">현재 누락</span>
+  │
+  ▼
+수강생 로그인 → /protractor
+  ├─ 총가치 수준 게이지 (6개 지표)
+  ├─ 성과 요약 카드
+  ├─ TOP 5 광고 + 믹스패널/Meta 버튼
+  └─ 광고별 3파트 진단</div>
+
+<!-- ─── 4. 총가치 수준 게이지 ─── -->
+<h2>4. 총가치 수준 게이지 (핵심 신규)</h2>
+
+<div class="card card-primary">
+<h3>개념</h3>
+<p>선택한 기간 내 <strong>모든 광고의 광고비를 합산</strong>하고, 그 합산 광고들의 지표를 토탈로 계산하여 <strong>벤치마크 수준이 어떤지 한눈에 보여주는 게이지</strong>.</p>
+<p style="margin-top:0.5rem;color:var(--muted)">개별 광고 진단이 아닌, "내 전체 광고의 총가치 수준"을 판정.</p>
+</div>
+
+<div class="card card-blue">
+<h3>6개 핵심 지표</h3>
+<table>
+  <tr><th>#</th><th>지표명</th><th>계산 방식</th><th>벤치마크 키</th></tr>
+  <tr><td>1</td><td><strong>3초 시청률 (Hook)</strong></td><td>가중평균: SUM(video_p3s) / SUM(impressions)</td><td>video_p3s_rate</td></tr>
+  <tr><td>2</td><td><strong>CTR</strong></td><td>SUM(clicks) / SUM(impressions)</td><td>ctr</td></tr>
+  <tr><td>3</td><td><strong>참여 합계</strong></td><td>(SUM(reactions+comments+shares) / SUM(impressions)) × 10,000</td><td>engagement_per_10k</td></tr>
+  <tr><td>4</td><td><strong>결제시작율</strong></td><td>SUM(initiate_checkout) / SUM(clicks)</td><td>click_to_checkout_rate</td></tr>
+  <tr><td>5</td><td><strong>구매전환율</strong></td><td>SUM(purchases) / SUM(clicks)</td><td>click_to_purchase_rate</td></tr>
+  <tr><td>6</td><td><strong>노출대비 구매전환율</strong></td><td>SUM(purchases) / SUM(impressions)</td><td>reach_to_purchase_rate</td></tr>
+</table>
+</div>
+
+<div class="card card-green">
+<h3>판정 로직</h3>
+<ul>
+  <li>각 지표: 내 토탈 ≥ p75 → 🟢 우수, ≥ p50 → 🟡 보통, &lt; p50 → 🔴 미달</li>
+  <li>전체 등급: 🟢 4개 이상 → A, 3개 → B, 2개 → C, 1개 → D, 0개 → F</li>
+  <li>UI: 좌측에 등급 + 총 광고비, 우측에 6개 지표 카드</li>
+</ul>
+</div>
+
+<!-- ─── 5. 벤치마크 수집 로직 ─── -->
+<h2>5. 벤치마크 수집 로직 (수정 필수)</h2>
+
+<div class="card card-red">
+<h3>현재 문제: 모집단이 너무 작다</h3>
+<ul>
+  <li>현재 <span class="code">collect-benchmarks</span>: <strong>수강생 계정(ad_accounts)의 daily_ad_insights만</strong> 대상</li>
+  <li>수강생 ~7명 → 일주일 데이터로 벤치마크 계산 → 통계적 유의성 없음</li>
+  <li>과거 GCP에서는 Smith님이 접근 가능한 <strong>전체 광고계정</strong>을 대상으로 벤치마크를 뽑았음</li>
+</ul>
+</div>
+
+<div class="card card-green">
+<h3>올바른 방식 (GCP 원본 복원)</h3>
+<table>
+  <tr><th>항목</th><th>내용</th></tr>
+  <tr><td><strong>모집단</strong></td><td>Smith님 <span class="code">META_ACCESS_TOKEN</span>으로 접근 가능한 <strong>모든 광고계정</strong> (수강생 + 본인 + 외부 클라이언트)</td></tr>
+  <tr><td><strong>필터</strong></td><td>노출 3,500회 이상인 광고만 (통계적 유의성 확보)</td></tr>
+  <tr><td><strong>분류</strong></td><td>컨텐츠 형식별 분리: VIDEO / IMAGE / CAROUSEL 등 (<span class="code">creative_type</span> 기준)</td></tr>
+  <tr><td><strong>계산</strong></td><td>형식별로 p25 / p50 / p75 / p90 / avg / sample_size</td></tr>
+  <tr><td><strong>주기</strong></td><td>주 1회 (월요일)</td></tr>
+</table>
+</div>
+
+<div class="card card-blue">
+<h3>수집 흐름</h3>
+<ol>
+  <li><span class="code">GET /me/adaccounts</span> → 접근 가능한 전체 계정 목록</li>
+  <li>각 계정별 <span class="code">GET /act_{id}/insights?level=ad&fields=spend,impressions,clicks,actions,...</span></li>
+  <li>노출 ≥ 3,500 필터 적용</li>
+  <li><span class="code">creative_type</span>별 그룹핑</li>
+  <li>그룹별 percentile 계산 → <span class="code">benchmarks</span> 테이블에 INSERT</li>
+</ol>
+<p style="margin-top:0.8rem;color:var(--muted)">현재 daily_ad_insights에 <span class="code">creative_type</span> 컬럼 이미 존재. benchmarks 테이블에 <span class="code">creative_type</span> 컬럼 추가 필요.</p>
+</div>
+
+<div class="card card-yellow">
+<h3>DB 변경: benchmarks 테이블</h3>
+<table>
+  <tr><th>변경</th><th>내용</th></tr>
+  <tr><td>컬럼 추가</td><td><span class="code">creative_type</span> (text, nullable) — VIDEO/IMAGE/CAROUSEL/ALL</td></tr>
+  <tr><td>컬럼 추가</td><td><span class="code">source</span> (text, default 'all_accounts') — 모집단 출처 구분</td></tr>
+  <tr><td>인덱스</td><td>(metric_name, creative_type, date) unique</td></tr>
+</table>
+<p style="margin-top:0.8rem;color:var(--muted)">creative_type='ALL'인 행은 형식 무관 전체 벤치마크. 수강생 대시보드에서 해당 광고의 creative_type에 맞는 벤치마크와 비교.</p>
+</div>
+
+<!-- ─── 6. 수강생 대시보드 ─── -->
+<h2>6. 수강생 대시보드 구성</h2>
+
+<p>위에서 아래 순서대로:</p>
+<ol>
+  <li><strong>헤더</strong> — 계정 선택 + 기간 선택 (어제/7/14/30/직접)</li>
+  <li><strong>총가치 수준 게이지</strong> — 6개 지표 벤치마크 비교 <span class="tag tag-new">신규</span></li>
+  <li><strong>성과 요약 카드 4개</strong> — 광고비/클릭/구매/ROAS <span class="tag tag-keep">유지</span></li>
+  <li><strong>TOP 5 광고</strong> — 광고비 기준 순위 + 믹스패널/광고통계 버튼 <span class="tag tag-fix">버튼추가</span></li>
+  <li><strong>광고 상세 진단</strong> — 3파트 (기반점수/참여율/전환율) <span class="tag tag-fix">LP파트 제거</span></li>
+</ol>
+
+<h3>5-1. TOP 5 광고 — 버튼 구조</h3>
+<div class="card">
+<table>
+  <tr><th>버튼</th><th>URL 구조</th><th>필요 데이터</th></tr>
+  <tr><td><strong>믹스패널</strong></td><td><span class="code">mixpanel.com/project/{project_id}/view/{board_id}</span></td><td>ad_accounts.mixpanel_project_id + board_id</td></tr>
+  <tr><td><strong>광고통계</strong></td><td><span class="code">adsmanager.facebook.com/.../ads?act={account_id}&amp;selected_ad_ids={ad_id}</span></td><td>ad_accounts.account_id + daily_ad_insights.ad_id</td></tr>
+</table>
+</div>
+
+<h3>5-2. 광고 상세 진단 — 3파트 (변경)</h3>
+<div class="card">
+<table>
+  <tr><th>파트</th><th>파트명</th><th>지표</th></tr>
+  <tr><td>0</td><td><strong>기반점수 (영상 품질)</strong></td><td>3초 시청률, ThruPlay율, 지속비율</td></tr>
+  <tr><td style="text-decoration:line-through;color:var(--muted)">1</td><td style="text-decoration:line-through;color:var(--muted)">LP 품질</td><td style="color:var(--muted)"><span class="tag tag-del">삭제</span> 믹스패널에서 직접 확인</td></tr>
+  <tr><td>1</td><td><strong>참여율</strong></td><td>좋아요/댓글/공유/참여합계 (per 10K impressions)</td></tr>
+  <tr><td>2</td><td><strong>전환율</strong></td><td>CTR, 결제시작율, 구매전환율, 노출대비구매전환율, 결제→구매율</td></tr>
+</table>
+<p style="margin-top:0.8rem;color:var(--muted)">전환율 파트에서 제거된 지표: <span style="text-decoration:line-through">click_to_cart_rate</span>, <span style="text-decoration:line-through">cart_to_purchase_rate</span>, <span style="text-decoration:line-through">lp_session_to_cart</span> (장바구니 관련 전부)</p>
+<p style="color:var(--muted)">추가된 지표: <strong>reach_to_purchase_rate</strong> (노출대비 구매전환율)</p>
+</div>
+
+<!-- ─── 7. 타겟중복율 ─── -->
+<h2>7. 타겟중복율 (신규 기능)</h2>
+
+<div class="card card-primary">
+<h3>개념</h3>
+<p>광고세트 여러 개를 동시 집행할 때, 같은 사람에게 중복 노출되는 비율. 예: A세트 빈도 2, B세트 빈도 2인데 합치면 빈도 3 → 타겟이 겹치고 있다는 뜻.</p>
+</div>
+
+<div class="card card-blue">
+<h3>구현 방식 — 실제 집행 데이터 기반</h3>
+<ol>
+  <li>수강생이 <strong>"타겟중복 확인" 버튼 클릭</strong> (on-demand)</li>
+  <li>해당 계정의 활성 광고세트 목록 조회</li>
+  <li>각 세트별 개별 <span class="code">reach</span> 조회 (Insights API)</li>
+  <li>2개씩 조합 필터링으로 합산 unique <span class="code">reach</span> 조회</li>
+  <li><strong>중복 = 개별 reach 합 - 합산 unique reach</strong></li>
+  <li>결과를 DB에 캐싱 → 같은 조합 재조회 시 API 재호출 안 함</li>
+</ol>
+</div>
+
+<div class="card">
+<h3>API 호출</h3>
+<p>Insights API로 adset 필터링하면 중복 제거된 합산 reach가 나옴 (광고관리자에서 세트 2개 체크했을 때 보이는 빈도 합계와 동일):</p>
+<pre style="background:#0c1322;padding:1rem;border-radius:8px;font-size:0.85rem;color:#93c5fd;margin:0.5rem 0">GET /act_{id}/insights
+  ?level=adset
+  &amp;filtering=[{"field":"adset.id","operator":"IN","value":["세트A","세트B"]}]
+  &amp;fields=reach,impressions,frequency
+  &amp;date_preset=last_7d</pre>
+<p style="margin-top:0.8rem">세트 5개(A~E)면: 개별 5회 + 조합 C(5,2)=10회 + 전체 1회 = 총 16회 호출</p>
+</div>
+
+<div class="card card-green">
+<h3>캐싱 전략</h3>
+<table>
+  <tr><th>항목</th><th>내용</th></tr>
+  <tr><td>캐시 키</td><td>account_id + adset_ids (정렬) + date_range</td></tr>
+  <tr><td>저장 위치</td><td>신규 테이블 <span class="code">adset_overlap_cache</span> (account_id, adset_pair, period, overlap_data jsonb, cached_at)</td></tr>
+  <tr><td>만료</td><td>같은 기간 데이터는 재호출 불필요. 기간 변경 시에만 새로 호출</td></tr>
+  <tr><td>표시</td><td>"마지막 조회: 2026-02-24 14:30" 타임스탬프 표시</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>UI — 대시보드 내 별도 탭</h3>
+<ul>
+  <li>대시보드 상단 탭: <strong>[성과 요약] [타겟중복]</strong></li>
+  <li>기간은 상단 공용 필터 그대로 사용 (7일 미만 시 비활성 + 안내 문구)</li>
+</ul>
+</div>
+
+<div class="card card-primary">
+<h3>타겟중복 탭 UX 흐름</h3>
+<ol>
+  <li><strong>상단:</strong> 전체 합산 중복율 큰 숫자 + 활성 세트 수 + 측정 기간</li>
+  <li><strong>캠페인 필터:</strong> 드롭다운으로 특정 캠페인 선택 가능 (기본: 전체)</li>
+  <li><strong>"전체 분석" 버튼:</strong> 클릭 시 Meta API 호출 → 모든 조합 매트릭스 생성</li>
+  <li><strong>매트릭스 테이블:</strong> 세트 × 세트 격자. 색상 코딩 (60%+ 빨강, 30~59% 노랑, &lt;30% 초록, 측불가 회색)</li>
+  <li><strong>조합 상세:</strong> 매트릭스 셀 클릭 → 해당 조합의 reach/impressions/frequency 상세</li>
+  <li><strong>캐시 표시:</strong> "마지막 조회: 2026-02-24 14:30" 타임스탬프. 같은 기간+세트는 재호출 안 함</li>
+</ol>
+</div>
+
+<div class="card">
+<h3>API 흐름</h3>
+<pre style="background:#0c1322;padding:1rem;border-radius:8px;font-size:.85rem;color:#93c5fd;margin:.5rem 0;white-space:pre-wrap">프론트: /api/protractor/overlap?account_id={id}&amp;period=last_7d
+  ↓
+서버:
+  1. 캐시 확인 (adset_overlap_cache) → HIT면 즉시 반환
+  2. MISS면:
+     a. GET /act_{id}/campaigns (활성 OUTCOME_SALES)
+     b. GET /{campaign}/adsets (활성 세트 목록)
+     c. GET /{adset}/insights (개별 reach/impressions/frequency)
+     d. GET /act_{id}/insights?level=account&amp;filtering=adset.id IN [A,B] (조합별 합산 reach)
+     e. GET /act_{id}/insights?level=account&amp;filtering=adset.id IN [전체] (전체 합산)
+  3. 중복율 계산 + DB 캐싱
+  ↓
+프론트: 매트릭스 렌더링</pre>
+</div>
+
+<!-- ─── 8. 관리자 광고계정 테이블 ─── -->
+<h2>7. 관리자 광고계정 별도 테이블 (총가치각도기와 무관)</h2>
+
+<div class="card card-purple">
+<h3>목적</h3>
+<p>Smith님이 접근 가능한 <strong>전체 광고계정</strong>(수강생 계정 + 본인 소유 계정)의 광고비/평균ROAS/총매출을 수치적 근거로 관리. 총가치각도기 진단 기능과는 별개의 독립 테이블.</p>
+</div>
+
+<div class="card card-blue">
+<h3>신규 DB 테이블: <span class="code">owner_ad_summaries</span></h3>
+<table>
+  <tr><th>컬럼</th><th>타입</th><th>설명</th></tr>
+  <tr><td>id</td><td>uuid PK</td><td></td></tr>
+  <tr><td>account_id</td><td>text</td><td>Meta 광고계정 ID (act_XXX)</td></tr>
+  <tr><td>account_name</td><td>text</td><td>계정명/브랜드명</td></tr>
+  <tr><td>owner_type</td><td>enum</td><td>'self' (본인 소유) / 'student' (수강생) / 'client' (외부)</td></tr>
+  <tr><td>period_start</td><td>date</td><td>집계 시작일</td></tr>
+  <tr><td>period_end</td><td>date</td><td>집계 종료일</td></tr>
+  <tr><td>total_spend</td><td>numeric</td><td>기간 총 광고비</td></tr>
+  <tr><td>total_revenue</td><td>numeric</td><td>기간 총 매출</td></tr>
+  <tr><td>avg_roas</td><td>numeric</td><td>기간 평균 ROAS</td></tr>
+  <tr><td>total_purchases</td><td>integer</td><td>기간 총 구매수</td></tr>
+  <tr><td>collected_at</td><td>timestamptz</td><td>수집 시점</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>수집 방식</h3>
+<ul>
+  <li>별도 크론: <span class="code">collect-owner-summaries</span> (주 1회)</li>
+  <li>Meta Graph API로 접근 가능한 전체 계정 목록 조회 → 계정별 기간 insights 수집</li>
+  <li>수강생 계정은 ad_accounts에서 자동 매칭, 본인 소유 계정은 수동 등록</li>
+</ul>
+</div>
+
+<div class="card card-green">
+<h3>관리자 UI</h3>
+<ul>
+  <li>/admin/accounts 또는 /admin/summary에 별도 섹션</li>
+  <li>카드 3개: 총 접근 계정 수 / 총 광고비 합산 / 평균 ROAS</li>
+  <li>테이블: 계정별 광고비, 매출, ROAS, 구매수, 소유구분</li>
+  <li>활용: "총 XX억원의 광고비를 관리하며 평균 ROAS X.X 달성" (마케팅 수치 근거)</li>
+</ul>
+</div>
+
+<!-- ─── 8. 관리자 대시보드 ─── -->
+<h2>8. 관리자 수강생 성과 대시보드</h2>
+
+<div class="card">
+<h3>구성 (v1과 동일, 유지)</h3>
+<ul>
+  <li>상단: 기수별 필터 + 요약 카드 (관리 수강생수, 총 광고비, 평균 ROAS, 총 매출)</li>
+  <li>우수/미달 성과 하이라이트</li>
+  <li>수강생별 성과 비교 테이블</li>
+</ul>
+</div>
+
+<!-- ─── 9. DB 변경 사항 ─── -->
+<h2>9. DB 변경 사항</h2>
+
+<div class="card card-yellow">
+<h3>제거할 것</h3>
+<table>
+  <tr><th>항목</th><th>액션</th></tr>
+  <tr><td>daily_lp_metrics 수집 (크론)</td><td>collect-daily에서 Mixpanel 블록 비활성</td></tr>
+  <tr><td>lp-metrics API</td><td>/api/protractor/lp-metrics 비활성 또는 제거</td></tr>
+  <tr><td>lp-metrics-card 컴포넌트</td><td>대시보드에서 제거</td></tr>
+  <tr><td>진단 파트1 (LP품질)</td><td>PART_METRICS에서 제거, engine.ts 수정</td></tr>
+  <tr><td>장바구니 벤치마크</td><td>BENCHMARK_METRICS에서 click_to_cart_rate 제거</td></tr>
+  <tr><td>장바구니 진단 지표</td><td>click_to_cart_rate, cart_to_purchase_rate, lp_session_to_cart 등 제거</td></tr>
+</table>
+</div>
+
+<div class="card card-green">
+<h3>추가할 것</h3>
+<table>
+  <tr><th>항목</th><th>액션</th></tr>
+  <tr><td>owner_ad_summaries 테이블</td><td>Supabase 마이그레이션</td></tr>
+  <tr><td>reach_to_purchase_rate 진단</td><td>전환율 파트 지표에 추가</td></tr>
+  <tr><td>총가치 수준 API</td><td>/api/protractor/total-value (기간별 6개 지표 합산 + 벤치마크 비교)</td></tr>
+  <tr><td>collect-owner-summaries 크론</td><td>관리자 광고계정 집계 (주 1회)</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>진실의 원천 통일 (v1 유지)</h3>
+<table>
+  <tr><th>데이터</th><th>진실의 원천</th></tr>
+  <tr><td>광고계정 ID</td><td><strong>ad_accounts</strong></td></tr>
+  <tr><td>Mixpanel 프로젝트/보드</td><td><strong>ad_accounts</strong></td></tr>
+  <tr><td>Mixpanel 시크릿</td><td><strong>service_secrets</strong></td></tr>
+  <tr><td>관리자 광고계정 집계</td><td><strong>owner_ad_summaries</strong> (신규)</td></tr>
+</table>
+</div>
+
+<!-- ─── 10. 수정 로드맵 ─── -->
+<h2>10. 수정 로드맵</h2>
+
+<h3><span class="tag tag-p0">P0</span> 즉시 — 연결 + 기본 작동 + 제거</h3>
+<div class="card card-red">
+<table>
+  <tr><th>#</th><th>내용</th><th>파일</th></tr>
+  <tr><td>1</td><td>approveMember()에 ad_accounts + service_secrets 자동 생성</td><td>actions/admin.ts</td></tr>
+  <tr><td>2</td><td>수강생 전환 모달에 mixpanel_board_id 필드 추가</td><td>members-client.tsx</td></tr>
+  <tr><td>3</td><td>회원 상세 모달에 광고계정/믹스패널 편집 필드 추가</td><td>member-detail-modal.tsx</td></tr>
+  <tr><td>4</td><td>real-dashboard.tsx에 URL ?account= 파라미터 처리</td><td>real-dashboard.tsx</td></tr>
+  <tr><td>5</td><td>accounts/route.ts에 DELETE 핸들러 추가</td><td>accounts/route.ts</td></tr>
+  <tr><td>6</td><td>LP 파트 제거 (진단 엔진 + UI + 벤치마크)</td><td>engine.ts, metrics.ts, 컴포넌트들</td></tr>
+  <tr><td>7</td><td>장바구니 지표 제거 (진단 + 벤치마크 + 크론)</td><td>engine.ts, collect-benchmarks</td></tr>
+  <tr><td>8</td><td>노출대비 구매전환율 추가 (진단 전환율 파트)</td><td>metrics.ts, engine.ts</td></tr>
+</table>
+</div>
+
+<h3><span class="tag tag-p1">P1</span> 핵심 기능</h3>
+<div class="card card-yellow">
+<table>
+  <tr><th>#</th><th>내용</th><th>파일</th></tr>
+  <tr><td>9</td><td><strong>총가치 수준 게이지</strong> — 6개 지표 토탈 벤치마크 비교 컴포넌트</td><td>신규: TotalValueGauge.tsx + /api/protractor/total-value</td></tr>
+  <tr><td>10</td><td>TOP 5 광고에 믹스패널/광고통계 버튼 추가</td><td>ad-metrics-table.tsx</td></tr>
+  <tr><td>11</td><td>관리자 대시보드: 기수별 필터 + 수강생 성과 테이블</td><td>protractor-admin-client.tsx</td></tr>
+  <tr><td>12</td><td>관리자 대시보드: 우수/미달 성과 하이라이트</td><td>protractor-admin-client.tsx</td></tr>
+  <tr><td>13</td><td><strong>타겟중복율</strong> — adset_overlap_cache 테이블 + Insights API 조회 + 캐싱 + UI</td><td>신규: OverlapAnalysis.tsx + /api/protractor/overlap</td></tr>
+</table>
+</div>
+
+<h3><span class="tag tag-p2">P2</span> 관리자 광고계정 + 구조 개선</h3>
+<div class="card card-green">
+<table>
+  <tr><th>#</th><th>내용</th></tr>
+  <tr><td>13</td><td>owner_ad_summaries 테이블 생성 + 관리자 광고계정 수집 크론</td></tr>
+  <tr><td>14</td><td>관리자 광고계정 관리 UI (총 광고비/평균ROAS/총매출)</td></tr>
+  <tr><td>15</td><td>profiles 레거시 필드 정리 (ad_accounts로 완전 이관)</td></tr>
+  <tr><td>16</td><td>기수별 ROAS 추이 차트</td></tr>
+  <tr><td>17</td><td>성과 미달 자동 알림 (크론 + Slack)</td></tr>
+</table>
+</div>
+
+<!-- ─── 10. 핵심 메시지 ─── -->
+<h2>11. 핵심 메시지</h2>
+
+<div class="highlight">
+<p><strong>총가치각도기 = 내 전체 광고의 벤치마크 수준을 한눈에.</strong></p>
+<p style="margin-top:0.5rem">LP 분석은 믹스패널에서 직접, 장바구니는 카페24 픽셀 오류로 제외. 총가치 수준 게이지가 6개 핵심 지표(3초훅/CTR/참여합계/결제시작율/구매전환율/노출대비구매전환율)로 전체 광고의 벤치마크 달성도를 토탈로 보여준다.</p>
+<p style="margin-top:0.5rem">관리자 광고계정 테이블은 별도로, Smith님이 접근 가능한 모든 계정의 수치를 "XX억원 관리, 평균 ROAS X.X"으로 증명하는 근거 자료.</p>
+</div>
+
+</body>
+</html>

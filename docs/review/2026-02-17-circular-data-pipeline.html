@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>순환 데이터 파이프라인 아키텍처</title>
+  <meta name="date" content="2026-02-17">
+  <meta name="project" content="qa-helpdesk">
+  <meta name="status" content="pending">
+  <meta property="og:title" content="순환 데이터 파이프라인 아키텍처">
+  <meta property="og:description" content="데이터가 소비되고 끝나는 게 아니라, 결과가 다시 원료가 되는 구조. BS CAMP 전체 서비스의 데이터 순환 설계.">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#FEF2F2',
+        primaryBorderColor: '#F75D5D',
+        primaryTextColor: '#1a1a1a',
+        lineColor: '#9ca3af',
+        fontSize: '13px',
+        edgeLabelBackground: '#ffffff'
+      },
+      flowchart: { htmlLabels: true, curve: 'basis' }
+    });
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #F75D5D; --primary-hover: #E54949;
+      --bg: #fff; --text: #1a1a1a; --text-sub: #374151; --text-muted: #6b7280; --text-faint: #9ca3af;
+      --border: #e5e7eb; --surface: #f8f9fc; --surface-warm: #FEF2F2; --sidebar-w: 220px;
+    }
+    body { font-family: "Pretendard", -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+    .sidebar { position: fixed; top: 0; left: 0; width: var(--sidebar-w); height: 100vh; background: var(--surface); border-right: 1px solid var(--border); padding: 24px 16px; overflow-y: auto; z-index: 100; }
+    .sidebar-title { font-size: 13px; font-weight: 800; color: var(--primary); margin-bottom: 16px; letter-spacing: 1px; text-transform: uppercase; }
+    .sidebar nav a { display: block; padding: 5px 10px; font-size: 12.5px; color: var(--text-muted); text-decoration: none; border-left: 2px solid transparent; border-radius: 0 4px 4px 0; transition: all .15s; }
+    .sidebar nav a:hover { color: var(--text); background: var(--surface-warm); }
+    .sidebar nav .sep { height: 1px; background: var(--border); margin: 8px 10px; }
+    .main { margin-left: var(--sidebar-w); padding: 40px 48px 80px; max-width: 920px; }
+    h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+    h2 { font-size: 18px; font-weight: 700; margin: 40px 0 14px; padding-bottom: 8px; border-bottom: 2px solid var(--primary); scroll-margin-top: 24px; }
+    h3 { font-size: 15px; font-weight: 700; margin: 20px 0 8px; color: var(--text-sub); }
+    p, li { font-size: 14px; color: var(--text-sub); }
+    p { margin-bottom: 12px; }
+    ul, ol { padding-left: 20px; margin-bottom: 12px; }
+    li { margin-bottom: 4px; }
+    .meta { font-size: 13px; color: var(--text-faint); margin-bottom: 28px; display: flex; flex-wrap: wrap; gap: 16px; }
+    .summary-box { background: var(--surface-warm); border-left: 4px solid var(--primary); padding: 16px 20px; border-radius: 0 8px 8px 0; margin-bottom: 24px; }
+    .summary-box strong { color: var(--primary); }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+    th, td { border: 1px solid var(--border); padding: 10px 12px; text-align: left; }
+    th { background: var(--surface-warm); font-weight: 600; color: var(--text-muted); }
+    pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin-bottom: 16px; }
+    code { font-family: "SF Mono", "Fira Code", monospace; font-size: 13px; }
+    p code, li code, td code { background: #f3f4f6; padding: 1px 6px; border-radius: 4px; color: var(--primary-hover); font-size: 12px; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .badge-ok { background: #DCFCE7; color: #166534; }
+    .badge-warn { background: #FEF9C3; color: #854D0E; }
+    .badge-danger { background: #FEE2E2; color: #991B1B; }
+    .badge-info { background: #DBEAFE; color: #1E40AF; }
+    .badge-purple { background: #F3E8FF; color: #6B21A8; }
+    .badge-new { background: #DCFCE7; color: #166534; font-weight: 700; border: 1px solid #86EFAC; }
+    .impact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0; }
+    .impact-card { border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-align: center; }
+    .impact-card .num { font-size: 28px; font-weight: 800; color: var(--primary); }
+    .impact-card .label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .loop-card { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+    .loop-header { padding: 14px 20px; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 10px; }
+    .loop-header.a { background: #DBEAFE; color: #1E40AF; }
+    .loop-header.b { background: #FEF9C3; color: #854D0E; }
+    .loop-header.c { background: #F3E8FF; color: #6B21A8; }
+    .loop-header.d { background: #DCFCE7; color: #166534; }
+    .loop-body { padding: 16px 20px; font-size: 13px; }
+    .loop-body .flow { background: var(--surface); border-radius: 8px; padding: 12px 16px; font-family: "SF Mono", monospace; font-size: 12px; margin: 8px 0; line-height: 1.8; }
+    .layer-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; margin-right: 4px; }
+    .l0 { background: #DBEAFE; color: #1E40AF; }
+    .l1 { background: #FEF9C3; color: #854D0E; }
+    .l2 { background: #F3E8FF; color: #6B21A8; }
+    .l3 { background: #FFEDD5; color: #9A3412; }
+    .l4 { background: #DCFCE7; color: #166534; }
+    .roadmap-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 16px 0; }
+    .roadmap-card { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .roadmap-card-header { padding: 12px 16px; font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    .roadmap-card-header.done { background: #DCFCE7; color: #166534; }
+    .roadmap-card-header.next { background: #FEF9C3; color: #854D0E; }
+    .roadmap-card-header.future { background: #DBEAFE; color: #1E40AF; }
+    .roadmap-card-body { padding: 16px; font-size: 13px; }
+    .adr { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+    .adr-header { padding: 14px 20px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .adr-num { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 24px; border-radius: 6px; background: var(--primary); color: #fff; font-size: 12px; font-weight: 700; padding: 0 8px; }
+    .adr-title { font-size: 14px; font-weight: 700; }
+    .adr-body { padding: 20px; }
+    .adr-section { margin-bottom: 16px; }
+    .adr-section:last-child { margin-bottom: 0; }
+    .adr-section-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .mermaid { margin: 16px 0 24px; }
+    footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-faint); }
+    @media (max-width: 800px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 24px 16px 60px; }
+      .impact-grid, .roadmap-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-title">Circular Pipeline</div>
+  <nav>
+    <a href="#summary">1. 핵심 개념</a>
+    <a href="#current-state">2. 현재 상태</a>
+    <div class="sep"></div>
+    <a href="#layers">3. 5-Layer 순환 구조</a>
+    <a href="#diagram-main">4. 순환 다이어그램</a>
+    <a href="#loops">5. 피드백 루프 4종</a>
+    <a href="#diagram-loops">6. 루프 다이어그램</a>
+    <div class="sep"></div>
+    <a href="#data-inventory">7. 데이터 인벤토리</a>
+    <a href="#adr">8. ADR-9, 10</a>
+    <div class="sep"></div>
+    <a href="#roadmap">9. 구현 로드맵</a>
+    <a href="#metrics">10. 성과 지표</a>
+  </nav>
+</aside>
+
+<div class="main">
+
+<section id="header">
+  <h1>순환 데이터 파이프라인 아키텍처</h1>
+  <p style="font-size:16px;font-weight:600;color:var(--primary);margin-bottom:4px;">
+    데이터가 소비되고 끝나는 게 아니라, 결과가 다시 원료가 되는 구조
+  </p>
+  <div class="meta">
+    <span>작성일: 2026-02-17</span>
+    <span>작성: 모찌 (PM)</span>
+    <span>기반: v3.1 아키텍처 보고서</span>
+    <span><span class="badge badge-new">NEW</span></span>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!-- 1. 핵심 개념 -->
+<!-- ================================================================ -->
+
+<h2 id="summary">1. 핵심 개념</h2>
+
+<div class="summary-box">
+  <strong>순환 파이프라인의 핵심:</strong> 기존 콘텐츠 파이프라인은 <em>데이터 → 가공 → 소비</em>의 일방향이었다.
+  순환 파이프라인에서는 <strong>소비 결과(성과, QA, 피드백)가 다시 데이터로 돌아와</strong> 콘텐츠 품질이 자동으로 개선된다.
+</div>
+
+<div class="impact-grid">
+  <div class="impact-card">
+    <div class="num">4</div>
+    <div class="label">피드백 루프</div>
+  </div>
+  <div class="impact-card">
+    <div class="num">5</div>
+    <div class="label">데이터 레이어</div>
+  </div>
+  <div class="impact-card">
+    <div class="num">676</div>
+    <div class="label">현재 임베딩 chunk</div>
+  </div>
+</div>
+
+<p>기존 일방향 파이프라인:</p>
+<pre><code>강의 자료 → 임베딩 → QA 답변 → (끝)</code></pre>
+
+<p><strong>순환 파이프라인:</strong></p>
+<pre><code>강의 자료 → 임베딩 → QA 답변 → QA가 새 데이터 → 재임베딩 → 더 좋은 답변 ↩️
+콘텐츠 발행 → 열람/클릭 성과 → 인기 주제 분석 → 다음 콘텐츠 기획 ↩️
+수강생 성과 → 사례 뉴스레터 자동생성 → 수강생 반응 → 다시 데이터 ↩️</code></pre>
+
+<!-- ================================================================ -->
+<!-- 2. 현재 상태 -->
+<!-- ================================================================ -->
+
+<h2 id="current-state">2. 현재 상태</h2>
+
+<table>
+  <thead>
+    <tr><th>항목</th><th>상태</th><th>데이터</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="layer-tag l0">L0</span> 강의 데이터</td>
+      <td><span class="badge badge-ok">완료</span></td>
+      <td><code>lecture_chunks</code> 664개 (source_type: lecture)</td>
+    </tr>
+    <tr>
+      <td><span class="layer-tag l0">L0</span> 웨비나 이메일</td>
+      <td><span class="badge badge-ok">완료</span></td>
+      <td><code>lecture_chunks</code> 12개 (source_type: meeting)</td>
+    </tr>
+    <tr>
+      <td><span class="layer-tag l1">L1</span> Knowledge Service</td>
+      <td><span class="badge badge-ok">완료</span></td>
+      <td>KS + Gemini 임베딩 + Opus 4.6 생성</td>
+    </tr>
+    <tr>
+      <td><span class="layer-tag l2">L2</span> 콘텐츠 생성</td>
+      <td><span class="badge badge-ok">완료</span></td>
+      <td>3 템플릿(교육/웨비나/사례) + 뉴스레터 2단계</td>
+    </tr>
+    <tr>
+      <td><span class="layer-tag l3">L3</span> 이메일 성과 추적</td>
+      <td><span class="badge badge-ok">완료</span></td>
+      <td><code>email_logs</code> (열람/클릭 tracking pixel + CTA)</td>
+    </tr>
+    <tr>
+      <td><span class="layer-tag l4">L4</span> QA 자기강화</td>
+      <td><span class="badge badge-warn">미구현</span></td>
+      <td>QA 답변 → 재임베딩 루프 없음</td>
+    </tr>
+    <tr>
+      <td><span class="layer-tag l4">L4</span> 성과 기반 기획</td>
+      <td><span class="badge badge-warn">미구현</span></td>
+      <td>열람/클릭 데이터 → 콘텐츠 추천 없음</td>
+    </tr>
+    <tr>
+      <td><span class="layer-tag l4">L4</span> 수강생 성과 순환</td>
+      <td><span class="badge badge-danger">미구현</span></td>
+      <td>수강생 데이터 수집 체계 없음</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ================================================================ -->
+<!-- 3. 5-Layer 순환 구조 -->
+<!-- ================================================================ -->
+
+<h2 id="layers">3. 5-Layer 순환 구조</h2>
+
+<h3><span class="layer-tag l0">Layer 0</span> 데이터 수집 (Data Ingestion)</h3>
+<p>모든 원료 데이터가 들어오는 입구. <strong>순환 파이프라인에서는 L4의 결과도 여기로 돌아온다.</strong></p>
+<table>
+  <thead><tr><th>소스</th><th>source_type</th><th>수집 방법</th><th>현재 chunk</th></tr></thead>
+  <tbody>
+    <tr><td>강의 녹화/자료</td><td><code>lecture</code></td><td>수동 업로드 → 청크 분할</td><td>664</td></tr>
+    <tr><td>웨비나 뉴스레터</td><td><code>meeting</code></td><td>Gmail 스크래핑 → 청크 분할</td><td>12</td></tr>
+    <tr><td>QA 질문/답변 <span class="badge badge-warn">L4→L0</span></td><td><code>qa_archive</code></td><td>QA 답변 완료 시 자동 수집</td><td>0</td></tr>
+    <tr><td>크롤링 콘텐츠</td><td><code>crawl</code></td><td>경쟁사/업계 기사 크롤링</td><td>0</td></tr>
+    <tr><td>수강생 피드백/성과 <span class="badge badge-warn">L4→L0</span></td><td><code>manual</code></td><td>후기 게시판 / 성과 공유</td><td>0</td></tr>
+  </tbody>
+</table>
+
+<h3><span class="layer-tag l1">Layer 1</span> 임베딩/가공 (Processing)</h3>
+<p>원료 데이터를 벡터화하여 검색 가능하게 만드는 과정.</p>
+<ul>
+  <li><strong>임베딩 모델:</strong> Gemini <code>gemini-embedding-001</code> (768d)</li>
+  <li><strong>저장소:</strong> Supabase <code>lecture_chunks</code> (pgvector)</li>
+  <li><strong>메타데이터:</strong> <code>source_type</code> + <code>metadata</code> (jsonb) 필터링</li>
+  <li><strong>Knowledge Service:</strong> RAG 검색 → Opus 4.6 생성</li>
+</ul>
+
+<h3><span class="layer-tag l2">Layer 2</span> 콘텐츠 생성 (Content Generation)</h3>
+<p>임베딩된 지식을 기반으로 5종의 콘텐츠를 생산.</p>
+<table>
+  <thead><tr><th>Consumer</th><th>입력</th><th>출력</th><th>상태</th></tr></thead>
+  <tbody>
+    <tr><td>QA 답변</td><td>수강생 질문 + RAG 검색</td><td>AI 답변</td><td><span class="badge badge-ok">운영중</span></td></tr>
+    <tr><td>뉴스레터</td><td>body_md + 배너키 규칙</td><td>이메일 HTML (3 템플릿)</td><td><span class="badge badge-ok">운영중</span></td></tr>
+    <tr><td>정보공유 기사</td><td>주제 + RAG 검색</td><td>마크다운 기사</td><td><span class="badge badge-ok">운영중</span></td></tr>
+    <tr><td>웨비나 기획</td><td>인기 주제 + 성과 데이터</td><td>웨비나 기획안</td><td><span class="badge badge-danger">미구현</span></td></tr>
+    <tr><td>챗봇</td><td>방문자 질문 + RAG</td><td>실시간 응답</td><td><span class="badge badge-danger">미구현</span></td></tr>
+  </tbody>
+</table>
+
+<h3><span class="layer-tag l3">Layer 3</span> 배포 &amp; 소비 (Distribution)</h3>
+<ul>
+  <li><strong>이메일:</strong> 뉴스레터 발송 (Stibee / 자체 발송)</li>
+  <li><strong>웹:</strong> qa-helpdesk.vercel.app 콘텐츠 허브</li>
+  <li><strong>QA:</strong> 수강생 질문 → AI 답변 제공</li>
+</ul>
+
+<h3><span class="layer-tag l4">Layer 4</span> 피드백 수집 &amp; 재순환 (Feedback → L0)</h3>
+<p><strong>순환 파이프라인의 핵심 레이어.</strong> 소비 결과가 다시 L0으로 돌아간다.</p>
+<table>
+  <thead><tr><th>피드백 소스</th><th>데이터</th><th>재순환 대상</th><th>효과</th></tr></thead>
+  <tbody>
+    <tr><td>이메일 성과</td><td>열람률, 클릭률</td><td>콘텐츠 기획 (L2)</td><td>인기 주제 자동 파악</td></tr>
+    <tr><td>QA 질문/답변</td><td>질문 텍스트 + AI 답변</td><td>임베딩 (L0→L1)</td><td>QA 품질 자기강화</td></tr>
+    <tr><td>수강생 광고 성과</td><td>ROAS, CPC, 매출</td><td>사례 콘텐츠 (L2)</td><td>자동 성과공유</td></tr>
+    <tr><td>수강생 후기</td><td>텍스트 후기</td><td>임베딩 (L0→L1)</td><td>교육 품질 향상</td></tr>
+  </tbody>
+</table>
+
+<!-- ================================================================ -->
+<!-- 4. 순환 다이어그램 -->
+<!-- ================================================================ -->
+
+<h2 id="diagram-main">4. 순환 다이어그램</h2>
+
+<div class="mermaid">
+graph TB
+  subgraph L0["<b>Layer 0: 데이터 수집</b>"]
+    L0A["강의 자료<br/><small>664 chunks</small>"]
+    L0B["웨비나 이메일<br/><small>12 chunks</small>"]
+    L0C["QA 질문/답변<br/><small>⚡ 자동 수집</small>"]
+    L0D["수강생 피드백<br/><small>후기/성과</small>"]
+    L0E["크롤링<br/><small>업계 동향</small>"]
+  end
+
+  subgraph L1["<b>Layer 1: 임베딩/가공</b>"]
+    L1A["Gemini Embedding<br/><small>768d vector</small>"]
+    L1B["lecture_chunks<br/><small>pgvector</small>"]
+    L1C["Knowledge Service<br/><small>RAG 검색</small>"]
+  end
+
+  subgraph L2["<b>Layer 2: 콘텐츠 생성</b>"]
+    L2A["QA 답변"]
+    L2B["뉴스레터<br/><small>3 템플릿</small>"]
+    L2C["정보공유 기사"]
+    L2D["웨비나 기획"]
+  end
+
+  subgraph L3["<b>Layer 3: 배포</b>"]
+    L3A["이메일 발송"]
+    L3B["웹 콘텐츠 허브"]
+    L3C["QA 시스템"]
+  end
+
+  subgraph L4["<b>Layer 4: 피드백 수집</b>"]
+    L4A["열람/클릭 성과<br/><small>email_logs</small>"]
+    L4B["QA 데이터<br/><small>질문+답변</small>"]
+    L4C["수강생 성과<br/><small>ROAS/매출</small>"]
+    L4D["수강생 후기"]
+  end
+
+  L0A & L0B & L0C & L0D & L0E --> L1A
+  L1A --> L1B --> L1C
+  L1C --> L2A & L2B & L2C & L2D
+  L2A --> L3C
+  L2B --> L3A
+  L2C --> L3B
+  L3A --> L4A
+  L3C --> L4B
+  L3B --> L4C & L4D
+
+  L4A -.->|"인기 주제 분석"| L2D
+  L4B -.->|"QA 자기강화"| L0C
+  L4C -.->|"사례 자동 생성"| L0D
+  L4D -.->|"후기 임베딩"| L0D
+
+  style L0 fill:#DBEAFE,stroke:#1E40AF
+  style L1 fill:#FEF9C3,stroke:#854D0E
+  style L2 fill:#F3E8FF,stroke:#6B21A8
+  style L3 fill:#FFEDD5,stroke:#9A3412
+  style L4 fill:#DCFCE7,stroke:#166534
+</div>
+
+<!-- ================================================================ -->
+<!-- 5. 피드백 루프 4종 -->
+<!-- ================================================================ -->
+
+<h2 id="loops">5. 피드백 루프 4종</h2>
+
+<div class="loop-card">
+  <div class="loop-header a">Loop A: QA 자기강화</div>
+  <div class="loop-body">
+    <p><strong>데이터가 사용될수록 QA 품질이 좋아지는 구조.</strong></p>
+    <div class="flow">강의 자료 → 임베딩 → QA 질문 수신 → AI 답변 생성 → <strong>QA 자체가 새 데이터</strong> → 재임베딩 → 더 정확한 답변 ↩️</div>
+    <p><strong>구현 방법:</strong> QA 답변 완료 시 <code>lecture_chunks</code>에 <code>source_type: 'qa_archive'</code>로 자동 insert. 다음 QA에서 이전 QA도 검색 대상에 포함.</p>
+    <p><strong>효과:</strong> QA가 쌓일수록 유사 질문에 더 정확하게 답변. 수강생이 많이 묻는 주제에 자연스럽게 강해짐.</p>
+  </div>
+</div>
+
+<div class="loop-card">
+  <div class="loop-header b">Loop B: 콘텐츠 성과 기반 기획</div>
+  <div class="loop-body">
+    <p><strong>어떤 콘텐츠가 잘 되는지 데이터로 파악 → 다음 콘텐츠 자동 추천.</strong></p>
+    <div class="flow">콘텐츠 발행 → 이메일 열람/클릭 추적 → <strong>인기 주제 분석</strong> → 다음 콘텐츠 기획 참고 → 발행 ↩️</div>
+    <p><strong>구현 방법:</strong> <code>email_logs</code> 집계 → 주제별 열람/클릭률 랭킹 → 콘텐츠 생성 시 "최근 인기 주제" 컨텍스트 제공.</p>
+    <p><strong>효과:</strong> 감으로 주제 선정하지 않고, 실제 독자 반응 기반으로 기획. 열람률 높은 주제를 깊게, 낮은 주제는 관점 변경.</p>
+  </div>
+</div>
+
+<div class="loop-card">
+  <div class="loop-header c">Loop C: 수강생 성과 → 사례 콘텐츠</div>
+  <div class="loop-body">
+    <p><strong>수강생의 실제 광고 성과가 새로운 마케팅 소재가 되는 구조.</strong></p>
+    <div class="flow">수강생 광고 운영 → 성과 데이터(ROAS, 매출) → <strong>사례 뉴스레터 자동 생성</strong>(TEMPLATE_C) → 잠재 수강생 전환 → 새 수강생 성과 ↩️</div>
+    <p><strong>구현 방법:</strong> 수강생 성과 입력 폼 → <code>contents</code> 테이블 자동 draft → AI가 TEMPLATE_C 배너키로 사례 뉴스레터 생성.</p>
+    <p><strong>효과:</strong> "78명 → 104억 매출" 같은 실제 데이터가 자동으로 마케팅 콘텐츠가 됨. 수강생이 늘수록 사례가 늘고, 사례가 늘수록 신뢰도 상승.</p>
+  </div>
+</div>
+
+<div class="loop-card">
+  <div class="loop-header d">Loop D: 후기 → 교육 개선</div>
+  <div class="loop-body">
+    <p><strong>수강생 후기가 교육 품질을 자동으로 개선하는 구조.</strong></p>
+    <div class="flow">수강 완료 → 후기 작성 → <strong>후기 임베딩</strong> → QA에서 "실제 수강 경험" 답변 가능 → 교육 약점 자동 파악 → 커리큘럼 개선 ↩️</div>
+    <p><strong>구현 방법:</strong> 후기 게시판 → 후기 텍스트 <code>source_type: 'manual'</code>로 자동 임베딩. QA가 "이전 수강생은 이렇게 해결했어요" 식으로 답변 가능.</p>
+    <p><strong>효과:</strong> "이 부분이 어려웠다"는 후기가 많으면 → 해당 주제 보강 콘텐츠 자동 추천.</p>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 6. 루프 다이어그램 -->
+<!-- ================================================================ -->
+
+<h2 id="diagram-loops">6. 루프 다이어그램</h2>
+
+<div class="mermaid">
+graph LR
+  subgraph LoopA["Loop A: QA 자기강화"]
+    A1["수강생 질문"] --> A2["RAG 검색"]
+    A2 --> A3["AI 답변"]
+    A3 --> A4["QA 임베딩"]
+    A4 -.->|"다음 검색에 포함"| A2
+  end
+
+  subgraph LoopB["Loop B: 성과 기반 기획"]
+    B1["콘텐츠 발행"] --> B2["열람/클릭"]
+    B2 --> B3["인기 주제 랭킹"]
+    B3 -.->|"다음 콘텐츠 기획"| B1
+  end
+
+  subgraph LoopC["Loop C: 수강생 사례"]
+    C1["수강생 성과"] --> C2["사례 자동 생성"]
+    C2 --> C3["뉴스레터 발송"]
+    C3 --> C4["신규 수강생"]
+    C4 -.->|"새 성과 데이터"| C1
+  end
+
+  style LoopA fill:#DBEAFE,stroke:#1E40AF
+  style LoopB fill:#FEF9C3,stroke:#854D0E
+  style LoopC fill:#F3E8FF,stroke:#6B21A8
+</div>
+
+<!-- ================================================================ -->
+<!-- 7. 데이터 인벤토리 -->
+<!-- ================================================================ -->
+
+<h2 id="data-inventory">7. 데이터 인벤토리</h2>
+
+<table>
+  <thead><tr><th>테이블</th><th>역할</th><th>현재 레코드</th><th>순환 경로</th></tr></thead>
+  <tbody>
+    <tr><td><code>lecture_chunks</code></td><td>임베딩 벡터 저장</td><td>676 (664 lecture + 12 meeting)</td><td>L0→L1 (입력), L4→L0 (재순환)</td></tr>
+    <tr><td><code>contents</code></td><td>콘텐츠 관리</td><td>18 (13 edu + 2 webinar + 2 case + 1 notice)</td><td>L2 (생성), L3 (배포)</td></tr>
+    <tr><td><code>email_logs</code></td><td>이메일 성과 추적</td><td>0 (Phase 1 배포 직후)</td><td>L3→L4 (피드백)</td></tr>
+    <tr><td><code>qa_conversations</code></td><td>QA 대화 기록</td><td>운영 중</td><td>L4→L0 (Loop A 재순환 대상)</td></tr>
+    <tr><td><code>profiles</code></td><td>수강생 정보</td><td>운영 중</td><td>Loop C, D 피드백 소스</td></tr>
+  </tbody>
+</table>
+
+<!-- ================================================================ -->
+<!-- 8. ADR -->
+<!-- ================================================================ -->
+
+<h2 id="adr">8. Architecture Decision Records</h2>
+
+<div class="adr">
+  <div class="adr-header">
+    <span class="adr-num">ADR-9</span>
+    <span class="adr-title">순환 데이터 파이프라인 도입</span>
+    <span class="badge badge-new">NEW</span>
+  </div>
+  <div class="adr-body">
+    <div class="adr-section">
+      <div class="adr-section-title">결정</div>
+      <p>콘텐츠 소비 결과(성과 데이터, QA, 수강생 피드백)를 <strong>자동으로 수집하여 다시 데이터 원료로 재활용</strong>하는 순환 구조를 도입한다.</p>
+    </div>
+    <div class="adr-section">
+      <div class="adr-section-title">근거</div>
+      <ul>
+        <li>일방향 파이프라인은 데이터가 소비되면 끝 → 수동 기획에 의존</li>
+        <li>순환 구조에서는 서비스를 쓸수록 데이터가 쌓이고, 쌓일수록 콘텐츠 품질이 올라감</li>
+        <li>수강생 78명 × 평균 ROAS 254% 같은 성과 데이터가 가장 강력한 마케팅 소재인데 수동으로만 활용 중</li>
+      </ul>
+    </div>
+    <div class="adr-section">
+      <div class="adr-section-title">구현 우선순위</div>
+      <ul>
+        <li><strong>Phase 2:</strong> Loop A (QA 자기강화) — 가장 즉시 효과 + 구현 비용 낮음</li>
+        <li><strong>Phase 2:</strong> Loop D (후기 임베딩) — 후기 게시판과 함께</li>
+        <li><strong>Phase 3:</strong> Loop B (성과 기반 기획) — email_logs 데이터 축적 필요</li>
+        <li><strong>Phase 3:</strong> Loop C (수강생 사례) — 수강생 데이터 입력 체계 필요</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="adr">
+  <div class="adr-header">
+    <span class="adr-num">ADR-10</span>
+    <span class="adr-title">QA 답변 자동 재임베딩 (Loop A)</span>
+    <span class="badge badge-new">NEW</span>
+  </div>
+  <div class="adr-body">
+    <div class="adr-section">
+      <div class="adr-section-title">결정</div>
+      <p>QA 답변이 생성될 때마다 <code>lecture_chunks</code>에 <code>source_type: 'qa_archive'</code>로 자동 insert한다.</p>
+    </div>
+    <div class="adr-section">
+      <div class="adr-section-title">구현 상세</div>
+      <ul>
+        <li>트리거: QA 답변 생성 완료 시 (서버 액션 내)</li>
+        <li>포맷: <code>Q: {질문}\nA: {답변}</code> 형태로 chunk</li>
+        <li>필터: source_type으로 분리, QA 검색 시 qa_archive도 포함</li>
+        <li>중복 방지: 동일 질문 해시 체크</li>
+      </ul>
+    </div>
+    <div class="adr-section">
+      <div class="adr-section-title">예상 효과</div>
+      <p>월 50건 QA 기준, 6개월 후 ~300개 qa_archive chunk 축적. 반복 질문에 대한 답변 정확도 향상 + "이전에도 비슷한 질문이 있었는데요" 맥락 제공 가능.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 9. 구현 로드맵 -->
+<!-- ================================================================ -->
+
+<h2 id="roadmap">9. 구현 로드맵</h2>
+
+<div class="roadmap-grid">
+  <div class="roadmap-card">
+    <div class="roadmap-card-header done">✅ Phase 1 (완료)</div>
+    <div class="roadmap-card-body">
+      <strong>기반 인프라</strong>
+      <ul>
+        <li>뉴스레터 2단계 분리 (T1~T7)</li>
+        <li>3 템플릿 배너키 구조</li>
+        <li>이메일 성과 추적 (tracking pixel + CTA)</li>
+        <li>웨비나 이메일 12건 임베딩</li>
+        <li>배너키 구조 수정</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="roadmap-card">
+    <div class="roadmap-card-header next">🔥 Phase 2 (다음)</div>
+    <div class="roadmap-card-body">
+      <strong>순환 루프 시작</strong>
+      <ul>
+        <li>후기 게시판 구축</li>
+        <li><strong>Loop A:</strong> QA 자동 재임베딩</li>
+        <li><strong>Loop D:</strong> 후기 자동 임베딩</li>
+        <li>콘텐츠 허브 Preview UI</li>
+        <li>email_summary 검증</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="roadmap-card">
+    <div class="roadmap-card-header future">🔮 Phase 3 (향후)</div>
+    <div class="roadmap-card-body">
+      <strong>성과 기반 자동화</strong>
+      <ul>
+        <li><strong>Loop B:</strong> 인기 주제 자동 분석</li>
+        <li><strong>Loop C:</strong> 수강생 사례 자동 생성</li>
+        <li>콘텐츠 추천 엔진</li>
+        <li>비용 모니터링 대시보드</li>
+        <li>QA 스피너/UX 개선</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 10. 성과 지표 -->
+<!-- ================================================================ -->
+
+<h2 id="metrics">10. 성과 지표</h2>
+
+<table>
+  <thead><tr><th>지표</th><th>현재</th><th>Phase 2 목표</th><th>Phase 3 목표</th></tr></thead>
+  <tbody>
+    <tr><td>총 임베딩 chunk</td><td>676</td><td>~1,000 (QA+후기 추가)</td><td>~2,000+</td></tr>
+    <tr><td>QA 답변 정확도</td><td>측정 미시작</td><td>수강생 만족도 설문</td><td>자동 평가 체계</td></tr>
+    <tr><td>뉴스레터 열람률</td><td>추적 시작</td><td>기준선 확보</td><td>인기 주제 기반 20%↑</td></tr>
+    <tr><td>콘텐츠 기획 시간</td><td>수동 (수 시간)</td><td>반자동 (30분)</td><td>자동 추천 (5분)</td></tr>
+    <tr><td>사례 콘텐츠 생성</td><td>수동</td><td>반자동</td><td>수강생 데이터 입력 → 자동</td></tr>
+  </tbody>
+</table>
+
+<footer>
+  <p>순환 데이터 파이프라인 아키텍처 v1.0 &mdash; 2026-02-17 &mdash; 모찌 (PM)</p>
+  <p>기반 문서: 콘텐츠 파이프라인 v3.1 아키텍처 보고서 (2026-02-15)</p>
+</footer>
+
+</div>
+</body>
+</html>

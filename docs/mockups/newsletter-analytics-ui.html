@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>뉴스레터 성과 추적 — UI 목업</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Pretendard', '-apple-system', 'sans-serif'] },
+      colors: { primary: '#F75D5D', 'primary-hover': '#E54949' }
+    }
+  }
+}
+</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<style>
+  body { font-family: 'Pretendard', -apple-system, sans-serif; }
+  .sidebar-item.active { background: rgba(255,255,255,0.08); border-left: 3px solid #F75D5D; }
+  .tab-active { color: #F75D5D; border-bottom: 2px solid #F75D5D; }
+  .tab-inactive { color: #6B7280; border-bottom: 2px solid transparent; }
+  .tab-inactive:hover { color: #374151; }
+  .sparkbar { display: flex; gap: 1px; align-items: flex-end; height: 24px; }
+  .sparkbar .bar { width: 3px; border-radius: 1px; background: #F75D5D; opacity: 0.6; }
+  .sparkbar .bar:last-child { opacity: 1; }
+  .detail-overlay { display: none; }
+  .detail-overlay.show { display: flex; }
+</style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+<div class="flex h-screen overflow-hidden">
+
+  <!-- 사이드바 -->
+  <aside class="w-[240px] bg-[#111827] text-white flex flex-col shrink-0">
+    <div class="p-5 flex items-center gap-2.5 border-b border-white/10">
+      <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-sm font-bold">자</div>
+      <span class="font-semibold text-sm">자사몰사관학교</span>
+    </div>
+
+    <nav class="flex-1 py-3 text-[13px]">
+      <div class="px-4 py-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">메인</div>
+      <a class="flex items-center gap-3 px-5 py-2.5 text-gray-400 hover:text-white hover:bg-white/5 transition-colors" href="#">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        대시보드
+      </a>
+      <a class="flex items-center gap-3 px-5 py-2.5 text-gray-400 hover:text-white hover:bg-white/5" href="#">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Q&A
+      </a>
+
+      <div class="px-4 py-2 mt-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">관리자</div>
+      <a class="sidebar-item active flex items-center gap-3 px-5 py-2.5 text-white" href="#">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+        콘텐츠 관리
+      </a>
+      <a class="flex items-center gap-3 px-5 py-2.5 text-gray-400 hover:text-white hover:bg-white/5" href="#">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        회원 관리
+      </a>
+    </nav>
+
+    <div class="p-4 border-t border-white/10">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-sm font-bold">S</div>
+        <div class="text-xs"><div class="font-medium">Smith</div><div class="text-gray-500">admin</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 메인 콘텐츠 -->
+  <main class="flex-1 overflow-y-auto">
+    <div class="p-8 max-w-[1100px]">
+
+      <!-- 헤더 -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">콘텐츠 관리</h1>
+          <p class="text-sm text-gray-500 mt-1">콘텐츠를 관리하고 편집합니다.</p>
+        </div>
+        <button class="h-9 px-4 bg-primary hover:bg-primary-hover text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          새 콘텐츠
+        </button>
+      </div>
+
+      <!-- 탭 -->
+      <div class="flex gap-6 border-b border-gray-200 mb-6">
+        <button class="tab-inactive pb-3 text-sm font-medium flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="12,2 15,8.5 22,9.3 17,14 18.2,21 12,17.8 5.8,21 7,14 2,9.3 9,8.5"/></svg>
+          큐레이션
+          <span class="ml-1 bg-primary text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full">12</span>
+        </button>
+        <button class="tab-inactive pb-3 text-sm font-medium flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+          콘텐츠
+        </button>
+        <button class="tab-inactive pb-3 text-sm font-medium flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 10h16"/></svg>
+          정보공유
+        </button>
+        <button class="tab-active pb-3 text-sm font-medium flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          이메일
+        </button>
+      </div>
+
+      <!-- ========== 뉴스레터 성과 탭 콘텐츠 ========== -->
+
+      <!-- 요약 카드 -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <div class="flex items-center gap-3">
+            <div class="rounded-lg bg-blue-50 p-2"><svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+            <div><p class="text-xs text-gray-500">총 발송</p><p class="text-xl font-semibold">8건</p></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <div class="flex items-center gap-3">
+            <div class="rounded-lg bg-green-50 p-2"><svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+            <div><p class="text-xs text-gray-500">평균 열람율</p><p class="text-xl font-semibold text-green-600">42.3%</p></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <div class="flex items-center gap-3">
+            <div class="rounded-lg bg-purple-50 p-2"><svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10,17 15,12 10,7"/><line x1="15" y1="12" x2="3" y2="12"/></svg></div>
+            <div><p class="text-xs text-gray-500">평균 클릭율</p><p class="text-xl font-semibold text-purple-600">8.7%</p></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <div class="flex items-center gap-3">
+            <div class="rounded-lg bg-gray-50 p-2"><svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+            <div><p class="text-xs text-gray-500">총 수신자</p><p class="text-xl font-semibold">1,247</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 발송 목록 테이블 -->
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-100">
+              <th class="text-left px-5 py-3 font-semibold text-gray-500 text-xs bg-gray-50">제목</th>
+              <th class="text-left px-4 py-3 font-semibold text-gray-500 text-xs bg-gray-50">발송일</th>
+              <th class="text-right px-4 py-3 font-semibold text-gray-500 text-xs bg-gray-50">수신자</th>
+              <th class="text-right px-4 py-3 font-semibold text-gray-500 text-xs bg-gray-50">열람</th>
+              <th class="text-right px-4 py-3 font-semibold text-gray-500 text-xs bg-gray-50">열람율</th>
+              <th class="text-right px-4 py-3 font-semibold text-gray-500 text-xs bg-gray-50">클릭</th>
+              <th class="text-right px-4 py-3 font-semibold text-gray-500 text-xs bg-gray-50">클릭율</th>
+              <th class="text-center px-4 py-3 font-semibold text-gray-500 text-xs bg-gray-50">추세</th>
+              <th class="text-right px-4 py-3 font-semibold text-gray-500 text-xs bg-gray-50">수신거부</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- 행 1 -->
+            <tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onclick="showDetail(1)">
+              <td class="px-5 py-3.5 font-medium text-gray-900 max-w-[250px] truncate">
+                메타 광고 2025년 핵심 변경사항 총정리
+              </td>
+              <td class="px-4 py-3.5 text-gray-500">2월 20일</td>
+              <td class="px-4 py-3.5 text-right text-gray-700 tabular-nums">1,247</td>
+              <td class="px-4 py-3.5 text-right text-gray-700 tabular-nums">562</td>
+              <td class="px-4 py-3.5 text-right">
+                <span class="inline-flex items-center gap-1 text-green-700 bg-green-50 px-2 py-0.5 rounded-full text-xs font-semibold">45.1%</span>
+              </td>
+              <td class="px-4 py-3.5 text-right text-gray-700 tabular-nums">134</td>
+              <td class="px-4 py-3.5 text-right">
+                <span class="inline-flex items-center gap-1 text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full text-xs font-semibold">10.7%</span>
+              </td>
+              <td class="px-4 py-3.5">
+                <div class="sparkbar justify-center">
+                  <div class="bar" style="height:40%"></div><div class="bar" style="height:60%"></div><div class="bar" style="height:80%"></div>
+                  <div class="bar" style="height:70%"></div><div class="bar" style="height:90%"></div><div class="bar" style="height:95%"></div><div class="bar" style="height:100%"></div>
+                </div>
+              </td>
+              <td class="px-4 py-3.5 text-right text-gray-500 tabular-nums">3</td>
+            </tr>
+            <!-- 행 2 -->
+            <tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onclick="showDetail(2)">
+              <td class="px-5 py-3.5 font-medium text-gray-900 max-w-[250px] truncate">
+                ASC 캠페인 실전 세팅법 — ROAS 3배 사례
+              </td>
+              <td class="px-4 py-3.5 text-gray-500">2월 17일</td>
+              <td class="px-4 py-3.5 text-right text-gray-700 tabular-nums">1,198</td>
+              <td class="px-4 py-3.5 text-right text-gray-700 tabular-nums">521</td>
+              <td class="px-4 py-3.5 text-right">
+                <span class="inline-flex items-center gap-1 text-green-700 bg-green-50 px-2 py-0.5 rounded-full text-xs font-semibold">43.5%</span>
+              </td>
+              <td class="px-4 py-3.5 text-right text-gray-700 tabular-nums">98</td>
+              <td class="px-4 py-3.5 text-right">
+                <span class="inline-flex items-center gap-1 text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full text-xs font-semibold">8.2%</span>
+              </td>
+              <td class="px-4 py-3.5">
+                <div class="sparkbar justify-center">
+                  <div class="bar" style="height:50%"></div><div class="bar" style="height:70%"></div><div class="bar" style="height:85%"></div>
+                  <div class="bar" style="height:80%"></div><div class="bar" style="height:75%"></div><div class="bar" style="height:60%"></div><div class="bar" style="height:50%"></div>
+                </div>
+              </td>
+              <td class="px-4 py-3.5 text-right text-gray-500 tabular-nums">1</td>
+            </tr>
+            <!-- 행 3 -->
+            <tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onclick="showDetail(3)">
+              <td class="px-5 py-3.5 font-medium text-gray-900 max-w-[250px] truncate">
+                전환 API(CAPI) 완벽 가이드 — 픽셀만으론 부족한 이유
+              </td>
+              <td class="px-4 py-3.5 text-gray-500">2월 13일</td>
+              <td class="px-4 py-3.5 text-right text-gray-700 tabular-nums">1,152</td>
+              <td class="px-4 py-3.5 text-right text-gray-700 tabular-nums">478</td>
+              <td class="px-4 py-3.5 text-right">
+                <span class="inline-flex items-center gap-1 text-green-700 bg-green-50 px-2 py-0.5 rounded-full text-xs font-semibold">41.5%</span>
+              </td>
+              <td class="px-4 py-3.5 text-right text-gray-700 tabular-nums">87</td>
+              <td class="px-4 py-3.5 text-right">
+                <span class="inline-flex items-center gap-1 text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full text-xs font-semibold">7.6%</span>
+              </td>
+              <td class="px-4 py-3.5">
+                <div class="sparkbar justify-center">
+                  <div class="bar" style="height:60%"></div><div class="bar" style="height:80%"></div><div class="bar" style="height:70%"></div>
+                  <div class="bar" style="height:50%"></div><div class="bar" style="height:40%"></div><div class="bar" style="height:30%"></div><div class="bar" style="height:20%"></div>
+                </div>
+              </td>
+              <td class="px-4 py-3.5 text-right text-gray-500 tabular-nums">5</td>
+            </tr>
+            <!-- 행 4~8 축약 -->
+            <tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer">
+              <td class="px-5 py-3.5 font-medium text-gray-900">수강생 성공사례: 월매출 500만→2,300만</td>
+              <td class="px-4 py-3.5 text-gray-500">2월 10일</td>
+              <td class="px-4 py-3.5 text-right tabular-nums">1,089</td>
+              <td class="px-4 py-3.5 text-right tabular-nums">490</td>
+              <td class="px-4 py-3.5 text-right"><span class="text-green-700 bg-green-50 px-2 py-0.5 rounded-full text-xs font-semibold">45.0%</span></td>
+              <td class="px-4 py-3.5 text-right tabular-nums">112</td>
+              <td class="px-4 py-3.5 text-right"><span class="text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full text-xs font-semibold">10.3%</span></td>
+              <td class="px-4 py-3.5"><div class="sparkbar justify-center"><div class="bar" style="height:40%"></div><div class="bar" style="height:65%"></div><div class="bar" style="height:90%"></div><div class="bar" style="height:85%"></div><div class="bar" style="height:70%"></div><div class="bar" style="height:55%"></div><div class="bar" style="height:40%"></div></div></td>
+              <td class="px-4 py-3.5 text-right text-gray-500 tabular-nums">2</td>
+            </tr>
+            <tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer">
+              <td class="px-5 py-3.5 font-medium text-gray-900">CBO vs ABO — 2025년 어떤 걸 써야 할까?</td>
+              <td class="px-4 py-3.5 text-gray-500">2월 6일</td>
+              <td class="px-4 py-3.5 text-right tabular-nums">1,034</td>
+              <td class="px-4 py-3.5 text-right tabular-nums">414</td>
+              <td class="px-4 py-3.5 text-right"><span class="text-green-700 bg-green-50 px-2 py-0.5 rounded-full text-xs font-semibold">40.0%</span></td>
+              <td class="px-4 py-3.5 text-right tabular-nums">72</td>
+              <td class="px-4 py-3.5 text-right"><span class="text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full text-xs font-semibold">7.0%</span></td>
+              <td class="px-4 py-3.5"><div class="sparkbar justify-center"><div class="bar" style="height:50%"></div><div class="bar" style="height:70%"></div><div class="bar" style="height:60%"></div><div class="bar" style="height:45%"></div><div class="bar" style="height:35%"></div><div class="bar" style="height:25%"></div><div class="bar" style="height:15%"></div></div></td>
+              <td class="px-4 py-3.5 text-right text-gray-500 tabular-nums">4</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+<!-- ========== 상세 오버레이 ========== -->
+<div id="detail-overlay" class="detail-overlay fixed inset-0 bg-black/40 z-50 items-center justify-center p-8">
+  <div class="bg-white rounded-2xl w-full max-w-[720px] max-h-[85vh] overflow-y-auto shadow-2xl">
+    <!-- 상세 헤더 -->
+    <div class="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+      <div>
+        <h2 class="text-lg font-bold text-gray-900">메타 광고 2025년 핵심 변경사항 총정리</h2>
+        <p class="text-sm text-gray-500">2월 20일 발송 &middot; 수신자 1,247명</p>
+      </div>
+      <button onclick="hideDetail()" class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="p-6 space-y-6">
+      <!-- 성과 요약 -->
+      <div class="grid grid-cols-4 gap-3">
+        <div class="text-center p-4 bg-gray-50 rounded-xl">
+          <p class="text-2xl font-bold text-gray-900">562</p>
+          <p class="text-xs text-gray-500 mt-1">열람</p>
+        </div>
+        <div class="text-center p-4 bg-green-50 rounded-xl">
+          <p class="text-2xl font-bold text-green-600">45.1%</p>
+          <p class="text-xs text-gray-500 mt-1">열람율</p>
+        </div>
+        <div class="text-center p-4 bg-purple-50 rounded-xl">
+          <p class="text-2xl font-bold text-purple-600">10.7%</p>
+          <p class="text-xs text-gray-500 mt-1">클릭율</p>
+        </div>
+        <div class="text-center p-4 bg-gray-50 rounded-xl">
+          <p class="text-2xl font-bold text-gray-900">3</p>
+          <p class="text-xs text-gray-500 mt-1">수신거부</p>
+        </div>
+      </div>
+
+      <!-- 시간별 열람 추이 -->
+      <div>
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">열람 추이 (발송 후 7일)</h3>
+        <div class="bg-gray-50 rounded-xl p-4">
+          <div class="flex items-end gap-1" style="height:80px;">
+            <div class="flex-1 flex flex-col items-center gap-1">
+              <div class="w-full bg-primary rounded-t" style="height:65px;opacity:1"></div>
+              <span class="text-[10px] text-gray-400">1일</span>
+            </div>
+            <div class="flex-1 flex flex-col items-center gap-1">
+              <div class="w-full bg-primary rounded-t" style="height:45px;opacity:0.8"></div>
+              <span class="text-[10px] text-gray-400">2일</span>
+            </div>
+            <div class="flex-1 flex flex-col items-center gap-1">
+              <div class="w-full bg-primary rounded-t" style="height:25px;opacity:0.6"></div>
+              <span class="text-[10px] text-gray-400">3일</span>
+            </div>
+            <div class="flex-1 flex flex-col items-center gap-1">
+              <div class="w-full bg-primary rounded-t" style="height:15px;opacity:0.5"></div>
+              <span class="text-[10px] text-gray-400">4일</span>
+            </div>
+            <div class="flex-1 flex flex-col items-center gap-1">
+              <div class="w-full bg-primary rounded-t" style="height:10px;opacity:0.4"></div>
+              <span class="text-[10px] text-gray-400">5일</span>
+            </div>
+            <div class="flex-1 flex flex-col items-center gap-1">
+              <div class="w-full bg-primary rounded-t" style="height:5px;opacity:0.3"></div>
+              <span class="text-[10px] text-gray-400">6일</span>
+            </div>
+            <div class="flex-1 flex flex-col items-center gap-1">
+              <div class="w-full bg-primary rounded-t" style="height:3px;opacity:0.2"></div>
+              <span class="text-[10px] text-gray-400">7일</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 클릭 링크별 집계 -->
+      <div>
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">클릭 링크별 집계</h3>
+        <div class="space-y-2">
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate">자세히 보기 (본문 CTA)</p>
+              <p class="text-xs text-gray-400 truncate">qa-helpdesk.vercel.app/posts?content_id=abc123</p>
+            </div>
+            <div class="text-right ml-4 shrink-0">
+              <p class="text-sm font-bold text-purple-600">89</p>
+              <p class="text-[11px] text-gray-400">클릭</p>
+            </div>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate">웨비나 신청하기</p>
+              <p class="text-xs text-gray-400 truncate">event.bscamp.kr/webinar-feb-2026</p>
+            </div>
+            <div class="text-right ml-4 shrink-0">
+              <p class="text-sm font-bold text-purple-600">31</p>
+              <p class="text-[11px] text-gray-400">클릭</p>
+            </div>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate">강의 커리큘럼 보기</p>
+              <p class="text-xs text-gray-400 truncate">bscamp.kr/curriculum</p>
+            </div>
+            <div class="text-right ml-4 shrink-0">
+              <p class="text-sm font-bold text-purple-600">14</p>
+              <p class="text-[11px] text-gray-400">클릭</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 열람자 목록 (샘플) -->
+      <div>
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">열람자 목록 <span class="text-gray-400 font-normal">(최근 20명)</span></h3>
+        <div class="bg-gray-50 rounded-xl overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-gray-200">
+                <th class="text-left px-4 py-2.5 text-xs font-semibold text-gray-500">이메일</th>
+                <th class="text-left px-4 py-2.5 text-xs font-semibold text-gray-500">유형</th>
+                <th class="text-left px-4 py-2.5 text-xs font-semibold text-gray-500">열람 시각</th>
+                <th class="text-center px-4 py-2.5 text-xs font-semibold text-gray-500">클릭</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-gray-100"><td class="px-4 py-2 text-gray-700">kim****@gmail.com</td><td class="px-4 py-2"><span class="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">수강생</span></td><td class="px-4 py-2 text-gray-500 text-xs">2/20 09:34</td><td class="px-4 py-2 text-center"><span class="inline-block w-2 h-2 rounded-full bg-purple-500"></span></td></tr>
+              <tr class="border-b border-gray-100"><td class="px-4 py-2 text-gray-700">lee****@naver.com</td><td class="px-4 py-2"><span class="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">리드</span></td><td class="px-4 py-2 text-gray-500 text-xs">2/20 10:12</td><td class="px-4 py-2 text-center text-gray-300">-</td></tr>
+              <tr class="border-b border-gray-100"><td class="px-4 py-2 text-gray-700">park****@daum.net</td><td class="px-4 py-2"><span class="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">수강생</span></td><td class="px-4 py-2 text-gray-500 text-xs">2/20 11:05</td><td class="px-4 py-2 text-center"><span class="inline-block w-2 h-2 rounded-full bg-purple-500"></span></td></tr>
+              <tr class="border-b border-gray-100"><td class="px-4 py-2 text-gray-700">choi****@gmail.com</td><td class="px-4 py-2"><span class="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">리드</span></td><td class="px-4 py-2 text-gray-500 text-xs">2/20 13:22</td><td class="px-4 py-2 text-center"><span class="inline-block w-2 h-2 rounded-full bg-purple-500"></span></td></tr>
+              <tr><td class="px-4 py-2 text-gray-700">jung****@kakao.com</td><td class="px-4 py-2"><span class="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">수강생</span></td><td class="px-4 py-2 text-gray-500 text-xs">2/20 14:08</td><td class="px-4 py-2 text-center text-gray-300">-</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="text-xs text-gray-400 mt-2 text-center">... 외 557명</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showDetail() { document.getElementById('detail-overlay').classList.add('show'); }
+function hideDetail() { document.getElementById('detail-overlay').classList.remove('show'); }
+document.getElementById('detail-overlay').addEventListener('click', function(e) {
+  if (e.target === this) hideDetail();
+});
+</script>
+
+</body>
+</html>
