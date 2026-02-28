@@ -3,10 +3,9 @@
 import { useState, useEffect } from "react";
 import { ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { AdInsightRow, BenchmarkRow } from "./ad-metrics-table";
+import type { AdInsightRow } from "./ad-metrics-table";
 import { getTop5Ads } from "@/lib/protractor/aggregate";
 import { METRIC_GROUPS, type CommonMetricDef } from "@/lib/protractor/metric-groups";
-import { findAboveAvg } from "./utils";
 
 // ============================================================
 // 타입 정의
@@ -14,9 +13,9 @@ import { findAboveAvg } from "./utils";
 
 interface RawDiagnosisMetric {
   name: string;
+  key: string | null;
   my_value: number | null;
-  above_avg: number | null;
-  average_avg: number | null;
+  pct_of_benchmark: number | null;
   verdict: string;
 }
 
@@ -37,7 +36,6 @@ interface RawDiagnosis {
 
 export interface ContentRankingProps {
   insights: AdInsightRow[];
-  benchmarks: BenchmarkRow[];
   accountId: string;
   periodNum: number;
   mixpanelProjectId?: string | null;
@@ -83,25 +81,6 @@ function verdictEmoji(verdict: string): string {
   return verdict.match(/[🟢🟡🔴]/u)?.[0] ?? "⚪";
 }
 
-// 값 기준 판정 (aboveAvg 기준)
-function calcVerdictStyle(
-  value: number | null,
-  aboveAvg: number | null
-): { bg: string; text: string; border: string } {
-  if (value == null || aboveAvg == null || aboveAvg === 0) {
-    return { bg: "bg-gray-50", text: "text-gray-400", border: "border-gray-100" };
-  }
-  if (value >= aboveAvg) return { bg: "bg-green-50", text: "text-green-700", border: "border-green-200" };
-  if (value >= aboveAvg * 0.75) return { bg: "bg-yellow-50", text: "text-yellow-700", border: "border-yellow-200" };
-  return { bg: "bg-red-50", text: "text-red-700", border: "border-red-200" };
-}
-
-function calcVerdictEmoji(value: number | null, aboveAvg: number | null): string {
-  if (value == null || aboveAvg == null || aboveAvg === 0) return "⚪";
-  if (value >= aboveAvg) return "🟢";
-  if (value >= aboveAvg * 0.75) return "🟡";
-  return "🔴";
-}
 
 // ============================================================
 // 통계 미니카드
@@ -140,15 +119,21 @@ function PartVerdictBadge({ part }: { part: RawDiagnosisPart }) {
 
 function BenchmarkCompareGrid({
   ad,
-  engAbove,
-  convAbove,
+  diagnosis,
 }: {
   ad: AdInsightRow;
-  engAbove: BenchmarkRow | undefined;
-  convAbove: BenchmarkRow | undefined;
+  diagnosis?: RawDiagnosis;
 }) {
-  if (!engAbove && !convAbove) {
-    return <p className="text-sm text-gray-400">벤치마크 데이터 없음</p>;
+  // T3: 진단 결과에서 metric key → {pct_of_benchmark, verdict} 맵 구축
+  const diagMetricMap = new Map<string, { pct_of_benchmark: number | null; verdict: string }>();
+  if (diagnosis) {
+    for (const part of diagnosis.parts) {
+      for (const m of part.metrics) {
+        if (m.key) {
+          diagMetricMap.set(m.key, { pct_of_benchmark: m.pct_of_benchmark, verdict: m.verdict });
+        }
+      }
+    }
   }
 
   function formatVal(v: number | null, m: CommonMetricDef): string {
@@ -160,13 +145,12 @@ function BenchmarkCompareGrid({
 
   function renderMetricRow(m: CommonMetricDef, isSummary?: boolean) {
     const myVal = ad[m.key as keyof AdInsightRow] as number | undefined | null;
-    const bench = m.benchGroup === "engagement" ? engAbove : convAbove;
-    const benchVal = bench ? (bench[m.benchKey] as number | undefined) : undefined;
+    const diag = diagMetricMap.get(m.key);
 
-    if (myVal == null && benchVal == null) return null;
+    if (myVal == null) return null;
 
-    const style = calcVerdictStyle(myVal ?? null, benchVal ?? null);
-    const emoji = calcVerdictEmoji(myVal ?? null, benchVal ?? null);
+    const style = diag ? verdictStyle(diag.verdict) : { bg: "bg-gray-50", text: "text-gray-400", border: "border-gray-100" };
+    const emoji = diag ? (diag.verdict.match(/[🟢🟡🔴]/u)?.[0] ?? "⚪") : "⚪";
 
     return (
       <div
@@ -177,8 +161,8 @@ function BenchmarkCompareGrid({
         <div className="flex items-center gap-1.5">
           <span className={`${isSummary ? "text-sm font-bold" : "text-xs font-medium"} ${style.text}`}>
             {formatVal(myVal ?? null, m)}
-            {benchVal != null && (
-              <span className="text-gray-400"> / {formatVal(benchVal, m)}</span>
+            {diag?.pct_of_benchmark != null && (
+              <span className="text-gray-400 ml-1 text-[10px]">({diag.pct_of_benchmark}%)</span>
             )}
           </span>
           <span className="text-[10px]">{emoji}</span>
@@ -191,10 +175,7 @@ function BenchmarkCompareGrid({
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       {METRIC_GROUPS.map((group) => {
         const allMetrics = [...group.metrics, ...(group.summaryMetric ? [group.summaryMetric] : [])];
-        const hasAnyData = allMetrics.some((m) => {
-          const bench = m.benchGroup === "engagement" ? engAbove : convAbove;
-          return ad[m.key as keyof AdInsightRow] != null || (bench && bench[m.benchKey] != null);
-        });
+        const hasAnyData = allMetrics.some((m) => ad[m.key as keyof AdInsightRow] != null);
         if (!hasAnyData) return null;
 
         return (
@@ -233,9 +214,6 @@ function AdRankCard({
   mixpanelProjectId,
   mixpanelBoardId,
   diagnosis,
-  periodNum,
-  engAbove,
-  convAbove,
 }: {
   ad: AdInsightRow;
   rank: number;
@@ -243,9 +221,6 @@ function AdRankCard({
   mixpanelProjectId?: string | null;
   mixpanelBoardId?: string | null;
   diagnosis?: RawDiagnosis;
-  periodNum: number;
-  engAbove: BenchmarkRow | undefined;
-  convAbove: BenchmarkRow | undefined;
 }) {
   const metaUrl = `https://adsmanager.facebook.com/adsmanager/manage/ads/insights?act=${accountId}&selected_ad_ids=${ad.ad_id}&nav_source=no_referrer`;
   const mixpanelUrl = mixpanelProjectId
@@ -320,7 +295,7 @@ function AdRankCard({
             {diagnosis.overall_verdict} {diagnosis.one_line_diagnosis}
           </p>
         )}
-        <BenchmarkCompareGrid ad={ad} engAbove={engAbove} convAbove={convAbove} />
+        <BenchmarkCompareGrid ad={ad} diagnosis={diagnosis} />
       </div>
     </div>
   );
@@ -332,7 +307,6 @@ function AdRankCard({
 
 export function ContentRanking({
   insights,
-  benchmarks,
   accountId,
   periodNum,
   mixpanelProjectId,
@@ -408,10 +382,6 @@ export function ContentRanking({
     }
   }
 
-  // ABOVE_AVERAGE 벤치마크
-  const engAbove = findAboveAvg(benchmarks, "engagement");
-  const convAbove = findAboveAvg(benchmarks, "conversion");
-
   if (insights.length === 0 || top5.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-xl border border-gray-100 bg-white py-20 text-gray-400">
@@ -454,9 +424,6 @@ export function ContentRanking({
             mixpanelProjectId={mixpanelProjectId}
             mixpanelBoardId={mixpanelBoardId}
             diagnosis={diagMap.get(ad.ad_id)}
-            periodNum={periodNum}
-            engAbove={engAbove}
-            convAbove={convAbove}
           />
         ))}
       </div>

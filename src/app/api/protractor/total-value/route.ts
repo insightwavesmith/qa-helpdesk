@@ -169,14 +169,38 @@ export async function GET(request: NextRequest) {
     // ── 4. T3 점수 계산 (엔진) ──
     const t3Result = calculateT3Score(metricValues, benchMap);
 
-    // ── 5. 응답 ──
+    // ── 5. 응답 (T3: aboveAvg 제거, pctOfBenchmark 추가) ──
+    const safeMetrics = t3Result.metrics.map(({ aboveAvg, ...rest }) => ({
+      ...rest,
+      pctOfBenchmark: rest.value != null && aboveAvg != null && aboveAvg > 0
+        ? Math.round((rest.value / aboveAvg) * 100)
+        : null,
+    }));
+
+    const safeDiagnostics = t3Result.diagnostics
+      ? Object.fromEntries(
+          Object.entries(t3Result.diagnostics).map(([k, part]) => [
+            k,
+            {
+              ...part,
+              metrics: part.metrics.map(({ aboveAvg, ...rest }) => ({
+                ...rest,
+                pctOfBenchmark: rest.value != null && aboveAvg != null && aboveAvg > 0
+                  ? Math.round((rest.value / aboveAvg) * 100)
+                  : null,
+              })),
+            },
+          ])
+        )
+      : null;
+
     return NextResponse.json({
       score: t3Result.score,
       period,
       dataAvailableDays,
       grade: t3Result.grade,
-      diagnostics: t3Result.diagnostics,
-      metrics: t3Result.metrics,
+      diagnostics: safeDiagnostics,
+      metrics: safeMetrics,
       hasBenchmarkData,
       message: hasBenchmarkData ? undefined : "벤치마크 데이터 없음. 벤치마크 관리 탭에서 수집하세요.",
       summary: {

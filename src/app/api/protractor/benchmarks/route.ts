@@ -52,7 +52,8 @@ export async function GET() {
   try {
     const auth = await requireProtractorAccess();
     if ("response" in auth) return auth.response;
-    const { svc } = auth;
+    const { svc, profile } = auth;
+    const isAdmin = profile.role === "admin";
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const benchSvc = svc as any;
@@ -92,7 +93,21 @@ export async function GET() {
       );
     }
 
-    const rows = (data as Record<string, unknown>[] ?? []).map(toFrontendRow);
+    const rows = (data as Record<string, unknown>[] ?? []).map((r) => {
+      const row = toFrontendRow(r);
+      if (!isAdmin) {
+        // T3: 비관리자에게 벤치마크 raw 수치 숨김
+        return {
+          id: row.id,
+          creative_type: row.creative_type,
+          ranking_type: row.ranking_type,
+          ranking_group: row.ranking_group,
+          sample_count: row.sample_count,
+          calculated_at: row.calculated_at,
+        };
+      }
+      return row;
+    });
     return NextResponse.json({ data: rows });
   } catch {
     return NextResponse.json(

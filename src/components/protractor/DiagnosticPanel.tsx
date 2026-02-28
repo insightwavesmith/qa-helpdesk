@@ -10,7 +10,7 @@ interface T3MetricResult {
   key: string;
   value: number | null;
   score: number | null;
-  aboveAvg: number | null; // ABOVE_AVERAGE 단일 값 (T8: p25/p50/p75/p90 제거)
+  pctOfBenchmark: number | null; // T3: 기준 대비 % (raw aboveAvg 대신)
   status: string;
   unit: string;
 }
@@ -26,8 +26,7 @@ interface T3DiagnosticPart {
 interface DiagnosticMetric {
   name: string;
   my_value: number | null;
-  above_avg: number | null;
-  average_avg: number | null;
+  pct_of_benchmark: number | null;
   verdict: string;
 }
 
@@ -124,7 +123,7 @@ function T3DiagnosticView({ diagnostics }: { diagnostics: Record<string, T3Diagn
                                 )}
                               </div>
                               <div className="mt-1 text-[10px] text-muted-foreground">
-                                {m.aboveAvg != null ? `기준선: ${fmtMetric(m.aboveAvg)}` : ""}
+                                {m.pctOfBenchmark != null ? `기준 대비 ${m.pctOfBenchmark}%` : ""}
                               </div>
                             </div>
                           );
@@ -154,7 +153,7 @@ function T3DiagnosticView({ diagnostics }: { diagnostics: Record<string, T3Diagn
                                 })()}
                               </div>
                               <div className="mt-1 text-[10px] text-muted-foreground">
-                                {summaryMetric.aboveAvg != null ? `기준선: ${fmtMetric(summaryMetric.aboveAvg)}` : ""}
+                                {summaryMetric.pctOfBenchmark != null ? `기준 대비 ${summaryMetric.pctOfBenchmark}%` : ""}
                               </div>
                             </div>
                           </>
@@ -182,9 +181,7 @@ function T3DiagnosticView({ diagnostics }: { diagnostics: Record<string, T3Diagn
                           )}
                         </div>
                         <div className="mt-1 text-[10px] text-muted-foreground">
-                          {m.aboveAvg != null
-                            ? `기준선: ${fmtMetric(m.aboveAvg)}`
-                            : ""}
+                          {m.pctOfBenchmark != null ? `기준 대비 ${m.pctOfBenchmark}%` : ""}
                         </div>
                       </div>
                     );
@@ -202,7 +199,7 @@ function T3DiagnosticView({ diagnostics }: { diagnostics: Record<string, T3Diagn
 // ── 기존 광고별 진단 렌더링 ──
 
 function LegacyDiagnosticView({ diagnoses }: { diagnoses: DiagnosisEntry[] }) {
-  const partMap = new Map<string, { verdict: string; metrics: Map<string, { values: number[]; aboves: number[]; averages: number[]; verdicts: string[] }> }>();
+  const partMap = new Map<string, { verdict: string; metrics: Map<string, { values: number[]; pctOfBenchmarks: number[]; verdicts: string[] }> }>();
 
   for (const d of diagnoses) {
     for (const part of d.parts) {
@@ -212,12 +209,11 @@ function LegacyDiagnosticView({ diagnoses }: { diagnoses: DiagnosisEntry[] }) {
       const pm = partMap.get(part.part_name)!;
       for (const m of part.metrics) {
         if (!pm.metrics.has(m.name)) {
-          pm.metrics.set(m.name, { values: [], aboves: [], averages: [], verdicts: [] });
+          pm.metrics.set(m.name, { values: [], pctOfBenchmarks: [], verdicts: [] });
         }
         const mm = pm.metrics.get(m.name)!;
         if (m.my_value != null) mm.values.push(m.my_value);
-        if (m.above_avg != null) mm.aboves.push(m.above_avg);
-        if (m.average_avg != null) mm.averages.push(m.average_avg);
+        if (m.pct_of_benchmark != null) mm.pctOfBenchmarks.push(m.pct_of_benchmark);
         mm.verdicts.push(m.verdict);
       }
     }
@@ -234,11 +230,10 @@ function LegacyDiagnosticView({ diagnoses }: { diagnoses: DiagnosisEntry[] }) {
     const allPartVerdicts: string[] = [];
     const metrics = Array.from(data.metrics.entries()).map(([name, mm]) => {
       const avgVal = mm.values.length > 0 ? mm.values.reduce((a, b) => a + b, 0) / mm.values.length : null;
-      const avgAbove = mm.aboves.length > 0 ? mm.aboves.reduce((a, b) => a + b, 0) / mm.aboves.length : null;
-      const avgAverage = mm.averages.length > 0 ? mm.averages.reduce((a, b) => a + b, 0) / mm.averages.length : null;
+      const avgPct = mm.pctOfBenchmarks.length > 0 ? Math.round(mm.pctOfBenchmarks.reduce((a, b) => a + b, 0) / mm.pctOfBenchmarks.length) : null;
       const verdict = aggregateVerdict(mm.verdicts);
       allPartVerdicts.push(verdict);
-      return { name, my_value: avgVal, above_avg: avgAbove, average_avg: avgAverage, verdict };
+      return { name, my_value: avgVal, pct_of_benchmark: avgPct, verdict };
     });
     const partVerdict = aggregateVerdict(allPartVerdicts);
     return { partName, verdict: partVerdict, metrics };
@@ -278,11 +273,7 @@ function LegacyDiagnosticView({ diagnoses }: { diagnoses: DiagnosisEntry[] }) {
                         <div className="mt-1 flex items-baseline gap-2">
                           <span className={`text-base font-bold ${ms.text}`}>{fmtMetric(m.my_value)}</span>
                           <span className="text-[10px] text-muted-foreground">
-                            {m.average_avg != null && m.above_avg != null
-                              ? `p50: ${fmtMetric(m.average_avg)} / p75: ${fmtMetric(m.above_avg)}`
-                              : m.above_avg != null
-                                ? `기준선: ${fmtMetric(m.above_avg)}`
-                                : ""}
+                            {m.pct_of_benchmark != null ? `기준 대비 ${m.pct_of_benchmark}%` : ""}
                           </span>
                         </div>
                       </div>

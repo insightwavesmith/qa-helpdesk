@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 import { requireProtractorAccess, verifyAccountOwnership } from '@/app/api/protractor/_shared';
-import { diagnoseAd, Verdict, type GCPBenchmarks } from '@/lib/diagnosis';
+import { diagnoseAd, Verdict, PART_METRICS, type GCPBenchmarks } from '@/lib/diagnosis';
+
+// diagnosis label → DB column key 역매핑 (T3: 클라이언트에 key 전달용)
+const labelToKeyMap = new Map<string, string>();
+for (const partConfig of Object.values(PART_METRICS)) {
+  for (const metricDef of partConfig.metrics) {
+    labelToKeyMap.set(metricDef.label, metricDef.key);
+  }
+}
 
 export async function POST(request: Request) {
   // 1. 인증 확인
@@ -159,10 +167,11 @@ export async function POST(request: Request) {
             .filter((m) => m.verdict !== Verdict.UNKNOWN)
             .map((m) => ({
               name: m.metricName,
+              key: labelToKeyMap.get(m.metricName) ?? null,
               my_value: m.myValue,
-              above_avg: m.aboveAvg,
-              // threshold = aboveAvg × 0.75, for DiagnosticPanel display
-              average_avg: m.aboveAvg != null ? m.aboveAvg * 0.75 : null,
+              pct_of_benchmark: m.myValue != null && m.aboveAvg != null && m.aboveAvg > 0
+                ? Math.round((m.myValue / m.aboveAvg) * 100)
+                : null,
               verdict: m.verdict,
             })),
         })),

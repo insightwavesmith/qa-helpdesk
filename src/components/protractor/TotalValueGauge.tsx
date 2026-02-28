@@ -10,7 +10,7 @@ interface T3MetricResult {
   key: string;
   value: number | null;
   score: number | null;
-  aboveAvg: number | null; // ABOVE_AVERAGE 단일 값 (T8: p25/p50/p75/p90 제거)
+  pctOfBenchmark: number | null; // T3: 기준 대비 % (raw aboveAvg 대신)
   status: string;
   unit: string;
 }
@@ -271,7 +271,7 @@ export function TotalValueGauge({ data, isLoading }: TotalValueGaugeProps) {
                     />
                   </div>
                   <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-                    <span>기준선: {m.aboveAvg != null ? (m.unit === "%" ? m.aboveAvg.toFixed(2) + "%" : m.aboveAvg.toFixed(1)) : "-"}</span>
+                    <span>{m.pctOfBenchmark != null ? `기준 대비 ${m.pctOfBenchmark}%` : "-"}</span>
                   </div>
                 </div>
               );

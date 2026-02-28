@@ -42,7 +42,7 @@ interface T3MetricResult {
   key: string;
   value: number | null;
   score: number | null;
-  aboveAvg: number | null; // ABOVE_AVERAGE 단일 값 (T8: p25/p50/p75/p90 제거)
+  pctOfBenchmark: number | null; // T3: 기준 대비 % (raw aboveAvg 대신)
   status: string;
   unit: string;
 }
@@ -405,7 +405,6 @@ export default function RealDashboard() {
           ) : selectedAccountId && insights.length > 0 ? (
             <ContentRanking
               insights={insights}
-              benchmarks={benchmarks}
               accountId={selectedAccountId}
               periodNum={periodNum}
               mixpanelProjectId={selectedAccount?.mixpanel_project_id}

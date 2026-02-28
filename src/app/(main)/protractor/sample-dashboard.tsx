@@ -117,23 +117,23 @@ const SAMPLE_DIAGNOSES = [
         part_name: "기반점수",
         verdict: "🟢",
         metrics: [
-          { name: "3초시청률", my_value: 42.5, above_avg: 35.0, average_avg: 28.0, verdict: "🟢" },
-          { name: "CTR", my_value: 3.2, above_avg: 2.5, average_avg: 1.8, verdict: "🟢" },
+          { name: "3초시청률", my_value: 42.5, pct_of_benchmark: 121, verdict: "🟢" },
+          { name: "CTR", my_value: 3.2, pct_of_benchmark: 128, verdict: "🟢" },
         ],
       },
       {
         part_name: "참여율",
         verdict: "🟡",
         metrics: [
-          { name: "참여합계/만노출", my_value: 15.3, above_avg: 18.0, average_avg: 12.0, verdict: "🟡" },
+          { name: "참여합계/만노출", my_value: 15.3, pct_of_benchmark: 85, verdict: "🟡" },
         ],
       },
       {
         part_name: "전환율",
         verdict: "🔴",
         metrics: [
-          { name: "구매전환율", my_value: 0.8, above_avg: 2.1, average_avg: 1.5, verdict: "🔴" },
-          { name: "노출→구매", my_value: 0.01, above_avg: 0.05, average_avg: 0.03, verdict: "🔴" },
+          { name: "구매전환율", my_value: 0.8, pct_of_benchmark: 38, verdict: "🔴" },
+          { name: "노출→구매", my_value: 0.01, pct_of_benchmark: 20, verdict: "🔴" },
         ],
       },
     ],
