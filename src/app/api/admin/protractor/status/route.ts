@@ -60,7 +60,7 @@ export async function GET() {
     }
 
     // 3) service_secrets 유무 체크
-    const secretKeyNames = accountIds.map((id) => `secret_${id}`);
+    const secretKeyNames = accountIds.map((id) => `secret_act_${id}`);
     const { data: secrets } = await svc
       .from("service_secrets" as never)
       .select("key_name" as never)

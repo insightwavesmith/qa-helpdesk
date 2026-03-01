@@ -271,9 +271,6 @@ export function TotalValueGauge({ data, isLoading }: TotalValueGaugeProps) {
                   </div>
                   <div className="flex items-baseline gap-1.5 mt-1">
                     <span className={`text-lg font-bold ${textColor}`}>{fmtVal}</span>
-                    {m.score != null && (
-                      <span className="text-[10px] text-gray-400">{scoreToGrade(m.score)}</span>
-                    )}
                   </div>
                   <div className="relative mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100">
                     <div

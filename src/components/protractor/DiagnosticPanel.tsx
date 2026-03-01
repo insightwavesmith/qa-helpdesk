@@ -126,9 +126,6 @@ function T3DiagnosticView({ diagnostics }: { diagnostics: Record<string, T3Diagn
                               </div>
                               <div className="mt-1 flex items-baseline gap-2">
                                 <span className={`text-base font-bold ${mStyle.text}`}>{fmtVal}</span>
-                                {m.score != null && (
-                                  <span className="text-[10px] text-muted-foreground">{scoreToGrade(m.score)}</span>
-                                )}
                               </div>
                               <div className="mt-1 text-[10px] text-muted-foreground">
                                 {m.pctOfBenchmark != null ? `기준 대비 ${m.pctOfBenchmark}%` : ""}
@@ -153,9 +150,6 @@ function T3DiagnosticView({ diagnostics }: { diagnostics: Record<string, T3Diagn
                                   return (
                                     <>
                                       <span className={`text-base font-bold ${sStyle.text}`}>{fmtVal}</span>
-                                      {summaryMetric.score != null && (
-                                        <span className="text-[10px] text-muted-foreground">{scoreToGrade(summaryMetric.score)}</span>
-                                      )}
                                     </>
                                   );
                                 })()}
@@ -184,9 +178,6 @@ function T3DiagnosticView({ diagnostics }: { diagnostics: Record<string, T3Diagn
                         </div>
                         <div className="mt-1 flex items-baseline gap-2">
                           <span className={`text-base font-bold ${mStyle.text}`}>{fmtVal}</span>
-                          {m.score != null && (
-                            <span className="text-[10px] text-muted-foreground">{m.score}점</span>
-                          )}
                         </div>
                         <div className="mt-1 text-[10px] text-muted-foreground">
                           {m.pctOfBenchmark != null ? `기준 대비 ${m.pctOfBenchmark}%` : ""}
