@@ -48,10 +48,10 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 ### 역할별 담당
 | 역할 | Plan | Design | Do | Check | Act |
 |------|:----:|:------:|:--:|:-----:|:---:|
-| **Leader** | 검토 | 검토+승인 | 분배 | 검토 | 판단 |
+| **Leader** | 작성 | 작성+승인 | 분배 | 최종 검토 | 판단 |
 | **frontend-dev** | - | 컴포넌트 설계 | 프론트 구현 | - | 프론트 수정 |
 | **backend-dev** | - | API/DB 설계 | 백엔드 구현 | - | 백엔드 수정 |
-| **code-reviewer** | - | - | - | Gap 분석 | 검증 |
+| **qa-engineer** | - | - | - | Gap 분석 + QA | 버그 리포트 |
 
 ### Design 문서 필수 항목
 ```markdown
@@ -139,6 +139,35 @@ git worktree remove ../qa-helpdesk-frontend
 
 ## 플러그인
 - **bkit** (v1.5.2) — PDCA 워크플로우, `/pdca plan {기능}`
+
+## SDK 실행 시 필수 프로세스 (hooks 대체)
+
+settings.json hooks가 없는 환경(SDK 등)에서도 아래를 반드시 직접 실행한다.
+이 규칙을 건너뛰면 코드 품질 검증 없이 배포되므로 절대 금지.
+
+### 커밋 전 필수 실행 (순서대로)
+```bash
+# 1. 타입 체크
+npx tsc --noEmit --quiet
+
+# 2. 린트
+npx next lint --quiet
+
+# 3. 빌드
+npm run build
+```
+3개 모두 에러 0이어야 커밋 가능. 하나라도 실패하면 수정 후 재실행.
+
+### QA 필수 (qa-engineer 역할)
+구현 완료 후 반드시 qa-engineer에게 delegate:
+1. **Gap 분석**: 설계서(Design) vs 실제 구현 비교 → `docs/03-analysis/{기능}.analysis.md` 작성
+2. **Match Rate 90%+** 확인. 미만이면 수정 필요 항목 리포트
+3. **빌드 검증**: `npm run build` 성공 확인
+4. `.pdca-status.json` 상태를 `completed`로 업데이트
+
+### 커밋 메시지 규칙
+- 한글로 작성
+- 컨벤션: feat/fix/refactor/style/chore
 
 ## 작업 완료 기준
 - [ ] `npm run build` 성공
