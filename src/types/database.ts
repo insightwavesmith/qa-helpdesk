@@ -665,6 +665,39 @@ export type Database = {
           },
         ]
       }
+      cron_runs: {
+        Row: {
+          id: string
+          cron_name: string
+          started_at: string
+          finished_at: string | null
+          status: string
+          records_count: number | null
+          error_message: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          cron_name: string
+          started_at?: string
+          finished_at?: string | null
+          status?: string
+          records_count?: number | null
+          error_message?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          cron_name?: string
+          started_at?: string
+          finished_at?: string | null
+          status?: string
+          records_count?: number | null
+          error_message?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
       curriculum: {
         Row: {
           block_id: string | null
@@ -1635,36 +1668,51 @@ export type Database = {
       reviews: {
         Row: {
           author_id: string | null
+          category: string
+          cohort: string | null
           content: string
           created_at: string | null
           id: string
           image_urls: string[] | null
+          is_pinned: boolean
           like_count: number | null
+          rating: number | null
           title: string
           updated_at: string | null
           view_count: number | null
+          youtube_url: string | null
         }
         Insert: {
           author_id?: string | null
+          category?: string
+          cohort?: string | null
           content: string
           created_at?: string | null
           id?: string
           image_urls?: string[] | null
+          is_pinned?: boolean
           like_count?: number | null
+          rating?: number | null
           title: string
           updated_at?: string | null
           view_count?: number | null
+          youtube_url?: string | null
         }
         Update: {
           author_id?: string | null
+          category?: string
+          cohort?: string | null
           content?: string
           created_at?: string | null
           id?: string
           image_urls?: string[] | null
+          is_pinned?: boolean
           like_count?: number | null
+          rating?: number | null
           title?: string
           updated_at?: string | null
           view_count?: number | null
+          youtube_url?: string | null
         }
         Relationships: [
           {

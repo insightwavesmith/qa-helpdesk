@@ -188,6 +188,24 @@
       },
       "completedAt": "2026-02-20",
       "notes": "T6: 대시보드 역할별 라우팅 + Sidebar 메뉴 필터링. dashboard/page.tsx, Sidebar.tsx, layout.tsx 수정."
+    },
+    "cron-stabilization": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/cron-stabilization.plan.md",
+        "design": "02-design/features/cron-stabilization.design.md"
+      },
+      "notes": "A1 cron_runs 테이블 + health 엔드포인트, A2 collect-daily 재시도, A3 주석 수정"
+    },
+    "reviews-enhancement": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/reviews-enhancement.plan.md",
+        "design": "02-design/features/reviews-enhancement.design.md"
+      },
+      "notes": "B1 기수/카테고리/별점, B2 필터/정렬, B3 유튜브 임베드, B4 관리자 페이지"
     }
   },
   "phaseMapping": {

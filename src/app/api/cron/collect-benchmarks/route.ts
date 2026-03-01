@@ -1,6 +1,6 @@
 /**
  * collect-benchmarks — GCP 방식 벤치마크 수집 (전면 재작성)
- * Vercel Cron: 매주 월요일 02:00 UTC (KST 11:00)
+ * Vercel Cron: 매주 월요일 17:00 UTC (KST 화요일 02:00)
  *
  * STEP 1: Meta API로 활성 계정의 광고 원본 수집 → ad_insights_classified UPSERT
  * STEP 2: creative_type × ranking_type × ranking_group별 평균 계산 → benchmarks UPSERT
@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 
 // ── Vercel Cron 인증 ─────────────────────────────────────────
 function verifyCron(req: NextRequest): boolean {
@@ -275,6 +276,7 @@ export async function GET(req: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const anySvc = svc as any;
   const collectedAt = new Date().toISOString();
+  const cronRunId = await startCronRun("collect-benchmarks");
 
   try {
     // ────────────────────────────────────────────────────────
@@ -485,6 +487,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    await completeCronRun(cronRunId, "success", allClassified.length);
+
     return NextResponse.json({
       message: "collect-benchmarks (GCP 방식) 완료",
       accounts_active: activeAccounts.length,
@@ -499,16 +503,15 @@ export async function GET(req: NextRequest) {
       collected_at: collectedAt,
     });
   } catch (e) {
+    const errorMessage = e instanceof Error
+      ? e.message
+      : typeof e === "object" && e && "message" in e
+        ? (e as { message: string }).message
+        : "Unknown error";
     console.error("collect-benchmarks error:", e);
+    await completeCronRun(cronRunId, "error", 0, errorMessage);
     return NextResponse.json(
-      {
-        error:
-          e instanceof Error
-            ? e.message
-            : typeof e === "object" && e && "message" in e
-              ? (e as { message: string }).message
-              : "Unknown error",
-      },
+      { error: errorMessage },
       { status: 500 }
     );
   }

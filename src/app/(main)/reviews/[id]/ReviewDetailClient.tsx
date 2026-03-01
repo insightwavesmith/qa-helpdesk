@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Trash2, Loader2, Eye } from "lucide-react";
+import { ArrowLeft, Trash2, Loader2, Eye, Star } from "lucide-react";
 import { deleteReview } from "@/actions/reviews";
 import { toast } from "sonner";
 
@@ -17,11 +17,27 @@ interface Review {
   view_count: number;
   created_at: string;
   author: { name: string } | null;
+  cohort?: string | null;
+  category?: string;
+  rating?: number | null;
+  youtube_url?: string | null;
+  is_pinned?: boolean;
 }
 
 interface ReviewDetailClientProps {
   review: Review;
   isAdmin: boolean;
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  general: "일반후기",
+  graduation: "졸업후기",
+  weekly: "주차별 후기",
+};
+
+function getYouTubeEmbedUrl(url: string): string {
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+  return match ? `https://www.youtube.com/embed/${match[1]}` : url;
 }
 
 function formatDate(dateStr: string | null) {
@@ -89,9 +105,53 @@ export function ReviewDetailClient({ review, isAdmin }: ReviewDetailClientProps)
 
       {/* Content */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8">
+        {/* YouTube embed */}
+        {!!review.youtube_url && (
+          <div
+            className="relative w-full mb-6 rounded-lg overflow-hidden"
+            style={{ paddingBottom: "56.25%" }}
+          >
+            <iframe
+              className="absolute top-0 left-0 w-full h-full"
+              src={getYouTubeEmbedUrl(review.youtube_url)}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        )}
+
         <h1 className="text-2xl font-bold text-gray-900 mb-3">
           {review.title}
         </h1>
+
+        {/* Badges */}
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          {review.cohort && (
+            <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
+              {review.cohort}
+            </span>
+          )}
+          {review.category && (
+            <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+              {CATEGORY_LABELS[review.category] || review.category}
+            </span>
+          )}
+          {!!review.rating && (
+            <span className="flex items-center gap-0.5">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  className={`h-3.5 w-3.5 ${
+                    star <= (review.rating ?? 0)
+                      ? "fill-yellow-400 text-yellow-400"
+                      : "text-gray-200"
+                  }`}
+                />
+              ))}
+            </span>
+          )}
+        </div>
+
         <div className="flex items-center gap-3 text-sm text-gray-500 mb-6">
           <span>{review.author?.name || "알 수 없음"}</span>
           <span>·</span>

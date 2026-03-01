@@ -1,0 +1,6 @@
+-- 수강후기 강화 마이그레이션
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS cohort TEXT;
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'general';
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS rating INT CHECK (rating >= 1 AND rating <= 5);
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS youtube_url TEXT;
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN NOT NULL DEFAULT false;

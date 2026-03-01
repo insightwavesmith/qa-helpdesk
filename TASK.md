@@ -1,493 +1,151 @@
-# TASK.md — 총가치각도기 v2 + 벤치마크 서비스 리빌드
-
-> 작성: 모찌 | 2026-02-27
-> 기획서(벤치마크): https://mozzi-reports.vercel.app/reports/architecture/2026-02-27-benchmark-service-plan.html
-> 기획서(비교): https://mozzi-reports.vercel.app/reports/architecture/2026-02-27-benchmark-architecture-comparison.html
-> 목업(v2): https://mozzi-reports.vercel.app/reports/architecture/2026-02-26-protractor-v2-mockup.html
-> 프로젝트: /Users/smith/projects/qa-helpdesk
-> 최신 커밋: 9ffa913
-
----
-
-## 타입
-개발
+# TASK: 크론 수집 안정화 + 수강후기 탭 강화
 
 ## 목표
-1. 벤치마크 계산을 percentile → GCP 방식(Meta 랭킹 기반 ABOVE_AVERAGE 그룹 평균)으로 전면 교체
-2. 장바구니 지표 2개 삭제 (카페24 픽셀 오류), 최종 13개 지표 확정
-3. 총가치각도기 UI v2: TOP5 삭제→타겟중복 이동, 콘텐츠 탭 광고비순 1~5등, 벤치마크 관리 탭 신규
-4. 성공 기준: 벤치마크 수집 크론 실행 → benchmarks 테이블에 ~33행 저장 → 대시보드에서 ABOVE_AVERAGE 기준선으로 3단계 판정
+1. 데이터 수집 크론이 실패해도 아무도 모르는 구조를 고쳐서, 실패 시 즉시 알 수 있게 한다.
+2. 수강후기 페이지를 강화해서 오프라인/졸업생/유튜브 후기를 체계적으로 쌓을 수 있게 한다.
 
-## 레퍼런스
-- 벤치마크 기획서: https://mozzi-reports.vercel.app/reports/architecture/2026-02-27-benchmark-service-plan.html
-- GCP 원본 코드: /Users/smith/Library/Mobile Documents/com~apple~CloudDocs/cluade_code/meta-ads-benchmark/
-- v2 목업: docs/design/protractor-v2-mockup.html (로컬)
-- 이전 코드리뷰: https://mozzi-reports.vercel.app/reports/review/2026-02-25-protractor-code-review.html
-
-## 제약
-- daily_ad_insights 테이블 구조 변경 금지 (수강생 일별 데이터 수집용, T3 아키텍처)
-- daily_lp_metrics 테이블 DROP 금지 (데이터 유지, 코드만 제거)
-- 기존 수강생 로그인/계정관리 기능 깨뜨리지 않기
-- META_ACCESS_TOKEN은 Vercel env에서 관리 (코드에 하드코딩 금지)
-
-## 개요
-
-총가치각도기를 GCP(collect_benchmarks.py) 방식 벤치마크로 전환 + UI v2 개편.
-핵심: Meta 랭킹(품질/참여/전환) 기반 ABOVE_AVERAGE 그룹 평균을 벤치마크로 사용.
-장바구니 관련 지표 2개 삭제 (카페24 픽셀 오류). 최종 13개 지표.
+## 빌드/테스트
+- `npm run build` 성공 필수
+- 테스트 계정: smith.kim@inwv.co / test1234! (관리자), student@test.com / test1234! (수강생)
+- 프로덕션: https://bscamp.vercel.app
 
 ---
 
-## Phase 1: DB 스키마 + 삭제 (병렬 가능)
+# Part A. 크론 수집 안정화
 
-### T1. LP 관련 코드 제거
+## A1. 크론 실행 이력 테이블 + 실패 알림
 
-**현재:** LP품질 파트가 4파트 중 1개로 존재
-**변경:** 완전 제거
+### 현재 동작
+- 크론(collect-daily, collect-mixpanel, collect-benchmarks)이 실패하면 console.error만 찍힘
+- 실행 이력이 어디에도 저장 안 됨
+- 2/6~2/25 20일 공백이 발생했는데 아무도 몰랐음
 
-- `src/lib/diagnosis/engine.ts` — PART_METRICS에서 LP품질 파트 삭제
-- `src/components/protractor/lp-metrics-card.tsx` — 컴포넌트 제거
-- `src/app/api/protractor/lp-metrics/route.ts` — 라우트 비활성
-- `src/app/api/protractor/collect-daily/route.ts` — Mixpanel LP 수집 블록 비활성
-- `src/app/protractor/real-dashboard.tsx` — `void lpMetrics` 제거 + LpMetricsCard import 제거
-- 테이블 `daily_lp_metrics`는 유지 (코드만 제거)
+### 기대 동작
+1. `cron_runs` 테이블 생성:
+   - id, cron_name (text), started_at (timestamptz), finished_at (timestamptz), status ('success'|'error'|'partial'), records_count (int), error_message (text)
+2. 각 크론 시작 시 row INSERT, 완료 시 UPDATE (status, records_count, finished_at)
+3. 에러 발생 시 status='error', error_message에 에러 내용 저장
+4. 부분 실패 (일부 계정만 실패) 시 status='partial'
+5. `/api/cron/health` 엔드포인트 추가:
+   - 최근 24시간 내 collect-daily 실행 0건이면 → `{ healthy: false, missing: ["collect-daily"] }`
+   - 관리자만 접근 가능 (requireAdmin)
 
-### T2. 장바구니 지표 제거
+### 하지 말 것
+- 외부 알림 서비스 연동 (슬랙 webhook 등) — 나중에 별도로
+- 기존 크론 로직 변경 — 이력 기록만 추가
 
-**현재:** click_to_cart_rate, cart_to_purchase_rate, lp_session_to_cart 존재
-**변경:** 3개 모두 제거 (카페24 픽셀 장바구니 이벤트 오류)
+## A2. collect-daily 재시도 로직
 
-제거 대상 파일:
-- `src/lib/diagnosis/engine.ts` — 진단 로직에서 제거
-- `src/lib/diagnosis/metrics.ts` — 벤치마크 메트릭 정의에서 제거
-- `src/app/api/protractor/collect-benchmarks/route.ts` — 수집 로직에서 제거
-- `src/components/protractor/ConversionFunnel` — 장바구니 스텝 제거 (H5)
-- 전환율 파트 UI에서 장바구니 관련 행 삭제
+### 현재 동작
+- Meta API 호출 실패 시 해당 계정 skip → 그날 데이터 영구 누락
+- 재시도 없음
 
-### T3. benchmarks 테이블 스키마 변경
+### 기대 동작
+1. Meta API 호출 실패 시 최대 2회 재시도 (3초, 6초 대기)
+2. 재시도 후에도 실패하면 cron_runs에 partial 기록
+3. 429 (rate limit) 응답 시 Retry-After 헤더 존중
 
-**현재:** metric_name, creative_type, p25/p50/p75/p90/avg_value/sample_size
-**변경:** GCP 방식으로 전환 — 한 행 = 조합 1개, 13개 지표값 포함
+### 하지 말 것
+- collect-mixpanel, collect-benchmarks는 건드리지 않음 (이미 재시도 있음)
+- 전체 구조 변경 — 기존 try/catch 안에 재시도만 추가
 
-```sql
--- 기존 benchmarks 테이블 DROP 후 재생성
-DROP TABLE IF EXISTS benchmarks;
+## A3. collect-benchmarks 스케줄 수정
 
-CREATE TABLE benchmarks (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  creative_type text NOT NULL,        -- VIDEO / IMAGE / CATALOG
-  ranking_type text NOT NULL,         -- quality / engagement / conversion
-  ranking_group text NOT NULL,        -- ABOVE_AVERAGE / AVERAGE / BELOW_AVERAGE / MEDIAN_ALL
-  sample_count integer DEFAULT 0,
-  -- 영상 (3개)
-  video_p3s_rate numeric,
-  thruplay_rate numeric,
-  retention_rate numeric,
-  -- 참여 (5개)
-  reactions_per_10k numeric,
-  comments_per_10k numeric,
-  shares_per_10k numeric,
-  saves_per_10k numeric,
-  engagement_per_10k numeric,
-  -- 전환 (5개)
-  ctr numeric,
-  click_to_checkout_rate numeric,
-  click_to_purchase_rate numeric,
-  checkout_to_purchase_rate numeric,
-  roas numeric,
-  -- 메타
-  calculated_at timestamptz DEFAULT now(),
-  UNIQUE (creative_type, ranking_type, ranking_group)
-);
-```
+### 현재 동작
+- vercel.json: `0 17 * * 1` (UTC 월요일 17시 = KST 화요일 02시)
+- 코드 주석: "매주 월요일 KST 11:00" → 불일치
 
-총 행 수: 최대 27행 (3×3×3) + 6행 (MEDIAN_ALL) = ~33행
+### 기대 동작
+- 주석을 실제 스케줄에 맞게 수정: "매주 화요일 KST 02:00"
+- 또는 Smith님 의도가 월요일이면 스케줄을 `0 2 * * 1` (UTC 월 02시 = KST 월 11시)로 변경
 
-### T4. ad_insights_classified 테이블 생성
-
-**현재:** 없음 (신규)
-**변경:** GCP 방식 광고 원본 저장용
-
-```sql
-CREATE TABLE IF NOT EXISTS ad_insights_classified (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  ad_id text NOT NULL,
-  account_id text NOT NULL,
-  ad_name text,
-  creative_type text NOT NULL,        -- VIDEO / IMAGE / CATALOG
-  quality_ranking text,               -- ABOVE_AVERAGE / AVERAGE / BELOW_AVERAGE / UNKNOWN
-  engagement_ranking text,
-  conversion_ranking text,
-  impressions numeric DEFAULT 0,
-  clicks numeric DEFAULT 0,
-  spend numeric DEFAULT 0,
-  reach numeric DEFAULT 0,
-  -- 13개 계산된 지표
-  video_p3s_rate numeric,
-  thruplay_rate numeric,
-  retention_rate numeric,
-  reactions_per_10k numeric,
-  comments_per_10k numeric,
-  shares_per_10k numeric,
-  saves_per_10k numeric,
-  engagement_per_10k numeric,
-  ctr numeric,
-  click_to_checkout_rate numeric,
-  click_to_purchase_rate numeric,
-  checkout_to_purchase_rate numeric,
-  roas numeric,
-  -- 메타
-  collected_at timestamptz DEFAULT now()
-);
-
-CREATE INDEX idx_aic_creative_type ON ad_insights_classified (creative_type);
-CREATE INDEX idx_aic_engagement ON ad_insights_classified (engagement_ranking);
-CREATE INDEX idx_aic_conversion ON ad_insights_classified (conversion_ranking);
-CREATE INDEX idx_aic_quality ON ad_insights_classified (quality_ranking);
-```
+### 하지 말 것
+- 벤치마크 수집 로직 변경
 
 ---
 
-## Phase 2: 벤치마크 수집 엔진 (T3, T4 완료 후)
+# Part B. 수강후기 탭 강화
 
-### T5. 벤치마크 수집 로직 — GCP 방식으로 전면 교체
+## B1. 후기 작성폼에 기수/카테고리 추가
 
-**현재:** 수강생 계정 대상 percentile 계산
-**변경:** 전체 활성 계정 → Meta 랭킹 기반 ABOVE_AVERAGE 그룹 평균
+### 현재 동작
+- 후기 작성 시 제목 + 본문 + 이미지(최대 3장)만 입력 가능
+- 몇 기인지, 어떤 종류의 후기인지 구분 없음
 
-파일: `src/app/api/protractor/collect-benchmarks/route.ts`
+### 기대 동작
+1. reviews 테이블에 컬럼 추가:
+   - `cohort` (text, nullable) — 기수 ("1기", "2기", ...)
+   - `category` (text, default 'general') — 'general'(일반), 'graduation'(졸업), 'weekly'(주차별)
+   - `rating` (int, nullable, 1~5) — 별점
+2. 작성폼에 필드 추가:
+   - 기수 선택 (드롭다운: 1기~5기, 직접입력)
+   - 카테고리 선택 (일반후기 / 졸업후기 / 주차별 후기)
+   - 별점 (1~5 별)
+3. 기존 후기 데이터는 cohort=null, category='general'로 유지
 
-#### STEP 1: 광고 원본 수집
+### 하지 말 것
+- 기존 후기 데이터 마이그레이션 — null 그대로
+- 댓글/좋아요 기능 — Smith님 결정으로 불필요
 
-```
-1-1. 계정 목록
-    META_ACCESS_TOKEN으로 GET /me/adaccounts
-    → account_status = 1 (활성)만
-    → EXCLUDED_ACCOUNTS 배열에 있는 계정 제외
+## B2. 후기 목록 필터링 + 정렬
 
-1-2. 계정별 광고 수집
-    GET /{account_id}/ads?date_preset=last_7d
-    → effective_status = ACTIVE
-    → impressions >= 3,500
-    → spend DESC 정렬 → 상위 10개만
+### 현재 동작
+- 전체 후기가 시간순으로만 표시
+- 필터 없음
 
-1-3. 각 광고 지표 계산 (calculateMetrics)
-    Meta 원시 데이터 → 13개 지표 계산:
-    
-    영상:
-    - video_p3s_rate = (video_p3s / impressions) × 100
-    - thruplay_rate = (video_thruplay / impressions) × 100
-    - retention_rate = (video_play_100p / video_p3s) × 100
-    
-    참여:
-    - reactions_per_10k = reactions × (10000 / impressions)
-    - comments_per_10k = comments × (10000 / impressions)
-    - shares_per_10k = shares × (10000 / impressions)
-    - saves_per_10k = post_saves × (10000 / impressions)
-    - engagement_per_10k = (reactions+comments+shares+post_saves) × (10000 / impressions)
-    
-    전환:
-    - ctr = Meta API 그대로
-    - click_to_checkout_rate = (initiate_checkout / clicks) × 100
-    - click_to_purchase_rate = (purchases / clicks) × 100
-    - checkout_to_purchase_rate = (purchases / initiate_checkout) × 100
-    - roas = purchase_value / spend
+### 기대 동작
+1. 상단에 필터 UI:
+   - 기수별 필터 (전체 / 1기 / 2기 / ...)
+   - 카테고리별 필터 (전체 / 일반 / 졸업 / 주차별)
+2. 정렬: 최신순 (기본) / 별점 높은순
+3. 후기 카드에 기수 배지 + 별점 표시
 
-1-4. Meta 랭킹 정규화
-    quality_ranking ← quality_ranking
-    engagement_ranking ← engagement_rate_ranking
-    conversion_ranking ← conversion_rate_ranking
-    None / "" / 없음 → "UNKNOWN"
+### 하지 말 것
+- 검색 기능 — 아직 불필요
+- 무한 스크롤 — 기존 페이지네이션 유지
 
-1-5. ad_insights_classified 테이블에 UPSERT
-    기존 데이터 DELETE → INSERT (전체 교체)
-```
+## B3. 유튜브 후기 영상 임베드
 
-#### STEP 2: 벤치마크 계산 (calculate_and_save_benchmarks)
+### 현재 동작
+- 후기 = 텍스트 + 이미지만
+- 유튜브 수료생 인터뷰 시리즈(Ep.1~9+)가 있지만 QA Helpdesk에서 볼 수 없음
 
-```
-크리에이티브 타입: [VIDEO, IMAGE, CATALOG]
-× 랭킹 타입: [quality, engagement, conversion]
-× 랭킹 그룹: [ABOVE_AVERAGE, AVERAGE, BELOW_AVERAGE]
+### 기대 동작
+1. 관리자가 후기에 유튜브 URL 추가 가능 (관리자 전용 기능)
+   - reviews 테이블에 `youtube_url` (text, nullable) 컬럼 추가
+   - 관리자 페이지에서 후기 등록 시 유튜브 URL 입력란
+2. 후기 상세 페이지에서 유튜브 영상 임베드 표시
+   - `<iframe>` 방식, 반응형 (16:9)
+3. 후기 목록에서 영상 후기는 🎬 아이콘으로 구분
+4. 관리자만 유튜브 후기 등록 가능 (수강생은 텍스트+이미지만)
 
-각 조합에서:
-- WHERE creative_type = ? AND {ranking_type}_ranking = {ranking_group}
-- UNKNOWN 자동 제외
-- 13개 지표 전부 AVG 산출
-- sample_count = COUNT(*)
-- benchmarks 테이블에 UPSERT
-```
+### 하지 말 것
+- 유튜브 API 연동 — URL만 저장하고 iframe 임베드
+- 자동 크롤링 — 수동 등록
 
-#### STEP 3: 전체 평균 (calculate_and_save_median_benchmarks)
+## B4. 관리자 후기 관리 페이지
 
-```
-크리에이티브 타입: [VIDEO, IMAGE, CATALOG]
-× 랭킹 타입: [engagement, conversion]
+### 현재 동작
+- 관리자가 후기를 삭제만 할 수 있음
+- 후기 등록/수정 불가
 
-각 조합에서:
-- 랭킹 필터 없음 (UNKNOWN 포함 전체)
-- ranking_group = 'MEDIAN_ALL'
-- 13개 지표 AVG + sample_count
-- benchmarks 테이블에 UPSERT
-```
+### 기대 동작
+1. /admin/reviews 페이지 신규:
+   - 전체 후기 목록 (작성자, 기수, 카테고리, 별점, 날짜)
+   - 삭제 버튼 (기존)
+   - 유튜브 후기 등록 버튼 → 제목, 유튜브 URL, 기수, 카테고리 입력
+   - 후기 고정(pin) 기능 — 상단 고정 후기 지정
+2. reviews 테이블에 `is_pinned` (boolean, default false) 컬럼
+3. 고정된 후기는 목록 최상단에 표시
 
-#### 환경변수
-
-- `META_ACCESS_TOKEN`: Vercel env (전체 계정 접근용)
-- `EXCLUDED_ACCOUNTS`: config 또는 env로 관리 (현재 5개)
-
-#### Rate Limit 대응
-
-- 계정별 200ms sleep
-- 429 응답 시 exponential backoff (1s → 2s → 4s, 최대 3회)
-- 전체 타임아웃: 5분
-
----
-
-## Phase 3: 진단 엔진 + 프론트 (T5 완료 후)
-
-### T6. 진단 파트 구조 변경 (4파트 → 3파트)
-
-**현재:** 4파트 (LP품질/기반점수/참여율/전환율)
-**변경:** 3파트
-
-```
-파트0 기반점수 (영상):
-  - video_p3s_rate  → 벤치마크: engAbove.video_p3s_rate
-  - thruplay_rate   → 벤치마크: engAbove.thruplay_rate
-  - retention_rate   → 벤치마크: engAbove.retention_rate
-  - ctr             → 벤치마크: convAbove.ctr (여기만 conversion 기준)
-
-파트1 참여율:
-  - reactions_per_10k    → 벤치마크: engAbove.reactions_per_10k
-  - comments_per_10k     → 벤치마크: engAbove.comments_per_10k
-  - shares_per_10k       → 벤치마크: engAbove.shares_per_10k
-  - engagement_per_10k   → 벤치마크: engAbove.engagement_per_10k
-
-파트2 전환율:
-  - click_to_checkout_rate    → 벤치마크: convAbove.click_to_checkout_rate
-  - click_to_purchase_rate    → 벤치마크: convAbove.click_to_purchase_rate
-  - checkout_to_purchase_rate → 벤치마크: convAbove.checkout_to_purchase_rate
-  - roas                      → 벤치마크: convAbove.roas
-```
-
-**engAbove** = `benchmarks WHERE ranking_type='engagement' AND ranking_group='ABOVE_AVERAGE'`
-**convAbove** = `benchmarks WHERE ranking_type='conversion' AND ranking_group='ABOVE_AVERAGE'`
-
-수정 파일:
-- `src/lib/diagnosis/engine.ts` — PART_METRICS 재정의
-- `src/lib/diagnosis/metrics.ts` — 메트릭 목록 변경
-- `src/lib/diagnosis/one-line.ts` — 한줄 진단 텍스트 (H3: SHARE 분기 재작성)
-
-### T7. 벤치마크 API 수정
-
-**현재:** percentile(p25/p50/p75/p90) + creative_type별 조회
-**변경:** ABOVE_AVERAGE 평균 + engAbove/convAbove 분리 전달
-
-파일: `src/app/api/protractor/diagnosis/route.ts` (또는 해당 API)
-
-```typescript
-// API 응답 구조
-{
-  benchmarks: {
-    VIDEO: {
-      engagement: {
-        above_avg: { video_p3s_rate: 23.5, reactions_per_10k: 38, ... }
-      },
-      conversion: {
-        above_avg: { ctr: 3.2, click_to_checkout_rate: 10.5, ... }
-      },
-      sample_counts: { engagement: 29, conversion: 23 }
-    },
-    IMAGE: { ... },
-    CATALOG: { ... }
-  }
-}
-```
-
-### T8. 판정 로직 수정
-
-**현재:** percentile 기반 구간 판정
-**변경:** ABOVE_AVERAGE 평균 기준 3단계
-
-```typescript
-function get3LevelVerdict(value: number, aboveAvg: number) {
-  const threshold = aboveAvg * 0.75;
-  if (value >= aboveAvg)  return '🟢';  // 우수
-  if (value >= threshold) return '🟡';  // 보통
-  return '🔴';                           // 미달
-}
-```
-
-수정 파일:
-- `src/lib/diagnosis/engine.ts`
-- `src/components/protractor/benchmark-compare.tsx`
-
-### T9. 참여 표시 — per_10k → 실제 개수 환산
-
-**현재:** per_10k 그대로 표시
-**변경:** "어제" 단일 조회 시 실제 개수로 환산 표시
-
-```typescript
-// 어제(단일) 조회 시:
-const actual   = ad.reactions_per_10k × (ad.impressions / 10000);  // 실제 280개
-const expected = engAbove.reactions_per_10k × (ad.impressions / 10000);  // 기대 222개
-// 표시: "280개 / 222개"
-// 판정: per_10k 값으로 비교
-
-// 기간 평균(7/14/30일) 조회 시:
-// per_10k 그대로 표시 ("48.0 / 38.0")
-```
-
-수정 파일: `src/components/protractor/` 관련 컴포넌트
-
----
-
-## Phase 4: UI v2 개편
-
-### T10. 성과 요약 탭 — TOP5 삭제 + 타겟중복 이동
-
-**현재:** 게이지 + 진단 3파트 + TOP5 광고 + 일별 테이블
-**변경:** 게이지 + 진단 3파트 + 타겟중복 (TOP5/일별 삭제)
-
-- TOP 5 광고 섹션 삭제 (성과 요약 탭에서)
-- 일별 성과 테이블 삭제 (성과 요약 탭에서)
-- 타겟중복 분석을 성과 요약 탭 하단에 배치
-- 타겟중복 기존 별도 탭 → 성과 요약 내 섹션으로 이동
-
-### T11. 콘텐츠 탭 — 광고비순 1~5등 랭킹
-
-**현재:** 추이 차트 + 퍼널
-**변경:** 광고비순 1~5등 카드
-
-- 기존 추이/퍼널 삭제
-- 광고비 DESC 정렬 → 상위 5개 광고 카드
-- 각 카드: 광고명 + 지출/노출/클릭/CTR/구매 요약
-- 각 카드에 3파트 점수바 (기반점수/참여율/전환율)
-- 1등 카드 펼침: 지표별 실제값 vs ABOVE_AVERAGE 벤치마크 그리드
-- 각 카드에 버튼 2개:
-  - **광고 통계**: `https://adsmanager.facebook.com/adsmanager/manage/ads?act={account_id}&selected_ad_ids={ad_id}`
-  - **믹스패널**: `https://mixpanel.com/project/{project_id}/view/{board_id}`
-
-### T12. 벤치마크 관리 탭 (관리자 전용, 신규)
-
-**현재:** 없음
-**변경:** 관리자가 벤치마크 데이터를 확인할 수 있는 탭
-
-- 사이드바에 "벤치마크 관리" 메뉴 (관리자만 표시)
-- creative_type별 탭 (VIDEO / IMAGE / CATALOG)
-- 각 타입: ranking_type × ranking_group별 13개 지표값 테이블
-- sample_count, calculated_at 표시
-- 수동 재수집 버튼 (collect-benchmarks API 호출)
-- 수집 히스토리 (최근 5회)
+### 하지 말 것
+- 수강생 후기 수정 기능 — 작성자 본인도 수정 불가 (삭제 후 재작성)
+- 후기 승인 프로세스 — 바로 게시
 
 ---
 
 ## 참고 파일
-
-| 파일 | 역할 |
-|------|------|
-| `src/lib/diagnosis/engine.ts` | 진단 엔진 (PART_METRICS, 판정 로직) |
-| `src/lib/diagnosis/metrics.ts` | 벤치마크 메트릭 정의 |
-| `src/lib/diagnosis/one-line.ts` | 한줄 진단 텍스트 |
-| `src/app/api/protractor/collect-benchmarks/route.ts` | 벤치마크 수집 크론 |
-| `src/app/api/protractor/collect-daily/route.ts` | 일일 데이터 수집 |
-| `src/app/api/protractor/lp-metrics/route.ts` | LP 메트릭 API (제거 대상) |
-| `src/app/protractor/real-dashboard.tsx` | 수강생 대시보드 메인 |
-| `src/components/protractor/ad-metrics-table.tsx` | TOP 5 광고 테이블 |
-| `src/components/protractor/lp-metrics-card.tsx` | LP 카드 (제거 대상) |
-| `src/components/protractor/benchmark-compare.tsx` | 벤치마크 비교 |
-| `docs/design/protractor-v2-mockup.html` | v2 목업 (로컬) |
-| GCP 원본 | `/Users/smith/Library/Mobile Documents/com~apple~CloudDocs/cluade_code/meta-ads-benchmark/` |
-
-## 환경변수
-
-- `META_ACCESS_TOKEN`: Vercel env (전체 계정 접근용 토큰)
-- `EXCLUDED_ACCOUNTS`: 제외할 광고계정 ID 배열
-
-## 리뷰 결과 (이전 버전)
-
-리뷰 보고서: https://mozzi-reports.vercel.app/reports/review/2026-02-25-protractor-code-review.html
-
-### 경로 수정
-- `src/lib/protractor/engine.ts` → `src/lib/diagnosis/engine.ts`
-- `src/lib/protractor/metrics.ts` → `src/lib/diagnosis/metrics.ts`
-
-### 숨은 이슈 (이전 리뷰에서 발견, 여전히 유효)
-- **H1**: collect-daily가 영상/참여/creative_type 수집 안 함 → T5에서 함께 처리
-- **H2**: database.ts 타입 재생성 필요 (initiate_checkout 등)
-- **H3**: one-line.ts SHARE 분기 → T6에서 함께 재작성
-- **H4**: engine.ts quality_ranking 키 → T1에서 함께 제거
-- **H5**: ConversionFunnel 장바구니 스텝 → T2에서 함께 제거
-
-### 실행 순서
-Phase 1(병렬): T1 + T2 + T3 + T4 → Phase 2: T5 → Phase 3(병렬): T6 + T7 + T8 + T9 → Phase 4(병렬): T10 + T11 + T12
-
-## T1. LP 코드 제거 및 지표 정리
-## T2. reach_to_purchase_rate 제거 + saves_per_10k 추가
-## T3. benchmarks 타입 wide format 재작성
-## T4. ad_insights_classified 타입 추가
-## T5. collect-benchmarks GCP 방식 재작성
-## T6. 진단 엔진 재작성
-## T7. 벤치마크 API 재작성
-## T8. T3 엔진 + total-value API 재작성
-## T10. 성과 요약 탭 개편
-## T11. 콘텐츠 탭 ContentRanking 신규
-## T12. 벤치마크 관리 탭 신규
-
----
-
-## 엣지 케이스
-
-| 상황 | 기대 동작 |
-|------|-----------|
-| Meta 랭킹이 전부 UNKNOWN인 광고 | 벤치마크 계산에서 자동 제외, ad_insights_classified에는 저장 |
-| 계정에 활성 광고가 0개 | 해당 계정 스킵, 에러 없이 다음 계정 진행 |
-| CATALOG 타입 광고가 0개 | CATALOG 조합 벤치마크 행 생성 안 함 (NULL 행 금지) |
-| IMAGE 광고의 영상 지표 | video_p3s_rate 등 NULL 저장, 벤치마크 AVG에서 NULL 제외 |
-| Rate Limit (429) | exponential backoff 1s→2s→4s, 최대 3회 재시도 |
-| impressions < 3,500 | 수집 대상에서 제외 |
-| 수강생 광고에 creative_type 없음 | 'ALL' 벤치마크로 폴백 |
-| benchmarks 테이블 비어있음 (첫 수집 전) | 대시보드에 "벤치마크 데이터 없음" 안내 표시 |
-
-## 리뷰 보고서
-
-- 보고서 파일: https://mozzi-reports.vercel.app/reports/review/2026-02-27-benchmark-v2-review.html
-- 리뷰 일시: 2026-02-27 10:34
-- 변경 유형: 혼합 (DB + 백엔드 구조 + API + UI/UX)
-- 피드백 요약:
-  - engine.ts ↔ utils.ts 판정 로직 이미 불일치 (2-threshold vs 0.75 단일) → 통일 필요
-  - DB 컬럼 대부분 이미 존재 (quality/engagement/conversion_ranking), 값만 미수집
-  - 데이터 단절 리스크: video_p3s_rate 분모(reach→impressions), retention_rate, creative_type 변경
-  - 의사결정 필요: D1(retention_rate 분모), D2(타겟중복 배치), D3(T3 엔진 유지), D4(콘텐츠 벤치마크 기준)
-- 반영: D1=retention_rate 계산식은 GCP 방식(100%시청/3초조회) 그대로, D2=성과요약 내 배치 확정, D4=ABOVE_AVERAGE 기준 확정
-
-## 검증
-
-☐ npm run build 성공
-☐ npx tsc --noEmit — 타입 에러 0
-☐ 기존 수강생 로그인 + 대시보드 접근 정상
-☐ 벤치마크 수집 API 호출 → ad_insights_classified에 광고 데이터 저장 확인
-☐ 벤치마크 수집 API 호출 → benchmarks 테이블에 ~33행 생성 확인
-☐ 대시보드에서 ABOVE_AVERAGE 기준선으로 🟢🟡🔴 판정 표시 확인
-☐ 참여 파트: 실제 개수 환산 표시 ("280개 / 222개" 형태) 확인
-☐ 성과 요약 탭: TOP5 삭제, 타겟중복 하단 배치 확인
-☐ 콘텐츠 탭: 광고비순 1~5등 카드 표시 확인
-☐ 벤치마크 관리 탭: 관리자 접근 시 데이터 테이블 표시 확인
-
-## 완료 후 QA
-
-### 1단계: 에이전트팀 자체 QA (bkit)
-- [ ] npm run build 성공
-- [ ] 타입/린트 에러 0
-- [ ] bkit qa-strategist Gap 분석
-- [ ] bkit qa-monitor 런타임 검증
-- [ ] 보안 점검 (RLS, 인증)
-- [ ] QA봇에 결과 보고
-
-### 2단계: 브라우저 QA (서브에이전트)
-- [ ] 관리자 로그인 → 벤치마크 관리 탭 접근 → 데이터 확인
-- [ ] 수강생 로그인 → 총가치각도기 → 진단 3파트 + 판정 확인
-- [ ] 성과 요약 탭 → 타겟중복 하단 표시 확인
-- [ ] 콘텐츠 탭 → 광고비순 1~5등 확인
-- [ ] 기존 기능 회귀 테스트
+- 크론: `src/app/api/cron/collect-daily/route.ts`, `collect-mixpanel/route.ts`, `collect-benchmarks/route.ts`
+- 후기: `src/app/(main)/reviews/`, `src/actions/reviews.ts`
+- 디자인: Primary #F75D5D, Pretendard 폰트, 라이트 모드
+- 유튜브 채널: https://www.youtube.com/@1bpluschool

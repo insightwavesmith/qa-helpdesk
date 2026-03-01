@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { generateEmbedding } from "@/lib/gemini";
 import { chunkText } from "@/lib/chunk-utils";
+import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 
 // ── Vercel Cron 인증 ─────────────────────────────────────────
 function verifyCron(req: NextRequest): boolean {
@@ -388,6 +389,7 @@ export async function GET(req: NextRequest) {
 
   const svc = createServiceClient();
   embedCount = 0;
+  const cronRunId = await startCronRun("sync-notion");
 
   try {
     // 1. 데이터 수집
@@ -413,6 +415,13 @@ export async function GET(req: NextRequest) {
       if (result.skipped) totalSkipped++;
     }
 
+    await completeCronRun(
+      cronRunId,
+      totalFail > 0 ? "partial" : "success",
+      totalSuccess,
+      totalFail > 0 ? `${totalFail}건 청크 임베딩 실패` : undefined
+    );
+
     return NextResponse.json({
       message: "sync-notion 완료",
       members: members.length,
@@ -432,9 +441,11 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : "Unknown error";
     console.error("[sync-notion] error:", e);
+    await completeCronRun(cronRunId, "error", 0, errorMessage);
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Unknown error" },
+      { error: errorMessage },
       { status: 500 },
     );
   }

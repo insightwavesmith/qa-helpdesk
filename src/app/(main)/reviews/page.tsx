@@ -31,13 +31,17 @@ async function getUserRole(): Promise<string | null> {
 export default async function ReviewsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; cohort?: string; category?: string; sortBy?: string }>;
 }) {
   const params = await searchParams;
   const page = parseInt(params.page || "1", 10);
+  const filters: { cohort?: string; category?: string; sortBy?: "latest" | "rating" } = {};
+  if (params.cohort) filters.cohort = params.cohort;
+  if (params.category) filters.category = params.category;
+  if (params.sortBy === "latest" || params.sortBy === "rating") filters.sortBy = params.sortBy;
 
   const [{ data: reviews, count }, userRole] = await Promise.all([
-    getReviews({ page, pageSize: PAGE_SIZE }),
+    getReviews({ page, pageSize: PAGE_SIZE, filters }),
     getUserRole(),
   ]);
 

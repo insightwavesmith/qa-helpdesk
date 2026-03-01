@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 
 // ── Vercel Cron 인증 ──────────────────────────────────────────
 function verifyCron(req: NextRequest): boolean {
@@ -155,6 +156,42 @@ function calculateMetrics(insight: Record<string, any>) {
   };
 }
 
+// ── Meta API 재시도 래퍼 ──────────────────────────────────────
+async function fetchMetaWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries = 2
+): Promise<Response> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.status === 429) {
+        const retryAfter = response.headers.get("Retry-After");
+        const waitMs = retryAfter ? parseInt(retryAfter) * 1000 : (attempt + 1) * 3000;
+        console.log(`[collect-daily] 429 Rate limited, retry ${attempt + 1} after ${waitMs}ms`);
+        await new Promise(r => setTimeout(r, waitMs));
+        continue;
+      }
+      if (!response.ok && attempt < maxRetries) {
+        const waitMs = (attempt + 1) * 3000; // 3s, 6s
+        console.log(`[collect-daily] API error ${response.status}, retry ${attempt + 1} after ${waitMs}ms`);
+        await new Promise(r => setTimeout(r, waitMs));
+        continue;
+      }
+      return response;
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+      if (attempt < maxRetries) {
+        const waitMs = (attempt + 1) * 3000;
+        console.log(`[collect-daily] Network error, retry ${attempt + 1} after ${waitMs}ms`);
+        await new Promise(r => setTimeout(r, waitMs));
+      }
+    }
+  }
+  throw lastError || new Error("Max retries exceeded");
+}
+
 // ── Meta Graph API 호출 (GCP 방식: /ads 엔드포인트) ───────────
 async function fetchAccountAds(accountId: string, targetDate?: string): Promise<Record<string, unknown>[]> {
   const token = process.env.META_ACCESS_TOKEN;
@@ -178,7 +215,7 @@ async function fetchAccountAds(accountId: string, targetDate?: string): Promise<
   );
   url.searchParams.set("limit", "100");
 
-  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(60_000) });
+  const res = await fetchMetaWithRetry(url.toString(), { signal: AbortSignal.timeout(60_000) });
   const data = await res.json();
 
   if (data.error) {
@@ -196,18 +233,21 @@ async function fetchAccountAds(accountId: string, targetDate?: string): Promise<
 export const maxDuration = 300; // 5분 (Vercel Pro 최대)
 
 // ── GET /api/cron/collect-daily ──────────────────────────────
-// Vercel Cron: 매일 03:00 UTC (KST 12:00)
+// Vercel Cron: 매일 18:00 UTC (KST 다음날 03:00)
 export async function GET(req: NextRequest) {
   if (!verifyCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const svc = createServiceClient();
+  const cronRunId = await startCronRun("collect-daily");
   const { searchParams } = new URL(req.url);
   const dateParam = searchParams.get("date"); // optional: YYYY-MM-DD
   const yesterday = dateParam ?? new Date(Date.now() - 86_400_000)
     .toISOString()
     .slice(0, 10);
+
+  let hasPartialError = false;
 
   try {
     // 1. Meta API로 접근 가능한 전체 광고계정 조회
@@ -287,6 +327,7 @@ export async function GET(req: NextRequest) {
       } catch (e) {
         accountResult.meta_error = e instanceof Error ? e.message : String(e);
         console.error(`Meta error [${account.account_id}]:`, e);
+        hasPartialError = true;
       }
 
       // ── overlap 수집 ──────────────────────────────────────────
@@ -400,6 +441,14 @@ export async function GET(req: NextRequest) {
       results.push(accountResult);
     }
 
+    const totalRecords = results.reduce((sum, r) => sum + (typeof r.meta_ads === "number" ? r.meta_ads : 0), 0);
+    await completeCronRun(
+      cronRunId,
+      hasPartialError ? "partial" : "success",
+      totalRecords,
+      hasPartialError ? "일부 계정 실패" : undefined
+    );
+
     return NextResponse.json({
       message: "collect-daily completed",
       date: yesterday,
@@ -407,9 +456,11 @@ export async function GET(req: NextRequest) {
       results,
     });
   } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? (e as { message: string }).message : "Unknown error";
     console.error("collect-daily fatal error:", e);
+    await completeCronRun(cronRunId, "error", 0, errorMessage);
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? (e as { message: string }).message : "Unknown error" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

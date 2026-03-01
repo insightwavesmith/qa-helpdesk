@@ -20,6 +20,7 @@ import {
   Brain,
   TrendingUp,
   BarChart3,
+  Star,
 } from "lucide-react";
 import {
   Sidebar,
@@ -69,6 +70,7 @@ const adminNavItems: NavItem[] = [
   { label: "벤치마크 관리", href: "/admin/protractor/benchmarks", icon: BarChart3 },
   { label: "광고계정 관리", href: "/admin/accounts", icon: Monitor },
   { label: "내 광고계정", href: "/admin/owner-accounts", icon: BarChart3 },
+  { label: "수강후기 관리", href: "/admin/reviews", icon: Star },
 ];
 
 interface AppSidebarProps {

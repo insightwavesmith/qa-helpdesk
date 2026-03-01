@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { decrypt } from "@/lib/crypto";
+import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 
 // ── Vercel Cron 인증 ──────────────────────────────────────────
 function verifyCron(req: NextRequest): boolean {
@@ -91,13 +92,14 @@ async function fetchMixpanelRevenue(
 }
 
 // ── GET /api/cron/collect-mixpanel ─────────────────────────────
-// Vercel Cron: 매일 03:30 UTC (KST 12:30) — collect-daily 30분 후
+// Vercel Cron: 매일 18:30 UTC (KST 다음날 03:30) — collect-daily 30분 후
 export async function GET(req: NextRequest) {
   if (!verifyCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const svc = createServiceClient();
+  const cronRunId = await startCronRun("collect-mixpanel");
   const { searchParams } = new URL(req.url);
   const dateParam = searchParams.get("date"); // optional: YYYY-MM-DD
   const yesterday = dateParam ?? new Date(Date.now() - 86_400_000)
@@ -223,6 +225,13 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    await completeCronRun(
+      cronRunId,
+      failCount > 0 ? "partial" : "success",
+      successCount,
+      failCount > 0 ? `${failCount}건 실패` : undefined
+    );
+
     return NextResponse.json({
       message: "collect-mixpanel completed",
       date: yesterday,
@@ -233,9 +242,11 @@ export async function GET(req: NextRequest) {
       results,
     });
   } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : "Unknown error";
     console.error("collect-mixpanel fatal error:", e);
+    await completeCronRun(cronRunId, "error", 0, errorMessage);
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Unknown error" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

@@ -5,7 +5,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, ImagePlus, X, Loader2 } from "lucide-react";
+import { ArrowLeft, ImagePlus, X, Loader2, Star } from "lucide-react";
 import { createReview } from "@/actions/reviews";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -14,6 +14,13 @@ import Image from "next/image";
 
 const MAX_IMAGES = 3;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+const COHORT_OPTIONS = ["선택 안함", "1기", "2기", "3기", "4기", "5기"];
+const CATEGORY_OPTIONS = [
+  { value: "general", label: "일반후기" },
+  { value: "graduation", label: "졸업후기" },
+  { value: "weekly", label: "주차별 후기" },
+] as const;
 
 interface ImagePreview {
   file: File;
@@ -26,6 +33,10 @@ export function NewReviewForm() {
   const [content, setContent] = useState("");
   const [images, setImages] = useState<ImagePreview[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [cohort, setCohort] = useState("");
+  const [category, setCategory] = useState("general");
+  const [rating, setRating] = useState<number | null>(null);
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,6 +123,9 @@ export function NewReviewForm() {
         title: title.trim(),
         content: content.trim(),
         imageUrls,
+        cohort: cohort || null,
+        category,
+        rating,
       });
 
       if (result.error) {
@@ -129,6 +143,8 @@ export function NewReviewForm() {
       setUploading(false);
     }
   };
+
+  const displayRating = hoverRating ?? rating ?? 0;
 
   return (
     <div className="space-y-6">
@@ -163,6 +179,88 @@ export function NewReviewForm() {
             maxLength={200}
             required
           />
+        </div>
+
+        {/* 기수 선택 */}
+        <div className="space-y-2">
+          <label
+            htmlFor="review-cohort"
+            className="block text-sm font-medium text-gray-700"
+          >
+            기수
+          </label>
+          <select
+            id="review-cohort"
+            value={cohort}
+            onChange={(e) => setCohort(e.target.value)}
+            className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#F75D5D]/30 focus:border-[#F75D5D]"
+          >
+            <option value="">선택 안함</option>
+            {COHORT_OPTIONS.filter((o) => o !== "선택 안함").map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* 카테고리 선택 */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            카테고리
+          </label>
+          <div className="flex gap-3">
+            {CATEGORY_OPTIONS.map((opt) => (
+              <label
+                key={opt.value}
+                className={`flex items-center gap-2 cursor-pointer rounded-lg border px-4 py-2.5 text-sm transition-colors ${
+                  category === opt.value
+                    ? "border-[#F75D5D] bg-red-50 text-[#F75D5D]"
+                    : "border-gray-200 text-gray-600 hover:border-gray-300"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="category"
+                  value={opt.value}
+                  checked={category === opt.value}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="sr-only"
+                />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* 별점 */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            별점 <span className="text-gray-400 font-normal">(선택사항)</span>
+          </label>
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                onClick={() => setRating(star === rating ? null : star)}
+                onMouseEnter={() => setHoverRating(star)}
+                onMouseLeave={() => setHoverRating(null)}
+                className="p-0.5 transition-transform hover:scale-110"
+              >
+                <Star
+                  className={`h-6 w-6 ${
+                    star <= displayRating
+                      ? "fill-yellow-400 text-yellow-400"
+                      : "text-gray-300"
+                  }`}
+                />
+              </button>
+            ))}
+            {rating && (
+              <span className="ml-2 text-sm text-gray-500">{rating}점</span>
+            )}
+          </div>
         </div>
 
         <div className="space-y-2">
