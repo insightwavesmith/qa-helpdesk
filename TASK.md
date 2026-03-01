@@ -1,151 +1,160 @@
-# TASK: 크론 수집 안정화 + 수강후기 탭 강화
+# TASK: UI/UX 개선 + 버그 수정 (7항목)
 
 ## 목표
-1. 데이터 수집 크론이 실패해도 아무도 모르는 구조를 고쳐서, 실패 시 즉시 알 수 있게 한다.
-2. 수강후기 페이지를 강화해서 오프라인/졸업생/유튜브 후기를 체계적으로 쌓을 수 있게 한다.
+메인페이지 레이아웃 변경, 정보공유 글 가독성 CSS 개선, 총가치각도기 버그 수정, 회원 관리 버그 수정을 한 번에 처리한다.
 
 ## 빌드/테스트
 - `npm run build` 성공 필수
-- 테스트 계정: smith.kim@inwv.co / test1234! (관리자), student@test.com / test1234! (수강생)
-- 프로덕션: https://bscamp.vercel.app
+- 테스트 계정: smith@test.com / test1234! (admin), student@test.com / test1234! (student)
+- 확인 URL: https://bscamp.vercel.app
 
 ---
 
-# Part A. 크론 수집 안정화
-
-## A1. 크론 실행 이력 테이블 + 실패 알림
+## T1. SummaryCards 하드코딩 데이터 제거
 
 ### 현재 동작
-- 크론(collect-daily, collect-mixpanel, collect-benchmarks)이 실패하면 console.error만 찍힘
-- 실행 이력이 어디에도 저장 안 됨
-- 2/6~2/25 20일 공백이 발생했는데 아무도 몰랐음
+- `src/components/protractor/SummaryCards.tsx` 17~20줄에 더미 데이터가 하드코딩됨
+  - 총 광고비: 834,500 / 총 클릭: 4,280 / 총 구매: 132 / ROAS: 2.85
+- DB(daily_ad_insights)를 삭제해도 이 수치가 계속 표시됨
 
 ### 기대 동작
-1. `cron_runs` 테이블 생성:
-   - id, cron_name (text), started_at (timestamptz), finished_at (timestamptz), status ('success'|'error'|'partial'), records_count (int), error_message (text)
-2. 각 크론 시작 시 row INSERT, 완료 시 UPDATE (status, records_count, finished_at)
-3. 에러 발생 시 status='error', error_message에 에러 내용 저장
-4. 부분 실패 (일부 계정만 실패) 시 status='partial'
-5. `/api/cron/health` 엔드포인트 추가:
-   - 최근 24시간 내 collect-daily 실행 0건이면 → `{ healthy: false, missing: ["collect-daily"] }`
-   - 관리자만 접근 가능 (requireAdmin)
+- SummaryCards가 실제 DB 데이터(daily_ad_insights)를 받아서 표시
+- 데이터가 없으면 "데이터 없음" 또는 컴포넌트 미표시
+- PerformanceTrendChart.tsx에도 하드코딩된 차트 데이터가 있으면 동일하게 처리
 
 ### 하지 말 것
-- 외부 알림 서비스 연동 (슬랙 webhook 등) — 나중에 별도로
-- 기존 크론 로직 변경 — 이력 기록만 추가
-
-## A2. collect-daily 재시도 로직
-
-### 현재 동작
-- Meta API 호출 실패 시 해당 계정 skip → 그날 데이터 영구 누락
-- 재시도 없음
-
-### 기대 동작
-1. Meta API 호출 실패 시 최대 2회 재시도 (3초, 6초 대기)
-2. 재시도 후에도 실패하면 cron_runs에 partial 기록
-3. 429 (rate limit) 응답 시 Retry-After 헤더 존중
-
-### 하지 말 것
-- collect-mixpanel, collect-benchmarks는 건드리지 않음 (이미 재시도 있음)
-- 전체 구조 변경 — 기존 try/catch 안에 재시도만 추가
-
-## A3. collect-benchmarks 스케줄 수정
-
-### 현재 동작
-- vercel.json: `0 17 * * 1` (UTC 월요일 17시 = KST 화요일 02시)
-- 코드 주석: "매주 월요일 KST 11:00" → 불일치
-
-### 기대 동작
-- 주석을 실제 스케줄에 맞게 수정: "매주 화요일 KST 02:00"
-- 또는 Smith님 의도가 월요일이면 스케줄을 `0 2 * * 1` (UTC 월 02시 = KST 월 11시)로 변경
-
-### 하지 말 것
-- 벤치마크 수집 로직 변경
+- daily_ad_insights 테이블 구조 변경 금지
+- 새 API 엔드포인트 만들지 말 것 — 기존 protractor API에서 데이터 전달
 
 ---
 
-# Part B. 수강후기 탭 강화
-
-## B1. 후기 작성폼에 기수/카테고리 추가
+## T2. 총가치각도기 좌우 여백 수정
 
 ### 현재 동작
-- 후기 작성 시 제목 + 본문 + 이미지(최대 3장)만 입력 가능
-- 몇 기인지, 어떤 종류의 후기인지 구분 없음
+- 총가치각도기(/protractor) 페이지가 좌우 여백 없이 풀 너비로 표시됨
+- 다른 페이지(대시보드 등)는 `max-w-6xl mx-auto px-4`로 제한됨
 
 ### 기대 동작
-1. reviews 테이블에 컬럼 추가:
-   - `cohort` (text, nullable) — 기수 ("1기", "2기", ...)
-   - `category` (text, default 'general') — 'general'(일반), 'graduation'(졸업), 'weekly'(주차별)
-   - `rating` (int, nullable, 1~5) — 별점
-2. 작성폼에 필드 추가:
-   - 기수 선택 (드롭다운: 1기~5기, 직접입력)
-   - 카테고리 선택 (일반후기 / 졸업후기 / 주차별 후기)
-   - 별점 (1~5 별)
-3. 기존 후기 데이터는 cohort=null, category='general'로 유지
+- 총가치각도기도 다른 페이지와 동일한 max-width + padding 적용
+- 기준: `src/app/(main)/dashboard/student-home.tsx` → `max-w-6xl mx-auto px-4`
 
 ### 하지 말 것
-- 기존 후기 데이터 마이그레이션 — null 그대로
-- 댓글/좋아요 기능 — Smith님 결정으로 불필요
-
-## B2. 후기 목록 필터링 + 정렬
-
-### 현재 동작
-- 전체 후기가 시간순으로만 표시
-- 필터 없음
-
-### 기대 동작
-1. 상단에 필터 UI:
-   - 기수별 필터 (전체 / 1기 / 2기 / ...)
-   - 카테고리별 필터 (전체 / 일반 / 졸업 / 주차별)
-2. 정렬: 최신순 (기본) / 별점 높은순
-3. 후기 카드에 기수 배지 + 별점 표시
-
-### 하지 말 것
-- 검색 기능 — 아직 불필요
-- 무한 스크롤 — 기존 페이지네이션 유지
-
-## B3. 유튜브 후기 영상 임베드
-
-### 현재 동작
-- 후기 = 텍스트 + 이미지만
-- 유튜브 수료생 인터뷰 시리즈(Ep.1~9+)가 있지만 QA Helpdesk에서 볼 수 없음
-
-### 기대 동작
-1. 관리자가 후기에 유튜브 URL 추가 가능 (관리자 전용 기능)
-   - reviews 테이블에 `youtube_url` (text, nullable) 컬럼 추가
-   - 관리자 페이지에서 후기 등록 시 유튜브 URL 입력란
-2. 후기 상세 페이지에서 유튜브 영상 임베드 표시
-   - `<iframe>` 방식, 반응형 (16:9)
-3. 후기 목록에서 영상 후기는 🎬 아이콘으로 구분
-4. 관리자만 유튜브 후기 등록 가능 (수강생은 텍스트+이미지만)
-
-### 하지 말 것
-- 유튜브 API 연동 — URL만 저장하고 iframe 임베드
-- 자동 크롤링 — 수동 등록
-
-## B4. 관리자 후기 관리 페이지
-
-### 현재 동작
-- 관리자가 후기를 삭제만 할 수 있음
-- 후기 등록/수정 불가
-
-### 기대 동작
-1. /admin/reviews 페이지 신규:
-   - 전체 후기 목록 (작성자, 기수, 카테고리, 별점, 날짜)
-   - 삭제 버튼 (기존)
-   - 유튜브 후기 등록 버튼 → 제목, 유튜브 URL, 기수, 카테고리 입력
-   - 후기 고정(pin) 기능 — 상단 고정 후기 지정
-2. reviews 테이블에 `is_pinned` (boolean, default false) 컬럼
-3. 고정된 후기는 목록 최상단에 표시
-
-### 하지 말 것
-- 수강생 후기 수정 기능 — 작성자 본인도 수정 불가 (삭제 후 재작성)
-- 후기 승인 프로세스 — 바로 게시
+- 다른 페이지의 여백을 변경하지 말 것
 
 ---
 
-## 참고 파일
-- 크론: `src/app/api/cron/collect-daily/route.ts`, `collect-mixpanel/route.ts`, `collect-benchmarks/route.ts`
-- 후기: `src/app/(main)/reviews/`, `src/actions/reviews.ts`
-- 디자인: Primary #F75D5D, Pretendard 폰트, 라이트 모드
-- 유튜브 채널: https://www.youtube.com/@1bpluschool
+## T3. 회원 삭제 조건 수정
+
+### 현재 동작
+- `src/app/(main)/admin/members/member-detail-modal.tsx` 239줄
+- `canDelete = profile.role === "lead" || profile.role === "member"`
+- inactive/student 등은 삭제 버튼 비활성화
+
+### 기대 동작
+- inactive 상태 회원도 삭제 가능
+- `canDelete = profile.role === "lead" || profile.role === "member" || profile.role === "inactive"`
+
+### 하지 말 것
+- 삭제 로직(handleDelete) 자체를 변경하지 말 것
+
+---
+
+## T4. 정보공유 글 CSS 개선
+
+### 현재 동작
+- 정보공유 글 상세 페이지에서 마크다운이 기본 스타일로 렌더링됨
+- blockquote, 체크리스트, 숫자 강조 등 시각적 구분이 약함
+
+### 기대 동작
+- **blockquote**: 좌측 빨간 바(#F75D5D, 4px) + 연한 배경(#fef2f2) + padding
+- **체크리스트** (✅, ☐, ☑): 배경 박스 + 체크 아이콘 스타일
+- **숫자 강조**: h2 앞 번호(## 1. ~)에 빨간색 번호 스타일
+- **인용문 출처**: blockquote 내 "—" 뒤 텍스트를 cite 스타일로
+- **이미지 캡션**: 이미지 아래 볼드 텍스트를 캡션 스타일로
+
+### 참고
+- 목업: https://mozzi-reports.vercel.app/reports/mockup/readability-ab.html (After 컬럼)
+- 정보공유 글 렌더링 위치: 마크다운 → HTML 변환 후 표시되는 CSS
+- bscamp 기존 디자인 시스템 유지: Pretendard, #F75D5D, #f8f9fa
+
+### 하지 말 것
+- 마크다운 → HTML 변환 로직 변경 금지
+- 다른 페이지의 글로벌 CSS에 영향 주지 말 것 — 정보공유 상세 페이지에만 적용
+
+---
+
+## T5. 정보공유 AI 프롬프트 개선
+
+### 현재 동작
+- `src/actions/contents.ts` 508~531줄 CONTENT_BASE_STYLE
+- `src/actions/contents.ts` 533~548줄 education 타입 프롬프트
+- 도입부 → 넘버링 h2 → 테이블 → blockquote → 3줄 요약 구조
+
+### 기대 동작
+- education 프롬프트에 추가:
+  1. **상단 3줄 요약 박스**: 글 시작 전 `> **📌 핵심 요약**` blockquote로 3줄 요약
+  2. **핵심 숫자 블록**: 섹션 시작 시 `- **6억 건** — 설명` 형태로 핵심 수치 먼저
+  3. **체크리스트**: 실무 점검 항목은 `- ✅ ~하고 있나요?` 형태
+  4. **섹션 구분**: `---` 구분선을 각 h2 앞에 필수
+- 기존 구조(넘버링 h2, blockquote 하이라이트, 볼드 팁) 유지
+
+### 하지 말 것
+- CONTENT_BASE_STYLE의 메타 광고 지식 섹션 변경 금지
+- 다른 타입(case_study, webinar 등) 프롬프트 변경 금지
+- RAG 검색 로직(knowledge.ts) 변경 금지
+
+---
+
+## T6. 메인페이지 순서 변경
+
+### 현재 동작
+- `src/app/(main)/dashboard/student-home.tsx`
+- 순서: 검색바 → 광고성과 → 공지사항 → 최근 Q&A → 정보공유 최신글
+
+### 기대 동작
+- 순서: **신뢰배너(새로 추가)** → 광고성과 → 공지사항 → 최근 Q&A → 정보공유 최신글
+- 검색바("무엇이든 물어보세요") 제거
+- 신뢰배너 구성:
+  - 좌측: Meta Business Partners badge 이미지 (`/images/meta-partner/badge-light.png`, 높이 44px)
+  - 우측: 제목 "Meta가 인증한 비즈니스 파트너" + 설명 "자사몰사관학교는 Meta Business Partner로서 검증된 메타 광고 교육을 제공합니다."
+  - 스타일: `bg-[#f8faff] border border-[#e8edf5] rounded-xl p-5 flex items-center gap-5`
+
+### 참고
+- 목업: https://mozzi-reports.vercel.app/reports/mockup/main-v5.html
+- 로고 파일: `public/images/meta-partner/badge-light.png` (이미 존재)
+
+### 하지 말 것
+- 광고성과 위젯(StudentAdSummary) 컴포넌트 내부 변경 금지
+- 공지/QA/정보공유 컴포넌트 변경 금지
+- 사이드바(Sidebar.tsx) 변경 금지
+
+---
+
+## T7. 프로필 카드 적용 (이메일 + 정보공유)
+
+### 현재 동작
+- 이메일 템플릿: `src/lib/email-default-template.ts` 37줄 — 80px 프로필 사진 + 이름/역할/설명
+- 정보공유 글 하단: 프로필 카드 없음
+
+### 기대 동작
+- 이메일 프로필 카드:
+  - 사진(80px 원형) + "스미스 / 자사몰사관학교 코치"
+  - 설명: "Meta가 인증한 비즈니스 파트너 / 수강생 자사몰매출 450억+"
+  - 하단: Meta Business Partners 인라인 로고 (`/images/meta-partner/inline-positive.png`, 높이 36px)
+- 정보공유 글 상세 하단:
+  - 동일한 프로필 카드 컴포넌트로 적용
+  - border-top 구분선 + padding
+
+### 참고
+- 목업: https://mozzi-reports.vercel.app/reports/mockup/profile-card-final.html
+- 이미지: `public/images/meta-partner/inline-positive.png` (이미 존재)
+- 프로필 사진: `public/images/meta-partner/profile-smith.png` (이미 존재)
+
+### 하지 말 것
+- 이메일 HTML 구조를 대폭 변경하지 말 것 — 프로필 영역만 수정
+- 자격증 배지 넣지 말 것 — 인라인 로고만
+
+---
+
+## 리뷰 결과
+(에이전트팀 리뷰 후 기록)
