@@ -73,7 +73,7 @@
 - **이미지 캡션**: 이미지 아래 볼드 텍스트를 캡션 스타일로
 
 ### 참고
-- 목업: https://mozzi-reports.vercel.app/reports/mockup/readability-ab.html (After 컬럼)
+- 목업 파일: docs/mockups/readability-ab.html (After 컬럼 참고)
 - 정보공유 글 렌더링 위치: 마크다운 → HTML 변환 후 표시되는 CSS
 - bscamp 기존 디자인 시스템 유지: Pretendard, #F75D5D, #f8f9fa
 
@@ -120,7 +120,7 @@
   - 스타일: `bg-[#f8faff] border border-[#e8edf5] rounded-xl p-5 flex items-center gap-5`
 
 ### 참고
-- 목업: https://mozzi-reports.vercel.app/reports/mockup/main-v5.html
+- 목업 파일: docs/mockups/main-page.html
 - 로고 파일: `public/images/meta-partner/badge-light.png` (이미 존재)
 
 ### 하지 말 것
@@ -146,7 +146,7 @@
   - border-top 구분선 + padding
 
 ### 참고
-- 목업: https://mozzi-reports.vercel.app/reports/mockup/profile-card-final.html
+- 목업 파일: docs/mockups/profile-card.html
 - 이미지: `public/images/meta-partner/inline-positive.png` (이미 존재)
 - 프로필 사진: `public/images/meta-partner/profile-smith.png` (이미 존재)
 
