@@ -305,6 +305,16 @@
       },
       "completedAt": "2026-03-01",
       "notes": "기수/카테고리 필터 드롭다운 + useMemo 클라이언트 필터링 + 빈 상태"
+    },
+    "t10-email-meta-logo": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/t10-email-meta-logo.plan.md",
+        "design": "02-design/features/t10-email-meta-logo.design.md"
+      },
+      "completedAt": "2026-03-02",
+      "notes": "SMITH_PROFILE_ROW 인라인 로고 이미지 URL을 Supabase → bscamp.vercel.app으로 변경"
     }
   },
   "phaseMapping": {
