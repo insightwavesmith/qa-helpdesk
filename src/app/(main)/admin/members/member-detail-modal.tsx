@@ -236,7 +236,7 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
     }
   };
 
-  const canDelete = profile.role === "lead" || profile.role === "member";
+  const canDelete = profile.role === "lead" || profile.role === "member" || profile.role === "inactive";
   const role = roleLabels[profile.role] || roleLabels.lead;
 
   return (

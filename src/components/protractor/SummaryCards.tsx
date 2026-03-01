@@ -13,14 +13,15 @@ interface SummaryCardsProps {
   cards?: SummaryCardData[];
 }
 
-const defaultCards: SummaryCardData[] = [
-  { label: "총 광고비", value: "834,500", prefix: "₩", changePercent: 8, changeLabel: "전기간 대비" },
-  { label: "총 클릭", value: "4,280", changePercent: 12, changeLabel: "전기간 대비" },
-  { label: "총 구매", value: "132", changePercent: 18, changeLabel: "전기간 대비" },
-  { label: "ROAS", value: "2.85", changePercent: 5, changeLabel: "전기간 대비" },
-];
+export function SummaryCards({ cards }: SummaryCardsProps) {
+  if (!cards || cards.length === 0) {
+    return (
+      <div className="rounded-lg border border-gray-200 bg-white p-6 text-center">
+        <p className="text-sm text-gray-400">광고 데이터가 없습니다</p>
+      </div>
+    );
+  }
 
-export function SummaryCards({ cards = defaultCards }: SummaryCardsProps) {
   return (
     <div className="grid grid-cols-3 gap-2 lg:grid-cols-6">
       {cards.map((card) => {

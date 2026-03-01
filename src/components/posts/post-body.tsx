@@ -60,6 +60,10 @@ function markdownToHtml(md: string): string {
   // Headings (h2, h3 only — h1 is the title)
   html = html.replace(/^### (.+)$/gm, "<h3>$1</h3>");
   let h2Index = 0;
+  html = html.replace(/^## (\d+)\.\s*(.+)$/gm, (_match, num, title) => {
+    h2Index++;
+    return `<h2 id="heading-${h2Index}"><span class="section-number">${num}</span>${title}</h2>`;
+  });
   html = html.replace(/^## (.+)$/gm, (_match, title) => {
     h2Index++;
     return `<h2 id="heading-${h2Index}">${title}</h2>`;
@@ -82,6 +86,9 @@ function markdownToHtml(md: string): string {
 
   // Backslash escapes (remove trailing backslashes used as line breaks)
   html = html.replace(/\\$/gm, "");
+
+  // Checklist items (✅, ☐, ☑ at start of list item)
+  html = html.replace(/^[\-\*] ((?:✅|☐|☑|✓|✔)\s*.+)$/gm, '<li class="checklist-item">$1</li>');
 
   // Unordered list
   html = html.replace(/^[\-\*] (.+)$/gm, "<li>$1</li>");

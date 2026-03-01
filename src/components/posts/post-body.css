@@ -28,15 +28,68 @@
 
 .post-body blockquote {
   border-left: 4px solid #F75D5D;
-  background: #FFF5F5;
-  padding: 16px;
-  margin: 16px 0;
+  background: #fef2f2;
+  padding: 16px 20px;
+  margin: 20px 0;
   border-radius: 0 8px 8px 0;
-  font-style: italic;
+  font-style: normal;
 }
 
 .post-body blockquote p {
   margin-bottom: 0;
+}
+
+/* 인용문 출처 (— 뒤 텍스트) */
+.post-body blockquote p:last-child em {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #94a3b8;
+  font-style: normal;
+}
+
+/* 체크리스트 스타일 */
+.post-body li:has(> :first-child) {
+  list-style: none;
+}
+
+.post-body .checklist-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  list-style: none;
+  position: relative;
+  padding-left: 14px;
+}
+
+/* 숫자 강조 (h2 앞 번호) - 번호 뱃지 스타일 */
+.post-body h2 .section-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #F75D5D;
+  color: #ffffff;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 700;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+/* 이미지 캡션 스타일 */
+.post-body .post-image-figure + p strong:only-child,
+.post-body img + p strong:only-child {
+  display: block;
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+  margin-top: -8px;
+  margin-bottom: 16px;
 }
 
 .post-body .table-wrapper {

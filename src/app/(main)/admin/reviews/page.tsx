@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -43,6 +43,10 @@ export default function AdminReviewsPage() {
   const [actionId, setActionId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
 
+  // T9: 필터 상태
+  const [filterCohort, setFilterCohort] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+
   const fetchReviews = async () => {
     const result = await getReviewsAdmin();
     if (!result.error) {
@@ -52,8 +56,18 @@ export default function AdminReviewsPage() {
   };
 
   useEffect(() => {
-    fetchReviews();
+    void fetchReviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // T9: 클라이언트 필터링
+  const filteredReviews = useMemo(() => {
+    return reviews.filter((review) => {
+      if (filterCohort && review.cohort !== filterCohort) return false;
+      if (filterCategory && review.category !== filterCategory) return false;
+      return true;
+    });
+  }, [reviews, filterCohort, filterCategory]);
 
   const handleTogglePin = async (id: string) => {
     setActionId(id);
@@ -98,8 +112,37 @@ export default function AdminReviewsPage() {
           onClick={() => setShowModal(true)}
         >
           <Plus className="h-4 w-4 mr-1" />
-          유튜브 후기 등록
+          후기 등록
         </Button>
+      </div>
+
+      {/* T9: 필터 바 */}
+      <div className="flex items-center gap-3">
+        <select
+          value={filterCohort}
+          onChange={(e) => setFilterCohort(e.target.value)}
+          className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D]/30 focus:border-[#F75D5D]"
+        >
+          <option value="">전체 기수</option>
+          {["1기", "2기", "3기", "4기", "5기"].map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+        <select
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+          className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D]/30 focus:border-[#F75D5D]"
+        >
+          <option value="">전체 카테고리</option>
+          <option value="general">일반후기</option>
+          <option value="graduation">졸업후기</option>
+          <option value="weekly">주차별 후기</option>
+        </select>
+        <span className="text-sm text-gray-500">
+          {filteredReviews.length}건
+        </span>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -118,7 +161,7 @@ export default function AdminReviewsPage() {
               </tr>
             </thead>
             <tbody>
-              {reviews.map((review) => (
+              {filteredReviews.map((review) => (
                 <tr key={review.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1.5">
@@ -196,10 +239,12 @@ export default function AdminReviewsPage() {
                   </td>
                 </tr>
               ))}
-              {reviews.length === 0 && (
+              {filteredReviews.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
-                    등록된 후기가 없습니다.
+                    {filterCohort || filterCategory
+                      ? "필터 조건에 맞는 후기가 없습니다."
+                      : "등록된 후기가 없습니다."}
                   </td>
                 </tr>
               )}
@@ -209,7 +254,7 @@ export default function AdminReviewsPage() {
       </div>
 
       {showModal && (
-        <YouTubeReviewModal
+        <ReviewModal
           onClose={() => setShowModal(false)}
           onCreated={() => {
             setShowModal(false);
@@ -221,7 +266,8 @@ export default function AdminReviewsPage() {
   );
 }
 
-function YouTubeReviewModal({
+// T8: 후기 등록 모달 (별점 + 내용 필드 추가, 유튜브 URL 선택)
+function ReviewModal({
   onClose,
   onCreated,
 }: {
@@ -229,9 +275,12 @@ function YouTubeReviewModal({
   onCreated: () => void;
 }) {
   const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [cohort, setCohort] = useState("");
   const [category, setCategory] = useState("general");
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
   const isValidYouTubeUrl = (url: string) =>
@@ -239,11 +288,15 @@ function YouTubeReviewModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !youtubeUrl.trim()) {
-      toast.error("제목과 유튜브 URL을 입력해주세요.");
+    if (!title.trim()) {
+      toast.error("제목을 입력해주세요.");
       return;
     }
-    if (!isValidYouTubeUrl(youtubeUrl)) {
+    if (!content.trim()) {
+      toast.error("내용을 입력해주세요.");
+      return;
+    }
+    if (youtubeUrl.trim() && !isValidYouTubeUrl(youtubeUrl)) {
       toast.error("유효한 유튜브 URL을 입력해주세요.");
       return;
     }
@@ -251,9 +304,11 @@ function YouTubeReviewModal({
     setSubmitting(true);
     const result = await createAdminReview({
       title: title.trim(),
-      youtubeUrl: youtubeUrl.trim(),
+      content: content.trim(),
+      youtubeUrl: youtubeUrl.trim() || undefined,
       cohort: cohort || null,
       category,
+      rating: rating > 0 ? rating : null,
     });
 
     if (result.error) {
@@ -262,15 +317,15 @@ function YouTubeReviewModal({
       return;
     }
 
-    toast.success("유튜브 후기가 등록되었습니다.");
+    toast.success("후기가 등록되었습니다.");
     onCreated();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-900">유튜브 후기 등록</h2>
+          <h2 className="text-lg font-bold text-gray-900">후기 등록</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="h-5 w-5" />
           </button>
@@ -287,13 +342,57 @@ function YouTubeReviewModal({
             />
           </div>
 
+          {/* T8: 별점 선택 */}
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">유튜브 URL</label>
+            <label className="block text-sm font-medium text-gray-700">별점</label>
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setRating(s)}
+                  onMouseEnter={() => setHoverRating(s)}
+                  onMouseLeave={() => setHoverRating(0)}
+                  className="p-0.5 transition-colors"
+                >
+                  <Star
+                    className={`h-6 w-6 ${
+                      s <= (hoverRating || rating)
+                        ? "fill-yellow-400 text-yellow-400"
+                        : "text-gray-200"
+                    }`}
+                  />
+                </button>
+              ))}
+              {rating > 0 && (
+                <span className="ml-2 text-sm text-gray-500">{rating}점</span>
+              )}
+            </div>
+          </div>
+
+          {/* T8: 내용 텍스트 영역 */}
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">
+              내용 <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              placeholder="후기 내용을 입력해주세요..."
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              required
+              rows={4}
+              className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D]/30 focus:border-[#F75D5D] resize-y min-h-[80px]"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">
+              유튜브 URL <span className="text-gray-400 text-xs">(선택)</span>
+            </label>
             <Input
               placeholder="https://www.youtube.com/watch?v=..."
               value={youtubeUrl}
               onChange={(e) => setYoutubeUrl(e.target.value)}
-              required
             />
           </div>
 

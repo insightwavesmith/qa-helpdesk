@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Search } from "lucide-react";
+import Image from "next/image";
 import { getPosts, getNotices } from "@/actions/posts";
 import { getQuestions } from "@/actions/questions";
 import { StudentAdSummary, type AdSummaryData } from "./student-ad-summary";
@@ -102,23 +102,26 @@ export async function StudentHome({}: StudentHomeProps) {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      {/* 검색바 */}
+      {/* 신뢰배너 - Meta Business Partners */}
       <div className="mb-12">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-bold text-center mb-6 text-text-main">
-            궁금한 것이 있으신가요?
-          </h1>
-          <Link href="/questions" className="block">
-            <div className="relative search-focus rounded-xl">
-              <input
-                type="text"
-                placeholder="질문 검색하기..."
-                className="w-full px-6 py-4 text-lg border border-border-color rounded-xl focus:outline-none transition-shadow bg-card-bg text-text-main"
-                readOnly
-              />
-              <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 text-primary w-6 h-6" />
-            </div>
-          </Link>
+        <div className="bg-[#f8faff] border border-[#e8edf5] rounded-xl p-5 flex items-center gap-5 max-sm:flex-col max-sm:text-center max-sm:gap-3">
+          <div className="flex-shrink-0">
+            <Image
+              src="/images/meta-partner/badge-light.png"
+              alt="Meta Business Partners"
+              width={88}
+              height={44}
+              className="h-[44px] w-auto"
+            />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-[#1a1a2e]">
+              Meta가 인증한 비즈니스 파트너
+            </h2>
+            <p className="text-sm text-[#64748b] mt-1">
+              자사몰사관학교는 Meta Business Partner로서 검증된 메타 광고 교육을 제공합니다.
+            </p>
+          </div>
         </div>
       </div>
 

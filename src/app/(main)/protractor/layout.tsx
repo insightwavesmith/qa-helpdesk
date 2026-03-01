@@ -39,5 +39,9 @@ export default async function ProtractorLayout({
     redirect(profile.role === "member" ? "/dashboard" : "/pending");
   }
 
-  return <>{children}</>;
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      {children}
+    </div>
+  );
 }

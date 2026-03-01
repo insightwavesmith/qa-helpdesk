@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-01T12:00:00.000Z",
+  "lastUpdated": "2026-03-01T15:00:00.000Z",
   "features": {
     "bugfix-autocomplete-secret": {
       "phase": "completed",
@@ -206,6 +206,105 @@
         "design": "02-design/features/reviews-enhancement.design.md"
       },
       "notes": "B1 기수/카테고리/별점, B2 필터/정렬, B3 유튜브 임베드, B4 관리자 페이지"
+    },
+    "t1-summary-cards-hardcoded": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/t1-summary-cards-hardcoded.plan.md",
+        "design": "02-design/features/t1-summary-cards-hardcoded.design.md",
+        "analysis": "03-analysis/t1-t9-uiux-bugfix.analysis.md"
+      },
+      "completedAt": "2026-03-01",
+      "notes": "하드코딩 defaultCards/defaultData 제거, 빈 상태 UI 추가"
+    },
+    "t2-protractor-margin": {
+      "phase": "completed",
+      "matchRate": 90,
+      "documents": {
+        "plan": "01-plan/features/t2-protractor-margin.plan.md",
+        "design": "02-design/features/t2-protractor-margin.design.md",
+        "analysis": "03-analysis/t1-t9-uiux-bugfix.analysis.md"
+      },
+      "completedAt": "2026-03-01",
+      "notes": "layout.tsx에 max-w-6xl mx-auto px-4 py-8 래퍼 추가"
+    },
+    "t3-member-delete-condition": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/t3-member-delete-condition.plan.md",
+        "design": "02-design/features/t3-member-delete-condition.design.md",
+        "analysis": "03-analysis/t1-t9-uiux-bugfix.analysis.md"
+      },
+      "completedAt": "2026-03-01",
+      "notes": "canDelete에 inactive 조건 추가 (1줄 변경)"
+    },
+    "t4-content-css-readability": {
+      "phase": "completed",
+      "matchRate": 80,
+      "documents": {
+        "plan": "01-plan/features/t4-content-css-readability.plan.md",
+        "design": "02-design/features/t4-content-css-readability.design.md",
+        "analysis": "03-analysis/t1-t9-uiux-bugfix.analysis.md"
+      },
+      "completedAt": "2026-03-01",
+      "notes": "blockquote/checklist/section-number/cite/caption CSS 개선. 대안 패턴 사용"
+    },
+    "t5-content-ai-prompt": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/t5-content-ai-prompt.plan.md",
+        "design": "02-design/features/t5-content-ai-prompt.design.md",
+        "analysis": "03-analysis/t1-t9-uiux-bugfix.analysis.md"
+      },
+      "completedAt": "2026-03-01",
+      "notes": "education 프롬프트 11항목 추가 (3줄요약/구분선/핵심수치/체크리스트)"
+    },
+    "t6-main-page-reorder": {
+      "phase": "completed",
+      "matchRate": 90,
+      "documents": {
+        "plan": "01-plan/features/t6-main-page-reorder.plan.md",
+        "design": "02-design/features/t6-main-page-reorder.design.md",
+        "analysis": "03-analysis/t1-t9-uiux-bugfix.analysis.md"
+      },
+      "completedAt": "2026-03-01",
+      "notes": "검색바 제거, Meta 신뢰배너 추가, 섹션 순서 변경. 모바일 반응형 추가"
+    },
+    "t7-profile-card": {
+      "phase": "completed",
+      "matchRate": 90,
+      "documents": {
+        "plan": "01-plan/features/t7-profile-card.plan.md",
+        "design": "02-design/features/t7-profile-card.design.md",
+        "analysis": "03-analysis/t1-t9-uiux-bugfix.analysis.md"
+      },
+      "completedAt": "2026-03-01",
+      "notes": "이메일 프로필 카드 업데이트 + 정보공유 글 하단 AuthorProfileCard 추가"
+    },
+    "t8-admin-review-form": {
+      "phase": "completed",
+      "matchRate": 90,
+      "documents": {
+        "plan": "01-plan/features/t8-admin-review-form.plan.md",
+        "design": "02-design/features/t8-admin-review-form.design.md",
+        "analysis": "03-analysis/t1-t9-uiux-bugfix.analysis.md"
+      },
+      "completedAt": "2026-03-01",
+      "notes": "별점 선택기 + 내용 textarea 추가, 유튜브 URL 선택, 별점 범위 검증"
+    },
+    "t9-admin-review-filter": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/t9-admin-review-filter.plan.md",
+        "design": "02-design/features/t9-admin-review-filter.design.md",
+        "analysis": "03-analysis/t1-t9-uiux-bugfix.analysis.md"
+      },
+      "completedAt": "2026-03-01",
+      "notes": "기수/카테고리 필터 드롭다운 + useMemo 클라이언트 필터링 + 빈 상태"
     }
   },
   "phaseMapping": {

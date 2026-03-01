@@ -126,13 +126,14 @@ export async function createReview(data: {
   return { data: review, error: null };
 }
 
-// 관리자 유튜브 후기 등록
+// 관리자 후기 등록 (유튜브 URL 선택, 텍스트 내용 필수)
 export async function createAdminReview(data: {
   title: string;
-  content?: string;
-  youtubeUrl: string;
+  content: string;
+  youtubeUrl?: string;
   cohort?: string | null;
   category?: string;
+  rating?: number | null;
 }) {
   const supabase = await createClient();
   const {
@@ -148,7 +149,12 @@ export async function createAdminReview(data: {
     .single();
 
   if (profile?.role !== "admin") {
-    return { error: "관리자만 유튜브 후기를 등록할 수 있습니다." };
+    return { error: "관리자만 후기를 등록할 수 있습니다." };
+  }
+
+  // 별점 범위 검증
+  if (data.rating != null && (data.rating < 1 || data.rating > 5)) {
+    return { error: "별점은 1~5 사이 값이어야 합니다." };
   }
 
   const { data: review, error } = await svc
@@ -156,10 +162,11 @@ export async function createAdminReview(data: {
     .insert({
       author_id: user.id,
       title: data.title,
-      content: data.content || "",
-      youtube_url: data.youtubeUrl,
+      content: data.content,
+      youtube_url: data.youtubeUrl || null,
       cohort: data.cohort || null,
       category: data.category || "general",
+      rating: data.rating || null,
     })
     .select("id")
     .single();
@@ -170,6 +177,7 @@ export async function createAdminReview(data: {
   }
 
   revalidatePath("/reviews");
+  revalidatePath("/admin/reviews");
   return { data: review, error: null };
 }
 

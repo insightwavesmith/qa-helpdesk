@@ -9,6 +9,7 @@ import { PostToc } from "@/components/posts/post-toc";
 import { PostBody } from "@/components/posts/post-body";
 import { PostRelated } from "@/components/posts/post-related";
 import { NewsletterCta } from "@/components/posts/newsletter-cta";
+import { AuthorProfileCard } from "@/components/posts/author-profile-card";
 import { InlineEditor } from "@/components/post/InlineEditor";
 import { PublishBar } from "@/components/post/PublishBar";
 import { updatePostInline } from "@/actions/posts";
@@ -241,6 +242,9 @@ export default function PostDetailClient({
 
       {/* Body */}
       <PostBody content={post.content} />
+
+      {/* Author Profile Card */}
+      <AuthorProfileCard />
 
       {/* Related Posts */}
       <PostRelated posts={relatedPosts} />
