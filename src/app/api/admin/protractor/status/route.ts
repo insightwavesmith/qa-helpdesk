@@ -10,7 +10,7 @@ export async function GET() {
     // 1) 전체 계정 목록
     const { data: accounts, error: accountsError } = await svc
       .from("ad_accounts")
-      .select("id, account_id, account_name, created_at")
+      .select("id, account_id, account_name, mixpanel_project_id, mixpanel_board_id, created_at")
       .order("created_at", { ascending: false });
 
     if (accountsError) throw accountsError;
@@ -60,7 +60,7 @@ export async function GET() {
     }
 
     // 3) service_secrets 유무 체크
-    const secretKeyNames = accountIds.map((id) => `secret_act_${id}`);
+    const secretKeyNames = accountIds.map((id) => `secret_${id}`);
     const { data: secrets } = await svc
       .from("service_secrets" as never)
       .select("key_name" as never)
@@ -73,15 +73,45 @@ export async function GET() {
       )
     );
 
+    // 3b) daily_mixpanel_insights 최근 7일 데이터 존재 여부
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const sevenDaysAgoStr = sevenDaysAgo.toISOString().split("T")[0];
+
+    const { data: mixpanelData } = await svc
+      .from("daily_mixpanel_insights" as never)
+      .select("account_id, date" as never)
+      .in("account_id" as never, accountIds)
+      .gte("date" as never, sevenDaysAgoStr)
+      .order("date" as never, { ascending: false });
+
+    const mixpanelDataSet = new Set(
+      ((mixpanelData || []) as { account_id: string }[]).map((d) => d.account_id)
+    );
+
     // 4) 결과 조합
     const result = (accounts || []).map((acc) => {
       const meta = metaStatusMap.get(acc.account_id);
-      const hasSecret = secretSet.has(acc.account_id);
 
       const metaOk = !!meta;
-      const mixpanelOk = false;
 
-      const mixpanelState: "no_data" | "not_configured" = hasSecret ? "no_data" : "not_configured";
+      const hasProjectId = !!acc.mixpanel_project_id;
+      const hasBoardId = !!acc.mixpanel_board_id;
+      const hasData = mixpanelDataSet.has(acc.account_id);
+
+      let mixpanelState: "ok" | "no_board" | "not_configured";
+      let mixpanelOk: boolean;
+
+      if (hasProjectId && hasData && hasBoardId) {
+        mixpanelState = "ok";
+        mixpanelOk = true;
+      } else if (hasProjectId && hasData && !hasBoardId) {
+        mixpanelState = "no_board";
+        mixpanelOk = false;
+      } else {
+        mixpanelState = "not_configured";
+        mixpanelOk = false;
+      }
 
       return {
         id: acc.id,

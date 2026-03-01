@@ -390,12 +390,13 @@ function StepAdAccount({
   saving,
 }: {
   profile: OnboardingProfile;
-  onConnect: (data: { metaAccountId: string; mixpanelProjectId: string; mixpanelSecretKey: string; mixpanelBoardId: string }) => void;
+  onConnect: (data: { metaAccountId: string; accountName: string; mixpanelProjectId: string; mixpanelSecretKey: string; mixpanelBoardId: string }) => void;
   saving: boolean;
 }) {
   const [accountId, setAccountId] = useState(
     profile.meta_account_id || ""
   );
+  const [accountName, setAccountName] = useState("");
   const [mixpanelProjectId, setMixpanelProjectId] = useState(
     profile.mixpanel_project_id || ""
   );
@@ -457,6 +458,23 @@ function StepAdAccount({
 
         <div className="space-y-2">
           <label
+            htmlFor="onb-account-name"
+            className="block text-sm font-medium text-[#111827]"
+          >
+            광고계정 이름 (선택)
+          </label>
+          <input
+            id="onb-account-name"
+            type="text"
+            placeholder="예: 우리쇼핑몰"
+            value={accountName}
+            onChange={(e) => setAccountName(e.target.value)}
+            className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label
             htmlFor="onb-mixpanel-project"
             className="block text-sm font-medium text-[#111827]"
           >
@@ -508,7 +526,7 @@ function StepAdAccount({
 
         <div className="flex flex-col gap-3">
           <button
-            onClick={() => onConnect({ metaAccountId: accountId, mixpanelProjectId, mixpanelSecretKey, mixpanelBoardId })}
+            onClick={() => onConnect({ metaAccountId: accountId, accountName, mixpanelProjectId, mixpanelSecretKey, mixpanelBoardId })}
             disabled={saving || !hasMetaAccount}
             className="w-full bg-[#F75D5D] hover:bg-[#E54949] text-white h-11 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
@@ -642,10 +660,11 @@ export default function OnboardingPage() {
     []
   );
 
-  const handleAdConnect = useCallback(async (data: { metaAccountId: string; mixpanelProjectId: string; mixpanelSecretKey: string; mixpanelBoardId: string }) => {
+  const handleAdConnect = useCallback(async (data: { metaAccountId: string; accountName: string; mixpanelProjectId: string; mixpanelSecretKey: string; mixpanelBoardId: string }) => {
     setSaving(true);
     const result = await saveAdAccount({
       metaAccountId: data.metaAccountId || null,
+      accountName: data.accountName || undefined,
       mixpanelProjectId: data.mixpanelProjectId || null,
       mixpanelSecretKey: data.mixpanelSecretKey || null,
       mixpanelBoardId: data.mixpanelBoardId || null,

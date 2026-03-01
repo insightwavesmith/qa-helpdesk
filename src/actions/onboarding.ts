@@ -94,15 +94,6 @@ export async function saveAdAccount(data: {
   if (data.metaAccountId) {
     updates.meta_account_id = data.metaAccountId;
   }
-  if (data.mixpanelProjectId) {
-    updates.mixpanel_project_id = data.mixpanelProjectId;
-  }
-  if (data.mixpanelSecretKey) {
-    updates.mixpanel_secret_key = data.mixpanelSecretKey;
-  }
-  if (data.mixpanelBoardId) {
-    updates.mixpanel_board_id = data.mixpanelBoardId;
-  }
 
   const { error } = await svc
     .from("profiles")

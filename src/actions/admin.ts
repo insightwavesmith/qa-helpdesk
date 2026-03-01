@@ -73,8 +73,6 @@ export async function approveMember(
   const update: ProfileUpdate = { role: newRole };
   if (extra?.cohort) update.cohort = extra.cohort;
   if (extra?.meta_account_id) update.meta_account_id = extra.meta_account_id;
-  if (extra?.mixpanel_project_id) update.mixpanel_project_id = extra.mixpanel_project_id;
-  if (extra?.mixpanel_secret_key) update.mixpanel_secret_key = extra.mixpanel_secret_key;
 
   const { error } = await supabase
     .from("profiles")

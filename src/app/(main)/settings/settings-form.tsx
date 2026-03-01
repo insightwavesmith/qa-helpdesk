@@ -350,6 +350,14 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
                         <X className="h-4 w-4" />
                       </button>
                     </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Meta 계정 ID</Label>
+                      <Input
+                        value={acc.account_id}
+                        disabled
+                        className="h-8 text-sm rounded-lg border-gray-200 bg-gray-100 text-gray-500 font-mono"
+                      />
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <Label className="text-xs">계정 이름</Label>

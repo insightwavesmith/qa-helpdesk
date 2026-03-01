@@ -41,7 +41,7 @@ interface AccountStatus {
   };
   mixpanel: {
     ok: boolean;
-    state: "ok" | "no_data" | "not_configured";
+    state: "ok" | "no_board" | "not_configured";
     last_date: string | null;
     sessions: number;
   };
@@ -293,10 +293,10 @@ export function ProtractorAdminClient() {
                             {acc.mixpanel.sessions}명 세션
                           </div>
                         </div>
-                      ) : acc.mixpanel.state === "no_data" ? (
+                      ) : acc.mixpanel.state === "no_board" ? (
                         <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-0">
                           <AlertTriangle className="h-3 w-3" />
-                          데이터 없음
+                          보드없음
                         </Badge>
                       ) : (
                         <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0">

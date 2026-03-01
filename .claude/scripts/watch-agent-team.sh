@@ -1,10 +1,11 @@
 #!/bin/bash
-# watch-agent-team.sh — 에이전트팀 감시 스크립트 v2
+# watch-agent-team.sh v3 — 완료 시에만 종료
 
 SLACK_TOKEN="$1"
 CHANNEL="${2:-D09V1NX98SK}"
-MAX_CHECKS=60
-CHECK_INTERVAL=10
+MAX_MINUTES=60
+CHECK_INTERVAL=15
+ELAPSED=0
 
 send_slack() {
   curl -s -X POST "https://slack.com/api/chat.postMessage" \
@@ -13,41 +14,32 @@ send_slack() {
     -d "{\"channel\":\"$CHANNEL\",\"text\":\"$1\"}" > /dev/null 2>&1
 }
 
-for i in $(seq 1 $MAX_CHECKS); do
+while [ $ELAPSED -lt $((MAX_MINUTES * 60)) ]; do
   if ! tmux has-session -t agent-team 2>/dev/null; then
-    send_slack "에이전트팀: 세션 없음"
+    send_slack "에이전트팀: 세션 종료됨"
     exit 0
   fi
 
-  # 마지막 3줄에서 프롬프트 확인
-  LAST=$(tmux capture-pane -t agent-team -p 2>/dev/null | tail -3)
-  
-  # "? for shortcuts" 또는 "esc to interrupt" 없이 ❯만 있으면 = 입력 대기
+  PANE=$(tmux capture-pane -t agent-team -p 2>/dev/null)
+  LAST=$(echo "$PANE" | tail -10)
+
+  # 완료 감지: ❯ 프롬프트 + 메모리 저장 or build success
   if echo "$LAST" | grep -q "? for shortcuts"; then
-    CONTEXT=$(tmux capture-pane -t agent-team -p 2>/dev/null | tail -30)
-    
-    STATUS="대기"
-    if echo "$CONTEXT" | grep -qi "cogitat\|build.*succe\|완료\|finish\|메모리 저장"; then
-      STATUS="완료"
-    elif echo "$CONTEXT" | grep -qi "error\|fail\|에러\|실패"; then
-      STATUS="에러"
-    elif echo "$CONTEXT" | grep -qi "plan mode\|plan.*preview"; then
-      STATUS="Plan 대기"
-    fi
-    
-    SUMMARY=$(echo "$CONTEXT" | grep -v "^$" | grep -v "^─" | tail -5 | tr '\n' ' ' | cut -c1-200)
-    
-    send_slack "에이전트팀: ${STATUS} — ${SUMMARY}"
-    
-    if [ "$STATUS" = "완료" ]; then
+    CONTEXT=$(echo "$PANE" | tail -30)
+    if echo "$CONTEXT" | grep -qi "메모리 저장\|build.*succe\|완료\|finish\|npm run build"; then
+      SUMMARY=$(echo "$CONTEXT" | grep -v "^$" | grep -v "^─" | grep -v "shortcuts" | tail -3 | tr '\n' ' ' | cut -c1-200)
+      send_slack "에이전트팀 완료: ${SUMMARY}"
       exit 0
     fi
-    
-    # 보고 후 다음 대기까지 좀 더 기다림
-    sleep 60
+    # Plan 대기 (실행 필요)
+    if echo "$LAST" | grep -q "Would you like to proceed"; then
+      send_slack "에이전트팀: Plan 승인 대기 중"
+      sleep 60
+    fi
   fi
-  
+
   sleep $CHECK_INTERVAL
+  ELAPSED=$((ELAPSED + CHECK_INTERVAL))
 done
 
-send_slack "에이전트팀: 감시 타임아웃 (10분) — 아직 작업 중"
+send_slack "에이전트팀: 감시 타임아웃 (${MAX_MINUTES}분)"
