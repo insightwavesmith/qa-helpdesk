@@ -48,6 +48,14 @@ interface DiagnosticPanelProps {
   diagnoses?: DiagnosisEntry[];
 }
 
+// ── 점수 → 등급 변환 ──
+
+function scoreToGrade(score: number): string {
+  if (score >= 75) return "A";
+  if (score >= 50) return "B";
+  return "C";
+}
+
 // ── 스타일 ──
 
 function scoreToStyle(score: number) {
@@ -92,7 +100,7 @@ function T3DiagnosticView({ diagnostics }: { diagnostics: Record<string, T3Diagn
               <div className="flex items-center justify-between border-b border-inherit px-4 py-2.5">
                 <span className="text-sm font-semibold">{part.label}</span>
                 <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${style.badge}`}>
-                  {part.score}점 · {style.label}
+                  {scoreToGrade(part.score)} · {style.label}
                 </span>
               </div>
               <div className="flex flex-col gap-2 p-3">
@@ -119,7 +127,7 @@ function T3DiagnosticView({ diagnostics }: { diagnostics: Record<string, T3Diagn
                               <div className="mt-1 flex items-baseline gap-2">
                                 <span className={`text-base font-bold ${mStyle.text}`}>{fmtVal}</span>
                                 {m.score != null && (
-                                  <span className="text-[10px] text-muted-foreground">{m.score}점</span>
+                                  <span className="text-[10px] text-muted-foreground">{scoreToGrade(m.score)}</span>
                                 )}
                               </div>
                               <div className="mt-1 text-[10px] text-muted-foreground">
@@ -146,7 +154,7 @@ function T3DiagnosticView({ diagnostics }: { diagnostics: Record<string, T3Diagn
                                     <>
                                       <span className={`text-base font-bold ${sStyle.text}`}>{fmtVal}</span>
                                       {summaryMetric.score != null && (
-                                        <span className="text-[10px] text-muted-foreground">{summaryMetric.score}점</span>
+                                        <span className="text-[10px] text-muted-foreground">{scoreToGrade(summaryMetric.score)}</span>
                                       )}
                                     </>
                                   );

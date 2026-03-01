@@ -123,6 +123,14 @@ function SemiCircleGauge({ score, grade, gradeStyle }: {
   );
 }
 
+// ── 점수 → 등급 변환 ──
+
+function scoreToGrade(score: number): string {
+  if (score >= 75) return "A";
+  if (score >= 50) return "B";
+  return "C";
+}
+
 // ── 파트 점수 바 ──
 
 function PartScoreBar({ label, score }: { label: string; score: number }) {
@@ -138,7 +146,7 @@ function PartScoreBar({ label, score }: { label: string; score: number }) {
           style={{ width: `${Math.min(score, 100)}%` }}
         />
       </div>
-      <span className={`w-8 text-xs font-bold ${textColor}`}>{score}</span>
+      <span className={`w-8 text-xs font-bold ${textColor}`}>{scoreToGrade(score)}</span>
     </div>
   );
 }
@@ -244,7 +252,10 @@ export function TotalValueGauge({ data, isLoading }: TotalValueGaugeProps) {
               const statusLabel = m.score != null
                 ? m.score >= 75 ? "우수" : m.score >= 50 ? "보통" : "미달"
                 : "데이터 없음";
-              const barW = m.score != null ? Math.max(m.score, 5) : 0;
+              // U1: pctOfBenchmark 기반 바 너비 (100% 이상이면 꽉 참), fallback: score 기반
+              const barW = m.pctOfBenchmark != null
+                ? Math.min(Math.max(m.pctOfBenchmark, 5), 100)
+                : m.score != null ? Math.max(m.score, 5) : 0;
               const fmtVal = m.value != null
                 ? m.unit === "%" ? m.value.toFixed(2) + "%" : m.value.toFixed(1)
                 : "-";
@@ -261,7 +272,7 @@ export function TotalValueGauge({ data, isLoading }: TotalValueGaugeProps) {
                   <div className="flex items-baseline gap-1.5 mt-1">
                     <span className={`text-lg font-bold ${textColor}`}>{fmtVal}</span>
                     {m.score != null && (
-                      <span className="text-[10px] text-gray-400">{m.score}점</span>
+                      <span className="text-[10px] text-gray-400">{scoreToGrade(m.score)}</span>
                     )}
                   </div>
                   <div className="relative mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100">

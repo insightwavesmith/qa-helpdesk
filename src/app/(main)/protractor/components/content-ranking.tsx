@@ -152,6 +152,11 @@ function BenchmarkCompareGrid({
     const style = diag ? verdictStyle(diag.verdict) : { bg: "bg-gray-50", text: "text-gray-400", border: "border-gray-100" };
     const emoji = diag ? (diag.verdict.match(/[🟢🟡🔴]/u)?.[0] ?? "⚪") : "⚪";
 
+    // U3: pct_of_benchmark에서 기준값 역산 (기준값 = 내 값 / (pct / 100))
+    const benchVal = myVal != null && diag?.pct_of_benchmark != null && diag.pct_of_benchmark > 0
+      ? (myVal / diag.pct_of_benchmark) * 100
+      : null;
+
     return (
       <div
         key={m.key}
@@ -161,8 +166,8 @@ function BenchmarkCompareGrid({
         <div className="flex items-center gap-1.5">
           <span className={`${isSummary ? "text-sm font-bold" : "text-xs font-medium"} ${style.text}`}>
             {formatVal(myVal ?? null, m)}
-            {diag?.pct_of_benchmark != null && (
-              <span className="text-gray-400 ml-1 text-[10px]">({diag.pct_of_benchmark}%)</span>
+            {benchVal != null && (
+              <span className="text-gray-400 ml-1 text-[10px]">(기준 {formatVal(benchVal, m)})</span>
             )}
           </span>
           <span className="text-[10px]">{emoji}</span>

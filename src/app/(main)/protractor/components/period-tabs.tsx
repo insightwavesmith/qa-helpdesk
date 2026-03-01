@@ -11,13 +11,21 @@ export interface DateRange {
   end: string;
 }
 
+// 로컬 타임존 기준 YYYY-MM-DD (toISOString은 UTC 변환되어 KST 자정~09시 사이 날짜 밀림)
+function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 // 기간으로부터 날짜 범위를 계산
 function getDateRange(period: PeriodKey): DateRange {
   const today = new Date();
   const end = new Date(today);
   end.setDate(end.getDate() - 1); // 어제까지
 
-  const endStr = end.toISOString().split("T")[0];
+  const endStr = toLocalDateStr(end);
 
   if (period === "yesterday") {
     return { start: endStr, end: endStr };
@@ -26,7 +34,7 @@ function getDateRange(period: PeriodKey): DateRange {
   const days = period === "7d" ? 7 : period === "14d" ? 14 : 30;
   const start = new Date(end);
   start.setDate(start.getDate() - (days - 1));
-  return { start: start.toISOString().split("T")[0], end: endStr };
+  return { start: toLocalDateStr(start), end: endStr };
 }
 
 function formatDate(dateStr: string): string {

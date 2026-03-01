@@ -113,13 +113,21 @@ export function scoreToGrade(score: number): { grade: string; label: string } {
   return { grade: "F", label: "위험" };
 }
 
+// 로컬 타임존 기준 YYYY-MM-DD (toISOString은 UTC 변환되어 KST 자정~09시 사이 날짜 밀림)
+function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export function periodToDateRange(period: number): { start: string; end: string } {
   const end = new Date();
   end.setDate(end.getDate() - 1); // 어제까지
-  const endStr = end.toISOString().split("T")[0];
+  const endStr = toLocalDateStr(end);
   const start = new Date(end);
   start.setDate(start.getDate() - (period - 1));
-  const startStr = start.toISOString().split("T")[0];
+  const startStr = toLocalDateStr(start);
   return { start: startStr, end: endStr };
 }
 

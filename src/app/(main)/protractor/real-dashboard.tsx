@@ -27,11 +27,14 @@ import {
   toSummaryCards,
 } from "@/lib/protractor/aggregate";
 
-// 어제 날짜 (기본값)
+// 어제 날짜 (기본값) — toISOString은 UTC 변환되어 KST 자정~09시 사이 날짜 밀림
 function yesterday(): PeriodDateRange {
   const d = new Date();
   d.setDate(d.getDate() - 1);
-  const s = d.toISOString().split("T")[0];
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const s = `${y}-${m}-${day}`;
   return { start: s, end: s };
 }
 

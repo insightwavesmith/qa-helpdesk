@@ -1,67 +1,118 @@
-# TASK — 총가치각도기 UI/UX 개선 (세션1)
+# TASK: 총가치각도기 UI 개선
 
-> 작성: 모찌 | 2026-02-25
-> 목업: https://mozzi-reports.vercel.app/reports/architecture/2026-02-25-protractor-ui-mockup.html
-> 기획서: https://mozzi-reports.vercel.app/reports/architecture/2026-02-25-protractor-integrated-plan.html
+## 목표
+수강생이 각도기에서 자신의 광고 성과를 벤치마크와 직관적으로 비교할 수 있게 개선한다.
 
----
-
-## 배경
-
-백엔드 리팩토링(T1~T5)은 완료됐지만 UI/UX가 목업과 다름. 이 TASK에서 프론트엔드를 목업 기준으로 맞춤.
+## 빌드/테스트
+- `npm run build` 성공 필수
+- 테스트 계정: smith.kim@inwv.co / test1234!
+- 확인 URL: https://bscamp.vercel.app/protractor?account=1112351559994391
 
 ---
 
-## U1. 진단 UI 3컬럼 레이아웃
+## U1. 지표별 프로그레스 바가 직관적이지 않음
 
-- 파일: `src/components/protractor/DiagnosticPanel.tsx` (204줄)
-- 현재: 이슈 목록형 (진단 요약 + 발견된 이슈 나열)
-- 변경: 3컬럼 카드형 (기반점수 / 참여율 / 전환율)
-  - 각 파트별 지표를 카드로 분리
-  - 각 지표: 이름 + 내 값 + 벤치마크(p50/p75) + 판정(🟢🟡🔴)
-  - 파트별 소계 점수
-- 데이터 소스: `/api/diagnose` 응답의 parts 배열
-- 목업 참고: "광고 상세 진단" 섹션
+### 현재 동작
+- ThruPlay율이 기준 대비 103%인데 초록색 바가 77%만 채워져 있음
+- 사용자 입장에서 "기준을 넘었는데 왜 바가 안 차지?" → 혼란
 
-## U2. TOP 5 광고 버튼 추가
+### 기대 동작
+- 기준 대비 100% 이상이면 바가 꽉 참
+- 기준 대비 70%면 바가 70%만 채워짐
+- 기준값이 없으면 기존 점수 기반 폴백
 
-- 파일: `src/app/(main)/protractor/components/ad-metrics-table.tsx` (281줄)
-- 현재: 광고별 지표만 표시
-- 변경: 각 광고 행에 2개 버튼 추가
-  - **Meta 광고관리**: `https://adsmanager.facebook.com/adsmanager/manage/ads?act={account_id}&selected_ad_ids={ad_id}`
-  - **믹스패널**: `https://mixpanel.com/project/{mixpanel_project_id}/view/{mixpanel_board_id}` (ad_accounts 테이블에서 조회)
-- ad_accounts 테이블에 `mixpanel_board_id` 컬럼 없으면 추가 (마이그레이션)
-
-## U3. 벤치마크 크론 수동 실행 + 데이터 복구
-
-- `/api/cron/collect-benchmarks` GET 호출로 벤치마크 데이터 수집
-- `/api/cron/collect-daily` GET 호출로 일일 데이터 수집
-- 실행 후 benchmarks 테이블에 최신 날짜 데이터 존재하는지 확인
-- 에러 시 원인 파악 + 수정
-
-## U4. 기존 ad_accounts 전부 삭제
-
-```sql
-DELETE FROM ad_accounts;
-DELETE FROM daily_ad_insights;
-DELETE FROM benchmarks;
-```
-- Smith님이 직접 재등록할 예정
-
-## U5. sample-dashboard 목업 동기화
-
-- 파일: `src/app/(main)/protractor/sample-dashboard.tsx` (258줄)
-- 현재 샘플 데이터가 기존 4파트 기준 → 3파트 기준으로 업데이트
-- 전환 퍼널: 노출→클릭→결제시작→구매 (장바구니 없음)
-- 샘플 진단 이슈도 3파트에 맞게 수정
+### 참고
+- TotalValueGauge.tsx에서 barW 계산이 score 기반으로 되어 있음
+- pctOfBenchmark 값이 이미 API 응답에 포함되어 있으니 이걸 사용하면 됨
 
 ---
 
-## 완료 기준
+## U2. 파트별 점수를 등급으로 표시
 
-- 진단 UI가 3컬럼 카드형으로 표시
-- TOP 5 광고에 Meta/믹스패널 버튼 존재
-- 벤치마크 데이터 최신 날짜 확인
-- ad_accounts 비어있음
-- sample-dashboard에 장바구니 없음
-- 빌드 성공
+### 현재 동작
+- "기반점수 78점", "참여율 43점" 등 숫자로 표시
+- 수강생은 78점이 좋은 건지 나쁜 건지 감이 안 옴
+
+### 기대 동작
+- 점수 대신 A/B/C 등급으로 표시
+- 75점 이상 → A (우수, 초록)
+- 50~74점 → B (보통, 노랑)
+- 50점 미만 → C (미달, 빨강)
+- 색상은 현재 scoreToStyle() 로직 그대로 유지
+- 표시 예: "기반점수 A" "참여율 C"
+
+### 참고
+- TotalValueGauge.tsx, DiagnosticPanel.tsx 두 곳에서 점수 표시
+
+---
+
+## U3. 콘텐츠 탭에 벤치마크 비교값 추가
+
+### 현재 동작
+- 콘텐츠별 지표가 내 수치만 표시됨 (예: 3초시청률 26.81%)
+- 이게 좋은 건지 나쁜 건지 비교 기준이 없음
+
+### 기대 동작
+- 각 지표 옆에 벤치마크 기준값도 함께 표시
+- 예: "26.81% (기준 29.5%)" 또는 "26.81% / 기준 29.5%"
+- pctOfBenchmark가 이미 있으니 역산 가능: 기준값 = 내 값 / (pct / 100)
+
+### 하지 말 것
+- 벤치마크 API를 별도 호출하지 말 것 (보안상 admin-only)
+- 프론트에서 역산하면 됨
+
+### 참고
+- content-ranking.tsx에서 이미 pct_of_benchmark를 사용 중
+
+---
+
+## U4. "어제" 기간에서 T3 점수가 안 나오는 버그
+
+### 현재 동작
+- "어제" 기간 선택 시 성과 카드(총광고비, 클릭 등)는 표시됨
+- 그런데 T3 점수는 "내일부터 확인 가능합니다" 표시
+- 같은 daily_ad_insights 테이블 데이터인데 결과가 다름
+
+### 기대 동작
+- 어제 데이터가 있으면 T3 점수도 정상 표시
+- 어제 데이터가 진짜 없으면 성과 카드도 빈 상태여야 함 (둘 다 같아야)
+
+### 확인해볼 것
+- insights API와 total-value API의 날짜 범위 계산 방식이 다른지
+- UTC/KST 시간대 차이로 하루 밀리는지
+
+---
+
+## 실행 순서
+U4(버그) → U1(바) → U2(등급) → U3(벤치마크)
+
+## 하지 말 것
+- 벤치마크 raw 수치를 새 API로 노출하지 말 것
+- 기존 API 응답 구조를 깨뜨리지 말 것
+- 다른 페이지(Q&A, 설정 등) 건드리지 말 것
+
+---
+
+## 리뷰 결과 (세션 104, 읽기 전용)
+
+### U1. 프로그레스 바 — PASS (간단)
+- barW = score → pctOfBenchmark으로 1줄 수정
+- pctOfBenchmark null이면 score 폴백
+
+### U2. 등급 표시 — PASS (간단)
+- scoreToStyle()이 이미 75/50 임계값 사용 중
+- 숫자→A/B/C 변환 헬퍼만 추가
+- TotalValueGauge + DiagnosticPanel 2곳 수정
+
+### U3. 콘텐츠 벤치마크 — PASS (주의사항 있음)
+- 역산 가능하지만 pct_of_benchmark가 Math.round() 정수화 → ±0.5% 오차 발생
+- 기준값 직접 노출이 "벤치마크 raw 수치 노출 금지" 정책에 저촉 가능 → Smith님 확인 필요
+
+### U4. 어제 버그 — PASS (핵심 발견)
+- **타임존 버그 패턴 발견**: `d.toISOString().split("T")[0]` → 로컬→UTC 변환으로 날짜 밀림
+- 3곳: period-tabs.tsx:20, real-dashboard.tsx:34, t3-engine.ts:119
+- KST 00:00~08:59 접속 시 "어제"가 "그저께"로 계산됨
+- 단, insights와 total-value 둘 다 같은 dateRange 사용 → DB 데이터 존재 여부 선행 확인 필요
+
+### 리뷰어 권장 실행 순서
+U4(DB 확인 후 타임존 수정) → U1 → U2 → U3

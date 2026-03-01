@@ -1,5 +1,6 @@
 #!/bin/bash
-# validate-task.sh — 개발 시작 전 TASK.md 형식 + 목업/기획서 첨부 검증
+# validate-task.sh — TASK.md 포맷 검증
+# 포맷: "현재 동작 / 기대 동작 / 하지 말 것" (What/Why 중심)
 # PreToolUse hook: Bash 도구 실행 시 체크
 
 INPUT=$(cat)
@@ -38,51 +39,54 @@ done
 TASK_NAME=$(basename "$ACTIVE_TASK")
 ERRORS=""
 
-# 1. T항목 존재 체크
-TOTAL_TASKS=$(grep -cE '^## (T[0-9]+\.|A[0-9]+\.|B[0-9]+\.|Part )' "$ACTIVE_TASK" 2>/dev/null || true)
+# 1. ## 목표 섹션 존재
+if ! grep -q '^## 목표' "$ACTIVE_TASK" 2>/dev/null; then
+    ERRORS="$ERRORS\n  - '## 목표' 섹션 없음"
+fi
+
+# 2. 작업 항목 존재 (U1/T1/A1/B1/Part 등)
+TOTAL_TASKS=$(grep -cE '^## (U[0-9]+\.|T[0-9]+\.|A[0-9]+\.|B[0-9]+\.|Part )' "$ACTIVE_TASK" 2>/dev/null || true)
 TOTAL_TASKS=${TOTAL_TASKS:-0}
 if [ "$TOTAL_TASKS" -eq 0 ]; then
-    ERRORS="$ERRORS\n  - T/A/B/Part 항목이 없음"
+    ERRORS="$ERRORS\n  - 작업 항목(U1/T1 등)이 없음"
 fi
 
-# 2. 리뷰 결과 섹션 체크
+# 3. "현재 동작" 섹션 존재
+CURRENT_COUNT=$(grep -c '### 현재 동작\|### 현재$\|### 현상' "$ACTIVE_TASK" 2>/dev/null || echo "0")
+if [ "$CURRENT_COUNT" -eq 0 ]; then
+    ERRORS="$ERRORS\n  - '### 현재 동작' 섹션이 하나도 없음 (사용자 관점 현재 상태 필수)"
+fi
+
+# 4. "기대 동작" 섹션 존재
+EXPECTED_COUNT=$(grep -c '### 기대 동작\|### 기대$\|### 변경' "$ACTIVE_TASK" 2>/dev/null || echo "0")
+if [ "$EXPECTED_COUNT" -eq 0 ]; then
+    ERRORS="$ERRORS\n  - '### 기대 동작' 섹션이 하나도 없음 (수정 후 사용자가 볼 것 필수)"
+fi
+
+# 5. "하지 말 것" 경계 존재 (전역 또는 항목별 1개 이상)
+BOUNDARY_COUNT=$(grep -c '하지 말 것\|금지\|건드리지' "$ACTIVE_TASK" 2>/dev/null || echo "0")
+if [ "$BOUNDARY_COUNT" -eq 0 ]; then
+    ERRORS="$ERRORS\n  - '하지 말 것' 경계가 없음 (에이전트 행동 범위 제한 필수)"
+fi
+
+# 6. 실행 순서 존재
+if ! grep -q '## 실행 순서' "$ACTIVE_TASK" 2>/dev/null; then
+    ERRORS="$ERRORS\n  - '## 실행 순서' 섹션 없음"
+fi
+
+# 7. 리뷰 결과 섹션 체크
 if ! grep -q '^## 리뷰 결과' "$ACTIVE_TASK" 2>/dev/null; then
     ERRORS="$ERRORS\n  - '## 리뷰 결과' 섹션 없음 (코드리뷰 미완료)"
-fi
-
-# 3. 목업/기획서 참조 체크 (핵심!)
-HAS_DESIGN_REF=false
-
-# docs/design/ 폴더에 HTML 파일 있는지
-DESIGN_FILES=$(find "$PROJECT_DIR/docs/design" -name "*.html" -type f 2>/dev/null | wc -l | tr -d ' ')
-if [ "$DESIGN_FILES" -gt 0 ]; then
-    HAS_DESIGN_REF=true
-fi
-
-# TASK.md 안에 목업/기획서 경로 언급 있는지
-if grep -qiE '(mockup|목업|기획서|design/|\.html)' "$ACTIVE_TASK" 2>/dev/null; then
-    HAS_DESIGN_REF=true
-fi
-
-if [ "$HAS_DESIGN_REF" = false ]; then
-    ERRORS="$ERRORS\n  - 목업/기획서 참조 없음! docs/design/에 HTML 파일이 없고, TASK.md에도 목업/기획서 경로가 없습니다."
-    ERRORS="$ERRORS\n    → TASK.md에 목업 HTML 경로를 명시하거나, docs/design/에 목업 파일을 넣으세요."
-fi
-
-# 4. 각 항목에 "현재/목업/변경" 구체 기술 있는지
-HAS_DETAIL=$(grep -cE '(현재:|목업:|변경:|현재 |목업 )' "$ACTIVE_TASK" 2>/dev/null || echo "0")
-if [ "$HAS_DETAIL" -lt 2 ]; then
-    ERRORS="$ERRORS\n  - 항목별 '현재/목업/변경' 구체 기술 부족 (${HAS_DETAIL}건만 발견)"
-    ERRORS="$ERRORS\n    → 각 항목마다 '현재: ~, 목업: ~, 변경: ~' 형태로 작성하세요."
 fi
 
 if [ -n "$ERRORS" ]; then
     echo "VALIDATE 실패 ($TASK_NAME):" >&2
     echo -e "$ERRORS" >&2
     echo "" >&2
-    echo "목업/기획서 없이 개발을 시작할 수 없습니다." >&2
+    echo "TASK.md 포맷: ## 목표 / ### 현재 동작 / ### 기대 동작 / 하지 말 것 / ## 실행 순서" >&2
+    echo "규칙 참조: rules/task-format.md" >&2
     exit 2
 fi
 
-echo "VALIDATE 통과: $TASK_NAME (${TOTAL_TASKS}개 항목, 목업 참조 확인, 리뷰 완료)"
+echo "VALIDATE 통과: $TASK_NAME (${TOTAL_TASKS}개 항목, 포맷 검증 완료)"
 exit 0
