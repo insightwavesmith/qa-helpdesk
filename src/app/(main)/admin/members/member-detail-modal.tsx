@@ -442,6 +442,8 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                         <label className="block text-xs text-gray-500 mb-0.5">광고계정명</label>
                         <input
                           type="text"
+                          name="edit-account-name"
+                          autoComplete="off"
                           value={accountForm.account_name}
                           onChange={(e) => setAccountForm((p) => ({ ...p, account_name: e.target.value }))}
                           className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
@@ -451,6 +453,8 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                         <label className="block text-xs text-gray-500 mb-0.5">믹스패널 프로젝트 ID</label>
                         <input
                           type="text"
+                          name="edit-mixpanel-project-id"
+                          autoComplete="off"
                           value={accountForm.mixpanel_project_id}
                           onChange={(e) => setAccountForm((p) => ({ ...p, mixpanel_project_id: e.target.value }))}
                           className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
@@ -460,6 +464,8 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                         <label className="block text-xs text-gray-500 mb-0.5">믹스패널 보드 ID</label>
                         <input
                           type="text"
+                          name="edit-mixpanel-board-id"
+                          autoComplete="off"
                           value={accountForm.mixpanel_board_id}
                           onChange={(e) => setAccountForm((p) => ({ ...p, mixpanel_board_id: e.target.value }))}
                           className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
@@ -469,6 +475,8 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                         <label className="block text-xs text-gray-500 mb-0.5">믹스패널 시크릿키</label>
                         <input
                           type="password"
+                          name="edit-mixpanel-secret-key"
+                          autoComplete="new-password"
                           value={accountForm.mixpanel_secret_key}
                           onChange={(e) => setAccountForm((p) => ({ ...p, mixpanel_secret_key: e.target.value }))}
                           placeholder="변경 시에만 입력"
@@ -530,6 +538,8 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                 <label className="block text-xs text-gray-500 mb-0.5">광고계정 ID</label>
                 <input
                   type="text"
+                  name="new-account-id"
+                  autoComplete="off"
                   value={newAccountForm.account_id}
                   onChange={(e) => setNewAccountForm((p) => ({ ...p, account_id: e.target.value }))}
                   placeholder="act_xxxxxxxxxx"
@@ -540,6 +550,8 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                 <label className="block text-xs text-gray-500 mb-0.5">광고계정명</label>
                 <input
                   type="text"
+                  name="new-account-name"
+                  autoComplete="off"
                   value={newAccountForm.account_name}
                   onChange={(e) => setNewAccountForm((p) => ({ ...p, account_name: e.target.value }))}
                   className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
@@ -549,6 +561,8 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                 <label className="block text-xs text-gray-500 mb-0.5">믹스패널 프로젝트 ID</label>
                 <input
                   type="text"
+                  name="new-mixpanel-project-id"
+                  autoComplete="off"
                   value={newAccountForm.mixpanel_project_id}
                   onChange={(e) => setNewAccountForm((p) => ({ ...p, mixpanel_project_id: e.target.value }))}
                   className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
@@ -558,6 +572,8 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                 <label className="block text-xs text-gray-500 mb-0.5">믹스패널 보드 ID</label>
                 <input
                   type="text"
+                  name="new-mixpanel-board-id"
+                  autoComplete="off"
                   value={newAccountForm.mixpanel_board_id}
                   onChange={(e) => setNewAccountForm((p) => ({ ...p, mixpanel_board_id: e.target.value }))}
                   className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
@@ -567,6 +583,8 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                 <label className="block text-xs text-gray-500 mb-0.5">믹스패널 시크릿키</label>
                 <input
                   type="password"
+                  name="new-mixpanel-secret-key"
+                  autoComplete="new-password"
                   value={newAccountForm.mixpanel_secret_key}
                   onChange={(e) => setNewAccountForm((p) => ({ ...p, mixpanel_secret_key: e.target.value }))}
                   className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"

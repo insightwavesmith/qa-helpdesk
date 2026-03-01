@@ -1,7 +1,18 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-02-25T18:00:00.000Z",
+  "lastUpdated": "2026-03-01T12:00:00.000Z",
   "features": {
+    "bugfix-autocomplete-secret": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/bugfix-autocomplete-secret.plan.md",
+        "design": "02-design/features/bugfix-autocomplete-secret.design.md",
+        "analysis": "03-analysis/bugfix-autocomplete-secret.analysis.md"
+      },
+      "completedAt": "2026-03-01",
+      "notes": "T1 autoComplete='off' + name 속성 9개 input. T2 시크릿키 type=password + Eye 토글."
+    },
     "타겟중복": {
       "phase": "implementing",
       "matchRate": null,

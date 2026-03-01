@@ -11,6 +11,8 @@ import {
   ArrowRight,
   PartyPopper,
   LogOut,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -404,6 +406,7 @@ function StepAdAccount({
     profile.mixpanel_secret_key || ""
   );
   const [mixpanelBoardId, setMixpanelBoardId] = useState("");
+  const [showSecretKey, setShowSecretKey] = useState(false);
 
   const hasMetaAccount = accountId.trim().length > 0;
 
@@ -514,14 +517,23 @@ function StepAdAccount({
           >
             믹스패널 시크릿키 (선택)
           </label>
-          <input
-            id="onb-mixpanel-secret"
-            type="text"
-            placeholder="시크릿키"
-            value={mixpanelSecretKey}
-            onChange={(e) => setMixpanelSecretKey(e.target.value)}
-            className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
-          />
+          <div className="relative">
+            <input
+              id="onb-mixpanel-secret"
+              type={showSecretKey ? "text" : "password"}
+              placeholder="시크릿키"
+              value={mixpanelSecretKey}
+              onChange={(e) => setMixpanelSecretKey(e.target.value)}
+              className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400 pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowSecretKey(!showSecretKey)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              {showSecretKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-col gap-3">
