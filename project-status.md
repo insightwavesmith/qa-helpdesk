@@ -1,6 +1,6 @@
 # BS CAMP QA Helpdesk — PDCA 프로젝트 현황
 
-> 최종 업데이트: 2026-02-28 20:13 KST
+> 최종 업데이트: 2026-03-01 13:10 KST
 > 프로젝트: https://bscamp.vercel.app
 > GitHub: https://github.com/insightwavesmith/qa-helpdesk
 
@@ -8,101 +8,71 @@
 
 ## Phase: Act (반복 개선)
 
-## 완료된 작업
+## 최근 완료 (2026-03-01)
 
-### 총가치각도기 v2 — Phase 1~4 (완료)
-- Phase 1: LP/장바구니 제거 + DB 타입 재작성 → `b92d3f0`
-- Phase 2: collect-benchmarks GCP 방식 재작성 → `de8bc30`
-- Phase 3: 진단 엔진 3파트 + 벤치마크 API → `4e16647`
-- Phase 4: UI v2 (탭 2개, 콘텐츠 1~5, 벤치마크 관리) → `4e16647`
+### 보안 수정 T1~T9 (완료, push 완료)
+- T1: RLS 정책 강화 → a20bf82
+- T2: 시크릿 하드코딩 제거
+- T3: 각도기 비즈니스 로직 보호
+- T4: XSS 방어
+- T5: 시크릿키 암호화
+- T6: Rate Limiting → 30be15c
+- T7: 무제한 쿼리 방어 → cb829ba
+- T8: requireAdmin 적용
+- T9: 미사용 API 삭제
+- 벤치마크 API admin-only → 47a9430, 27fea93
 
-### UI 수정 T1~T9 (완료)
-- 탭 4→2 (성과요약/콘텐츠) → `471d517`
-- 타겟중복 성과요약 안으로 이동
-- 콘텐츠 전부 펼침 + 벤치마크 비교 그리드 → `5bc373f`
-- 광고계정 삭제 버튼 → `6986843`
-- video_p3s_rate 계산 버그 수정 (video_play_actions → video_view)
-- mixpanel 매출 속성 $amount → value → `3f43467`
+### UI 개선 U1~U4 (완료, push 완료)
+- U1: 지표 바 → 기준 대비 % → 16a5952
+- U2: 파트별 A/B/C 등급
+- U3: 콘텐츠 탭 벤치마크 기준값
+- U4: 타임존 버그 수정
+- 개별지표 등급 제거 + status key_name → 12c2fb1
 
-### 버그 수정 B1~B7 + A1~A4 (완료)
-- account_name ID 저장 버그 4곳 수정 → `9304b34`
-- roleLabels에 assistant 추가
-- per_10k 지표 재계산 로직
-
-### 아키텍처 재설계 A1~C3 (완료)
-- A1: collect-daily INSERT→UPSERT 중복 방지 → `1f00900`
-- A2: retention_rate = p100/p3s 통일
-- A3: collect-benchmarks GCP 방식 (creative.fields)
-- A4: benchmarks date 컬럼 + 이력 보존
-- B1: DiagnosisDetail 데드코드 제거
-- B2: 라벨 통일 (노출당구매확률)
-- B3: METRIC_KEYS reach_to_purchase_rate 추가
-- C3: diagnose API 분모 버그 수정 (totalReach→totalImpressions)
-
-### D1+D2 (완료)
-- D1: 노출당구매확률 벤치마크 컬럼 추가 → `6e7d19a`
-- D2: 수강생 성과 카드 컴팩트화
-- DB: ad_insights_classified + benchmarks에 reach_to_purchase_rate 컬럼
-- 옛 unique index(date 없는) 삭제
-
-### 인프라 (완료)
-- mozzi-reports Basic Auth 미들웨어 추가
-- hook 알림 중복 제거 (프로젝트 레벨 hook 제거 + [모찌확인] 중복 제거)
-- Notification(idle_prompt) hook 추가
-- agent-send.sh 스크립트 (tmux 긴 텍스트 방지)
-- --dangerously-skip-permissions 모드 전환
-
-### 통합개선 T1+T2 (완료)
-- T1: ROAS 지표 복원 (13→14개), unit=decimal, benchmark-admin 중복 제거 → `5e8a6cf`
-- T2: 노션 캠프반 파이프라인 자동화 (sync-notion API + vercel 크론)
-- PDCA validate-design.sh hook + 설계서 18건 현행화
-- 타겟중복/overlap 7일 제한 제거
+### 5필드 통합 (완료, push 완료)
+- F1: key_name 패턴 통일
+- F2: profiles 레거시 쓰기 제거
+- F3: Mixpanel 상태 3단계 (미연동/보드없음/연동완료)
+- F4: 온보딩 계정명 추가
+- F5: 수정 폼 5개 필드 노출
+- → 446f323
 
 ### 인프라
-- Vercel 중복 프로젝트 삭제 (qa-helpdesk → bscamp만)
-- NEXT_PUBLIC_SITE_URL 환경변수 추가
-- 벤치마크 수집 크론 실행 완료 (33행)
-- 믹스패널 수집 크론 실행 (value 속성 수정 후 재수집 필요)
+- 크론 KST 03:00 변경 → e0befa0
+- TASK.md 포맷 규칙 (rules/task-format.md)
+- Agent SDK 설치 + Max Pro 인증 성공
 
 ---
 
 ## 현재 진행 중
-
-### TASK-QA수정7.md — Smith님 직접 QA 피드백 (에이전트팀 작업 중)
-- D1: 광고계정 삭제 실제 작동 + 새로고침
-- D2: 광고계정/믹스패널 추가 기능
-- D3: 5개 필드 세트 통일 (광고계정ID, 광고계정명, 믹스패널프로젝트ID, 믹스패널시크릿키, 믹스패널보드ID)
-- D4: 타겟중복 새로고침 버튼 삭제 + 데이터 표시 + 상위 1,2,3등 세트 쌍 노출
-- D5: 참여율 진단상세 좋아요/댓글/공유/저장 개별 4개 + 합계
-- D6: collect-daily ad_id NULL 버그 (콘텐츠 #1만 나오는 근본 원인)
-
-### 미커밋 수정 (TASK-QA수정6.md, 에이전트팀 완료 → 커밋 대기)
-- collect-daily ad_id 매핑 수정
-- 레거시 필드 제거
-- 진단 API HTML 에러 핸들링
-- overlap 7일 제한 제거
+- 5필드 통합 QA (서브에이전트)
+- Agent SDK 전환 검토
 
 ---
 
 ## 대기 (다음 작업)
 
-### 자사몰매출 탭 (Smith님 지시 2026-02-27)
-- 수강생 성과 페이지에 "자사몰매출" 탭 추가
-- daily_mixpanel_insights → 기간별 total_revenue/purchase_count
+### 우선순위 높음
+1. 수강생 등수/랭킹 기능 (2026-03-01 지시)
+2. 콘텐츠 이미지 기획
+3. daily_ad_insights 과거 재수집 (2/06~2/25)
+4. encrypt/decrypt 호환 수정
+
+### 보통
+5. 메타 배지 로고 → UI
+6. NOTION_TOKEN Vercel 등록
+7. Agent SDK 에이전트팀 스크립트
 
 ### 백로그
-1. 초대코드 만료 로직 — 기간 지났는데 활성화 상태
-2. 노션 피드백반 임베딩 업데이트 — projects/active/notion-sprint-pipeline/TASK.md 1,2번
-3. collect-mixpanel 재수집 (value 속성 수정 후)
-4. collect-benchmarks 재수집 (video_p3s_rate 수정 후)
-5. 메타 배지 개발 (보류)
-6. QA 임베딩 파이프라인
+- Context Warehouse (파킹)
+- 초대코드 만료 기능
 
 ---
 
 ## 핵심 지표
 - 배포: https://bscamp.vercel.app (READY)
-- 최신 커밋: 9304b34 + 미커밋 6파일
-- 빌드: 성공 (tsc 0에러)
-- DB: benchmarks 33행, ad_insights_classified 활성, daily_mixpanel_insights 1행
-- 크론: collect-daily 12:00 KST / collect-benchmarks 월 11:00 KST / collect-mixpanel 12:30 KST
+- 최신 커밋: 446f323
+- 빌드: 성공
+- 크론: KST 03:00
+- 에이전트팀: Claude Code Agent Teams (tmux)
+- 모델: Opus 4.6 (메인), Sonnet 4.6 (서브/크론)
