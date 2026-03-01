@@ -128,4 +128,4 @@ async function run() {
   }
 }
 
-run();
+run().catch(e => { console.error("FATAL:", e); process.exit(1); });
