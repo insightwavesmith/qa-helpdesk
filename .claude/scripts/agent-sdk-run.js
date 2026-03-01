@@ -115,13 +115,24 @@ async function run() {
   fs.unlinkSync(`${SETTINGS}.orig`);
   log("settings 복구 완료");
 
-  // openclaw wake
+  // openclaw wake (HTTP API)
   const wakeMsg = mode === "plan"
     ? "에이전트팀 Plan/Design 작성 완료. /tmp/agent-sdk-result.json 확인 후 Smith님께 보고"
     : "에이전트팀 SDK 작업 완료. /tmp/agent-sdk-result.json 확인";
   
   try {
-    execSync(`openclaw gateway wake --text "${wakeMsg}" --mode now`, { timeout: 10000 });
+    const http = require("http");
+    const postData = JSON.stringify({ text: wakeMsg, mode: "now" });
+    const hookToken = fs.readFileSync("/Users/smith/.openclaw/openclaw.json", "utf8");
+    const token = JSON.parse(hookToken).hooks?.token || "";
+    const req = http.request({
+      hostname: "localhost", port: 18789, path: "/hooks/wake",
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }
+    });
+    req.write(postData);
+    req.end();
+    execSync(\`curl -s -X POST http://localhost:18789/hooks/wake -H "Content-Type: application/json" -H "Authorization: Bearer \${process.env.OPENCLAW_HOOK_TOKEN}" -d '{"text":"'\${wakeMsg}'","mode":"now"}'\`, { timeout: 10000, env: { ...process.env } });
     log("openclaw wake 전송 완료");
   } catch (e) {
     log("wake 실패: " + e.message);
