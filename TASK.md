@@ -194,3 +194,22 @@
 ### 하지 말 것
 - 수강생 후기 페이지 변경 금지
 - API 엔드포인트 추가 금지 — 기존 데이터에서 클라이언트 필터링
+
+---
+
+## T10. 이메일 프로필 카드 Meta 로고 누락
+
+### 현재 동작
+- `src/lib/email-default-template.ts` 이메일 프로필 카드에 "메타파트너 / 메타공식 프로페셔널" 텍스트만 표시
+- Meta Business Partners 인라인 로고 이미지가 없음
+
+### 기대 동작
+- 프로필 카드 하단에 Meta Business Partners 인라인 로고 이미지 표시
+- 이미지 URL: `https://bscamp.vercel.app/images/meta-partner/inline-positive.png` (절대 URL, 이메일이라 상대경로 불가)
+- 높이 36px
+- 텍스트는 "Meta가 인증한 비즈니스 파트너" (Smith님 확정 문구)
+- "공식" 표현 사용 금지 (Meta 가이드라인)
+
+### 하지 말 것
+- 이메일 HTML 구조 대폭 변경 금지 — 프로필 카드 로고 영역만 수정
+- 자격증 배지 넣지 말 것
