@@ -1,10 +1,14 @@
 .post-body {
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.8;
   color: #333333;
   word-break: keep-all;
   overflow-wrap: break-word;
   letter-spacing: -0.01em;
+  word-spacing: 0.05em;
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .post-body h2 {
@@ -184,8 +188,8 @@
 .post-body img {
   width: 100%;
   border-radius: 8px;
-  margin-top: 24px;
-  margin-bottom: 24px;
+  margin-top: 32px;
+  margin-bottom: 32px;
 }
 
 .post-body hr {
@@ -253,7 +257,7 @@
 /* Mobile responsive */
 @media (max-width: 640px) {
   .post-body {
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.75;
   }
 
