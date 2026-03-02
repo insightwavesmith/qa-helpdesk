@@ -43,7 +43,7 @@ export function GeneratePreviewModal({
   const [editMode, setEditMode] = useState(false);
   const [error, setError] = useState("");
 
-  // Sonnet 호출
+  // AI 호출
   useEffect(() => {
     async function generate() {
       try {
@@ -105,7 +105,7 @@ export function GeneratePreviewModal({
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-[#F75D5D] mb-3" />
             <p className="text-sm text-gray-500">
-              Sonnet이 정보공유를 생성하고 있습니다...
+              AI가 글을 생성중입니다.
             </p>
           </div>
         ) : error ? (

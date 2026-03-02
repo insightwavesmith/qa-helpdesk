@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * agent-sdk-run.js v4 — 2단계 SDK 실행 + wake
+ * agent-sdk-run.js v5 — 2단계 SDK 실행 + wake
  * 
  * 사용법:
  *   node agent-sdk-run.js plan "지시문"   → Plan/Design만 작성 후 wake
@@ -9,10 +9,12 @@
  */
 const { query } = require("@anthropic-ai/claude-agent-sdk");
 const fs = require("fs");
-const { execSync } = require("child_process");
 
 const PROJECT = "/Users/smith/projects/qa-helpdesk";
 const SETTINGS = `${PROJECT}/.claude/settings.json`;
+const SETTINGS_ORIG = `${SETTINGS}.orig`;
+const SETTINGS_LOCAL = `${PROJECT}/.claude/settings.local.json`;
+const SETTINGS_LOCAL_ORIG = `${SETTINGS_LOCAL}.orig`;
 const LOG_FILE = "/tmp/agent-sdk-progress.log";
 const RESULT_FILE = "/tmp/agent-sdk-result.json";
 
@@ -25,26 +27,9 @@ if (!mode || !prompt) {
 }
 
 const MODE_PREFIX = {
-  plan: `CLAUDE.md를 먼저 읽고 규칙을 따라. docs/ PDCA 아키텍처 문서도 확인.
-
-【중요】 이 실행에서는 Plan/Design 문서만 작성하고 멈춰라.
-- docs/01-plan/features/ 에 Plan 문서 작성
-- docs/02-design/features/ 에 Design 문서 작성
-- 코드 구현은 하지 마. 설계까지만.
-- 완료되면 "Plan/Design 작성 완료" 라고 말해.
-
-`,
-  dev: `CLAUDE.md를 먼저 읽고 규칙을 따라. docs/ PDCA 아키텍처 문서도 확인.
-
-【중요】 Plan/Design은 이미 작성되어 있다. docs/01-plan/, docs/02-design/ 참고.
-- Plan 기반으로 구현해.
-- qa-engineer에게 delegate해서 Gap 분석 + QA도 해.
-- 커밋 전에 tsc + lint + npm run build 필수.
-
-`,
-  full: `CLAUDE.md를 먼저 읽고 규칙을 따라. docs/ PDCA 아키텍처 문서도 확인.
-
-`
+  plan: "CLAUDE.md를 먼저 읽고 규칙을 따라. docs/ PDCA 아키텍처 문서도 확인.\n\n【중요】 이 실행에서는 Plan/Design 문서만 작성하고 멈춰라.\n- docs/01-plan/features/ 에 Plan 문서 작성\n- docs/02-design/features/ 에 Design 문서 작성\n- 코드 구현은 하지 마. 설계까지만.\n- 완료되면 \"Plan/Design 작성 완료\" 라고 말해.\n\n",
+  dev: "CLAUDE.md를 먼저 읽고 규칙을 따라. docs/ PDCA 아키텍처 문서도 확인.\n\n【중요】 Plan/Design은 이미 작성되어 있다. docs/01-plan/, docs/02-design/ 참고.\n- Plan 기반으로 구현해.\n- qa-engineer에게 delegate해서 Gap 분석 + QA도 해.\n- 커밋 전에 tsc + lint + npm run build 필수.\n\n",
+  full: "CLAUDE.md를 먼저 읽고 규칙을 따라. docs/ PDCA 아키텍처 문서도 확인.\n\n"
 };
 
 if (!MODE_PREFIX[mode]) {
@@ -54,40 +39,124 @@ if (!MODE_PREFIX[mode]) {
 
 function log(msg) {
   const line = `[${new Date().toLocaleTimeString("ko-KR", { timeZone: "Asia/Seoul" })}] [${mode}] ${msg}\n`;
-  fs.appendFileSync(LOG_FILE, line);
+  try { fs.appendFileSync(LOG_FILE, line); } catch (_) {}
   process.stdout.write(line);
 }
 
+// settings.json + settings.local.json 복구 (동기) - signal 핸들러 + finally에서 공유
+function restoreSettings() {
+  // settings.json 복구
+  try {
+    if (fs.existsSync(SETTINGS_ORIG)) {
+      fs.copyFileSync(SETTINGS_ORIG, SETTINGS);
+      fs.unlinkSync(SETTINGS_ORIG);
+      log("settings.json 복구 완료");
+    }
+  } catch (e) {
+    log("settings.json 복구 실패: " + e.message);
+  }
+
+  // settings.local.json 복구
+  try {
+    if (fs.existsSync(SETTINGS_LOCAL_ORIG)) {
+      fs.copyFileSync(SETTINGS_LOCAL_ORIG, SETTINGS_LOCAL);
+      fs.unlinkSync(SETTINGS_LOCAL_ORIG);
+      log("settings.local.json 복구 완료");
+    }
+  } catch (e) {
+    log("settings.local.json 복구 실패: " + e.message);
+  }
+}
+
+// 전역 에러 핸들러 - 조용한 종료 방지
+process.on("uncaughtException", (e) => {
+  log("[FATAL uncaughtException] " + e.message);
+  restoreSettings();
+  process.exit(1);
+});
+process.on("unhandledRejection", (reason) => {
+  log("[FATAL unhandledRejection] " + (reason && reason.message ? reason.message : String(reason)));
+  restoreSettings();
+  process.exit(1);
+});
+
+// SIGTERM/SIGINT: finally 블록 없이 종료되므로 여기서 직접 복구
+process.on("SIGTERM", () => {
+  log("SIGTERM 수신 - settings 복구 후 종료");
+  restoreSettings();
+  process.exit(0);
+});
+process.on("SIGINT", () => {
+  log("SIGINT 수신 - settings 복구 후 종료");
+  restoreSettings();
+  process.exit(0);
+});
+
 async function run() {
-  // settings 백업 → SDK용 교체
-  fs.copyFileSync(SETTINGS, `${SETTINGS}.orig`);
+  // [FIX] LOG_FILE 먼저 초기화한 뒤 로깅 시작
+  fs.writeFileSync(LOG_FILE, "");
+
+  // settings.json 백업: .orig이 없을 때만 원본 보존
+  // 이전 크래시로 .orig이 남아있으면 그 원본을 지킴
+  if (!fs.existsSync(SETTINGS_ORIG)) {
+    fs.copyFileSync(SETTINGS, SETTINGS_ORIG);
+    log("settings.json 백업 완료");
+  } else {
+    log("settings.json.orig 이미 존재 - 이전 크래시 복구 중, 원본 유지");
+  }
+
+  // settings.local.json 백업: hooks 제거 목적 (EPIPE/SIGTERM 방지)
+  if (fs.existsSync(SETTINGS_LOCAL)) {
+    if (!fs.existsSync(SETTINGS_LOCAL_ORIG)) {
+      fs.copyFileSync(SETTINGS_LOCAL, SETTINGS_LOCAL_ORIG);
+      log("settings.local.json 백업 완료");
+    } else {
+      log("settings.local.json.orig 이미 존재 - 이전 크래시 복구 중, 원본 유지");
+    }
+  }
+
+  // SDK용 settings.json 교체
   fs.writeFileSync(SETTINGS, '{"env":{"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS":"1"}}');
 
-  fs.writeFileSync(LOG_FILE, "");
+  // SDK용 settings.local.json 교체: hooks 비활성화 (EPIPE/SIGTERM 방지)
+  fs.writeFileSync(SETTINGS_LOCAL, "{}");
+  log("settings.local.json → {} (hooks 비활성화)");
+
   const start = Date.now();
   let turns = 0, lastText = "", toolUses = 0;
+  let resultWritten = false;
 
-  log(`시작 [${mode}]: ${prompt.substring(0, 100)}`);
+  log("시작 [" + mode + "]: " + prompt.substring(0, 100));
 
   try {
     for await (const msg of query({
       prompt: MODE_PREFIX[mode] + prompt,
       options: {
+        cwd: PROJECT,
         pathToClaudeCodeExecutable: "/opt/homebrew/bin/claude",
         permissionMode: "bypassPermissions",
         maxTurns: mode === "plan" ? 30 : 100
       }
     })) {
-      if (msg.type === "assistant" && msg.message?.content) {
+      // system 메시지 로그 (디버깅)
+      if (msg.type === "system") {
+        log("시스템: subtype=" + (msg.subtype || "?") + " session=" + (msg.session_id || ""));
+      }
+
+      if (msg.type === "assistant" && msg.message && msg.message.content) {
         turns++;
         for (const b of msg.message.content) {
           if (b.type === "text") {
             lastText = b.text;
-            log(`턴${turns}: ${b.text.substring(0, 150).replace(/\n/g, " ")}`);
+            log("턴" + turns + ": " + b.text.substring(0, 150).replace(/\n/g, " "));
           }
-          if (b.type === "tool_use") toolUses++;
+          if (b.type === "tool_use") {
+            toolUses++;
+            log("도구사용: " + b.name);
+          }
         }
       }
+
       if (msg.type === "result") {
         const mins = ((Date.now() - start) / 1000 / 60).toFixed(1);
         const result = {
@@ -100,43 +169,77 @@ async function run() {
           timestamp: new Date().toISOString()
         };
         fs.writeFileSync(RESULT_FILE, JSON.stringify(result, null, 2));
-        log(`완료: ${msg.subtype} (${mins}분, ${turns}턴, ${toolUses}도구)`);
+        resultWritten = true;
+        log("완료: " + msg.subtype + " (" + mins + "분, " + turns + "턴, " + toolUses + "도구)");
       }
     }
   } catch (e) {
     const mins = ((Date.now() - start) / 1000 / 60).toFixed(1);
-    const result = { mode, status: "error", minutes: parseFloat(mins), turns, error: e.message };
+    const result = {
+      mode,
+      status: "error",
+      minutes: parseFloat(mins),
+      turns,
+      error: e.message,
+      stack: e.stack
+    };
     fs.writeFileSync(RESULT_FILE, JSON.stringify(result, null, 2));
-    log(`에러: ${e.message}`);
-  }
+    resultWritten = true;
+    log("에러: " + e.message);
+    log("스택: " + (e.stack || "").split("\n").slice(0, 5).join(" | "));
+  } finally {
+    // [FIX] finally: 정상 완료 또는 에러 시 settings 반드시 복구
+    restoreSettings();
 
-  // settings 복구
-  fs.copyFileSync(`${SETTINGS}.orig`, SETTINGS);
-  fs.unlinkSync(`${SETTINGS}.orig`);
-  log("settings 복구 완료");
+    // [FIX] result 미생성 시 fallback 기록
+    if (!resultWritten) {
+      const mins = ((Date.now() - start) / 1000 / 60).toFixed(1);
+      const result = {
+        mode,
+        status: "incomplete",
+        minutes: parseFloat(mins),
+        turns,
+        toolUses,
+        lastText: lastText.substring(0, 2000),
+        timestamp: new Date().toISOString(),
+        note: "result 이벤트 없이 루프 종료"
+      };
+      fs.writeFileSync(RESULT_FILE, JSON.stringify(result, null, 2));
+      log("불완전 종료 (" + mins + "분, " + turns + "턴) - result 이벤트 없이 루프 종료됨");
+    }
+  }
 
   // openclaw wake (HTTP API)
   const wakeMsg = mode === "plan"
     ? "에이전트팀 Plan/Design 작성 완료. /tmp/agent-sdk-result.json 확인 후 Smith님께 보고"
     : "에이전트팀 SDK 작업 완료. /tmp/agent-sdk-result.json 확인";
-  
+
   try {
     const http = require("http");
     const postData = JSON.stringify({ text: wakeMsg, mode: "now" });
-    const hookToken = fs.readFileSync("/Users/smith/.openclaw/openclaw.json", "utf8");
-    const token = JSON.parse(hookToken).hooks?.token || "";
+    const raw = fs.readFileSync("/Users/smith/.openclaw/openclaw.json", "utf8");
+    const token = (JSON.parse(raw).hooks || {}).token || "";
     const req = http.request({
       hostname: "localhost", port: 18789, path: "/hooks/wake",
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }
-    });
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(postData),
+        "Authorization": "Bearer " + token
+      }
+    }, (res) => { res.resume(); });
+    req.on("error", (e) => log("wake HTTP 에러: " + e.message));
     req.write(postData);
     req.end();
-    execSync(\`curl -s -X POST http://localhost:18789/hooks/wake -H "Content-Type: application/json" -H "Authorization: Bearer \${process.env.OPENCLAW_HOOK_TOKEN}" -d '{"text":"'\${wakeMsg}'","mode":"now"}'\`, { timeout: 10000, env: { ...process.env } });
     log("openclaw wake 전송 완료");
   } catch (e) {
     log("wake 실패: " + e.message);
   }
 }
 
-run().catch(e => { console.error("FATAL:", e); process.exit(1); });
+run().catch(function(e) {
+  console.error("FATAL:", e.message);
+  console.error(e.stack);
+  restoreSettings();
+  process.exit(1);
+});

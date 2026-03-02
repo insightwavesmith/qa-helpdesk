@@ -2,8 +2,8 @@ import Image from "next/image";
 
 export function AuthorProfileCard() {
   return (
-    <div className="border-t border-gray-200 pt-8 mt-12">
-      <div className="flex items-center gap-5">
+    <div className="border-t border-b border-slate-200 py-6 mt-8">
+      <div className="flex items-center gap-4">
         <div className="flex-shrink-0">
           <Image
             src="/images/meta-partner/profile-smith.png"
@@ -14,25 +14,28 @@ export function AuthorProfileCard() {
           />
         </div>
         <div>
-          <p className="text-base font-bold text-[#1a1a2e]">
+          <p className="font-extrabold text-base text-gray-900">
             스미스{" "}
-            <span className="text-sm font-semibold text-[#F75D5D]">
+            <span className="font-semibold text-[13px] text-[#F75D5D]">
               자사몰사관학교 코치
             </span>
           </p>
-          <p className="text-sm text-[#64748b] mt-1 leading-relaxed">
-            Meta가 인증한 비즈니스 파트너 / 수강생 자사몰매출 450억+
+          <p className="text-[13px] text-slate-500 mt-1 leading-relaxed">
+            Meta가 인증한 비즈니스 파트너
+            <br />
+            수강생 자사몰매출 450억+
           </p>
-          <div className="mt-2">
-            <Image
-              src="/images/meta-partner/inline-positive.png"
-              alt="Meta Business Partners"
-              width={120}
-              height={36}
-              className="h-[36px] w-auto"
-            />
-          </div>
         </div>
+      </div>
+      {/* Meta Business Partners 로고 — 별도 badge-row */}
+      <div className="mt-4 pt-4 border-t border-slate-100">
+        <Image
+          src="/images/meta-partner/inline-positive.png"
+          alt="Meta Business Partners"
+          width={120}
+          height={36}
+          className="h-9 w-auto"
+        />
       </div>
     </div>
   );

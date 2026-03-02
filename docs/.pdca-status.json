@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-01T15:00:00.000Z",
+  "lastUpdated": "2026-03-02T00:00:00.000Z",
   "features": {
     "bugfix-autocomplete-secret": {
       "phase": "completed",
@@ -315,6 +315,39 @@
       },
       "completedAt": "2026-03-02",
       "notes": "SMITH_PROFILE_ROW 인라인 로고 이미지 URL을 Supabase → bscamp.vercel.app으로 변경"
+    },
+    "a1-profile-card-final": {
+      "phase": "completed",
+      "matchRate": 90,
+      "documents": {
+        "plan": "01-plan/features/a1-profile-card-final.plan.md",
+        "design": "02-design/features/a1-profile-card-final.design.md",
+        "analysis": "03-analysis/a1-a3-instant-fixes.analysis.md"
+      },
+      "completedAt": "2026-03-02",
+      "notes": "author-profile-card.tsx 목업 100% 일치 + newsletter-row-templates ROW_PROFILE 신규 HTML. email-default-template.ts는 설계대로 변경 불필요."
+    },
+    "a2-ai-loading-text": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/a2-ai-loading-text.plan.md",
+        "design": "02-design/features/a2-ai-loading-text.design.md",
+        "analysis": "03-analysis/a1-a3-instant-fixes.analysis.md"
+      },
+      "completedAt": "2026-03-02",
+      "notes": "generate-preview-modal.tsx 로딩 문구 'AI가 글을 생성중입니다.' + 주석 '// AI 호출'. 모델명 사용자 비노출 확인."
+    },
+    "a3-collect-daily-overlap-removal": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/a3-collect-daily-overlap-removal.plan.md",
+        "design": "02-design/features/a3-collect-daily-overlap-removal.design.md",
+        "analysis": "03-analysis/a1-a3-instant-fixes.analysis.md"
+      },
+      "completedAt": "2026-03-02",
+      "notes": "collect-daily/route.ts overlap 전체 삭제. 광고 수집만 유지. on-demand API 무영향. cron_runs 정상."
     }
   },
   "phaseMapping": {
