@@ -43,6 +43,7 @@ function formatDate(dateStr: string | null) {
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
 
@@ -51,8 +52,11 @@ export default function AdminReviewsPage() {
   const [filterCategory, setFilterCategory] = useState("");
 
   const fetchReviews = async () => {
+    setFetchError(null);
     const result = await getReviewsAdmin();
-    if (!result.error) {
+    if (result.error) {
+      setFetchError(result.error);
+    } else {
       setReviews(result.data as Review[]);
     }
     setLoading(false);
@@ -159,6 +163,12 @@ export default function AdminReviewsPage() {
           {filteredReviews.length}건
         </span>
       </div>
+
+      {fetchError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+          후기 목록 로드 실패: {fetchError}
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">

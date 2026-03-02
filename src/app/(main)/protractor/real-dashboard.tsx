@@ -17,8 +17,8 @@ import {
   ProtractorHeader,
   SummaryCards,
   TotalValueGauge,
-  DiagnosticPanel,
   EngagementTotalCard,
+  DiagnosticPanel,
   OverlapAnalysis,
   type OverlapData,
 } from "@/components/protractor";
@@ -75,6 +75,7 @@ interface T3Response {
     adCount: number;
   } | null;
   message?: string;
+  hasBenchmarkData?: boolean;
 }
 
 export default function RealDashboard() {
@@ -89,7 +90,7 @@ export default function RealDashboard() {
   const [insights, setInsights] = useState<AdInsightRow[]>([]);
   const [totalValue, setTotalValue] = useState<T3Response | null>(null);
 
-  const [activeTab, setActiveTab] = useState<"summary" | "content">("summary");
+  const [activeTab, setActiveTab] = useState<"summary" | "detail" | "content">("summary");
   const [overlapData, setOverlapData] = useState<OverlapData | null>(null);
   const [loadingOverlap, setLoadingOverlap] = useState(false);
   const [overlapError, setOverlapError] = useState<string | null>(null);
@@ -263,6 +264,24 @@ export default function RealDashboard() {
   const summary = insights.length > 0 ? aggregateSummary(insights) : null;
   const summaryCards = summary ? toSummaryCards(summary) : undefined;
 
+  // C1-v2: 참여합계 데이터 추출 (IIFE → 명시적 변수)
+  const engagementData = (() => {
+    if (!totalValue?.diagnostics) return null;
+    const engPart = Object.values(totalValue.diagnostics)
+      .find((p) => p.label === "참여율");
+    const engMetric = engPart?.metrics?.find((m) => m.key === "engagement_per_10k");
+    if (!engMetric) return null;
+    return {
+      value: engMetric.value ?? 0,
+      benchmark: engMetric.pctOfBenchmark != null
+        ? (engMetric.value ?? 0) / (engMetric.pctOfBenchmark / 100) : 0,
+      score: engMetric.score ?? 0,
+      grade: engMetric.score != null
+        ? (engMetric.score >= 75 ? "A" : engMetric.score >= 50 ? "B" : "C") : "F",
+    };
+  })();
+  const noBenchmarkFlag = totalValue?.hasBenchmarkData === false;
+
   // 현재 선택 계정의 믹스패널 정보
   const selectedAccount = accounts.find((a) => a.account_id === selectedAccountId);
 
@@ -320,10 +339,11 @@ export default function RealDashboard() {
       {/* 3. 탭 구조: 성과 요약 / 콘텐츠 / 벤치마크 관리 */}
       <Tabs
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v as "summary" | "content")}
+        onValueChange={(v) => setActiveTab(v as "summary" | "detail" | "content")}
       >
         <TabsList>
           <TabsTrigger value="summary">성과 요약</TabsTrigger>
+          <TabsTrigger value="detail">진단 상세</TabsTrigger>
           <TabsTrigger value="content">콘텐츠</TabsTrigger>
         </TabsList>
 
@@ -359,26 +379,13 @@ export default function RealDashboard() {
                 showMetricCards={false}
               />
 
-              {/* 3a-1. 참여합계 지표 카드 (C1 신규) */}
-              {(() => {
-                const engPart = totalValue?.diagnostics
-                  ? Object.values(totalValue.diagnostics).find((p) => p.label === "참여율")
-                  : null;
-                const engMetric = engPart?.metrics?.find((m) => m.key === "engagement_per_10k");
-                if (!engMetric) return null;
-                return (
-                  <EngagementTotalCard
-                    engagementTotal={{
-                      value: engMetric.value ?? 0,
-                      benchmark: engMetric.pctOfBenchmark != null ? (engMetric.value ?? 0) / (engMetric.pctOfBenchmark / 100) : 0,
-                      score: engMetric.score ?? 0,
-                      grade: engMetric.score != null ? (engMetric.score >= 75 ? "A" : engMetric.score >= 50 ? "B" : "C") : "F",
-                    }}
-                  />
-                );
-              })()}
+              {/* 3a-1. 참여합계 지표 카드 (C1-v2: fallback UI 포함) */}
+              <EngagementTotalCard
+                engagementTotal={engagementData}
+                noBenchmark={noBenchmarkFlag}
+              />
 
-              {/* 3b. SummaryCards */}
+              {/* 3b. SummaryCards (6개: 광고비/노출/도달/클릭/구매/ROAS) */}
               <SummaryCards cards={summaryCards} />
 
               {/* 3c. 타겟중복 분석 */}
@@ -391,6 +398,47 @@ export default function RealDashboard() {
                   onRefresh={() => fetchOverlap(true)}
                   error={overlapError}
                 />
+              )}
+            </>
+          )}
+        </TabsContent>
+
+        {/* ── 진단 상세 탭 ── */}
+        <TabsContent value="detail" className="mt-6 space-y-6">
+          {loadingData && (
+            <div className="space-y-4">
+              <Skeleton className="h-[120px] w-full rounded-lg" />
+              <Skeleton className="h-[300px] w-full rounded-lg" />
+            </div>
+          )}
+
+          {!selectedAccountId && !loadingAccounts && (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+              <BarChart3 className="h-10 w-10" />
+              <p className="mt-3 text-base font-medium">광고계정을 선택하세요</p>
+              <p className="mt-1 text-sm">
+                위 드롭다운에서 분석할 광고계정을 선택하면 데이터가 표시됩니다
+              </p>
+            </div>
+          )}
+
+          {selectedAccountId && !loadingData && (
+            <>
+              {/* 게이지 + 9개 지표 카드 포함 */}
+              <TotalValueGauge
+                data={totalValue}
+                isLoading={loadingTotalValue}
+                showMetricCards={true}
+              />
+
+              {/* DiagnosticPanel: 14개 지표 전체 (3파트 × 세부지표) */}
+              {totalValue?.diagnostics ? (
+                <DiagnosticPanel t3Diagnostics={totalValue.diagnostics} />
+              ) : (
+                <div className="rounded-lg border border-gray-200 bg-white p-6 text-center">
+                  <p className="text-sm text-gray-400">진단 데이터가 없습니다</p>
+                  <p className="text-xs text-gray-300 mt-1">벤치마크 데이터 수집 후 확인 가능합니다</p>
+                </div>
               )}
             </>
           )}

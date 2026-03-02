@@ -377,13 +377,24 @@
       "notes": "구현 완료. route.ts systemPrompt에 문체 규칙 블록 추가 (어미다양화/리듬/상투어금지/경험담톤)."
     },
     "c1-protractor-summary-cleanup": {
-      "phase": "implementing",
+      "phase": "completed",
       "matchRate": null,
       "documents": {
         "plan": "01-plan/features/c1-protractor-summary-cleanup.plan.md",
         "design": "02-design/features/c1-protractor-summary-cleanup.design.md"
       },
       "notes": "구현 완료. TotalValueGauge showMetricCards 프롭, EngagementTotalCard 신규 컴포넌트, real-dashboard 요약탭 정리."
+    },
+    "c1-v2-protractor-summary-fix": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/c1-v2-protractor-summary-fix.plan.md",
+        "design": "02-design/features/c1-v2-protractor-summary-fix.design.md",
+        "analysis": "03-analysis/c1-v2-protractor-summary-fix.analysis.md"
+      },
+      "completedAt": "2026-03-02",
+      "notes": "C1 QA FAIL 근본 수정 완료: TotalValueGauge early return 제거+배너, EngagementTotalCard fallback UI, SummaryCards 6개(노출/도달 추가), 진단상세 탭 추가. Match Rate 95%."
     },
     "c2-review-cohort-autofill": {
       "phase": "implementing",

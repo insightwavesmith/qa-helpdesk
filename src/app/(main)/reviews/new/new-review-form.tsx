@@ -38,7 +38,19 @@ export function NewReviewForm({ defaultCohort }: NewReviewFormProps) {
   const [images, setImages] = useState<ImagePreview[]>([]);
   const [uploading, setUploading] = useState(false);
   // C2: profiles.cohort 기반 초기값 자동 세팅
-  const initialCohort = defaultCohort && COHORT_OPTIONS.includes(defaultCohort) ? defaultCohort : "";
+  // DB에 "3기", "3", "제3기" 등 다양한 포맷 가능 → 정규화 후 매칭
+  const initialCohort = (() => {
+    if (!defaultCohort) return "";
+    // 정확히 일치
+    if (COHORT_OPTIONS.includes(defaultCohort)) return defaultCohort;
+    // 숫자만 추출 후 "N기" 형태로 변환
+    const num = defaultCohort.replace(/[^0-9]/g, "");
+    if (num) {
+      const normalized = `${num}기`;
+      if (COHORT_OPTIONS.includes(normalized)) return normalized;
+    }
+    return "";
+  })();
   const [cohort, setCohort] = useState(initialCohort);
   const [category, setCategory] = useState("general");
   const [rating, setRating] = useState<number | null>(null);

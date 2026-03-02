@@ -13,6 +13,7 @@ import type { AdInsightRow } from "@/app/(main)/protractor/components/ad-metrics
 export interface AccountSummary {
   totalSpend: number;
   totalImpressions: number;
+  totalReach: number;       // 도달 (C1-v2 추가)
   totalClicks: number;
   totalPurchases: number;
   totalRevenue: number;
@@ -31,6 +32,7 @@ export interface AccountSummary {
 export function aggregateSummary(insights: AdInsightRow[]): AccountSummary {
   const totalSpend = insights.reduce((sum, r) => sum + (r.spend || 0), 0);
   const totalImpressions = insights.reduce((sum, r) => sum + (r.impressions || 0), 0);
+  const totalReach = insights.reduce((sum, r) => sum + (r.reach || 0), 0);
   const totalClicks = insights.reduce((sum, r) => sum + (r.clicks || 0), 0);
   const totalPurchases = insights.reduce((sum, r) => sum + (r.purchases || 0), 0);
   const totalRevenue = insights.reduce((sum, r) => sum + (r.purchase_value || 0), 0);
@@ -38,6 +40,7 @@ export function aggregateSummary(insights: AdInsightRow[]): AccountSummary {
   return {
     totalSpend: Math.round(totalSpend),
     totalImpressions,
+    totalReach,
     totalClicks,
     totalPurchases,
     totalRevenue: Math.round(totalRevenue),
@@ -65,7 +68,7 @@ export interface SummaryCardData {
 
 /**
  * 현재 기간과 이전 기간의 insights를 비교하여 SummaryCards에 필요한 데이터 생성
- * 카드: 총 광고비, 총 클릭, 총 구매, ROAS
+ * 카드 6개: 총 광고비 / 노출 / 도달 / 총 클릭 / 총 구매 / ROAS
  */
 export function toSummaryCards(
   current: AccountSummary,
@@ -82,6 +85,18 @@ export function toSummaryCards(
       value: current.totalSpend.toLocaleString("ko-KR"),
       prefix: "₩",
       changePercent: pct(current.totalSpend, previous?.totalSpend ?? 0),
+      changeLabel: "전기간 대비",
+    },
+    {
+      label: "노출",
+      value: current.totalImpressions.toLocaleString("ko-KR"),
+      changePercent: pct(current.totalImpressions, previous?.totalImpressions ?? 0),
+      changeLabel: "전기간 대비",
+    },
+    {
+      label: "도달",
+      value: current.totalReach.toLocaleString("ko-KR"),
+      changePercent: pct(current.totalReach, previous?.totalReach ?? 0),
       changeLabel: "전기간 대비",
     },
     {

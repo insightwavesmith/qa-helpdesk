@@ -172,52 +172,60 @@ export function TotalValueGauge({ data, isLoading, showMetricCards = true }: Tot
     );
   }
 
-  // 벤치마크 데이터 없음
-  if (data && data.hasBenchmarkData === false) {
-    return (
-      <Card className="bg-white border border-gray-200">
-        <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-          <Info className="h-6 w-6 mb-2" />
-          <p className="text-sm font-medium">벤치마크 데이터 없음</p>
-          <p className="text-xs mt-1">벤치마크 관리 탭에서 수집하세요.</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // 데이터 없음
-  if (!data || data.score == null || !data.grade) {
+  // 데이터 완전 없음 — 게이지 렌더링 자체 불가
+  if (!data) {
     return (
       <Card className="bg-white border border-gray-200">
         <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
           <AlertTriangle className="h-6 w-6 mb-2" />
-          <p className="text-sm">{data?.message || "데이터를 불러올 수 없습니다"}</p>
+          <p className="text-sm">데이터를 불러올 수 없습니다</p>
           <p className="text-xs mt-1">기간을 변경하거나 다시 시도해 주세요</p>
         </CardContent>
       </Card>
     );
   }
 
-  const { score, grade, diagnostics, summary, period, dataAvailableDays } = data;
-  const gradeStyle = GRADE_STYLES[grade.grade] ?? GRADE_STYLES.C;
+  // 벤치마크/점수 없어도 게이지는 표시 (0점 F등급 fallback)
+  const noBenchmark = data.hasBenchmarkData === false;
+  const noScore = data.score == null || !data.grade;
+
+  const displayScore = data.score ?? 0;
+  const displayGrade = data.grade ?? { grade: "F" as const, label: "벤치마크 설정 필요" };
+  const gradeStyle = GRADE_STYLES[displayGrade.grade] ?? GRADE_STYLES.F;
+
+  const { diagnostics, summary, period, dataAvailableDays } = data;
 
   // 기간 라벨
-  const periodLabel = dataAvailableDays < period
-    ? `${dataAvailableDays}일치 데이터 기준`
-    : `${period}일 기준`;
+  const periodLabel = period
+    ? (dataAvailableDays < period
+      ? `${dataAvailableDays}일치 데이터 기준`
+      : `${period}일 기준`)
+    : "";
 
   return (
     <Card className="bg-white border border-gray-200">
       <CardContent className="p-5">
+        {/* 벤치마크 미설정 안내 배너 */}
+        {(noBenchmark || noScore) && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-700">
+            <Info className="h-4 w-4 shrink-0" />
+            <p>
+              {noBenchmark
+                ? "벤치마크 데이터가 없습니다. 벤치마크 관리 탭에서 수집하면 정확한 점수를 확인할 수 있습니다."
+                : "데이터가 부족합니다. 기간을 변경하거나 다시 시도해 주세요."}
+            </p>
+          </div>
+        )}
+
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
           {/* 좌측: 게이지 + 요약 */}
           <div className="flex-shrink-0 flex flex-col items-center" style={{ minWidth: "220px" }}>
-            <SemiCircleGauge score={score} grade={grade.grade} gradeStyle={gradeStyle} />
-            <p className={`-mt-1 text-sm font-semibold ${gradeStyle.text}`}>{grade.label}</p>
+            <SemiCircleGauge score={displayScore} grade={displayGrade.grade} gradeStyle={gradeStyle} />
+            <p className={`-mt-1 text-sm font-semibold ${gradeStyle.text}`}>{displayGrade.label}</p>
             <p className="mt-1 text-[11px] text-muted-foreground">{periodLabel}</p>
 
             {/* 데이터 부족 안내 */}
-            {dataAvailableDays < period && (
+            {period > 0 && dataAvailableDays < period && (
               <div className="mt-2 flex items-center gap-1 text-[11px] text-amber-600">
                 <Info className="h-3 w-3" />
                 <span>{period}일 중 {dataAvailableDays}일 데이터</span>

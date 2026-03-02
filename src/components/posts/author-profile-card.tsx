@@ -28,7 +28,7 @@ export function AuthorProfileCard() {
         </div>
       </div>
       {/* Meta Business Partners 로고 — 별도 badge-row */}
-      <div className="mt-4 pt-4 border-t border-slate-100">
+      <div className="mt-4 pt-4 border-t border-gray-200">
         <Image
           src="/images/meta-partner/inline-positive.png"
           alt="Meta Business Partners"
