@@ -92,6 +92,56 @@ process.on("SIGINT", () => {
   process.exit(0);
 });
 
+// Slack DM 전송 (실패해도 wake에 영향 없음)
+async function sendSlackDM(text) {
+  const token = process.env.SLACK_BOT_TOKEN;
+  if (!token) {
+    log("SLACK_BOT_TOKEN 없음 - Slack 알림 skip");
+    return;
+  }
+  return new Promise((resolve) => {
+    try {
+      const https = require("https");
+      const postData = JSON.stringify({ channel: "D09V1NX98SK", text });
+      const req = https.request({
+        hostname: "slack.com",
+        path: "/api/chat.postMessage",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(postData),
+          "Authorization": "Bearer " + token
+        }
+      }, (res) => {
+        let body = "";
+        res.on("data", (chunk) => { body += chunk; });
+        res.on("end", () => {
+          try {
+            const parsed = JSON.parse(body);
+            if (parsed.ok) {
+              log("Slack DM 전송 완료");
+            } else {
+              log("Slack DM 실패: " + parsed.error);
+            }
+          } catch (_) {
+            log("Slack DM 응답 파싱 실패");
+          }
+          resolve();
+        });
+      });
+      req.on("error", (e) => {
+        log("Slack DM HTTP 에러: " + e.message);
+        resolve();
+      });
+      req.write(postData);
+      req.end();
+    } catch (e) {
+      log("Slack DM 예외: " + e.message);
+      resolve();
+    }
+  });
+}
+
 async function run() {
   // [FIX] LOG_FILE 먼저 초기화한 뒤 로깅 시작
   fs.writeFileSync(LOG_FILE, "");
@@ -125,6 +175,7 @@ async function run() {
   const start = Date.now();
   let turns = 0, lastText = "", toolUses = 0;
   let resultWritten = false;
+  let slackMsg = null; // Slack DM 메시지 (완료/에러 시 설정)
 
   log("시작 [" + mode + "]: " + prompt.substring(0, 100));
 
@@ -171,6 +222,7 @@ async function run() {
         fs.writeFileSync(RESULT_FILE, JSON.stringify(result, null, 2));
         resultWritten = true;
         log("완료: " + msg.subtype + " (" + mins + "분, " + turns + "턴, " + toolUses + "도구)");
+        slackMsg = `[에이전트팀] ${mode} 완료 (${mins}분, ${turns}턴). 모찌에게 보고 요청.`;
       }
     }
   } catch (e) {
@@ -187,6 +239,7 @@ async function run() {
     resultWritten = true;
     log("에러: " + e.message);
     log("스택: " + (e.stack || "").split("\n").slice(0, 5).join(" | "));
+    slackMsg = `[에이전트팀] ${mode} 실패: ${e.message}. 확인 필요.`;
   } finally {
     // [FIX] finally: 정상 완료 또는 에러 시 settings 반드시 복구
     restoreSettings();
@@ -207,6 +260,13 @@ async function run() {
       fs.writeFileSync(RESULT_FILE, JSON.stringify(result, null, 2));
       log("불완전 종료 (" + mins + "분, " + turns + "턴) - result 이벤트 없이 루프 종료됨");
     }
+  }
+
+  // Slack DM 전송 (wake 직전, 실패해도 wake는 반드시 실행)
+  try {
+    await sendSlackDM(slackMsg || `[에이전트팀] ${mode} 종료. /tmp/agent-sdk-result.json 확인.`);
+  } catch (e) {
+    log("Slack DM 전송 중 예외: " + e.message);
   }
 
   // openclaw wake (HTTP API)

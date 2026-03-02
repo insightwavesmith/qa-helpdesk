@@ -2,6 +2,9 @@
   font-size: 16px;
   line-height: 1.8;
   color: #333333;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  letter-spacing: -0.01em;
 }
 
 .post-body h2 {
@@ -23,7 +26,7 @@
 }
 
 .post-body p {
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
 .post-body blockquote {
@@ -181,7 +184,8 @@
 .post-body img {
   width: 100%;
   border-radius: 8px;
-  margin: 16px 0;
+  margin-top: 24px;
+  margin-bottom: 24px;
 }
 
 .post-body hr {
@@ -231,6 +235,8 @@
   border-radius: 8px;
   min-height: 200px;
   background: #f8f9fa;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .post-body .post-image-figure figcaption {

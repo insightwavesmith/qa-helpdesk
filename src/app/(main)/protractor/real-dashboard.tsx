@@ -18,6 +18,7 @@ import {
   SummaryCards,
   TotalValueGauge,
   DiagnosticPanel,
+  EngagementTotalCard,
   OverlapAnalysis,
   type OverlapData,
 } from "@/components/protractor";
@@ -351,21 +352,36 @@ export default function RealDashboard() {
           {/* 데이터 표시 */}
           {selectedAccountId && !loadingData && (
             <>
-              {/* 3a. TotalValueGauge (T3 엔진) */}
+              {/* 3a. TotalValueGauge (T3 엔진) — 9개 지표 카드 숨김 */}
               <TotalValueGauge
                 data={totalValue}
                 isLoading={loadingTotalValue}
+                showMetricCards={false}
               />
+
+              {/* 3a-1. 참여합계 지표 카드 (C1 신규) */}
+              {(() => {
+                const engPart = totalValue?.diagnostics
+                  ? Object.values(totalValue.diagnostics).find((p) => p.label === "참여율")
+                  : null;
+                const engMetric = engPart?.metrics?.find((m) => m.key === "engagement_per_10k");
+                if (!engMetric) return null;
+                return (
+                  <EngagementTotalCard
+                    engagementTotal={{
+                      value: engMetric.value ?? 0,
+                      benchmark: engMetric.pctOfBenchmark != null ? (engMetric.value ?? 0) / (engMetric.pctOfBenchmark / 100) : 0,
+                      score: engMetric.score ?? 0,
+                      grade: engMetric.score != null ? (engMetric.score >= 75 ? "A" : engMetric.score >= 50 ? "B" : "C") : "F",
+                    }}
+                  />
+                );
+              })()}
 
               {/* 3b. SummaryCards */}
               <SummaryCards cards={summaryCards} />
 
-              {/* 3c. 진단 3컬럼 (T3 기반점수 / 참여율 / 전환율) */}
-              {totalValue?.diagnostics && (
-                <DiagnosticPanel t3Diagnostics={totalValue.diagnostics} />
-              )}
-
-              {/* 3d. 타겟중복 분석 */}
+              {/* 3c. 타겟중복 분석 */}
               {selectedAccountId && (
                 <OverlapAnalysis
                   accountId={selectedAccountId}

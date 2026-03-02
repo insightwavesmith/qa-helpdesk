@@ -28,14 +28,18 @@ export async function getReviews({
     query = query.eq("category", filters.category);
   }
 
-  // is_pinned first, then sort
+  // is_featured first, then is_pinned, then sort
   if (filters?.sortBy === "rating") {
     query = query
+      .order("is_featured", { ascending: false })
+      .order("featured_order", { ascending: true, nullsFirst: false })
       .order("is_pinned", { ascending: false })
       .order("rating", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false });
   } else {
     query = query
+      .order("is_featured", { ascending: false })
+      .order("featured_order", { ascending: true, nullsFirst: false })
       .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: false });
   }
@@ -224,6 +228,99 @@ export async function togglePinReview(id: string) {
   return { error: null };
 }
 
+// 베스트 후기 선정/해제 토글 (관리자 전용, 최대 5개)
+export async function toggleFeaturedReview(reviewId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "인증되지 않은 사용자입니다." };
+
+  const svc = createServiceClient();
+  const { data: profile } = await svc
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "admin") {
+    return { success: false, error: "관리자만 베스트 후기를 선정할 수 있습니다." };
+  }
+
+  const { data: review, error: fetchError } = await svc
+    .from("reviews")
+    .select("is_featured")
+    .eq("id", reviewId)
+    .single();
+
+  if (fetchError || !review) {
+    return { success: false, error: "후기를 찾을 수 없습니다." };
+  }
+
+  if (review.is_featured) {
+    // 해제
+    await svc
+      .from("reviews")
+      .update({ is_featured: false, featured_order: null })
+      .eq("id", reviewId);
+
+    // 나머지 순서 재정렬
+    await reorderFeaturedReviews(svc);
+  } else {
+    // 선정: 최대 5개 확인
+    const { count } = await svc
+      .from("reviews")
+      .select("id", { count: "exact", head: true })
+      .eq("is_featured", true);
+
+    if ((count ?? 0) >= 5) {
+      return { success: false, error: "베스트 후기는 최대 5개까지 선정할 수 있습니다." };
+    }
+
+    // 다음 순서 번호
+    const { data: maxOrder } = await svc
+      .from("reviews")
+      .select("featured_order")
+      .eq("is_featured", true)
+      .order("featured_order", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const nextOrder = (maxOrder?.featured_order ?? 0) + 1;
+
+    await svc
+      .from("reviews")
+      .update({ is_featured: true, featured_order: nextOrder })
+      .eq("id", reviewId);
+  }
+
+  revalidatePath("/reviews");
+  revalidatePath("/admin/reviews");
+  return { success: true, error: null };
+}
+
+// 베스트 후기 순서 재정렬 (내부 헬퍼)
+async function reorderFeaturedReviews(
+  svc: ReturnType<typeof createServiceClient>,
+) {
+  const { data: featured } = await svc
+    .from("reviews")
+    .select("id, featured_order")
+    .eq("is_featured", true)
+    .order("featured_order", { ascending: true });
+
+  if (!featured) return;
+
+  for (let i = 0; i < featured.length; i++) {
+    if (featured[i].featured_order !== i + 1) {
+      await svc
+        .from("reviews")
+        .update({ featured_order: i + 1 })
+        .eq("id", featured[i].id);
+    }
+  }
+}
+
 // 관리자 후기 목록 (전체 + 작성자 정보)
 export async function getReviewsAdmin() {
   const svc = createServiceClient();
@@ -231,6 +328,8 @@ export async function getReviewsAdmin() {
   const { data, error } = await svc
     .from("reviews")
     .select("*, author:profiles!reviews_author_id_fkey(name)")
+    .order("is_featured", { ascending: false })
+    .order("featured_order", { ascending: true, nullsFirst: false })
     .order("is_pinned", { ascending: false })
     .order("created_at", { ascending: false });
 

@@ -1,4 +1,4 @@
-# TASK.md — 즉시 수정 (A1~A3)
+# TASK.md — B+C 개선
 
 ## 빌드/테스트
 - npm run build 성공 필수
@@ -6,77 +6,146 @@
 
 ---
 
-## A1. 프로필 카드 문구 + 로고 수정
+## B1. 프로필 카드 문구 수정
 
 ### 목표
-정보공유 글 하단 프로필 카드와 이메일 프로필 카드를 확정 목업대로 수정
+Meta 가이드라인 위반 문구 수정
 
 ### 현재 동작
-- "메타파트너 / 메타공식 프로페셔널" 표시
-- "스킨스쿨 / 재미어트 Co-founder" 표시
-- Meta Business Partners 인라인 로고 없거나 불일치
+- "Meta가 인증한 비즈니스 파트너" 표시 (Meta가 주어 = 가이드라인 위반)
 
 ### 기대 동작
-- 1줄차: Meta Business Partners 로고 인라인 (높이 36px) + "Meta가 인증한 비즈니스 파트너"
-- 2줄차: "수강생 자사몰매출 450억+" 유지
-- "스킨스쿨 / 재미어트 Co-founder" 제거
-- 정보공유 글 하단 프로필 카드 + 이메일 템플릿 프로필 카드 둘 다 동일 적용
-- 목업 참고: docs/mockups/profile-card-final.html
-
-### 수정 대상 파일 (참고용)
-- 정보공유 글 하단: src/components/posts/ 내 프로필 카드 컴포넌트
-- 이메일 템플릿: src/app/api/admin/email/ 또는 src/components/email/ 내 프로필 카드
-- Meta 로고 이미지: public/images/ 내 Meta Business Partners 로고
+- "Meta Business Partner로서 광고 성과를 높입니다" 로 변경
+- 정보공유 하단 프로필 카드 + 이메일 프로필 카드 둘 다 동일 적용
 
 ### 하지 말 것
-- 프로필 카드 레이아웃 구조 변경
+- 프로필 카드 레이아웃/로고 변경
 - 다른 페이지 수정
 
 ---
 
-## A2. 정보공유 AI 생성 로딩 문구 변경
+## B2. 정보공유 CSS 미세 조정
 
 ### 목표
-AI 글 생성 중 표시되는 로딩 문구에서 모델명 노출 제거
+정보공유 글 상세 페이지 가독성 향상
 
 ### 현재 동작
-- "Sonnet이 정보공유를 생성하고 있습니다..." (모델명 직접 노출)
+- p margin-bottom: 16px (단락 간격 좁음)
+- letter-spacing: 없음 (한글 기본 자간)
+- 이미지 상하 여백 부족
+- 프로필 카드 구분선 얇음
 
 ### 기대 동작
-- "AI가 글을 생성중입니다."
-- 모델명(Sonnet, Claude 등) 사용자에게 노출하지 않음
+- p margin-bottom: 24px
+- letter-spacing: -0.01em (본문 전체)
+- 이미지(img) 상하 margin: 24px
+- 프로필 카드 상단 구분선: border-top 2px solid #e5e7eb + margin-top 40px
 
 ### 수정 대상 파일 (참고용)
-- 프론트엔드: 정보공유 생성/편집 페이지에서 "Sonnet" 문자열이 있는 곳
-- 백엔드 API 응답에 모델명이 포함되어 있다면 제거
+- src/components/posts/post-body.css
 
 ### 하지 말 것
-- AI 생성 로직 변경
-- 프롬프트 내용 변경
-- 다른 로딩 UI 수정
+- font-size, line-height 변경 (현재 16px, 1.8 이미 적절)
+- h2 margin-top 변경 (현재 48px 이미 적절)
+- 다른 페이지 CSS 영향
 
 ---
 
-## A3. 데일리콜랙트 overlap 제거
+## B3. AI 프롬프트 humanize
 
 ### 목표
-collect-daily 크론에서 overlap 수집 코드 제거. 광고 데이터만 수집.
+정보공유 AI 생성 글의 문체를 자연스럽게 개선 (AI틱한 느낌 제거)
 
 ### 현재 동작
-- collect-daily가 광고 데이터 수집 + overlap pair 순차 Meta API 호출 (최대 28쌍)
-- overlap 때문에 Vercel 300초(maxDuration) 타임아웃 발생
+- "-었요. -요" 반복 어미로 로봇 느낌
+- 모든 문장이 비슷한 길이
+- "매우 중요합니다", "필수적입니다" 같은 AI 상투어 반복
 
 ### 기대 동작
-- collect-daily = 광고 데이터 수집만 (Meta insights → daily_ad_insights upsert)
-- overlap 관련 코드 전부 제거 (fetchCombinedReach, pair 계산, overlap upsert 등)
-- 기존 overlap 데이터(DB)는 유지
-- cron_runs 기록은 정상 동작 유지
+프롬프트에 문체 규칙 추가:
+- 문장 끝 다양화: ~요, ~다, ~죠, ~거든요, ~네요, ~데요 섞어서 쓰기. 같은 어미 3번 연속 금지.
+- 문장 리듬: 짧은 문장(10자 이내)과 긴 문장(40자+) 번갈아.
+- 의문문/감탄문: 섹션당 1~2개. "왜 이렇게 될까요?" "진짜 됩니다."
+- 구어체 전환어: "사실", "솔직히", "그런데 말이죠" 적절히.
+- AI 상투어 금지: "매우 중요합니다", "필수적입니다", "핵심입니다", "반드시" 등.
+- 경험담 톤: 교육 현장에서 실제로 본 것처럼.
 
 ### 수정 대상 파일 (참고용)
-- src/app/api/cron/collect-daily/route.ts
+- src/app/api/admin/curation/generate/route.ts (system prompt)
 
 ### 하지 말 것
-- overlap DB 테이블/데이터 삭제
-- 프론트엔드 overlap 표시 UI 변경
-- on-demand overlap API (/api/protractor/overlap) 수정
-- collect-mixpanel, collect-benchmarks 수정
+- AI 모델 변경
+- RAG 로직 변경
+- 글 구조(훅→도입→목차→본론→마치며) 변경
+- 최소 글자 수(4,000자) 변경
+
+---
+
+## C1. 총가치각도기 성과요약 정리
+
+### 목표
+성과요약 탭을 간결하게 정리. 진단상세와 차별화.
+
+### 현재 동작
+- 성과요약 탭에 게이지 + 9개 지표 카드 + SummaryCards 6개 + DiagnosticPanel + OverlapAnalysis 전부 표시
+- 진단상세와 거의 같은 내용 반복
+
+### 기대 동작
+- 성과요약 탭: 게이지(T3 점수) + A/B/C 등급 카드 3장(기반/참여/전환) + 참여합계 지표만 표시
+- 9개 개별 지표 카드 제거 (진단상세에서 볼 수 있음)
+- SummaryCards 6개 유지 (광고비/노출/도달/클릭/구매/ROAS)
+- OverlapAnalysis 유지
+
+### 하지 말 것
+- 진단 엔진 로직 변경
+- 콘텐츠 탭 변경
+- 벤치마크 계산 방식 변경
+
+---
+
+## C2. 후기 기수 자동 입력
+
+### 목표
+수강생이 후기 작성 시 기수를 자동으로 채워주기
+
+### 현재 동작
+- 기수 드롭다운에서 수동 선택 (1기~5기 하드코딩)
+- profiles 테이블에 cohort 필드 있음
+
+### 기대 동작
+- 후기 작성 폼 진입 시 현재 로그인 수강생의 profiles.cohort 값을 기수 드롭다운 기본값으로 자동 세팅
+- 수동 변경 가능하게 유지
+- 드롭다운 옵션: 1기~10기로 확장
+
+### 수정 대상 파일 (참고용)
+- src/app/(main)/reviews/new/new-review-form.tsx
+
+### 하지 말 것
+- 후기 작성 폼 레이아웃 변경
+- reviews 테이블 구조 변경
+
+---
+
+## C3. 베스트 후기
+
+### 목표
+관리자가 베스트 후기를 선정하고 상단에 노출
+
+### 현재 동작
+- 모든 후기가 동일하게 목록 표시
+- 베스트 선정 기능 없음
+
+### 기대 동작
+- reviews 테이블에 is_featured boolean (default false) + featured_order integer 컬럼 추가
+- 관리자 후기 관리 페이지에서 베스트 토글 버튼
+- 후기 목록 페이지에서 베스트 후기 상단 하이라이트 표시 (뱃지 또는 배경색 구분)
+- 베스트 후기 최대 5개
+
+### 수정 대상 파일 (참고용)
+- DB 마이그레이션 필요
+- src/app/(main)/reviews/ 관련 컴포넌트
+- src/app/api/ 후기 API
+
+### 하지 말 것
+- 기존 후기 데이터 변경
+- 후기 작성 폼 변경 (C2와 별개)

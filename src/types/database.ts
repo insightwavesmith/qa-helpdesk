@@ -1674,6 +1674,8 @@ export type Database = {
           created_at: string | null
           id: string
           image_urls: string[] | null
+          is_featured: boolean
+          featured_order: number | null
           is_pinned: boolean
           like_count: number | null
           rating: number | null
@@ -1690,6 +1692,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           image_urls?: string[] | null
+          is_featured?: boolean
+          featured_order?: number | null
           is_pinned?: boolean
           like_count?: number | null
           rating?: number | null
@@ -1706,6 +1710,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           image_urls?: string[] | null
+          is_featured?: boolean
+          featured_order?: number | null
           is_pinned?: boolean
           like_count?: number | null
           rating?: number | null

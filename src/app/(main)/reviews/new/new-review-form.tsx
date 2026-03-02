@@ -15,7 +15,7 @@ import Image from "next/image";
 const MAX_IMAGES = 3;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-const COHORT_OPTIONS = ["선택 안함", "1기", "2기", "3기", "4기", "5기"];
+const COHORT_OPTIONS = ["선택 안함", "1기", "2기", "3기", "4기", "5기", "6기", "7기", "8기", "9기", "10기"];
 const CATEGORY_OPTIONS = [
   { value: "general", label: "일반후기" },
   { value: "graduation", label: "졸업후기" },
@@ -27,13 +27,19 @@ interface ImagePreview {
   url: string;
 }
 
-export function NewReviewForm() {
+interface NewReviewFormProps {
+  defaultCohort?: string | null;
+}
+
+export function NewReviewForm({ defaultCohort }: NewReviewFormProps) {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [images, setImages] = useState<ImagePreview[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [cohort, setCohort] = useState("");
+  // C2: profiles.cohort 기반 초기값 자동 세팅
+  const initialCohort = defaultCohort && COHORT_OPTIONS.includes(defaultCohort) ? defaultCohort : "";
+  const [cohort, setCohort] = useState(initialCohort);
   const [category, setCategory] = useState("general");
   const [rating, setRating] = useState<number | null>(null);
   const [hoverRating, setHoverRating] = useState<number | null>(null);

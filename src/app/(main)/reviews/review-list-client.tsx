@@ -19,6 +19,8 @@ interface Review {
   rating?: number | null;
   youtube_url?: string | null;
   is_pinned?: boolean;
+  is_featured?: boolean;
+  featured_order?: number | null;
 }
 
 interface ReviewListClientProps {
@@ -28,7 +30,7 @@ interface ReviewListClientProps {
   totalCount: number;
 }
 
-const COHORT_FILTER_OPTIONS = ["전체", "1기", "2기", "3기", "4기", "5기"];
+const COHORT_FILTER_OPTIONS = ["전체", "1기", "2기", "3기", "4기", "5기", "6기", "7기", "8기", "9기", "10기"];
 const CATEGORY_FILTER_OPTIONS = [
   { value: "", label: "전체" },
   { value: "general", label: "일반후기" },
@@ -167,7 +169,11 @@ export function ReviewListClient({
               <Link
                 key={review.id}
                 href={`/reviews/${review.id}`}
-                className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+                className={`group rounded-xl border overflow-hidden hover:shadow-md transition-shadow ${
+                  review.is_featured
+                    ? "border-yellow-300 bg-yellow-50/50 ring-1 ring-yellow-200"
+                    : "bg-white border-gray-200"
+                }`}
               >
                 {review.image_urls.length > 0 && (
                   <div className="relative w-full h-48 bg-gray-100">
@@ -181,6 +187,11 @@ export function ReviewListClient({
                 )}
                 <div className="p-4">
                   <div className="flex items-center gap-1.5 mb-1.5">
+                    {review.is_featured && (
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-yellow-100 px-1.5 py-0.5 text-[10px] font-semibold text-yellow-800">
+                        ⭐ 베스트
+                      </span>
+                    )}
                     {review.is_pinned && (
                       <span className="inline-flex items-center gap-0.5 rounded bg-[#F75D5D]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#F75D5D]">
                         <Pin className="h-2.5 w-2.5" />

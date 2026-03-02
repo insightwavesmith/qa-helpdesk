@@ -45,6 +45,7 @@ interface T3Data {
 interface TotalValueGaugeProps {
   data: T3Data | null;
   isLoading?: boolean;
+  showMetricCards?: boolean; // default: true (하위 호환)
 }
 
 // ── 등급별 스타일 ──
@@ -159,7 +160,7 @@ function fmtCurrency(n: number): string {
 
 // ── 메인 컴포넌트 ──
 
-export function TotalValueGauge({ data, isLoading }: TotalValueGaugeProps) {
+export function TotalValueGauge({ data, isLoading, showMetricCards = true }: TotalValueGaugeProps) {
   if (isLoading) {
     return (
       <Card>
@@ -240,8 +241,8 @@ export function TotalValueGauge({ data, isLoading }: TotalValueGaugeProps) {
             )}
           </div>
 
-          {/* 우측: 지표 카드 (3×3 그리드) */}
-          <div className="grid flex-1 grid-cols-3 gap-3">
+          {/* 우측: 지표 카드 (3×3 그리드) — showMetricCards에 따라 표시/숨김 */}
+          {showMetricCards && <div className="grid flex-1 grid-cols-3 gap-3">
             {data.metrics.map((m) => {
               const barColor = m.score != null
                 ? m.score >= 75 ? "bg-green-500" : m.score >= 50 ? "bg-yellow-500" : "bg-red-500"
@@ -284,7 +285,7 @@ export function TotalValueGauge({ data, isLoading }: TotalValueGaugeProps) {
                 </div>
               );
             })}
-          </div>
+          </div>}
         </div>
       </CardContent>
     </Card>

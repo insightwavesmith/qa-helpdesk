@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export function AuthorProfileCard() {
   return (
-    <div className="border-t border-b border-slate-200 py-6 mt-8">
+    <div className="border-t-2 border-b border-gray-200 py-6 mt-10">
       <div className="flex items-center gap-4">
         <div className="flex-shrink-0">
           <Image
@@ -21,7 +21,7 @@ export function AuthorProfileCard() {
             </span>
           </p>
           <p className="text-[13px] text-slate-500 mt-1 leading-relaxed">
-            Meta가 인증한 비즈니스 파트너
+            Meta Business Partner로서 광고 성과를 높입니다
             <br />
             수강생 자사몰매출 450억+
           </p>

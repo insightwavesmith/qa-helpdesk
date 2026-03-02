@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-02T00:00:00.000Z",
+  "lastUpdated": "2026-03-02T12:00:00.000Z",
   "features": {
     "bugfix-autocomplete-secret": {
       "phase": "completed",
@@ -348,6 +348,60 @@
       },
       "completedAt": "2026-03-02",
       "notes": "collect-daily/route.ts overlap 전체 삭제. 광고 수집만 유지. on-demand API 무영향. cron_runs 정상."
+    },
+    "b1-profile-card-text": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/b1-profile-card-text.plan.md",
+        "design": "02-design/features/b1-profile-card-text.design.md"
+      },
+      "notes": "구현 완료. 3개 파일 텍스트 변경: author-profile-card.tsx, email-default-template.ts, newsletter-row-templates.ts"
+    },
+    "b2-post-css-tuning": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/b2-post-css-tuning.plan.md",
+        "design": "02-design/features/b2-post-css-tuning.design.md"
+      },
+      "notes": "구현 완료. post-body.css (letter-spacing, p margin, img margin) + author-profile-card.tsx (border-t-2, mt-10)"
+    },
+    "b3-ai-prompt-humanize": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/b3-ai-prompt-humanize.plan.md",
+        "design": "02-design/features/b3-ai-prompt-humanize.design.md"
+      },
+      "notes": "구현 완료. route.ts systemPrompt에 문체 규칙 블록 추가 (어미다양화/리듬/상투어금지/경험담톤)."
+    },
+    "c1-protractor-summary-cleanup": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/c1-protractor-summary-cleanup.plan.md",
+        "design": "02-design/features/c1-protractor-summary-cleanup.design.md"
+      },
+      "notes": "구현 완료. TotalValueGauge showMetricCards 프롭, EngagementTotalCard 신규 컴포넌트, real-dashboard 요약탭 정리."
+    },
+    "c2-review-cohort-autofill": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/c2-review-cohort-autofill.plan.md",
+        "design": "02-design/features/c2-review-cohort-autofill.design.md"
+      },
+      "notes": "구현 완료. new-review-form defaultCohort 프롭, page.tsx cohort 쿼리, 4개 파일 10기 확장."
+    },
+    "c3-best-reviews": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/c3-best-reviews.plan.md",
+        "design": "02-design/features/c3-best-reviews.design.md"
+      },
+      "notes": "구현 완료. 마이그레이션+타입+toggleFeaturedReview 액션+정렬 수정+관리자 토글+목록 하이라이트."
     }
   },
   "phaseMapping": {

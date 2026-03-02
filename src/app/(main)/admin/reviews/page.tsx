@@ -7,10 +7,11 @@ import {
   getReviewsAdmin,
   deleteReview,
   togglePinReview,
+  toggleFeaturedReview,
   createAdminReview,
 } from "@/actions/reviews";
 import { toast } from "sonner";
-import { Pin, Trash2, Loader2, Plus, X, Star, Film } from "lucide-react";
+import { Pin, Trash2, Loader2, Plus, X, Star, Film, Award } from "lucide-react";
 
 interface Review {
   id: string;
@@ -22,6 +23,8 @@ interface Review {
   rating: number | null;
   youtube_url: string | null;
   is_pinned: boolean;
+  is_featured: boolean;
+  featured_order: number | null;
   author: { name: string } | null;
 }
 
@@ -81,6 +84,18 @@ export default function AdminReviewsPage() {
     setActionId(null);
   };
 
+  const handleToggleFeatured = async (id: string) => {
+    setActionId(id);
+    const result = await toggleFeaturedReview(id);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success("베스트 상태가 변경되었습니다.");
+      await fetchReviews();
+    }
+    setActionId(null);
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("이 후기를 삭제하시겠습니까?")) return;
     setActionId(id);
@@ -124,7 +139,7 @@ export default function AdminReviewsPage() {
           className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D]/30 focus:border-[#F75D5D]"
         >
           <option value="">전체 기수</option>
-          {["1기", "2기", "3기", "4기", "5기"].map((opt) => (
+          {["1기", "2기", "3기", "4기", "5기", "6기", "7기", "8기", "9기", "10기"].map((opt) => (
             <option key={opt} value={opt}>
               {opt}
             </option>
@@ -156,6 +171,7 @@ export default function AdminReviewsPage() {
                 <th className="text-left px-4 py-3 font-medium text-gray-500">카테고리</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-500">별점</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-500">날짜</th>
+                <th className="text-center px-4 py-3 font-medium text-gray-500">베스트</th>
                 <th className="text-center px-4 py-3 font-medium text-gray-500">고정</th>
                 <th className="text-center px-4 py-3 font-medium text-gray-500">액션</th>
               </tr>
@@ -211,6 +227,22 @@ export default function AdminReviewsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => handleToggleFeatured(review.id)}
+                      disabled={actionId === review.id}
+                      className={review.is_featured ? "text-yellow-600" : "text-gray-400"}
+                      title={review.is_featured ? `베스트 해제 (#${review.featured_order})` : "베스트 선정"}
+                    >
+                      {actionId === review.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Award className={`h-4 w-4 ${review.is_featured ? "fill-yellow-400 text-yellow-600" : ""}`} />
+                      )}
+                    </Button>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleTogglePin(review.id)}
                       disabled={actionId === review.id}
                       className={review.is_pinned ? "text-[#F75D5D]" : "text-gray-400"}
@@ -241,7 +273,7 @@ export default function AdminReviewsPage() {
               ))}
               {filteredReviews.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
+                  <td colSpan={9} className="px-4 py-12 text-center text-gray-400">
                     {filterCohort || filterCategory
                       ? "필터 조건에 맞는 후기가 없습니다."
                       : "등록된 후기가 없습니다."}
@@ -404,7 +436,7 @@ function ReviewModal({
               className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D]/30 focus:border-[#F75D5D]"
             >
               <option value="">선택 안함</option>
-              {["1기", "2기", "3기", "4기", "5기"].map((opt) => (
+              {["1기", "2기", "3기", "4기", "5기", "6기", "7기", "8기", "9기", "10기"].map((opt) => (
                 <option key={opt} value={opt}>
                   {opt}
                 </option>

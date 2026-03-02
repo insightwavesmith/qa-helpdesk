@@ -13,7 +13,7 @@ export default async function NewReviewPage() {
   const svc = createServiceClient();
   const { data: profile } = await svc
     .from("profiles")
-    .select("role")
+    .select("role, cohort")
     .eq("id", user.id)
     .single();
 
@@ -21,9 +21,12 @@ export default async function NewReviewPage() {
     redirect("/reviews");
   }
 
+  // C2: profiles.cohort → 드롭다운 기본값 자동 세팅
+  const userCohort = profile?.cohort ?? null;
+
   return (
     <div className="max-w-2xl mx-auto px-6 py-8">
-      <NewReviewForm />
+      <NewReviewForm defaultCohort={userCohort} />
     </div>
   );
 }
