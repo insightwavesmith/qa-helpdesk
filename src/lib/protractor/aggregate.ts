@@ -17,9 +17,13 @@ export interface AccountSummary {
   totalClicks: number;
   totalPurchases: number;
   totalRevenue: number;
-  avgCtr: number;    // SUM(clicks)/SUM(impressions)*100
-  avgCpc: number;    // SUM(spend)/SUM(clicks)
-  roas: number;      // SUM(purchase_value)/SUM(spend)
+  avgCtr: number;              // SUM(clicks)/SUM(impressions)*100
+  avgCpc: number;              // SUM(spend)/SUM(clicks)
+  roas: number;                // SUM(purchase_value)/SUM(spend)
+  // T2: 핵심 성과 지표 (SummaryCards용)
+  avgVideoP3sRate: number;        // 3초시청률 가중평균 (%)
+  avgClickToPurchaseRate: number; // 구매전환율 = purchases/clicks*100
+  avgReachToPurchaseRate: number; // 노출당구매확률 = purchases/impressions*100
 }
 
 /**
@@ -37,6 +41,12 @@ export function aggregateSummary(insights: AdInsightRow[]): AccountSummary {
   const totalPurchases = insights.reduce((sum, r) => sum + (r.purchases || 0), 0);
   const totalRevenue = insights.reduce((sum, r) => sum + (r.purchase_value || 0), 0);
 
+  // T2: 3초시청률 가중평균 역산 (raw 3s views = video_p3s_rate/100 * impressions)
+  const totalP3sRaw = insights.reduce(
+    (sum, r) => sum + ((r.video_p3s_rate ?? 0) / 100) * (r.impressions || 0),
+    0,
+  );
+
   return {
     totalSpend: Math.round(totalSpend),
     totalImpressions,
@@ -50,6 +60,10 @@ export function aggregateSummary(insights: AdInsightRow[]): AccountSummary {
     avgCpc: totalClicks > 0 ? Math.round(totalSpend / totalClicks) : 0,
     // SAFE_DIVIDE(SUM(purchase_value), SUM(spend))
     roas: totalSpend > 0 ? +(totalRevenue / totalSpend).toFixed(2) : 0,
+    // T2: 핵심 성과 지표
+    avgVideoP3sRate: totalImpressions > 0 ? +(totalP3sRaw / totalImpressions * 100).toFixed(2) : 0,
+    avgClickToPurchaseRate: totalClicks > 0 ? +(totalPurchases / totalClicks * 100).toFixed(2) : 0,
+    avgReachToPurchaseRate: totalImpressions > 0 ? +(totalPurchases / totalImpressions * 100).toFixed(3) : 0,
   };
 }
 
@@ -64,58 +78,101 @@ export interface SummaryCardData {
   suffix?: string;
   changePercent: number;
   changeLabel: string;
+  // T2: 벤치마크 비교 표시
+  benchmarkText?: string | null;   // "기준 1.8%" 등
+  benchmarkGood?: boolean | null;  // true=초록, false=빨강, null=색상없음
+  benchmarkAbove?: boolean | null; // true=▲(내 값이 기준 초과), false=▼(미달), null=화살표없음
+}
+
+/** T3 API 응답에서 벤치마크 계산에 필요한 최소 타입 */
+export interface T3MetricForBenchmark {
+  key: string;
+  value: number | null;
+  pctOfBenchmark: number | null;
 }
 
 /**
- * 현재 기간과 이전 기간의 insights를 비교하여 SummaryCards에 필요한 데이터 생성
- * 카드 6개: 총 광고비 / 노출 / 도달 / 총 클릭 / 총 구매 / ROAS
+ * insights 집계 → SummaryCards 6개 (T2)
+ * 3초시청률 / CTR / CPC / 구매전환율 / 노출당구매확률 / ROAS
+ * t3Metrics: T3 API 응답의 metrics 배열 (벤치마크 역산에 사용)
  */
 export function toSummaryCards(
   current: AccountSummary,
-  previous?: AccountSummary | null,
+  t3Metrics?: T3MetricForBenchmark[] | null,
 ): SummaryCardData[] {
-  const pct = (cur: number, prev: number): number => {
-    if (!prev || prev === 0) return 0;
-    return +((cur - prev) / prev * 100).toFixed(1);
-  };
+  // T3 metrics → key: 절대 벤치마크 값 맵
+  const benchMap = new Map<string, number>();
+  if (t3Metrics) {
+    for (const m of t3Metrics) {
+      if (m.value != null && m.value > 0 && m.pctOfBenchmark != null && m.pctOfBenchmark > 0) {
+        benchMap.set(m.key, m.value / (m.pctOfBenchmark / 100));
+      }
+    }
+  }
+
+  /** 벤치마크 비교 정보 생성 (ascending: true=클수록 좋음) */
+  function bm(
+    key: string,
+    myValue: number,
+    ascending: boolean,
+    formatBench: (v: number) => string,
+  ): Pick<SummaryCardData, "benchmarkText" | "benchmarkGood" | "benchmarkAbove"> {
+    const benchVal = benchMap.get(key) ?? null;
+    if (benchVal == null) return { benchmarkText: null, benchmarkGood: null, benchmarkAbove: null };
+    const isAbove = myValue > benchVal;
+    const isGood = ascending ? isAbove : !isAbove;
+    return {
+      benchmarkText: `기준 ${formatBench(benchVal)}`,
+      benchmarkGood: isGood,
+      benchmarkAbove: isAbove,
+    };
+  }
 
   return [
     {
-      label: "총 광고비",
-      value: current.totalSpend.toLocaleString("ko-KR"),
+      label: "3초시청률",
+      value: `${current.avgVideoP3sRate.toFixed(1)}%`,
+      changePercent: 0,
+      changeLabel: "",
+      ...bm("video_p3s_rate", current.avgVideoP3sRate, true, (v) => `${v.toFixed(0)}%`),
+    },
+    {
+      label: "CTR",
+      value: `${current.avgCtr.toFixed(2)}%`,
+      changePercent: 0,
+      changeLabel: "",
+      ...bm("ctr", current.avgCtr, true, (v) => `${v.toFixed(2)}%`),
+    },
+    {
+      label: "CPC",
+      value: current.avgCpc.toLocaleString("ko-KR"),
       prefix: "₩",
-      changePercent: pct(current.totalSpend, previous?.totalSpend ?? 0),
-      changeLabel: "전기간 대비",
+      changePercent: 0,
+      changeLabel: "",
+      benchmarkText: null,
+      benchmarkGood: null,
+      benchmarkAbove: null,
     },
     {
-      label: "노출",
-      value: current.totalImpressions.toLocaleString("ko-KR"),
-      changePercent: pct(current.totalImpressions, previous?.totalImpressions ?? 0),
-      changeLabel: "전기간 대비",
+      label: "구매전환율",
+      value: `${current.avgClickToPurchaseRate.toFixed(2)}%`,
+      changePercent: 0,
+      changeLabel: "",
+      ...bm("click_to_purchase_rate", current.avgClickToPurchaseRate, true, (v) => `${v.toFixed(2)}%`),
     },
     {
-      label: "도달",
-      value: current.totalReach.toLocaleString("ko-KR"),
-      changePercent: pct(current.totalReach, previous?.totalReach ?? 0),
-      changeLabel: "전기간 대비",
-    },
-    {
-      label: "총 클릭",
-      value: current.totalClicks.toLocaleString("ko-KR"),
-      changePercent: pct(current.totalClicks, previous?.totalClicks ?? 0),
-      changeLabel: "전기간 대비",
-    },
-    {
-      label: "총 구매",
-      value: current.totalPurchases.toLocaleString("ko-KR"),
-      changePercent: pct(current.totalPurchases, previous?.totalPurchases ?? 0),
-      changeLabel: "전기간 대비",
+      label: "노출당구매확률",
+      value: `${current.avgReachToPurchaseRate.toFixed(3)}%`,
+      changePercent: 0,
+      changeLabel: "",
+      ...bm("reach_to_purchase_rate", current.avgReachToPurchaseRate, true, (v) => `${v.toFixed(3)}%`),
     },
     {
       label: "ROAS",
       value: current.roas.toFixed(2),
-      changePercent: pct(current.roas, previous?.roas ?? 0),
-      changeLabel: "전기간 대비",
+      changePercent: 0,
+      changeLabel: "",
+      ...bm("roas", current.roas, true, (v) => v.toFixed(2)),
     },
   ];
 }

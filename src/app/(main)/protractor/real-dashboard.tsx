@@ -18,7 +18,6 @@ import {
   SummaryCards,
   TotalValueGauge,
   EngagementTotalCard,
-  DiagnosticPanel,
   OverlapAnalysis,
   type OverlapData,
 } from "@/components/protractor";
@@ -90,7 +89,7 @@ export default function RealDashboard() {
   const [insights, setInsights] = useState<AdInsightRow[]>([]);
   const [totalValue, setTotalValue] = useState<T3Response | null>(null);
 
-  const [activeTab, setActiveTab] = useState<"summary" | "detail" | "content">("summary");
+  const [activeTab, setActiveTab] = useState<"summary" | "content">("summary");
   const [overlapData, setOverlapData] = useState<OverlapData | null>(null);
   const [loadingOverlap, setLoadingOverlap] = useState(false);
   const [overlapError, setOverlapError] = useState<string | null>(null);
@@ -262,7 +261,8 @@ export default function RealDashboard() {
 
   // 실데이터 집계
   const summary = insights.length > 0 ? aggregateSummary(insights) : null;
-  const summaryCards = summary ? toSummaryCards(summary) : undefined;
+  // T2: totalValue.metrics를 toSummaryCards에 전달 → 벤치마크 비교 표시
+  const summaryCards = summary ? toSummaryCards(summary, totalValue?.metrics ?? null) : undefined;
 
   // C1-v2: 참여합계 데이터 추출 (IIFE → 명시적 변수)
   const engagementData = (() => {
@@ -336,14 +336,13 @@ export default function RealDashboard() {
         </div>
       )}
 
-      {/* 3. 탭 구조: 성과 요약 / 콘텐츠 / 벤치마크 관리 */}
+      {/* 3. 탭 구조: 성과 요약 / 콘텐츠 */}
       <Tabs
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v as "summary" | "detail" | "content")}
+        onValueChange={(v) => setActiveTab(v as "summary" | "content")}
       >
         <TabsList>
           <TabsTrigger value="summary">성과 요약</TabsTrigger>
-          <TabsTrigger value="detail">진단 상세</TabsTrigger>
           <TabsTrigger value="content">콘텐츠</TabsTrigger>
         </TabsList>
 
@@ -398,47 +397,6 @@ export default function RealDashboard() {
                   onRefresh={() => fetchOverlap(true)}
                   error={overlapError}
                 />
-              )}
-            </>
-          )}
-        </TabsContent>
-
-        {/* ── 진단 상세 탭 ── */}
-        <TabsContent value="detail" className="mt-6 space-y-6">
-          {loadingData && (
-            <div className="space-y-4">
-              <Skeleton className="h-[120px] w-full rounded-lg" />
-              <Skeleton className="h-[300px] w-full rounded-lg" />
-            </div>
-          )}
-
-          {!selectedAccountId && !loadingAccounts && (
-            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-              <BarChart3 className="h-10 w-10" />
-              <p className="mt-3 text-base font-medium">광고계정을 선택하세요</p>
-              <p className="mt-1 text-sm">
-                위 드롭다운에서 분석할 광고계정을 선택하면 데이터가 표시됩니다
-              </p>
-            </div>
-          )}
-
-          {selectedAccountId && !loadingData && (
-            <>
-              {/* 게이지 + 9개 지표 카드 포함 */}
-              <TotalValueGauge
-                data={totalValue}
-                isLoading={loadingTotalValue}
-                showMetricCards={true}
-              />
-
-              {/* DiagnosticPanel: 14개 지표 전체 (3파트 × 세부지표) */}
-              {totalValue?.diagnostics ? (
-                <DiagnosticPanel t3Diagnostics={totalValue.diagnostics} />
-              ) : (
-                <div className="rounded-lg border border-gray-200 bg-white p-6 text-center">
-                  <p className="text-sm text-gray-400">진단 데이터가 없습니다</p>
-                  <p className="text-xs text-gray-300 mt-1">벤치마크 데이터 수집 후 확인 가능합니다</p>
-                </div>
               )}
             </>
           )}

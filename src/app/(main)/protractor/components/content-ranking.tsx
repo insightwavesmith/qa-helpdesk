@@ -16,6 +16,7 @@ interface RawDiagnosisMetric {
   key: string | null;
   my_value: number | null;
   pct_of_benchmark: number | null;
+  abs_benchmark: number | null; // T3: 절대 벤치마크 값 (my_value=0일 때 기준값 표시용)
   verdict: string;
 }
 
@@ -124,13 +125,17 @@ function BenchmarkCompareGrid({
   ad: AdInsightRow;
   diagnosis?: RawDiagnosis;
 }) {
-  // T3: 진단 결과에서 metric key → {pct_of_benchmark, verdict} 맵 구축
-  const diagMetricMap = new Map<string, { pct_of_benchmark: number | null; verdict: string }>();
+  // T3: 진단 결과에서 metric key → {pct_of_benchmark, abs_benchmark, verdict} 맵 구축
+  const diagMetricMap = new Map<string, { pct_of_benchmark: number | null; abs_benchmark: number | null; verdict: string }>();
   if (diagnosis) {
     for (const part of diagnosis.parts) {
       for (const m of part.metrics) {
         if (m.key) {
-          diagMetricMap.set(m.key, { pct_of_benchmark: m.pct_of_benchmark, verdict: m.verdict });
+          diagMetricMap.set(m.key, {
+            pct_of_benchmark: m.pct_of_benchmark,
+            abs_benchmark: m.abs_benchmark,
+            verdict: m.verdict,
+          });
         }
       }
     }
@@ -152,10 +157,12 @@ function BenchmarkCompareGrid({
     const style = diag ? verdictStyle(diag.verdict) : { bg: "bg-gray-50", text: "text-gray-400", border: "border-gray-100" };
     const emoji = diag ? (diag.verdict.match(/[🟢🟡🔴]/u)?.[0] ?? "⚪") : "⚪";
 
-    // U3: pct_of_benchmark에서 기준값 역산 (기준값 = 내 값 / (pct / 100))
-    const benchVal = myVal != null && diag?.pct_of_benchmark != null && diag.pct_of_benchmark > 0
-      ? (myVal / diag.pct_of_benchmark) * 100
-      : null;
+    // T3: 기준값 계산 — abs_benchmark 직접 사용 우선, 없으면 pct_of_benchmark에서 역산
+    const benchVal = diag?.abs_benchmark != null && diag.abs_benchmark > 0
+      ? diag.abs_benchmark
+      : (myVal != null && myVal > 0 && diag?.pct_of_benchmark != null && diag.pct_of_benchmark > 0
+        ? (myVal / diag.pct_of_benchmark) * 100
+        : null);
 
     return (
       <div

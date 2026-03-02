@@ -1,13 +1,6 @@
 "use client";
 
-interface SummaryCardData {
-  label: string;
-  value: string;
-  prefix?: string;
-  suffix?: string;
-  changePercent: number;
-  changeLabel: string;
-}
+import type { SummaryCardData } from "@/lib/protractor/aggregate";
 
 interface SummaryCardsProps {
   cards?: SummaryCardData[];
@@ -26,6 +19,20 @@ export function SummaryCards({ cards }: SummaryCardsProps) {
     <div className="grid grid-cols-3 gap-2 lg:grid-cols-6">
       {cards.map((card) => {
         const isRoas = card.label === "ROAS";
+        const hasBenchmark = card.benchmarkText != null;
+
+        // 벤치마크 텍스트 색상
+        const benchColor = hasBenchmark
+          ? card.benchmarkGood === true
+            ? "text-green-600"
+            : card.benchmarkGood === false
+              ? "text-red-500"
+              : "text-gray-400"
+          : "text-gray-400";
+
+        // ▲/▼ 화살표
+        const arrow =
+          card.benchmarkAbove === true ? "▲" : card.benchmarkAbove === false ? "▼" : "";
 
         return (
           <div
@@ -36,6 +43,7 @@ export function SummaryCards({ cards }: SummaryCardsProps) {
                 : "border-gray-200 bg-white"
             }`}
           >
+            {/* 지표 값 */}
             <div className="flex items-baseline gap-0.5">
               {card.prefix && (
                 <span className={`text-lg font-bold ${isRoas ? "text-[#F75D5D]" : "text-gray-900"}`}>
@@ -51,9 +59,20 @@ export function SummaryCards({ cards }: SummaryCardsProps) {
                 </span>
               )}
             </div>
+
+            {/* 지표 레이블 */}
             <span className="mt-1 text-xs font-medium text-gray-400">
               {card.label}
             </span>
+
+            {/* 벤치마크 비교 (T2) */}
+            {hasBenchmark ? (
+              <span className={`mt-0.5 text-[10px] font-medium ${benchColor}`}>
+                {arrow} {card.benchmarkText}
+              </span>
+            ) : (
+              <span className="mt-0.5 text-[10px] text-transparent select-none" aria-hidden>-</span>
+            )}
           </div>
         );
       })}

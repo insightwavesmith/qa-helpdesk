@@ -177,6 +177,8 @@ export async function POST(request: NextRequest) {
               pct_of_benchmark: m.myValue != null && m.aboveAvg != null && m.aboveAvg > 0
                 ? Math.round((m.myValue / m.aboveAvg) * 100)
                 : null,
+              // T3: 절대 벤치마크 값 추가 (my_value=0일 때도 기준값 표시 가능)
+              abs_benchmark: m.aboveAvg ?? null,
               verdict: m.verdict,
             })),
         })),
