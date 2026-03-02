@@ -246,12 +246,16 @@ export async function POST(request: NextRequest) {
       headers: {
         "Content-Type": "application/json",
         "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        "anthropic-version": "2025-04-15",
       },
       body: JSON.stringify({
         model: "claude-opus-4-6",
-        max_tokens: 8192,
-        temperature: 0.7,
+        max_tokens: 16000,
+        temperature: 1,
+        thinking: {
+          type: "enabled",
+          budget_tokens: 10000,
+        },
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
       }),
@@ -267,7 +271,9 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    const text = data.content?.[0]?.text || "";
+    // thinking 블록 건너뛰고 text 블록만 추출
+    const textBlock = data.content?.find((b: { type: string }) => b.type === "text");
+    const text = textBlock?.text || "";
 
     if (!text.trim()) {
       return NextResponse.json(
