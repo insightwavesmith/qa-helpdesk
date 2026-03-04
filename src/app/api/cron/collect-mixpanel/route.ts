@@ -23,9 +23,12 @@ export async function GET(req: NextRequest) {
   const cronRunId = await startCronRun("collect-mixpanel");
   const { searchParams } = new URL(req.url);
   const dateParam = searchParams.get("date"); // optional: YYYY-MM-DD
-  const yesterday = dateParam ?? new Date(Date.now() - 86_400_000)
-    .toISOString()
-    .slice(0, 10);
+  // KST(UTC+9) 기준 어제 날짜
+  const yesterday = dateParam ?? (() => {
+    const now = new Date(Date.now() + 9 * 3600_000); // UTC → KST
+    now.setDate(now.getDate() - 1);
+    return now.toISOString().slice(0, 10);
+  })();
 
   try {
     // 1. ad_accounts + profiles JOIN → mixpanel_project_id 있는 계정 목록
