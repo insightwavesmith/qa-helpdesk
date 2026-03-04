@@ -133,7 +133,7 @@ export function QuestionsListClient({
                     <DialogTitle>수강생 전용 기능</DialogTitle>
                   </DialogHeader>
                   <p className="text-sm text-gray-600 mt-2">
-                    수강생만 질문할 수 있어요.
+                    수강생만 질문이 가능합니다.
                   </p>
                   <div className="mt-4 flex justify-end">
                     <Button asChild className="bg-[#F75D5D] hover:bg-[#E54949]">
