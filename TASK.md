@@ -1,23 +1,26 @@
-# TASK: T10-F4 — ROAS 벤치마크 기준값 표시 제거
+# TASK: Supabase SECURITY DEFINER 함수 search_path 수정
 
 ## 목표
-ROAS에 벤치마크 기준값을 표시하지 않는다. 실제 값만 보여준다.
+Supabase Security Advisor에서 경고하는 SECURITY DEFINER 함수에 `SET search_path = public` 추가.
 
 ## 현재 동작
-- 벤치마크에서 ROAS 표시 시 "2.77 (기준 2.38)" 형태로 기준값이 같이 표시됨
-- 총가치각도기에서도 ROAS에 기준값이 표시될 수 있음
+아래 함수들이 SECURITY DEFINER인데 search_path 미설정 — SQL injection 위험:
+- `debug_log_autonomous`
+- `get_user_role`
+- `is_admin`
+- `is_member_or_above`
+- `is_student_or_above`
+
+(dblink_connect_u는 시스템 함수라 제외)
 
 ## 기대 동작
-- ROAS는 실제 값만 표시. "(기준 X.XX)" 부분 제거.
-- 벤치마크 대시보드 + 총가치각도기 모두 해당.
-- 다른 지표(CTR, CPC 등)의 기준값 표시는 그대로 유지.
+각 함수에 `SET search_path = public` 추가하는 마이그레이션 SQL 작성 + 실행.
 
-## 참고 파일
-- `src/app/(main)/protractor/real-dashboard.tsx`
-- `src/components/protractor/TotalValueGauge.tsx`
-- `src/app/(main)/protractor/components/benchmark-admin.tsx`
+## 참고
+- Supabase docs: https://supabase.com/docs/guides/database/database-linter
+- 기존에 이미 설정된 함수 참고: `auto_create_ad_account`, `handle_new_user`, `is_approved_user`, `match_lecture_chunks`, `search_knowledge`, `update_content_sources_updated_at`, `update_reviews_updated_at`
 
 ## 하지 말 것
-- ROAS 데이터 수집/저장 로직 건드리지 말 것. 표시만 변경.
-- ROAS 외 다른 지표의 기준값 표시는 변경하지 말 것.
-- DB 스키마 변경 금지.
+- 함수 로직 변경 금지. search_path만 추가.
+- 테이블 구조 변경 금지.
+- dblink_connect_u는 건드리지 말 것 (시스템 함수).

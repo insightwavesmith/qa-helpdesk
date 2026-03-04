@@ -458,6 +458,16 @@
       },
       "completedAt": "2026-03-04",
       "notes": "ROAS 벤치마크 기준값 표시 제거. aggregate.ts(1곳) + TotalValueGauge(1곳) + DiagnosticPanel(3곳). 다른 지표 미영향. tsc+build 통과. Match Rate 100%."
+    },
+    "security-definer-search-path": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/security-definer-search-path.plan.md",
+        "design": "02-design/features/security-definer-search-path.design.md"
+      },
+      "completedAt": "2026-03-04",
+      "notes": "SECURITY DEFINER 함수 5개에 SET search_path = public 추가. debug_log_autonomous, get_user_role, is_admin, is_member_or_above, is_student_or_above. 로직 변경 없음."
     }
   },
   "phaseMapping": {
