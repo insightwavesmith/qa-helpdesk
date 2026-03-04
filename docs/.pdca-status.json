@@ -425,6 +425,17 @@
       },
       "completedAt": "2026-03-02",
       "notes": "T1 진단상세탭제거(100%), T2 SummaryCards 6개핵심지표+벤치마크(90%/CPC벤치마크데이터없음), T3 0.0항목벤치마크표시(100%), T4 C2후기기수자동선택(100%). 전체 20체크포인트 중 19개 일치."
+    },
+    "protractor-v5-t5-t9": {
+      "phase": "completed",
+      "matchRate": 92,
+      "documents": {
+        "plan": "01-plan/features/protractor-v5-t5-engagement-removal.plan.md",
+        "design": "02-design/features/protractor-v5-t5-engagement-removal.design.md",
+        "analysis": "03-analysis/protractor-v5-t5-t9.analysis.md"
+      },
+      "completedAt": "2026-03-04",
+      "notes": "T5 참여합계제거(100%), T6 게이지목업일치(100%), T7 데이터표시이슈(86%), T8 백필기능(80%/collect-daily리팩토링제외), T9 AI말투제거(90%). tsc+lint+build 모두 통과."
     }
   },
   "phaseMapping": {

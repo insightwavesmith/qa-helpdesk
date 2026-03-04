@@ -64,11 +64,11 @@ export function NewReviewForm({ defaultCohort }: NewReviewFormProps) {
 
     for (const file of selected) {
       if (file.size > MAX_FILE_SIZE) {
-        toast.error(`${file.name}: 5MB 이하의 파일만 업로드 가능합니다.`);
+        toast.error(`${file.name}: 5MB 이하만 업로드할 수 있어요.`);
         continue;
       }
       if (!file.type.startsWith("image/")) {
-        toast.error(`${file.name}: 이미지 파일만 업로드 가능합니다.`);
+        toast.error(`${file.name}: 이미지 파일만 업로드할 수 있어요.`);
         continue;
       }
       setImages((prev) => [

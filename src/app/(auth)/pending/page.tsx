@@ -116,15 +116,15 @@ export default function PendingPage() {
           </p>
 
           <p className="text-[#6B7280] mb-4">
-            관리자가 회원 정보를 확인한 후 승인해 드립니다.
+            관리자가 회원 정보를 확인한 후 승인합니다.
             <br />
-            승인이 완료되면 서비스를 이용하실 수 있습니다.
+            승인이 완료되면 바로 이용할 수 있어요.
           </p>
 
           <div className="flex items-center justify-center gap-2 rounded-lg bg-gray-50 p-3 mb-6">
             <Mail className="h-4 w-4 text-[#6B7280]" />
             <span className="text-sm text-[#6B7280]">
-              승인 완료 시 이메일로 안내드립니다.
+              승인되면 이메일로 알려드려요.
             </span>
           </div>
 

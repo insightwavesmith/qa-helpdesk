@@ -96,7 +96,7 @@ export function DailyMetricsTable({
           일별 성과 상세
         </h3>
         <p className="text-xs text-muted-foreground">
-          헤더를 클릭하여 정렬할 수 있습니다
+          헤더를 클릭하면 정렬돼요
         </p>
       </div>
       <div className="overflow-x-auto">

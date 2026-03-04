@@ -17,7 +17,6 @@ import {
   ProtractorHeader,
   SummaryCards,
   TotalValueGauge,
-  EngagementTotalCard,
   OverlapAnalysis,
   type OverlapData,
 } from "@/components/protractor";
@@ -98,6 +97,7 @@ export default function RealDashboard() {
   const [loadingData, setLoadingData] = useState(false);
   const [loadingTotalValue, setLoadingTotalValue] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [totalValueError, setTotalValueError] = useState<string | null>(null);
 
   // 1) 계정 목록 로드
   useEffect(() => {
@@ -171,6 +171,7 @@ export default function RealDashboard() {
 
     (async () => {
       setLoadingTotalValue(true);
+      setTotalValueError(null);
       try {
         const params = new URLSearchParams({
           account_id: selectedAccountId,
@@ -179,14 +180,21 @@ export default function RealDashboard() {
           date_end: dateRange.end,
         });
         const res = await fetch(`/api/protractor/total-value?${params}`);
-        const json: T3Response = await res.json();
+        const json = await res.json();
         if (res.ok) {
-          setTotalValue(json);
+          setTotalValue(json as T3Response);
+          setTotalValueError(null);
         } else {
           setTotalValue(null);
+          setTotalValueError(
+            res.status === 403
+              ? "권한이 없습니다"
+              : (json as { error?: string }).error || "T3 점수 조회 실패"
+          );
         }
-      } catch {
+      } catch (e) {
         setTotalValue(null);
+        setTotalValueError((e as Error).message || "T3 점수 조회 실패");
       } finally {
         setLoadingTotalValue(false);
       }
@@ -263,24 +271,6 @@ export default function RealDashboard() {
   const summary = insights.length > 0 ? aggregateSummary(insights) : null;
   // T2: totalValue.metrics를 toSummaryCards에 전달 → 벤치마크 비교 표시
   const summaryCards = summary ? toSummaryCards(summary, totalValue?.metrics ?? null) : undefined;
-
-  // C1-v2: 참여합계 데이터 추출 (IIFE → 명시적 변수)
-  const engagementData = (() => {
-    if (!totalValue?.diagnostics) return null;
-    const engPart = Object.values(totalValue.diagnostics)
-      .find((p) => p.label === "참여율");
-    const engMetric = engPart?.metrics?.find((m) => m.key === "engagement_per_10k");
-    if (!engMetric) return null;
-    return {
-      value: engMetric.value ?? 0,
-      benchmark: engMetric.pctOfBenchmark != null
-        ? (engMetric.value ?? 0) / (engMetric.pctOfBenchmark / 100) : 0,
-      score: engMetric.score ?? 0,
-      grade: engMetric.score != null
-        ? (engMetric.score >= 75 ? "A" : engMetric.score >= 50 ? "B" : "C") : "F",
-    };
-  })();
-  const noBenchmarkFlag = totalValue?.hasBenchmarkData === false;
 
   // 현재 선택 계정의 믹스패널 정보
   const selectedAccount = accounts.find((a) => a.account_id === selectedAccountId);
@@ -376,15 +366,10 @@ export default function RealDashboard() {
                 data={totalValue}
                 isLoading={loadingTotalValue}
                 showMetricCards={false}
+                errorMessage={totalValueError}
               />
 
-              {/* 3a-1. 참여합계 지표 카드 (C1-v2: fallback UI 포함) */}
-              <EngagementTotalCard
-                engagementTotal={engagementData}
-                noBenchmark={noBenchmarkFlag}
-              />
-
-              {/* 3b. SummaryCards (6개: 광고비/노출/도달/클릭/구매/ROAS) */}
+              {/* 3b. SummaryCards (6개: 3초시청률/CTR/CPC/구매전환율/노출당구매확률/ROAS) */}
               <SummaryCards cards={summaryCards} />
 
               {/* 3c. 타겟중복 분석 */}

@@ -59,9 +59,9 @@ export default function ForgotPasswordPage() {
             비밀번호 재설정
           </h1>
           <p className="text-center text-[#6B7280] text-sm mb-6">
-            가입하신 이메일을 입력하시면
+            가입하신 이메일을 입력하면
             <br />
-            비밀번호 재설정 링크를 보내드립니다.
+            비밀번호 재설정 링크를 보내드려요.
           </p>
 
           {sent ? (

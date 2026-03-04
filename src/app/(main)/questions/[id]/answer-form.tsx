@@ -44,17 +44,17 @@ export function AnswerForm({ questionId }: AnswerFormProps) {
 
       const remaining = MAX_IMAGES - images.length;
       if (remaining <= 0) {
-        toast.error(`이미지는 최대 ${MAX_IMAGES}개까지 첨부할 수 있습니다.`);
+        toast.error(`이미지는 최대 ${MAX_IMAGES}개까지 첨부할 수 있어요.`);
         return;
       }
 
       const validFiles = files.slice(0, remaining).filter((file) => {
         if (file.size > MAX_FILE_SIZE) {
-          toast.error(`${file.name}: 10MB 이하의 이미지만 첨부 가능합니다.`);
+          toast.error(`${file.name}: 10MB 이하만 첨부할 수 있어요.`);
           return false;
         }
         if (!ALLOWED_TYPES.includes(file.type)) {
-          toast.error(`${file.name}: PNG/JPG/WebP 이미지만 첨부 가능합니다.`);
+          toast.error(`${file.name}: PNG/JPG/WebP 이미지만 첨부할 수 있어요.`);
           return false;
         }
         return true;

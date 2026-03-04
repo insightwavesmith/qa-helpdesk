@@ -129,7 +129,7 @@ function StepWelcome({
       icon: MessageCircleQuestion,
       title: "Q&A 질문하기",
       description:
-        "광고 운영 중 궁금한 점을 질문하면 AI가 즉시 답변하고, 전문가가 추가 피드백을 드립니다.",
+        "광고 운영 중 궁금한 점을 질문하면 바로 답변을 받고, 전문가 피드백도 확인할 수 있어요.",
     },
     {
       icon: BookOpen,
@@ -141,7 +141,7 @@ function StepWelcome({
       icon: Target,
       title: "총가치각도기",
       description:
-        "광고 성과를 진단하고 개선 포인트를 찾아주는 자사몰사관학교 전용 분석 도구입니다.",
+        "내 광고 성과를 진단하고 개선 포인트를 찾아보세요. 자사몰사관학교 전용 분석 도구예요.",
     },
   ];
 
@@ -419,7 +419,7 @@ function StepAdAccount({
         <p className="text-[#6B7280]">
           Meta 광고 계정과 믹스패널 정보를 입력하면
           <br />
-          총가치각도기에서 광고 성과를 분석할 수 있습니다.
+          총가치각도기에서 광고 성과를 확인할 수 있어요.
         </p>
       </div>
 
@@ -568,7 +568,7 @@ function StepComplete() {
           온보딩이 완료되었습니다!
         </h2>
         <p className="text-[#6B7280]">
-          이제 자사몰사관학교 헬프데스크의 모든 기능을 이용할 수 있습니다.
+          이제 자사몰사관학교 헬프데스크의 모든 기능을 사용할 수 있어요.
         </p>
       </div>
 

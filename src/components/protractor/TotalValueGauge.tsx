@@ -46,80 +46,61 @@ interface TotalValueGaugeProps {
   data: T3Data | null;
   isLoading?: boolean;
   showMetricCards?: boolean; // default: true (하위 호환)
+  errorMessage?: string | null; // T7: 에러 메시지
 }
 
-// ── 등급별 스타일 ──
+// ── 등급 배지 스타일 (목업 기준) ──
 
-const GRADE_STYLES: Record<string, { border: string; text: string; bg: string; hex: string }> = {
-  A: { border: "border-emerald-400", text: "text-emerald-500", bg: "bg-emerald-50", hex: "#10b981" },
-  B: { border: "border-blue-400", text: "text-blue-500", bg: "bg-blue-50", hex: "#3b82f6" },
-  C: { border: "border-yellow-400", text: "text-yellow-500", bg: "bg-yellow-50", hex: "#eab308" },
-  D: { border: "border-orange-400", text: "text-orange-500", bg: "bg-orange-50", hex: "#f97316" },
-  F: { border: "border-red-400", text: "text-red-500", bg: "bg-red-50", hex: "#ef4444" },
+const GRADE_BADGE_STYLES: Record<string, string> = {
+  A: "bg-green-100 text-green-700",
+  B: "bg-yellow-100 text-yellow-700",
+  C: "bg-red-100 text-red-700",
+  D: "bg-orange-100 text-orange-700",
+  F: "bg-red-100 text-red-700",
 };
 
-// ── 반원형 SVG 게이지 ──
+// ── 서브점수 카드 부제목 ──
 
-function SemiCircleGauge({ score, grade, gradeStyle }: {
-  score: number;
-  grade: string;
-  gradeStyle: { hex: string; text: string };
-}) {
-  const cx = 120;
-  const cy = 110;
-  const r = 85;
-  const strokeWidth = 14;
-  const startAngle = Math.PI;
+const PART_SUB_LABELS: Record<string, string> = {
+  "기반점수": "노출·도달·빈도 기반",
+  "참여율": "3초시청·좋아요·공유 등",
+  "전환율": "CTR·구매·ROAS",
+};
 
-  function arcPath(startDeg: number, endDeg: number): string {
-    const x1 = cx + r * Math.cos(startDeg);
-    const y1 = cy - r * Math.sin(startDeg);
-    const x2 = cx + r * Math.cos(endDeg);
-    const y2 = cy - r * Math.sin(endDeg);
-    const sweep = endDeg < startDeg ? 0 : 1;
-    return `M ${x1} ${y1} A ${r} ${r} 0 0 ${sweep} ${x2} ${y2}`;
-  }
+// ── T6: 반원형 SVG 게이지 (목업 일치) ──
 
-  const segments = [
-    { start: Math.PI, end: Math.PI * 0.667, color: "#fca5a5" },
-    { start: Math.PI * 0.667, end: Math.PI * 0.333, color: "#fde68a" },
-    { start: Math.PI * 0.333, end: 0, color: "#86efac" },
-  ];
-
-  const needleAngle = Math.PI - (score / 100) * Math.PI;
-  const needleLen = r - 10;
-  const nx = cx + needleLen * Math.cos(needleAngle);
-  const ny = cy - needleLen * Math.sin(needleAngle);
+function SemiCircleGauge({ score }: { score: number }) {
+  const cx = 100;
+  const cy = 100;
+  const r = 80;
+  const angle = Math.PI - (score / 100) * Math.PI;
+  const dotX = cx + r * Math.cos(angle);
+  const dotY = cy - r * Math.sin(angle);
 
   return (
-    <svg viewBox="0 0 240 140" className="w-full max-w-[220px]">
-      {segments.map((seg, i) => (
-        <path
-          key={i}
-          d={arcPath(seg.start, seg.end)}
-          fill="none"
-          stroke={seg.color}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-        />
-      ))}
-      {score > 0 && (
-        <path
-          d={arcPath(startAngle, startAngle - (score / 100) * Math.PI)}
-          fill="none"
-          stroke={gradeStyle.hex}
-          strokeWidth={strokeWidth + 2}
-          strokeLinecap="round"
-          opacity={0.7}
-        />
-      )}
-      <line x1={cx} y1={cy} x2={nx} y2={ny} stroke="#374151" strokeWidth={2.5} strokeLinecap="round" />
-      <circle cx={cx} cy={cy} r={5} fill="#374151" />
-      <text x={cx} y={cy + 25} textAnchor="middle" fill="#111827" fontSize="26" fontWeight="900">{score}</text>
-      <text x={cx} y={cy + 42} textAnchor="middle" fill={gradeStyle.hex} fontSize="13" fontWeight="700">{grade}등급</text>
-      <text x={cx - r - 2} y={cy + 16} textAnchor="middle" fill="#9ca3af" fontSize="10">0</text>
-      <text x={cx} y={cy - r + 4} textAnchor="middle" fill="#9ca3af" fontSize="10">50</text>
-      <text x={cx + r + 2} y={cy + 16} textAnchor="middle" fill="#9ca3af" fontSize="10">100</text>
+    <svg viewBox="0 0 200 120" className="w-[180px] h-[110px]">
+      {/* 배경 회색 호 */}
+      <path
+        d="M 20 100 A 80 80 0 0 1 180 100"
+        fill="none" stroke="#e2e8f0" strokeWidth={16} strokeLinecap="round"
+      />
+      {/* 빨강 구간 (D등급: 0~33%) */}
+      <path
+        d="M 20 100 A 80 80 0 0 1 60 35"
+        fill="none" stroke="#ef4444" strokeWidth={16} strokeLinecap="round"
+      />
+      {/* 노랑 구간 (C/B등급: 33~67%) */}
+      <path
+        d="M 60 35 A 80 80 0 0 1 140 35"
+        fill="none" stroke="#eab308" strokeWidth={16} strokeLinecap="round"
+      />
+      {/* 초록 구간 (A등급: 67~100%) */}
+      <path
+        d="M 140 35 A 80 80 0 0 1 180 100"
+        fill="none" stroke="#22c55e" strokeWidth={16} strokeLinecap="round"
+      />
+      {/* 포인터: 호 위 도트 */}
+      <circle cx={dotX} cy={dotY} r={6} fill="#1e293b" />
     </svg>
   );
 }
@@ -132,22 +113,30 @@ function scoreToGrade(score: number): string {
   return "C";
 }
 
-// ── 파트 점수 바 ──
+// ── T6: 서브점수 카드 (목업 기준) ──
 
-function PartScoreBar({ label, score }: { label: string; score: number }) {
-  const color = score >= 75 ? "bg-emerald-500" : score >= 50 ? "bg-yellow-500" : "bg-red-500";
-  const textColor = score >= 75 ? "text-emerald-600" : score >= 50 ? "text-yellow-600" : "text-red-600";
+function GradeCard({ label, subLabel, score, dotColor }: {
+  label: string;
+  subLabel: string;
+  score: number;
+  dotColor: string;
+}) {
+  const grade = scoreToGrade(score);
+  const badgeStyle = GRADE_BADGE_STYLES[grade] ?? GRADE_BADGE_STYLES.C;
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="w-16 text-xs text-gray-500 text-right">{label}</span>
-      <div className="relative flex-1 h-2 rounded-full bg-gray-100">
-        <div
-          className={`absolute left-0 top-0 h-full rounded-full transition-all ${color}`}
-          style={{ width: `${Math.min(score, 100)}%` }}
-        />
+    <div className="bg-white rounded-xl border border-gray-200 px-5 py-4 flex justify-between items-center">
+      <div className="flex items-center gap-3">
+        <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor }} />
+        <div>
+          <p className="text-sm font-semibold text-gray-900">{label}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{subLabel}</p>
+        </div>
       </div>
-      <span className={`w-8 text-xs font-bold ${textColor}`}>{scoreToGrade(score)}</span>
+      <div className="text-right">
+        <p className="text-xl font-extrabold text-gray-900">{score}</p>
+        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badgeStyle}`}>{grade}</span>
+      </div>
     </div>
   );
 }
@@ -160,7 +149,7 @@ function fmtCurrency(n: number): string {
 
 // ── 메인 컴포넌트 ──
 
-export function TotalValueGauge({ data, isLoading, showMetricCards = true }: TotalValueGaugeProps) {
+export function TotalValueGauge({ data, isLoading, showMetricCards = true, errorMessage }: TotalValueGaugeProps) {
   if (isLoading) {
     return (
       <Card>
@@ -172,14 +161,27 @@ export function TotalValueGauge({ data, isLoading, showMetricCards = true }: Tot
     );
   }
 
+  // T7: 에러 메시지 표시
+  if (!data && errorMessage) {
+    return (
+      <Card className="bg-white border border-gray-200">
+        <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+          <AlertTriangle className="h-6 w-6 mb-2 text-red-400" />
+          <p className="text-sm font-medium text-red-600">{errorMessage}</p>
+          <p className="text-xs mt-1">기간을 변경하거나 새로고침해 주세요</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   // 데이터 완전 없음 — 게이지 렌더링 자체 불가
   if (!data) {
     return (
       <Card className="bg-white border border-gray-200">
         <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
           <AlertTriangle className="h-6 w-6 mb-2" />
-          <p className="text-sm">데이터를 불러올 수 없습니다</p>
-          <p className="text-xs mt-1">기간을 변경하거나 다시 시도해 주세요</p>
+          <p className="text-sm">데이터가 없습니다</p>
+          <p className="text-xs mt-1">기간을 변경하거나 새로고침해 주세요</p>
         </CardContent>
       </Card>
     );
@@ -191,16 +193,16 @@ export function TotalValueGauge({ data, isLoading, showMetricCards = true }: Tot
 
   const displayScore = data.score ?? 0;
   const displayGrade = data.grade ?? { grade: "F" as const, label: "벤치마크 설정 필요" };
-  const gradeStyle = GRADE_STYLES[displayGrade.grade] ?? GRADE_STYLES.F;
+  const gradeBadgeStyle = GRADE_BADGE_STYLES[displayGrade.grade] ?? GRADE_BADGE_STYLES.F;
 
   const { diagnostics, summary, period, dataAvailableDays } = data;
 
   // 기간 라벨
   const periodLabel = period
     ? (dataAvailableDays < period
-      ? `${dataAvailableDays}일치 데이터 기준`
-      : `${period}일 기준`)
-    : "";
+      ? `${dataAvailableDays}일치 데이터 기준 · 전체 광고 합산`
+      : `${period}일 기준 · 전체 광고 합산`)
+    : "전체 광고 합산";
 
   return (
     <Card className="bg-white border border-gray-200">
@@ -211,18 +213,27 @@ export function TotalValueGauge({ data, isLoading, showMetricCards = true }: Tot
             <Info className="h-4 w-4 shrink-0" />
             <p>
               {noBenchmark
-                ? "벤치마크 데이터가 없습니다. 벤치마크 관리 탭에서 수집하면 정확한 점수를 확인할 수 있습니다."
-                : "데이터가 부족합니다. 기간을 변경하거나 다시 시도해 주세요."}
+                ? "벤치마크 데이터가 없어 점수를 계산할 수 없습니다. 관리자에게 벤치마크 수집을 요청하세요."
+                : "데이터가 부족합니다. 기간을 변경하거나 새로고침해 주세요."}
             </p>
           </div>
         )}
 
+        {/* T6: 게이지 + 서브점수 카드 레이아웃 (목업 일치) */}
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-          {/* 좌측: 게이지 + 요약 */}
-          <div className="flex-shrink-0 flex flex-col items-center" style={{ minWidth: "220px" }}>
-            <SemiCircleGauge score={displayScore} grade={displayGrade.grade} gradeStyle={gradeStyle} />
-            <p className={`-mt-1 text-sm font-semibold ${gradeStyle.text}`}>{displayGrade.label}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{periodLabel}</p>
+          {/* 좌측: 게이지 카드 */}
+          <div className="flex-shrink-0 flex flex-col items-center bg-white rounded-2xl border border-gray-200 p-6" style={{ minWidth: "220px" }}>
+            <SemiCircleGauge score={displayScore} />
+            {/* T7: 벤치마크 없으면 점수 대신 "-" 표시 */}
+            {noBenchmark ? (
+              <div className="text-5xl font-black text-gray-300 -mt-2.5">-</div>
+            ) : (
+              <div className="text-5xl font-black -mt-2.5">{displayScore}</div>
+            )}
+            <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold mt-1 ${gradeBadgeStyle}`}>
+              {displayGrade.grade}등급
+            </span>
+            <p className="text-xs text-gray-400 mt-2">{periodLabel}</p>
 
             {/* 데이터 부족 안내 */}
             {period > 0 && dataAvailableDays < period && (
@@ -237,20 +248,30 @@ export function TotalValueGauge({ data, isLoading, showMetricCards = true }: Tot
                 총 광고비 {fmtCurrency(summary.spend)}
               </p>
             )}
-            <p className="mt-0.5 text-[10px] text-muted-foreground">전체 광고 합산 기준</p>
-
-            {/* 파트 점수 바 */}
-            {diagnostics && (
-              <div className="mt-4 w-full space-y-1.5">
-                {Object.values(diagnostics).map((part) => (
-                  <PartScoreBar key={part.label} label={part.label} score={part.score} />
-                ))}
-              </div>
-            )}
           </div>
 
-          {/* 우측: 지표 카드 (3×3 그리드) — showMetricCards에 따라 표시/숨김 */}
-          {showMetricCards && <div className="grid flex-1 grid-cols-3 gap-3">
+          {/* 우측: 서브점수 카드 3개 (T6: 목업 기준 독립 카드) */}
+          {!!diagnostics && (
+            <div className="flex-1 flex flex-col gap-3">
+              {Object.values(diagnostics).map((part) => {
+                const dotColor = part.score >= 75 ? "#22c55e" : part.score >= 50 ? "#eab308" : "#ef4444";
+                return (
+                  <GradeCard
+                    key={part.label}
+                    label={part.label}
+                    subLabel={PART_SUB_LABELS[part.label] ?? ""}
+                    score={part.score}
+                    dotColor={dotColor}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* 지표 카드 (3×3 그리드) — showMetricCards에 따라 표시/숨김 */}
+        {showMetricCards && (
+          <div className="grid grid-cols-3 gap-3 mt-6">
             {data.metrics.map((m) => {
               const barColor = m.score != null
                 ? m.score >= 75 ? "bg-green-500" : m.score >= 50 ? "bg-yellow-500" : "bg-red-500"
@@ -261,7 +282,6 @@ export function TotalValueGauge({ data, isLoading, showMetricCards = true }: Tot
               const statusLabel = m.score != null
                 ? m.score >= 75 ? "우수" : m.score >= 50 ? "보통" : "미달"
                 : "데이터 없음";
-              // U1: pctOfBenchmark 기반 바 너비 (100% 이상이면 꽉 참), fallback: score 기반
               const barW = m.pctOfBenchmark != null
                 ? Math.min(Math.max(m.pctOfBenchmark, 5), 100)
                 : m.score != null ? Math.max(m.score, 5) : 0;
@@ -293,8 +313,8 @@ export function TotalValueGauge({ data, isLoading, showMetricCards = true }: Tot
                 </div>
               );
             })}
-          </div>}
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

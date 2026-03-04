@@ -85,17 +85,17 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
 
       const remaining = MAX_IMAGES - images.length;
       if (remaining <= 0) {
-        toast.error(`이미지는 최대 ${MAX_IMAGES}개까지 첨부할 수 있습니다.`);
+        toast.error(`이미지는 최대 ${MAX_IMAGES}개까지 첨부할 수 있어요.`);
         return;
       }
 
       const validFiles = files.slice(0, remaining).filter((file) => {
         if (file.size > MAX_FILE_SIZE) {
-          toast.error(`${file.name}: 5MB 이하의 이미지만 첨부 가능합니다.`);
+          toast.error(`${file.name}: 5MB 이하만 첨부할 수 있어요.`);
           return false;
         }
         if (!file.type.startsWith("image/")) {
-          toast.error(`${file.name}: 이미지 파일만 첨부 가능합니다.`);
+          toast.error(`${file.name}: 이미지 파일만 첨부할 수 있어요.`);
           return false;
         }
         return true;
@@ -269,7 +269,7 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
                 <FormLabel>내용</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder="구체적으로 작성해주시면 더 정확한 답변을 받으실 수 있습니다."
+                    placeholder="구체적으로 작성할수록 정확한 답변을 받을 수 있어요."
                     rows={12}
                     className="text-[15px] leading-relaxed resize-none rounded-lg border-gray-200 focus:ring-[#F75D5D]"
                     {...field}

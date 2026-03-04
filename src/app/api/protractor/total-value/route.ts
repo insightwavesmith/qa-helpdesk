@@ -216,8 +216,14 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (e) {
+    console.error("[total-value] Error:", {
+      accountId,
+      dateStart,
+      dateEnd,
+      error: e instanceof Error ? e.message : String(e),
+    });
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Unknown error" },
+      { error: e instanceof Error ? e.message : "서버 오류가 발생했습니다" },
       { status: 500 }
     );
   }

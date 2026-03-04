@@ -119,7 +119,7 @@ export async function StudentHome({}: StudentHomeProps) {
               Meta가 인증한 비즈니스 파트너
             </h2>
             <p className="text-sm text-[#64748b] mt-1">
-              자사몰사관학교는 Meta Business Partner로서 검증된 메타 광고 교육을 제공합니다.
+              자사몰사관학교는 Meta Business Partner로서 검증된 메타 광고 교육을 진행하고 있어요.
             </p>
           </div>
         </div>
