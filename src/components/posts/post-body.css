@@ -198,6 +198,29 @@
   margin: 32px 0;
 }
 
+/* 연속 hr 숨기기 (프롬프트에서 2개 연속 생성되는 경우) */
+.post-body hr + hr {
+  display: none;
+}
+
+/* "이 글에서 다루는 내용" 목차 박스 */
+.post-body > ul:first-of-type,
+.post-body > ol:first-of-type {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #3b82f6;
+  border-radius: 0 8px 8px 0;
+  padding: 20px 24px 20px 28px;
+  margin: 24px 0 32px;
+}
+
+.post-body > ul:first-of-type li,
+.post-body > ol:first-of-type li {
+  margin-bottom: 6px;
+  color: #475569;
+  font-size: 15px;
+}
+
 .post-body .image-placeholder {
   display: flex;
   align-items: center;
