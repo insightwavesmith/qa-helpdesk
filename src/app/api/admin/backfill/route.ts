@@ -1,14 +1,43 @@
 /**
  * POST /api/admin/backfill
- * T8: 과거데이터 수동 수집 — SSE 스트리밍으로 진행 상태 전송
+ * T10: 백필 통합 — 광고데이터 + 믹스패널 + 타겟중복 3종 SSE 스트리밍
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { createClient } from "@/lib/supabase/server";
 import { fetchAccountAds, buildInsightRows, upsertInsights } from "@/lib/protractor/meta-collector";
+import { fetchMixpanelRevenue, lookupMixpanelSecret } from "@/lib/protractor/mixpanel-collector";
+import {
+  fetchActiveAdsets,
+  fetchCombinedReach,
+  makePairKey,
+} from "@/lib/protractor/overlap-utils";
 
 export const maxDuration = 300; // 5분 (Vercel Pro)
+
+// ── SSE 타입 ──────────────────────────────────────────────────
+type PhaseName = "ad" | "mixpanel" | "overlap";
+
+interface PhaseInfo {
+  phase: PhaseName;
+  label: string;
+}
+
+interface PhaseSummary {
+  phase: PhaseName;
+  label: string;
+  status: "success" | "skipped" | "error";
+  totalDays: number;
+  totalInserted: number;
+  message?: string;
+}
+
+const PHASES: PhaseInfo[] = [
+  { phase: "ad", label: "광고데이터" },
+  { phase: "mixpanel", label: "믹스패널" },
+  { phase: "overlap", label: "타겟중복" },
+];
 
 export async function POST(request: NextRequest) {
   // 1. admin 권한 확인
@@ -37,17 +66,19 @@ export async function POST(request: NextRequest) {
   }
 
   const { account_id, days } = body;
-  if (!account_id || !days || ![7, 30, 90].includes(days)) {
-    return NextResponse.json({ error: "account_id, days(7/30/90) 필수" }, { status: 400 });
+  if (!account_id || !days || ![1, 7, 30, 90].includes(days)) {
+    return NextResponse.json({ error: "account_id, days(1/7/30/90) 필수" }, { status: 400 });
   }
 
-  // 계정명 조회
+  // 계정 정보 조회
   const { data: accountRow } = await svc
     .from("ad_accounts")
-    .select("account_name")
+    .select("account_name, user_id, mixpanel_project_id")
     .eq("account_id", account_id)
     .single();
-  const accountName = accountRow?.account_name ?? account_id;
+  const accountName = (accountRow?.account_name ?? account_id) as string;
+  const userId = accountRow?.user_id as string | undefined;
+  const mixpanelProjectId = accountRow?.mixpanel_project_id as string | undefined;
 
   // 2. SSE 스트리밍 응답
   const encoder = new TextEncoder();
@@ -56,6 +87,8 @@ export async function POST(request: NextRequest) {
       function send(data: object) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
       }
+
+      const summaries: PhaseSummary[] = [];
 
       try {
         // 수집 날짜 범위 생성 (오늘-1일 ~ 오늘-days일)
@@ -70,44 +103,318 @@ export async function POST(request: NextRequest) {
         }
         dates.reverse(); // 오래된 날짜부터 처리
 
-        send({ type: "start", total: dates.length, accountId: account_id });
+        send({ type: "start", phases: PHASES });
 
-        let totalInserted = 0;
+        // ── Phase 1: 광고데이터 ──────────────────────────────
+        let adTotalInserted = 0;
+        try {
+          send({ type: "phase_start", phase: "ad", total: dates.length });
 
-        for (let i = 0; i < dates.length; i++) {
-          const dateStr = dates[i];
-          try {
-            const ads = await fetchAccountAds(account_id, dateStr);
-            let inserted = 0;
+          for (let i = 0; i < dates.length; i++) {
+            const dateStr = dates[i];
+            try {
+              const ads = await fetchAccountAds(account_id, dateStr);
+              let inserted = 0;
 
-            if (ads.length > 0) {
-              const rows = buildInsightRows(ads, account_id, accountName, dateStr);
-              inserted = await upsertInsights(svc, rows);
+              if (ads.length > 0) {
+                const rows = buildInsightRows(ads, account_id, accountName, dateStr);
+                inserted = await upsertInsights(svc, rows);
+              }
+
+              adTotalInserted += inserted;
+              send({
+                type: "phase_progress",
+                phase: "ad",
+                current: i + 1,
+                total: dates.length,
+                date: dateStr,
+                detail: `${inserted}건 저장`,
+              });
+            } catch (e) {
+              send({
+                type: "day_error",
+                phase: "ad",
+                date: dateStr,
+                message: (e as Error).message,
+              });
             }
 
-            totalInserted += inserted;
-            send({
-              type: "progress",
-              current: i + 1,
-              total: dates.length,
-              date: dateStr,
-              inserted,
-            });
-          } catch (e) {
-            send({
-              type: "dayError",
-              date: dateStr,
-              message: (e as Error).message,
-            });
+            // rate limit 방지: 2초 대기
+            if (i < dates.length - 1) {
+              await new Promise(r => setTimeout(r, 2000));
+            }
           }
 
-          // rate limit 방지: 2초 대기
-          if (i < dates.length - 1) {
-            await new Promise(r => setTimeout(r, 2000));
-          }
+          send({ type: "phase_complete", phase: "ad", totalDays: dates.length, totalInserted: adTotalInserted });
+          summaries.push({ phase: "ad", label: "광고데이터", status: "success", totalDays: dates.length, totalInserted: adTotalInserted });
+        } catch (e) {
+          const msg = (e as Error).message || "광고데이터 수집 오류";
+          send({ type: "phase_error", phase: "ad", message: msg });
+          summaries.push({ phase: "ad", label: "광고데이터", status: "error", totalDays: 0, totalInserted: adTotalInserted, message: msg });
         }
 
-        send({ type: "complete", totalDays: dates.length, totalInserted });
+        // ── Phase 2: 믹스패널 ──────────────────────────────
+        let mixpanelTotalInserted = 0;
+        try {
+          if (!mixpanelProjectId) {
+            send({ type: "phase_skip", phase: "mixpanel", reason: "믹스패널 미연동" });
+            summaries.push({ phase: "mixpanel", label: "믹스패널", status: "skipped", totalDays: 0, totalInserted: 0, message: "믹스패널 미연동" });
+          } else if (!userId) {
+            send({ type: "phase_skip", phase: "mixpanel", reason: "계정 소유자 없음" });
+            summaries.push({ phase: "mixpanel", label: "믹스패널", status: "skipped", totalDays: 0, totalInserted: 0, message: "계정 소유자 없음" });
+          } else {
+            const secretKey = await lookupMixpanelSecret(svc, account_id, userId);
+            if (!secretKey) {
+              send({ type: "phase_skip", phase: "mixpanel", reason: "시크릿키 없음" });
+              summaries.push({ phase: "mixpanel", label: "믹스패널", status: "skipped", totalDays: 0, totalInserted: 0, message: "시크릿키 없음" });
+            } else {
+              send({ type: "phase_start", phase: "mixpanel", total: dates.length });
+
+              for (let i = 0; i < dates.length; i++) {
+                const dateStr = dates[i];
+                // 1회 재시도
+                let retries = 0;
+                while (retries <= 1) {
+                  try {
+                    const { totalRevenue, purchaseCount } = await fetchMixpanelRevenue(
+                      mixpanelProjectId,
+                      secretKey,
+                      dateStr
+                    );
+
+                    const { error: upsertErr } = await svc
+                      .from("daily_mixpanel_insights" as never)
+                      .upsert(
+                        {
+                          date: dateStr,
+                          user_id: userId,
+                          account_id: account_id,
+                          project_id: mixpanelProjectId,
+                          total_revenue: totalRevenue,
+                          purchase_count: purchaseCount,
+                          collected_at: new Date().toISOString(),
+                        } as never,
+                        { onConflict: "date,account_id,project_id" as never }
+                      );
+
+                    if (upsertErr) {
+                      send({
+                        type: "day_error",
+                        phase: "mixpanel",
+                        date: dateStr,
+                        message: upsertErr.message,
+                      });
+                    } else {
+                      mixpanelTotalInserted++;
+                      send({
+                        type: "phase_progress",
+                        phase: "mixpanel",
+                        current: i + 1,
+                        total: dates.length,
+                        date: dateStr,
+                      });
+                    }
+                    break; // 성공 시 루프 종료
+                  } catch (e) {
+                    if (retries === 0 && e instanceof Error && e.name === "TimeoutError") {
+                      retries++;
+                      continue;
+                    }
+                    send({
+                      type: "day_error",
+                      phase: "mixpanel",
+                      date: dateStr,
+                      message: (e as Error).message,
+                    });
+                    break;
+                  }
+                }
+
+                // rate limit 방지: 2초 대기
+                if (i < dates.length - 1) {
+                  await new Promise(r => setTimeout(r, 2000));
+                }
+              }
+
+              send({ type: "phase_complete", phase: "mixpanel", totalDays: dates.length, totalInserted: mixpanelTotalInserted });
+              summaries.push({ phase: "mixpanel", label: "믹스패널", status: "success", totalDays: dates.length, totalInserted: mixpanelTotalInserted });
+            }
+          }
+        } catch (e) {
+          const msg = (e as Error).message || "믹스패널 수집 오류";
+          send({ type: "phase_error", phase: "mixpanel", message: msg });
+          summaries.push({ phase: "mixpanel", label: "믹스패널", status: "error", totalDays: 0, totalInserted: mixpanelTotalInserted, message: msg });
+        }
+
+        // ── Phase 3: 타겟중복 ──────────────────────────────
+        let overlapTotalInserted = 0;
+        try {
+          const adsets = await fetchActiveAdsets(account_id);
+          if (adsets.length === 0) {
+            send({ type: "phase_skip", phase: "overlap", reason: "활성 캠페인 없음" });
+            summaries.push({ phase: "overlap", label: "타겟중복", status: "skipped", totalDays: 0, totalInserted: 0, message: "활성 캠페인 없음" });
+          } else {
+            // 전체 기간에 대해 1회 계산
+            const dateStart = dates[0];
+            const dateEnd = dates[dates.length - 1];
+
+            // 개별 reach — daily_ad_insights에서 조회
+            const { data: reachRows } = await svc
+              .from("daily_ad_insights")
+              .select("adset_id, reach")
+              .eq("account_id", account_id)
+              .gte("date", dateStart)
+              .lte("date", dateEnd)
+              .in("adset_id", adsets.map(a => a.id));
+
+            const reachByAdset: Record<string, number> = {};
+            for (const row of (reachRows ?? []) as { adset_id: string; reach: number | null }[]) {
+              if (!row.adset_id) continue;
+              reachByAdset[row.adset_id] = (reachByAdset[row.adset_id] ?? 0) + (row.reach ?? 0);
+            }
+
+            const activeAdsets = adsets.filter(a => (reachByAdset[a.id] ?? 0) > 0);
+            if (activeAdsets.length === 0) {
+              send({ type: "phase_skip", phase: "overlap", reason: "reach 데이터 없음" });
+              summaries.push({ phase: "overlap", label: "타겟중복", status: "skipped", totalDays: 0, totalInserted: 0, message: "reach 데이터 없음" });
+            } else {
+              // 상위 8개 adset으로 제한 (rate limit 대응)
+              const sortedAdsets = [...activeAdsets].sort(
+                (a, b) => (reachByAdset[b.id] ?? 0) - (reachByAdset[a.id] ?? 0)
+              );
+              const cappedAdsets = sortedAdsets.slice(0, 8);
+              const totalPairs = (cappedAdsets.length * (cappedAdsets.length - 1)) / 2 + 1; // +1 = overall
+
+              send({ type: "phase_start", phase: "overlap", total: totalPairs });
+              let pairsDone = 0;
+              const now = new Date().toISOString();
+
+              // pair별 overlap 계산
+              const startTime = Date.now();
+              let deadlineHit = false;
+
+              for (let i = 0; i < cappedAdsets.length && !deadlineHit; i++) {
+                for (let j = i + 1; j < cappedAdsets.length; j++) {
+                  if (Date.now() - startTime > 55_000) {
+                    deadlineHit = true;
+                    break;
+                  }
+
+                  const a = cappedAdsets[i];
+                  const b = cappedAdsets[j];
+                  const reachA = reachByAdset[a.id] ?? 0;
+                  const reachB = reachByAdset[b.id] ?? 0;
+                  const pairSum = reachA + reachB;
+
+                  if (pairSum === 0) {
+                    pairsDone++;
+                    continue;
+                  }
+
+                  try {
+                    const combinedUnique = await fetchCombinedReach(
+                      account_id,
+                      [a.id, b.id],
+                      dateStart,
+                      dateEnd
+                    );
+                    const pairOverlap = Math.max(0, ((pairSum - combinedUnique) / pairSum) * 100);
+
+                    await svc.from("adset_overlap_cache" as never).upsert(
+                      {
+                        account_id: account_id,
+                        adset_pair: makePairKey(a.id, b.id),
+                        period_start: dateStart,
+                        period_end: dateEnd,
+                        overlap_data: {
+                          overlap_rate: Math.round(pairOverlap * 10) / 10,
+                          reach_a: reachA,
+                          reach_b: reachB,
+                          combined_unique: combinedUnique,
+                          adset_a_name: a.name,
+                          adset_b_name: b.name,
+                          campaign_a: a.campaignName,
+                          campaign_b: b.campaignName,
+                        },
+                        cached_at: now,
+                      } as never,
+                      { onConflict: "account_id,adset_pair,period_start,period_end" }
+                    );
+
+                    overlapTotalInserted++;
+                    pairsDone++;
+                    send({
+                      type: "phase_progress",
+                      phase: "overlap",
+                      current: pairsDone,
+                      total: totalPairs,
+                      date: `${dateStart}~${dateEnd}`,
+                      detail: `${a.name} × ${b.name}`,
+                    });
+                  } catch {
+                    pairsDone++;
+                    // 개별 pair 실패 시 건너뛰기
+                    continue;
+                  }
+                }
+              }
+
+              // 전체 overlap 저장
+              try {
+                const individualSum = activeAdsets.reduce((sum, a) => sum + (reachByAdset[a.id] ?? 0), 0);
+                const totalUnique = await fetchCombinedReach(
+                  account_id,
+                  activeAdsets.map(a => a.id),
+                  dateStart,
+                  dateEnd
+                );
+                const overallRate = individualSum > 0
+                  ? Math.max(0, ((individualSum - totalUnique) / individualSum) * 100)
+                  : 0;
+
+                await svc.from("adset_overlap_cache" as never).upsert(
+                  {
+                    account_id: account_id,
+                    adset_pair: "__overall__",
+                    period_start: dateStart,
+                    period_end: dateEnd,
+                    overlap_data: {
+                      overall_rate: Math.round(overallRate * 10) / 10,
+                      total_unique: totalUnique,
+                      individual_sum: individualSum,
+                    },
+                    cached_at: now,
+                  } as never,
+                  { onConflict: "account_id,adset_pair,period_start,period_end" }
+                );
+                overlapTotalInserted++;
+                pairsDone++;
+              } catch {
+                // 전체 overlap 저장 실패는 무시
+                pairsDone++;
+              }
+
+              send({
+                type: "phase_progress",
+                phase: "overlap",
+                current: pairsDone,
+                total: totalPairs,
+                date: `${dateStart}~${dateEnd}`,
+                detail: `${overlapTotalInserted}쌍 분석`,
+              });
+
+              send({ type: "phase_complete", phase: "overlap", totalDays: 1, totalInserted: overlapTotalInserted });
+              summaries.push({ phase: "overlap", label: "타겟중복", status: "success", totalDays: 1, totalInserted: overlapTotalInserted });
+            }
+          }
+        } catch (e) {
+          const msg = (e as Error).message || "타겟중복 수집 오류";
+          send({ type: "phase_error", phase: "overlap", message: msg });
+          summaries.push({ phase: "overlap", label: "타겟중복", status: "error", totalDays: 0, totalInserted: overlapTotalInserted, message: msg });
+        }
+
+        // ── 전체 완료 ──────────────────────────────────────
+        send({ type: "complete", summary: summaries });
       } catch (e) {
         send({ type: "error", message: (e as Error).message || "수집 중 오류 발생" });
       } finally {

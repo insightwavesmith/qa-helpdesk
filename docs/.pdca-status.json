@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-02T15:00:00.000Z",
+  "lastUpdated": "2026-03-04T12:00:00.000Z",
   "features": {
     "bugfix-autocomplete-secret": {
       "phase": "completed",
@@ -436,6 +436,17 @@
       },
       "completedAt": "2026-03-04",
       "notes": "T5 참여합계제거(100%), T6 게이지목업일치(100%), T7 데이터표시이슈(86%), T8 백필기능(80%/collect-daily리팩토링제외), T9 AI말투제거(90%). tsc+lint+build 모두 통과."
+    },
+    "protractor-v5-t10-backfill-unify": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/protractor-v5-t10-backfill-unify.plan.md",
+        "design": "02-design/features/protractor-v5-t10-backfill-unify.design.md",
+        "analysis": "03-analysis/protractor-v5-t10-backfill-unify.analysis.md"
+      },
+      "completedAt": "2026-03-04",
+      "notes": "T10 백필 통합 완료: RecollectButtons 삭제, BackfillSection 3종 통합(광고+믹스패널+타겟중복), 1일 옵션 추가, SSE phase 기반 3종 진행률 UI. mixpanel-collector.ts 신규 모듈 추출(DRY). tsc+lint+build 모두 통과. Match Rate 95%."
     }
   },
   "phaseMapping": {
