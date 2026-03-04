@@ -7,6 +7,10 @@ import { generateEmbedding } from "@/lib/gemini";
 import { createServiceClient } from "@/lib/supabase/server";
 import { rerankChunks } from "@/lib/reranker";
 import { expandQuery } from "@/lib/query-expander";
+import { analyzeDomain, type DomainAnalysis } from "@/lib/domain-intelligence";
+import { evaluateRelevance, type RelevanceGrade } from "@/lib/relevance-evaluator";
+import { searchWeb } from "@/lib/brave-search";
+import { hybridSearch } from "@/lib/hybrid-search";
 
 // ─── 타입 정의 ────────────────────────────────────────────
 
@@ -78,6 +82,11 @@ interface ConsumerConfig {
   model: string;
   enableThinking: boolean;
   thinkingBudget: number;
+  // T3 CRAG 확장 플래그
+  enableDomainAnalysis: boolean;
+  enableHybridSearch: boolean;
+  enableRelevanceEval: boolean;
+  enableWebSearch: boolean;
 }
 
 const QA_SYSTEM_PROMPT = `당신은 자사몰사관학교 대표 Smith입니다. 수강생이 질문했고, 당신이 직접 답변합니다.
@@ -171,6 +180,10 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     model: "claude-sonnet-4-6",
     enableThinking: true,
     thinkingBudget: 5000,
+    enableDomainAnalysis: true,
+    enableHybridSearch: true,
+    enableRelevanceEval: true,
+    enableWebSearch: true,
   },
   newsletter: {
     limit: 5,
@@ -184,6 +197,10 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     model: "claude-opus-4-6",
     enableThinking: false,
     thinkingBudget: 0,
+    enableDomainAnalysis: false,
+    enableHybridSearch: false,
+    enableRelevanceEval: false,
+    enableWebSearch: false,
   },
   education: {
     limit: 7,
@@ -197,6 +214,10 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     model: "claude-opus-4-6",
     enableThinking: false,
     thinkingBudget: 0,
+    enableDomainAnalysis: false,
+    enableHybridSearch: false,
+    enableRelevanceEval: false,
+    enableWebSearch: false,
   },
   webinar: {
     limit: 3,
@@ -210,6 +231,10 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     model: "claude-opus-4-6",
     enableThinking: false,
     thinkingBudget: 0,
+    enableDomainAnalysis: false,
+    enableHybridSearch: false,
+    enableRelevanceEval: false,
+    enableWebSearch: false,
   },
   chatbot: {
     limit: 5,
@@ -223,6 +248,10 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     model: "claude-sonnet-4-6",
     enableThinking: true,
     thinkingBudget: 5000,
+    enableDomainAnalysis: true,
+    enableHybridSearch: true,
+    enableRelevanceEval: true,
+    enableWebSearch: true,
   },
   promo: {
     limit: 3,
@@ -236,6 +265,10 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     model: "claude-opus-4-6",
     enableThinking: false,
     thinkingBudget: 0,
+    enableDomainAnalysis: false,
+    enableHybridSearch: false,
+    enableRelevanceEval: false,
+    enableWebSearch: false,
   },
 };
 
@@ -443,6 +476,25 @@ function buildContext(
   return truncateToTokenBudget(combined, tokenBudget);
 }
 
+// ─── CRAG: 도메인 컨텍스트 빌더 ──────────────────────────────
+
+function buildDomainContext(analysis: DomainAnalysis): string {
+  const parts: string[] = [];
+
+  if (analysis.normalizedTerms.length > 0) {
+    const terms = analysis.normalizedTerms
+      .map((t) => `- ${t.original} → ${t.normalized}: ${t.definition}`)
+      .join("\n");
+    parts.push(`## 도메인 용어 정규화\n${terms}`);
+  }
+
+  if (analysis.intent) {
+    parts.push(`## 질문 의도\n${analysis.intent}`);
+  }
+
+  return parts.join("\n\n");
+}
+
 // ─── KnowledgeService ─────────────────────────────────────
 
 const DEFAULT_MODEL = "claude-opus-4-6";
@@ -478,16 +530,60 @@ export async function generate(
   const model = config.model || DEFAULT_MODEL;
   const isQAConsumer = request.consumerType === "qa" || request.consumerType === "chatbot";
 
-  // ── Stage 0: 이미지 설명 결합 (qa/chatbot만) ──
+  // ── Stage 0a: 이미지 설명 결합 (qa/chatbot만) ──
   let query = request.query;
   if (isQAConsumer && request.imageDescriptions) {
     query = `${request.query}\n\n[첨부 이미지 설명]\n${request.imageDescriptions}`;
   }
 
-  // ── Stage 1: 유사 QA 검색 (qa/chatbot만) ──
+  // ── NEW Stage 0b: 도메인 인텔리전스 (CRAG) ──
+  let domainAnalysis: DomainAnalysis | null = null;
+  let relevanceGrade: RelevanceGrade = "AMBIGUOUS";
+  let webContext = "";
+  const pipelineStages: string[] = [];
+
+  if (isQAConsumer && config.enableDomainAnalysis) {
+    pipelineStages.push("stage0");
+    domainAnalysis = await analyzeDomain(request.query, request.imageDescriptions);
+
+    // 단순+비기술 → Stage 1~2 스킵, 직접 답변
+    if (domainAnalysis?.skipRAG && domainAnalysis.directAnswer) {
+      pipelineStages.push("stage0_direct");
+      // fire-and-forget 로깅
+      const svc = createServiceClient();
+      Promise.resolve(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (svc as any).from("knowledge_usage").insert({
+          consumer_type: request.consumerType,
+          source_types: [],
+          input_tokens: 0,
+          output_tokens: 0,
+          total_tokens: 0,
+          model,
+          question_id: request.questionId || null,
+          content_id: request.contentId || null,
+          duration_ms: Date.now() - startTime,
+          domain_analysis: domainAnalysis,
+          question_type: domainAnalysis.questionType,
+          complexity: domainAnalysis.complexity,
+          pipeline_stages: pipelineStages,
+        } as Record<string, unknown>)
+      ).catch((err) => console.error("[KS] Usage log failed:", err));
+
+      return {
+        content: domainAnalysis.directAnswer,
+        sourceRefs: [],
+        tokensUsed: 0,
+        model,
+      };
+    }
+  }
+
+  // ── Stage 1a: 유사 QA 검색 (qa/chatbot만) ──
   let similarQAs: SimilarQA[] = [];
   let stage1Embedding: number[] | null = null;
   if (isQAConsumer) {
+    pipelineStages.push("stage1a_similar_qa");
     // Stage 1과 Stage 2에서 임베딩 재사용을 위해 먼저 생성
     stage1Embedding = await generateEmbedding(query);
     similarQAs = await searchSimilarQuestions(query, stage1Embedding);
@@ -500,7 +596,7 @@ export async function generate(
     for (const a of qa.answers) stage1ChunkIds.add(a.id);
   }
 
-  // ── Stage 2: buildSearchResults (P2 파이프라인) ──
+  // ── Stage 1b: 검색 (Hybrid Search or 기존 파이프라인) ──
   // F-03: qa/chatbot일 때 qa_question, qa_answer를 Stage 2 sourceTypes에서 제외
   let stage2SourceTypes = sourceTypes;
   if (isQAConsumer && sourceTypes) {
@@ -509,18 +605,66 @@ export async function generate(
     );
   }
 
-  const searchResult = await buildSearchResults(
-    query, config, limit, threshold, stage2SourceTypes
-  );
-  let { chunks } = searchResult;
-  const { expandedQueries, chunksBeforeRerank } = searchResult;
+  let chunks: ChunkResult[];
+  let expandedQueries: string[] = [];
+  let chunksBeforeRerank = 0;
+
+  if (isQAConsumer && config.enableHybridSearch && stage1Embedding) {
+    // NEW: Hybrid Search (벡터 + BM25)
+    pipelineStages.push("stage1b_hybrid");
+    const searchQueries = domainAnalysis?.suggestedSearchQueries?.length
+      ? [query, ...domainAnalysis.suggestedSearchQueries]
+      : [query];
+
+    const hybridResult = await hybridSearch({
+      queries: searchQueries,
+      embedding: stage1Embedding,
+      limit,
+      threshold,
+      sourceTypes: stage2SourceTypes as string[] | null,
+      enableReranking: config.enableReranking,
+    });
+
+    chunks = hybridResult.chunks;
+    chunksBeforeRerank = hybridResult.vectorCount + hybridResult.bm25Count;
+    expandedQueries = searchQueries.length > 1 ? searchQueries.slice(1) : [];
+  } else {
+    // 기존 파이프라인 (non-QA consumers)
+    pipelineStages.push("stage1b_vector");
+    const searchResult = await buildSearchResults(
+      query, config, limit, threshold, stage2SourceTypes
+    );
+    chunks = searchResult.chunks;
+    expandedQueries = searchResult.expandedQueries;
+    chunksBeforeRerank = searchResult.chunksBeforeRerank;
+  }
 
   // F-03: Stage 1에서 이미 사용된 chunk ID 제외
   if (stage1ChunkIds.size > 0) {
     chunks = chunks.filter((c) => !stage1ChunkIds.has(c.id));
   }
 
+  // ── NEW: 관련성 평가 (Stage 1→2 게이트) ──
+  if (isQAConsumer && config.enableRelevanceEval && chunks.length > 0) {
+    pipelineStages.push("relevance_eval");
+    const evaluation = await evaluateRelevance(query, domainAnalysis, chunks);
+    relevanceGrade = evaluation.grade;
+  }
+
+  // ── NEW Stage 2: 웹서치 (조건부) ──
+  if (
+    isQAConsumer &&
+    config.enableWebSearch &&
+    (relevanceGrade !== "CORRECT" ||
+      domainAnalysis?.questionType === "platform")
+  ) {
+    pipelineStages.push("stage2_websearch");
+    const webResult = await searchWeb(domainAnalysis, request.query);
+    webContext = webResult.formattedContext;
+  }
+
   // ── Stage 2b: buildContext ──
+  pipelineStages.push("stage3_llm");
   const contextText = buildContext(chunks, tokenBudget);
   const similarQAContext = buildSimilarQAContext(similarQAs);
 
@@ -531,6 +675,17 @@ export async function generate(
   }
   if (contextText) {
     userContent += `## 참고 강의 자료\n${contextText}\n\n`;
+  }
+  // NEW: 도메인 컨텍스트 추가
+  if (domainAnalysis && !domainAnalysis.skipRAG) {
+    const domainContext = buildDomainContext(domainAnalysis);
+    if (domainContext) {
+      userContent += `${domainContext}\n\n`;
+    }
+  }
+  // NEW: 웹서치 결과 추가
+  if (webContext) {
+    userContent += `${webContext}\n\n`;
   }
   userContent += `## 질문\n${query}`;
 
@@ -603,7 +758,7 @@ export async function generate(
         : undefined,
     }));
 
-    // fire-and-forget: P2 확장 로깅
+    // fire-and-forget: P2 + CRAG 확장 로깅
     const imageCount = chunks.filter((c) => c.image_url).length;
     const rerankScores = config.enableReranking
       ? chunks.map((c) => c.rerank_score ?? 0)
@@ -629,6 +784,13 @@ export async function generate(
         chunks_before_rerank: chunksBeforeRerank,
         chunks_after_rerank: chunks.length,
         similar_qa_count: similarQAs.length,
+        // T3 CRAG 확장 필드 (컬럼 없으면 무시됨)
+        ...(domainAnalysis ? { domain_analysis: domainAnalysis } : {}),
+        relevance_grade: relevanceGrade,
+        web_search_used: webContext.length > 0,
+        ...(domainAnalysis?.questionType ? { question_type: domainAnalysis.questionType } : {}),
+        ...(domainAnalysis?.complexity ? { complexity: domainAnalysis.complexity } : {}),
+        pipeline_stages: pipelineStages,
       } as Record<string, unknown>)
     ).catch((err) => console.error("[KS] Usage log failed:", err));
 

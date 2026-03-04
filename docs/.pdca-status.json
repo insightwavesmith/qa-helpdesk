@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-04T15:30:00.000Z",
+  "lastUpdated": "2026-03-04T17:00:00.000Z",
   "features": {
     "bugfix-autocomplete-secret": {
       "phase": "completed",
@@ -501,6 +501,39 @@
       },
       "completedAt": "2026-03-04",
       "notes": "프롬프트 IMAGE_PLACEHOLDER→이미지금지 + unsplash 폴백 null + post-body figure 제거. 3개 파일. tsc+lint+build 통과. Match Rate 100%."
+    },
+    "t1-toc-card-style": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/t1-toc-card-style.plan.md",
+        "design": "02-design/features/t1-toc-card-style.design.md",
+        "analysis": "03-analysis/t1-t2-t3-toc-chatbot-crag.analysis.md"
+      },
+      "completedAt": "2026-03-04",
+      "notes": "TOC ordered list <ol> 래핑 버그 수정. <oli> 임시 태그 패턴으로 ul/ol 충돌 방지. CSS 변경 불필요. tsc+lint+build 통과."
+    },
+    "t2-qa-reporting-chatbot": {
+      "phase": "completed",
+      "matchRate": 82,
+      "documents": {
+        "plan": "01-plan/features/t2-qa-reporting-chatbot.plan.md",
+        "design": "02-design/features/t2-qa-reporting-chatbot.design.md",
+        "analysis": "03-analysis/t1-t2-t3-toc-chatbot-crag.analysis.md"
+      },
+      "completedAt": "2026-03-04",
+      "notes": "채널톡 스타일 관리자 전용 QA 리포팅 챗봇. Sonnet 모델. qa_reports 테이블 + 플로팅 UI + 채팅 패널 + 목록 뷰. 6개 파일 신규 + layout.tsx 수정."
+    },
+    "t3-crag-adaptive-rag": {
+      "phase": "completed",
+      "matchRate": 88,
+      "documents": {
+        "plan": "01-plan/features/t3-crag-adaptive-rag.plan.md",
+        "design": "02-design/features/t3-crag-adaptive-rag.design.md",
+        "analysis": "03-analysis/t1-t2-t3-toc-chatbot-crag.analysis.md"
+      },
+      "completedAt": "2026-03-04",
+      "notes": "CRAG+Adaptive RAG 4단계 파이프라인. domain-intelligence.ts + hybrid-search.ts + relevance-evaluator.ts + brave-search.ts 신규. knowledge.ts ConsumerConfig 확장 + generate() 파이프라인 통합. tsc+lint+build 통과."
     }
   },
   "phaseMapping": {

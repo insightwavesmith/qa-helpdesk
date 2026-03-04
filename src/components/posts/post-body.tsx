@@ -101,14 +101,23 @@ function markdownToHtml(md: string): string {
   // Merge consecutive uls
   html = html.replace(/<\/ul>\s*<ul>/g, "");
 
-  // Ordered list
-  html = html.replace(/^\d+\. (.+)$/gm, "<li>$1</li>");
-  // Wrap remaining orphan <li> in <ol>
-  html = html.replace(/(?<!<\/li>\s*)(<li>[\s\S]*?<\/li>)(?!\s*<li>)/g, (match) => {
-    // If already wrapped in ul, skip
-    if (html.indexOf(`<ul>${match}`) !== -1) return match;
+  // Ordered list — <ul> 안에 포함되지 않은 numbered list를 <ol>로 래핑
+  html = html.replace(/^\d+\. (.+)$/gm, (_match, content) => {
+    // 이미 <ul> 안의 <li>로 변환된 것과 구분하기 위해 임시 <oli> 태그 사용
+    return `<oli>${content}</oli>`;
+  });
+  // <oli> 태그를 <ol>로 래핑
+  html = html.replace(/(<oli>[\s\S]*?<\/oli>)/g, (match) => {
+    if (!match.startsWith("<ol>")) {
+      return `<ol>${match}</ol>`;
+    }
     return match;
   });
+  // Merge consecutive ols
+  html = html.replace(/<\/ol>\s*<ol>/g, "");
+  // <oli> → <li> 최종 변환
+  html = html.replace(/<oli>/g, "<li>");
+  html = html.replace(/<\/oli>/g, "</li>");
 
   // Tables
   html = html.replace(/^\|(.+)\|\s*\n\|[-\s|:]+\|\s*\n((?:\|.+\|\s*\n?)*)/gm, (_match, header, body) => {

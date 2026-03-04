@@ -7,6 +7,7 @@ import { DashboardSidebar } from "@/components/dashboard/Sidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { MobileSidebar } from "@/components/dashboard/MobileSidebar";
 import { Button } from "@/components/ui/button";
+import { QaChatButton } from "@/components/qa-chatbot/QaChatButton";
 
 export default async function MainLayout({
   children,
@@ -95,6 +96,8 @@ export default async function MainLayout({
           </div>
         </main>
       </div>
+      {/* 관리자 전용 QA 리포팅 챗봇 */}
+      <QaChatButton />
     </div>
   );
 }
