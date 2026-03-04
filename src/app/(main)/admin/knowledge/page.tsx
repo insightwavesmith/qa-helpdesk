@@ -364,9 +364,9 @@ export default function AdminKnowledgePage() {
                   <XAxis type="number" tick={{ fontSize: 11 }} />
                   <YAxis type="category" dataKey="source_type" tick={{ fontSize: 12 }} width={120} />
                   <Tooltip />
-                  <Bar dataKey="cnt" radius={[0, 4, 4, 0]}>
+                  <Bar dataKey="cnt" fill="#94a3b8" radius={[0, 4, 4, 0]} isAnimationActive={false}>
                     {chunkStats.map((entry, i) => (
-                      <Cell key={i} fill={SOURCE_COLORS[entry.source_type] || "#94a3b8"} />
+                      <Cell key={`cell-${i}`} fill={SOURCE_COLORS[entry.source_type] || "#94a3b8"} />
                     ))}
                   </Bar>
                 </BarChart>

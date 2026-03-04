@@ -41,7 +41,7 @@ export function PostToc({ content }: PostTocProps) {
   if (headings.length === 0) return null;
 
   return (
-    <nav className="bg-[#f9fafb] rounded-lg p-6 mb-8">
+    <nav className="bg-[#f9fafb] border border-gray-200 rounded-lg p-6 mb-8">
       <h4 className="text-sm font-bold text-[#1a1a2e] mb-3">목차</h4>
       <ol className="space-y-2">
         {headings.map((h) => (
