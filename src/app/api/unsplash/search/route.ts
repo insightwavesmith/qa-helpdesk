@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   const accessKey = process.env.UNSPLASH_ACCESS_KEY;
   if (!accessKey) {
     return NextResponse.json({
-      url: `https://placehold.co/800x400?text=${encodeURIComponent(query)}`,
+      url: null,
     });
   }
 
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     if (!res.ok) {
       return NextResponse.json({
-        url: `https://placehold.co/800x400?text=${encodeURIComponent(query)}`,
+        url: null,
       });
     }
 
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     if (!photo) {
       return NextResponse.json({
-        url: `https://placehold.co/800x400?text=${encodeURIComponent(query)}`,
+        url: null,
       });
     }
 
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     });
   } catch {
     return NextResponse.json({
-      url: `https://placehold.co/800x400?text=${encodeURIComponent(query)}`,
+      url: null,
     });
   }
 }

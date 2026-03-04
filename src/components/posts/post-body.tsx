@@ -167,10 +167,12 @@ export function PostBody({ content }: PostBodyProps) {
         if (data.url) {
           img.src = data.url;
         } else {
-          img.src = `https://placehold.co/800x400/F5F5F5/999999?text=Image`;
+          // 이미지 못 찾으면 figure 요소 자체 제거
+          img.closest("figure")?.remove();
         }
       } catch {
-        img.src = `https://placehold.co/800x400/F5F5F5/999999?text=Image`;
+        // 에러 시 figure 요소 자체 제거
+        img.closest("figure")?.remove();
       }
     });
   }, [html]);
