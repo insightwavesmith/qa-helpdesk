@@ -308,7 +308,7 @@ export function TotalValueGauge({ data, isLoading, showMetricCards = true, error
                     />
                   </div>
                   <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-                    <span>{m.pctOfBenchmark != null ? `기준 대비 ${m.pctOfBenchmark}%` : "-"}</span>
+                    <span>{m.key === "roas" ? "-" : m.pctOfBenchmark != null ? `기준 대비 ${m.pctOfBenchmark}%` : "-"}</span>
                   </div>
                 </div>
               );

@@ -128,7 +128,7 @@ function T3DiagnosticView({ diagnostics }: { diagnostics: Record<string, T3Diagn
                                 <span className={`text-base font-bold ${mStyle.text}`}>{fmtVal}</span>
                               </div>
                               <div className="mt-1 text-[10px] text-muted-foreground">
-                                {m.pctOfBenchmark != null ? `기준 대비 ${m.pctOfBenchmark}%` : ""}
+                                {m.key === "roas" ? "" : m.pctOfBenchmark != null ? `기준 대비 ${m.pctOfBenchmark}%` : ""}
                               </div>
                             </div>
                           );
@@ -180,7 +180,7 @@ function T3DiagnosticView({ diagnostics }: { diagnostics: Record<string, T3Diagn
                           <span className={`text-base font-bold ${mStyle.text}`}>{fmtVal}</span>
                         </div>
                         <div className="mt-1 text-[10px] text-muted-foreground">
-                          {m.pctOfBenchmark != null ? `기준 대비 ${m.pctOfBenchmark}%` : ""}
+                          {m.key === "roas" ? "" : m.pctOfBenchmark != null ? `기준 대비 ${m.pctOfBenchmark}%` : ""}
                         </div>
                       </div>
                     );
@@ -272,7 +272,7 @@ function LegacyDiagnosticView({ diagnoses }: { diagnoses: DiagnosisEntry[] }) {
                         <div className="mt-1 flex items-baseline gap-2">
                           <span className={`text-base font-bold ${ms.text}`}>{fmtMetric(m.my_value)}</span>
                           <span className="text-[10px] text-muted-foreground">
-                            {m.pct_of_benchmark != null ? `기준 대비 ${m.pct_of_benchmark}%` : ""}
+                            {m.name.toLowerCase().includes("roas") ? "" : m.pct_of_benchmark != null ? `기준 대비 ${m.pct_of_benchmark}%` : ""}
                           </span>
                         </div>
                       </div>

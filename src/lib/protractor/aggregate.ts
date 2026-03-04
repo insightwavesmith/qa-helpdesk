@@ -172,7 +172,10 @@ export function toSummaryCards(
       value: current.roas.toFixed(2),
       changePercent: 0,
       changeLabel: "",
-      ...bm("roas", current.roas, true, (v) => v.toFixed(2)),
+      // T10-F4: ROAS는 기준값 표시하지 않음 (실제 값만 표시)
+      benchmarkText: null,
+      benchmarkGood: null,
+      benchmarkAbove: null,
     },
   ];
 }

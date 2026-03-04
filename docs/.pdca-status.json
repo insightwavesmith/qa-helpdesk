@@ -447,6 +447,17 @@
       },
       "completedAt": "2026-03-04",
       "notes": "T10 백필 통합 완료: RecollectButtons 삭제, BackfillSection 3종 통합(광고+믹스패널+타겟중복), 1일 옵션 추가, SSE phase 기반 3종 진행률 UI. mixpanel-collector.ts 신규 모듈 추출(DRY). tsc+lint+build 모두 통과. Match Rate 95%."
+    },
+    "t10-f4-roas-benchmark-removal": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/t10-f4-roas-benchmark-removal.plan.md",
+        "design": "02-design/features/t10-f4-roas-benchmark-removal.design.md",
+        "analysis": "03-analysis/t10-f4-roas-benchmark-removal.analysis.md"
+      },
+      "completedAt": "2026-03-04",
+      "notes": "ROAS 벤치마크 기준값 표시 제거. aggregate.ts(1곳) + TotalValueGauge(1곳) + DiagnosticPanel(3곳). 다른 지표 미영향. tsc+build 통과. Match Rate 100%."
     }
   },
   "phaseMapping": {
