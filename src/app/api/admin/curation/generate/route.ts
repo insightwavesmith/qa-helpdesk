@@ -6,6 +6,66 @@ export const maxDuration = 300;
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 
+// --- 프록시 / 직접 호출 헬퍼 ---
+
+interface AnthropicResponseData {
+  content: Array<{ type: string; text?: string }>;
+}
+
+/** AI_PROXY_URL 경유 호출 (timeout 120초) */
+async function callViaProxy(
+  proxyUrl: string,
+  proxyKey: string,
+  body: Record<string, unknown>,
+): Promise<AnthropicResponseData> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 120_000);
+
+  try {
+    const res = await fetch(proxyUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(proxyKey ? { "x-proxy-key": proxyKey } : {}),
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`프록시 ${res.status}: ${errText.substring(0, 200)}`);
+    }
+
+    return (await res.json()) as AnthropicResponseData;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** 기존 Anthropic API 직접 호출 */
+async function callAnthropicDirect(
+  apiKey: string,
+  body: Record<string, unknown>,
+): Promise<AnthropicResponseData> {
+  const res = await fetch(ANTHROPIC_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Anthropic API ${res.status}: ${errText.substring(0, 200)}`);
+  }
+
+  return (await res.json()) as AnthropicResponseData;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const auth = await requireAdmin(["admin", "assistant"]);
@@ -241,37 +301,61 @@ export async function POST(request: NextRequest) {
       userPrompt += `\n\n---\n\n### 자사몰사관학교 강의 컨텍스트\n아래는 관련 강의/블루프린트 내용입니다. 이것을 글의 기반으로 삼으세요.\n\n${ragContext}`;
     }
 
-    // Anthropic API 호출
-    const response = await fetch(ANTHROPIC_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+    // Anthropic API 호출 (프록시 우선 → 폴백)
+    const proxyUrl = process.env.AI_PROXY_URL;
+    const proxyKey = process.env.AI_PROXY_KEY || "";
+
+    const requestBody: Record<string, unknown> = {
+      model: "claude-opus-4-6",
+      max_tokens: 16000,
+      temperature: 1,
+      thinking: {
+        type: "enabled",
+        budget_tokens: 10000,
       },
-      body: JSON.stringify({
-        model: "claude-opus-4-6",
-        max_tokens: 16000,
-        temperature: 1,
-        thinking: {
-          type: "enabled",
-          budget_tokens: 10000,
-        },
-        system: systemPrompt,
-        messages: [{ role: "user", content: userPrompt }],
-      }),
-    });
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    };
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Anthropic API error:", errorText);
-      return NextResponse.json(
-        { error: "정보공유 생성에 실패했습니다." },
-        { status: 500 }
-      );
+    let data: AnthropicResponseData;
+
+    if (proxyUrl) {
+      try {
+        data = await callViaProxy(proxyUrl, proxyKey, requestBody);
+        console.log("[정보공유 생성] 프록시 사용:", proxyUrl);
+      } catch (proxyErr) {
+        console.warn(
+          "[정보공유 생성] 프록시 실패, API 폴백:",
+          proxyErr instanceof Error ? proxyErr.message : proxyErr,
+        );
+        try {
+          data = await callAnthropicDirect(apiKey, requestBody);
+          console.log("[정보공유 생성] Anthropic API 폴백 성공");
+        } catch (apiErr) {
+          console.error(
+            "Anthropic API error:",
+            apiErr instanceof Error ? apiErr.message : apiErr,
+          );
+          return NextResponse.json(
+            { error: "정보공유 생성에 실패했습니다." },
+            { status: 500 },
+          );
+        }
+      }
+    } else {
+      try {
+        data = await callAnthropicDirect(apiKey, requestBody);
+      } catch (apiErr) {
+        console.error(
+          "Anthropic API error:",
+          apiErr instanceof Error ? apiErr.message : apiErr,
+        );
+        return NextResponse.json(
+          { error: "정보공유 생성에 실패했습니다." },
+          { status: 500 },
+        );
+      }
     }
-
-    const data = await response.json();
     // thinking 블록 건너뛰고 text 블록만 추출
     const textBlock = data.content?.find((b: { type: string }) => b.type === "text");
     const text = textBlock?.text || "";

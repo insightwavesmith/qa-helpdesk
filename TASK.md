@@ -1,131 +1,66 @@
-# TASK — 버그 수정 + Q&A 답변 톤 수정
+# TASK — T3: 정보공유 생성 프록시 경유
 
-## B1: 회원가입 오류 + 온보딩 미전환
+## 목표
+정보공유 콘텐츠 생성(Opus) 시 Anthropic API 직접 호출 대신 로컬 프록시 서버를 경유하도록 변경.
+Q&A(Sonnet)는 기존 API 유지. 정보공유 생성만 프록시.
 
-### 현재 동작
-- 초대코드 넣고 가입 → "회원가입 중 오류가 발생했습니다" 표시
-- 실제로는 Supabase Auth 유저 생성됨 (trigger로 profiles INSERT)
-- 오류 표시 때문에 `router.push("/onboarding")` 도달 안 함
+## 현재 동작
+- `src/app/api/admin/curation/generate/route.ts` 에서 Anthropic SDK로 직접 API 호출
+- `new Anthropic()` → `client.messages.create()` 패턴
+- 모델: claude-opus-4-6, max_tokens: 16000, thinking budget: 10000
 
-### 코드 위치
-- `src/app/(auth)/signup/page.tsx:136-176`
-- `supabase.auth.signUp()` 호출 후 `authError` 처리
+## 기대 동작
+- 정보공유 생성 시 `AI_PROXY_URL` 환경변수가 있으면 프록시로 요청
+- 프록시 실패 시 기존 Anthropic API로 폴백 (서비스 중단 방지)
+- `AI_PROXY_URL` 환경변수가 없으면 기존 방식 그대로
 
-### 기대 동작
-- 가입 성공 시 오류 없이 온보딩 페이지로 이동
-- authError가 있어도 유저가 실제로 생성됐으면 (authData.user 존재) 정상 플로우 진행
-- authError가 있고 유저도 없으면 그때 오류 표시
-
-### 수정 방향
-- `if (authError)` 블록에서 `authData?.user`가 존재하면 에러 무시하고 다음 단계 진행
-- `authData.user`가 없을 때만 `setError(authError.message)` + return
-
-### 하지 말 것
-- Supabase Auth 설정 변경 금지
-- middleware.ts 수정 금지
-- 가입 플로우 전체 구조 변경 금지
-
----
-
-## B2: 회원 삭제 오류 — inactive role 미허용
-
-### 현재 동작
-- 수강생 비활성화 → role이 `inactive`로 변경
-- 삭제 시도 → `["lead", "member"]`만 허용 → "수강생과 관리자는 삭제할 수 없습니다"
-
-### 코드 위치
-- `src/actions/admin.ts:402` — `if (!["lead", "member"].includes(profile.role))`
-
-### 기대 동작
-- 비활성화된 회원(role=inactive)도 삭제 가능
-
-### 수정
-- `["lead", "member"]` → `["lead", "member", "inactive"]`
-- 한 줄 수정
-
-### 하지 말 것
-- admin, student, assistant role 삭제 허용하면 안 됨
-- 다른 삭제 로직 변경 금지
-
----
-
-## T2-fix: Q&A 답변 포맷 수정 — AI틱한 구조 제거
-
-### 현재 동작 (방금 T2에서 추가한 것)
-- "**핵심:**" 으로 시작 → 상세 → "**정리하면:**" 으로 마무리
-- Q1/Q2 자체 분리 구조
-- 교과서적 나열 (이벤트 4개 퍼널 순서대로 등)
-
-### 코드 위치
-- `src/lib/knowledge.ts` — QA_SYSTEM_PROMPT 내 답변 포맷 섹션
-
-### 기대 동작
-- "핵심:" / "정리하면:" 키워드 삭제
-- 바로 본론 들어가기. 강사가 수강생한테 직접 말하듯이.
-- Q1/Q2 번호 분리 금지. 자연스러운 흐름으로 연결.
-- 마무리는 별도 요약 반복 없이 자연스럽게 끝내기.
-
-### 수정할 프롬프트 규칙 (교체)
+## 프록시 API 스펙
 ```
-[답변 구조]
-- "핵심:", "정리하면:", "요약:" 같은 볼드 키워드로 시작하거나 끝내지 마라
-- 바로 본론부터 시작해라. 인사나 서론 없이.
-- 질문이 여러 개여도 Q1/Q2 번호 매기지 마라. 자연스럽게 이어서 써라.
-- 마지막에 앞에서 한 말을 불릿으로 반복 요약하지 마라. 자연스럽게 끝내라.
-- 용어를 나열할 때 교과서처럼 빠짐없이 순서대로 쓰지 마라. 핵심적인 것만 언급해라.
+POST {AI_PROXY_URL}
+Headers:
+  Content-Type: application/json
+  x-proxy-key: {AI_PROXY_KEY}  // 환경변수
+Body:
+  {
+    "model": "claude-opus-4-6",
+    "max_tokens": 16000,
+    "system": "시스템 프롬프트",
+    "messages": [{"role":"user","content":"..."}],
+    "thinking": {"type":"enabled","budget_tokens":10000}
+  }
+Response:
+  {
+    "id": "msg_...",
+    "type": "message",
+    "role": "assistant",
+    "content": [{"type":"text","text":"생성된 콘텐츠"}],
+    "model": "claude-opus-4-6",
+    "stop_reason": "end_turn"
+  }
 ```
 
-### 하지 말 것
-- QA_SYSTEM_PROMPT의 다른 섹션 (말투, 마크다운 규칙 등) 수정 금지
-- 정보공유 프롬프트 (route.ts) 수정 금지
+## 수정 방법
+1. `generate/route.ts`에 프록시 호출 함수 추가:
+   - `AI_PROXY_URL`과 `AI_PROXY_KEY` 환경변수 확인
+   - fetch로 프록시 호출 (timeout 120초)
+   - 응답에서 content[0].text 추출 (기존 Anthropic SDK 응답과 동일 구조)
 
----
+2. 기존 `client.messages.create()` 호출 부분을:
+   - 먼저 프록시 시도
+   - 프록시 실패(네트워크 에러, 타임아웃, 5xx) → 기존 Anthropic API 폴백
+   - console.log로 "프록시 사용" / "API 폴백" 로깅
 
-## T4-fix: Q&A 답변 톤 — 단정형 → 요체(~요)
+3. thinking 응답 처리:
+   - 프록시 응답의 content 배열에 thinking block이 있을 수 있음
+   - type === "text"인 항목만 추출 (기존 코드와 동일)
 
-### 현재 동작
-- 단정형(~다, ~거든, ~해라) 말투
-- few-shot 예시도 단정형
+## 환경변수
+- `AI_PROXY_URL`: 프록시 엔드포인트 (예: https://xxx.trycloudflare.com/v1/generate)
+- `AI_PROXY_KEY`: 프록시 인증 키
 
-### 코드 위치
-- `src/lib/knowledge.ts` — QA_SYSTEM_PROMPT 내 말투 규칙 + few-shot 예시
-
-### 기대 동작
-- 요체(~요, ~거든요, ~이에요, ~해요) 말투
-- 강사가 수강생한테 친절하게 설명하는 톤
-- 근데 챗봇("안녕하세요! 😊")은 아님. 실무자가 후배한테 알려주는 느낌.
-
-### 수정할 프롬프트 규칙 (교체)
-```
-[말투]
-- 요체(~요, ~거든요, ~이에요) 기본
-- "~입니다/~합니다" 딱딱한 존댓말 금지
-- "안녕하세요!", "도움이 되셨길 바랍니다" 같은 챗봇 인사 금지
-- 이모지 금지
-- 실무 선배가 후배한테 알려주는 톤. 친절하되 가볍지 않게.
-```
-
-### few-shot 예시 (교체)
-좋은 예:
-```
-네이버 쇼핑 입점 자체는 Meta 학습이랑 별개예요. 네이버 쇼핑에서 발생하는 구매는 자사몰 픽셀에 안 쌓이거든요.
-
-근데 진짜 고민해야 할 건 기존에 SA나 GFA로 보내던 트래픽이에요. 이걸 자사몰로 보내면 Meta 픽셀 데이터가 더 쌓이니까 학습에 도움이 되거든요.
-
-매출 분산 기준으로 판단하시면 돼요.
-```
-
-나쁜 예:
-```
-**핵심:** 네이버 쇼핑 입점은 Meta 학습과 무관하다.
-
-Q1부터 짚고 가면, 네이버 쇼핑에 상품이 올라간다고 자사몰 픽셀에 데이터가 쌓이는 구조가 아니다.
-
-**정리하면:**
-- 네이버 쇼핑 입점은 Meta 학습과 별개다
-- SA, GFA 랜딩을 자사몰로 전환하는 건 학습에 도움이 된다
-```
-
-### 하지 말 것
-- 정보공유 프롬프트는 단정형(~다) 유지 — Q&A만 변경
-- QA_SYSTEM_PROMPT의 마크다운 규칙, AI상투어 금지 목록 등은 수정 금지
+## 하지 말 것
+- Q&A 관련 코드 (knowledge.ts, domain-intelligence.ts) 수정 금지
+- 정보공유 프롬프트 내용 수정 금지
+- AI 수정(revise) 엔드포인트 수정 금지 (정보공유 생성만)
+- 새 패키지 설치 금지 (fetch는 Next.js 내장)
+- Anthropic SDK 제거 금지 (폴백용으로 유지)

@@ -1,7 +1,19 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-05T12:00:00.000Z",
+  "lastUpdated": "2026-03-05T18:00:00.000Z",
   "features": {
+    "t3-curation-proxy": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/t3-curation-proxy.plan.md",
+        "design": "02-design/features/t3-curation-proxy.design.md",
+        "analysis": "03-analysis/t3-curation-proxy.analysis.md"
+      },
+      "startedAt": "2026-03-05",
+      "completedAt": "2026-03-05",
+      "notes": "정보공유 생성 시 AI_PROXY_URL 환경변수 있으면 프록시 경유, 실패 시 Anthropic API 폴백. callViaProxy+callAnthropicDirect 헬퍼. Q&A 코드 무변경. tsc+lint+build 통과."
+    },
     "b1b2-t2fix-t4fix-bugfix": {
       "phase": "completed",
       "matchRate": 100,
