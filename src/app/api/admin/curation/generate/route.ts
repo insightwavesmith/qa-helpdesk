@@ -116,9 +116,9 @@ export async function POST(request: NextRequest) {
    - 마지막에 수강 문의 CTA 1줄: "자사몰사관학교에서 더 자세히 배워보세요 →"
 
 ## 글자수 (절대 규칙)
-- 최소 4,000자 이상 (공백 포함). 4,000자 미만 절대 금지.
-- 1개 콘텐츠: 4,000~5,000자
-- 2~4개 묶음: 5,000~7,000자
+- 최소 5,000자 이상 (공백 포함). 5,000자 미만 절대 금지.
+- 1개 콘텐츠: 5,000~7,000자
+- 2~4개 묶음: 7,000~10,000자
 - 부족하면 실전 예시, 체크리스트, FAQ를 추가하여 분량 확보
 
 ## 작성 규칙
@@ -189,6 +189,7 @@ export async function POST(request: NextRequest) {
 - *** 단독 한 줄 = 수평선. 볼드+이탤릭은 ***텍스트*** 형태로만
 - 수평선(--- 또는 ***) 연속 2개 이상 금지
 - 이미지 관련 마크다운(![...](...), [이미지: ...]) 사용 금지. 이미지 없이 텍스트만 작성.
+- <figure>, <img>, <picture> HTML 태그 생성 절대 금지. 텍스트 콘텐츠만 작성해라.
 
 ## 강의 컨텍스트 활용법
 아래 '강의 컨텍스트'가 제공됩니다. 이것을 글의 기반으로 삼으세요:
@@ -296,10 +297,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 출력 길이 검증
-    if (bodyMd.length < 2000) {
-      console.warn(`정보공유 생성 결과가 짧음: ${bodyMd.length}자 (기준 2,500자 이상)`);
-    } else if (bodyMd.length > 7000) {
-      console.warn(`정보공유 생성 결과가 김: ${bodyMd.length}자 (기준 6,000자 이하)`);
+    if (bodyMd.length < 5000) {
+      console.warn(`정보공유 생성 결과가 짧음: ${bodyMd.length}자 (기준 5,000자 이상)`);
+    } else if (bodyMd.length > 10000) {
+      console.warn(`정보공유 생성 결과가 김: ${bodyMd.length}자 (기준 10,000자 이하)`);
     }
 
     // 원본 콘텐츠들의 주요 카테고리 결정

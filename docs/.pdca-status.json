@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-04T17:00:00.000Z",
+  "lastUpdated": "2026-03-05T09:00:00.000Z",
   "features": {
     "bugfix-autocomplete-secret": {
       "phase": "completed",
@@ -534,6 +534,18 @@
       },
       "completedAt": "2026-03-04",
       "notes": "CRAG+Adaptive RAG 4단계 파이프라인. domain-intelligence.ts + hybrid-search.ts + relevance-evaluator.ts + brave-search.ts 신규. knowledge.ts ConsumerConfig 확장 + generate() 파이프라인 통합. tsc+lint+build 통과."
+    },
+    "qa-curation-quality-t1t6": {
+      "phase": "completed",
+      "matchRate": 97.1,
+      "documents": {
+        "plan": "01-plan/features/qa-curation-quality-t1t6.plan.md",
+        "design": "02-design/features/qa-curation-quality-t1t6.design.md",
+        "analysis": "03-analysis/features/qa-curation-quality-t1t6.analysis.md"
+      },
+      "startedAt": "2026-03-05",
+      "completedAt": "2026-03-05",
+      "notes": "T1 Stage0 용어정의 Brave웹서치 + T2 답변 3단구조 + T3 톤보정 few-shot + T5 IMAGE_PLACEHOLDER img만 삭제 + T6 글자수 5000~10000. T4 제외. tsc+lint+build 통과."
     }
   },
   "phaseMapping": {

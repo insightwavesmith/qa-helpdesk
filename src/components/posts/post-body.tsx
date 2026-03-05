@@ -176,12 +176,12 @@ export function PostBody({ content }: PostBodyProps) {
         if (data.url) {
           img.src = data.url;
         } else {
-          // 이미지 못 찾으면 figure 요소 자체 제거
-          img.closest("figure")?.remove();
+          // 이미지 못 찾으면 img 태그만 제거 (figure 내 텍스트 보존)
+          img.remove();
         }
       } catch {
-        // 에러 시 figure 요소 자체 제거
-        img.closest("figure")?.remove();
+        // 에러 시 img 태그만 제거 (figure 내 텍스트 보존)
+        img.remove();
       }
     });
   }, [html]);

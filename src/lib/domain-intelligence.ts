@@ -1,6 +1,8 @@
 // Stage 0: 도메인 인텔리전스 — 질문 분석 및 도메인 용어 정규화
 // Sonnet으로 질문의 도메인 용어를 이해하고 검색 쿼리를 최적화
 
+import { searchBrave } from "@/lib/brave-search";
+
 const API_URL = "https://api.anthropic.com/v1/messages";
 const TIMEOUT_MS = 15_000;
 
@@ -26,6 +28,7 @@ export interface DomainAnalysis {
   suggestedSearchQueries: string[];
   skipRAG: boolean;
   directAnswer?: string;
+  termDefinitions: Array<{ term: string; definition: string }>; // T1: Brave 용어 정의
 }
 
 const DOMAIN_ANALYSIS_PROMPT = `당신은 메타(Facebook) 광고 도메인 전문가입니다.
@@ -144,10 +147,48 @@ export async function analyzeDomain(
     ];
     const validComplexity: Complexity[] = ["simple", "medium", "complex"];
 
+    const normalizedTerms: NormalizedTerm[] = Array.isArray(parsed.normalizedTerms)
+      ? parsed.normalizedTerms
+      : [];
+
+    // T1: 핵심 용어 Brave Search 정의 조회
+    let termDefinitions: Array<{ term: string; definition: string }> = [];
+    if (normalizedTerms.length > 0 && process.env.BRAVE_API_KEY) {
+      try {
+        const keyTerms = normalizedTerms.slice(0, 2);
+        const definitionPromises = keyTerms.map(async (t: NormalizedTerm) => {
+          const results = await searchBrave({
+            query: `${t.normalized} 뜻`,
+            count: 2,
+            country: "KR",
+          });
+          if (results.length > 0) {
+            return {
+              term: t.normalized,
+              definition: results[0].description.slice(0, 300),
+            };
+          }
+          return null;
+        });
+
+        const results = await Promise.race([
+          Promise.all(definitionPromises),
+          new Promise<({ term: string; definition: string } | null)[]>((resolve) =>
+            setTimeout(() => resolve(keyTerms.map(() => null)), 5000)
+          ),
+        ]);
+
+        termDefinitions = results.filter(
+          (r): r is { term: string; definition: string } => r !== null
+        );
+      } catch (err) {
+        console.warn("[DomainIntelligence] 용어 정의 조회 실패:", err);
+        // 실패 시 빈 배열 — 기존 동작 유지
+      }
+    }
+
     return {
-      normalizedTerms: Array.isArray(parsed.normalizedTerms)
-        ? parsed.normalizedTerms
-        : [],
+      normalizedTerms,
       intent: String(parsed.intent || question),
       questionType: validTypes.includes(parsed.questionType)
         ? parsed.questionType
@@ -162,6 +203,7 @@ export async function analyzeDomain(
       directAnswer: parsed.directAnswer
         ? String(parsed.directAnswer)
         : undefined,
+      termDefinitions,
     };
   } catch (error) {
     clearTimeout(timeout);
