@@ -1,7 +1,18 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-05T09:00:00.000Z",
+  "lastUpdated": "2026-03-05T12:00:00.000Z",
   "features": {
+    "b1b2-t2fix-t4fix-bugfix": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/b1b2-t2fix-t4fix-bugfix.plan.md",
+        "design": "02-design/features/b1b2-t2fix-t4fix-bugfix.design.md",
+        "analysis": "03-analysis/b1b2-t2fix-t4fix-bugfix.analysis.md"
+      },
+      "completedAt": "2026-03-05",
+      "notes": "B1 signup authError 처리(user 존재시 진행), B2 inactive 삭제 허용, T2-fix 핵심:/정리하면: 제거, T4-fix 말투 요체 변경+few-shot 교체. tsc+lint+build 통과. Match Rate 100%."
+    },
     "bugfix-autocomplete-secret": {
       "phase": "completed",
       "matchRate": 100,

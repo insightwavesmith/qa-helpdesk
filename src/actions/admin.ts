@@ -398,7 +398,7 @@ export async function deleteMember(userId: string) {
 
   if (!profile) return { error: "회원을 찾을 수 없습니다." };
 
-  if (!["lead", "member"].includes(profile.role)) {
+  if (!["lead", "member", "inactive"].includes(profile.role)) {
     return { error: "수강생과 관리자는 삭제할 수 없습니다." };
   }
 

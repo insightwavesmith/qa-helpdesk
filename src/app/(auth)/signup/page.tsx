@@ -140,12 +140,13 @@ export default function SignupPage() {
         },
       });
 
-      if (authError) {
+      // B1: authError가 있어도 유저가 실제 생성됐으면 정상 플로우 진행
+      if (authError && !authData?.user) {
         setError(authError.message);
         return;
       }
 
-      if (!authData.user) {
+      if (!authData?.user) {
         setError("회원가입 중 오류가 발생했습니다.");
         return;
       }
