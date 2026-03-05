@@ -227,6 +227,11 @@ function StepProfile({
   // T3: submit 시도 상태
   const [submitted, setSubmitted] = useState(false);
 
+  // blur 시 에러 표시용 touched 상태
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const markTouched = (field: string) =>
+    setTouched((prev) => ({ ...prev, [field]: true }));
+
   const isCategoryValid = category !== "etc" || customCategory.trim().length > 0;
 
   // T3: 프로필 전체 유효성
@@ -293,11 +298,12 @@ function StepProfile({
             placeholder="예: 마이브랜드"
             value={shopName}
             onChange={(e) => setShopName(e.target.value)}
+            onBlur={() => markTouched('shopName')}
             className={`w-full px-4 h-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400 ${
-              submitted && !shopName.trim() ? "border-red-300" : "border-gray-200"
+              (submitted || touched.shopName) && !shopName.trim() ? "border-red-300" : "border-gray-200"
             }`}
           />
-          {submitted && !shopName.trim() && (
+          {(submitted || touched.shopName) && !shopName.trim() && (
             <p className="text-xs text-red-500 mt-1">필수 항목입니다</p>
           )}
         </div>
@@ -315,11 +321,12 @@ function StepProfile({
             placeholder="https://myshop.com"
             value={shopUrl}
             onChange={(e) => setShopUrl(e.target.value)}
+            onBlur={() => markTouched('shopUrl')}
             className={`w-full px-4 h-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400 ${
-              submitted && !shopUrl.trim() ? "border-red-300" : "border-gray-200"
+              (submitted || touched.shopUrl) && !shopUrl.trim() ? "border-red-300" : "border-gray-200"
             }`}
           />
-          {submitted && !shopUrl.trim() && (
+          {(submitted || touched.shopUrl) && !shopUrl.trim() && (
             <p className="text-xs text-red-500 mt-1">필수 항목입니다</p>
           )}
         </div>
@@ -328,9 +335,9 @@ function StepProfile({
           <label className="block text-sm font-medium text-[#111827]">
             연매출 <span className="text-red-500">*</span>
           </label>
-          <Select value={annualRevenue} onValueChange={setAnnualRevenue}>
+          <Select value={annualRevenue} onValueChange={setAnnualRevenue} onOpenChange={(open) => { if (!open) markTouched('annualRevenue'); }}>
             <SelectTrigger className={`w-full h-11 px-4 border rounded-lg bg-white text-[#111827] ${
-              submitted && !annualRevenue ? "border-red-300" : "border-gray-200"
+              (submitted || touched.annualRevenue) && !annualRevenue ? "border-red-300" : "border-gray-200"
             }`}>
               <SelectValue placeholder="연매출 범위를 선택하세요" />
             </SelectTrigger>
@@ -342,7 +349,7 @@ function StepProfile({
               ))}
             </SelectContent>
           </Select>
-          {submitted && !annualRevenue && (
+          {(submitted || touched.annualRevenue) && !annualRevenue && (
             <p className="text-xs text-red-500 mt-1">필수 항목입니다</p>
           )}
         </div>
@@ -354,9 +361,10 @@ function StepProfile({
           <Select
             value={monthlyAdBudget}
             onValueChange={setMonthlyAdBudget}
+            onOpenChange={(open) => { if (!open) markTouched('monthlyAdBudget'); }}
           >
             <SelectTrigger className={`w-full h-11 px-4 border rounded-lg bg-white text-[#111827] ${
-              submitted && !monthlyAdBudget ? "border-red-300" : "border-gray-200"
+              (submitted || touched.monthlyAdBudget) && !monthlyAdBudget ? "border-red-300" : "border-gray-200"
             }`}>
               <SelectValue placeholder="예산 범위를 선택하세요" />
             </SelectTrigger>
@@ -368,7 +376,7 @@ function StepProfile({
               ))}
             </SelectContent>
           </Select>
-          {submitted && !monthlyAdBudget && (
+          {(submitted || touched.monthlyAdBudget) && !monthlyAdBudget && (
             <p className="text-xs text-red-500 mt-1">필수 항목입니다</p>
           )}
         </div>

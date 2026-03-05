@@ -38,6 +38,16 @@
       "completedAt": "2026-03-06",
       "notes": "T3 온보딩 StepProfile 4개 필드 필수화. submitted 상태 + isProfileValid + 에러 UI. getFieldError 헬퍼 미추출(인라인 처리)."
     },
+    "onboarding-blur-validation": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/onboarding-blur-validation.plan.md",
+        "design": "02-design/features/onboarding-blur-validation.design.md"
+      },
+      "startedAt": "2026-03-06",
+      "notes": "T3 보완: touched 상태 추가로 blur 시 에러 표시. 기존 submitted+disabled 로직 유지."
+    },
     "t3-curation-proxy": {
       "phase": "completed",
       "matchRate": 100,
