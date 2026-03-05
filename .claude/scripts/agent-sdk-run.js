@@ -94,7 +94,15 @@ process.on("SIGINT", () => {
 
 // Slack DM 전송 (실패해도 wake에 영향 없음)
 async function sendSlackDM(text) {
-  const token = process.env.SLACK_BOT_TOKEN;
+  let token = process.env.SLACK_BOT_TOKEN;
+  if (!token) {
+    // openclaw config에서 dev-lead botToken 자동 추출
+    try {
+      const raw = fs.readFileSync("/Users/smith/.openclaw/openclaw.json", "utf8");
+      const config = eval("(" + raw + ")");
+      token = config.channels?.slack?.accounts?.["dev-lead"]?.botToken;
+    } catch (_) {}
+  }
   if (!token) {
     log("SLACK_BOT_TOKEN 없음 - Slack 알림 skip");
     return;

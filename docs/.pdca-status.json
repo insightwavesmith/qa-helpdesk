@@ -1,7 +1,43 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-05T18:00:00.000Z",
+  "lastUpdated": "2026-03-06T10:00:00.000Z",
   "features": {
+    "signup-validation": {
+      "phase": "completed",
+      "matchRate": 88,
+      "documents": {
+        "plan": "01-plan/features/signup-validation.plan.md",
+        "design": "02-design/features/signup-validation.design.md",
+        "analysis": "03-analysis/signup-validation-i18n-onboarding.analysis.md"
+      },
+      "startedAt": "2026-03-06",
+      "completedAt": "2026-03-06",
+      "notes": "T1 회원가입 폼 클라이언트 Validation 강화. 필드별 에러, 자동 하이픈, 실시간 비밀번호 확인. isFormValid 설계보다 강화(regex+길이 포함)."
+    },
+    "signup-error-i18n": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/signup-error-i18n.plan.md",
+        "design": "02-design/features/signup-error-i18n.design.md",
+        "analysis": "03-analysis/signup-validation-i18n-onboarding.analysis.md"
+      },
+      "startedAt": "2026-03-06",
+      "completedAt": "2026-03-06",
+      "notes": "T2 Supabase Auth 에러 메시지 한국어 매핑. SUPABASE_ERROR_MAP 6개 + 3단계 매칭(exact→partial→default). B1 로직 보존. 100% 일치."
+    },
+    "onboarding-required-fields": {
+      "phase": "completed",
+      "matchRate": 93,
+      "documents": {
+        "plan": "01-plan/features/onboarding-required-fields.plan.md",
+        "design": "02-design/features/onboarding-required-fields.design.md",
+        "analysis": "03-analysis/signup-validation-i18n-onboarding.analysis.md"
+      },
+      "startedAt": "2026-03-06",
+      "completedAt": "2026-03-06",
+      "notes": "T3 온보딩 StepProfile 4개 필드 필수화. submitted 상태 + isProfileValid + 에러 UI. getFieldError 헬퍼 미추출(인라인 처리)."
+    },
     "t3-curation-proxy": {
       "phase": "completed",
       "matchRate": 100,

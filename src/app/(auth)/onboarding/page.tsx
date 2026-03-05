@@ -224,8 +224,24 @@ function StepProfile({
       : ""
   );
 
+  // T3: submit 시도 상태
+  const [submitted, setSubmitted] = useState(false);
+
+  const isCategoryValid = category !== "etc" || customCategory.trim().length > 0;
+
+  // T3: 프로필 전체 유효성
+  const isProfileValid =
+    !!name.trim() &&
+    !!shopName.trim() &&
+    !!shopUrl.trim() &&
+    !!annualRevenue &&
+    !!monthlyAdBudget &&
+    isCategoryValid;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitted(true);
+    if (!isProfileValid) return;
     const finalCategory = category === "etc" ? customCategory.trim() : category;
     // shopUrl https:// 자동 보완
     let finalShopUrl = shopUrl.trim();
@@ -234,8 +250,6 @@ function StepProfile({
     }
     onSave({ name, shopName, shopUrl: finalShopUrl, annualRevenue, monthlyAdBudget, category: finalCategory });
   };
-
-  const isCategoryValid = category !== "etc" || customCategory.trim().length > 0;
 
   return (
     <div>
@@ -271,7 +285,7 @@ function StepProfile({
             htmlFor="onb-shop-name"
             className="block text-sm font-medium text-[#111827]"
           >
-            브랜드명
+            브랜드명 <span className="text-red-500">*</span>
           </label>
           <input
             id="onb-shop-name"
@@ -279,8 +293,13 @@ function StepProfile({
             placeholder="예: 마이브랜드"
             value={shopName}
             onChange={(e) => setShopName(e.target.value)}
-            className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
+            className={`w-full px-4 h-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400 ${
+              submitted && !shopName.trim() ? "border-red-300" : "border-gray-200"
+            }`}
           />
+          {submitted && !shopName.trim() && (
+            <p className="text-xs text-red-500 mt-1">필수 항목입니다</p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -288,7 +307,7 @@ function StepProfile({
             htmlFor="onb-shop-url"
             className="block text-sm font-medium text-[#111827]"
           >
-            쇼핑몰 URL
+            쇼핑몰 URL <span className="text-red-500">*</span>
           </label>
           <input
             id="onb-shop-url"
@@ -296,16 +315,23 @@ function StepProfile({
             placeholder="https://myshop.com"
             value={shopUrl}
             onChange={(e) => setShopUrl(e.target.value)}
-            className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
+            className={`w-full px-4 h-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400 ${
+              submitted && !shopUrl.trim() ? "border-red-300" : "border-gray-200"
+            }`}
           />
+          {submitted && !shopUrl.trim() && (
+            <p className="text-xs text-red-500 mt-1">필수 항목입니다</p>
+          )}
         </div>
 
         <div className="space-y-2">
           <label className="block text-sm font-medium text-[#111827]">
-            연매출
+            연매출 <span className="text-red-500">*</span>
           </label>
           <Select value={annualRevenue} onValueChange={setAnnualRevenue}>
-            <SelectTrigger className="w-full h-11 px-4 border border-gray-200 rounded-lg bg-white text-[#111827]">
+            <SelectTrigger className={`w-full h-11 px-4 border rounded-lg bg-white text-[#111827] ${
+              submitted && !annualRevenue ? "border-red-300" : "border-gray-200"
+            }`}>
               <SelectValue placeholder="연매출 범위를 선택하세요" />
             </SelectTrigger>
             <SelectContent>
@@ -316,17 +342,22 @@ function StepProfile({
               ))}
             </SelectContent>
           </Select>
+          {submitted && !annualRevenue && (
+            <p className="text-xs text-red-500 mt-1">필수 항목입니다</p>
+          )}
         </div>
 
         <div className="space-y-2">
           <label className="block text-sm font-medium text-[#111827]">
-            월 광고예산
+            월 광고예산 <span className="text-red-500">*</span>
           </label>
           <Select
             value={monthlyAdBudget}
             onValueChange={setMonthlyAdBudget}
           >
-            <SelectTrigger className="w-full h-11 px-4 border border-gray-200 rounded-lg bg-white text-[#111827]">
+            <SelectTrigger className={`w-full h-11 px-4 border rounded-lg bg-white text-[#111827] ${
+              submitted && !monthlyAdBudget ? "border-red-300" : "border-gray-200"
+            }`}>
               <SelectValue placeholder="예산 범위를 선택하세요" />
             </SelectTrigger>
             <SelectContent>
@@ -337,6 +368,9 @@ function StepProfile({
               ))}
             </SelectContent>
           </Select>
+          {submitted && !monthlyAdBudget && (
+            <p className="text-xs text-red-500 mt-1">필수 항목입니다</p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -369,7 +403,7 @@ function StepProfile({
 
         <button
           type="submit"
-          disabled={saving || !name.trim() || !isCategoryValid}
+          disabled={saving || !isProfileValid}
           className="w-full bg-[#F75D5D] hover:bg-[#E54949] text-white h-11 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
         >
           {saving ? (

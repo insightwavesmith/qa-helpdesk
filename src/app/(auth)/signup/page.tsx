@@ -10,6 +10,48 @@ import { useInviteCode as consumeInviteCode } from "@/actions/invites";
 import Image from "next/image";
 import { Loader2, Upload, FileCheck, CheckCircle2 } from "lucide-react";
 
+// --- T1: Validation 정규식 ---
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^01[016789]-?\d{3,4}-?\d{4}$/;
+const BIZ_NUMBER_REGEX = /^\d{3}-?\d{2}-?\d{5}$/;
+
+// --- T1: 자동 하이픈 포맷팅 ---
+function formatPhone(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
+
+function formatBusinessNumber(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 10);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 5) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
+}
+
+// --- T2: Supabase 에러 한국어 매핑 ---
+const SUPABASE_ERROR_MAP: Record<string, string> = {
+  "User already registered": "이미 가입된 이메일입니다",
+  "Password should be at least 6 characters":
+    "비밀번호는 6자 이상이어야 합니다",
+  "Invalid email": "올바른 이메일 형식이 아닙니다",
+  "Signups not allowed for this instance":
+    "현재 회원가입이 제한되어 있습니다",
+  "Email rate limit exceeded":
+    "너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해 주세요.",
+  "For security purposes, you can only request this after":
+    "보안을 위해 잠시 후 다시 시도해 주세요.",
+};
+
+function mapSupabaseError(message: string): string {
+  if (SUPABASE_ERROR_MAP[message]) return SUPABASE_ERROR_MAP[message];
+  for (const [key, val] of Object.entries(SUPABASE_ERROR_MAP)) {
+    if (message.includes(key)) return val;
+  }
+  return "회원가입 중 오류가 발생했습니다. 다시 시도해 주세요.";
+}
+
 export default function SignupPage() {
   const [formData, setFormData] = useState({
     email: "",
@@ -35,9 +77,117 @@ export default function SignupPage() {
   const [inviteCohort, setInviteCohort] = useState("");
   const [inviteError, setInviteError] = useState("");
 
-  const updateField = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  // T1: 필드별 에러 + 터치 상태
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // T1: 필드 유효성 검사
+  const validateField = (field: string, value: string): string => {
+    switch (field) {
+      case "email":
+        if (!value.trim()) return "필수 항목입니다";
+        if (!EMAIL_REGEX.test(value)) return "올바른 이메일 형식이 아닙니다";
+        return "";
+      case "password":
+        if (!value) return "필수 항목입니다";
+        if (value.length < 8) return "비밀번호는 8자 이상이어야 합니다";
+        return "";
+      case "passwordConfirm":
+        if (!value) return "필수 항목입니다";
+        if (value !== formData.password) return "비밀번호가 일치하지 않습니다";
+        return "";
+      case "name":
+        if (!value.trim()) return "필수 항목입니다";
+        return "";
+      case "phone":
+        if (!value.trim()) return "필수 항목입니다";
+        if (!PHONE_REGEX.test(value))
+          return "올바른 전화번호 형식이 아닙니다";
+        return "";
+      case "shopName":
+        if (!value.trim()) return "필수 항목입니다";
+        return "";
+      case "businessNumber":
+        if (!value.trim()) return "필수 항목입니다";
+        if (!BIZ_NUMBER_REGEX.test(value))
+          return "올바른 사업자등록번호 형식이 아닙니다";
+        return "";
+      default:
+        return "";
+    }
   };
+
+  // T1: 필드 업데이트 + 자동 포맷팅 + 실시간 검증
+  const updateField = (field: string, value: string) => {
+    let formatted = value;
+    if (field === "phone") formatted = formatPhone(value);
+    if (field === "businessNumber") formatted = formatBusinessNumber(value);
+
+    setFormData((prev) => ({ ...prev, [field]: formatted }));
+
+    // 터치된 필드는 실시간 검증
+    if (touched[field]) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        [field]: validateField(field, formatted),
+      }));
+    }
+
+    // 비밀번호 확인 실시간 체크 (입력 중에도 불일치 표시)
+    if (field === "passwordConfirm" && formatted) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        passwordConfirm:
+          formatted !== formData.password
+            ? "비밀번호가 일치하지 않습니다"
+            : "",
+      }));
+    }
+
+    // 비밀번호 변경 시 확인 필드 재검증
+    if (field === "password" && formData.passwordConfirm) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        passwordConfirm:
+          formData.passwordConfirm !== formatted
+            ? "비밀번호가 일치하지 않습니다"
+            : "",
+      }));
+    }
+  };
+
+  // T1: blur 시 터치 상태 + 검증
+  const handleBlur = (field: string) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    setFieldErrors((prev) => ({
+      ...prev,
+      [field]: validateField(
+        field,
+        formData[field as keyof typeof formData]
+      ),
+    }));
+  };
+
+  // T1: 폼 전체 유효성 (submit 버튼 활성화 조건)
+  const isFormValid = (() => {
+    const base =
+      formData.email.trim() !== "" &&
+      EMAIL_REGEX.test(formData.email) &&
+      formData.password.length >= 8 &&
+      formData.passwordConfirm === formData.password &&
+      formData.name.trim() !== "";
+
+    if (isStudentMode) return base;
+
+    return (
+      base &&
+      formData.phone.trim() !== "" &&
+      PHONE_REGEX.test(formData.phone) &&
+      formData.shopName.trim() !== "" &&
+      formData.businessNumber.trim() !== "" &&
+      BIZ_NUMBER_REGEX.test(formData.businessNumber)
+    );
+  })();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -89,21 +239,39 @@ export default function SignupPage() {
     e.preventDefault();
     setError("");
 
-    if (formData.password !== formData.passwordConfirm) {
-      setError("비밀번호가 일치하지 않습니다.");
-      return;
+    // T1: 모든 필드 검증
+    const fieldsToValidate = isStudentMode
+      ? ["email", "password", "passwordConfirm", "name"]
+      : [
+          "email",
+          "password",
+          "passwordConfirm",
+          "name",
+          "phone",
+          "shopName",
+          "businessNumber",
+        ];
+
+    const newErrors: Record<string, string> = {};
+    const newTouched: Record<string, boolean> = {};
+    let hasError = false;
+
+    for (const field of fieldsToValidate) {
+      newTouched[field] = true;
+      const err = validateField(
+        field,
+        formData[field as keyof typeof formData]
+      );
+      if (err) {
+        newErrors[field] = err;
+        hasError = true;
+      }
     }
 
-    if (formData.password.length < 8) {
-      setError("비밀번호는 8자 이상이어야 합니다.");
-      return;
-    }
+    setTouched((prev) => ({ ...prev, ...newTouched }));
+    setFieldErrors((prev) => ({ ...prev, ...newErrors }));
 
-    // T5: lead 모드 사업자등록번호 서버 사이드 validation
-    if (!isStudentMode && !formData.businessNumber.trim()) {
-      setError("사업자등록번호를 입력해주세요.");
-      return;
-    }
+    if (hasError) return;
 
     setLoading(true);
 
@@ -132,17 +300,18 @@ export default function SignupPage() {
         metadata.business_number = formData.businessNumber;
       }
 
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: metadata,
-        },
-      });
+      const { data: authData, error: authError } =
+        await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: metadata,
+          },
+        });
 
       // B1: authError가 있어도 유저가 실제 생성됐으면 정상 플로우 진행
       if (authError && !authData?.user) {
-        setError(authError.message);
+        setError(mapSupabaseError(authError.message)); // T2: 한국어 매핑
         return;
       }
 
@@ -170,7 +339,11 @@ export default function SignupPage() {
 
       // 수강생 모드: 초대코드 사용 처리 (used_count 증가 + student_registry 매칭)
       if (isStudentMode && inviteCode.trim()) {
-        await consumeInviteCode(authData.user.id, formData.email, inviteCode.trim());
+        await consumeInviteCode(
+          authData.user.id,
+          formData.email,
+          inviteCode.trim()
+        );
       }
 
       // 가입 후 리다이렉트 분기
@@ -180,7 +353,9 @@ export default function SignupPage() {
         router.push("/pending");
       }
     } catch {
-      setError("회원가입 중 오류가 발생했습니다.");
+      setError(
+        "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
+      ); // T2: catch block 한국어 메시지
     } finally {
       setLoading(false);
     }
@@ -192,15 +367,27 @@ export default function SignupPage() {
         {/* 헤더 */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-3">
-            <Image src="/logo.png" alt="자사몰사관학교" width={40} height={40} className="rounded-lg object-cover" />
-            <span className="ml-2 text-xl font-bold text-[#111827]">자사몰사관학교</span>
+            <Image
+              src="/logo.png"
+              alt="자사몰사관학교"
+              width={40}
+              height={40}
+              className="rounded-lg object-cover"
+            />
+            <span className="ml-2 text-xl font-bold text-[#111827]">
+              자사몰사관학교
+            </span>
           </div>
-          <p className="text-[#6B7280] font-medium">자사몰사관학교 헬프데스크</p>
+          <p className="text-[#6B7280] font-medium">
+            자사몰사관학교 헬프데스크
+          </p>
         </div>
 
         {/* 회원가입 카드 */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
-          <h1 className="text-2xl font-bold mb-2 text-center text-[#111827]">회원가입</h1>
+          <h1 className="text-2xl font-bold mb-2 text-center text-[#111827]">
+            회원가입
+          </h1>
           <p className="text-center text-[#6B7280] text-sm mb-6">
             {isStudentMode ? (
               "수강생 모드로 가입합니다."
@@ -214,6 +401,7 @@ export default function SignupPage() {
           </p>
 
           <form onSubmit={handleSignup} className="space-y-5">
+            {/* T2: 서버 에러 (Supabase 등) 상단 표시 */}
             {error && (
               <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
                 {error}
@@ -279,7 +467,10 @@ export default function SignupPage() {
               </h3>
               <div className="space-y-3">
                 <div className="space-y-2">
-                  <label htmlFor="email" className="block text-sm font-medium text-[#111827]">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-[#111827]"
+                  >
                     이메일 *
                   </label>
                   <input
@@ -288,13 +479,24 @@ export default function SignupPage() {
                     placeholder="your@email.com"
                     value={formData.email}
                     onChange={(e) => updateField("email", e.target.value)}
+                    onBlur={() => handleBlur("email")}
                     required
-                    className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
+                    className={`w-full px-4 h-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400 ${
+                      fieldErrors.email ? "border-red-300" : "border-gray-200"
+                    }`}
                   />
+                  {fieldErrors.email && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {fieldErrors.email}
+                    </p>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <label htmlFor="password" className="block text-sm font-medium text-[#111827]">
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-medium text-[#111827]"
+                    >
                       비밀번호 *
                     </label>
                     <input
@@ -303,12 +505,25 @@ export default function SignupPage() {
                       placeholder="8자 이상"
                       value={formData.password}
                       onChange={(e) => updateField("password", e.target.value)}
+                      onBlur={() => handleBlur("password")}
                       required
-                      className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
+                      className={`w-full px-4 h-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400 ${
+                        fieldErrors.password
+                          ? "border-red-300"
+                          : "border-gray-200"
+                      }`}
                     />
+                    {fieldErrors.password && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {fieldErrors.password}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
-                    <label htmlFor="passwordConfirm" className="block text-sm font-medium text-[#111827]">
+                    <label
+                      htmlFor="passwordConfirm"
+                      className="block text-sm font-medium text-[#111827]"
+                    >
                       비밀번호 확인 *
                     </label>
                     <input
@@ -319,9 +534,19 @@ export default function SignupPage() {
                       onChange={(e) =>
                         updateField("passwordConfirm", e.target.value)
                       }
+                      onBlur={() => handleBlur("passwordConfirm")}
                       required
-                      className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
+                      className={`w-full px-4 h-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400 ${
+                        fieldErrors.passwordConfirm
+                          ? "border-red-300"
+                          : "border-gray-200"
+                      }`}
                     />
+                    {fieldErrors.passwordConfirm && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {fieldErrors.passwordConfirm}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -335,9 +560,14 @@ export default function SignupPage() {
                 개인 정보
               </h3>
               <div className="space-y-3">
-                <div className={!isStudentMode ? "grid grid-cols-2 gap-3" : ""}>
+                <div
+                  className={!isStudentMode ? "grid grid-cols-2 gap-3" : ""}
+                >
                   <div className="space-y-2">
-                    <label htmlFor="name" className="block text-sm font-medium text-[#111827]">
+                    <label
+                      htmlFor="name"
+                      className="block text-sm font-medium text-[#111827]"
+                    >
                       이름 *
                     </label>
                     <input
@@ -345,13 +575,26 @@ export default function SignupPage() {
                       placeholder="홍길동"
                       value={formData.name}
                       onChange={(e) => updateField("name", e.target.value)}
+                      onBlur={() => handleBlur("name")}
                       required
-                      className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
+                      className={`w-full px-4 h-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400 ${
+                        fieldErrors.name
+                          ? "border-red-300"
+                          : "border-gray-200"
+                      }`}
                     />
+                    {fieldErrors.name && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {fieldErrors.name}
+                      </p>
+                    )}
                   </div>
                   {!isStudentMode && (
                     <div className="space-y-2">
-                      <label htmlFor="phone" className="block text-sm font-medium text-[#111827]">
+                      <label
+                        htmlFor="phone"
+                        className="block text-sm font-medium text-[#111827]"
+                      >
                         전화번호 *
                       </label>
                       <input
@@ -359,9 +602,19 @@ export default function SignupPage() {
                         placeholder="010-1234-5678"
                         value={formData.phone}
                         onChange={(e) => updateField("phone", e.target.value)}
+                        onBlur={() => handleBlur("phone")}
                         required
-                        className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
+                        className={`w-full px-4 h-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400 ${
+                          fieldErrors.phone
+                            ? "border-red-300"
+                            : "border-gray-200"
+                        }`}
                       />
+                      {fieldErrors.phone && (
+                        <p className="text-xs text-red-500 mt-1">
+                          {fieldErrors.phone}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -379,32 +632,55 @@ export default function SignupPage() {
                   </h3>
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      <label htmlFor="shopName" className="block text-sm font-medium text-[#111827]">
+                      <label
+                        htmlFor="shopName"
+                        className="block text-sm font-medium text-[#111827]"
+                      >
                         쇼핑몰 이름 *
                       </label>
                       <input
                         id="shopName"
                         placeholder="내 쇼핑몰"
                         value={formData.shopName}
-                        onChange={(e) => updateField("shopName", e.target.value)}
+                        onChange={(e) =>
+                          updateField("shopName", e.target.value)
+                        }
+                        onBlur={() => handleBlur("shopName")}
                         required
-                        className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
+                        className={`w-full px-4 h-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400 ${
+                          fieldErrors.shopName
+                            ? "border-red-300"
+                            : "border-gray-200"
+                        }`}
                       />
+                      {fieldErrors.shopName && (
+                        <p className="text-xs text-red-500 mt-1">
+                          {fieldErrors.shopName}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="shopUrl" className="block text-sm font-medium text-[#111827]">
+                      <label
+                        htmlFor="shopUrl"
+                        className="block text-sm font-medium text-[#111827]"
+                      >
                         쇼핑몰 URL
                       </label>
                       <input
                         id="shopUrl"
                         placeholder="https://myshop.com"
                         value={formData.shopUrl}
-                        onChange={(e) => updateField("shopUrl", e.target.value)}
+                        onChange={(e) =>
+                          updateField("shopUrl", e.target.value)
+                        }
                         className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="businessNumber" className="block text-sm font-medium text-[#111827]">
+                      <label
+                        htmlFor="businessNumber"
+                        className="block text-sm font-medium text-[#111827]"
+                      >
                         사업자등록번호 *
                       </label>
                       <input
@@ -414,9 +690,19 @@ export default function SignupPage() {
                         onChange={(e) =>
                           updateField("businessNumber", e.target.value)
                         }
+                        onBlur={() => handleBlur("businessNumber")}
                         required
-                        className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
+                        className={`w-full px-4 h-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400 ${
+                          fieldErrors.businessNumber
+                            ? "border-red-300"
+                            : "border-gray-200"
+                        }`}
                       />
+                      {fieldErrors.businessNumber && (
+                        <p className="text-xs text-red-500 mt-1">
+                          {fieldErrors.businessNumber}
+                        </p>
+                      )}
                     </div>
 
                     {/* 사업자등록증 업로드 */}
@@ -443,7 +729,12 @@ export default function SignupPage() {
                                 {businessFile.name}
                               </p>
                               <p className="text-xs text-[#6B7280]">
-                                {(businessFile.size / 1024 / 1024).toFixed(1)}MB
+                                {(
+                                  businessFile.size /
+                                  1024 /
+                                  1024
+                                ).toFixed(1)}
+                                MB
                               </p>
                             </div>
                           </>
@@ -469,7 +760,7 @@ export default function SignupPage() {
 
             <button
               type="submit"
-              disabled={loading || (!isStudentMode && !formData.businessNumber.trim())}
+              disabled={loading || !isFormValid}
               className="w-full bg-[#F75D5D] hover:bg-[#E54949] text-white h-11 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {loading ? (
@@ -486,7 +777,10 @@ export default function SignupPage() {
           <div className="mt-6 text-center">
             <p className="text-[#6B7280] text-sm">
               이미 계정이 있으신가요?{" "}
-              <Link href="/login" className="text-[#F75D5D] hover:underline font-medium">
+              <Link
+                href="/login"
+                className="text-[#F75D5D] hover:underline font-medium"
+              >
                 로그인
               </Link>
             </p>
