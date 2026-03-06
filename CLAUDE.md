@@ -172,12 +172,17 @@ npm run build
 - 한글로 작성
 - 컨벤션: feat/fix/refactor/style/chore
 
-## 작업 완료 기준
-- [ ] `npm run build` 성공
-- [ ] lint 에러 0개
-- [ ] 타입 에러 0개
+## 작업 완료 기준 (강제 — 스킵 불가)
+
+**아래 5개를 직접 실행하지 않으면 작업 미완료로 간주한다. SDK 스크립트가 사후 검증도 하지만, 에이전트가 먼저 직접 실행해야 한다.**
+
+- [ ] `npx tsc --noEmit --quiet` — 타입 에러 0개
+- [ ] `npx next lint --quiet` — lint 에러 0개
+- [ ] `npm run build` — 빌드 성공
 - [ ] 기존 기능 깨지지 않음 확인
-- [ ] Playwright 스크린샷 QA (데스크탑 + 모바일)
+- [ ] Gap 분석 문서 작성 (Match Rate 90%+)
+
+**이 체크리스트를 실행하지 않고 "완료"라고 보고하면 리젝된다.**
 
 ## TASK.md 타입별 행동 규칙 (절대 준수)
 

@@ -252,6 +252,35 @@ async function run() {
     log("에러: " + e.message);
     log("스택: " + (e.stack || "").split("\n").slice(0, 5).join(" | "));
     slackMsg = `[에이전트팀] ${mode} 실패: ${e.message}. 확인 필요.`;
+  // ── POST-COMPLETION VALIDATION (강제) ──────────────────────
+  // SDK가 빌드/린트 안 하고 끝내도 여기서 강제 검증
+  if (mode !== "plan") {
+    log("=== 강제 Validation 시작 ===");
+    const { execSync } = require("child_process");
+    const checks = [
+      { name: "TypeScript", cmd: "npx tsc --noEmit --quiet" },
+      { name: "Lint", cmd: "npx next lint --quiet" },
+      { name: "Build", cmd: "npm run build" },
+    ];
+    let allPassed = true;
+    for (const check of checks) {
+      try {
+        execSync(check.cmd, { cwd: PROJECT, stdio: "pipe", timeout: 120_000 });
+        log("✅ " + check.name + " PASS");
+      } catch (e) {
+        allPassed = false;
+        const stderr = (e.stderr || "").toString().slice(0, 500);
+        log("❌ " + check.name + " FAIL: " + stderr.replace(/\n/g, " "));
+      }
+    }
+    if (!allPassed) {
+      log("⚠️ Validation 실패 — Smith님 확인 필요");
+      slackMsg = `[에이전트팀] ${mode} 완료했으나 ❌ Validation 실패. 확인 필요.`;
+    } else {
+      log("✅ 전체 Validation 통과");
+    }
+  }
+
   } finally {
     // [FIX] finally: 정상 완료 또는 에러 시 settings 반드시 복구
     restoreSettings();
