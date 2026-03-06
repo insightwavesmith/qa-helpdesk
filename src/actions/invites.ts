@@ -23,7 +23,7 @@ export async function useInviteCode(
     const { data: inviteRow, error: fetchError } = await svc
       .from("invite_codes")
       .select("code, cohort, max_uses, used_count, expires_at")
-      .eq("code", trimmedCode)
+      .ilike("code", trimmedCode)
       .maybeSingle();
 
     if (fetchError || !inviteRow) {
@@ -48,7 +48,7 @@ export async function useInviteCode(
     const { data: updated, error: updateError } = await svc
       .from("invite_codes")
       .update({ used_count: currentUsed + 1 } as never)
-      .eq("code", trimmedCode)
+      .ilike("code", trimmedCode)
       .eq("used_count", currentUsed)
       .select("code")
       .maybeSingle();

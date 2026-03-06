@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const { data: row, error } = await svc
       .from("invite_codes")
       .select("code, cohort, expires_at, max_uses, used_count")
-      .eq("code", trimmedCode)
+      .ilike("code", trimmedCode)
       .maybeSingle();
 
     if (error) {
