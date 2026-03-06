@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { embedContentToChunks } from "@/actions/embed-pipeline";
-import { requireStaff } from "@/lib/auth-utils";
+import { requireStaff, requireAdmin } from "@/lib/auth-utils";
 import { generateFlashText } from "@/lib/gemini";
 
 export async function getCurationContents({
@@ -26,8 +26,7 @@ export async function getCurationContents({
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase as any)
+  let query = supabase
     .from("contents")
     .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
@@ -76,8 +75,7 @@ export async function getCurationContents({
 export async function getCurationCount() {
   const supabase = await requireStaff();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { count, error } = await (supabase as any)
+  const { count, error } = await supabase
     .from("contents")
     .select("id", { count: "exact", head: true })
     .in("curation_status", ["new", "selected"])
@@ -97,8 +95,7 @@ export async function updateCurationStatus(
 ) {
   const supabase = await requireStaff();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("contents")
     .update({
       curation_status: status,
@@ -121,8 +118,7 @@ export async function batchUpdateCurationStatus(
 ) {
   const supabase = await requireStaff();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("contents")
     .update({
       curation_status: status,
@@ -156,8 +152,7 @@ export async function createInfoShareDraft({
   const now = new Date().toISOString();
 
   // 1. 새 contents 행 INSERT (draft — 콘텐츠 탭에서 편집/게시)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: newContent, error: insertError } = await (supabase as any)
+  const { data: newContent, error: insertError } = await supabase
     .from("contents")
     .insert({
       title,
@@ -190,8 +185,7 @@ export async function createInfoShareDraft({
   // 3. 원본 콘텐츠 curation_status → published (별도 클라이언트)
   if (sourceContentIds.length > 0) {
     const svc2 = createServiceClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: updateError } = await (svc2 as any)
+    const { error: updateError } = await svc2
       .from("contents")
       .update({ curation_status: "published", updated_at: now })
       .in("id", sourceContentIds);
@@ -199,8 +193,7 @@ export async function createInfoShareDraft({
     if (updateError) {
       console.error("createInfoShareDraft 원본 상태 업데이트 실패:", updateError);
       for (const srcId of sourceContentIds) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: retryErr } = await (svc2 as any)
+        const { error: retryErr } = await svc2
           .from("contents")
           .update({ curation_status: "published", updated_at: now })
           .eq("id", srcId);
@@ -223,8 +216,7 @@ export async function getInfoShareContents({
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, count, error } = await (supabase as any)
+  const { data, count, error } = await supabase
     .from("contents")
     .select("*", { count: "exact" })
     .eq("source_type", "info_share")
@@ -266,12 +258,11 @@ export async function getPipelineStats(): Promise<PipelineStat[]> {
   const dayAgo = new Date(Date.now() - 86400000).toISOString();
 
   // 3개 쿼리 병렬 실행
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const s = supabase as any;
+  const s = supabase;
   const [contentsRes, chunksRes, newRes] = await Promise.all([
-    s.from("contents").select("source_type").neq("source_type", "info_share"),
+    supabase.from("contents").select("source_type").neq("source_type", "info_share"),
     s.from("knowledge_chunks").select("source_type"),
-    s.from("contents").select("source_type").gte("created_at", dayAgo).neq("source_type", "info_share"),
+    supabase.from("contents").select("source_type").gte("created_at", dayAgo).neq("source_type", "info_share"),
   ]);
 
   // 집계
@@ -313,8 +304,7 @@ export async function getPipelineStats(): Promise<PipelineStat[]> {
 export async function getCurriculumContents(sourceType: string) {
   const supabase = await requireStaff();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("contents")
     .select("*")
     .eq("source_type", sourceType)
@@ -338,11 +328,9 @@ export async function getCurationSummaryStats(): Promise<{
 }> {
   const supabase = await requireStaff();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const s = supabase as any;
   const [totalRes, withSummaryRes] = await Promise.all([
-    s.from("contents").select("id", { count: "exact", head: true }).neq("source_type", "info_share").neq("status", "archived"),
-    s.from("contents").select("id", { count: "exact", head: true }).neq("source_type", "info_share").neq("status", "archived").not("ai_summary", "is", null),
+    supabase.from("contents").select("id", { count: "exact", head: true }).neq("source_type", "info_share").neq("status", "archived"),
+    supabase.from("contents").select("id", { count: "exact", head: true }).neq("source_type", "info_share").neq("status", "archived").not("ai_summary", "is", null),
   ]);
 
   const total = totalRes.count || 0;
@@ -366,10 +354,9 @@ export async function backfillAiSummary(): Promise<{
   failed: number;
   errors: string[];
 }> {
-  const supabase = createServiceClient();
+  const supabase = await requireAdmin();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rows, error } = await (supabase as any)
+  const { data: rows, error } = await supabase
     .from("contents")
     .select("id, title, body_md")
     .is("ai_summary", null)
@@ -384,9 +371,17 @@ export async function backfillAiSummary(): Promise<{
   let failed = 0;
   const errors: string[] = [];
 
-  for (const row of (rows || []) as { id: string; title: string; body_md: string }[]) {
+  for (const row of rows || []) {
     try {
       const text = (row.body_md || "").slice(0, 3000);
+
+      // T2: 빈 본문 가드
+      if (!text.trim()) {
+        failed++;
+        errors.push(`${row.id}: 빈 본문 skip`);
+        continue;
+      }
+
       const prompt = `다음 콘텐츠를 3줄로 핵심 요약해주세요. 불릿포인트 없이 평서문으로 작성하세요.
 
 제목: ${row.title}
@@ -403,8 +398,7 @@ ${text}
         continue;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: updateErr } = await (supabase as any)
+      const { error: updateErr } = await supabase
         .from("contents")
         .update({ ai_summary: summary.trim(), updated_at: new Date().toISOString() })
         .eq("id", row.id);
@@ -432,19 +426,17 @@ export async function backfillImportanceScore(): Promise<{
   failed: number;
   errors: string[];
 }> {
-  const supabase = createServiceClient();
+  const supabase = await requireAdmin();
 
   // importance_score가 0이거나 null인 레코드 조회
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const s = supabase as any;
   const [nullRes, zeroRes] = await Promise.all([
-    s.from("contents").select("id, title, body_md, source_type").is("importance_score", null).neq("status", "archived"),
-    s.from("contents").select("id, title, body_md, source_type").eq("importance_score", 0).neq("status", "archived"),
+    supabase.from("contents").select("id, title, body_md, source_type").is("importance_score", null).neq("status", "archived"),
+    supabase.from("contents").select("id, title, body_md, source_type").eq("importance_score", 0).neq("status", "archived"),
   ]);
 
   const rows = [
-    ...((nullRes.data || []) as { id: string; title: string; body_md: string; source_type: string | null }[]),
-    ...((zeroRes.data || []) as { id: string; title: string; body_md: string; source_type: string | null }[]),
+    ...(nullRes.data || []),
+    ...(zeroRes.data || []),
   ];
 
   // 중복 제거
@@ -469,6 +461,14 @@ export async function backfillImportanceScore(): Promise<{
       } else {
         // AI 스코어링
         const text = (row.body_md || "").slice(0, 2000);
+
+        // T2: 빈 본문 가드
+        if (!text.trim()) {
+          failed++;
+          errors.push(`${row.id}: 빈 본문 skip`);
+          continue;
+        }
+
         const prompt = `이 콘텐츠의 자사몰 사업자 교육 관점에서의 중요도를 1~5로 평가해주세요.
 5=필수 학습, 4=매우 유용, 3=참고할 만함, 2=일반적, 1=관련성 낮음
 
@@ -491,8 +491,7 @@ ${text}
         await delay(1000);
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: updateErr } = await (supabase as any)
+      const { error: updateErr } = await supabase
         .from("contents")
         .update({ importance_score: score, updated_at: new Date().toISOString() })
         .eq("id", row.id);

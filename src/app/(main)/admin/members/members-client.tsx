@@ -42,7 +42,7 @@ interface Member {
   mixpanel_board_id: string | null;
   mixpanel_secret_key: string | null;
   role: string;
-  created_at: string;
+  created_at: string | null;
 }
 
 interface MembersClientProps {
@@ -96,7 +96,7 @@ export function MembersClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [detailModal, setDetailModal] = useState<{ profile: Member; accounts: Array<{ id: string; account_id: string; account_name: string | null; mixpanel_project_id: string | null; mixpanel_board_id: string | null; active: boolean }> } | null>(null);
+  const [detailModal, setDetailModal] = useState<{ profile: Member; accounts: Array<{ id: string; account_id: string; account_name: string | null; mixpanel_project_id: string | null; mixpanel_board_id: string | null; active: boolean | null }> } | null>(null);
   const [detailLoading, setDetailLoading] = useState<string | null>(null);
   // 수강생 전환 모달
   const [studentModal, setStudentModal] = useState<{ userId: string; name: string } | null>(null);

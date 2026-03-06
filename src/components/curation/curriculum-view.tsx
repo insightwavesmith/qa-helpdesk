@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, BookOpen, ChevronDown, ChevronUp, Shield, GraduationCap } from "lucide-react";
+import { Loader2, BookOpen, ChevronDown, ChevronUp, Shield, GraduationCap, CheckCircle, ArrowRight, Lock } from "lucide-react";
 import { getCurriculumContents } from "@/actions/curation";
 import type { Content } from "@/types/content";
 
@@ -45,6 +45,30 @@ function groupByLevel(items: Content[]): { level: string; items: Content[] }[] {
     .map((key) => ({ level: key, items: groups[key] }));
 }
 
+type PublishStatus = "published" | "next" | "locked";
+
+function getPublishStatuses(items: Content[]): Map<string, PublishStatus> {
+  const statuses = new Map<string, PublishStatus>();
+  let foundNext = false;
+  for (const item of items) {
+    if (item.curation_status === "published" && !!item.ai_summary) {
+      statuses.set(item.id, "published");
+    } else if (!foundNext) {
+      statuses.set(item.id, "next");
+      foundNext = true;
+    } else {
+      statuses.set(item.id, "locked");
+    }
+  }
+  return statuses;
+}
+
+const PUBLISH_BADGE: Record<PublishStatus, { label: string; className: string; Icon: typeof CheckCircle }> = {
+  published: { label: "발행됨", className: "bg-green-50 text-green-700 border-green-200", Icon: CheckCircle },
+  next: { label: "다음 발행", className: "bg-orange-50 text-orange-700 border-orange-200", Icon: ArrowRight },
+  locked: { label: "잠금", className: "bg-gray-50 text-gray-500 border-gray-200", Icon: Lock },
+};
+
 function ProgressBar({ completed, total }: { completed: number; total: number }) {
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
@@ -66,16 +90,21 @@ function ProgressBar({ completed, total }: { completed: number; total: number })
 function CurriculumItem({
   item,
   index,
+  publishStatus,
 }: {
   item: Content;
   index: number;
+  publishStatus: PublishStatus;
 }) {
   const [expanded, setExpanded] = useState(false);
   const hasSummary = !!item.ai_summary;
+  const badge = PUBLISH_BADGE[publishStatus];
+  const StatusIcon = badge.Icon;
 
   return (
     <button
       onClick={() => setExpanded(!expanded)}
+      aria-expanded={expanded}
       className={`w-full text-left rounded-lg border p-3 transition-colors ${
         expanded ? "border-[#F75D5D]/30 bg-red-50/30" : "border-gray-200 hover:bg-gray-50"
       }`}
@@ -93,13 +122,13 @@ function CurriculumItem({
               {item.title}
             </h4>
             <div className="flex items-center gap-1.5 shrink-0">
-              {hasSummary ? (
+              <Badge variant="outline" className={`text-[10px] h-5 gap-0.5 ${badge.className}`}>
+                <StatusIcon className="h-3 w-3" />
+                {badge.label}
+              </Badge>
+              {hasSummary && publishStatus !== "published" && (
                 <Badge variant="outline" className="text-[10px] h-5 bg-green-50 text-green-700 border-green-200">
                   요약완료
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="text-[10px] h-5 bg-gray-50 text-gray-500 border-gray-200">
-                  미처리
                 </Badge>
               )}
               {expanded ? (
@@ -191,7 +220,7 @@ export function CurriculumView({ sourceType }: CurriculumViewProps) {
 
   const groups = groupByLevel(contents);
   const totalCount = contents.length;
-  const withSummary = contents.filter((c) => !!c.ai_summary).length;
+  const publishedCount = contents.filter((c) => c.curation_status === "published" && !!c.ai_summary).length;
   const SourceIcon = sourceType === "blueprint" ? Shield : GraduationCap;
 
   return (
@@ -209,8 +238,8 @@ export function CurriculumView({ sourceType }: CurriculumViewProps) {
             </Badge>
           </div>
           <div>
-            <p className="text-[11px] text-gray-500 mb-1">AI 요약 진행률</p>
-            <ProgressBar completed={withSummary} total={totalCount} />
+            <p className="text-[11px] text-gray-500 mb-1">발행 진행률</p>
+            <ProgressBar completed={publishedCount} total={totalCount} />
           </div>
         </CardContent>
       </Card>
@@ -219,6 +248,8 @@ export function CurriculumView({ sourceType }: CurriculumViewProps) {
       {groups.map((group) => {
         const levelColor = LEVEL_ICONS[group.level] || LEVEL_ICONS["전체"];
         const levelLabel = group.level === "전체" ? "전체 시퀀스" : group.level;
+        const statuses = getPublishStatuses(group.items);
+        const groupPublished = group.items.filter((c) => statuses.get(c.id) === "published").length;
 
         return (
           <div key={group.level} className="space-y-2">
@@ -228,13 +259,18 @@ export function CurriculumView({ sourceType }: CurriculumViewProps) {
                 {levelLabel}
               </h3>
               <span className="text-[11px] text-gray-400">
-                ({group.items.length}건)
+                ({groupPublished}/{group.items.length} 발행)
               </span>
             </div>
 
             <div className="space-y-1.5">
               {group.items.map((item, idx) => (
-                <CurriculumItem key={item.id} item={item} index={idx} />
+                <CurriculumItem
+                  key={item.id}
+                  item={item}
+                  index={idx}
+                  publishStatus={statuses.get(item.id) || "locked"}
+                />
               ))}
             </div>
           </div>

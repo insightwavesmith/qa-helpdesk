@@ -2,11 +2,12 @@
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
 
 /**
  * admin 전용: 회원 삭제, role 변경, 이메일 발송
  */
-export async function requireAdmin(): Promise<SupabaseClient> {
+export async function requireAdmin(): Promise<SupabaseClient<Database>> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -27,7 +28,7 @@ export async function requireAdmin(): Promise<SupabaseClient> {
 /**
  * staff(admin + assistant): 회원 목록 조회, 콘텐츠 관리, 큐레이션, 이메일 미리보기, 프로텍터 조회
  */
-export async function requireStaff(): Promise<SupabaseClient> {
+export async function requireStaff(): Promise<SupabaseClient<Database>> {
   const supabase = await createClient();
   const {
     data: { user },

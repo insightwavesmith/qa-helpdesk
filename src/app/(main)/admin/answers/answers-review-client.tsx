@@ -24,9 +24,9 @@ import { SourceReferences } from "@/components/questions/SourceReferences";
 interface Answer {
   id: string;
   content: string;
-  is_ai: boolean;
-  is_approved: boolean;
-  created_at: string;
+  is_ai: boolean | null;
+  is_approved: boolean | null;
+  created_at: string | null;
   source_refs?: unknown;
   author?: { id: string; name: string } | null;
   question?: { id: string; title: string } | null;

@@ -13,7 +13,7 @@ interface AdAccount {
   account_name: string | null;
   mixpanel_project_id: string | null;
   mixpanel_board_id: string | null;
-  active: boolean;
+  active: boolean | null;
 }
 
 interface MemberProfile {
@@ -29,7 +29,7 @@ interface MemberProfile {
   mixpanel_board_id: string | null;
   mixpanel_secret_key: string | null;
   role: string;
-  created_at: string;
+  created_at: string | null;
 }
 
 interface MemberDetailModalProps {

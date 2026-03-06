@@ -29,7 +29,7 @@ interface Subscriber {
   id: string;
   name: string | null;
   email: string;
-  created_at: string;
+  created_at: string | null;
   email_opted_out: boolean | null;
 }
 

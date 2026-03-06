@@ -8,8 +8,13 @@ export async function POST(req: NextRequest) {
   const auth = await requireAdmin();
   if ("response" in auth) return auth.response;
 
-  const body = await req.json();
-  const { type } = body as { type: string };
+  let type: string;
+  try {
+    const body = await req.json();
+    type = (body as { type: string }).type;
+  } catch {
+    return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
+  }
 
   if (type === "ai_summary") {
     const result = await backfillAiSummary();

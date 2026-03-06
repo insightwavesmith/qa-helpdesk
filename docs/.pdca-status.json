@@ -628,6 +628,18 @@
       "completedAt": "2026-03-05",
       "notes": "T1 Stage0 용어정의 Brave웹서치 + T2 답변 3단구조 + T3 톤보정 few-shot + T5 IMAGE_PLACEHOLDER img만 삭제 + T6 글자수 5000~10000. T4 제외. tsc+lint+build 통과."
     },
+    "curation-v2-review-fixes": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/curation-v2-review-fixes.plan.md",
+        "design": "02-design/features/curation-v2-review-fixes.design.md",
+        "analysis": "03-analysis/curation-v2-review-fixes.analysis.md"
+      },
+      "startedAt": "2026-03-06",
+      "completedAt": "2026-03-06",
+      "notes": "T1 auth-utils 타입 수정+curation.ts as any 15개 제거. T2 백필 빈 본문 가드. T3 서버액션 requireAdmin()+API try-catch. T4 커리큘럼 발행 상태 3종(발행됨/다음 발행/잠금). tsc+build 통과. Match Rate 100%."
+    },
     "curation-v2-p0p1": {
       "phase": "completed",
       "matchRate": 95,
