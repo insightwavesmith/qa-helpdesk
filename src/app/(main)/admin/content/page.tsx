@@ -26,11 +26,11 @@ import { getContents } from "@/actions/contents";
 import { getCurationCount } from "@/actions/curation";
 import type { Content } from "@/types/content";
 import NewContentModal from "@/components/content/new-content-modal";
-import { CurationTab } from "@/components/curation/curation-tab";
 import { InfoShareTab } from "@/components/curation/info-share-tab";
 import { GeneratePreviewModal } from "@/components/curation/generate-preview-modal";
 import { PipelineSidebar } from "@/components/curation/pipeline-sidebar";
 import { CurriculumView } from "@/components/curation/curriculum-view";
+import { CurationView } from "@/components/curation/curation-view";
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   draft: {
@@ -245,9 +245,9 @@ export default function AdminContentPage() {
               {sidebarSource === "blueprint" || sidebarSource === "lecture" ? (
                 <CurriculumView sourceType={sidebarSource} />
               ) : (
-                <CurationTab
+                <CurationView
+                  sourceFilter={sidebarSource}
                   onGenerateInfoShare={(ids) => setGenerateIds(ids)}
-                  externalSourceFilter={sidebarSource}
                 />
               )}
             </div>

@@ -32,9 +32,22 @@ export interface Content {
   importance_score: number;
   key_topics: string[];
   curation_status: 'new' | 'selected' | 'dismissed' | 'published';
+  deleted_at: string | null;
   published_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** 생성물 연결 정보 */
+export interface LinkedInfoShare {
+  id: string;
+  title: string;
+  status: string;
+}
+
+/** 카드에 전달할 확장 타입 */
+export interface CurationContentWithLinks extends Content {
+  linked_info_shares: LinkedInfoShare[];
 }
 
 export interface Distribution {

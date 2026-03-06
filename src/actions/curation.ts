@@ -6,12 +6,14 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { embedContentToChunks } from "@/actions/embed-pipeline";
 import { requireStaff, requireAdmin } from "@/lib/auth-utils";
 import { generateFlashText } from "@/lib/gemini";
+import type { LinkedInfoShare, CurationContentWithLinks } from "@/types/content";
 
 export async function getCurationContents({
   source,
   minScore,
   period,
   showDismissed = false,
+  curationStatus,
   page = 1,
   pageSize = 100,
 }: {
@@ -19,27 +21,33 @@ export async function getCurationContents({
   minScore?: number;
   period?: string;
   showDismissed?: boolean;
+  curationStatus?: string;
   page?: number;
   pageSize?: number;
-} = {}) {
+} = {}): Promise<{ data: CurationContentWithLinks[]; count: number; error: string | null }> {
   const supabase = await requireStaff();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  let query = supabase
+  // deleted_at은 새 컬럼이라 Supabase 타입에 없음 — filter로 우회
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (supabase
     .from("contents")
-    .select("*", { count: "exact" })
+    .select("*", { count: "exact" }) as any)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .range(from, to);
 
-  // curation_status 필터
-  if (showDismissed) {
+  // curation_status 필터 (신규 상태 필터 우선)
+  if (curationStatus && curationStatus !== "all") {
+    query = query.eq("curation_status", curationStatus);
+  } else if (showDismissed) {
     query = query.in("curation_status", ["new", "selected", "dismissed"]);
   } else {
     query = query.in("curation_status", ["new", "selected"]);
   }
 
-  // 소스 필터 (T3: 모든 source_type 허용, info_share만 제외)
+  // 소스 필터 (모든 source_type 허용, info_share만 제외)
   if (source && source !== "all") {
     query = query.eq("source_type", source);
   } else {
@@ -69,16 +77,76 @@ export async function getCurationContents({
     return { data: [], count: 0, error: error.message };
   }
 
-  return { data: data || [], count: count || 0, error: null };
+  const contents = data || [];
+  if (contents.length === 0) {
+    return { data: [], count: count || 0, error: null };
+  }
+
+  // content_relations JOIN으로 생성물 연결 조회
+  const contentIds = contents.map((c: { id: string }) => c.id);
+  const linkMap = await getLinkedInfoSharesMap(supabase, contentIds);
+
+  const enriched: CurationContentWithLinks[] = contents.map((c: { id: string }) => ({
+    ...c,
+    linked_info_shares: linkMap.get(c.id) || [],
+  })) as CurationContentWithLinks[];
+
+  return { data: enriched, count: count || 0, error: null };
+}
+
+/** content_relations 테이블을 이용해 소스→생성물 연결 조회 */
+async function getLinkedInfoSharesMap(
+  supabase: Awaited<ReturnType<typeof requireStaff>>,
+  contentIds: string[]
+): Promise<Map<string, LinkedInfoShare[]>> {
+  const linkMap = new Map<string, LinkedInfoShare[]>();
+
+  if (contentIds.length === 0) return linkMap;
+
+  // content_relations는 새 테이블이라 아직 Supabase 타입에 없음
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: relations } = await (supabase as any)
+    .from("content_relations")
+    .select("source_id, generated_id")
+    .in("source_id", contentIds) as { data: { source_id: string; generated_id: string }[] | null };
+
+  if (!relations || relations.length === 0) return linkMap;
+
+  // 생성물 id 목록
+  const generatedIds = [...new Set(relations.map((r) => r.generated_id))];
+
+  const { data: generatedContents } = await supabase
+    .from("contents")
+    .select("id, title, status")
+    .in("id", generatedIds);
+
+  if (!generatedContents) return linkMap;
+
+  const genMap = new Map<string, { id: string; title: string; status: string }>();
+  for (const g of generatedContents) {
+    genMap.set(g.id, g);
+  }
+
+  for (const rel of relations) {
+    const gen = genMap.get(rel.generated_id);
+    if (!gen) continue;
+    const existing = linkMap.get(rel.source_id) || [];
+    existing.push({ id: gen.id, title: gen.title, status: gen.status });
+    linkMap.set(rel.source_id, existing);
+  }
+
+  return linkMap;
 }
 
 export async function getCurationCount() {
   const supabase = await requireStaff();
 
-  const { count, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { count, error } = await (supabase
     .from("contents")
     .select("id", { count: "exact", head: true })
-    .in("curation_status", ["new", "selected"])
+    .in("curation_status", ["new", "selected"]) as any)
+    .is("deleted_at", null)
     .neq("source_type", "info_share");
 
   if (error) {
@@ -87,6 +155,58 @@ export async function getCurationCount() {
   }
 
   return count || 0;
+}
+
+// ─── 상태별 카운트 (Phase 2 T2) ─────────────────────────────
+
+export interface CurationStatusCounts {
+  total: number;
+  new: number;
+  selected: number;
+  dismissed: number;
+  published: number;
+}
+
+export async function getCurationStatusCounts(
+  source?: string
+): Promise<CurationStatusCounts> {
+  const supabase = await requireStaff();
+
+  const buildQuery = (status?: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q = (supabase
+      .from("contents")
+      .select("id", { count: "exact", head: true }) as any)
+      .is("deleted_at", null);
+
+    if (source && source !== "all") {
+      q = q.eq("source_type", source);
+    } else {
+      q = q.neq("source_type", "info_share");
+    }
+
+    if (status) {
+      q = q.eq("curation_status", status);
+    }
+
+    return q;
+  };
+
+  const [totalRes, newRes, selectedRes, dismissedRes, publishedRes] = await Promise.all([
+    buildQuery(),
+    buildQuery("new"),
+    buildQuery("selected"),
+    buildQuery("dismissed"),
+    buildQuery("published"),
+  ]);
+
+  return {
+    total: totalRes.count || 0,
+    new: newRes.count || 0,
+    selected: selectedRes.count || 0,
+    dismissed: dismissedRes.count || 0,
+    published: publishedRes.count || 0,
+  };
 }
 
 export async function updateCurationStatus(
@@ -173,7 +293,22 @@ export async function createInfoShareDraft({
     return { data: null, error: insertError?.message || "생성 실패" };
   }
 
-  // 2. 자동 임베딩 (응답 반환 후 비동기 실행)
+  // 2. content_relations에 관계 기록
+  if (sourceContentIds.length > 0) {
+    const relations = sourceContentIds.map((srcId) => ({
+      source_id: srcId,
+      generated_id: newContent.id,
+    }));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: relError } = await (supabase as any)
+      .from("content_relations")
+      .insert(relations);
+    if (relError) {
+      console.error("createInfoShareDraft content_relations insert error:", relError);
+    }
+  }
+
+  // 3. 자동 임베딩 (응답 반환 후 비동기 실행)
   after(async () => {
     try {
       await embedContentToChunks(newContent.id);
@@ -182,7 +317,7 @@ export async function createInfoShareDraft({
     }
   });
 
-  // 3. 원본 콘텐츠 curation_status → published (별도 클라이언트)
+  // 4. 원본 콘텐츠 curation_status → published (별도 클라이언트)
   if (sourceContentIds.length > 0) {
     const svc2 = createServiceClient();
     const { error: updateError } = await svc2
@@ -341,6 +476,76 @@ export async function getCurationSummaryStats(): Promise<{
     withSummary,
     withoutSummary: total - withSummary,
   };
+}
+
+// ─── Soft Delete (Phase 2 T3) ────────────────────────────────
+
+export async function softDeleteContents(
+  ids: string[]
+): Promise<{ error: string | null }> {
+  const supabase = await requireStaff();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase
+    .from("contents") as any)
+    .update({ deleted_at: new Date().toISOString() })
+    .in("id", ids);
+
+  if (error) {
+    console.error("softDeleteContents error:", error);
+    return { error: error.message };
+  }
+
+  revalidatePath("/admin/content");
+  return { error: null };
+}
+
+export async function restoreContents(
+  ids: string[]
+): Promise<{ error: string | null }> {
+  const supabase = await requireStaff();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase
+    .from("contents") as any)
+    .update({ deleted_at: null })
+    .in("id", ids);
+
+  if (error) {
+    console.error("restoreContents error:", error);
+    return { error: error.message };
+  }
+
+  revalidatePath("/admin/content");
+  return { error: null };
+}
+
+export async function getDeletedContents(
+  source?: string
+): Promise<{ data: Array<Record<string, unknown>>; count: number; error: string | null }> {
+  const supabase = await requireStaff();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (supabase
+    .from("contents")
+    .select("id, title, source_type, deleted_at, created_at", { count: "exact" }) as any)
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false });
+
+  if (source && source !== "all") {
+    query = query.eq("source_type", source);
+  } else {
+    query = query.neq("source_type", "info_share");
+  }
+
+  const { data, count, error } = await query;
+
+  if (error) {
+    console.error("getDeletedContents error:", error);
+    return { data: [], count: 0, error: error.message };
+  }
+
+  return { data: data || [], count: count || 0, error: null };
 }
 
 // ─── Phase 0: 백필 ─────────────────────────────────────────
