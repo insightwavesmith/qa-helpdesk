@@ -91,11 +91,25 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 - 모든 구현은 plan approval 후에만 진행
 - TASK.md를 읽고 작업 분배 (의존성 순서 준수)
 
-### 리더 메모리 보존 (필수)
-- **세션 종료 전**: `~/.claude/agent-memory/leader/MEMORY.md`에 현재 진행 상황 저장
-  - 완료된 태스크, 진행 중 태스크, 남은 이슈, 팀원별 상태
-- **세션 시작 시**: `~/.claude/agent-memory/leader/MEMORY.md` 먼저 읽기
-- 이 파일이 없으면 TASK.md + 팀원 메모리로 상태 파악
+### 리더 메모리 보존 (필수 — Validation 대상)
+
+**시작과 끝에 반드시 정리. 이걸 안 하면 Validation 실패 처리.**
+
+#### 세션 시작 시 (첫 번째 행동)
+1. `~/.claude/agent-memory/leader/MEMORY.md` 읽기
+2. 이전 세션 상태 파악 → 이어서 작업할지 새로 시작할지 판단
+3. 시작 시간 + 받은 TASK 요약을 MEMORY.md 맨 위에 기록
+
+#### 세션 종료 시 (마지막 행동)
+1. `~/.claude/agent-memory/leader/MEMORY.md` 업데이트:
+   - 완료된 태스크 (커밋 해시 포함)
+   - 진행 중 태스크 (어디까지 했는지)
+   - 남은 이슈 / 블로커
+   - 변경된 파일 목록
+   - 다음 세션에서 할 일
+2. 이 파일이 없으면 TASK.md + 코드 상태로 파악
+
+**검증**: SDK 완료 후 MEMORY.md의 마지막 업데이트 시간이 현재와 1시간 이내가 아니면 Validation 실패.
 
 ### 태스크 수행 순서 (강제)
 ```

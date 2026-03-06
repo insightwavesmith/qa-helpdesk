@@ -189,6 +189,11 @@ async function run() {
   let resultWritten = false;
   let slackMsg = null; // Slack DM 메시지 (완료/에러 시 설정)
 
+  // stage 마커 초기화 (이전 실행 찌꺼기 제거)
+  for (const stage of ["REVIEW_DONE", "DEV_DONE", "QA_DONE", "BUILD_PASS"]) {
+    try { fs.unlinkSync(`/tmp/agent-stage-${stage}`); } catch {}
+  }
+
   log("시작 [" + mode + "]: " + prompt.substring(0, 100));
 
   try {
@@ -275,6 +280,34 @@ async function run() {
         log("❌ " + check.name + " FAIL: " + stderr.replace(/\n/g, " "));
       }
     }
+
+    // 리더 메모리 업데이트 검증
+    const LEADER_MEMORY = `${process.env.HOME}/.claude/agent-memory/leader/MEMORY.md`;
+    try {
+      const stat = fs.statSync(LEADER_MEMORY);
+      const ageMinutes = (Date.now() - stat.mtimeMs) / 60000;
+      if (ageMinutes > 60) {
+        allPassed = false;
+        log("❌ 리더 MEMORY.md 미업데이트 (" + Math.round(ageMinutes) + "분 전) — 작업 정리 안 함");
+      } else {
+        log("✅ 리더 MEMORY.md 업데이트됨 (" + Math.round(ageMinutes) + "분 전)");
+      }
+    } catch {
+      allPassed = false;
+      log("❌ 리더 MEMORY.md 파일 없음 — 작업 정리 안 함");
+    }
+
+    // report-stage 마커 검증
+    const stages = ["REVIEW_DONE", "DEV_DONE", "QA_DONE", "BUILD_PASS"];
+    for (const stage of stages) {
+      if (fs.existsSync(`/tmp/agent-stage-${stage}`)) {
+        log("✅ " + stage + " 보고됨");
+      } else {
+        allPassed = false;
+        log("❌ " + stage + " 보고 누락");
+      }
+    }
+
     if (!allPassed) {
       log("⚠️ Validation 실패 — Smith님 확인 필요");
       slackMsg = `[에이전트팀] ${mode} 완료했으나 ❌ Validation 실패. 확인 필요.`;
