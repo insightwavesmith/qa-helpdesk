@@ -66,20 +66,50 @@ function ImportanceStars({ score }: { score: number }) {
 function formatSummary(aiSummary: string | null): string[] {
   if (!aiSummary) return [];
 
-  const lines = aiSummary.split("\n").filter((l) => l.trim());
+  const trimmed = aiSummary.trim();
+
+  // JSON 형태 요약 처리 ({"핵심 주제 한 줄":"...", "주요 내용 1":"..."} 등)
+  if (trimmed.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      const values: string[] = [];
+      for (const [, v] of Object.entries(parsed)) {
+        if (typeof v === "string" && v.trim()) {
+          values.push(v.trim());
+        } else if (Array.isArray(v)) {
+          for (const item of v) {
+            if (typeof item === "string" && item.trim()) values.push(item.trim());
+          }
+        }
+      }
+      return values.slice(0, 3);
+    } catch {
+      // JSON 파싱 실패 시 아래로 fallthrough
+    }
+  }
+
+  const lines = trimmed.split("\n").filter((l) => l.trim());
 
   if (lines.length >= 2) {
     return lines.slice(0, 3).map((l) =>
-      l.replace(/^[\s]*[*\-\d.]+[\s]*/, "").trim()
+      l.replace(/^[\s]*[*\-•◦\d.]+[\s]*/, "").trim()
     );
   }
 
   // 단일 문장이면 그대로 1줄 반환
-  return [aiSummary.trim()];
+  return [trimmed];
 }
 
-/** URL에서 도메인 추출 */
-function extractDomain(sourceRef: string | null): string | null {
+/** 내부 메타데이터 키 필터 (ep_number, parent_id, level, section_title 등) */
+const METADATA_PATTERNS = /^(ep_number|parent_id|level|section_title|chunk_index|source_ref|content_id)[:_]/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}/i;
+function isMetadataKey(topic: string): boolean {
+  return METADATA_PATTERNS.test(topic) || UUID_PATTERN.test(topic);
+}
+
+/** URL에서 도메인 추출. YouTube는 youtube.com 반환 */
+function extractDomain(sourceRef: string | null, sourceType: string | null): string | null {
+  if (sourceType === "youtube") return "youtube.com";
   if (!sourceRef) return null;
   try {
     const url = new URL(sourceRef);
@@ -118,7 +148,7 @@ export function CurationCard({
   onGenerate,
 }: CurationCardProps) {
   const summaryLines = formatSummary(aiSummary);
-  const domain = extractDomain(sourceRef);
+  const domain = extractDomain(sourceRef, sourceType);
   const dateStr = new Date(createdAt).toLocaleDateString("ko-KR", {
     month: "numeric",
     day: "numeric",
@@ -184,18 +214,20 @@ export function CurationCard({
           </div>
         )}
 
-        {/* 토픽 뱃지 */}
+        {/* 토픽 뱃지 (내부 메타데이터 키 필터링) */}
         {keyTopics.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-2">
-            {keyTopics.map((topic) => (
-              <Badge
-                key={topic}
-                variant="secondary"
-                className="text-[10px] px-1.5 py-0 h-5"
-              >
-                {topic}
-              </Badge>
-            ))}
+            {keyTopics
+              .filter((t) => !isMetadataKey(t))
+              .map((topic) => (
+                <Badge
+                  key={topic}
+                  variant="secondary"
+                  className="text-[10px] px-1.5 py-0 h-5"
+                >
+                  {topic}
+                </Badge>
+              ))}
           </div>
         )}
 

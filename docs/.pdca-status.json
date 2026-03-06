@@ -651,6 +651,28 @@
       "startedAt": "2026-03-06",
       "completedAt": "2026-03-06",
       "notes": "P0 백필(ai_summary+importance_score) 서버액션+API. P1 사이드바 3섹션분리(커리큘럼/큐레이션/통계) + CurriculumView(레벨파싱+진행률+확장) + 듀얼모드 분기 + 모바일 반응형 탭. tsc+build 통과."
+    },
+    "curation-v2-phase2": {
+      "phase": "designing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/curation-v2-phase2.plan.md",
+        "design": "02-design/features/curation-v2-phase2.design.md"
+      },
+      "startedAt": "2026-03-06",
+      "notes": "Phase 2: T1 카드v2(요약항상펼침+생성물연결), T2 뷰리뉴얼(인박스+토픽맵+상태필터), T3 Soft Delete(deleted_at+복원+Cron30일). Plan+Design 작성 완료."
+    },
+    "competitor-analyzer": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/competitor-analyzer.plan.md",
+        "design": "02-design/features/competitor-analyzer.design.md",
+        "analysis": "03-analysis/competitor-analyzer.analysis.md"
+      },
+      "startedAt": "2026-03-06",
+      "completedAt": "2026-03-06",
+      "notes": "T1 Meta Ad Library 검색(API+UI: 검색바/필터칩/광고카드/운영기간바) + T2 브랜드 모니터링(CRUD API+Cron+패널UI) + T3 AI 인사이트(ai-proxy 패턴+캐시+통계카드/훅유형차트/시즌차트). 탭 네비게이션 layout 통합. DB 마이그레이션 SQL 작성. tsc+lint+build 통과. Match Rate 95%."
     }
   },
   "phaseMapping": {

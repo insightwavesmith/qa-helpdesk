@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/types";
+import { ProtractorTabNav } from "./protractor-tab-nav";
 
 /**
  * 접근 제어:
@@ -41,6 +42,7 @@ export default async function ProtractorLayout({
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
+      <ProtractorTabNav />
       {children}
     </div>
   );

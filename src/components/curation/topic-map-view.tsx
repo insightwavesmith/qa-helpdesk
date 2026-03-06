@@ -19,14 +19,20 @@ interface TopicGroup {
   items: CurationContentWithLinks[];
 }
 
+/** 내부 메타데이터 키 필터 */
+const METADATA_PATTERNS = /^(ep_number|parent_id|level|section_title|chunk_index|source_ref|content_id)[:_]/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}/i;
+function isMetadataKey(topic: string): boolean {
+  return METADATA_PATTERNS.test(topic) || UUID_PATTERN.test(topic);
+}
+
 function groupByTopic(contents: CurationContentWithLinks[]): TopicGroup[] {
   const groups: Record<string, CurationContentWithLinks[]> = {};
 
   for (const item of contents) {
-    const topic =
-      item.key_topics && item.key_topics.length > 0
-        ? item.key_topics[0]
-        : "미분류";
+    // 첫 번째 유효한 토픽 찾기 (메타데이터 키 제외)
+    const validTopic = (item.key_topics || []).find((t) => !isMetadataKey(t));
+    const topic = validTopic || "미분류";
 
     if (!groups[topic]) groups[topic] = [];
     groups[topic].push(item);
