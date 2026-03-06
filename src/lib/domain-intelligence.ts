@@ -196,14 +196,28 @@ export async function analyzeDomain(
       ? parsed.normalizedTerms
       : [];
 
-    // T1: 핵심 용어 Brave Search 정의 조회
+    // T1: 핵심 용어 — glossary 캐시 우선, 없으면 Brave 검색
     let termDefinitions: Array<{ term: string; definition: string }> = [];
-    if (normalizedTerms.length > 0 && process.env.BRAVE_API_KEY) {
+    if (normalizedTerms.length > 0) {
       try {
+        const svc = createServiceClient();
         const keyTerms = normalizedTerms.slice(0, 2);
         const definitionPromises = keyTerms.map(async (t: NormalizedTerm) => {
+          // glossary 캐시 확인
+          const { data: cached } = await svc
+            .from("knowledge_chunks")
+            .select("content")
+            .eq("source_type", "glossary")
+            .ilike("content", `${t.normalized}:%`)
+            .limit(1);
+          if (cached && cached.length > 0) {
+            const parts = cached[0].content.split(": ");
+            return { term: t.normalized, definition: parts.slice(1).join(": ") };
+          }
+          // glossary 미스 → Brave 검색 (키 있을 때만)
+          if (!process.env.BRAVE_API_KEY) return null;
           const results = await searchBrave({
-            query: `${t.normalized} 뜻`,
+            query: `${t.normalized} 뜻 자사몰 메타광고 맥락`,
             count: 2,
             country: "KR",
           });
