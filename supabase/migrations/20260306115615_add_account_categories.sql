@@ -11,6 +11,15 @@ CREATE TABLE IF NOT EXISTS account_categories (
 -- benchmarks에 category 컬럼 추가
 ALTER TABLE benchmarks ADD COLUMN IF NOT EXISTS category text;
 
+-- benchmarks unique constraint에 category 포함 (기존 constraint 교체)
+ALTER TABLE benchmarks DROP CONSTRAINT IF EXISTS benchmarks_unique;
+ALTER TABLE benchmarks
+ADD CONSTRAINT benchmarks_unique
+UNIQUE (creative_type, ranking_type, ranking_group, date, category);
+
+-- 기존 benchmarks 데이터 중 category가 null인 건 'uncategorized'로 채움
+UPDATE benchmarks SET category = 'uncategorized' WHERE category IS NULL;
+
 -- 코멘트
 COMMENT ON TABLE account_categories IS '광고 계정 카테고리 분류 (멀티시그널 AI 종합판단)';
 COMMENT ON COLUMN account_categories.confidence IS '분류 신뢰도 0~1';

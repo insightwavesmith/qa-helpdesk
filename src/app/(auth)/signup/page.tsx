@@ -338,12 +338,18 @@ export default function SignupPage() {
       }
 
       // 수강생 모드: 초대코드 사용 처리 (used_count 증가 + student_registry 매칭)
+      // 실패해도 가입 자체는 완료 → 온보딩으로 넘어가야 함
       if (isStudentMode && inviteCode.trim()) {
-        await consumeInviteCode(
-          authData.user.id,
-          formData.email,
-          inviteCode.trim()
-        );
+        try {
+          await consumeInviteCode(
+            authData.user.id,
+            formData.email,
+            inviteCode.trim()
+          );
+        } catch (inviteErr) {
+          console.error("[signup] consumeInviteCode failed:", inviteErr);
+          // 초대코드 처리 실패해도 가입은 완료 — 리다이렉트 계속 진행
+        }
       }
 
       // 가입 후 리다이렉트 분기
@@ -354,9 +360,19 @@ export default function SignupPage() {
       }
     } catch (err) {
       console.error("[signup] unexpected error:", err);
-      setError(
-        "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
-      ); // T2: catch block 한국어 메시지
+
+      // 이미 가입된 이메일인지 체크 (signUp은 성공했지만 identities가 비어있으면 기존 유저)
+      if (
+        err instanceof Error &&
+        (err.message?.includes("already registered") ||
+          err.message?.includes("User already registered"))
+      ) {
+        setError("이미 가입된 이메일입니다. 로그인해 주세요.");
+      } else {
+        setError(
+          "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
+        );
+      }
     } finally {
       setLoading(false);
     }

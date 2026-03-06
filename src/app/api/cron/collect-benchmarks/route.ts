@@ -2,14 +2,16 @@
  * collect-benchmarks — GCP 방식 벤치마크 수집 (전면 재작성)
  * Vercel Cron: 매주 월요일 17:00 UTC (KST 화요일 02:00)
  *
+ * STEP 0: 계정 카테고리 분류 (profiles 매칭 → account_categories → AI 자동 분류)
  * STEP 1: Meta API로 활성 계정의 광고 원본 수집 → ad_insights_classified UPSERT
- * STEP 2: creative_type × ranking_type × ranking_group별 평균 계산 → benchmarks UPSERT
+ * STEP 2: creative_type × ranking_type × ranking_group × category별 평균 계산 → benchmarks UPSERT
  * STEP 3: MEDIAN_ALL (랭킹 무관 전체 평균) → benchmarks UPSERT
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { startCronRun, completeCronRun } from "@/lib/cron-logger";
+import { classifyAccount } from "@/lib/classify-account";
 
 // ── Vercel Cron 인증 ─────────────────────────────────────────
 function verifyCron(req: NextRequest): boolean {
@@ -312,6 +314,82 @@ export async function GET(req: NextRequest) {
     }
 
     // ────────────────────────────────────────────────────────
+    // STEP 0: 계정 카테고리 분류
+    //   1) profiles.meta_account_id 매칭 → profiles.category 사용
+    //   2) account_categories 테이블에 있음 → 그대로 사용
+    //   3) 없음 → classifyAccount() 실행 → account_categories 저장
+    //   실패해도 나머지 흐름은 계속 진행 (category = null → "uncategorized")
+    // ────────────────────────────────────────────────────────
+    const accountCategoryMap: Record<string, string> = {};
+    let classifiedCount = 0;
+
+    // 1) profiles에서 meta_account_id 매칭된 category 조회
+    const { data: profilesWithCategory } = await anySvc
+      .from("profiles")
+      .select("meta_account_id, category")
+      .not("meta_account_id", "is", null)
+      .not("category", "is", null);
+
+    if (profilesWithCategory) {
+      for (const p of profilesWithCategory) {
+        const cleanId = (p.meta_account_id as string).replace(/^act_/, "");
+        accountCategoryMap[cleanId] = p.category as string;
+      }
+    }
+
+    // 2) account_categories 테이블에서 기존 분류 조회
+    const accountIdsToCheck = activeAccounts
+      .map((a) => a.cleanId)
+      .filter((id) => !accountCategoryMap[id]);
+
+    let existingCategoryCount = 0;
+    if (accountIdsToCheck.length > 0) {
+      const { data: existingCategories } = await anySvc
+        .from("account_categories")
+        .select("account_id, category")
+        .in("account_id", accountIdsToCheck);
+
+      if (existingCategories) {
+        existingCategoryCount = existingCategories.length;
+        for (const ac of existingCategories) {
+          accountCategoryMap[ac.account_id as string] = ac.category as string;
+        }
+      }
+    }
+
+    // 3) 미분류 계정 → classifyAccount() 실행
+    const unclassifiedIds = activeAccounts
+      .map((a) => a.cleanId)
+      .filter((id) => !accountCategoryMap[id]);
+
+    for (const accountId of unclassifiedIds) {
+      try {
+        await new Promise((r) => setTimeout(r, 200)); // rate limit
+        const result = await classifyAccount(accountId);
+        accountCategoryMap[accountId] = result.category;
+        classifiedCount++;
+
+        // account_categories 테이블에 저장
+        await anySvc.from("account_categories").upsert({
+          account_id: accountId,
+          category: result.category,
+          confidence: result.confidence,
+          signals: result.signals,
+          classified_at: new Date().toISOString(),
+          classified_by: "auto",
+        }, { onConflict: "account_id" });
+
+        console.log(`[STEP 0] ${accountId} → ${result.category} (confidence: ${result.confidence})`);
+      } catch (e) {
+        console.error(`[STEP 0] ${accountId} 분류 실패:`, e instanceof Error ? e.message : e);
+        // 실패해도 계속 진행 — category는 "uncategorized"로 처리됨
+      }
+    }
+
+    const profileMatchCount = Object.keys(accountCategoryMap).length - classifiedCount - existingCategoryCount;
+    console.log(`[STEP 0] 카테고리 분류 완료: profiles 매칭 ${profileMatchCount}건, 기존 분류 ${existingCategoryCount}건, 신규 분류 ${classifiedCount}건`);
+
+    // ────────────────────────────────────────────────────────
     // STEP 1-2: 계정별 /ads 엔드포인트 + nested insights 수집 (GCP 방식)
     //   AD_FIELDS + insights.date_preset(last_7d){INSIGHT_FIELDS}
     //   → creative.object_type + product_set_id로 정확한 creative_type 판별
@@ -417,30 +495,69 @@ export async function GET(req: NextRequest) {
     }
 
     // ────────────────────────────────────────────────────────
-    // STEP 2: 벤치마크 계산 — creative_type × ranking_type × ranking_group
+    // STEP 2: 벤치마크 계산 — creative_type × ranking_type × ranking_group × category
     // ────────────────────────────────────────────────────────
     const creativeTypes = ["VIDEO", "IMAGE", "CATALOG"] as const;
     const rankingTypes = ["quality", "engagement", "conversion"] as const;
     const rankingGroups = ["ABOVE_AVERAGE", "AVERAGE", "BELOW_AVERAGE"] as const;
 
+    // 계정별 카테고리를 광고 데이터에 매핑
+    const categories = [
+      ...new Set(
+        allClassified.map(
+          (ad) => accountCategoryMap[ad.account_id] || "uncategorized"
+        )
+      ),
+    ];
+
     const benchmarkRows: Record<string, unknown>[] = [];
     const weekDate = getMondayOfWeek(); // A4: 해당 주의 월요일
 
-    for (const ct of creativeTypes) {
-      for (const rankingType of rankingTypes) {
-        const rankingKey = `${rankingType}_ranking` as keyof ClassifiedAd;
-        for (const rankingGroup of rankingGroups) {
-          const filtered = allClassified.filter(
-            (r) => r.creative_type === ct && r[rankingKey] === rankingGroup
-          );
-          if (filtered.length === 0) continue;
+    for (const category of categories) {
+      const categoryAds = allClassified.filter(
+        (ad) => (accountCategoryMap[ad.account_id] || "uncategorized") === category
+      );
 
+      for (const ct of creativeTypes) {
+        for (const rankingType of rankingTypes) {
+          const rankingKey = `${rankingType}_ranking` as keyof ClassifiedAd;
+          for (const rankingGroup of rankingGroups) {
+            const filtered = categoryAds.filter(
+              (r) => r.creative_type === ct && r[rankingKey] === rankingGroup
+            );
+            if (filtered.length === 0) continue;
+
+            benchmarkRows.push(
+              calcGroupAvg(filtered, {
+                creative_type: ct,
+                ranking_type: rankingType,
+                ranking_group: rankingGroup,
+                category,
+                sample_count: filtered.length,
+                calculated_at: collectedAt,
+                date: weekDate,
+              })
+            );
+          }
+        }
+      }
+
+      // ────────────────────────────────────────────────────────
+      // STEP 3: MEDIAN_ALL — 랭킹 무관 전체 평균 (카테고리별)
+      // ────────────────────────────────────────────────────────
+      const medianRankingTypes = ["engagement", "conversion"] as const;
+      for (const ct of creativeTypes) {
+        const ctAds = categoryAds.filter((r) => r.creative_type === ct);
+        if (ctAds.length === 0) continue;
+
+        for (const rankingType of medianRankingTypes) {
           benchmarkRows.push(
-            calcGroupAvg(filtered, {
+            calcGroupAvg(ctAds, {
               creative_type: ct,
               ranking_type: rankingType,
-              ranking_group: rankingGroup,
-              sample_count: filtered.length,
+              ranking_group: "MEDIAN_ALL",
+              category,
+              sample_count: ctAds.length,
               calculated_at: collectedAt,
               date: weekDate,
             })
@@ -450,35 +567,13 @@ export async function GET(req: NextRequest) {
     }
 
     // ────────────────────────────────────────────────────────
-    // STEP 3: MEDIAN_ALL — 랭킹 무관 전체 평균
-    // ────────────────────────────────────────────────────────
-    const medianRankingTypes = ["engagement", "conversion"] as const;
-    for (const ct of creativeTypes) {
-      const ctAds = allClassified.filter((r) => r.creative_type === ct);
-      if (ctAds.length === 0) continue;
-
-      for (const rankingType of medianRankingTypes) {
-        benchmarkRows.push(
-          calcGroupAvg(ctAds, {
-            creative_type: ct,
-            ranking_type: rankingType,
-            ranking_group: "MEDIAN_ALL",
-            sample_count: ctAds.length,
-            calculated_at: collectedAt,
-            date: weekDate,
-          })
-        );
-      }
-    }
-
-    // ────────────────────────────────────────────────────────
-    // benchmarks 테이블 UPSERT (A4: 이력 보존)
+    // benchmarks 테이블 UPSERT (A4: 이력 보존, category 포함)
     // ────────────────────────────────────────────────────────
     if (benchmarkRows.length > 0) {
       const { error: insertBenchErr } = await anySvc
         .from("benchmarks")
         .upsert(benchmarkRows, {
-          onConflict: "creative_type,ranking_type,ranking_group,date",
+          onConflict: "creative_type,ranking_type,ranking_group,date,category",
         });
 
       if (insertBenchErr) {
@@ -495,6 +590,8 @@ export async function GET(req: NextRequest) {
       accounts_processed: accountsProcessed,
       ads_classified: allClassified.length,
       benchmarks_saved: benchmarkRows.length,
+      newly_classified: classifiedCount,
+      categories_used: categories,
       creative_type_breakdown: {
         VIDEO: allClassified.filter((r) => r.creative_type === "VIDEO").length,
         IMAGE: allClassified.filter((r) => r.creative_type === "IMAGE").length,
