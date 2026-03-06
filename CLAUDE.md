@@ -87,19 +87,22 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 ### 태스크 수행 순서 (강제)
 ```
 1. TASK.md 읽기
-2. 해당 기능의 기존 docs 확인 (01-plan, 02-design, 03-analysis)
-3. Plan 없으면 → docs/01-plan/features/{기능}.plan.md 작성
-4. Design 없으면 → docs/02-design/features/{기능}.design.md 작성
-5. .pdca-status.json 업데이트 (상태: designing → implementing)
-6. 구현
-7. Check → docs/03-analysis/{기능}.analysis.md 작성
-8. Match Rate 90%+ 확인
-9. .pdca-status.json 업데이트 (상태: completed)
-10. openclaw gateway wake --text 'Done' --mode now
+2. 관련 파일 탐색 (TASK.md의 "관련 파일" 섹션 + 기존 docs)
+3. research.md 작성 — 기존 코드 구조, 의존성, 수정 영향 범위 정리
+   - "코드를 읽었다"는 증거. 이게 없으면 Plan 작성 불가.
+   - 최소 포함: 수정 대상 파일 목록, 현재 동작 요약, 의존성 그래프
+4. Plan 없으면 → docs/01-plan/features/{기능}.plan.md 작성
+5. Design 없으면 → docs/02-design/features/{기능}.design.md 작성
+6. .pdca-status.json 업데이트 (상태: designing → implementing)
+7. 구현
+8. Check → docs/03-analysis/{기능}.analysis.md 작성
+9. Match Rate 90%+ 확인
+10. .pdca-status.json 업데이트 (상태: completed)
+11. openclaw gateway wake --text 'Done' --mode now
 ```
 
-**2번에서 기존 문서가 있으면 반드시 읽고, 설계 변경이 필요하면 문서부터 업데이트한다.**
-**이 순서를 건너뛰고 바로 코딩하면 리젝된다.**
+**2~3번이 핵심. 코드를 깊이 읽지 않고 Plan 쓰면 엉뚱한 설계가 나온다.**
+**research.md 없이 바로 코딩하면 리젝된다.**
 
 ## Plan Mode
 - settings.json에 `defaultMode: "plan"` 설정됨

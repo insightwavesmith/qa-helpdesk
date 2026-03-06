@@ -1,121 +1,116 @@
-# TASK: 광고 계정 카테고리 자동 분류 시스템
+# TASK: 큐레이션 v2 — Phase 0 + Phase 1
+
+## 타입
+개발
+
+## 관련 파일 (반드시 먼저 읽을 것)
+- `docs/proposals/curation-v2-spec.md` — 전체 기획서 (듀얼모드, 4 Phase, 컴포넌트 트리)
+- `src/components/curation/` — 현재 큐레이션 컴포넌트 5개 (849줄)
+- `src/app/(main)/admin/curation/page.tsx` — 현재 큐레이션 페이지
+- `src/actions/contents.ts` — 콘텐츠 CRUD 서버 액션
+- `src/lib/gemini.ts` — AI 요약 생성 (generateFlash)
 
 ## 배경
-- `collect-benchmarks` 크론이 7일 주기로 광고 성과 데이터 수집 중
-- 현재 benchmarks에 `category` 없이 전체 평균만 제공 → 카테고리별 비교 불가
-- BM 계정 45개 중 카테고리 분류된 건 0개
-- 수강생은 `profiles.category`에 가입 시 등록
+큐레이션 탭을 듀얼모드(커리큘럼/큐레이션)로 리뉴얼한다.
+Phase 0은 데이터 정리, Phase 1은 UI 구조 변경.
 
-## 목표
-`collect-benchmarks` 실행 시 카테고리 미분류 계정을 자동 분류하고, benchmarks에 category별로 집계
+## Phase 0: 데이터 백필 (먼저 완료)
 
-## T1. 계정 카테고리 자동 분류 + 벤치마크 카테고리별 집계
+### P0-1: ai_summary null 백필
+- `contents` 테이블에서 `ai_summary IS NULL` 인 레코드 조회 (약 30건)
+- 각 레코드의 `body_md`를 읽어서 `generateFlash()`로 3줄 요약 생성
+- `ai_summary` 컬럼 UPDATE
+- **주의**: rate limit 고려, 1초 간격으로 호출
 
-### 현재 동작
-- benchmarks에 category 없이 전체 평균만 제공
-- 계정 45개 모두 카테고리 미분류
-- 수강생은 같은 업종끼리 비교 불가
+### P0-2: importance_score 0 백필
+- `contents` 테이블에서 `importance_score = 0` 인 레코드 조회 (약 98건)
+- source_type별 처리:
+  - `blueprint` 또는 `lecture` → importance_score = 5 (고정, AI 스코어링 안 함)
+  - 그 외 (blog, youtube, crawl 등) → AI로 1~5 스코어링
+    - 프롬프트: "이 콘텐츠의 자사몰 사업자 교육 관점에서의 중요도를 1~5로 평가. 5=필수, 1=참고"
+    - body_md 앞 2000자 + title 제공
 
-### 기대 동작
-- collect-benchmarks 실행 시 미분류 계정이 AI로 자동 분류됨
-- benchmarks가 카테고리별로 집계되어 같은 업종끼리 비교 가능
+### P0 완료 기준
+- ai_summary NULL = 0건
+- importance_score 0 = 0건
+- blueprint/lecture의 importance_score = 전부 5
 
-### 하지 말 것
-- 기존 collect-benchmarks 로직 (STEP 1~3)의 동작 변경 금지
-- profiles 테이블 직접 수정 금지
-- 프론트엔드 UI 변경 없음 (이 태스크는 백엔드만)
+## Phase 1: 사이드바 + 듀얼모드 + CurriculumView
 
-## 실행 순서
-1. migration SQL 확인 (이미 존재)
-2. `src/lib/classify-account.ts` 신규 생성
-3. `src/app/api/cron/collect-benchmarks/route.ts`에 STEP 0 삽입 + benchmarks 집계에 category 반영
-4. `npm run build` 성공 확인
+### P1-1: 사이드바 리팩토링
+현재 큐레이션 페이지의 필터를 **좌측 사이드바**로 분리.
 
-## 리뷰 결과
-- TASK.md 확인 완료, 구현 진행
-
-## 구현 사항
-
-### 1. DB 테이블 생성 (migration 파일은 이미 있음)
-- `supabase/migrations/20260306115615_add_account_categories.sql` 참조
-- `account_categories` 테이블: account_id(PK), category, confidence, signals(jsonb), classified_at, classified_by
-- `benchmarks` 테이블에 `category text` 컬럼 추가
-
-### 2. 계정 분류 함수 구현
-**파일**: `src/lib/classify-account.ts` (신규)
-
-```typescript
-export async function classifyAccount(accountId: string): Promise<{
-  category: string;
-  confidence: number;
-  signals: Record<string, unknown>;
-}>
+```
+사이드바 구조:
+├── 📚 커리큘럼 소스
+│   ├── 블루프린트 (badge: N건)
+│   └── 자사몰사관학교 (badge: N건)
+├── 🔍 외부 소스
+│   ├── 블로그 (badge: N건)
+│   ├── YouTube (badge: N건)
+│   └── 크롤링 (badge: N건)
+└── 📊 통계
+    ├── 전체: N건
+    ├── AI 요약 완료: N건
+    └── 미처리: N건
 ```
 
-**멀티시그널 수집 (순서 = 신뢰도)**:
-1. **랜딩 URL 크롤링** — 광고의 `website_url` 필드에서 URL 추출 → fetch로 HTML 가져옴 → `<title>`, `<meta name="description">`, OG tags 추출
-2. **광고 소재 텍스트** — 최근 광고 3~5개의 `ad_creative.body`, `ad_creative.title` 수집
-3. **계정 이름** — account_name에서 키워드 추출
-4. **FB 페이지 카테고리** — 광고 계정의 연결 페이지 → `page.category` (참고용, 정답 아님)
+- 새 파일: `src/components/curation/CurationSidebar.tsx`
+- source_type별 건수는 서버에서 조회 (contents 테이블 GROUP BY source_type)
+- 사이드바 클릭 → 메인 영역 모드 전환:
+  - 블루프린트/자사몰사관학교 클릭 → CurriculumView 렌더
+  - 블로그/YouTube/크롤링 클릭 → 기존 CurationView 렌더 (필터 적용)
 
-**AI 종합 판단**:
-- 수집한 시그널 4개를 모아서 Anthropic Claude Sonnet에 전달
-- 프롬프트: "다음 시그널을 종합해서 이 광고 계정의 업종 카테고리를 판단해주세요. 반드시 아래 목록 중 하나로 답해주세요: beauty, fashion, food, health, education, home, pet, kids, sports, digital, finance, travel, etc"
-- 응답: `{ category: "beauty", confidence: 0.92 }`
+### P1-2: CurriculumView 컴포넌트
+블루프린트/자사몰사관학교 선택 시 보여줄 시퀀스 뷰.
 
-**Meta API 호출**:
-- 광고 크리에이티브: `GET /{account_id}/ads?fields=creative{body,title,url_tags},effective_status&effective_status=["ACTIVE","PAUSED"]&limit=5`
-- 랜딩 URL: `GET /{ad_id}?fields=creative{asset_feed_spec,object_story_spec}` 또는 `adcreatives` 엔드포인트
-- 연결 페이지: `GET /act_{account_id}?fields=business,name` → 페이지 조회
-
-**환경변수**: `META_ACCESS_TOKEN` (.env.local), `ANTHROPIC_API_KEY` (.env.local)
-
-### 3. collect-benchmarks에 STEP 0 삽입
-**파일**: `src/app/api/cron/collect-benchmarks/route.ts`
-
-**현재 흐름**:
 ```
-1. Meta API → 활성 계정 목록
-2. 각 계정 → 광고 데이터 수집 (노출 3500+ 필터)
-3. ad_insights_classified upsert
-4. benchmarks 집계
-```
+새 파일: src/components/curation/CurriculumView.tsx
 
-**변경 후**:
-```
-0. [NEW] 각 활성 계정 → 카테고리 체크
-   ├─ profiles.meta_account_id 매칭 → profiles.category 사용
-   ├─ account_categories 테이블에 있음 → 그대로 사용
-   └─ 없음 → classifyAccount() 실행 → account_categories 저장
-1. Meta API → 활성 계정 목록 (기존)
-2. 각 계정 → 광고 데이터 수집 (기존)
-3. ad_insights_classified upsert (기존)
-4. benchmarks 집계 → **category 포함** (변경)
+레이아웃:
+┌─────────────────────────────────┐
+│ 블루프린트 커리큘럼              │
+│ 진행률: ████████░░ 80% (24/30)  │
+├─────────────────────────────────┤
+│ 📗 초급 (10건)                  │
+│  1. EP01 — 자사몰이란 무엇인가  │  ← ai_summary 3줄
+│  2. EP02 — 네이버쇼핑 vs 자사몰 │
+│  ...                            │
+│ 📘 중급 (12건)                  │
+│  11. EP11 — 메타 광고 기초      │
+│  ...                            │
+│ 📕 고급 (8건)                   │
+│  23. EP23 — ROAS 최적화         │
+│  ...                            │
+└─────────────────────────────────┘
 ```
 
-**주의**: STEP 0에서 분류 실패해도 나머지 흐름은 계속 진행 (category = null)
+- EP 순서는 contents 테이블의 `title` 또는 `order` 필드로 정렬
+  - order 필드가 없으면 created_at 순서 사용
+- 각 EP 클릭 → 상세 패널 (ai_summary + body_md 미리보기)
+- 레벨 구분: title에서 "초급/중급/고급" 또는 "기초/심화/고급" 키워드 파싱
+  - 키워드 없으면 전체를 하나의 시퀀스로 표시
+- 진행률 = (ai_summary가 있는 건수 / 전체 건수) × 100
 
-### 4. benchmarks 집계에 category 반영
-- 기존: `creative_type × ranking_type × ranking_group`
-- 변경: `creative_type × ranking_type × ranking_group × category`
-- category가 null인 계정은 "uncategorized"로 집계
+### P1-3: 듀얼모드 스위칭
+- `src/app/(main)/admin/curation/page.tsx` 수정
+- 상태: `activeSource: string` (사이드바에서 선택한 source_type)
+- 조건부 렌더링:
+  ```
+  activeSource === 'blueprint' || activeSource === 'lecture'
+    → <CurriculumView sourceType={activeSource} />
+  그 외
+    → <CurationView sourceType={activeSource} />  (기존 컴포넌트)
+  ```
 
-### 5. 타입 업데이트
-**파일**: `src/types/database.ts` (또는 해당 타입 파일)
-- AccountCategory 인터페이스 추가
-- Benchmark 타입에 category 필드 추가
+### P1 완료 기준
+- 사이드바에서 소스 클릭 시 모드 자동 전환
+- 블루프린트 → CurriculumView 정상 렌더 (시퀀스, 진행률)
+- 블로그/YouTube → 기존 CurationView 정상 렌더
+- 반응형: 모바일에서 사이드바 → 상단 탭으로 전환
+- npm run build 성공
 
-## 참조 코드
-- `src/app/api/cron/collect-benchmarks/route.ts` — 현재 크론 로직 (전체 읽을 것)
-- `.env.local` — META_ACCESS_TOKEN, ANTHROPIC_API_KEY 위치
-- `supabase/migrations/20260306115615_add_account_categories.sql` — DDL
-
-## 제약
-- `maxDuration = 300` (Vercel 5분 제한) — 분류 1건당 2~3초면 45건 = ~2분. 여유 있음
-- Meta API rate limit 주의 — 200ms 딜레이
-- 분류 결과 한 번 저장하면 다시 안 돌림 (classified_by = 'auto'인 건만 재분류 가능)
-- AI 호출 비용: Sonnet 기준 건당 ~$0.01 이하. 45건 = ~$0.5
-
-## 테스트
-- `classifyAccount` 단독 테스트: 계정 1개로 시그널 수집 + AI 판단 결과 확인
-- collect-benchmarks 전체 실행: STEP 0 → 분류 → 집계 → category 포함 확인
+## 완료 후 QA
+1. `npm run build` 성공
+2. Gap 분석: docs/03-analysis/curation-v2-p0p1.analysis.md 작성
+3. Match Rate 90%+ 확인
