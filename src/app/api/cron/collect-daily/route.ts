@@ -259,7 +259,7 @@ export async function GET(req: NextRequest) {
 
     const adAccountsUrl = new URL("https://graph.facebook.com/v21.0/me/adaccounts");
     adAccountsUrl.searchParams.set("access_token", token);
-    adAccountsUrl.searchParams.set("fields", "account_id,name");
+    adAccountsUrl.searchParams.set("fields", "account_id,name,account_status");
     adAccountsUrl.searchParams.set("limit", "500");
 
     const adAccountsRes = await fetch(adAccountsUrl.toString());
@@ -269,11 +269,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: "No accessible accounts", results: [] });
     }
 
+    // 활성 계정만 필터 (account_status === 1)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const accounts = adAccountsJson.data.map((a: any) => ({
-      account_id: (a.account_id as string).replace(/^act_/, ""),
-      account_name: a.name as string,
-    }));
+    const accounts = adAccountsJson.data
+      .filter((a: any) => Number(a.account_status) === 1)
+      .map((a: any) => ({
+        account_id: (a.account_id as string).replace(/^act_/, ""),
+        account_name: a.name as string,
+      }));
 
     const results: Record<string, unknown>[] = [];
 
