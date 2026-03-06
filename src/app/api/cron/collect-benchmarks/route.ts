@@ -152,12 +152,13 @@ function getCreativeType(ad: Record<string, unknown>): string {
 
 // 광고 인사이트 → 13개 지표 계산 (GCP 스펙 기준)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function calculateMetrics(insight: Record<string, any>, accountId: string, collectedAt: string, creativeType: string): ClassifiedAd | null {
+function calculateMetrics(insight: Record<string, any>, accountId: string, collectedAt: string, creativeType: string, currencyMultiplier: number = 1): ClassifiedAd | null {
   const impressions = Math.trunc(safeFloat(insight.impressions));
   if (impressions < 3500) return null; // 최소 노출 필터
 
   const clicks = Math.trunc(safeFloat(insight.clicks));
-  const spend = safeFloat(insight.spend);
+  // USD 계정은 KRW로 변환 (currencyMultiplier = 1350)
+  const spend = safeFloat(insight.spend) * currencyMultiplier;
   const reach = Math.trunc(safeFloat(insight.reach));
 
   const actions: MetaAction[] = insight.actions ?? [];
@@ -286,7 +287,7 @@ export async function GET(req: NextRequest) {
     // ────────────────────────────────────────────────────────
     const accountsUrl = new URL("https://graph.facebook.com/v21.0/me/adaccounts");
     accountsUrl.searchParams.set("access_token", token);
-    accountsUrl.searchParams.set("fields", "account_id,name,account_status");
+    accountsUrl.searchParams.set("fields", "account_id,name,account_status,currency");
     accountsUrl.searchParams.set("limit", "500");
 
     const accountsRes = await fetchWithRetry(accountsUrl.toString());
@@ -296,6 +297,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: "No ad accounts found" });
     }
 
+    // USD → KRW 환율 (고정값, 추후 실시간 환율 API로 교체 가능)
+    const USD_TO_KRW = 1350;
+
+    // 계정별 통화 맵 (spend 변환용)
+    const accountCurrencyMap: Record<string, string> = {};
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const activeAccounts: { cleanId: string; name: string }[] = accountsJson.data
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -304,10 +311,14 @@ export async function GET(req: NextRequest) {
         return Number(a.account_status) === 1 && !EXCLUDED_ACCOUNTS.includes(cleanId);
       })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((a: any) => ({
-        cleanId: (a.account_id as string).replace(/^act_/, ""),
-        name: a.name as string,
-      }));
+      .map((a: any) => {
+        const cleanId = (a.account_id as string).replace(/^act_/, "");
+        accountCurrencyMap[cleanId] = (a.currency as string) || "KRW";
+        return {
+          cleanId,
+          name: a.name as string,
+        };
+      });
 
     if (activeAccounts.length === 0) {
       return NextResponse.json({ message: "No active ad accounts after filtering" });
@@ -450,11 +461,14 @@ export async function GET(req: NextRequest) {
             ad_name: insight.ad_name ?? ad.name,
           };
           const creativeType = getCreativeType(ad);
+          const currency = accountCurrencyMap[account.cleanId] || "KRW";
+          const multiplier = currency === "USD" ? USD_TO_KRW : 1;
           const row = calculateMetrics(
             enrichedInsight,
             account.cleanId,
             collectedAt,
             creativeType,
+            multiplier,
           );
           if (row) allClassified.push(row);
         }
