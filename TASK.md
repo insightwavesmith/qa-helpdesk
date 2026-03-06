@@ -1,67 +1,50 @@
-# TASK: 큐레이션 v2 Phase 0+1 코드 리뷰
+# TASK: 큐레이션 v2 코드 리뷰 이슈 수정 (4건)
 
 ## 타입
-코드리뷰
+버그수정 + 개선
 
 ## 배경
-큐레이션 v2 Phase 0 (데이터 백필) + Phase 1 (사이드바 + CurriculumView + 듀얼모드)이 구현되었다.
-빌드는 통과했지만, 코드 품질/설계/보안/UX 관점에서 철저한 리뷰가 필요하다.
+코드 리뷰(`docs/03-analysis/curation-v2-p0p1-review.md`)에서 발견된 이슈 4건을 수정한다.
 
-## 리뷰 대상 파일
+## 요구사항
 
-### Phase 0 — 데이터 백필
-1. `src/actions/curation.ts` — backfillAiSummary(), backfillImportanceScore() 서버 액션
-2. `src/app/api/admin/curation/backfill/route.ts` — POST API 엔드포인트
+### T1: Supabase 타입 재생성
+- `npx supabase gen types typescript --project-id symvlrsmkjlztoopbnht > src/lib/database.types.ts` 실행
+- `src/actions/curation.ts`의 `(supabase as any)` 15개를 정상 타입 호출로 교체
+- eslint-disable 주석도 제거
+- **주의**: 기존 database.types.ts가 있으면 백업 후 교체
 
-### Phase 1 — UI
-3. `src/components/curation/pipeline-sidebar.tsx` — 3섹션 분리 (커리큘럼/큐레이션/통계)
-4. `src/components/curation/curriculum-view.tsx` — 신규 컴포넌트 (레벨 파싱, 진행률)
-5. `src/app/(main)/admin/content/page.tsx` — 듀얼모드 분기 로직
+### T2: 백필 빈 본문 가드
+- `src/actions/curation.ts`의 `backfillAiSummary()`:
+  - `body_md`가 null/빈문자열/공백만 있으면 skip (failed++ 처리)
+- `backfillImportanceScore()`:
+  - 동일하게 빈 본문 가드 추가
 
-### 참고 문서
-6. `docs/proposals/curation-v2-spec.md` — 원본 스펙 (이 스펙 대로 구현됐는지 확인)
-7. `docs/01-plan/features/curation-v2-p0p1.plan.md` — Plan 문서
-8. `docs/02-design/features/curation-v2-p0p1.design.md` — Design 문서
+### T3: 백필 API 인증 체크
+- `src/app/api/admin/curation/backfill/route.ts` 확인
+- admin 미들웨어로 이미 보호되는지 확인 → 안 되면 세션 체크 + role="admin" 검증 추가
+- 미인증 시 401 반환
 
-## 리뷰 체크리스트
-
-### 1. 스펙 일치도 (Gap 분석)
-- [ ] `curation-v2-spec.md`의 Phase 0 요구사항 vs 실제 구현 비교
-- [ ] `curation-v2-spec.md`의 Phase 1 요구사항 vs 실제 구현 비교
-- [ ] 누락된 기능 목록 작성
-
-### 2. 코드 품질
-- [ ] TypeScript 타입 안전성 (any 사용, 미흡한 타입 정의)
-- [ ] 에러 처리 (try-catch, 사용자 피드백)
-- [ ] 중복 코드
-- [ ] 네이밍 일관성
-
-### 3. 보안
-- [ ] 백필 API 인증/권한 체크
-- [ ] SQL 인젝션 방어
-- [ ] Rate limit / 남용 방지
-
-### 4. 성능
-- [ ] 불필요한 리렌더링
-- [ ] 큰 데이터셋 처리 (페이지네이션, 가상 스크롤)
-- [ ] API 호출 최적화
-
-### 5. UX
-- [ ] 모바일 반응형 정상 동작
-- [ ] 로딩 상태 표시
-- [ ] 빈 상태 (데이터 없을 때) 처리
-
-## 출력물
-1. `docs/03-analysis/curation-v2-p0p1-review.md` — 리뷰 결과 문서
-   - 이슈별 심각도: 🔴 Critical / 🟡 Warning / 🔵 Info
-   - 각 이슈에 파일명 + 라인 번호 + 수정 제안
-2. 스펙 Gap 있으면 목록 정리
-3. **코드 수정은 하지 마** — 리뷰 결과만 문서로
+### T4: 커리큘럼 발행 상태 표시
+- `src/components/curation/curriculum-view.tsx`에 발행 상태 추가
+- 상태: `발행됨` (ai_summary 있음 + curation_status="published") / `다음 발행` (순서상 다음) / `잠금` (나머지)
+- 각 상태에 맞는 아이콘/색상 표시
+- 참고: `docs/proposals/curation-v2-spec.md` 섹션 3.1
 
 ## 관련 파일
-- src/actions/curation.ts
-- src/app/api/admin/curation/backfill/route.ts
-- src/components/curation/pipeline-sidebar.tsx
-- src/components/curation/curriculum-view.tsx
-- src/app/(main)/admin/content/page.tsx
-- docs/proposals/curation-v2-spec.md
+- src/actions/curation.ts (T1, T2)
+- src/app/api/admin/curation/backfill/route.ts (T3)
+- src/components/curation/curriculum-view.tsx (T4)
+- src/lib/database.types.ts (T1)
+- src/middleware.ts (T3 — 기존 admin 보호 확인)
+- docs/03-analysis/curation-v2-p0p1-review.md (리뷰 결과 참고)
+- docs/proposals/curation-v2-spec.md (T4 — 스펙 참고)
+
+## 완료 기준
+- [ ] `npx tsc --noEmit` 에러 0
+- [ ] `npx next lint --quiet` 에러 0
+- [ ] `npm run build` 성공
+- [ ] `(supabase as any)` 0개 (curation.ts에서)
+- [ ] 빈 본문 백필 시 skip 확인
+- [ ] 백필 API 미인증 호출 시 401 반환
+- [ ] 커리큘럼 발행 상태 3종 표시
