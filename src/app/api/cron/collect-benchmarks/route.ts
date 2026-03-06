@@ -297,8 +297,20 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: "No ad accounts found" });
     }
 
-    // USD → KRW 환율 (고정값, 추후 실시간 환율 API로 교체 가능)
-    const USD_TO_KRW = 1350;
+    // USD → KRW 실시간 환율 조회
+    let USD_TO_KRW = 1400; // fallback
+    try {
+      const fxRes = await fetch("https://open.er-api.com/v6/latest/USD", {
+        signal: AbortSignal.timeout(5_000),
+      });
+      if (fxRes.ok) {
+        const fxData = await fxRes.json();
+        USD_TO_KRW = fxData.rates?.KRW ?? 1400;
+        console.log(`[FX] USD/KRW = ${USD_TO_KRW}`);
+      }
+    } catch {
+      console.warn("[FX] 환율 API 실패, fallback 1400 사용");
+    }
 
     // 계정별 통화 맵 (spend 변환용)
     const accountCurrencyMap: Record<string, string> = {};
