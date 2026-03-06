@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+// stdout EPIPE 무시 (background 실행 시 파이프 깨짐 방지)
+process.stdout.on("error", (e) => { if (e.code !== "EPIPE") throw e; });
+process.stderr.on("error", (e) => { if (e.code !== "EPIPE") throw e; });
+
 /**
  * agent-sdk-run.js v5 — 2단계 SDK 실행 + wake
  * 
@@ -40,7 +44,7 @@ if (!MODE_PREFIX[mode]) {
 function log(msg) {
   const line = `[${new Date().toLocaleTimeString("ko-KR", { timeZone: "Asia/Seoul" })}] [${mode}] ${msg}\n`;
   try { fs.appendFileSync(LOG_FILE, line); } catch (_) {}
-  process.stdout.write(line);
+  try { process.stdout.write(line); } catch (_) {}
 }
 
 // settings.json + settings.local.json 복구 (동기) - signal 핸들러 + finally에서 공유
@@ -110,7 +114,7 @@ async function sendSlackDM(text) {
   return new Promise((resolve) => {
     try {
       const https = require("https");
-      const postData = JSON.stringify({ channel: "D09V1NX98SK", text });
+      const postData = JSON.stringify({ channel: "D0ADQEF21T4", text });
       const req = https.request({
         hostname: "slack.com",
         path: "/api/chat.postMessage",

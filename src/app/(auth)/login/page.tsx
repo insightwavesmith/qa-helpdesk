@@ -55,7 +55,6 @@ export default function LoginPage() {
             <Image src="/logo.png" alt="자사몰사관학교" width={40} height={40} className="rounded-lg object-cover" />
             <span className="ml-2 text-xl font-bold text-[#111827]">자사몰사관학교</span>
           </div>
-          <p className="text-[#6B7280] font-medium">자사몰사관학교 헬프데스크</p>
         </div>
 
         {/* 로그인 카드 */}

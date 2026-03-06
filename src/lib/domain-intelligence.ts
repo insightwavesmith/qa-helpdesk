@@ -2,6 +2,8 @@
 // Sonnet으로 질문의 도메인 용어를 이해하고 검색 쿼리를 최적화
 
 import { searchBrave } from "@/lib/brave-search";
+import { generateEmbedding } from "@/lib/gemini";
+import { createServiceClient } from "@/lib/supabase/server";
 
 const API_URL = "https://api.anthropic.com/v1/messages";
 const TIMEOUT_MS = 15_000;
@@ -71,6 +73,49 @@ JSON 형식:
   "skipRAG": false,
   "directAnswer": "..."
 }`;
+
+/**
+ * Brave 용어 검색 결과를 knowledge_chunks glossary로 자동 저장
+ * fire-and-forget — 답변 생성 속도에 영향 없음
+ */
+async function saveGlossaryToKnowledge(
+  termDefinitions: Array<{ term: string; definition: string }>
+): Promise<void> {
+  if (termDefinitions.length === 0) return;
+
+  const svc = createServiceClient();
+
+  for (const { term, definition } of termDefinitions) {
+    try {
+      // 중복 체크: 같은 용어가 glossary에 이미 있으면 skip
+      const { data: existing } = await svc
+        .from("knowledge_chunks")
+        .select("id")
+        .eq("source_type", "glossary")
+        .ilike("content", `${term}:%`)
+        .limit(1);
+
+      if (existing && existing.length > 0) continue;
+
+      // 임베딩 생성 + insert
+      const content = `${term}: ${definition}`;
+      const embedding = await generateEmbedding(content);
+
+      await svc.from("knowledge_chunks").insert({
+        source_type: "glossary",
+        lecture_name: "자동학습 용어집",
+        content,
+        embedding: JSON.stringify(embedding),
+        chunk_index: 0,
+        week: "glossary",
+      });
+
+      console.log(`[DomainIntelligence] glossary 저장: ${term}`);
+    } catch (err) {
+      console.warn(`[DomainIntelligence] glossary 저장 실패 (${term}):`, err);
+    }
+  }
+}
 
 /**
  * Stage 0: 도메인 분석
@@ -185,6 +230,13 @@ export async function analyzeDomain(
         console.warn("[DomainIntelligence] 용어 정의 조회 실패:", err);
         // 실패 시 빈 배열 — 기존 동작 유지
       }
+    }
+
+    // T4: Brave 용어 정의를 knowledge_chunks glossary에 비동기 저장 (fire-and-forget)
+    if (termDefinitions.length > 0) {
+      saveGlossaryToKnowledge(termDefinitions).catch((err) =>
+        console.warn("[DomainIntelligence] glossary 비동기 저장 실패:", err)
+      );
     }
 
     return {

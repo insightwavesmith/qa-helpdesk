@@ -378,9 +378,6 @@ export default function SignupPage() {
               자사몰사관학교
             </span>
           </div>
-          <p className="text-[#6B7280] font-medium">
-            자사몰사관학교 헬프데스크
-          </p>
         </div>
 
         {/* 회원가입 카드 */}

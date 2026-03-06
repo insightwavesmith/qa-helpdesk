@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
         )
         .join(" ");
       const ragChunks = await Promise.race([
-        searchChunks(searchQuery, 8, 0.4, ["lecture", "blueprint", "marketing_theory"]),
+        searchChunks(searchQuery, 8, 0.4, ["lecture", "blueprint", "marketing_theory", "glossary"]),
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error("RAG timeout")), 10000)),
       ]);
 

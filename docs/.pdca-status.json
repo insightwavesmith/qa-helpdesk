@@ -1,7 +1,19 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-06T10:00:00.000Z",
+  "lastUpdated": "2026-03-06T12:00:00.000Z",
   "features": {
+    "service-open-fixes": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/service-open-fixes.plan.md",
+        "design": "02-design/features/service-open-fixes.design.md",
+        "analysis": "03-analysis/service-open-fixes.analysis.md"
+      },
+      "startedAt": "2026-03-06",
+      "completedAt": "2026-03-06",
+      "notes": "T1 부제삭제(login+signup), T2 hr+h2 CSS구분선1줄, T3 createPost type추가, T4 Brave용어glossary자동저장+sourceTypes. tsc+build 통과. Match Rate 100%."
+    },
     "signup-validation": {
       "phase": "completed",
       "matchRate": 88,

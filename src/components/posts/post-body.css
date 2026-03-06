@@ -203,6 +203,13 @@
   display: none;
 }
 
+/* hr 다음 h2: border-top 제거 → 구분선 2줄 방지 */
+.post-body hr + h2 {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 16px;
+}
+
 /* "이 글에서 다루는 내용" 목차 박스 */
 .post-body > ul:first-of-type,
 .post-body > ol:first-of-type {

@@ -161,6 +161,7 @@ export async function createPost(formData: {
       title: formData.title,
       body_md: formData.content,
       category: formData.category,
+      type: formData.category,
       author_id: user.id,
       status: "draft",
     })
