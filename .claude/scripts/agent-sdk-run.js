@@ -196,6 +196,9 @@ async function run() {
 
   log("시작 [" + mode + "]: " + prompt.substring(0, 100));
 
+  // ── 세션 시작 Slack 알림 ──
+  await sendSlackDM(`🏁 [에이전트팀] ${mode} 세션 시작\n📋 ${prompt.substring(0, 200)}`);
+
   try {
     for await (const msg of query({
       prompt: MODE_PREFIX[mode] + prompt,
@@ -338,9 +341,11 @@ async function run() {
     }
   }
 
-  // Slack DM 전송 (wake 직전, 실패해도 wake는 반드시 실행)
+  // ── 세션 종료 Slack 알림 ──
+  const mins = resultWritten ? JSON.parse(fs.readFileSync(RESULT_FILE, "utf8")).minutes : "?";
+  const endMsg = slackMsg || `🏁 [에이전트팀] ${mode} 완료 (${mins}분, ${turns}턴)\n📄 /tmp/agent-sdk-result.json 확인`;
   try {
-    await sendSlackDM(slackMsg || `[에이전트팀] ${mode} 종료. /tmp/agent-sdk-result.json 확인.`);
+    await sendSlackDM(endMsg);
   } catch (e) {
     log("Slack DM 전송 중 예외: " + e.message);
   }
