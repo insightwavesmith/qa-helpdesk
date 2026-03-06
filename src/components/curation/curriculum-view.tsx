@@ -1,0 +1,245 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, BookOpen, ChevronDown, ChevronUp, Shield, GraduationCap } from "lucide-react";
+import { getCurriculumContents } from "@/actions/curation";
+import type { Content } from "@/types/content";
+
+interface CurriculumViewProps {
+  sourceType: string;
+}
+
+const SOURCE_LABELS: Record<string, string> = {
+  blueprint: "블루프린트 커리큘럼",
+  lecture: "자사몰사관학교 커리큘럼",
+};
+
+const LEVEL_ICONS: Record<string, string> = {
+  "초급": "text-green-600",
+  "중급": "text-blue-600",
+  "고급": "text-red-600",
+  "전체": "text-gray-600",
+};
+
+function parseLevel(title: string): string {
+  if (/초급|기초|입문/i.test(title)) return "초급";
+  if (/중급|심화/i.test(title)) return "중급";
+  if (/고급|전문|심층/i.test(title)) return "고급";
+  return "전체";
+}
+
+function groupByLevel(items: Content[]): { level: string; items: Content[] }[] {
+  const groups: Record<string, Content[]> = {};
+
+  for (const item of items) {
+    const level = parseLevel(item.title);
+    if (!groups[level]) groups[level] = [];
+    groups[level].push(item);
+  }
+
+  const order = ["초급", "중급", "고급", "전체"];
+  return order
+    .filter((key) => groups[key]?.length)
+    .map((key) => ({ level: key, items: groups[key] }));
+}
+
+function ProgressBar({ completed, total }: { completed: number; total: number }) {
+  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-[#F75D5D] rounded-full transition-all duration-300"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="text-xs text-gray-500 shrink-0 tabular-nums">
+        {pct}% ({completed}/{total})
+      </span>
+    </div>
+  );
+}
+
+function CurriculumItem({
+  item,
+  index,
+}: {
+  item: Content;
+  index: number;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const hasSummary = !!item.ai_summary;
+
+  return (
+    <button
+      onClick={() => setExpanded(!expanded)}
+      className={`w-full text-left rounded-lg border p-3 transition-colors ${
+        expanded ? "border-[#F75D5D]/30 bg-red-50/30" : "border-gray-200 hover:bg-gray-50"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        {/* 번호 */}
+        <span className="text-xs font-semibold text-gray-400 mt-0.5 w-5 text-right shrink-0 tabular-nums">
+          {index + 1}.
+        </span>
+
+        <div className="flex-1 min-w-0">
+          {/* 제목 행 */}
+          <div className="flex items-center justify-between gap-2">
+            <h4 className="text-sm font-medium text-[#111827] truncate">
+              {item.title}
+            </h4>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {hasSummary ? (
+                <Badge variant="outline" className="text-[10px] h-5 bg-green-50 text-green-700 border-green-200">
+                  요약완료
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-[10px] h-5 bg-gray-50 text-gray-500 border-gray-200">
+                  미처리
+                </Badge>
+              )}
+              {expanded ? (
+                <ChevronUp className="h-3.5 w-3.5 text-gray-400" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
+              )}
+            </div>
+          </div>
+
+          {/* AI 요약 (항상 1줄 표시, 확장시 전체) */}
+          {hasSummary && (
+            <p className={`text-xs text-gray-500 mt-1.5 ${expanded ? "" : "line-clamp-1"}`}>
+              {item.ai_summary}
+            </p>
+          )}
+
+          {/* 확장 영역: body_md 미리보기 */}
+          {expanded && (
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">
+                {(item.body_md || "").slice(0, 500)}
+                {(item.body_md || "").length > 500 && "..."}
+              </p>
+              {!!item.key_topics && item.key_topics.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {item.key_topics.map((topic) => (
+                    <Badge
+                      key={topic}
+                      variant="secondary"
+                      className="text-[10px] px-1.5 py-0 h-5"
+                    >
+                      {topic}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+export function CurriculumView({ sourceType }: CurriculumViewProps) {
+  const [contents, setContents] = useState<Content[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await getCurriculumContents(sourceType);
+      setContents(data as Content[]);
+    } catch {
+      setContents([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [sourceType]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-16 text-gray-500">
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          불러오는 중...
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (contents.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-16">
+          <BookOpen className="h-10 w-10 text-gray-300 mb-3" />
+          <p className="text-[15px] font-medium text-gray-500">
+            등록된 콘텐츠가 없습니다
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const groups = groupByLevel(contents);
+  const totalCount = contents.length;
+  const withSummary = contents.filter((c) => !!c.ai_summary).length;
+  const SourceIcon = sourceType === "blueprint" ? Shield : GraduationCap;
+
+  return (
+    <div className="space-y-6">
+      {/* 헤더 + 진행률 */}
+      <Card>
+        <CardContent className="pt-5 pb-4 px-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <SourceIcon className={`h-5 w-5 ${sourceType === "blueprint" ? "text-purple-500" : "text-green-600"}`} />
+            <h2 className="text-lg font-bold text-[#111827]">
+              {SOURCE_LABELS[sourceType] || sourceType}
+            </h2>
+            <Badge variant="secondary" className="text-[11px]">
+              {totalCount}건
+            </Badge>
+          </div>
+          <div>
+            <p className="text-[11px] text-gray-500 mb-1">AI 요약 진행률</p>
+            <ProgressBar completed={withSummary} total={totalCount} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 레벨별 그룹 */}
+      {groups.map((group) => {
+        const levelColor = LEVEL_ICONS[group.level] || LEVEL_ICONS["전체"];
+        const levelLabel = group.level === "전체" ? "전체 시퀀스" : group.level;
+
+        return (
+          <div key={group.level} className="space-y-2">
+            <div className="flex items-center gap-2 px-1">
+              <BookOpen className={`h-4 w-4 ${levelColor}`} />
+              <h3 className="text-sm font-semibold text-[#111827]">
+                {levelLabel}
+              </h3>
+              <span className="text-[11px] text-gray-400">
+                ({group.items.length}건)
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              {group.items.map((item, idx) => (
+                <CurriculumItem key={item.id} item={item} index={idx} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

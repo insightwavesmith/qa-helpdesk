@@ -5,6 +5,7 @@ import { after } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { embedContentToChunks } from "@/actions/embed-pipeline";
 import { requireStaff } from "@/lib/auth-utils";
+import { generateFlashText } from "@/lib/gemini";
 
 export async function getCurationContents({
   source,
@@ -305,4 +306,208 @@ export async function getPipelineStats(): Promise<PipelineStat[]> {
   }
   stats.sort((a, b) => b.chunksCount - a.chunksCount);
   return stats;
+}
+
+// ─── 커리큘럼 콘텐츠 조회 ─────────────────────────────────
+
+export async function getCurriculumContents(sourceType: string) {
+  const supabase = await requireStaff();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from("contents")
+    .select("*")
+    .eq("source_type", sourceType)
+    .neq("status", "archived")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("getCurriculumContents error:", error);
+    return { data: [], error: error.message };
+  }
+
+  return { data: data || [], error: null };
+}
+
+// ─── 사이드바 통계 (AI 요약 완료/미처리) ─────────────────────
+
+export async function getCurationSummaryStats(): Promise<{
+  total: number;
+  withSummary: number;
+  withoutSummary: number;
+}> {
+  const supabase = await requireStaff();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = supabase as any;
+  const [totalRes, withSummaryRes] = await Promise.all([
+    s.from("contents").select("id", { count: "exact", head: true }).neq("source_type", "info_share").neq("status", "archived"),
+    s.from("contents").select("id", { count: "exact", head: true }).neq("source_type", "info_share").neq("status", "archived").not("ai_summary", "is", null),
+  ]);
+
+  const total = totalRes.count || 0;
+  const withSummary = withSummaryRes.count || 0;
+
+  return {
+    total,
+    withSummary,
+    withoutSummary: total - withSummary,
+  };
+}
+
+// ─── Phase 0: 백필 ─────────────────────────────────────────
+
+function delay(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+export async function backfillAiSummary(): Promise<{
+  processed: number;
+  failed: number;
+  errors: string[];
+}> {
+  const supabase = createServiceClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rows, error } = await (supabase as any)
+    .from("contents")
+    .select("id, title, body_md")
+    .is("ai_summary", null)
+    .neq("status", "archived")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    return { processed: 0, failed: 0, errors: [error.message] };
+  }
+
+  let processed = 0;
+  let failed = 0;
+  const errors: string[] = [];
+
+  for (const row of (rows || []) as { id: string; title: string; body_md: string }[]) {
+    try {
+      const text = (row.body_md || "").slice(0, 3000);
+      const prompt = `다음 콘텐츠를 3줄로 핵심 요약해주세요. 불릿포인트 없이 평서문으로 작성하세요.
+
+제목: ${row.title}
+본문:
+${text}
+
+3줄 요약:`;
+
+      const summary = await generateFlashText(prompt, { temperature: 0.2, maxTokens: 300 });
+
+      if (!summary || !summary.trim()) {
+        failed++;
+        errors.push(`${row.id}: 빈 응답`);
+        continue;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: updateErr } = await (supabase as any)
+        .from("contents")
+        .update({ ai_summary: summary.trim(), updated_at: new Date().toISOString() })
+        .eq("id", row.id);
+
+      if (updateErr) {
+        failed++;
+        errors.push(`${row.id}: ${updateErr.message}`);
+      } else {
+        processed++;
+      }
+
+      // rate limit: 1초 간격
+      await delay(1000);
+    } catch (e) {
+      failed++;
+      errors.push(`${row.id}: ${e instanceof Error ? e.message : "알 수 없는 오류"}`);
+    }
+  }
+
+  return { processed, failed, errors };
+}
+
+export async function backfillImportanceScore(): Promise<{
+  processed: number;
+  failed: number;
+  errors: string[];
+}> {
+  const supabase = createServiceClient();
+
+  // importance_score가 0이거나 null인 레코드 조회
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = supabase as any;
+  const [nullRes, zeroRes] = await Promise.all([
+    s.from("contents").select("id, title, body_md, source_type").is("importance_score", null).neq("status", "archived"),
+    s.from("contents").select("id, title, body_md, source_type").eq("importance_score", 0).neq("status", "archived"),
+  ]);
+
+  const rows = [
+    ...((nullRes.data || []) as { id: string; title: string; body_md: string; source_type: string | null }[]),
+    ...((zeroRes.data || []) as { id: string; title: string; body_md: string; source_type: string | null }[]),
+  ];
+
+  // 중복 제거
+  const seen = new Set<string>();
+  const uniqueRows = rows.filter((r) => {
+    if (seen.has(r.id)) return false;
+    seen.add(r.id);
+    return true;
+  });
+
+  let processed = 0;
+  let failed = 0;
+  const errors: string[] = [];
+
+  for (const row of uniqueRows) {
+    try {
+      let score: number;
+
+      // blueprint/lecture -> 고정 5
+      if (row.source_type === "blueprint" || row.source_type === "lecture") {
+        score = 5;
+      } else {
+        // AI 스코어링
+        const text = (row.body_md || "").slice(0, 2000);
+        const prompt = `이 콘텐츠의 자사몰 사업자 교육 관점에서의 중요도를 1~5로 평가해주세요.
+5=필수 학습, 4=매우 유용, 3=참고할 만함, 2=일반적, 1=관련성 낮음
+
+제목: ${row.title}
+본문 앞부분:
+${text}
+
+숫자만 답변해주세요 (1~5):`;
+
+        const result = await generateFlashText(prompt, { temperature: 0.1, maxTokens: 10 });
+        const parsed = parseInt(result.trim());
+
+        if (isNaN(parsed) || parsed < 1 || parsed > 5) {
+          score = 3; // 파싱 실패 시 기본값
+        } else {
+          score = parsed;
+        }
+
+        // rate limit: 1초 간격 (AI 호출한 경우만)
+        await delay(1000);
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: updateErr } = await (supabase as any)
+        .from("contents")
+        .update({ importance_score: score, updated_at: new Date().toISOString() })
+        .eq("id", row.id);
+
+      if (updateErr) {
+        failed++;
+        errors.push(`${row.id}: ${updateErr.message}`);
+      } else {
+        processed++;
+      }
+    } catch (e) {
+      failed++;
+      errors.push(`${row.id}: ${e instanceof Error ? e.message : "알 수 없는 오류"}`);
+    }
+  }
+
+  return { processed, failed, errors };
 }

@@ -627,6 +627,18 @@
       "startedAt": "2026-03-05",
       "completedAt": "2026-03-05",
       "notes": "T1 Stage0 용어정의 Brave웹서치 + T2 답변 3단구조 + T3 톤보정 few-shot + T5 IMAGE_PLACEHOLDER img만 삭제 + T6 글자수 5000~10000. T4 제외. tsc+lint+build 통과."
+    },
+    "curation-v2-p0p1": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/curation-v2-p0p1.plan.md",
+        "design": "02-design/features/curation-v2-p0p1.design.md",
+        "analysis": "03-analysis/curation-v2-p0p1.analysis.md"
+      },
+      "startedAt": "2026-03-06",
+      "completedAt": "2026-03-06",
+      "notes": "P0 백필(ai_summary+importance_score) 서버액션+API. P1 사이드바 3섹션분리(커리큘럼/큐레이션/통계) + CurriculumView(레벨파싱+진행률+확장) + 듀얼모드 분기 + 모바일 반응형 탭. tsc+build 통과."
     }
   },
   "phaseMapping": {

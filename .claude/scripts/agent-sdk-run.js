@@ -199,7 +199,8 @@ async function run() {
         pathToClaudeCodeExecutable: "/opt/homebrew/bin/claude",
         permissionMode: "bypassPermissions",
         maxTurns: mode === "plan" ? 30 : 100,
-        model: "claude-opus-4-6"
+        model: "claude-opus-4-6",
+        thinkingBudget: "high"
       }
     })) {
       // system 메시지 로그 (디버깅)

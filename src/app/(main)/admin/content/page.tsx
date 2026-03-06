@@ -30,6 +30,7 @@ import { CurationTab } from "@/components/curation/curation-tab";
 import { InfoShareTab } from "@/components/curation/info-share-tab";
 import { GeneratePreviewModal } from "@/components/curation/generate-preview-modal";
 import { PipelineSidebar } from "@/components/curation/pipeline-sidebar";
+import { CurriculumView } from "@/components/curation/curriculum-view";
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   draft: {
@@ -207,16 +208,48 @@ export default function AdminContentPage() {
 
         {/* 큐레이션 탭 */}
         <TabsContent value="curation" forceMount className="mt-4">
+          {/* 모바일: 소스 수평 탭 */}
+          <div className="md:hidden mb-4 overflow-x-auto">
+            <div className="flex gap-1.5 min-w-max pb-1">
+              {["all", "blueprint", "lecture", "crawl", "youtube", "marketing_theory"].map((src) => {
+                const labels: Record<string, string> = {
+                  all: "전체", blueprint: "블루프린트", lecture: "사관학교",
+                  crawl: "블로그", youtube: "YouTube", marketing_theory: "마케팅원론",
+                };
+                return (
+                  <button
+                    key={src}
+                    onClick={() => setSidebarSource(src)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full border whitespace-nowrap transition-colors ${
+                      sidebarSource === src
+                        ? "border-[#F75D5D] bg-red-50 text-[#F75D5D]"
+                        : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    {labels[src] || src}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="flex gap-4">
-            <PipelineSidebar
-              activeSource={sidebarSource}
-              onSourceSelect={setSidebarSource}
-            />
-            <div className="flex-1 min-w-0">
-              <CurationTab
-                onGenerateInfoShare={(ids) => setGenerateIds(ids)}
-                externalSourceFilter={sidebarSource}
+            {/* 데스크탑: 사이드바 */}
+            <div className="hidden md:block">
+              <PipelineSidebar
+                activeSource={sidebarSource}
+                onSourceSelect={setSidebarSource}
               />
+            </div>
+            <div className="flex-1 min-w-0">
+              {sidebarSource === "blueprint" || sidebarSource === "lecture" ? (
+                <CurriculumView sourceType={sidebarSource} />
+              ) : (
+                <CurationTab
+                  onGenerateInfoShare={(ids) => setGenerateIds(ids)}
+                  externalSourceFilter={sidebarSource}
+                />
+              )}
             </div>
           </div>
         </TabsContent>

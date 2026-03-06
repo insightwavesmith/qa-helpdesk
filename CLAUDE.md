@@ -72,9 +72,22 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 ## 수정 필요: ...
 ```
 
-## 에이전트팀 운영
+## 에이전트팀 운영 (필수 — 예외 없음)
+
+### 실행 환경 (절대 규칙)
+| 항목 | 값 | 비고 |
+|------|-----|------|
+| **실행 방식** | tmux 세션 | nohup/background 금지 |
+| **모델** | claude-opus-4-6 | Sonnet 금지 |
+| **사고 모델** | thinking high | 반드시 활성화 |
+| **에이전트팀** | 활성화 | CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 |
+
+### 팀 구성
 - 이 프로젝트는 **상시 에이전트팀**으로 운영됨
-- Leader는 delegate 모드 — 코드 직접 작성 금지, 조율만
+- **Leader**: delegate 모드 — 코드 직접 작성 금지, 조율만
+- **frontend-dev**: 프론트엔드 컴포넌트 구현
+- **backend-dev**: API/DB/서버 액션 구현
+- **qa-engineer**: Gap 분석 + 빌드 검증 + 브라우저 QA
 - 모든 구현은 plan approval 후에만 진행
 - TASK.md를 읽고 작업 분배 (의존성 순서 준수)
 
