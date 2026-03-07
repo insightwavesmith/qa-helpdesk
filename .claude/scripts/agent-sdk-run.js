@@ -187,11 +187,29 @@ async function run() {
   }
 
   // SDK용 settings.json 교체
-  fs.writeFileSync(SETTINGS, '{"env":{"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS":"1"}}');
+  fs.writeFileSync(SETTINGS, JSON.stringify({
+    env: { CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1" },
+    agentTeamDisplay: "tmux"
+  }));
 
-  // SDK용 settings.local.json 교체: hooks 비활성화 (EPIPE/SIGTERM 방지)
-  fs.writeFileSync(SETTINGS_LOCAL, "{}");
-  log("settings.local.json → {} (hooks 비활성화)");
+  // SDK용 settings.local.json: 검증 hooks 유지, 외부 알림(Stop) hooks만 비활성화
+  // Stop hook의 openclaw CLI 호출이 SDK 종료 시 파이프 끊김 유발하므로 제거
+  // PreToolUse(validate-task, gap-analysis, validate-design) + TaskCompleted(quality-gate) + TeammateIdle은 유지
+  try {
+    const localRaw = fs.existsSync(SETTINGS_LOCAL_ORIG)
+      ? fs.readFileSync(SETTINGS_LOCAL_ORIG, "utf8")
+      : fs.readFileSync(SETTINGS_LOCAL, "utf8");
+    const localConfig = JSON.parse(localRaw);
+    // Stop hooks만 제거 (외부 알림 → SDK 자체 알림으로 대체)
+    if (localConfig.hooks) {
+      delete localConfig.hooks.Stop;
+    }
+    fs.writeFileSync(SETTINGS_LOCAL, JSON.stringify(localConfig, null, 2));
+    log("settings.local.json → 검증 hooks 유지, Stop hooks만 제거");
+  } catch (e) {
+    fs.writeFileSync(SETTINGS_LOCAL, "{}");
+    log("settings.local.json 파싱 실패 → {} (fallback): " + e.message);
+  }
 
   const start = Date.now();
   let turns = 0, lastText = "", toolUses = 0;

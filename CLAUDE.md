@@ -84,12 +84,43 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 
 ### 팀 구성
 - 이 프로젝트는 **상시 에이전트팀**으로 운영됨
-- **Leader**: delegate 모드 — 코드 직접 작성 금지, 조율만
+- **Leader**: **delegate 모드 강제** — 코드 직접 작성 절대 금지, 조율/분배/검토만
 - **frontend-dev**: 프론트엔드 컴포넌트 구현
 - **backend-dev**: API/DB/서버 액션 구현
 - **qa-engineer**: Gap 분석 + 빌드 검증 + 브라우저 QA
 - 모든 구현은 plan approval 후에만 진행
 - TASK.md를 읽고 작업 분배 (의존성 순서 준수)
+
+### Delegate 모드 (강제)
+- Leader는 세션 시작 후 반드시 **Shift+Tab으로 delegate 모드 진입**
+- delegate 모드에서 Leader가 할 수 있는 것: 팀원 생성, 메시지, 작업 배정, 태스크 관리
+- delegate 모드에서 Leader가 할 수 없는 것: 코드 작성, 파일 수정, 빌드 실행
+- Leader가 직접 코드를 쓰면 리젝
+
+### Plan 승인 (강제)
+- 팀원은 작업 시작 전 반드시 **계획을 먼저 세우고 Leader에게 승인 요청**
+- Leader는 계획을 검토하고 승인 또는 수정 요청
+- **승인 없이 구현 시작 = 작업 무효**
+- 승인 기준: TASK.md의 "기대 동작"과 일치하는지, 파일 경계를 지키는지, 설계서와 충돌 없는지
+
+### 파일 경계 (충돌 방지)
+- **같은 파일을 2명 이상이 동시에 수정 금지**
+- Leader가 작업 배정 시 팀원별 수정 가능 파일/디렉토리를 명시
+- 공유 파일(types/, utils/) 수정이 필요하면 Leader가 순서 조율
+- 경계 예시:
+  - frontend-dev: `src/app/(main)/`, `src/components/`
+  - backend-dev: `src/app/api/`, `src/actions/`, `src/lib/`, DB migration
+  - qa-engineer: `docs/03-analysis/`, 테스트 파일
+
+### TeammateIdle (자동 배정)
+- 팀원이 할 일 끝나면 TeammateIdle hook이 자동으로 남은 TASK 확인
+- 미완료 항목이 있으면 다음 작업 배정
+- 전부 완료면 idle 허용
+
+### Split Pane (tmux)
+- `agentTeamDisplay: "tmux"` 설정됨
+- tmux 환경에서 팀원별 pane 분리 → 동시 모니터링 가능
+- Shift+Up/Down: 팀원 선택, Enter: 팀원 세션 보기, Ctrl+T: 태스크 목록
 
 ### 리더 메모리 보존 (필수 — Validation 대상)
 
