@@ -1,7 +1,19 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-07T10:00:00.000Z",
+  "lastUpdated": "2026-03-07T14:00:00.000Z",
   "features": {
+    "competitor-brand-registration": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/competitor-brand-registration.plan.md",
+        "design": "02-design/features/competitor-brand-registration.design.md",
+        "analysis": "03-analysis/competitor-brand-registration.analysis.md"
+      },
+      "startedAt": "2026-03-07",
+      "completedAt": "2026-03-07",
+      "notes": "T1 페이지검색API(/api/competitor/pages) + T2 브랜드등록다이얼로그(debounce검색+드롭다운+프로필이미지+선택칩+기존텍스트입력유지) + T3 모니터링카드로고(GraphAPI프로필이미지+첫글자아바타fallback). tsc+lint+build 통과."
+    },
     "info-share-bugfix": {
       "phase": "completed",
       "matchRate": 97,

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { CompetitorMonitor } from "@/types/competitor";
 import { Trash2 } from "lucide-react";
 
@@ -8,6 +9,44 @@ interface MonitorBrandCardProps {
   isSearching: boolean;
   onClick: () => void;
   onDelete: () => void;
+}
+
+/** 첫 글자 아바타 */
+function LetterAvatar({ name }: { name: string }) {
+  const letter = name.charAt(0).toUpperCase();
+  return (
+    <div className="flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold shrink-0">
+      {letter}
+    </div>
+  );
+}
+
+/** 페이지 프로필 이미지 (fallback: 첫 글자 아바타) */
+function BrandLogo({
+  pageId,
+  brandName,
+}: {
+  pageId: string | null;
+  brandName: string;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  if (!pageId || failed) {
+    return <LetterAvatar name={brandName} />;
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`https://graph.facebook.com/${pageId}/picture?type=small`}
+      alt={brandName}
+      width={28}
+      height={28}
+      className="w-7 h-7 rounded-full shrink-0 object-cover"
+      onError={() => setFailed(true)}
+      referrerPolicy="no-referrer"
+    />
+  );
 }
 
 export function MonitorBrandCard({
@@ -33,6 +72,7 @@ export function MonitorBrandCard({
       }}
     >
       <div className="flex items-center gap-2 min-w-0">
+        <BrandLogo pageId={monitor.pageId} brandName={monitor.brandName} />
         <span className="text-sm font-medium text-gray-900 truncate">
           {monitor.brandName}
         </span>

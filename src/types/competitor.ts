@@ -73,6 +73,13 @@ export interface CompetitorInsight {
   analyzedAt: string;
 }
 
+/** Meta 페이지 (브랜드 검색 결과) */
+export interface MetaPage {
+  pageId: string;
+  pageName: string;
+  profileImageUrl: string;
+}
+
 /** API 에러 코드 */
 export type CompetitorErrorCode =
   | "TOKEN_MISSING"
