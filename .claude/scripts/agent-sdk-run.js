@@ -97,24 +97,33 @@ process.on("SIGINT", () => {
 });
 
 // Slack DM 전송 (실패해도 wake에 영향 없음)
+// dev-lead(텐동) + mozzi(모찌) 양쪽으로 전송
 async function sendSlackDM(text) {
-  let token = process.env.SLACK_BOT_TOKEN;
-  if (!token) {
-    // openclaw config에서 dev-lead botToken 자동 추출
-    try {
-      const raw = fs.readFileSync("/Users/smith/.openclaw/openclaw.json", "utf8");
-      const config = eval("(" + raw + ")");
-      token = config.channels?.slack?.accounts?.["dev-lead"]?.botToken;
-    } catch (_) {}
+  const targets = [];
+  try {
+    const raw = fs.readFileSync("/Users/smith/.openclaw/openclaw.json", "utf8");
+    const config = JSON.parse(raw);
+    const devLeadToken = config.channels?.slack?.accounts?.["dev-lead"]?.botToken;
+    const mozziToken = config.channels?.slack?.accounts?.mozzi?.botToken;
+    if (devLeadToken) targets.push({ token: devLeadToken, channel: "D0ADQEF21T4", label: "dev-lead" });
+    if (mozziToken) targets.push({ token: mozziToken, channel: "D0ADQEF21T4", label: "mozzi" });
+  } catch (_) {}
+  // fallback: 환경변수
+  if (targets.length === 0 && process.env.SLACK_BOT_TOKEN) {
+    targets.push({ token: process.env.SLACK_BOT_TOKEN, channel: "D0ADQEF21T4", label: "env" });
   }
-  if (!token) {
+  if (targets.length === 0) {
     log("SLACK_BOT_TOKEN 없음 - Slack 알림 skip");
     return;
   }
+  await Promise.all(targets.map(t => sendSlackMsg(t.token, t.channel, text, t.label)));
+}
+
+async function sendSlackMsg(token, channel, text, label) {
   return new Promise((resolve) => {
     try {
       const https = require("https");
-      const postData = JSON.stringify({ channel: "D0ADQEF21T4", text });
+      const postData = JSON.stringify({ channel, text });
       const req = https.request({
         hostname: "slack.com",
         path: "/api/chat.postMessage",
@@ -131,24 +140,24 @@ async function sendSlackDM(text) {
           try {
             const parsed = JSON.parse(body);
             if (parsed.ok) {
-              log("Slack DM 전송 완료");
+              log(`Slack DM 전송 완료 (${label})`);
             } else {
-              log("Slack DM 실패: " + parsed.error);
+              log(`Slack DM 실패 (${label}): ` + parsed.error);
             }
           } catch (_) {
-            log("Slack DM 응답 파싱 실패");
+            log(`Slack DM 응답 파싱 실패 (${label})`);
           }
           resolve();
         });
       });
       req.on("error", (e) => {
-        log("Slack DM HTTP 에러: " + e.message);
+        log(`Slack DM HTTP 에러 (${label}): ` + e.message);
         resolve();
       });
       req.write(postData);
       req.end();
     } catch (e) {
-      log("Slack DM 예외: " + e.message);
+      log(`Slack DM 예외 (${label}): ` + e.message);
       resolve();
     }
   });

@@ -21,29 +21,34 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 const LEVEL_ICONS: Record<string, string> = {
-  "초급": "text-green-600",
-  "중급": "text-blue-600",
-  "고급": "text-red-600",
-  "전체": "text-gray-600",
+  "입문": "text-green-600",
+  "실전": "text-blue-600",
+  "분석": "text-red-600",
+  "기타": "text-gray-600",
 };
 
-function parseLevel(title: string): string {
-  if (/초급|기초|입문/i.test(title)) return "초급";
-  if (/중급|심화/i.test(title)) return "중급";
-  if (/고급|전문|심층/i.test(title)) return "고급";
-  return "전체";
+function parseLevelFromCategory(category: string | null | undefined): string {
+  if (category === "level1_입문") return "입문";
+  if (category === "level2_실전") return "실전";
+  if (category === "level3_분석") return "분석";
+  return "기타";
 }
 
 function groupByLevel(items: Content[]): { level: string; items: Content[] }[] {
   const groups: Record<string, Content[]> = {};
 
   for (const item of items) {
-    const level = parseLevel(item.title);
+    const level = parseLevelFromCategory(item.category);
     if (!groups[level]) groups[level] = [];
     groups[level].push(item);
   }
 
-  const order = ["초급", "중급", "고급", "전체"];
+  // 각 그룹 내 title 가나다순 정렬
+  for (const key of Object.keys(groups)) {
+    groups[key].sort((a, b) => a.title.localeCompare(b.title, "ko"));
+  }
+
+  const order = ["입문", "실전", "분석", "기타"];
   return order
     .filter((key) => groups[key]?.length)
     .map((key) => ({ level: key, items: groups[key] }));
@@ -272,8 +277,8 @@ export function CurriculumView({ sourceType, onGenerateInfoShare }: CurriculumVi
 
       {/* 레벨별 그룹 */}
       {groups.map((group) => {
-        const levelColor = LEVEL_ICONS[group.level] || LEVEL_ICONS["전체"];
-        const levelLabel = group.level === "전체" ? "전체 시퀀스" : group.level;
+        const levelColor = LEVEL_ICONS[group.level] || LEVEL_ICONS["기타"];
+        const levelLabel = group.level;
         const statuses = getPublishStatuses(group.items);
         const groupPublished = group.items.filter((c) => statuses.get(c.id) === "published").length;
 
