@@ -1,0 +1,57 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:mozzi-reports.vercel.app)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/qa-helpdesk/.claude/hooks/validate-task.sh",
+            "timeout": 15000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/qa-helpdesk/.claude/hooks/gap-analysis.sh",
+            "timeout": 30000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/qa-helpdesk/.claude/hooks/validate-design.sh",
+            "timeout": 15000
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/qa-helpdesk/.claude/hooks/notify-openclaw.sh",
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/qa-helpdesk/.claude/hooks/task-completed.sh",
+            "timeout": 10000
+          }
+        ]
+      }
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "context7"
+  ],
+  "enableAllProjectMcpServers": true
+}

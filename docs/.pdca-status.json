@@ -704,11 +704,11 @@
       "documents": {
         "plan": "01-plan/features/competitor-analyzer.plan.md",
         "design": "02-design/features/competitor-analyzer.design.md",
-        "analysis": "03-analysis/competitor-analyzer.analysis.md"
+        "analysis": "03-analysis/competitor-analyzer-inspection.analysis.md"
       },
       "startedAt": "2026-03-06",
-      "completedAt": "2026-03-06",
-      "notes": "T1 Meta Ad Library 검색(API+UI: 검색바/필터칩/광고카드/운영기간바) + T2 브랜드 모니터링(CRUD API+Cron+패널UI) + T3 AI 인사이트(ai-proxy 패턴+캐시+통계카드/훅유형차트/시즌차트). 탭 네비게이션 layout 통합. DB 마이그레이션 SQL 작성. [2026-03-07] 환경변수 수정: 전 route에 runtime=nodejs + dynamic=force-dynamic 추가. Vercel 배포 시 Edge Runtime에서 process.env 미접근 문제 해결. tsc+lint+build 통과. Match Rate 95%."
+      "completedAt": "2026-03-07",
+      "notes": "T1 Meta Ad Library 검색(API+UI: 검색바/필터칩/광고카드/운영기간바) + T2 브랜드 모니터링(CRUD API+Cron+패널UI) + T3 AI 인사이트(ai-proxy 패턴+캐시+통계카드/훅유형차트/시즌차트). 탭 네비게이션 layout 통합. DB 마이그레이션 SQL 작성. [2026-03-07] 전체점검: 근본원인=미들웨어 PUBLIC_PATHS에 /api/competitor 미등록 → 307 redirect to /login. 수정: PUBLIC_PATHS에 추가. curl 테스트 200+데이터 확인. tsc+lint+build 통과."
     }
   },
   "phaseMapping": {
