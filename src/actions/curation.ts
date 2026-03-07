@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
 import { embedContentToChunks } from "@/actions/embed-pipeline";
 import { requireStaff, requireAdmin } from "@/lib/auth-utils";
 import { generateFlashText } from "@/lib/gemini";
@@ -211,7 +210,7 @@ export async function getCurationStatusCounts(
 
 export async function updateCurationStatus(
   id: string,
-  status: "selected" | "dismissed" | "published"
+  status: "new" | "selected" | "dismissed" | "published"
 ) {
   const supabase = await requireStaff();
 
@@ -234,7 +233,7 @@ export async function updateCurationStatus(
 
 export async function batchUpdateCurationStatus(
   ids: string[],
-  status: "selected" | "dismissed" | "published"
+  status: "new" | "selected" | "dismissed" | "published"
 ) {
   const supabase = await requireStaff();
 
@@ -282,7 +281,7 @@ export async function createInfoShareDraft({
       category,
       source_type: "info_share",
       source_ref: sourceContentIds.join(","),
-      curation_status: "published",
+      curation_status: "selected",
       ...(thumbnailUrl ? { thumbnail_url: thumbnailUrl } : {}),
     })
     .select("id")
@@ -317,28 +316,6 @@ export async function createInfoShareDraft({
     }
   });
 
-  // 4. 원본 콘텐츠 curation_status → published (별도 클라이언트)
-  if (sourceContentIds.length > 0) {
-    const svc2 = createServiceClient();
-    const { error: updateError } = await svc2
-      .from("contents")
-      .update({ curation_status: "published", updated_at: now })
-      .in("id", sourceContentIds);
-
-    if (updateError) {
-      console.error("createInfoShareDraft 원본 상태 업데이트 실패:", updateError);
-      for (const srcId of sourceContentIds) {
-        const { error: retryErr } = await svc2
-          .from("contents")
-          .update({ curation_status: "published", updated_at: now })
-          .eq("id", srcId);
-        if (retryErr) {
-          console.error(`  원본 ${srcId} 재시도 실패:`, retryErr);
-        }
-      }
-    }
-  }
-
   revalidatePath("/admin/content");
   return { data: { id: newContent.id }, error: null };
 }
@@ -355,7 +332,7 @@ export async function getInfoShareContents({
     .from("contents")
     .select("*", { count: "exact" })
     .eq("source_type", "info_share")
-    .eq("curation_status", "published")
+    .in("curation_status", ["published", "selected"])
     .order("published_at", { ascending: false })
     .range(from, to);
 

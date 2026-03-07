@@ -1,7 +1,20 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-06T12:00:00.000Z",
+  "lastUpdated": "2026-03-07T10:00:00.000Z",
   "features": {
+    "info-share-bugfix": {
+      "phase": "completed",
+      "matchRate": 97,
+      "documents": {
+        "plan": "01-plan/features/info-share-bugfix.plan.md",
+        "design": "02-design/features/info-share-bugfix.design.md",
+        "research": "research/info-share-bugfix.research.md",
+        "analysis": "03-analysis/info-share-bugfix.analysis.md"
+      },
+      "startedAt": "2026-03-07",
+      "completedAt": "2026-03-07",
+      "notes": "T1 스킵되돌리기(onRestore+벌크바), T2 커리큘럼잠금해제(onGenerateInfoShare+발행버튼), T4 소스전환캐싱(useRef Map+TTL 5분+invalidateCache), T3 발행됨상태구분(curation_status selected+원본미변경+초안/게시구분). tsc+lint+build 통과. Match Rate 97%."
+    },
     "service-open-fixes": {
       "phase": "completed",
       "matchRate": 100,

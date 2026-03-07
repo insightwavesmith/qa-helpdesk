@@ -18,6 +18,7 @@ import {
   X,
   Sparkles,
   CornerDownRight,
+  RotateCcw,
 } from "lucide-react";
 import type { LinkedInfoShare } from "@/types/content";
 import { filterValidTopics } from "@/lib/topic-utils";
@@ -38,6 +39,7 @@ interface CurationCardProps {
   onToggle: (id: string) => void;
   onDismiss: (id: string) => void;
   onGenerate: (id: string) => void;
+  onRestore?: (id: string) => void;
 }
 
 const SCORE_COLORS: Record<number, string> = {
@@ -193,11 +195,13 @@ export function CurationCard({
   sourceType,
   sourceRef,
   createdAt,
+  curationStatus,
   linkedInfoShares,
   selected,
   onToggle,
   onDismiss,
   onGenerate,
+  onRestore,
 }: CurationCardProps) {
   const summaryLines = formatSummary(aiSummary);
   const domain = extractDomain(sourceRef, sourceType);
@@ -257,12 +261,16 @@ export function CurationCard({
 
         {/* 생성물 연결 */}
         {linkedInfoShares.length > 0 && (
-          <div className="flex items-center gap-1.5 text-xs text-green-700 mb-2">
-            <CornerDownRight className="h-3 w-3 shrink-0" />
-            <span className="truncate">
+          <div className="flex items-center gap-1.5 text-xs mb-2">
+            <CornerDownRight className="h-3 w-3 shrink-0 text-gray-400" />
+            <span className="truncate text-gray-600">
               &quot;{linkedInfoShares[0].title}&quot;
             </span>
-            <span className="text-green-600 shrink-0">발행됨</span>
+            {linkedInfoShares[0].status === "published" ? (
+              <span className="text-green-600 shrink-0">게시 완료</span>
+            ) : (
+              <span className="text-orange-500 shrink-0">초안</span>
+            )}
           </div>
         )}
 
@@ -306,29 +314,47 @@ export function CurationCard({
                 원문 보기
               </Button>
             )}
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 text-xs px-2 text-gray-500"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDismiss(id);
-              }}
-            >
-              <X className="h-3 w-3 mr-1" />
-              스킵
-            </Button>
-            <Button
-              size="sm"
-              className="h-7 text-xs px-2 bg-[#F75D5D] hover:bg-[#E54949] text-white"
-              onClick={(e) => {
-                e.stopPropagation();
-                onGenerate(id);
-              }}
-            >
-              <Sparkles className="h-3 w-3 mr-1" />
-              정보공유 생성
-            </Button>
+
+            {curationStatus === "dismissed" ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRestore?.(id);
+                }}
+              >
+                <RotateCcw className="h-3 w-3 mr-1" />
+                되돌리기
+              </Button>
+            ) : (
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs px-2 text-gray-500"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDismiss(id);
+                  }}
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  스킵
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-7 text-xs px-2 bg-[#F75D5D] hover:bg-[#E54949] text-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onGenerate(id);
+                  }}
+                >
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  정보공유 생성
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

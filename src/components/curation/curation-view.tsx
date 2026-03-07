@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { List, FolderTree, Sparkles, X, Trash2 } from "lucide-react";
+import { List, FolderTree, Sparkles, X, Trash2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import {
   getCurationContents,
@@ -43,6 +43,18 @@ const EMPTY_STATE_MESSAGES: Record<string, { title: string; desc: string }> = {
   marketing_theory: { title: "마케팅원론 콘텐츠가 없습니다", desc: "마케팅원론 소스가 등록되면 여기에 표시됩니다." },
 };
 
+interface CacheEntry {
+  contents: CurationContentWithLinks[];
+  counts: CurationStatusCounts | null;
+  timestamp: number;
+}
+
+function makeCacheKey(source: string, status: string, score: string, period: string): string {
+  return `${source}|${status}|${score}|${period}`;
+}
+
+const CACHE_TTL = 5 * 60 * 1000; // 5분
+
 export function CurationView({ sourceFilter, onGenerateInfoShare }: CurationViewProps) {
   const [viewMode, setViewMode] = useState<"inbox" | "topicmap">("inbox");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -55,9 +67,36 @@ export function CurationView({ sourceFilter, onGenerateInfoShare }: CurationView
   const [dismissing, setDismissing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deletedRefreshKey, setDeletedRefreshKey] = useState(0);
+  const cacheRef = useRef<Map<string, CacheEntry>>(new Map());
+
+  const invalidateCache = useCallback((source?: string) => {
+    if (source) {
+      for (const key of cacheRef.current.keys()) {
+        if (key.startsWith(`${source}|`) || key.startsWith("all|")) {
+          cacheRef.current.delete(key);
+        }
+      }
+    } else {
+      cacheRef.current.clear();
+    }
+  }, []);
 
   const loadContents = useCallback(async () => {
-    setLoading(true);
+    const cacheKey = makeCacheKey(sourceFilter, statusFilter, scoreFilter, periodFilter);
+    const cached = cacheRef.current.get(cacheKey);
+    const now = Date.now();
+
+    // 캐시 히트: 즉시 렌더
+    if (cached && now - cached.timestamp < CACHE_TTL) {
+      setContents(cached.contents);
+      if (cached.counts) setStatusCounts(cached.counts);
+      setLoading(false);
+      return;
+    }
+
+    // 캐시 미스 또는 만료: stale 데이터가 있으면 로딩 표시 안 함
+    if (!cached) setLoading(true);
+
     try {
       const params: {
         source?: string;
@@ -79,8 +118,20 @@ export function CurationView({ sourceFilter, onGenerateInfoShare }: CurationView
         params.showDismissed = true;
       }
 
-      const { data } = await getCurationContents(params);
+      const [{ data }, counts] = await Promise.all([
+        getCurationContents(params),
+        getCurationStatusCounts(sourceFilter !== "all" ? sourceFilter : undefined),
+      ]);
+
       setContents(data);
+      setStatusCounts(counts);
+
+      // 캐시 저장
+      cacheRef.current.set(cacheKey, {
+        contents: data,
+        counts,
+        timestamp: Date.now(),
+      });
     } catch {
       setContents([]);
     } finally {
@@ -88,21 +139,9 @@ export function CurationView({ sourceFilter, onGenerateInfoShare }: CurationView
     }
   }, [sourceFilter, scoreFilter, periodFilter, statusFilter]);
 
-  const loadCounts = useCallback(async () => {
-    try {
-      const counts = await getCurationStatusCounts(
-        sourceFilter !== "all" ? sourceFilter : undefined
-      );
-      setStatusCounts(counts);
-    } catch {
-      // ignore
-    }
-  }, [sourceFilter]);
-
   useEffect(() => {
     loadContents();
-    loadCounts();
-  }, [loadContents, loadCounts]);
+  }, [loadContents]);
 
   // 소스 필터 변경 시 상태 필터 리셋
   useEffect(() => {
@@ -130,8 +169,8 @@ export function CurationView({ sourceFilter, onGenerateInfoShare }: CurationView
     } else {
       toast.success(`${ids.length}개 콘텐츠를 스킵했습니다.`);
       setSelectedIds(new Set());
+      invalidateCache(sourceFilter);
       loadContents();
-      loadCounts();
     }
     setDismissing(false);
   };
@@ -152,17 +191,31 @@ export function CurationView({ sourceFilter, onGenerateInfoShare }: CurationView
     } else {
       toast.success(`${ids.length}개 콘텐츠를 삭제했습니다.`);
       setSelectedIds(new Set());
+      invalidateCache(sourceFilter);
       loadContents();
-      loadCounts();
       setDeletedRefreshKey((k) => k + 1);
     }
     setDeleting(false);
   };
 
-  const handleRestore = () => {
+  const handleDeletedRestore = () => {
+    invalidateCache(sourceFilter);
     loadContents();
-    loadCounts();
     setDeletedRefreshKey((k) => k + 1);
+  };
+
+  const handleCurationRestore = async (id?: string) => {
+    const ids = id ? [id] : Array.from(selectedIds);
+    if (ids.length === 0) return;
+    const { error } = await batchUpdateCurationStatus(ids, "new");
+    if (error) {
+      toast.error("되돌리기에 실패했습니다.");
+    } else {
+      toast.success(`${ids.length}개 콘텐츠를 신규로 되돌렸습니다.`);
+      setSelectedIds(new Set());
+      invalidateCache(sourceFilter);
+      loadContents();
+    }
   };
 
   const emptyMsg = EMPTY_STATE_MESSAGES[sourceFilter] || EMPTY_STATE_MESSAGES.all;
@@ -271,16 +324,28 @@ export function CurationView({ sourceFilter, onGenerateInfoShare }: CurationView
               <Trash2 className="h-3.5 w-3.5 mr-1" />
               삭제
             </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => handleDismiss()}
-              disabled={dismissing}
-              className="text-xs text-white hover:bg-white/10 h-7 px-2"
-            >
-              <X className="h-3.5 w-3.5 mr-1" />
-              일괄 스킵
-            </Button>
+            {statusFilter === "dismissed" ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleCurationRestore()}
+                className="text-xs text-white hover:bg-white/10 h-7 px-2"
+              >
+                <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                일괄 되돌리기
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleDismiss()}
+                disabled={dismissing}
+                className="text-xs text-white hover:bg-white/10 h-7 px-2"
+              >
+                <X className="h-3.5 w-3.5 mr-1" />
+                일괄 스킵
+              </Button>
+            )}
             <Button
               size="sm"
               onClick={() => handleGenerate()}
@@ -302,6 +367,7 @@ export function CurationView({ sourceFilter, onGenerateInfoShare }: CurationView
           onToggleSelect={toggleSelect}
           onDismiss={(id) => handleDismiss(id)}
           onGenerate={(id) => handleGenerate(id)}
+          onRestore={(id) => handleCurationRestore(id)}
           emptyTitle={emptyMsg.title}
           emptyDesc={emptyMsg.desc}
         />
@@ -319,7 +385,7 @@ export function CurationView({ sourceFilter, onGenerateInfoShare }: CurationView
       <DeletedSection
         key={deletedRefreshKey}
         sourceFilter={sourceFilter}
-        onRestore={handleRestore}
+        onRestore={handleDeletedRestore}
       />
     </div>
   );

@@ -243,7 +243,10 @@ export default function AdminContentPage() {
             </div>
             <div className="flex-1 min-w-0">
               {sidebarSource === "blueprint" || sidebarSource === "lecture" ? (
-                <CurriculumView sourceType={sidebarSource} />
+                <CurriculumView
+                  sourceType={sidebarSource}
+                  onGenerateInfoShare={(ids) => setGenerateIds(ids)}
+                />
               ) : (
                 <CurationView
                   sourceFilter={sidebarSource}

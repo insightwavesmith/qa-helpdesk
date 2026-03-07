@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, BookOpen, ChevronDown, ChevronUp, Shield, GraduationCap, CheckCircle, ArrowRight, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, BookOpen, ChevronDown, ChevronUp, Shield, GraduationCap, CheckCircle, ArrowRight, Lock, Sparkles } from "lucide-react";
 import { getCurriculumContents } from "@/actions/curation";
 import { renderInlineMarkdown } from "./curation-card";
 import { filterValidTopics } from "@/lib/topic-utils";
@@ -11,6 +12,7 @@ import type { Content } from "@/types/content";
 
 interface CurriculumViewProps {
   sourceType: string;
+  onGenerateInfoShare?: (selectedIds: string[]) => void;
 }
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -93,10 +95,12 @@ function CurriculumItem({
   item,
   index,
   publishStatus,
+  onGenerateInfoShare,
 }: {
   item: Content;
   index: number;
   publishStatus: PublishStatus;
+  onGenerateInfoShare?: (selectedIds: string[]) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const hasSummary = !!item.ai_summary;
@@ -171,6 +175,23 @@ function CurriculumItem({
                   </div>
                 ) : null;
               })()}
+
+              {/* 정보공유 생성 버튼 — 모든 상태에서 표시 (published 제외) */}
+              {publishStatus !== "published" && onGenerateInfoShare && (
+                <div className="flex justify-end mt-3">
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs px-3 bg-[#F75D5D] hover:bg-[#E54949] text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onGenerateInfoShare([item.id]);
+                    }}
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    정보공유 생성
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -179,7 +200,7 @@ function CurriculumItem({
   );
 }
 
-export function CurriculumView({ sourceType }: CurriculumViewProps) {
+export function CurriculumView({ sourceType, onGenerateInfoShare }: CurriculumViewProps) {
   const [contents, setContents] = useState<Content[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -275,6 +296,7 @@ export function CurriculumView({ sourceType }: CurriculumViewProps) {
                   item={item}
                   index={idx}
                   publishStatus={statuses.get(item.id) || "locked"}
+                  onGenerateInfoShare={onGenerateInfoShare}
                 />
               ))}
             </div>

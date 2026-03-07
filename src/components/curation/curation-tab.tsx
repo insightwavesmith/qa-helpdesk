@@ -12,6 +12,7 @@ interface CurationTabProps {
   onToggleSelect: (id: string) => void;
   onDismiss: (id: string) => void;
   onGenerate: (id: string) => void;
+  onRestore?: (id: string) => void;
   emptyTitle?: string;
   emptyDesc?: string;
 }
@@ -48,6 +49,7 @@ export function CurationTab({
   onToggleSelect,
   onDismiss,
   onGenerate,
+  onRestore,
   emptyTitle = "새로운 콘텐츠가 없습니다",
   emptyDesc = "크롤러가 수집한 콘텐츠가 여기에 표시됩니다.",
 }: CurationTabProps) {
@@ -109,6 +111,7 @@ export function CurationTab({
                 onToggle={onToggleSelect}
                 onDismiss={onDismiss}
                 onGenerate={onGenerate}
+                onRestore={onRestore}
               />
             ))}
           </div>
