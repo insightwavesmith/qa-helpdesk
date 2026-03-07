@@ -377,11 +377,24 @@ async function run() {
     log("Slack DM 전송 중 예외: " + e.message);
   }
 
-  // openclaw wake (HTTP API)
+  // openclaw wake (HTTP API) + Slack DM을 모찌 세션에 직접 전달
   const wakeMsg = mode === "plan"
     ? "에이전트팀 Plan/Design 작성 완료. /tmp/agent-sdk-result.json 확인 후 Smith님께 보고"
     : "에이전트팀 SDK 작업 완료. /tmp/agent-sdk-result.json 확인";
 
+  // 방법 1: openclaw message send로 모찌 세션 트리거 (Slack DM → 모찌 inbound)
+  try {
+    const { execSync } = require("child_process");
+    execSync(
+      `/opt/homebrew/bin/openclaw message send --channel slack --account mozzi --target U06BP49UEJD --message "${wakeMsg.replace(/"/g, '\\"')}"`,
+      { timeout: 10000, stdio: "pipe" }
+    );
+    log("openclaw message send 완료 (모찌 세션 트리거)");
+  } catch (e) {
+    log("openclaw message send 실패: " + (e.message || "").substring(0, 100));
+  }
+
+  // 방법 2: wake HTTP API (백업)
   try {
     const http = require("http");
     const postData = JSON.stringify({ text: wakeMsg, mode: "now" });
