@@ -130,7 +130,7 @@ function formatSummary(aiSummary: string | null): string[] {
  * 간단한 인라인 마크다운 파서 (볼드 + 이탤릭).
  * react-markdown 없이 React 엘리먼트로 변환.
  */
-function renderInlineMarkdown(text: string): ReactNode[] {
+export function renderInlineMarkdown(text: string): ReactNode[] {
   const parts: ReactNode[] = [];
   // **볼드** 또는 *이탤릭* 매칭
   const regex = /\*\*(.+?)\*\*|\*(.+?)\*/g;

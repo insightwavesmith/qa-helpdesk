@@ -5,6 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, BookOpen, ChevronDown, ChevronUp, Shield, GraduationCap, CheckCircle, ArrowRight, Lock } from "lucide-react";
 import { getCurriculumContents } from "@/actions/curation";
+import { renderInlineMarkdown } from "./curation-card";
+import { filterValidTopics } from "@/lib/topic-utils";
 import type { Content } from "@/types/content";
 
 interface CurriculumViewProps {
@@ -142,7 +144,7 @@ function CurriculumItem({
           {/* AI 요약 (항상 1줄 표시, 확장시 전체) */}
           {hasSummary && (
             <p className={`text-xs text-gray-500 mt-1.5 ${expanded ? "" : "line-clamp-1"}`}>
-              {item.ai_summary}
+              {renderInlineMarkdown(item.ai_summary || "")}
             </p>
           )}
 
@@ -153,19 +155,22 @@ function CurriculumItem({
                 {(item.body_md || "").slice(0, 500)}
                 {(item.body_md || "").length > 500 && "..."}
               </p>
-              {!!item.key_topics && item.key_topics.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {item.key_topics.map((topic) => (
-                    <Badge
-                      key={topic}
-                      variant="secondary"
-                      className="text-[10px] px-1.5 py-0 h-5"
-                    >
-                      {topic}
-                    </Badge>
-                  ))}
-                </div>
-              )}
+              {(() => {
+                const validTopics = filterValidTopics(item.key_topics || []);
+                return validTopics.length > 0 ? (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {validTopics.map((topic) => (
+                      <Badge
+                        key={topic}
+                        variant="secondary"
+                        className="text-[10px] px-1.5 py-0 h-5"
+                      >
+                        {topic}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
             </div>
           )}
         </div>
