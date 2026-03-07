@@ -12,14 +12,14 @@ interface AnthropicResponseData {
   content: Array<{ type: string; text?: string }>;
 }
 
-/** AI_PROXY_URL 경유 호출 (timeout 120초) */
+/** AI_PROXY_URL 경유 호출 (timeout 300초) */
 async function callViaProxy(
   proxyUrl: string,
   proxyKey: string,
   body: Record<string, unknown>,
 ): Promise<AnthropicResponseData> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 120_000);
+  const timer = setTimeout(() => controller.abort(), 300_000);
 
   try {
     const res = await fetch(proxyUrl, {
