@@ -676,14 +676,27 @@
       "notes": "Phase 2: T1 카드v2(요약항상펼침+생성물연결), T2 뷰리뉴얼(인박스+토픽맵+상태필터), T3 Soft Delete(deleted_at+복원+Cron30일). Plan+Design 작성 완료."
     },
     "curation-v2-bugfix": {
-      "phase": "designing",
+      "phase": "completed",
       "matchRate": null,
       "documents": {
         "plan": "01-plan/features/curation-v2-bugfix.plan.md",
         "design": "02-design/features/curation-v2-bugfix.design.md"
       },
       "startedAt": "2026-03-07",
-      "notes": "T1 메타데이터필터강화+공통유틸, T2 JSON배열파싱, T3 인라인마크다운렌더, T4 타임아웃+경과시간. 코드리뷰 완료. Plan+Design 작성 완료."
+      "completedAt": "2026-03-07",
+      "notes": "T1 메타데이터필터강화+공통유틸, T2 JSON배열파싱, T3 인라인마크다운렌더, T4 타임아웃+경과시간. 구현 완료."
+    },
+    "curation-residual-bugs": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/curation-residual-bugs.plan.md",
+        "design": "02-design/features/curation-residual-bugs.design.md",
+        "analysis": "03-analysis/curation-residual-bugs.analysis.md"
+      },
+      "startedAt": "2026-03-07",
+      "completedAt": "2026-03-07",
+      "notes": "T1 COLON_KV_PATTERN 공백허용+NUMERIC_SUFFIX 추가. T2 BOM제거+JSON줄바꿈sanitize+파싱실패fallback+stripJsonChars \\n처리. T3 불릿regex negative lookahead로 **볼드** 보존. tsc+lint+build 통과. Match Rate 95%."
     },
     "competitor-analyzer": {
       "phase": "completed",

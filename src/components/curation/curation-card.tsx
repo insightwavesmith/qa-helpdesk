@@ -72,6 +72,7 @@ function stripJsonChars(text: string): string {
     .replace(/^\["|"\]$/g, "") // 양끝 [" "]
     .replace(/^["'\[{}\]]+|["'\[{}\]]+$/g, "") // 양끝 JSON 문자
     .replace(/",\s*"/g, ", ") // "," 패턴 → 쉼표
+    .replace(/\\n/g, " ") // 이스케이프된 줄바꿈 → 공백
     .trim();
 }
 
@@ -79,7 +80,8 @@ function stripJsonChars(text: string): string {
 function formatSummary(aiSummary: string | null): string[] {
   if (!aiSummary) return [];
 
-  const trimmed = aiSummary.trim();
+  // BOM 및 비표시 유니코드 제거
+  const trimmed = aiSummary.replace(/^\uFEFF/, "").trim();
 
   // JSON 객체 처리 ({"핵심 주제 한 줄":"...", "주요 내용 1":"..."} 등)
   if (trimmed.startsWith("{")) {
@@ -104,7 +106,9 @@ function formatSummary(aiSummary: string | null): string[] {
   // JSON 배열 처리
   if (trimmed.startsWith("[")) {
     try {
-      const parsed = JSON.parse(trimmed);
+      // 줄바꿈을 이스케이프 처리 후 파싱 시도
+      const sanitized = trimmed.replace(/\n/g, "\\n").replace(/\t/g, "\\t");
+      const parsed = JSON.parse(sanitized);
       if (Array.isArray(parsed)) {
         return parsed
           .filter((item): item is string => typeof item === "string" && item.trim() !== "")
@@ -112,6 +116,11 @@ function formatSummary(aiSummary: string | null): string[] {
           .slice(0, 3);
       }
     } catch {
+      // JSON 파싱 실패 시 수동 strip 후 텍스트 처리
+      const manualStrip = stripJsonChars(trimmed);
+      if (manualStrip) {
+        return [manualStrip];
+      }
       // fallthrough
     }
   }
@@ -120,7 +129,12 @@ function formatSummary(aiSummary: string | null): string[] {
 
   if (lines.length >= 2) {
     return lines.slice(0, 3).map((l) =>
-      stripJsonChars(l.replace(/^[\s]*[*\-•◦\d.]+[\s]*/, "").trim())
+      stripJsonChars(
+        l.replace(
+          /^[\s]*(?:[-\u2022\u25E6]\s+|\d+[.)]\s+|\*(?!\*)\s+)/,
+          ""
+        ).trim()
+      )
     );
   }
 

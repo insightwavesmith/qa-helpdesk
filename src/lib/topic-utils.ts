@@ -6,9 +6,10 @@
  */
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}/i;
-const COLON_KV_PATTERN = /^[a-z_]+:/i; // key:value 형태
+const COLON_KV_PATTERN = /^[a-zA-Z_]+\s*:/; // key:value 형태 (공백 허용, 대소문자 무관)
 const PURE_NUMBER = /^\d+$/;
 const SNAKE_CASE_ONLY = /^[a-z][a-z0-9_]*$/; // 순수 영문 소문자 snake_case
+const NUMERIC_SUFFIX = /^[a-z_]+_\d+$/i; // something_0, chunk_3 등
 
 /** 내부 메타데이터 키인지 판별 (구조 패턴 기반) */
 export function isMetadataKey(topic: string): boolean {
@@ -18,6 +19,7 @@ export function isMetadataKey(topic: string): boolean {
   if (COLON_KV_PATTERN.test(t)) return true;
   if (PURE_NUMBER.test(t)) return true;
   if (SNAKE_CASE_ONLY.test(t)) return true;
+  if (NUMERIC_SUFFIX.test(t)) return true;
   return false;
 }
 
