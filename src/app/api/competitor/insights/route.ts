@@ -3,6 +3,8 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { analyzeAds } from "@/lib/competitor/analyze-ads";
 import type { CompetitorAd } from "@/types/competitor";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 /**

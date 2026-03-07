@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { searchMetaAds, MetaAdError } from "@/lib/competitor/meta-ad-library";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 interface MonitorRow {
   id: string;
   brand_name: string;

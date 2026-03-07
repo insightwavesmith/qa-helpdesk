@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchMetaAds, MetaAdError } from "@/lib/competitor/meta-ad-library";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/competitor/search
  * 경쟁사 광고 검색 — Meta Ad Library API 연동
@@ -25,6 +28,12 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Vercel Function Logs 디버그: 환경변수 존재 확인
+    console.log(
+      "[competitor/search] META_AD_LIBRARY_TOKEN:",
+      !!process.env.META_AD_LIBRARY_TOKEN ? `존재 (${process.env.META_AD_LIBRARY_TOKEN.length}자)` : "미설정",
+    );
+
     const result = await searchMetaAds({
       searchTerms: q,
       country,

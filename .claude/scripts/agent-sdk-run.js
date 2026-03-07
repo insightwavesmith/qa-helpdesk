@@ -106,7 +106,7 @@ async function sendSlackDM(text) {
     const devLeadToken = config.channels?.slack?.accounts?.["dev-lead"]?.botToken;
     const mozziToken = config.channels?.slack?.accounts?.mozzi?.botToken;
     if (devLeadToken) targets.push({ token: devLeadToken, channel: "D0ADQEF21T4", label: "dev-lead" });
-    if (mozziToken) targets.push({ token: mozziToken, channel: "D0ADQEF21T4", label: "mozzi" });
+    if (mozziToken) targets.push({ token: mozziToken, channel: "D09V1NX98SK", label: "mozzi" });
   } catch (_) {}
   // fallback: 환경변수
   if (targets.length === 0 && process.env.SLACK_BOT_TOKEN) {
