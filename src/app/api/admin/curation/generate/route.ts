@@ -43,27 +43,35 @@ async function callViaProxy(
   }
 }
 
-/** 기존 Anthropic API 직접 호출 */
+/** 기존 Anthropic API 직접 호출 (240초 타임아웃) */
 async function callAnthropicDirect(
   apiKey: string,
   body: Record<string, unknown>,
 ): Promise<AnthropicResponseData> {
-  const res = await fetch(ANTHROPIC_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 240_000);
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Anthropic API ${res.status}: ${errText.substring(0, 200)}`);
+  try {
+    const res = await fetch(ANTHROPIC_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Anthropic API ${res.status}: ${errText.substring(0, 200)}`);
+    }
+
+    return (await res.json()) as AnthropicResponseData;
+  } finally {
+    clearTimeout(timer);
   }
-
-  return (await res.json()) as AnthropicResponseData;
 }
 
 export async function POST(request: NextRequest) {
@@ -335,13 +343,17 @@ export async function POST(request: NextRequest) {
           data = await callAnthropicDirect(apiKey, requestBody);
           console.log("[정보공유 생성] Anthropic API 폴백 성공");
         } catch (apiErr) {
+          const isTimeout = apiErr instanceof Error && apiErr.name === "AbortError";
           console.error(
             "Anthropic API error:",
             apiErr instanceof Error ? apiErr.message : apiErr,
           );
           return NextResponse.json(
-            { error: "정보공유 생성에 실패했습니다." },
-            { status: 500 },
+            { error: isTimeout
+                ? "AI 생성 시간이 초과되었습니다. 다시 시도해주세요."
+                : "정보공유 생성에 실패했습니다."
+            },
+            { status: isTimeout ? 504 : 500 },
           );
         }
       }
@@ -349,13 +361,17 @@ export async function POST(request: NextRequest) {
       try {
         data = await callAnthropicDirect(apiKey, requestBody);
       } catch (apiErr) {
+        const isTimeout = apiErr instanceof Error && apiErr.name === "AbortError";
         console.error(
           "Anthropic API error:",
           apiErr instanceof Error ? apiErr.message : apiErr,
         );
         return NextResponse.json(
-          { error: "정보공유 생성에 실패했습니다." },
-          { status: 500 },
+          { error: isTimeout
+              ? "AI 생성 시간이 초과되었습니다. 다시 시도해주세요."
+              : "정보공유 생성에 실패했습니다."
+          },
+          { status: isTimeout ? 504 : 500 },
         );
       }
     }

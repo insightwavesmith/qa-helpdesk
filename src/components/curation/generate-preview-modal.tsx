@@ -42,15 +42,37 @@ export function GeneratePreviewModal({
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [error, setError] = useState("");
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-  // AI 호출
+  // 경과 시간 포맷
+  function formatElapsed(seconds: number): string {
+    const min = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+    if (min > 0) return `${min}분 ${sec}초`;
+    return `${sec}초`;
+  }
+
+  // 경과 시간 타이머
   useEffect(() => {
+    if (!loading) return;
+    const interval = setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  // AI 호출 (클라이언트 270초 타임아웃)
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 270_000);
+
     async function generate() {
       try {
         const res = await fetch("/api/admin/curation/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ contentIds }),
+          signal: controller.signal,
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "생성 실패");
@@ -58,14 +80,24 @@ export function GeneratePreviewModal({
         setBodyMd(data.body_md);
         if (data.thumbnail_url) setThumbnailUrl(data.thumbnail_url);
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "정보공유 생성에 실패했습니다."
-        );
+        if (err instanceof Error && err.name === "AbortError") {
+          setError("생성 시간이 초과되었습니다. 다시 시도해주세요.");
+        } else {
+          setError(
+            err instanceof Error ? err.message : "정보공유 생성에 실패했습니다."
+          );
+        }
       } finally {
+        clearTimeout(timer);
         setLoading(false);
       }
     }
     generate();
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [contentIds]);
 
   const handleCreate = async () => {
@@ -106,6 +138,10 @@ export function GeneratePreviewModal({
             <Loader2 className="h-8 w-8 animate-spin text-[#F75D5D] mb-3" />
             <p className="text-sm text-gray-500">
               AI가 글을 생성중입니다.
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              {formatElapsed(elapsedSeconds)} 경과
+              {elapsedSeconds > 60 && " — Opus 모델은 2~4분 소요될 수 있습니다"}
             </p>
           </div>
         ) : error ? (

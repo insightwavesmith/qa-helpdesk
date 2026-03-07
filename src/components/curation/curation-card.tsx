@@ -1,5 +1,6 @@
 "use client";
 
+import { type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -19,6 +20,7 @@ import {
   CornerDownRight,
 } from "lucide-react";
 import type { LinkedInfoShare } from "@/types/content";
+import { filterValidTopics } from "@/lib/topic-utils";
 
 interface CurationCardProps {
   id: string;
@@ -62,23 +64,32 @@ function ImportanceStars({ score }: { score: number }) {
   );
 }
 
+/** JSON 문법 문자 제거 */
+function stripJsonChars(text: string): string {
+  return text
+    .replace(/^\["|"\]$/g, "") // 양끝 [" "]
+    .replace(/^["'\[{}\]]+|["'\[{}\]]+$/g, "") // 양끝 JSON 문자
+    .replace(/",\s*"/g, ", ") // "," 패턴 → 쉼표
+    .trim();
+}
+
 /** AI 요약을 불릿 리스트로 파싱 (최대 3줄) */
 function formatSummary(aiSummary: string | null): string[] {
   if (!aiSummary) return [];
 
   const trimmed = aiSummary.trim();
 
-  // JSON 형태 요약 처리 ({"핵심 주제 한 줄":"...", "주요 내용 1":"..."} 등)
+  // JSON 객체 처리 ({"핵심 주제 한 줄":"...", "주요 내용 1":"..."} 등)
   if (trimmed.startsWith("{")) {
     try {
       const parsed = JSON.parse(trimmed);
       const values: string[] = [];
       for (const [, v] of Object.entries(parsed)) {
         if (typeof v === "string" && v.trim()) {
-          values.push(v.trim());
+          values.push(stripJsonChars(v.trim()));
         } else if (Array.isArray(v)) {
           for (const item of v) {
-            if (typeof item === "string" && item.trim()) values.push(item.trim());
+            if (typeof item === "string" && item.trim()) values.push(stripJsonChars(item.trim()));
           }
         }
       }
@@ -88,23 +99,64 @@ function formatSummary(aiSummary: string | null): string[] {
     }
   }
 
+  // JSON 배열 처리
+  if (trimmed.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter((item): item is string => typeof item === "string" && item.trim() !== "")
+          .map((item) => stripJsonChars(item.trim()))
+          .slice(0, 3);
+      }
+    } catch {
+      // fallthrough
+    }
+  }
+
   const lines = trimmed.split("\n").filter((l) => l.trim());
 
   if (lines.length >= 2) {
     return lines.slice(0, 3).map((l) =>
-      l.replace(/^[\s]*[*\-•◦\d.]+[\s]*/, "").trim()
+      stripJsonChars(l.replace(/^[\s]*[*\-•◦\d.]+[\s]*/, "").trim())
     );
   }
 
   // 단일 문장이면 그대로 1줄 반환
-  return [trimmed];
+  return [stripJsonChars(trimmed)];
 }
 
-/** 내부 메타데이터 키 필터 (ep_number, parent_id, level, section_title 등) */
-const METADATA_PATTERNS = /^(ep_number|parent_id|level|section_title|chunk_index|source_ref|content_id)[:_]/i;
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}/i;
-function isMetadataKey(topic: string): boolean {
-  return METADATA_PATTERNS.test(topic) || UUID_PATTERN.test(topic);
+/**
+ * 간단한 인라인 마크다운 파서 (볼드 + 이탤릭).
+ * react-markdown 없이 React 엘리먼트로 변환.
+ */
+function renderInlineMarkdown(text: string): ReactNode[] {
+  const parts: ReactNode[] = [];
+  // **볼드** 또는 *이탤릭* 매칭
+  const regex = /\*\*(.+?)\*\*|\*(.+?)\*/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    if (match[1]) {
+      parts.push(<strong key={key++} className="font-semibold text-gray-700">{match[1]}</strong>);
+    } else if (match[2]) {
+      parts.push(<em key={key++}>{match[2]}</em>);
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : [text];
 }
 
 /** URL에서 도메인 추출. YouTube는 youtube.com 반환 */
@@ -192,7 +244,7 @@ export function CurationCard({
               {summaryLines.map((line, i) => (
                 <li key={i} className="text-xs text-gray-600 leading-relaxed flex gap-1.5">
                   <span className="text-gray-400 shrink-0">*</span>
-                  <span>{line}</span>
+                  <span>{renderInlineMarkdown(line)}</span>
                 </li>
               ))}
             </ul>
@@ -214,12 +266,12 @@ export function CurationCard({
           </div>
         )}
 
-        {/* 토픽 뱃지 (내부 메타데이터 키 필터링) */}
-        {keyTopics.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-2">
-            {keyTopics
-              .filter((t) => !isMetadataKey(t))
-              .map((topic) => (
+        {/* 토픽 뱃지 (내부 메타데이터 키 필터링 — 유효 토픽 없으면 숨김) */}
+        {(() => {
+          const validTopics = filterValidTopics(keyTopics);
+          return validTopics.length > 0 ? (
+            <div className="flex flex-wrap gap-1 mb-2">
+              {validTopics.map((topic) => (
                 <Badge
                   key={topic}
                   variant="secondary"
@@ -228,8 +280,9 @@ export function CurationCard({
                   {topic}
                 </Badge>
               ))}
-          </div>
-        )}
+            </div>
+          ) : null;
+        })()}
 
         {/* 하단: 소스 출처 + 인라인 액션 */}
         <div className="flex items-center justify-between pt-2 border-t border-gray-100">
