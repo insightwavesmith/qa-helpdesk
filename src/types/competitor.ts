@@ -80,6 +80,34 @@ export interface MetaPage {
   profileImageUrl: string;
 }
 
+/** DB Row 타입 (database.ts 재생성 전 임시) */
+export interface CompetitorMonitorRow {
+  id: string;
+  user_id: string;
+  brand_name: string;
+  page_id: string | null;
+  last_checked_at: string | null;
+  last_ad_count: number | null;
+  created_at: string;
+}
+
+export interface CompetitorAlertRow {
+  id: string;
+  monitor_id: string;
+  new_ad_ids: string[];
+  detected_at: string;
+  is_read: boolean;
+}
+
+export interface CompetitorInsightCacheRow {
+  id: string;
+  search_query: string;
+  insight_data: CompetitorInsight;
+  ad_count: number;
+  created_at: string;
+  expires_at: string;
+}
+
 /** API 에러 코드 */
 export type CompetitorErrorCode =
   | "TOKEN_MISSING"
@@ -87,5 +115,7 @@ export type CompetitorErrorCode =
   | "META_API_ERROR"
   | "RATE_LIMITED"
   | "MONITOR_LIMIT"
+  | "DUPLICATE_MONITOR"
   | "UNAUTHORIZED"
-  | "INSIGHT_ERROR";
+  | "INSIGHT_ERROR"
+  | "DB_ERROR";

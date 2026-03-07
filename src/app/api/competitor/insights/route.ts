@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { analyzeAds } from "@/lib/competitor/analyze-ads";
 import type { CompetitorAd } from "@/types/competitor";
 
@@ -10,9 +10,23 @@ export const maxDuration = 120;
 /**
  * POST /api/competitor/insights
  * 검색 결과 AI 분석 (24시간 캐시)
+ * 현재 UI에서 숨김 상태 — 서비스 오픈 후 재활성화 예정
  */
 export async function POST(req: NextRequest) {
   try {
+    // 인증 체크 (C2 — 비용 보안)
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "로그인이 필요합니다", code: "UNAUTHORIZED" },
+        { status: 401 },
+      );
+    }
+
     const body = await req.json();
     const query: string = body.query?.trim()?.toLowerCase();
     const ads: CompetitorAd[] = body.ads ?? [];

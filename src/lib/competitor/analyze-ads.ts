@@ -43,29 +43,37 @@ async function callViaProxy(
   }
 }
 
-/** Anthropic API 직접 호출 */
+/** Anthropic API 직접 호출 (H2: 120s timeout 추가) */
 async function callAnthropicDirect(
   apiKey: string,
   body: Record<string, unknown>,
 ): Promise<AnthropicResponseData> {
-  const res = await fetch(ANTHROPIC_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 120_000);
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(
-      `Anthropic API ${res.status}: ${errText.substring(0, 200)}`,
-    );
+  try {
+    const res = await fetch(ANTHROPIC_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(
+        `Anthropic API ${res.status}: ${errText.substring(0, 200)}`,
+      );
+    }
+
+    return (await res.json()) as AnthropicResponseData;
+  } finally {
+    clearTimeout(timer);
   }
-
-  return (await res.json()) as AnthropicResponseData;
 }
 
 const SYSTEM_PROMPT = `당신은 디지털 마케팅 광고 분석 전문가입니다.
@@ -164,8 +172,35 @@ export async function analyzeAds(
     jsonStr = codeBlockMatch[1].trim();
   }
 
-  const parsed = JSON.parse(jsonStr) as CompetitorInsight;
-  parsed.analyzedAt = new Date().toISOString();
+  const parsed = JSON.parse(jsonStr);
 
-  return parsed;
+  // 필수 필드 검증 (H3 — unsafe 캐스트 방지)
+  if (
+    typeof parsed.longRunningAdCount !== "number" ||
+    typeof parsed.totalAdCount !== "number" ||
+    typeof parsed.summary !== "string" ||
+    !Array.isArray(parsed.hookTypes) ||
+    !Array.isArray(parsed.seasonPattern)
+  ) {
+    throw new Error("AI 응답 형식이 올바르지 않습니다");
+  }
+
+  const insight: CompetitorInsight = {
+    longRunningAdCount: parsed.longRunningAdCount,
+    totalAdCount: parsed.totalAdCount,
+    videoRatio: parsed.videoRatio ?? 0,
+    imageRatio: parsed.imageRatio ?? 1,
+    platformDistribution: parsed.platformDistribution ?? {
+      facebook: 0,
+      instagram: 0,
+      messenger: 0,
+    },
+    hookTypes: parsed.hookTypes,
+    seasonPattern: parsed.seasonPattern,
+    keyProducts: parsed.keyProducts ?? [],
+    summary: parsed.summary,
+    analyzedAt: new Date().toISOString(),
+  };
+
+  return insight;
 }

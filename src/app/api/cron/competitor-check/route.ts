@@ -52,7 +52,8 @@ export async function GET(req: NextRequest) {
   let processed = 0;
   let newAlerts = 0;
 
-  for (const monitor of monitorList) {
+  for (let i = 0; i < monitorList.length; i++) {
+    const monitor = monitorList[i];
     try {
       const result = await searchMetaAds({
         searchTerms: monitor.brand_name,
@@ -62,11 +63,10 @@ export async function GET(req: NextRequest) {
       const currentAdCount = result.totalCount;
       const prevAdCount = monitor.last_ad_count ?? 0;
 
-      // 신규 광고 감지
+      // 신규 광고 감지 (C1: slice 방향 수정 — 신규 광고는 durationDays가 짧아 리스트 끝에 위치)
       if (currentAdCount > prevAdCount) {
-        const newAdIds = result.ads
-          .slice(0, currentAdCount - prevAdCount)
-          .map((ad) => ad.id);
+        const diff = currentAdCount - prevAdCount;
+        const newAdIds = result.ads.slice(-diff).map((ad) => ad.id);
 
         await svc.from("competitor_alerts").insert({
           monitor_id: monitor.id,
@@ -76,17 +76,21 @@ export async function GET(req: NextRequest) {
         newAlerts++;
       }
 
-      // 모니터 업데이트
+      // 모니터 업데이트 (M7: page_id 자동 변경 제거)
       await svc
         .from("competitor_monitors")
         .update({
           last_checked_at: new Date().toISOString(),
           last_ad_count: currentAdCount,
-          page_id: monitor.page_id || result.ads[0]?.pageId || null,
         })
         .eq("id", monitor.id);
 
       processed++;
+
+      // Rate limit 완화: 브랜드 간 500ms 딜레이 (M6)
+      if (i < monitorList.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
     } catch (err) {
       if (err instanceof MetaAdError && err.code === "RATE_LIMITED") {
         break;

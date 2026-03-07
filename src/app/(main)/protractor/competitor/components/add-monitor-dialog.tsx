@@ -79,6 +79,15 @@ export function AddMonitorDialog({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // ESC 키로 다이얼로그 닫기 (M9)
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   // 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

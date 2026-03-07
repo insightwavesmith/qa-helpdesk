@@ -131,6 +131,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // 동일 브랜드 중복 등록 방지 (M3)
+  const { data: existing } = await svc
+    .from("competitor_monitors")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("brand_name", brandName)
+    .maybeSingle();
+
+  if (existing) {
+    return NextResponse.json(
+      { error: "이미 등록된 브랜드입니다", code: "DUPLICATE_MONITOR" },
+      { status: 409 },
+    );
+  }
+
   const { data, error } = await svc
     .from("competitor_monitors")
     .insert({

@@ -67,12 +67,6 @@ export async function searchMetaAds(
   params: SearchParams,
 ): Promise<MetaApiResult> {
   const token = process.env.META_AD_LIBRARY_TOKEN;
-  console.log(
-    "[meta-ad-library] 토큰 확인:",
-    token ? `존재 (${token.length}자)` : "미설정",
-    "| runtime:",
-    typeof globalThis !== "undefined" && "EdgeRuntime" in globalThis ? "edge" : "nodejs",
-  );
   if (!token) {
     throw new MetaAdError(
       "META_AD_LIBRARY_TOKEN이 설정되지 않았습니다",

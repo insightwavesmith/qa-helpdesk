@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import type { CompetitorAd, CompetitorInsight, CompetitorMonitor } from "@/types/competitor";
+import { useState, useCallback, useMemo } from "react";
+import type { CompetitorAd, CompetitorMonitor } from "@/types/competitor";
 import { SearchBar } from "./components/search-bar";
 import { FilterChips, type FilterState } from "./components/filter-chips";
 import { AdCardList } from "./components/ad-card-list";
 import { MonitorPanel } from "./components/monitor-panel";
-import { InsightSection } from "./components/insight-section";
+// AI 인사이트 기능 숨김 (서비스 오픈 후 재검토 예정)
+// import { InsightSection } from "./components/insight-section";
 import { AlertTriangle, Search } from "lucide-react";
 
 export default function CompetitorDashboard() {
@@ -22,12 +23,8 @@ export default function CompetitorDashboard() {
   // 모니터링 상태
   const [monitors, setMonitors] = useState<CompetitorMonitor[]>([]);
 
-  // AI 인사이트 상태
-  const [insight, setInsight] = useState<CompetitorInsight | null>(null);
-
   // 로딩/에러 상태
   const [loadingSearch, setLoadingSearch] = useState(false);
-  const [loadingInsight, setLoadingInsight] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // 검색 실행
@@ -37,7 +34,6 @@ export default function CompetitorDashboard() {
     setSearchQuery(query.trim());
     setLoadingSearch(true);
     setError(null);
-    setInsight(null);
 
     try {
       const params = new URLSearchParams({ q: query.trim() });
@@ -59,42 +55,15 @@ export default function CompetitorDashboard() {
     }
   }, []);
 
-  // 필터 적용된 광고 목록
-  const filteredAds = ads.filter((ad) => {
-    if (filters.activeOnly && !ad.isActive) return false;
-    if (filters.minDays > 0 && ad.durationDays < filters.minDays) return false;
-    if (filters.platform && !ad.platforms.includes(filters.platform)) return false;
-    return true;
-  });
-
-  // AI 인사이트 요청
-  const handleAnalyze = useCallback(async () => {
-    if (filteredAds.length === 0) return;
-
-    setLoadingInsight(true);
-    try {
-      const res = await fetch("/api/competitor/insights", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: searchQuery,
-          ads: filteredAds.slice(0, 50),
-        }),
-      });
-      const json = await res.json();
-
-      if (!res.ok) {
-        setError(json.error || "AI 분석에 실패했습니다");
-        return;
-      }
-
-      setInsight(json.insight);
-    } catch {
-      setError("AI 분석 중 오류가 발생했습니다");
-    } finally {
-      setLoadingInsight(false);
-    }
-  }, [filteredAds, searchQuery]);
+  // 필터 적용된 광고 목록 (useMemo로 안정화 — M10)
+  const filteredAds = useMemo(() => {
+    return ads.filter((ad) => {
+      if (filters.activeOnly && !ad.isActive) return false;
+      if (filters.minDays > 0 && ad.durationDays < filters.minDays) return false;
+      if (filters.platform && !ad.platforms.includes(filters.platform)) return false;
+      return true;
+    });
+  }, [ads, filters]);
 
   // 모니터링 브랜드 클릭 -> 해당 브랜드로 검색
   const handleMonitorClick = useCallback(
@@ -159,15 +128,15 @@ export default function CompetitorDashboard() {
         </div>
       </div>
 
-      {/* AI 인사이트 섹션 */}
-      {ads.length > 0 && (
+      {/* AI 인사이트 섹션 — 서비스 오픈 후 재검토 예정 */}
+      {/* {ads.length > 0 && (
         <InsightSection
           insight={insight}
           loading={loadingInsight}
           onAnalyze={handleAnalyze}
           adCount={filteredAds.length}
         />
-      )}
+      )} */}
     </div>
   );
 }

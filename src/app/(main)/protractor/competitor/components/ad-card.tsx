@@ -108,9 +108,9 @@ export function AdCard({ ad }: AdCardProps) {
             <Eye className="h-3.5 w-3.5" />
             소재 보기
           </a>
-          {ad.caption && (
+          {ad.caption && /^https?:\/\//.test(ad.caption) && (
             <a
-              href={ad.caption.startsWith("http") ? ad.caption : `https://${ad.caption}`}
+              href={ad.caption}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#F75D5D] bg-red-50 hover:bg-red-100 rounded-lg transition"

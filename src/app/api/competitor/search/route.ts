@@ -28,12 +28,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Vercel Function Logs 디버그: 환경변수 존재 확인
-    console.log(
-      "[competitor/search] META_AD_LIBRARY_TOKEN:",
-      !!process.env.META_AD_LIBRARY_TOKEN ? `존재 (${process.env.META_AD_LIBRARY_TOKEN.length}자)` : "미설정",
-    );
-
     const result = await searchMetaAds({
       searchTerms: q,
       country,
