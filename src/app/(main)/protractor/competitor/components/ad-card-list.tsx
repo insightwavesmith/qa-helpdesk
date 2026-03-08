@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useMemo, useCallback } from "react";
 import type { CompetitorAd } from "@/types/competitor";
 import { AdCard } from "./ad-card";
+import { Download, Loader2 } from "lucide-react";
 
 interface AdCardListProps {
   ads: CompetitorAd[];
@@ -10,6 +12,67 @@ interface AdCardListProps {
 }
 
 export function AdCardList({ ads, totalCount, query }: AdCardListProps) {
+  const [downloading, setDownloading] = useState(false);
+
+  /** 이미지가 있는 광고 수 (ZIP 다운로드 가능 여부) */
+  const downloadableCount = useMemo(() => {
+    return ads.filter((ad) => {
+      if (ad.displayFormat === "VIDEO") {
+        return !!(ad.videoPreviewUrl ?? ad.imageUrl);
+      }
+      return !!ad.imageUrl;
+    }).length;
+  }, [ads]);
+
+  /** ZIP 다운로드 실행 */
+  const handleZipDownload = useCallback(async () => {
+    if (downloading || downloadableCount === 0) return;
+
+    setDownloading(true);
+    try {
+      // 최대 50건 제한
+      const targetAds = ads.slice(0, 50).map((ad) => ({
+        id: ad.id,
+        pageName: ad.pageName,
+        imageUrl: ad.imageUrl,
+        videoPreviewUrl: ad.videoPreviewUrl,
+        displayFormat: ad.displayFormat,
+      }));
+
+      const res = await fetch("/api/competitor/download-zip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ads: targetAds }),
+      });
+
+      if (!res.ok) {
+        const json = await res.json();
+        alert(json.error || "ZIP 다운로드에 실패했습니다");
+        return;
+      }
+
+      // Blob → 자동 다운로드
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+
+      // Content-Disposition에서 파일명 추출
+      const disposition = res.headers.get("Content-Disposition");
+      const filenameMatch = disposition?.match(/filename="(.+)"/);
+      a.download = filenameMatch?.[1] ?? "competitor-ads.zip";
+
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("네트워크 오류가 발생했습니다");
+    } finally {
+      setDownloading(false);
+    }
+  }, [ads, downloading, downloadableCount]);
+
   return (
     <div className="space-y-4">
       {/* 결과 헤더 */}
@@ -22,6 +85,21 @@ export function AdCardList({ ads, totalCount, query }: AdCardListProps) {
             <span className="text-gray-400 ml-1">(전체 {totalCount}건 중 필터 적용)</span>
           )}
         </h2>
+
+        {/* ZIP 전체 다운로드 버튼 */}
+        <button
+          type="button"
+          onClick={handleZipDownload}
+          disabled={downloading || downloadableCount === 0}
+          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#F75D5D] hover:bg-[#E54949] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition"
+        >
+          {downloading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          {downloading ? "다운로드 중..." : "전체 다운로드 (ZIP)"}
+        </button>
       </div>
 
       {/* 카드 그리드 */}

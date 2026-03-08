@@ -755,6 +755,18 @@
       },
       "startedAt": "2026-03-08",
       "notes": "useEffect+fetch → SWR 전환. 15개 파일 전수조사 완료. Plan+Design 작성 완료."
+    },
+    "competitor-zip-download": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/competitor-zip-download.plan.md",
+        "design": "02-design/features/competitor-zip-download.design.md",
+        "analysis": "03-analysis/competitor-zip-download.analysis.md"
+      },
+      "startedAt": "2026-03-08",
+      "completedAt": "2026-03-08",
+      "notes": "T1 ZIP다운로드API(JSZip+병렬fetch+50건제한+중복파일명방지) + T2 전체다운로드버튼(AdCardList+로딩스피너+비활성화). tsc+lint+build 통과."
     }
   },
   "phaseMapping": {
