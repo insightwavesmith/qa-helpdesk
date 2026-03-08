@@ -1500,6 +1500,7 @@ export type Database = {
           onboarding_status: string | null
           onboarding_step: number | null
           phone: string | null
+          privacy_agreed_at: string | null
           reject_reason: string | null
           role: Database["public"]["Enums"]["user_role"]
           role_old: string | null
@@ -1527,6 +1528,7 @@ export type Database = {
           onboarding_status?: string | null
           onboarding_step?: number | null
           phone?: string | null
+          privacy_agreed_at?: string | null
           reject_reason?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           role_old?: string | null
@@ -1554,6 +1556,7 @@ export type Database = {
           onboarding_status?: string | null
           onboarding_step?: number | null
           phone?: string | null
+          privacy_agreed_at?: string | null
           reject_reason?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           role_old?: string | null

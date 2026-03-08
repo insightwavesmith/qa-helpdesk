@@ -17,3 +17,19 @@ export async function updateBusinessCertUrl(userId: string, url: string) {
 
   return { error: null };
 }
+
+export async function savePrivacyConsent(userId: string) {
+  const supabase = createServiceClient();
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ privacy_agreed_at: new Date().toISOString() } as never)
+    .eq("id", userId);
+
+  if (error) {
+    console.error("savePrivacyConsent error:", error);
+    return { error: error.message };
+  }
+
+  return { error: null };
+}

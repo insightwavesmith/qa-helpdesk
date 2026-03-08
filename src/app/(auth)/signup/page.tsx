@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/client";
-import { updateBusinessCertUrl } from "@/actions/auth";
+import { updateBusinessCertUrl, savePrivacyConsent } from "@/actions/auth";
 import { useInviteCode as consumeInviteCode } from "@/actions/invites";
 import Image from "next/image";
 import { Loader2, Upload, FileCheck, CheckCircle2 } from "lucide-react";
@@ -64,6 +64,7 @@ export default function SignupPage() {
     businessNumber: "",
     cohort: "",
   });
+  const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [businessFile, setBusinessFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -177,10 +178,11 @@ export default function SignupPage() {
       formData.passwordConfirm === formData.password &&
       formData.name.trim() !== "";
 
-    if (isStudentMode) return base;
+    if (isStudentMode) return base && privacyAgreed;
 
     return (
       base &&
+      privacyAgreed &&
       formData.phone.trim() !== "" &&
       PHONE_REGEX.test(formData.phone) &&
       formData.shopName.trim() !== "" &&
@@ -335,6 +337,14 @@ export default function SignupPage() {
           // server action으로 프로필 업데이트 (service role = RLS 우회)
           await updateBusinessCertUrl(authData.user.id, publicUrl);
         }
+      }
+
+      // 개인정보처리방침 동의 시점 DB 기록
+      // 실패해도 가입 자체는 완료 → 리다이렉트 진행
+      try {
+        await savePrivacyConsent(authData.user.id);
+      } catch (consentErr) {
+        console.error("[signup] savePrivacyConsent failed:", consentErr);
       }
 
       // 수강생 모드: 초대코드 사용 처리 (used_count 증가 + student_registry 매칭)
@@ -771,6 +781,28 @@ export default function SignupPage() {
                 </div>
               </>
             )}
+
+            {/* 개인정보처리방침 필수동의 */}
+            <div className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                id="privacyAgreed"
+                checked={privacyAgreed}
+                onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-gray-300 accent-[#F75D5D] focus:ring-[#F75D5D]"
+              />
+              <label htmlFor="privacyAgreed" className="text-sm text-[#374151]">
+                <a
+                  href="/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#F75D5D] hover:underline font-medium"
+                >
+                  개인정보처리방침
+                </a>
+                에 동의합니다 (필수)
+              </label>
+            </div>
 
             <button
               type="submit"

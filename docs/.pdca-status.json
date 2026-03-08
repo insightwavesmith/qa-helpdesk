@@ -839,6 +839,17 @@
       "startedAt": "2026-03-08",
       "completedAt": "2026-03-08",
       "notes": "T1 브랜드검색고도화: page_search+ad_library 병렬검색(Promise.allSettled) + URL도메인추출(extractDomain) + ad_library결과 page_id별그룹핑→AdPage[] + 드롭다운2섹션(📌공식브랜드+🔗URL광고페이지) + 플레이스홀더변경. types/competitor.ts AdPage 타입추가. tsc+lint+build 통과. Match Rate 95%."
+    },
+    "privacy-consent": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/privacy-consent.plan.md",
+        "design": "02-design/features/privacy-consent.design.md"
+      },
+      "startedAt": "2026-03-08",
+      "completedAt": "2026-03-08",
+      "notes": "T1 회원가입 체크박스(privacyAgreed+isFormValid+새탭링크) + T2 /privacy 내용보강(8섹션, 수집항목/목적/보유기간/제3자/이용데이터/동의철회/문의) + T3 DB기록(profiles.privacy_agreed_at+savePrivacyConsent 서버액션+마이그레이션SQL). tsc+lint+build 통과."
     }
   },
   "phaseMapping": {
