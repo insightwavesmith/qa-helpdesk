@@ -27,6 +27,7 @@ interface Review {
 interface ReviewDetailClientProps {
   review: Review;
   isAdmin: boolean;
+  isOwner: boolean;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -46,7 +47,7 @@ function formatDate(dateStr: string | null) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export function ReviewDetailClient({ review, isAdmin }: ReviewDetailClientProps) {
+export function ReviewDetailClient({ review, isAdmin, isOwner }: ReviewDetailClientProps) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
@@ -85,7 +86,7 @@ export function ReviewDetailClient({ review, isAdmin }: ReviewDetailClientProps)
             목록
           </Link>
         </Button>
-        {isAdmin && (
+        {(isAdmin || isOwner) && (
           <Button
             variant="outline"
             size="sm"

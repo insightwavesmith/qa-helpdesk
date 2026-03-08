@@ -3,13 +3,13 @@ import { getReviewById } from "@/actions/reviews";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { ReviewDetailClient } from "./ReviewDetailClient";
 
-async function getUserRole(): Promise<string | null> {
+async function getUserInfo(): Promise<{ role: string | null; userId: string | null }> {
   try {
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return null;
+    if (!user) return { role: null, userId: null };
 
     const svc = createServiceClient();
     const { data: profile } = await svc
@@ -18,9 +18,9 @@ async function getUserRole(): Promise<string | null> {
       .eq("id", user.id)
       .single();
 
-    return profile?.role || null;
+    return { role: profile?.role || null, userId: user.id };
   } catch {
-    return null;
+    return { role: null, userId: null };
   }
 }
 
@@ -31,16 +31,17 @@ export default async function ReviewDetailPage({
 }) {
   const { id } = await params;
 
-  const [result, userRole] = await Promise.all([
+  const [result, userInfo] = await Promise.all([
     getReviewById(id),
-    getUserRole(),
+    getUserInfo(),
   ]);
 
   if (result.error || !result.data) {
     notFound();
   }
 
-  const isAdmin = userRole === "admin";
+  const isAdmin = userInfo.role === "admin";
+  const isOwner = !!(userInfo.userId && result.data.author_id === userInfo.userId);
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
@@ -49,7 +50,7 @@ export default async function ReviewDetailPage({
         image_urls: result.data.image_urls ?? [],
         view_count: result.data.view_count ?? 0,
         created_at: result.data.created_at ?? "",
-      }} isAdmin={isAdmin} />
+      }} isAdmin={isAdmin} isOwner={isOwner} />
     </div>
   );
 }

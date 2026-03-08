@@ -356,8 +356,18 @@ export async function deleteReview(id: string) {
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "admin") {
-    return { error: "관리자만 삭제할 수 있습니다." };
+  // Check if admin or author
+  const { data: review } = await svc
+    .from("reviews")
+    .select("author_id")
+    .eq("id", id)
+    .single();
+  if (!review) return { error: "후기를 찾을 수 없습니다." };
+
+  const isAdmin = profile?.role === "admin";
+  const isOwner = review.author_id === user.id;
+  if (!isAdmin && !isOwner) {
+    return { error: "권한이 없습니다." };
   }
 
   const { error } = await svc.from("reviews").delete().eq("id", id);

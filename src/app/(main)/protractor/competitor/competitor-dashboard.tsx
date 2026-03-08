@@ -97,6 +97,7 @@ export default function CompetitorDashboard() {
 
   // 더보기 (다음 페이지 누적 로드)
   const handleLoadMore = useCallback(async () => {
+    console.log("[handleLoadMore]", { searchQuery, searchPageId, nextPageToken, loadingMore });
     if ((!searchQuery && !searchPageId) || !nextPageToken || loadingMore) return;
 
     setLoadingMore(true);
@@ -227,6 +228,7 @@ export default function CompetitorDashboard() {
   // 브랜드 검색에서 핀 등록
   const handlePinBrand = useCallback(
     async (brand: BrandPage) => {
+      console.log("[handlePinBrand]", { brandName: brand.page_name, pageId: brand.page_id });
       // 이미 등록된 브랜드 확인
       const alreadyExists = monitors.some(
         (m) => m.pageId === brand.page_id || m.brandName === brand.page_name,
@@ -254,7 +256,10 @@ export default function CompetitorDashboard() {
         });
         const json = await res.json();
 
+        console.log("[handlePinBrand] response:", { ok: res.ok, status: res.status, json });
+
         if (!res.ok) {
+          console.error("[handlePinBrand] 등록 실패:", json);
           setError(json.error || "모니터링 등록에 실패했습니다");
           return;
         }

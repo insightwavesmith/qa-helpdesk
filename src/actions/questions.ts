@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { requireAdmin } from "@/lib/auth-utils";
 import { createAIAnswerForQuestion } from "@/lib/rag";
 
 export async function getQuestions({
@@ -175,7 +174,22 @@ export async function createQuestion(formData: {
 }
 
 export async function deleteQuestion(id: string) {
-  const svc = await requireAdmin();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "인증되지 않은 사용자입니다." };
+
+  const svc = createServiceClient();
+
+  // Get user role
+  const { data: profile } = await svc.from("profiles").select("role").eq("id", user.id).single();
+  const isAdmin = profile?.role === "admin";
+
+  // Get question author
+  const { data: question } = await svc.from("questions").select("author_id").eq("id", id).single();
+  if (!question) return { error: "질문을 찾을 수 없습니다." };
+
+  const isOwner = question.author_id === user.id;
+  if (!isAdmin && !isOwner) return { error: "권한이 없습니다." };
 
   // 답변 먼저 삭제
   await svc.from("answers").delete().eq("question_id", id);

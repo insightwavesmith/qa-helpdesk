@@ -245,7 +245,8 @@ export function AdCard({ ad, selected, onSelect, isPinned, onPinBrand }: AdCardP
               <button
                 type="button"
                 disabled={isPinned}
-                onClick={() =>
+                onClick={(e) => {
+                  e.stopPropagation();
                   onPinBrand({
                     page_id: ad.pageId,
                     page_name: ad.pageName,
@@ -256,8 +257,8 @@ export function AdCard({ ad, selected, onSelect, isPinned, onPinBrand }: AdCardP
                     ig_followers: null,
                     ig_verification: false,
                     page_alias: null,
-                  })
-                }
+                  });
+                }}
                 className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition ${
                   isPinned
                     ? "text-gray-400 bg-gray-100 cursor-not-allowed"

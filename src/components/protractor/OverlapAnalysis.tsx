@@ -24,8 +24,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertTriangle,
-  ChevronDown,
-  ChevronUp,
   BarChart3,
   Clock,
   Info,
@@ -401,101 +399,46 @@ export function OverlapAnalysis({
         </Card>
       )}
 
-      {/* ── 전체 조합 테이블 ────────────────────────────────── */}
+      {/* ── 세트조합 중복률 바차트 ────────────────────────── */}
       {sortedPairs.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">광고세트 조합별 중복률</CardTitle>
+            <CardTitle className="text-base">세트조합 중복률</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead
-                      className="cursor-pointer select-none"
-                      onClick={() => toggleSort("name")}
-                    >
-                      캠페인 / 광고세트 A
-                      {sortKey === "name" &&
-                        (sortAsc ? (
-                          <ChevronUp className="ml-1 inline h-3 w-3" />
-                        ) : (
-                          <ChevronDown className="ml-1 inline h-3 w-3" />
-                        ))}
-                    </TableHead>
-                    <TableHead>캠페인 / 광고세트 B</TableHead>
-                    <TableHead
-                      className="cursor-pointer select-none text-right"
-                      onClick={() => toggleSort("rate")}
-                    >
-                      중복률
-                      {sortKey === "rate" &&
-                        (sortAsc ? (
-                          <ChevronUp className="ml-1 inline h-3 w-3" />
-                        ) : (
-                          <ChevronDown className="ml-1 inline h-3 w-3" />
-                        ))}
-                    </TableHead>
-                    <TableHead className="text-center">상태</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedPairs.map((p, i) => (
-                    <TableRow key={i}>
-                      <TableCell>
-                        <div className="text-xs text-muted-foreground">
-                          {p.campaign_a}
-                        </div>
-                        <div className="font-medium">{p.adset_a_name}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-xs text-muted-foreground">
-                          {p.campaign_b}
-                        </div>
-                        <div className="font-medium">{p.adset_b_name}</div>
-                      </TableCell>
-                      <TableCell className="text-right font-mono font-medium">
+            <div className="space-y-3">
+              {sortedPairs.map((p, i) => {
+                const barColor =
+                  p.overlap_rate >= 60
+                    ? "bg-red-500"
+                    : p.overlap_rate >= 30
+                      ? "bg-yellow-500"
+                      : "bg-green-500";
+                return (
+                  <div key={i} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-700 truncate max-w-[70%]">
+                        {p.adset_a_name}
+                        <span className="mx-1 text-gray-400">↔</span>
+                        {p.adset_b_name}
+                      </span>
+                      <span className="font-mono font-medium shrink-0 ml-2">
                         {p.overlap_rate}%
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <StatusBadge rate={p.overlap_rate} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                      </span>
+                    </div>
+                    <div className="h-5 w-full rounded-full bg-gray-100 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${barColor}`}
+                        style={{ width: `${Math.min(p.overlap_rate, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
       )}
-
-      {/* ── 해석 가이드 — 항상 표시 ────────────────────────── */}
-      <Card className="border-blue-100 bg-blue-50">
-        <CardContent className="space-y-2 py-4 text-sm">
-          <div className="mb-2 flex items-center gap-1.5 font-medium text-blue-700">
-            <Info className="h-4 w-4" />
-            해석 가이드
-          </div>
-          <p className="text-muted-foreground">
-            <strong className="text-foreground">전체 중복률</strong> ={" "}
-            (개별 도달 합계 - 실제 고유 도달) / 개별 도달 합계 × 100
-          </p>
-          <p className="text-muted-foreground">
-            <strong className="text-foreground">60% 이상</strong>: 두
-            광고세트가 거의 같은 사람에게 노출됩니다. 하나를 끄거나 타겟을
-            조정하세요.
-          </p>
-          <p className="text-muted-foreground">
-            <strong className="text-foreground">30~60%</strong>: 일부 중복이
-            있습니다. 타겟 세분화를 권장합니다.
-          </p>
-          <p className="text-muted-foreground">
-            <strong className="text-foreground">30% 미만</strong>: 양호한
-            수준입니다. 각 광고세트가 서로 다른 사람에게 도달하고 있습니다.
-          </p>
-        </CardContent>
-      </Card>
 
       {/* ── 마지막 분석 시각 ─────────────────────────────────── */}
       {cached_at && (

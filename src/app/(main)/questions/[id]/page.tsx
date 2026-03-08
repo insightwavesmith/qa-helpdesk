@@ -51,10 +51,12 @@ export default async function QuestionDetailPage({
   const { id } = await params;
 
   let isAdmin = false;
+  let currentUserId: string | null = null;
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      currentUserId = user.id;
       const svc = createServiceClient();
       const { data: profile } = await svc
         .from("profiles")
@@ -135,7 +137,7 @@ export default async function QuestionDetailPage({
           <h1 className="text-xl font-bold text-foreground">
             {question.title}
           </h1>
-          {isAdmin && (
+          {(isAdmin || (currentUserId && question.author?.id === currentUserId)) && (
             <DeleteQuestionButton questionId={id} />
           )}
         </div>
