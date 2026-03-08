@@ -15,6 +15,7 @@ import { MonitorPanel } from "./components/monitor-panel";
 // AI 인사이트 기능 숨김 (서비스 오픈 후 재검토 예정)
 // import { InsightSection } from "./components/insight-section";
 import { AlertTriangle, Search, Building2, KeyRound } from "lucide-react";
+import { toast } from "sonner";
 
 export default function CompetitorDashboard() {
   // 검색 모드
@@ -97,7 +98,6 @@ export default function CompetitorDashboard() {
 
   // 더보기 (다음 페이지 누적 로드)
   const handleLoadMore = useCallback(async () => {
-    console.log("[handleLoadMore]", { searchQuery, searchPageId, nextPageToken, loadingMore });
     if ((!searchQuery && !searchPageId) || !nextPageToken || loadingMore) return;
 
     setLoadingMore(true);
@@ -116,25 +116,30 @@ export default function CompetitorDashboard() {
       const json = await res.json();
 
       if (!res.ok) {
-        setError(json.error || "더보기에 실패했습니다");
+        toast.error(json.error || "더보기에 실패했습니다");
         return;
       }
 
       // 기존 ads에 누적 (중복 제거)
       const newAds: CompetitorAd[] = json.ads ?? [];
-      setAds((prev) => {
-        const existingIds = new Set(prev.map((a) => a.id));
-        const deduped = newAds.filter((a) => !existingIds.has(a.id));
-        return [...prev, ...deduped];
-      });
+      const existingIds = new Set(ads.map((a) => a.id));
+      const deduped = newAds.filter((a) => !existingIds.has(a.id));
+
+      if (deduped.length === 0) {
+        toast.info("더 이상 새로운 광고가 없습니다");
+        setNextPageToken(null);
+        return;
+      }
+
+      setAds((prev) => [...prev, ...deduped]);
       setNextPageToken(json.nextPageToken ?? null);
-      // serverTotalCount는 첫 검색 시 설정된 값 유지
+      toast.success(`광고 ${deduped.length}건 추가 로드`);
     } catch {
-      setError("네트워크 오류가 발생했습니다");
+      toast.error("네트워크 오류가 발생했습니다");
     } finally {
       setLoadingMore(false);
     }
-  }, [searchQuery, nextPageToken, loadingMore, searchPageId]);
+  }, [searchQuery, nextPageToken, loadingMore, searchPageId, ads]);
 
   // 필터 변경 시 처리
   const handleFilterChange = useCallback(
@@ -228,17 +233,16 @@ export default function CompetitorDashboard() {
   // 브랜드 검색에서 핀 등록
   const handlePinBrand = useCallback(
     async (brand: BrandPage) => {
-      console.log("[handlePinBrand]", { brandName: brand.page_name, pageId: brand.page_id });
       // 이미 등록된 브랜드 확인
       const alreadyExists = monitors.some(
         (m) => m.pageId === brand.page_id || m.brandName === brand.page_name,
       );
       if (alreadyExists) {
-        setError("이미 등록된 브랜드입니다");
+        toast.warning("이미 등록된 브랜드입니다");
         return;
       }
       if (monitors.length >= 10) {
-        setError("모니터링은 최대 10개까지 등록할 수 있습니다");
+        toast.warning("모니터링은 최대 10개까지 등록할 수 있습니다");
         return;
       }
 
@@ -256,17 +260,19 @@ export default function CompetitorDashboard() {
         });
         const json = await res.json();
 
-        console.log("[handlePinBrand] response:", { ok: res.ok, status: res.status, json });
-
         if (!res.ok) {
-          console.error("[handlePinBrand] 등록 실패:", json);
-          setError(json.error || "모니터링 등록에 실패했습니다");
+          toast.error(json.error || "모니터링 등록에 실패했습니다");
           return;
         }
 
-        setMonitors((prev) => [...prev, json.monitor]);
+        if (json.monitor) {
+          setMonitors((prev) => [...prev, json.monitor]);
+          toast.success(`${brand.page_name} 모니터링 등록 완료`);
+        } else {
+          toast.error("등록 응답 데이터가 올바르지 않습니다");
+        }
       } catch {
-        setError("네트워크 오류가 발생했습니다");
+        toast.error("네트워크 오류가 발생했습니다");
       }
     },
     [monitors, setMonitors],

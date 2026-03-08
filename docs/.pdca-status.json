@@ -886,6 +886,18 @@
       "startedAt": "2026-03-08",
       "completedAt": "2026-03-08",
       "notes": "S1 knowledge.ts QA_SYSTEM_PROMPT 마크다운 포맷팅 규칙 1줄 변경: 굵기 강조 허용→금지. tsc+lint+build 통과. Match Rate 100%."
+    },
+    "hotfix-0308-2nd": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/hotfix-0308-2nd.plan.md",
+        "design": "02-design/features/hotfix-0308-2nd.design.md",
+        "analysis": "03-analysis/hotfix-0308-2nd.analysis.md"
+      },
+      "startedAt": "2026-03-08",
+      "completedAt": "2026-03-08",
+      "notes": "T1 개인정보처리방침 자사몰/광고데이터 항목추가. T2 더보기 toast피드백+중복제거0건시안내+에러가시성개선. T3 핀등록 toast성공/실패알림+json.monitor방어+디버그로그제거. 이전수정(9512b1c)은 console.log만 추가해 실제 수정 없었음. tsc+build 통과."
     }
   },
   "phaseMapping": {
