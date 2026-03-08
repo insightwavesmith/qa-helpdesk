@@ -3,15 +3,31 @@
 import { useState, useMemo, useCallback } from "react";
 import type { CompetitorAd } from "@/types/competitor";
 import { AdCard } from "./ad-card";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, ChevronDown } from "lucide-react";
 
 interface AdCardListProps {
+  /** 필터 적용된 광고 목록 */
   ads: CompetitorAd[];
-  totalCount: number;
+  /** 필터 전 전체 로드된 광고 수 */
+  allAdsCount: number;
+  /** SearchAPI.io 전체 결과 수 */
+  serverTotalCount: number;
   query: string;
+  /** 다음 페이지 토큰 (null이면 더보기 없음) */
+  nextPageToken: string | null;
+  onLoadMore: () => void;
+  loadingMore: boolean;
 }
 
-export function AdCardList({ ads, totalCount, query }: AdCardListProps) {
+export function AdCardList({
+  ads,
+  allAdsCount,
+  serverTotalCount,
+  query,
+  nextPageToken,
+  onLoadMore,
+  loadingMore,
+}: AdCardListProps) {
   const [downloading, setDownloading] = useState(false);
 
   /** 이미지가 있는 광고 수 (ZIP 다운로드 가능 여부) */
@@ -80,9 +96,18 @@ export function AdCardList({ ads, totalCount, query }: AdCardListProps) {
         <h2 className="text-sm font-medium text-gray-700">
           <span className="font-semibold text-gray-900">&quot;{query}&quot;</span>{" "}
           검색 결과{" "}
-          <span className="text-[#F75D5D] font-semibold">{ads.length}건</span>
-          {ads.length !== totalCount && (
-            <span className="text-gray-400 ml-1">(전체 {totalCount}건 중 필터 적용)</span>
+          <span className="text-[#F75D5D] font-semibold">
+            {ads.length.toLocaleString()}건
+          </span>
+          {ads.length !== allAdsCount && (
+            <span className="text-gray-400 ml-1">
+              (전체 {allAdsCount}건 중 필터 적용)
+            </span>
+          )}
+          {serverTotalCount > allAdsCount && (
+            <span className="text-gray-400 ml-1">
+              — 총 {serverTotalCount.toLocaleString()}건
+            </span>
           )}
         </h2>
 
@@ -108,6 +133,35 @@ export function AdCardList({ ads, totalCount, query }: AdCardListProps) {
           <AdCard key={ad.id} ad={ad} />
         ))}
       </div>
+
+      {/* 더보기 버튼 */}
+      {nextPageToken && (
+        <div className="flex justify-center pt-2">
+          <button
+            type="button"
+            onClick={onLoadMore}
+            disabled={loadingMore}
+            className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-[#F75D5D] hover:bg-[#E54949] disabled:opacity-60 disabled:cursor-not-allowed rounded-xl transition"
+          >
+            {loadingMore ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                불러오는 중...
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4" />
+                더보기
+                {serverTotalCount > allAdsCount && (
+                  <span className="text-red-200 text-xs">
+                    ({allAdsCount}/{serverTotalCount.toLocaleString()})
+                  </span>
+                )}
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

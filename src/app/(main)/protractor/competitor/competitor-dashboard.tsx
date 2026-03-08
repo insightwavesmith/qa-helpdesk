@@ -21,6 +21,11 @@ export default function CompetitorDashboard() {
     mediaType: "all",
   });
 
+  // 페이지네이션 상태
+  const [nextPageToken, setNextPageToken] = useState<string | null>(null);
+  const [serverTotalCount, setServerTotalCount] = useState<number>(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+
   // 모니터링 상태
   const [monitors, setMonitors] = useState<CompetitorMonitor[]>([]);
 
@@ -28,13 +33,16 @@ export default function CompetitorDashboard() {
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 검색 실행
+  // 검색 실행 (새 검색 — 기존 결과 초기화)
   const handleSearch = useCallback(async (query: string) => {
     if (!query.trim()) return;
 
     setSearchQuery(query.trim());
     setLoadingSearch(true);
     setError(null);
+    setAds([]);
+    setNextPageToken(null);
+    setServerTotalCount(0);
 
     try {
       const params = new URLSearchParams({ q: query.trim() });
@@ -43,20 +51,64 @@ export default function CompetitorDashboard() {
 
       if (!res.ok) {
         setError(json.error || "검색에 실패했습니다");
-        setAds([]);
         return;
       }
 
       setAds(json.ads ?? []);
+      setNextPageToken(json.nextPageToken ?? null);
+      setServerTotalCount(json.serverTotalCount ?? json.ads?.length ?? 0);
     } catch {
       setError("네트워크 오류가 발생했습니다");
-      setAds([]);
     } finally {
       setLoadingSearch(false);
     }
   }, []);
 
-  // 필터 적용된 광고 목록 (useMemo로 안정화 — M10)
+  // 더보기 (다음 페이지 누적 로드)
+  const handleLoadMore = useCallback(async () => {
+    if (!searchQuery || !nextPageToken || loadingMore) return;
+
+    setLoadingMore(true);
+    setError(null);
+
+    try {
+      const params = new URLSearchParams({
+        q: searchQuery,
+        page_token: nextPageToken,
+      });
+      const res = await fetch(`/api/competitor/search?${params}`);
+      const json = await res.json();
+
+      if (!res.ok) {
+        setError(json.error || "더보기에 실패했습니다");
+        return;
+      }
+
+      // 기존 ads에 누적 (중복 제거)
+      const newAds: CompetitorAd[] = json.ads ?? [];
+      setAds((prev) => {
+        const existingIds = new Set(prev.map((a) => a.id));
+        const deduped = newAds.filter((a) => !existingIds.has(a.id));
+        return [...prev, ...deduped];
+      });
+      setNextPageToken(json.nextPageToken ?? null);
+      // serverTotalCount는 첫 검색 시 설정된 값 유지
+    } catch {
+      setError("네트워크 오류가 발생했습니다");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [searchQuery, nextPageToken, loadingMore]);
+
+  // 필터 변경 시 처리
+  const handleFilterChange = useCallback(
+    (newFilters: FilterState) => {
+      setFilters(newFilters);
+    },
+    [],
+  );
+
+  // 필터 적용된 광고 목록 (useMemo로 안정화)
   const filteredAds = useMemo(() => {
     return ads.filter((ad) => {
       if (filters.activeOnly && !ad.isActive) return false;
@@ -83,7 +135,7 @@ export default function CompetitorDashboard() {
 
       {/* 필터 칩 */}
       {ads.length > 0 && (
-        <FilterChips filters={filters} onChange={setFilters} />
+        <FilterChips filters={filters} onChange={handleFilterChange} />
       )}
 
       {/* 에러 표시 */}
@@ -112,7 +164,15 @@ export default function CompetitorDashboard() {
               <span className="ml-3 text-gray-500">검색 중...</span>
             </div>
           ) : ads.length > 0 ? (
-            <AdCardList ads={filteredAds} totalCount={ads.length} query={searchQuery} />
+            <AdCardList
+              ads={filteredAds}
+              allAdsCount={ads.length}
+              serverTotalCount={serverTotalCount}
+              query={searchQuery}
+              nextPageToken={nextPageToken}
+              onLoadMore={handleLoadMore}
+              loadingMore={loadingMore}
+            />
           ) : searchQuery ? (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
               <Search className="h-12 w-12 mb-3" />

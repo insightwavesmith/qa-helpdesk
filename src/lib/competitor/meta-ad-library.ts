@@ -7,6 +7,7 @@
 
 import type {
   CompetitorAd,
+  BrandPage,
   SearchApiAdRaw,
   SearchApiSnapshot,
   DisplayFormat,
@@ -121,11 +122,19 @@ export interface SearchParams {
   country?: string;
   limit?: number;
   mediaType?: string;
+  /** 다음 페이지 토큰 (SearchAPI.io pagination) */
+  pageToken?: string;
+  /** 특정 페이지(브랜드) ID로 필터 검색 */
+  searchPageIds?: string;
 }
 
 export interface MetaApiResult {
   ads: CompetitorAd[];
   totalCount: number;
+  /** 서버 전체 결과 수 (search_information.total_results) */
+  serverTotalCount: number;
+  /** 다음 페이지 토큰 (없으면 null) */
+  nextPageToken: string | null;
 }
 
 /**
@@ -156,6 +165,16 @@ export async function searchMetaAds(
     url.searchParams.set("media_type", params.mediaType);
   }
 
+  // 특정 페이지(브랜드) ID 필터
+  if (params.searchPageIds) {
+    url.searchParams.set("search_page_ids", params.searchPageIds);
+  }
+
+  // 페이지네이션 토큰
+  if (params.pageToken) {
+    url.searchParams.set("page_token", params.pageToken);
+  }
+
   const res = await fetch(url.toString(), {
     headers: { "Content-Type": "application/json" },
   });
@@ -182,10 +201,75 @@ export async function searchMetaAds(
   // 운영기간 DESC 정렬
   ads.sort((a, b) => b.durationDays - a.durationDays);
 
+  // 전체 결과 수 (search_information.total_results)
+  const serverTotalCount: number =
+    json.search_information?.total_results ?? ads.length;
+
+  // 다음 페이지 토큰
+  const nextPageToken: string | null =
+    json.pagination?.next_page_token ?? null;
+
   return {
     ads,
     totalCount: ads.length,
+    serverTotalCount,
+    nextPageToken,
   };
+}
+
+/**
+ * SearchAPI.io meta_ad_library_page_search 엔진으로 브랜드 페이지 검색
+ * @param query 브랜드명 또는 키워드 (한글 지원)
+ * @throws MetaAdError API 키 미설정, API 에러, Rate Limit 시
+ */
+export async function searchBrandPages(query: string): Promise<BrandPage[]> {
+  const apiKey = process.env.SEARCH_API_KEY;
+  if (!apiKey) {
+    throw new MetaAdError(
+      "SearchAPI.io API 키가 설정되지 않았습니다",
+      "API_KEY_MISSING",
+    );
+  }
+
+  const url = new URL(SEARCH_API_BASE);
+  url.searchParams.set("engine", "meta_ad_library_page_search");
+  url.searchParams.set("q", query);
+  url.searchParams.set("api_key", apiKey);
+
+  const res = await fetch(url.toString(), {
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (res.status === 429) {
+    throw new MetaAdError(
+      "요청 한도 초과. 잠시 후 다시 시도하세요",
+      "RATE_LIMITED",
+    );
+  }
+
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => "");
+    throw new MetaAdError(
+      `브랜드 검색 API 호출 실패: ${errBody.substring(0, 200)}`,
+      "SEARCH_API_ERROR",
+    );
+  }
+
+  const json = await res.json();
+  const rawPages: Array<Record<string, unknown>> =
+    json.pages ?? json.data ?? [];
+
+  return rawPages.map((p) => ({
+    page_id: String(p.page_id ?? ""),
+    page_name: String(p.page_name ?? ""),
+    category: (p.category as string) ?? null,
+    image_uri: (p.image_uri as string) ?? null,
+    likes: typeof p.likes === "number" ? p.likes : null,
+    ig_username: (p.ig_username as string) ?? null,
+    ig_followers: typeof p.ig_followers === "number" ? p.ig_followers : null,
+    ig_verification: Boolean(p.ig_verification),
+    page_alias: (p.page_alias as string) ?? null,
+  }));
 }
 
 /** Meta Ad Library / SearchAPI.io 전용 에러 클래스 */

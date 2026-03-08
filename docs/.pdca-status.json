@@ -767,6 +767,18 @@
       "startedAt": "2026-03-08",
       "completedAt": "2026-03-08",
       "notes": "T1 ZIP다운로드API(JSZip+병렬fetch+50건제한+중복파일명방지) + T2 전체다운로드버튼(AdCardList+로딩스피너+비활성화). tsc+lint+build 통과."
+    },
+    "competitor-v2-structure": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/competitor-v2-structure.plan.md",
+        "design": "02-design/features/competitor-v2-structure.design.md",
+        "analysis": "03-analysis/competitor-v2-structure.analysis.md"
+      },
+      "startedAt": "2026-03-08",
+      "completedAt": "2026-03-08",
+      "notes": "T1.1 타입정의(BrandPage+SearchMode+CompetitorMonitor확장) + T1.2 searchBrandPages함수+SearchParams.searchPageIds + T1.3 /api/competitor/brands 라우트(URL감지) + T1.4 search라우트 page_id파라미터 + T1.5 DB마이그레이션(6컬럼추가). 하위호환유지. tsc+lint+build 통과."
     }
   },
   "phaseMapping": {

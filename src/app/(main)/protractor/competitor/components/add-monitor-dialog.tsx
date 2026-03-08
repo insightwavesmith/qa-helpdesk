@@ -2,13 +2,15 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import type { CompetitorMonitor, MetaPage } from "@/types/competitor";
-import { X, Search, Loader2 } from "lucide-react";
+import { X, Search, Loader2, Link, CheckCircle2 } from "lucide-react";
 
 interface AddMonitorDialogProps {
   onClose: () => void;
   onAdded: (monitor: CompetitorMonitor) => void;
   searchQuery: string;
 }
+
+type TabType = "search" | "url";
 
 /** 첫 글자 아바타 fallback */
 function LetterAvatar({
@@ -65,21 +67,29 @@ export function AddMonitorDialog({
   onAdded,
   searchQuery,
 }: AddMonitorDialogProps) {
+  const [activeTab, setActiveTab] = useState<TabType>("search");
+
+  // ── 검색 탭 상태 ──
   const [brandName, setBrandName] = useState(searchQuery);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // 페이지 검색 관련 상태
   const [searchResults, setSearchResults] = useState<MetaPage[]>([]);
   const [selectedPage, setSelectedPage] = useState<MetaPage | null>(null);
   const [searching, setSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchError, setSearchError] = useState("");
 
+  // ── URL 탭 상태 ──
+  const [urlInput, setUrlInput] = useState("");
+  const [urlLoading, setUrlLoading] = useState(false);
+  const [urlError, setUrlError] = useState("");
+  const [resolvedPage, setResolvedPage] = useState<MetaPage | null>(null);
+  const [urlSubmitting, setUrlSubmitting] = useState(false);
+
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // ESC 키로 다이얼로그 닫기 (M9)
+  // ESC 키로 닫기
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -102,7 +112,7 @@ export function AddMonitorDialog({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 디바운스 검색
+  // ── 검색 탭: 디바운스 페이지 검색 ──
   const searchPages = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
@@ -138,21 +148,11 @@ export function AddMonitorDialog({
   const handleInputChange = (value: string) => {
     setBrandName(value);
     setError("");
+    if (selectedPage) setSelectedPage(null);
 
-    // 페이지 선택 해제
-    if (selectedPage) {
-      setSelectedPage(null);
-    }
-
-    // 디바운스 300ms
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
-
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     if (value.trim().length >= 2) {
-      debounceRef.current = setTimeout(() => {
-        searchPages(value);
-      }, 300);
+      debounceRef.current = setTimeout(() => searchPages(value), 300);
     } else {
       setSearchResults([]);
       setShowDropdown(false);
@@ -171,7 +171,8 @@ export function AddMonitorDialog({
     setBrandName("");
   };
 
-  const handleSubmit = async () => {
+  // ── 검색 탭 등록 ──
+  const handleSearchSubmit = async () => {
     const name = selectedPage ? selectedPage.pageName : brandName.trim();
     if (!name) {
       setError("브랜드명을 입력하세요");
@@ -196,7 +197,6 @@ export function AddMonitorDialog({
         setError(json.error || "등록에 실패했습니다");
         return;
       }
-
       onAdded(json.monitor);
     } catch {
       setError("네트워크 오류가 발생했습니다");
@@ -205,9 +205,72 @@ export function AddMonitorDialog({
     }
   };
 
+  // ── URL 탭: Facebook URL → page_id 조회 ──
+  const handleUrlLookup = useCallback(async () => {
+    const url = urlInput.trim();
+    if (!url) return;
+
+    setUrlLoading(true);
+    setUrlError("");
+    setResolvedPage(null);
+
+    try {
+      const res = await fetch(
+        `/api/facebook/page-info?url=${encodeURIComponent(url)}`,
+      );
+      const json = await res.json();
+
+      if (!res.ok) {
+        setUrlError(json.error || "페이지를 찾을 수 없습니다");
+        return;
+      }
+
+      setResolvedPage({
+        pageId: json.pageId as string,
+        pageName: json.pageName as string,
+        profileImageUrl: json.profileImageUrl as string,
+      });
+    } catch {
+      setUrlError("네트워크 오류가 발생했습니다");
+    } finally {
+      setUrlLoading(false);
+    }
+  }, [urlInput]);
+
+  // ── URL 탭 등록 ──
+  const handleUrlSubmit = async () => {
+    if (!resolvedPage) return;
+
+    setUrlSubmitting(true);
+    setUrlError("");
+
+    try {
+      const res = await fetch("/api/competitor/monitors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brandName: resolvedPage.pageName,
+          pageId: resolvedPage.pageId,
+        }),
+      });
+      const json = await res.json();
+
+      if (!res.ok) {
+        setUrlError(json.error || "등록에 실패했습니다");
+        return;
+      }
+      onAdded(json.monitor);
+    } catch {
+      setUrlError("네트워크 오류가 발생했습니다");
+    } finally {
+      setUrlSubmitting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
+        {/* 헤더 */}
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-gray-900">
             브랜드 모니터링 추가
@@ -221,126 +284,249 @@ export function AddMonitorDialog({
           </button>
         </div>
 
-        <div className="space-y-3">
-          {/* 선택된 페이지 칩 */}
-          {!!selectedPage && (
-            <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-1.5">
-              <PageProfileImage
-                src={selectedPage.profileImageUrl}
-                name={selectedPage.pageName}
-                size={20}
-              />
-              <span className="text-sm font-medium text-gray-900 truncate">
-                {selectedPage.pageName}
-              </span>
-              <button
-                type="button"
-                onClick={handleClearSelection}
-                className="ml-auto text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
+        {/* 탭 */}
+        <div className="flex gap-1 mb-4 p-1 bg-gray-100 rounded-xl">
+          <button
+            type="button"
+            onClick={() => setActiveTab("search")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg transition ${
+              activeTab === "search"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <Search className="h-3.5 w-3.5" />
+            검색으로 등록
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("url")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg transition ${
+              activeTab === "url"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <Link className="h-3.5 w-3.5" />
+            URL로 등록
+          </button>
+        </div>
 
-          {/* 검색 입력 */}
-          <div className="relative" ref={dropdownRef}>
-            <label
-              className="text-sm font-medium text-gray-700"
-              htmlFor="monitor-brand-name"
-            >
-              브랜드명
-            </label>
-            <div className="relative mt-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                id="monitor-brand-name"
-                type="text"
-                value={brandName}
-                onChange={(e) => handleInputChange(e.target.value)}
-                onFocus={() => {
-                  if (searchResults.length > 0) setShowDropdown(true);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    setShowDropdown(false);
-                    handleSubmit();
-                  }
-                }}
-                placeholder="브랜드명을 검색하세요"
-                className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D]/30 focus:border-[#F75D5D]"
-                autoFocus
-                autoComplete="off"
-              />
-              {searching && (
-                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 animate-spin" />
+        {/* ── 검색 탭 ── */}
+        {activeTab === "search" && (
+          <div className="space-y-3">
+            {/* 선택된 페이지 칩 */}
+            {!!selectedPage && (
+              <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-1.5">
+                <PageProfileImage
+                  src={selectedPage.profileImageUrl}
+                  name={selectedPage.pageName}
+                  size={20}
+                />
+                <span className="text-sm font-medium text-gray-900 truncate">
+                  {selectedPage.pageName}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleClearSelection}
+                  className="ml-auto text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* 검색 입력 */}
+            <div className="relative" ref={dropdownRef}>
+              <label
+                className="text-sm font-medium text-gray-700"
+                htmlFor="monitor-brand-name"
+              >
+                브랜드명
+              </label>
+              <div className="relative mt-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  id="monitor-brand-name"
+                  type="text"
+                  value={brandName}
+                  onChange={(e) => handleInputChange(e.target.value)}
+                  onFocus={() => {
+                    if (searchResults.length > 0) setShowDropdown(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      setShowDropdown(false);
+                      handleSearchSubmit();
+                    }
+                  }}
+                  placeholder="브랜드명을 검색하세요"
+                  className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D]/30 focus:border-[#F75D5D]"
+                  autoFocus
+                  autoComplete="off"
+                />
+                {searching && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 animate-spin" />
+                )}
+              </div>
+
+              {/* 드롭다운 결과 */}
+              {showDropdown && !selectedPage && (
+                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                  {searchError ? (
+                    <div className="px-4 py-3 text-sm text-red-500">
+                      {searchError}
+                    </div>
+                  ) : searching ? (
+                    <div className="px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      검색 중...
+                    </div>
+                  ) : searchResults.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-gray-500">
+                      검색 결과가 없습니다
+                    </div>
+                  ) : (
+                    searchResults.map((page) => (
+                      <button
+                        key={page.pageId}
+                        type="button"
+                        onClick={() => handleSelectPage(page)}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition text-left"
+                      >
+                        <PageProfileImage
+                          src={page.profileImageUrl}
+                          name={page.pageName}
+                          size={32}
+                        />
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">
+                            {page.pageName}
+                          </div>
+                          <div className="text-xs text-gray-400 truncate">
+                            {page.pageId}
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
               )}
             </div>
 
-            {/* 드롭다운 결과 */}
-            {showDropdown && !selectedPage && (
-              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                {searchError ? (
-                  <div className="px-4 py-3 text-sm text-red-500">
-                    {searchError}
-                  </div>
-                ) : searching ? (
-                  <div className="px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
+            {!!error && <p className="text-xs text-red-500">{error}</p>}
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={handleSearchSubmit}
+                disabled={loading || (!brandName.trim() && !selectedPage)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#F75D5D] hover:bg-[#E54949] rounded-xl transition disabled:opacity-50"
+              >
+                {loading ? "등록 중..." : "등록"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── URL 탭 ── */}
+        {activeTab === "url" && (
+          <div className="space-y-3">
+            <div>
+              <label
+                className="text-sm font-medium text-gray-700"
+                htmlFor="page-url-input"
+              >
+                Facebook 페이지 URL 또는 이름
+              </label>
+              <div className="flex gap-2 mt-1">
+                <input
+                  id="page-url-input"
+                  type="text"
+                  value={urlInput}
+                  onChange={(e) => {
+                    setUrlInput(e.target.value);
+                    setUrlError("");
+                    setResolvedPage(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleUrlLookup();
+                  }}
+                  placeholder="facebook.com/oliveyoung"
+                  className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D]/30 focus:border-[#F75D5D]"
+                  autoFocus
+                  autoComplete="off"
+                />
+                <button
+                  type="button"
+                  onClick={handleUrlLookup}
+                  disabled={!urlInput.trim() || urlLoading}
+                  className="px-3 py-2.5 text-sm font-medium text-white bg-gray-700 hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition"
+                >
+                  {urlLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    검색 중...
+                  ) : (
+                    "조회"
+                  )}
+                </button>
+              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                예: facebook.com/oliveyoung, oliveyoung, 페이지 ID
+              </p>
+            </div>
+
+            {/* 조회 결과 */}
+            {resolvedPage && (
+              <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
+                <PageProfileImage
+                  src={resolvedPage.profileImageUrl}
+                  name={resolvedPage.pageName}
+                  size={36}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-semibold text-gray-900 truncate">
+                      {resolvedPage.pageName}
+                    </span>
+                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
                   </div>
-                ) : searchResults.length === 0 ? (
-                  <div className="px-4 py-3 text-sm text-gray-500">
-                    검색 결과가 없습니다
+                  <div className="text-xs text-gray-500 font-mono">
+                    ID: {resolvedPage.pageId}
                   </div>
-                ) : (
-                  searchResults.map((page) => (
-                    <button
-                      key={page.pageId}
-                      type="button"
-                      onClick={() => handleSelectPage(page)}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition text-left"
-                    >
-                      <PageProfileImage
-                        src={page.profileImageUrl}
-                        name={page.pageName}
-                        size={32}
-                      />
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium text-gray-900 truncate">
-                          {page.pageName}
-                        </div>
-                        <div className="text-xs text-gray-400 truncate">
-                          {page.pageId}
-                        </div>
-                      </div>
-                    </button>
-                  ))
-                )}
+                </div>
               </div>
             )}
-          </div>
 
-          {!!error && <p className="text-xs text-red-500">{error}</p>}
+            {!!urlError && (
+              <p className="text-xs text-red-500">{urlError}</p>
+            )}
 
-          <div className="flex gap-2 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
-            >
-              취소
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={loading || (!brandName.trim() && !selectedPage)}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#F75D5D] hover:bg-[#E54949] rounded-xl transition disabled:opacity-50"
-            >
-              {loading ? "등록 중..." : "등록"}
-            </button>
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={handleUrlSubmit}
+                disabled={!resolvedPage || urlSubmitting}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#F75D5D] hover:bg-[#E54949] rounded-xl transition disabled:opacity-50"
+              >
+                {urlSubmitting ? "등록 중..." : "등록"}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -108,7 +108,12 @@ export interface CompetitorAdCacheRow {
 /** 검색 응답 */
 export interface CompetitorSearchResponse {
   ads: CompetitorAd[];
+  /** 이번 페이지 광고 수 */
   totalCount: number;
+  /** SearchAPI.io 전체 결과 수 */
+  serverTotalCount: number;
+  /** 다음 페이지 토큰 (null이면 마지막 페이지) */
+  nextPageToken: string | null;
   query: string;
   searchedAt: string;
 }
@@ -122,6 +127,13 @@ export interface CompetitorMonitor {
   lastAdCount: number;
   createdAt: string;
   unreadAlertCount?: number;
+  // v2 확장 필드
+  pageProfileUrl: string | null;
+  igUsername: string | null;
+  category: string | null;
+  newAdsCount: number;
+  latestAdDate: string | null;
+  totalAdsCount: number;
 }
 
 /** AI 인사이트 결과 */
@@ -166,6 +178,13 @@ export interface CompetitorMonitorRow {
   last_checked_at: string | null;
   last_ad_count: number | null;
   created_at: string;
+  // v2 확장 컬럼
+  page_profile_url: string | null;
+  ig_username: string | null;
+  category: string | null;
+  new_ads_count: number;
+  latest_ad_date: string | null;
+  total_ads_count: number;
 }
 
 export interface CompetitorAlertRow {
@@ -184,6 +203,22 @@ export interface CompetitorInsightCacheRow {
   created_at: string;
   expires_at: string;
 }
+
+/** 브랜드 페이지 검색 결과 (SearchAPI.io meta_ad_library_page_search) */
+export interface BrandPage {
+  page_id: string;
+  page_name: string;
+  category: string | null;
+  image_uri: string | null;
+  likes: number | null;
+  ig_username: string | null;
+  ig_followers: number | null;
+  ig_verification: boolean;
+  page_alias: string | null;
+}
+
+/** 검색 모드: 브랜드 검색 vs 키워드 검색 */
+export type SearchMode = "brand" | "keyword";
 
 /** API 에러 코드 */
 export type CompetitorErrorCode =

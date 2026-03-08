@@ -49,6 +49,12 @@ export async function GET() {
     last_checked_at: string | null;
     last_ad_count: number | null;
     created_at: string;
+    page_profile_url: string | null;
+    ig_username: string | null;
+    category: string | null;
+    new_ads_count: number | null;
+    latest_ad_date: string | null;
+    total_ads_count: number | null;
   }>;
   const monitorIds = monitorList.map((m) => m.id);
   let alertCounts: Record<string, number> = {};
@@ -79,6 +85,13 @@ export async function GET() {
     lastAdCount: m.last_ad_count ?? 0,
     createdAt: m.created_at,
     unreadAlertCount: alertCounts[m.id] ?? 0,
+    // v2 확장 필드
+    pageProfileUrl: m.page_profile_url ?? null,
+    igUsername: m.ig_username ?? null,
+    category: m.category ?? null,
+    newAdsCount: m.new_ads_count ?? 0,
+    latestAdDate: m.latest_ad_date ?? null,
+    totalAdsCount: m.total_ads_count ?? 0,
   }));
 
   return NextResponse.json({ monitors: result });
@@ -170,6 +183,12 @@ export async function POST(req: NextRequest) {
     last_checked_at: string | null;
     last_ad_count: number | null;
     created_at: string;
+    page_profile_url: string | null;
+    ig_username: string | null;
+    category: string | null;
+    new_ads_count: number | null;
+    latest_ad_date: string | null;
+    total_ads_count: number | null;
   };
 
   return NextResponse.json(
@@ -182,6 +201,13 @@ export async function POST(req: NextRequest) {
         lastAdCount: row.last_ad_count ?? 0,
         createdAt: row.created_at,
         unreadAlertCount: 0,
+        // v2 확장 필드
+        pageProfileUrl: row.page_profile_url ?? null,
+        igUsername: row.ig_username ?? null,
+        category: row.category ?? null,
+        newAdsCount: row.new_ads_count ?? 0,
+        latestAdDate: row.latest_ad_date ?? null,
+        totalAdsCount: row.total_ads_count ?? 0,
       },
     },
     { status: 201 },

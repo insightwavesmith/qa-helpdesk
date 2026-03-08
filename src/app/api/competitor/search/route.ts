@@ -8,14 +8,19 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/competitor/search
  * 경쟁사 광고 검색 — SearchAPI.io Meta Ad Library 엔진
+ *
+ * Query params:
+ *   q           - 검색어 (필수)
+ *   page_token  - 다음 페이지 토큰 (선택, 더보기용)
+ *   country     - 국가 코드 (기본 KR)
+ *   media_type  - "all" | "image" | "video" (기본 all)
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const q = searchParams.get("q")?.trim();
+  const pageToken = searchParams.get("page_token") ?? undefined;
+  const pageId = searchParams.get("page_id") ?? undefined;
   const country = searchParams.get("country") ?? "KR";
-  const activeOnly = searchParams.get("active_only") === "true";
-  const minDays = parseInt(searchParams.get("min_days") ?? "0", 10) || 0;
-  const platform = searchParams.get("platform") ?? "";
   const mediaType = searchParams.get("media_type") ?? "all";
   const limit = Math.min(
     parseInt(searchParams.get("limit") ?? "50", 10) || 50,
@@ -35,6 +40,8 @@ export async function GET(req: NextRequest) {
       country,
       limit,
       mediaType,
+      pageToken,
+      searchPageIds: pageId,
     });
 
     // 캐시 UPSERT (다운로드 시 캐시 필요 → await)
@@ -44,26 +51,11 @@ export async function GET(req: NextRequest) {
       console.error("[search] 캐시 UPSERT 실패:", err);
     }
 
-    // 클라이언트 필터 적용
-    let filteredAds = result.ads;
-
-    if (activeOnly) {
-      filteredAds = filteredAds.filter((ad) => ad.isActive);
-    }
-
-    if (minDays > 0) {
-      filteredAds = filteredAds.filter((ad) => ad.durationDays >= minDays);
-    }
-
-    if (platform) {
-      filteredAds = filteredAds.filter((ad) =>
-        ad.platforms.includes(platform.toLowerCase()),
-      );
-    }
-
     return NextResponse.json({
-      ads: filteredAds,
-      totalCount: filteredAds.length,
+      ads: result.ads,
+      totalCount: result.ads.length,
+      serverTotalCount: result.serverTotalCount,
+      nextPageToken: result.nextPageToken,
       query: q,
       searchedAt: new Date().toISOString(),
     });
