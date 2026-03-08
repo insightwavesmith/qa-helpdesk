@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import type { CompetitorAd } from "@/types/competitor";
+import { downloadFile } from "@/lib/competitor/client-download";
 import {
   X,
   Download,
@@ -58,20 +59,22 @@ export function AdMediaModal({ ad, isOpen, onClose }: AdMediaModalProps) {
 
   const handleDownload = useCallback(
     async (type: "image" | "video") => {
+      const mediaUrl = type === "video" ? ad.videoUrl : ad.imageUrl;
+      if (!mediaUrl) return;
+
       setDownloading(true);
       try {
-        const mediaUrl = type === "video" ? ad.videoUrl : ad.imageUrl;
-        const urlParam = mediaUrl ? `&url=${encodeURIComponent(mediaUrl)}` : "";
-        window.open(
-          `/api/competitor/download?ad_id=${ad.id}&type=${type}${urlParam}`,
-          "_blank",
-        );
+        const ext = type === "video" ? "mp4" : "jpg";
+        const safeName = ad.pageName.replace(/[^a-zA-Z0-9가-힣]/g, "_");
+        const filename = `${safeName}_${ad.id}.${ext}`;
+        await downloadFile(mediaUrl, filename);
+      } catch {
+        alert("다운로드에 실패했습니다");
       } finally {
-        // 다운로드는 새 탭에서 진행되므로 즉시 해제
-        setTimeout(() => setDownloading(false), 1000);
+        setDownloading(false);
       }
     },
-    [ad.id, ad.videoUrl, ad.imageUrl],
+    [ad.id, ad.pageName, ad.videoUrl, ad.imageUrl],
   );
 
   if (!isOpen) return null;

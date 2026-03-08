@@ -4,10 +4,23 @@ import { useState } from "react";
 import type { CompetitorAd } from "@/types/competitor";
 import { DurationBar } from "./duration-bar";
 import { AdMediaModal } from "./ad-media-modal";
-import { ExternalLink, Eye, Download, Play, ImageOff } from "lucide-react";
+import { downloadFile } from "@/lib/competitor/client-download";
+import {
+  ExternalLink,
+  Eye,
+  Download,
+  Play,
+  ImageOff,
+  Check,
+  Loader2,
+} from "lucide-react";
 
 interface AdCardProps {
   ad: CompetitorAd;
+  /** 선택 상태 */
+  selected?: boolean;
+  /** 선택 토글 콜백 */
+  onSelect?: (id: string) => void;
 }
 
 /** 플랫폼별 아이콘 */
@@ -112,12 +125,51 @@ function MediaPreview({
   );
 }
 
-export function AdCard({ ad }: AdCardProps) {
+export function AdCard({ ad, selected, onSelect }: AdCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [downloadingFile, setDownloadingFile] = useState(false);
+
+  /** 클라이언트 직접 다운로드 */
+  const handleDownload = async () => {
+    if (downloadingFile) return;
+    const url = ad.videoUrl || ad.imageUrl;
+    if (!url) return;
+
+    const ext = ad.videoUrl ? "mp4" : "jpg";
+    const safeName = ad.pageName.replace(/[^a-zA-Z0-9가-힣]/g, "_");
+    const filename = `${safeName}_${ad.id}.${ext}`;
+
+    setDownloadingFile(true);
+    try {
+      await downloadFile(url, filename);
+    } catch {
+      alert("다운로드에 실패했습니다");
+    } finally {
+      setDownloadingFile(false);
+    }
+  };
 
   return (
     <>
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition overflow-hidden">
+      <div className="relative bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition overflow-hidden">
+        {/* 체크박스 (좌상단) */}
+        {onSelect && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(ad.id);
+            }}
+            className={`absolute top-2 left-2 z-10 w-6 h-6 rounded-md border-2 flex items-center justify-center transition ${
+              selected
+                ? "bg-[#F75D5D] border-[#F75D5D] text-white"
+                : "bg-white/80 border-gray-300 hover:border-[#F75D5D]"
+            }`}
+          >
+            {selected && <Check className="h-4 w-4" />}
+          </button>
+        )}
+
         {/* 소재 미리보기 */}
         <MediaPreview ad={ad} onClick={() => setModalOpen(true)} />
 
@@ -171,15 +223,19 @@ export function AdCard({ ad }: AdCardProps) {
               소재 보기
             </button>
             {(ad.imageUrl || ad.videoUrl) && (
-              <a
-                href={`/api/competitor/download?ad_id=${ad.id}&type=${ad.videoUrl ? "video" : "image"}&url=${encodeURIComponent((ad.videoUrl || ad.imageUrl)!)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#F75D5D] bg-red-50 hover:bg-red-100 rounded-lg transition"
+              <button
+                type="button"
+                onClick={handleDownload}
+                disabled={downloadingFile}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#F75D5D] bg-red-50 hover:bg-red-100 disabled:opacity-50 rounded-lg transition"
               >
-                <Download className="h-3.5 w-3.5" />
+                {downloadingFile ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Download className="h-3.5 w-3.5" />
+                )}
                 다운로드
-              </a>
+              </button>
             )}
             {ad.linkUrl && /^https?:\/\//.test(ad.linkUrl) && (
               <a

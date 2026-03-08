@@ -39,9 +39,25 @@ export default function CompetitorDashboard() {
   // 모니터링 상태
   const [monitors, setMonitors] = useState<CompetitorMonitor[]>([]);
 
+  // 선택 상태
+  const [selectedAds, setSelectedAds] = useState<Set<string>>(new Set());
+
   // 로딩/에러 상태
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // 광고 선택 토글
+  const handleSelectAd = useCallback((id: string) => {
+    setSelectedAds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
 
   // 검색 실행 (새 검색 — 기존 결과 초기화)
   const handleSearch = useCallback(async (query: string) => {
@@ -51,6 +67,7 @@ export default function CompetitorDashboard() {
     setLoadingSearch(true);
     setError(null);
     setAds([]);
+    setSelectedAds(new Set());
     setNextPageToken(null);
     setServerTotalCount(0);
 
@@ -145,6 +162,7 @@ export default function CompetitorDashboard() {
       setLoadingSearch(true);
       setError(null);
       setAds([]);
+      setSelectedAds(new Set());
       setNextPageToken(null);
       setServerTotalCount(0);
 
@@ -260,6 +278,8 @@ export default function CompetitorDashboard() {
               nextPageToken={nextPageToken}
               onLoadMore={handleLoadMore}
               loadingMore={loadingMore}
+              selectedAds={selectedAds}
+              onSelectAd={handleSelectAd}
             />
           ) : searchQuery ? (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
