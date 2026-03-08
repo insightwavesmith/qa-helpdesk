@@ -10,8 +10,32 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
+ * fbcdn 도메인 허용 목록 (보안)
+ * scontent: 이미지, video: 영상
+ */
+function isAllowedFbcdnUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    // fbcdn.net 도메인 (scontent-xxx.xx.fbcdn.net, video-xxx.xx.fbcdn.net)
+    // 또는 facebook.com 계열만 허용
+    return (
+      parsed.hostname.endsWith(".fbcdn.net") ||
+      parsed.hostname.endsWith(".facebook.com") ||
+      parsed.hostname.endsWith(".fna.fbcdn.net")
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
  * GET /api/competitor/download
  * 서버사이드 프록시로 fbcdn에서 이미지/영상 다운로드
+ *
+ * 쿼리 파라미터:
+ * - ad_id: 광고 ID (필수)
+ * - type: "image" | "video" (필수)
+ * - url: fbcdn 직접 URL (선택, 캐시 fallback용)
  */
 export async function GET(req: NextRequest) {
   // 인증 확인
@@ -30,6 +54,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const adId = searchParams.get("ad_id");
   const type = searchParams.get("type") as "image" | "video" | null;
+  const directUrl = searchParams.get("url");
 
   if (!adId || !type || !["image", "video"].includes(type)) {
     return NextResponse.json(
@@ -39,56 +64,72 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // 캐시에서 조회
-    let cachedAd = await getAdFromCache(adId);
-    console.log("[download] 캐시 조회:", adId, cachedAd ? "있음" : "없음");
+    let mediaUrl: string | null = null;
+    let pageName: string | null = null;
 
-    // 캐시 없거나 URL 만료 시 재검색
-    if (!cachedAd || isUrlExpired(cachedAd)) {
-      console.log("[download] 캐시 없음 또는 만료 → 재검색 시도", {
-        hasCache: !!cachedAd,
-        expired: cachedAd ? isUrlExpired(cachedAd) : false,
-        pageName: cachedAd?.page_name,
-      });
-      try {
-        // ad_archive_id로 직접 검색은 불가 → page_name으로 재검색
-        if (cachedAd?.page_name) {
-          await searchMetaAds({ searchTerms: cachedAd.page_name, limit: 50 });
-          cachedAd = await getAdFromCache(adId);
-        }
-      } catch (err) {
-        console.error("[download] 재검색 실패:", err);
-        if (err instanceof MetaAdError) {
-          return NextResponse.json(
-            { error: "미디어 URL이 만료되었습니다. 다시 검색해 주세요.", code: "URL_EXPIRED" },
-            { status: 410 },
-          );
+    // T2: URL 파라미터가 있으면 캐시 조회 스킵 (fallback)
+    if (directUrl) {
+      if (!isAllowedFbcdnUrl(directUrl)) {
+        return NextResponse.json(
+          { error: "허용되지 않는 URL입니다", code: "INVALID_QUERY" },
+          { status: 400 },
+        );
+      }
+      console.log("[download] URL fallback 사용:", directUrl.substring(0, 80));
+      mediaUrl = directUrl;
+      pageName = "ad";
+    } else {
+      // 기존 캐시 조회 로직
+      let cachedAd = await getAdFromCache(adId);
+      console.log("[download] 캐시 조회:", adId, cachedAd ? "있음" : "없음");
+
+      // 캐시 없거나 URL 만료 시 재검색
+      if (!cachedAd || isUrlExpired(cachedAd)) {
+        console.log("[download] 캐시 없음 또는 만료 → 재검색 시도", {
+          hasCache: !!cachedAd,
+          expired: cachedAd ? isUrlExpired(cachedAd) : false,
+          pageName: cachedAd?.page_name,
+        });
+        try {
+          // ad_archive_id로 직접 검색은 불가 → page_name으로 재검색
+          if (cachedAd?.page_name) {
+            await searchMetaAds({ searchTerms: cachedAd.page_name, limit: 50 });
+            cachedAd = await getAdFromCache(adId);
+          }
+        } catch (err) {
+          console.error("[download] 재검색 실패:", err);
+          if (err instanceof MetaAdError) {
+            return NextResponse.json(
+              { error: "미디어 URL이 만료되었습니다. 다시 검색해 주세요.", code: "URL_EXPIRED" },
+              { status: 410 },
+            );
+          }
         }
       }
-    }
 
-    if (!cachedAd) {
-      return NextResponse.json(
-        { error: "광고를 찾을 수 없습니다. 다시 검색해 주세요.", code: "AD_NOT_FOUND" },
-        { status: 404 },
-      );
-    }
+      if (!cachedAd) {
+        return NextResponse.json(
+          { error: "광고를 찾을 수 없습니다. 다시 검색해 주세요.", code: "AD_NOT_FOUND" },
+          { status: 404 },
+        );
+      }
 
-    // URL 결정
-    const mediaUrl =
-      type === "video" ? cachedAd.video_url : cachedAd.image_url;
+      // URL 결정
+      mediaUrl = type === "video" ? cachedAd.video_url : cachedAd.image_url;
+      pageName = cachedAd.page_name;
 
-    if (!mediaUrl) {
-      console.log("[download] 미디어 URL 없음:", {
-        type,
-        hasImage: !!cachedAd.image_url,
-        hasVideo: !!cachedAd.video_url,
-        displayFormat: cachedAd.display_format,
-      });
-      return NextResponse.json(
-        { error: "다운로드할 미디어가 없습니다", code: "AD_NOT_FOUND" },
-        { status: 404 },
-      );
+      if (!mediaUrl) {
+        console.log("[download] 미디어 URL 없음:", {
+          type,
+          hasImage: !!cachedAd.image_url,
+          hasVideo: !!cachedAd.video_url,
+          displayFormat: cachedAd.display_format,
+        });
+        return NextResponse.json(
+          { error: "다운로드할 미디어가 없습니다", code: "AD_NOT_FOUND" },
+          { status: 404 },
+        );
+      }
     }
 
     // fbcdn에서 프록시 다운로드
@@ -112,7 +153,7 @@ export async function GET(req: NextRequest) {
     }
 
     // 파일명 생성
-    const safeName = (cachedAd.page_name || "ad").replace(/[^a-zA-Z0-9가-힣]/g, "_");
+    const safeName = (pageName || "ad").replace(/[^a-zA-Z0-9가-힣]/g, "_");
     const ext = type === "video" ? "mp4" : "jpg";
     const filename = `${safeName}_${adId}.${ext}`;
 

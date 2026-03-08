@@ -64,18 +64,28 @@ export async function upsertAdCache(ads: CompetitorAd[]): Promise<void> {
 export async function getAdFromCache(
   adArchiveId: string,
 ): Promise<CompetitorAdCacheRow | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const svc = createServiceClient() as any;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const svc = createServiceClient() as any;
 
-  const { data, error } = await svc
-    .from("competitor_ad_cache")
-    .select("*")
-    .eq("ad_archive_id", adArchiveId)
-    .single();
+    const { data, error } = await svc
+      .from("competitor_ad_cache")
+      .select("*")
+      .eq("ad_archive_id", adArchiveId)
+      .single();
 
-  if (error || !data) return null;
+    if (error) {
+      console.error("[ad-cache] 조회 실패:", error.message, error.code);
+      return null;
+    }
 
-  return data as CompetitorAdCacheRow;
+    if (!data) return null;
+
+    return data as CompetitorAdCacheRow;
+  } catch (err) {
+    console.error("[ad-cache] getAdFromCache 예외:", err);
+    return null;
+  }
 }
 
 /**

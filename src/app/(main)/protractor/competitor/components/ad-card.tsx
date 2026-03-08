@@ -172,7 +172,7 @@ export function AdCard({ ad }: AdCardProps) {
             </button>
             {(ad.imageUrl || ad.videoUrl) && (
               <a
-                href={`/api/competitor/download?ad_id=${ad.id}&type=${ad.videoUrl ? "video" : "image"}`}
+                href={`/api/competitor/download?ad_id=${ad.id}&type=${ad.videoUrl ? "video" : "image"}&url=${encodeURIComponent((ad.videoUrl || ad.imageUrl)!)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#F75D5D] bg-red-50 hover:bg-red-100 rounded-lg transition"

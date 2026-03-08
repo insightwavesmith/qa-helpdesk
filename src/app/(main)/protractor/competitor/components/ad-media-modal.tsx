@@ -60,8 +60,10 @@ export function AdMediaModal({ ad, isOpen, onClose }: AdMediaModalProps) {
     async (type: "image" | "video") => {
       setDownloading(true);
       try {
+        const mediaUrl = type === "video" ? ad.videoUrl : ad.imageUrl;
+        const urlParam = mediaUrl ? `&url=${encodeURIComponent(mediaUrl)}` : "";
         window.open(
-          `/api/competitor/download?ad_id=${ad.id}&type=${type}`,
+          `/api/competitor/download?ad_id=${ad.id}&type=${type}${urlParam}`,
           "_blank",
         );
       } finally {
@@ -69,7 +71,7 @@ export function AdMediaModal({ ad, isOpen, onClose }: AdMediaModalProps) {
         setTimeout(() => setDownloading(false), 1000);
       }
     },
-    [ad.id],
+    [ad.id, ad.videoUrl, ad.imageUrl],
   );
 
   if (!isOpen) return null;
