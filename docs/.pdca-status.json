@@ -779,6 +779,18 @@
       "startedAt": "2026-03-08",
       "completedAt": "2026-03-08",
       "notes": "T1.1 타입정의(BrandPage+SearchMode+CompetitorMonitor확장) + T1.2 searchBrandPages함수+SearchParams.searchPageIds + T1.3 /api/competitor/brands 라우트(URL감지) + T1.4 search라우트 page_id파라미터 + T1.5 DB마이그레이션(6컬럼추가). 하위호환유지. tsc+lint+build 통과."
+    },
+    "competitor-v2-search-ui": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/competitor-v2-structure.plan.md",
+        "design": "02-design/features/competitor-v2-structure.design.md",
+        "analysis": "03-analysis/competitor-v2-search-ui.analysis.md"
+      },
+      "startedAt": "2026-03-08",
+      "completedAt": "2026-03-08",
+      "notes": "T2.1 검색모드토글(brand/keyword) + T2.2 BrandSearchBar(debounce300ms+드롭다운+프로필이미지+핀등록+ESC/외부클릭닫기) + T2.3 기존SearchBar 무변경. page_id기반광고검색 연동. tsc+lint+build 통과."
     }
   },
   "phaseMapping": {

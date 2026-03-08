@@ -1,16 +1,25 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import type { CompetitorAd, CompetitorMonitor } from "@/types/competitor";
+import type {
+  CompetitorAd,
+  CompetitorMonitor,
+  BrandPage,
+  SearchMode,
+} from "@/types/competitor";
 import { SearchBar } from "./components/search-bar";
+import { BrandSearchBar } from "./components/brand-search-bar";
 import { FilterChips, type FilterState } from "./components/filter-chips";
 import { AdCardList } from "./components/ad-card-list";
 import { MonitorPanel } from "./components/monitor-panel";
 // AI 인사이트 기능 숨김 (서비스 오픈 후 재검토 예정)
 // import { InsightSection } from "./components/insight-section";
-import { AlertTriangle, Search } from "lucide-react";
+import { AlertTriangle, Search, Building2, KeyRound } from "lucide-react";
 
 export default function CompetitorDashboard() {
+  // 검색 모드
+  const [searchMode, setSearchMode] = useState<SearchMode>("brand");
+
   // 검색 상태
   const [searchQuery, setSearchQuery] = useState("");
   const [ads, setAds] = useState<CompetitorAd[]>([]);
@@ -120,6 +129,41 @@ export default function CompetitorDashboard() {
     });
   }, [ads, filters]);
 
+  // 브랜드 선택 → page_id로 광고 검색
+  const handleBrandSelect = useCallback(
+    async (brand: BrandPage) => {
+      setSearchQuery(brand.page_name);
+      setLoadingSearch(true);
+      setError(null);
+      setAds([]);
+      setNextPageToken(null);
+      setServerTotalCount(0);
+
+      try {
+        const params = new URLSearchParams({
+          q: brand.page_name,
+          page_id: brand.page_id,
+        });
+        const res = await fetch(`/api/competitor/search?${params}`);
+        const json = await res.json();
+
+        if (!res.ok) {
+          setError(json.error || "검색에 실패했습니다");
+          return;
+        }
+
+        setAds(json.ads ?? []);
+        setNextPageToken(json.nextPageToken ?? null);
+        setServerTotalCount(json.serverTotalCount ?? json.ads?.length ?? 0);
+      } catch {
+        setError("네트워크 오류가 발생했습니다");
+      } finally {
+        setLoadingSearch(false);
+      }
+    },
+    [],
+  );
+
   // 모니터링 브랜드 클릭 -> 해당 브랜드로 검색
   const handleMonitorClick = useCallback(
     (monitor: CompetitorMonitor) => {
@@ -130,8 +174,43 @@ export default function CompetitorDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* 검색바 */}
-      <SearchBar onSearch={handleSearch} loading={loadingSearch} />
+      {/* 검색 모드 토글 */}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setSearchMode("brand")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition ${
+            searchMode === "brand"
+              ? "bg-[#F75D5D] text-white shadow-sm"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          <Building2 className="h-4 w-4" />
+          브랜드 검색
+        </button>
+        <button
+          type="button"
+          onClick={() => setSearchMode("keyword")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition ${
+            searchMode === "keyword"
+              ? "bg-[#F75D5D] text-white shadow-sm"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          <KeyRound className="h-4 w-4" />
+          키워드 검색
+        </button>
+      </div>
+
+      {/* 검색바 — 모드에 따라 분기 */}
+      {searchMode === "brand" ? (
+        <BrandSearchBar
+          onBrandSelect={handleBrandSelect}
+          loading={loadingSearch}
+        />
+      ) : (
+        <SearchBar onSearch={handleSearch} loading={loadingSearch} />
+      )}
 
       {/* 필터 칩 */}
       {ads.length > 0 && (
