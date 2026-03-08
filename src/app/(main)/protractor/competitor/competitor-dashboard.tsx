@@ -96,7 +96,7 @@ export default function CompetitorDashboard() {
     }
   }, []);
 
-  // 더보기 (다음 페이지 누적 로드 — 서버에서 중복 제거)
+  // 더보기 (다음 페이지 누적 로드 — page_token만 단독 전송)
   const handleLoadMore = useCallback(async () => {
     if ((!searchQuery && !searchPageId) || !nextPageToken || loadingMore) return;
 
@@ -104,19 +104,10 @@ export default function CompetitorDashboard() {
     setError(null);
 
     try {
+      // page_token만 전송 — 검색 조건이 토큰에 이미 인코딩되어 있음
       const fetchParams = new URLSearchParams({
         page_token: nextPageToken,
       });
-      // page_token + 원래 검색 키(q 또는 page_id)를 함께 전송
-      if (searchPageId) {
-        fetchParams.set("page_id", searchPageId);
-      } else if (searchQuery) {
-        fetchParams.set("q", searchQuery);
-      }
-      // 서버 중복제거: 이미 로드된 광고 ID 목록 전송
-      if (ads.length > 0) {
-        fetchParams.set("seen_ids", ads.map((a) => a.id).join(","));
-      }
 
       const res = await fetch(`/api/competitor/search?${fetchParams}`);
       const json: Record<string, unknown> = await res.json();
@@ -129,12 +120,21 @@ export default function CompetitorDashboard() {
       const newAds = (json.ads as CompetitorAd[]) ?? [];
       const serverNextToken = (json.nextPageToken as string) ?? null;
 
+      // serverTotalCount 갱신
+      if (typeof json.serverTotalCount === "number") {
+        setServerTotalCount(json.serverTotalCount);
+      }
+
       if (newAds.length > 0) {
-        setAds((prev) => [...prev, ...newAds]);
+        // 방어적 dedup: 혹시 중복이 있을 경우 클라이언트에서 제거
+        setAds((prev) => {
+          const existingIds = new Set(prev.map((a) => a.id));
+          const uniqueNew = newAds.filter((a) => !existingIds.has(a.id));
+          return [...prev, ...uniqueNew];
+        });
         setNextPageToken(serverNextToken);
         toast.success(`광고 ${newAds.length}건 추가 로드`);
       } else if (serverNextToken) {
-        // 이 페이지 결과가 모두 중복 → 다음 토큰 저장
         setNextPageToken(serverNextToken);
         toast.info("더 이상 새로운 광고가 없습니다");
       } else {
@@ -146,7 +146,7 @@ export default function CompetitorDashboard() {
     } finally {
       setLoadingMore(false);
     }
-  }, [searchQuery, nextPageToken, loadingMore, searchPageId, ads]);
+  }, [searchQuery, nextPageToken, loadingMore, searchPageId]);
 
   // 필터 변경 시 처리
   const handleFilterChange = useCallback(

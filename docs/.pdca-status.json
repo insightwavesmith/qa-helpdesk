@@ -930,6 +930,16 @@
       "startedAt": "2026-03-09",
       "completedAt": "2026-03-09",
       "notes": "초대코드 근본 수정: (A) handle_new_user 트리거에 invite_code_used 추가, (B) consume_invite_code RPC 함수(FOR UPDATE 행잠금+원자적 처리), (C) 기존 5명 데이터 복구 마이그레이션. tsc+lint+build 통과."
+    },
+    "bugfix-loadmore-pagination": {
+      "phase": "designing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/bugfix-loadmore-pagination.plan.md",
+        "design": "02-design/features/bugfix-loadmore-pagination.design.md"
+      },
+      "startedAt": "2026-03-09",
+      "notes": "더보기 1건 로드 버그: 근본원인=page_token과 q/page_id 동시전송→SearchAPI.io 새 검색으로 해석→page1과 동일결과→seen_ids dedup에서 29/30건 제거→1건만 남음. 10번째 시도에서 최초로 전체 흐름 추적 완료. Plan+Design만 작성, 코드수정 없음."
     }
   },
   "phaseMapping": {
