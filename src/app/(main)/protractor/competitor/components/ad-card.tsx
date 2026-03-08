@@ -1,18 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import type { CompetitorAd } from "@/types/competitor";
+import type { CompetitorAd, BrandPage } from "@/types/competitor";
 import { DurationBar } from "./duration-bar";
 import { AdMediaModal } from "./ad-media-modal";
 import { downloadFile } from "@/lib/competitor/client-download";
 import {
-  ExternalLink,
   Eye,
   Download,
   Play,
   ImageOff,
   Check,
   Loader2,
+  Pin,
 } from "lucide-react";
 
 interface AdCardProps {
@@ -21,6 +21,10 @@ interface AdCardProps {
   selected?: boolean;
   /** 선택 토글 콜백 */
   onSelect?: (id: string) => void;
+  /** 이미 모니터링 등록된 브랜드 여부 */
+  isPinned?: boolean;
+  /** 브랜드 핀 등록 콜백 */
+  onPinBrand?: (brand: BrandPage) => void;
 }
 
 /** 플랫폼별 아이콘 */
@@ -125,7 +129,7 @@ function MediaPreview({
   );
 }
 
-export function AdCard({ ad, selected, onSelect }: AdCardProps) {
+export function AdCard({ ad, selected, onSelect, isPinned, onPinBrand }: AdCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [downloadingFile, setDownloadingFile] = useState(false);
 
@@ -237,50 +241,32 @@ export function AdCard({ ad, selected, onSelect }: AdCardProps) {
                 다운로드
               </button>
             )}
-            {ad.linkUrl && /^https?:\/\//.test(ad.linkUrl) && (
-              <a
-                href={ad.linkUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
+            {ad.pageId && onPinBrand && (
+              <button
+                type="button"
+                disabled={isPinned}
+                onClick={() =>
+                  onPinBrand({
+                    page_id: ad.pageId,
+                    page_name: ad.pageName,
+                    category: null,
+                    image_uri: null,
+                    likes: null,
+                    ig_username: null,
+                    ig_followers: null,
+                    ig_verification: false,
+                    page_alias: null,
+                  })
+                }
+                className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition ${
+                  isPinned
+                    ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                    : "text-emerald-600 bg-emerald-50 hover:bg-emerald-100"
+                }`}
               >
-                <ExternalLink className="h-3.5 w-3.5" />
-                랜딩페이지
-              </a>
-            )}
-            {!ad.linkUrl && ad.caption && /^https?:\/\//.test(ad.caption) && (
-              <a
-                href={ad.caption}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                랜딩페이지
-              </a>
-            )}
-            {/* 외부 링크: Facebook + Ad Library */}
-            {ad.pageId && (
-              <>
-                <a
-                  href={`https://www.facebook.com/${ad.pageId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
-                  title="Facebook 페이지"
-                >
-                  📘 Facebook
-                </a>
-                <a
-                  href={`https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=KR&view_all_page_id=${ad.pageId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
-                  title="Ad Library에서 전체 광고 보기"
-                >
-                  🔍 Ad Library
-                </a>
-              </>
+                <Pin className="h-3.5 w-3.5" />
+                {isPinned ? "등록됨" : "브랜드 등록"}
+              </button>
             )}
           </div>
         </div>

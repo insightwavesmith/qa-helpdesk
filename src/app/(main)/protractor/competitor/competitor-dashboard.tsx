@@ -36,6 +36,9 @@ export default function CompetitorDashboard() {
   const [serverTotalCount, setServerTotalCount] = useState<number>(0);
   const [loadingMore, setLoadingMore] = useState(false);
 
+  // 브랜드 검색 시 page_id 보존 (더보기 시 필요)
+  const [searchPageId, setSearchPageId] = useState<string | null>(null);
+
   // 모니터링 상태
   const [monitors, setMonitors] = useState<CompetitorMonitor[]>([]);
 
@@ -70,6 +73,7 @@ export default function CompetitorDashboard() {
     setSelectedAds(new Set());
     setNextPageToken(null);
     setServerTotalCount(0);
+    setSearchPageId(null);
 
     try {
       const params = new URLSearchParams({ q: query.trim() });
@@ -103,6 +107,9 @@ export default function CompetitorDashboard() {
         q: searchQuery,
         page_token: nextPageToken,
       });
+      if (searchPageId) {
+        params.set("page_id", searchPageId);
+      }
       const res = await fetch(`/api/competitor/search?${params}`);
       const json = await res.json();
 
@@ -125,7 +132,7 @@ export default function CompetitorDashboard() {
     } finally {
       setLoadingMore(false);
     }
-  }, [searchQuery, nextPageToken, loadingMore]);
+  }, [searchQuery, nextPageToken, loadingMore, searchPageId]);
 
   // 필터 변경 시 처리
   const handleFilterChange = useCallback(
@@ -151,8 +158,11 @@ export default function CompetitorDashboard() {
     if (filters.sortBy === "duration") {
       return [...filtered].sort((a, b) => b.durationDays - a.durationDays);
     }
-    // 최신순은 API 반환 순서(start_date DESC) 그대로 유지
-    return filtered;
+    // 최신순: start_date 내림차순
+    return [...filtered].sort(
+      (a, b) =>
+        new Date(b.startDate).getTime() - new Date(a.startDate).getTime(),
+    );
   }, [ads, filters]);
 
   // 브랜드 선택 → page_id로 광고 검색
@@ -165,6 +175,7 @@ export default function CompetitorDashboard() {
       setSelectedAds(new Set());
       setNextPageToken(null);
       setServerTotalCount(0);
+      setSearchPageId(brand.page_id);
 
       try {
         const params = new URLSearchParams({
@@ -338,6 +349,8 @@ export default function CompetitorDashboard() {
               loadingMore={loadingMore}
               selectedAds={selectedAds}
               onSelectAd={handleSelectAd}
+              monitors={monitors}
+              onPinBrand={handlePinBrand}
             />
           ) : searchQuery ? (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">

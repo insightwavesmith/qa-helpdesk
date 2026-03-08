@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import type { CompetitorAd } from "@/types/competitor";
+import type { CompetitorAd, CompetitorMonitor, BrandPage } from "@/types/competitor";
 import { AdCard } from "./ad-card";
 import {
   downloadFilesAsZip,
@@ -26,6 +26,10 @@ interface AdCardListProps {
   selectedAds: Set<string>;
   /** 광고 선택 토글 */
   onSelectAd: (id: string) => void;
+  /** 모니터링 목록 (브랜드 등록 여부 확인용) */
+  monitors: CompetitorMonitor[];
+  /** 브랜드 핀 등록 콜백 */
+  onPinBrand: (brand: BrandPage) => void;
 }
 
 export function AdCardList({
@@ -38,6 +42,8 @@ export function AdCardList({
   loadingMore,
   selectedAds,
   onSelectAd,
+  monitors,
+  onPinBrand,
 }: AdCardListProps) {
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] =
@@ -231,6 +237,10 @@ export function AdCardList({
             ad={ad}
             selected={selectedAds.has(ad.id)}
             onSelect={onSelectAd}
+            isPinned={monitors.some(
+              (m) => m.pageId === ad.pageId || m.brandName === ad.pageName,
+            )}
+            onPinBrand={onPinBrand}
           />
         ))}
       </div>

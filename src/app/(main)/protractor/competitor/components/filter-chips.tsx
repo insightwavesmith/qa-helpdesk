@@ -21,36 +21,12 @@ interface ChipDef {
 }
 
 const CHIPS: ChipDef[] = [
-  // — 기간/상태 필터 —
+  // — 기간 필터 —
   {
     label: "30일+",
     group: "filter",
     isActive: (f) => f.minDays === 30,
     toggle: (f) => ({ ...f, minDays: f.minDays === 30 ? 0 : 30 }),
-  },
-  {
-    label: "게재중",
-    group: "filter",
-    isActive: (f) => f.activeOnly,
-    toggle: (f) => ({ ...f, activeOnly: !f.activeOnly }),
-  },
-  {
-    label: "Facebook",
-    group: "filter",
-    isActive: (f) => f.platform === "facebook",
-    toggle: (f) => ({
-      ...f,
-      platform: f.platform === "facebook" ? "" : "facebook",
-    }),
-  },
-  {
-    label: "Instagram",
-    group: "filter",
-    isActive: (f) => f.platform === "instagram",
-    toggle: (f) => ({
-      ...f,
-      platform: f.platform === "instagram" ? "" : "instagram",
-    }),
   },
   // — 소재 유형 필터 —
   {

@@ -161,6 +161,9 @@ export async function searchMetaAds(
   url.searchParams.set("country", country);
   url.searchParams.set("api_key", apiKey);
 
+  // 게재중 광고만 검색 (기본값)
+  url.searchParams.set("ad_active_status", "active");
+
   if (params.mediaType && params.mediaType !== "all") {
     url.searchParams.set("media_type", params.mediaType);
   }
@@ -197,9 +200,6 @@ export async function searchMetaAds(
   const json = await res.json();
   const rawAds: SearchApiAdRaw[] = json.ads ?? json.data ?? [];
   const ads = rawAds.slice(0, limit).map(transformSearchApiAd);
-
-  // 운영기간 DESC 정렬
-  ads.sort((a, b) => b.durationDays - a.durationDays);
 
   // 전체 결과 수 (search_information.total_results)
   const serverTotalCount: number =
@@ -257,7 +257,7 @@ export async function searchBrandPages(query: string): Promise<BrandPage[]> {
 
   const json = await res.json();
   const rawPages: Array<Record<string, unknown>> =
-    json.pages ?? json.data ?? [];
+    json.page_results ?? json.data ?? [];
 
   return rawPages.map((p) => ({
     page_id: String(p.page_id ?? ""),
