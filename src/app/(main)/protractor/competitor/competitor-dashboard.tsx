@@ -28,6 +28,7 @@ export default function CompetitorDashboard() {
     minDays: 0,
     platform: "",
     mediaType: "all",
+    sortBy: "latest",
   });
 
   // 페이지네이션 상태
@@ -117,16 +118,24 @@ export default function CompetitorDashboard() {
     [],
   );
 
-  // 필터 적용된 광고 목록 (useMemo로 안정화)
+  // 필터 + 정렬 적용된 광고 목록 (useMemo로 안정화)
   const filteredAds = useMemo(() => {
-    return ads.filter((ad) => {
+    const filtered = ads.filter((ad) => {
       if (filters.activeOnly && !ad.isActive) return false;
       if (filters.minDays > 0 && ad.durationDays < filters.minDays) return false;
       if (filters.platform && !ad.platforms.includes(filters.platform)) return false;
-      if (filters.mediaType === "image" && ad.displayFormat !== "IMAGE" && ad.displayFormat !== "CAROUSEL") return false;
+      if (filters.mediaType === "image" && ad.displayFormat !== "IMAGE") return false;
+      if (filters.mediaType === "carousel" && ad.displayFormat !== "CAROUSEL") return false;
       if (filters.mediaType === "video" && ad.displayFormat !== "VIDEO") return false;
       return true;
     });
+
+    // 정렬
+    if (filters.sortBy === "duration") {
+      return [...filtered].sort((a, b) => b.durationDays - a.durationDays);
+    }
+    // 최신순은 API 반환 순서(start_date DESC) 그대로 유지
+    return filtered;
   }, [ads, filters]);
 
   // 브랜드 선택 → page_id로 광고 검색

@@ -791,6 +791,18 @@
       "startedAt": "2026-03-08",
       "completedAt": "2026-03-08",
       "notes": "T2.1 검색모드토글(brand/keyword) + T2.2 BrandSearchBar(debounce300ms+드롭다운+프로필이미지+핀등록+ESC/외부클릭닫기) + T2.3 기존SearchBar 무변경. page_id기반광고검색 연동. tsc+lint+build 통과."
+    },
+    "competitor-v2-filter-sort": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/competitor-v2-filter-sort.plan.md",
+        "design": "02-design/features/competitor-v2-filter-sort.design.md",
+        "analysis": "03-analysis/competitor-v2-filter-sort.analysis.md"
+      },
+      "startedAt": "2026-03-08",
+      "completedAt": "2026-03-08",
+      "notes": "T3.1 슬라이드필터분리(IMAGE/CAROUSEL/VIDEO 각각 독립) + T3.2 정렬칩(최신순/운영기간순, 클라이언트정렬durationDays DESC) + T3.3 더보기페이지네이션(기존구현확인). tsc+lint+build 통과."
     }
   },
   "phaseMapping": {
