@@ -20,6 +20,7 @@ export const dynamic = "force-dynamic";
  *   page_id     - 브랜드 페이지 ID (선택)
  *   country     - 국가 코드 (기본 KR)
  *   media_type  - "all" | "image" | "video" (기본 all)
+ *   seen_ids    - 이미 로드된 ad_archive_id 목록 (콤마 구분, 서버 중복제거용)
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -31,6 +32,11 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(
     parseInt(searchParams.get("limit") ?? "50", 10) || 50,
     100,
+  );
+  // 서버 중복제거: 프론트에서 이미 로드된 광고 ID 목록
+  const seenIdsParam = searchParams.get("seen_ids") ?? "";
+  const seenIds = new Set(
+    seenIdsParam ? seenIdsParam.split(",").filter(Boolean) : [],
   );
 
   // 더보기(page_token)는 q/page_id 없이도 허용
@@ -84,16 +90,22 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // 서버 중복제거: seen_ids에 포함된 광고 필터링
+    const dedupedAds =
+      seenIds.size > 0
+        ? finalResult.ads.filter((ad) => !seenIds.has(ad.id))
+        : finalResult.ads;
+
     // 캐시 UPSERT (다운로드 시 캐시 필요 → await)
     try {
-      await upsertAdCache(finalResult.ads);
+      await upsertAdCache(dedupedAds);
     } catch (err) {
       console.error("[search] 캐시 UPSERT 실패:", err);
     }
 
     return NextResponse.json({
-      ads: finalResult.ads,
-      totalCount: finalResult.ads.length,
+      ads: dedupedAds,
+      totalCount: dedupedAds.length,
       serverTotalCount: finalResult.serverTotalCount,
       nextPageToken: finalResult.nextPageToken,
       query: q,

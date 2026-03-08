@@ -918,6 +918,18 @@
       },
       "startedAt": "2026-03-08",
       "notes": "수정사항 4차(4건): T1 더보기페이지네이션(pageToken시 page_id제외), T2 초대코드used_count(쿼리빌더재할당), T3 믹스패널필드필수화, T4 키워드검색강화(브랜드사전+폴백+자동영문변환)."
+    },
+    "bugfix-invite-code-consumption": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/bugfix-pagination-invitecode.plan.md",
+        "design": "02-design/features/bugfix-pagination-invitecode.design.md",
+        "analysis": "03-analysis/bugfix-invite-code-consumption.analysis.md"
+      },
+      "startedAt": "2026-03-09",
+      "completedAt": "2026-03-09",
+      "notes": "초대코드 근본 수정: (A) handle_new_user 트리거에 invite_code_used 추가, (B) consume_invite_code RPC 함수(FOR UPDATE 행잠금+원자적 처리), (C) 기존 5명 데이터 복구 마이그레이션. tsc+lint+build 통과."
     }
   },
   "phaseMapping": {
