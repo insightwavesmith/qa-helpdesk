@@ -175,7 +175,7 @@ export async function searchMetaAds(
 
   // 특정 페이지(브랜드) ID 필터
   if (params.searchPageIds) {
-    url.searchParams.set("search_page_ids", params.searchPageIds);
+    url.searchParams.set("page_id", params.searchPageIds);
   }
 
   // 페이지네이션 토큰

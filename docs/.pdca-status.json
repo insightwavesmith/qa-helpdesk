@@ -865,6 +865,16 @@
       "completedAt": "2026-03-08",
       "notes": "S1 meta-ad-library.ts searchPageIds 존재 시 q 빈 문자열 설정 + S2 route.ts page_id만으로 검색 허용(validation 완화). tsc+lint+build 통과. Match Rate 100%."
     },
+    "brand-search-bugfix": {
+      "phase": "designing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/brand-search-bugfix.plan.md",
+        "design": "02-design/features/brand-search-bugfix.design.md"
+      },
+      "startedAt": "2026-03-08",
+      "notes": "근본 원인: meta-ad-library.ts에서 SearchAPI.io에 search_page_ids(Meta Graph API 파라미터명)를 보내지만, SearchAPI.io는 page_id를 기대. 1줄 수정(search_page_ids→page_id)으로 해결 가능. Plan+Design만 작성."
+    },
     "open-final-t2-qa-bold-removal": {
       "phase": "completed",
       "matchRate": 100,
