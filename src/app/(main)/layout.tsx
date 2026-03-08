@@ -8,6 +8,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { MobileSidebar } from "@/components/dashboard/MobileSidebar";
 import { Button } from "@/components/ui/button";
 import { QaChatButton } from "@/components/qa-chatbot/QaChatButton";
+import { SWRProvider } from "@/components/providers/swr-provider";
 
 export default async function MainLayout({
   children,
@@ -35,7 +36,7 @@ export default async function MainLayout({
             </div>
           </div>
         </header>
-        <main>{children}</main>
+        <main><SWRProvider>{children}</SWRProvider></main>
       </div>
     );
   }
@@ -62,7 +63,7 @@ export default async function MainLayout({
           userRole={profile?.role}
         />
         <main>
-          {children}
+          <SWRProvider>{children}</SWRProvider>
         </main>
       </div>
     );
@@ -91,9 +92,11 @@ export default async function MainLayout({
       <div className="flex flex-1 flex-col overflow-hidden">
         <DashboardHeader userName={profile?.name || "사용자"} />
         <main className="flex-1 overflow-y-auto bg-background p-6">
-          <div className="mx-auto max-w-[1600px]">
-            {children}
-          </div>
+          <SWRProvider>
+            <div className="mx-auto max-w-[1600px]">
+              {children}
+            </div>
+          </SWRProvider>
         </main>
       </div>
       {/* 관리자 전용 QA 리포팅 챗봇 */}

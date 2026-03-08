@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import {
   Table,
   TableBody,
@@ -13,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { addAdAccount, updateAdAccount, toggleAdAccount } from "@/actions/admin";
+import { jsonFetcher } from "@/lib/swr/config";
+import { SWR_KEYS } from "@/lib/swr/keys";
 
 interface AssignedUser {
   name: string;
@@ -39,9 +42,13 @@ interface Student {
 }
 
 export function AccountsClient() {
-  const [accounts, setAccounts] = useState<AdAccount[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: accountsData, isLoading: loading, mutate } = useSWR(
+    SWR_KEYS.ADMIN_ACCOUNTS,
+    jsonFetcher,
+  );
+  const accounts: AdAccount[] = accountsData?.accounts ?? [];
+  const students: Student[] = accountsData?.students ?? [];
+
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [modalAccount, setModalAccount] = useState<AdAccount | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
@@ -55,24 +62,6 @@ export function AccountsClient() {
   const [editMixpanelBoardId, setEditMixpanelBoardId] = useState("");
   const [editLoading, setEditLoading] = useState(false);
   const [toggleLoading, setToggleLoading] = useState<string | null>(null);
-
-  const fetchData = useCallback(async () => {
-    try {
-      const res = await fetch("/api/admin/accounts");
-      if (!res.ok) throw new Error("Failed to fetch");
-      const data = await res.json();
-      setAccounts(data.accounts);
-      setStudents(data.students);
-    } catch {
-      toast.error("계정 목록을 불러오는데 실패했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const handleAssign = async () => {
     if (!modalAccount || !selectedUserId) return;
@@ -90,7 +79,7 @@ export function AccountsClient() {
       toast.success("계정이 배정되었습니다.");
       setModalAccount(null);
       setSelectedUserId("");
-      await fetchData();
+      await mutate();
     } catch {
       toast.error("배정에 실패했습니다.");
     } finally {
@@ -109,7 +98,7 @@ export function AccountsClient() {
       });
       if (!res.ok) throw new Error("Failed to unassign");
       toast.success("배정이 해제되었습니다.");
-      await fetchData();
+      await mutate();
     } catch {
       toast.error("해제에 실패했습니다.");
     } finally {
@@ -129,7 +118,7 @@ export function AccountsClient() {
         setShowAddModal(false);
         setAddAccountId("");
         setAddAccountName("");
-        await fetchData();
+        await mutate();
       }
     } catch {
       toast.error("처리 중 오류가 발생했습니다.");
@@ -152,7 +141,7 @@ export function AccountsClient() {
       } else {
         toast.success("계정이 수정되었습니다.");
         setEditAccount(null);
-        await fetchData();
+        await mutate();
       }
     } catch {
       toast.error("처리 중 오류가 발생했습니다.");
@@ -169,7 +158,7 @@ export function AccountsClient() {
         toast.error(`상태 변경 실패: ${error}`);
       } else {
         toast.success(account.active ? "비활성화되었습니다." : "활성화되었습니다.");
-        await fetchData();
+        await mutate();
       }
     } catch {
       toast.error("처리 중 오류가 발생했습니다.");

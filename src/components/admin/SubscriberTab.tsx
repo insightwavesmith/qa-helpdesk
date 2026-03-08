@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import {
   Table,
   TableBody,
@@ -21,7 +22,7 @@ import {
 import { Pagination } from "@/components/shared/Pagination";
 import { getSubscribers } from "@/actions/subscribers";
 import { Loader2, Search, UserCheck, UserX } from "lucide-react";
-import { toast } from "sonner";
+import { SWR_KEYS } from "@/lib/swr/keys";
 
 type StatusFilter = "all" | "active" | "opted_out";
 
@@ -40,34 +41,21 @@ function formatDate(dateStr: string | null) {
 }
 
 export function SubscriberTab() {
-  const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const pageSize = 20;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await getSubscribers(page, pageSize, {
-        status: statusFilter === "all" ? undefined : statusFilter,
-        search: search || undefined,
-      });
-      setSubscribers(result.data);
-      setTotalCount(result.count);
-    } catch {
-      toast.error("구독자 목록을 불러올 수 없습니다.");
-    } finally {
-      setLoading(false);
-    }
-  }, [page, statusFilter, search]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { data: subscriberResult, isLoading: loading } = useSWR(
+    SWR_KEYS.subscribers(page, statusFilter, search),
+    () => getSubscribers(page, pageSize, {
+      status: statusFilter === "all" ? undefined : statusFilter,
+      search: search || undefined,
+    }),
+  );
+  const subscribers: Subscriber[] = subscriberResult?.data ?? [];
+  const totalCount: number = subscriberResult?.count ?? 0;
 
   const handleSearch = () => {
     setPage(1);

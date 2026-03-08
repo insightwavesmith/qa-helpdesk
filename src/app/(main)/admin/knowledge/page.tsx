@@ -4,13 +4,16 @@
 // T7b: 모니터링 차트 + 임베딩 현황 (이 파일에 추가)
 // T6: 슬라이드 관리 탭 (이 파일에 추가)
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Brain, BarChart3, Database, Upload, Zap } from "lucide-react";
 import { toast } from "sonner";
+import { jsonFetcher } from "@/lib/swr/config";
+import { SWR_KEYS } from "@/lib/swr/keys";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line,
@@ -63,31 +66,15 @@ const COST_PER_1K_OUTPUT = 0.075; // $75/1M output
 
 export default function AdminKnowledgePage() {
   const [activeTab, setActiveTab] = useState("monitoring");
-  const [loading, setLoading] = useState(true);
-  const [usageData, setUsageData] = useState<UsageRow[]>([]);
-  const [chunkStats, setChunkStats] = useState<ChunkStat[]>([]);
-  const [totalChunks, setTotalChunks] = useState(0);
   const [embeddingRunning, setEmbeddingRunning] = useState(false);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await fetchMonitoringData();
-      if (data) {
-        setUsageData(data.usage || []);
-        setChunkStats(data.chunkStats || []);
-        setTotalChunks(data.totalChunks || 0);
-      }
-    } catch {
-      console.error("Failed to load monitoring data");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const { data: statsData, isLoading: loading, mutate } = useSWR(
+    SWR_KEYS.ADMIN_KNOWLEDGE_STATS,
+    jsonFetcher,
+  );
+  const usageData: UsageRow[] = statsData?.usage || [];
+  const chunkStats: ChunkStat[] = statsData?.chunkStats || [];
+  const totalChunks: number = statsData?.totalChunks || 0;
 
   // ── 일별 비용 계산 ──
   const dailyCosts = usageData.reduce<Record<string, number>>((acc, row) => {
@@ -145,7 +132,7 @@ export default function AdminKnowledgePage() {
       const result = await res.json();
       if (!res.ok) throw new Error(result.error);
       toast.success(`임베딩 완료: 성공 ${result.success}, 연결 ${result.linked}, 실패 ${result.failed}`);
-      loadData();
+      mutate();
     } catch {
       toast.error("재임베딩 실행에 실패했습니다.");
     } finally {

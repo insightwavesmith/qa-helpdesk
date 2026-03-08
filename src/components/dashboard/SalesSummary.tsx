@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import useSWR from "swr";
 import {
   DollarSign,
   TrendingUp,
@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { NumberTicker } from "@/components/ui/number-ticker";
 import { BorderBeam } from "@/components/ui/border-beam";
+import { jsonFetcher } from "@/lib/swr/config";
+import { SWR_KEYS } from "@/lib/swr/keys";
 
 interface SalesData {
   success: boolean;
@@ -51,28 +53,11 @@ function formatDate(dateStr: string | null): string {
 }
 
 export function SalesSummary() {
-  const [data, setData] = useState<SalesData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch("/api/sales-summary");
-        const json = await res.json();
-        if (json.success) {
-          setData(json);
-        } else {
-          setError(true);
-        }
-      } catch {
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
+  const { data, error: swrError, isLoading: loading } = useSWR<SalesData>(
+    SWR_KEYS.SALES_SUMMARY,
+    jsonFetcher,
+  );
+  const error = !!swrError || (data && !data.success);
 
   if (loading) {
     return (

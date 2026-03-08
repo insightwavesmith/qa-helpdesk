@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, BookOpen, ChevronDown, ChevronUp, Shield, GraduationCap, CheckCircle, ArrowRight, Lock, Sparkles } from "lucide-react";
 import { getCurriculumContents } from "@/actions/curation";
+import { SWR_KEYS } from "@/lib/swr/keys";
 import { renderInlineMarkdown } from "./curation-card";
 import { filterValidTopics } from "@/lib/topic-utils";
 import type { Content } from "@/types/content";
@@ -206,24 +208,11 @@ function CurriculumItem({
 }
 
 export function CurriculumView({ sourceType, onGenerateInfoShare }: CurriculumViewProps) {
-  const [contents, setContents] = useState<Content[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await getCurriculumContents(sourceType);
-      setContents(data as Content[]);
-    } catch {
-      setContents([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [sourceType]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const { data: curriculumData, isLoading: loading } = useSWR(
+    SWR_KEYS.curriculumContents(sourceType),
+    () => getCurriculumContents(sourceType),
+  );
+  const contents = (curriculumData?.data ?? []) as unknown as Content[];
 
   if (loading) {
     return (

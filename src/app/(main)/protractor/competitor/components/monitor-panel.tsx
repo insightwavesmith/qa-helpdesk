@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import useSWR from "swr";
 import type { CompetitorMonitor } from "@/types/competitor";
+import { jsonFetcher } from "@/lib/swr/config";
+import { SWR_KEYS } from "@/lib/swr/keys";
 import { MonitorBrandCard } from "./monitor-brand-card";
 import { AddMonitorDialog } from "./add-monitor-dialog";
 import { Eye, Plus, ChevronDown, ChevronUp } from "lucide-react";
@@ -21,25 +24,17 @@ export function MonitorPanel({
 }: MonitorPanelProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
-  const [loading, setLoading] = useState(true);
 
-  // 모니터링 목록 로드
-  const fetchMonitors = useCallback(async () => {
-    try {
-      const res = await fetch("/api/competitor/monitors");
-      if (!res.ok) return;
-      const json = await res.json();
-      setMonitors(json.monitors ?? []);
-    } catch {
-      // 무시
-    } finally {
-      setLoading(false);
-    }
-  }, [setMonitors]);
-
-  useEffect(() => {
-    fetchMonitors();
-  }, [fetchMonitors]);
+  // SWR: 모니터링 목록 로드
+  const { isLoading: loading } = useSWR(
+    SWR_KEYS.COMPETITOR_MONITORS,
+    jsonFetcher,
+    {
+      onSuccess: (data) => {
+        setMonitors(data?.monitors ?? []);
+      },
+    },
+  );
 
   // 삭제
   const handleDelete = useCallback(

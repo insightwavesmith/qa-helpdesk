@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
+import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -22,6 +23,7 @@ import { CurationTab } from "./curation-tab";
 import { TopicMapView } from "./topic-map-view";
 import { DeletedSection } from "./deleted-section";
 import type { CurationContentWithLinks } from "@/types/content";
+import { SWR_KEYS } from "@/lib/swr/keys";
 
 interface CurationViewProps {
   sourceFilter: string;
@@ -43,61 +45,20 @@ const EMPTY_STATE_MESSAGES: Record<string, { title: string; desc: string }> = {
   marketing_theory: { title: "마케팅원론 콘텐츠가 없습니다", desc: "마케팅원론 소스가 등록되면 여기에 표시됩니다." },
 };
 
-interface CacheEntry {
-  contents: CurationContentWithLinks[];
-  counts: CurationStatusCounts | null;
-  timestamp: number;
-}
-
-function makeCacheKey(source: string, status: string, score: string, period: string): string {
-  return `${source}|${status}|${score}|${period}`;
-}
-
-const CACHE_TTL = 5 * 60 * 1000; // 5분
-
 export function CurationView({ sourceFilter, onGenerateInfoShare }: CurationViewProps) {
   const [viewMode, setViewMode] = useState<"inbox" | "topicmap">("inbox");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [statusCounts, setStatusCounts] = useState<CurationStatusCounts | null>(null);
-  const [contents, setContents] = useState<CurationContentWithLinks[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [scoreFilter, setScoreFilter] = useState("all");
   const [periodFilter, setPeriodFilter] = useState("all");
   const [dismissing, setDismissing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deletedRefreshKey, setDeletedRefreshKey] = useState(0);
-  const cacheRef = useRef<Map<string, CacheEntry>>(new Map());
 
-  const invalidateCache = useCallback((source?: string) => {
-    if (source) {
-      for (const key of cacheRef.current.keys()) {
-        if (key.startsWith(`${source}|`) || key.startsWith("all|")) {
-          cacheRef.current.delete(key);
-        }
-      }
-    } else {
-      cacheRef.current.clear();
-    }
-  }, []);
-
-  const loadContents = useCallback(async () => {
-    const cacheKey = makeCacheKey(sourceFilter, statusFilter, scoreFilter, periodFilter);
-    const cached = cacheRef.current.get(cacheKey);
-    const now = Date.now();
-
-    // 캐시 히트: 즉시 렌더
-    if (cached && now - cached.timestamp < CACHE_TTL) {
-      setContents(cached.contents);
-      if (cached.counts) setStatusCounts(cached.counts);
-      setLoading(false);
-      return;
-    }
-
-    // 캐시 미스 또는 만료: stale 데이터가 있으면 로딩 표시 안 함
-    if (!cached) setLoading(true);
-
-    try {
+  // SWR: 큐레이션 콘텐츠
+  const { data: contentsResult, isLoading: loading, mutate: mutateContents } = useSWR(
+    SWR_KEYS.curationContents(sourceFilter, scoreFilter, periodFilter, statusFilter),
+    async () => {
       const params: {
         source?: string;
         minScore?: number;
@@ -110,11 +71,9 @@ export function CurationView({ sourceFilter, onGenerateInfoShare }: CurationView
       if (scoreFilter !== "all") params.minScore = parseInt(scoreFilter);
       if (periodFilter !== "all") params.period = periodFilter;
 
-      // 상태 필터
       if (statusFilter !== "all") {
         params.curationStatus = statusFilter;
       } else {
-        // "전체" 선택 시 dismissed 포함해서 보여줌
         params.showDismissed = true;
       }
 
@@ -123,25 +82,11 @@ export function CurationView({ sourceFilter, onGenerateInfoShare }: CurationView
         getCurationStatusCounts(sourceFilter !== "all" ? sourceFilter : undefined),
       ]);
 
-      setContents(data);
-      setStatusCounts(counts);
-
-      // 캐시 저장
-      cacheRef.current.set(cacheKey, {
-        contents: data,
-        counts,
-        timestamp: Date.now(),
-      });
-    } catch {
-      setContents([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [sourceFilter, scoreFilter, periodFilter, statusFilter]);
-
-  useEffect(() => {
-    loadContents();
-  }, [loadContents]);
+      return { contents: data, counts };
+    },
+  );
+  const contents = contentsResult?.contents ?? [];
+  const statusCounts = contentsResult?.counts ?? null;
 
   // 소스 필터 변경 시 상태 필터 리셋
   useEffect(() => {
@@ -169,8 +114,7 @@ export function CurationView({ sourceFilter, onGenerateInfoShare }: CurationView
     } else {
       toast.success(`${ids.length}개 콘텐츠를 스킵했습니다.`);
       setSelectedIds(new Set());
-      invalidateCache(sourceFilter);
-      loadContents();
+      mutateContents();
     }
     setDismissing(false);
   };
@@ -191,16 +135,14 @@ export function CurationView({ sourceFilter, onGenerateInfoShare }: CurationView
     } else {
       toast.success(`${ids.length}개 콘텐츠를 삭제했습니다.`);
       setSelectedIds(new Set());
-      invalidateCache(sourceFilter);
-      loadContents();
+      mutateContents();
       setDeletedRefreshKey((k) => k + 1);
     }
     setDeleting(false);
   };
 
   const handleDeletedRestore = () => {
-    invalidateCache(sourceFilter);
-    loadContents();
+    mutateContents();
     setDeletedRefreshKey((k) => k + 1);
   };
 
@@ -213,8 +155,7 @@ export function CurationView({ sourceFilter, onGenerateInfoShare }: CurationView
     } else {
       toast.success(`${ids.length}개 콘텐츠를 신규로 되돌렸습니다.`);
       setSelectedIds(new Set());
-      invalidateCache(sourceFilter);
-      loadContents();
+      mutateContents();
     }
   };
 

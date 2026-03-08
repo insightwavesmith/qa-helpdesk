@@ -747,14 +747,16 @@
       "notes": "T1 코드리뷰(C3/H4/M10/L3). T2 모니터링(중복방지409+알림GET+PATCH에러). T3 AI숨기기(InsightSection제거+state정리+인증+timeout+JSON검증). T4 크론(slice방향+page_id제거+딜레이). T5 디버그로그삭제. ESC키+useMemo. curl 7테스트+tsc+build 통과."
     },
     "client-caching": {
-      "phase": "designing",
-      "matchRate": null,
+      "phase": "completed",
+      "matchRate": 100,
       "documents": {
         "plan": "01-plan/features/client-caching.plan.md",
-        "design": "02-design/features/client-caching.design.md"
+        "design": "02-design/features/client-caching.design.md",
+        "analysis": "03-analysis/client-caching.analysis.md"
       },
       "startedAt": "2026-03-08",
-      "notes": "useEffect+fetch → SWR 전환. 15개 파일 전수조사 완료. Plan+Design 작성 완료."
+      "completedAt": "2026-03-08",
+      "notes": "Phase1 인프라(SWR설치+config+keys+SWRConfig Provider) + Phase2 단순전환 10파일 + Phase3 복잡전환 5파일(모듈캐시/useRef캐시→SWR대체). 전체 15파일 useEffect+fetch→useSWR 전환 완료. tsc+lint+build 통과. Match Rate 100%."
     },
     "competitor-zip-download": {
       "phase": "completed",
@@ -850,6 +852,30 @@
       "startedAt": "2026-03-08",
       "completedAt": "2026-03-08",
       "notes": "T1 회원가입 체크박스(privacyAgreed+isFormValid+새탭링크) + T2 /privacy 내용보강(8섹션, 수집항목/목적/보유기간/제3자/이용데이터/동의철회/문의) + T3 DB기록(profiles.privacy_agreed_at+savePrivacyConsent 서버액션+마이그레이션SQL). tsc+lint+build 통과."
+    },
+    "open-final-t1-brand-ad-load": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/open-final-t1-brand-ad-load.plan.md",
+        "design": "02-design/features/open-final-t1-brand-ad-load.design.md",
+        "analysis": "03-analysis/open-final-t1-brand-ad-load.analysis.md"
+      },
+      "startedAt": "2026-03-08",
+      "completedAt": "2026-03-08",
+      "notes": "S1 meta-ad-library.ts searchPageIds 존재 시 q 빈 문자열 설정 + S2 route.ts page_id만으로 검색 허용(validation 완화). tsc+lint+build 통과. Match Rate 100%."
+    },
+    "open-final-t2-qa-bold-removal": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/open-final-t2-qa-bold-removal.plan.md",
+        "design": "02-design/features/open-final-t2-qa-bold-removal.design.md",
+        "analysis": "03-analysis/open-final-t2-qa-bold-removal.analysis.md"
+      },
+      "startedAt": "2026-03-08",
+      "completedAt": "2026-03-08",
+      "notes": "S1 knowledge.ts QA_SYSTEM_PROMPT 마크다운 포맷팅 규칙 1줄 변경: 굵기 강조 허용→금지. tsc+lint+build 통과. Match Rate 100%."
     }
   },
   "phaseMapping": {

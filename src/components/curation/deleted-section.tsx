@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Trash2, ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { getDeletedContents, restoreContents } from "@/actions/curation";
+import { SWR_KEYS } from "@/lib/swr/keys";
 
 interface DeletedSectionProps {
   sourceFilter: string;
@@ -27,22 +29,16 @@ function daysUntilPermanentDelete(deletedAt: string): number {
 }
 
 export function DeletedSection({ sourceFilter, onRestore }: DeletedSectionProps) {
-  const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<DeletedItem[]>([]);
-  const [count, setCount] = useState(0);
-  const [restoring, setRestoring] = useState(false);
+  const swrKey = SWR_KEYS.deletedContents(sourceFilter !== "all" ? sourceFilter : undefined);
+  const { data: deletedResult, mutate } = useSWR(
+    swrKey,
+    () => getDeletedContents(sourceFilter !== "all" ? sourceFilter : undefined),
+  );
+  const items = (deletedResult?.data ?? []) as unknown as DeletedItem[];
+  const count = deletedResult?.count ?? 0;
 
-  useEffect(() => {
-    getDeletedContents(sourceFilter !== "all" ? sourceFilter : undefined)
-      .then(({ data, count: c }) => {
-        setItems(data as unknown as DeletedItem[]);
-        setCount(c);
-      })
-      .catch(() => {
-        setItems([]);
-        setCount(0);
-      });
-  }, [sourceFilter]);
+  const [open, setOpen] = useState(false);
+  const [restoring, setRestoring] = useState(false);
 
   const handleRestore = async (ids: string[]) => {
     setRestoring(true);
@@ -51,8 +47,7 @@ export function DeletedSection({ sourceFilter, onRestore }: DeletedSectionProps)
       toast.error("복원에 실패했습니다.");
     } else {
       toast.success(`${ids.length}개 콘텐츠를 복원했습니다.`);
-      setItems((prev) => prev.filter((item) => !ids.includes(item.id)));
-      setCount((prev) => prev - ids.length);
+      mutate();
       onRestore();
     }
     setRestoring(false);

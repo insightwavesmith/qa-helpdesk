@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import { RefreshCw, Info, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,6 +15,8 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { METRIC_GROUPS } from "@/lib/protractor/metric-groups";
+import { jsonFetcher } from "@/lib/swr/config";
+import { SWR_KEYS } from "@/lib/swr/keys";
 
 // ============================================================
 // 타입 정의
@@ -192,31 +195,15 @@ function MetricTable({
 // ============================================================
 
 export function BenchmarkAdmin() {
-  const [rows, setRows] = useState<BenchmarkAdminRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: benchmarkData, isLoading: loading, mutate } = useSWR(
+    SWR_KEYS.PROTRACTOR_BENCHMARKS,
+    jsonFetcher,
+  );
+  const rows: BenchmarkAdminRow[] = (benchmarkData?.data ?? []) as BenchmarkAdminRow[];
+
   const [collecting, setCollecting] = useState(false);
   const [collectMsg, setCollectMsg] = useState<string | null>(null);
   const [creativeTab, setCreativeTab] = useState<CreativeType>("VIDEO");
-
-  // 벤치마크 데이터 로드
-  const loadBenchmarks = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/protractor/benchmarks");
-      const json = await res.json();
-      if (res.ok && json.data) {
-        setRows(json.data as BenchmarkAdminRow[]);
-      }
-    } catch {
-      // 에러 무시
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadBenchmarks();
-  }, []);
 
   // 수동 재수집
   const handleCollect = async () => {
@@ -229,7 +216,7 @@ export function BenchmarkAdmin() {
       const json = await res.json();
       if (res.ok) {
         setCollectMsg("재수집이 완료되었습니다. 데이터를 새로고침합니다.");
-        await loadBenchmarks();
+        await mutate();
       } else {
         setCollectMsg(json.error ?? "재수집 중 오류가 발생했습니다.");
       }

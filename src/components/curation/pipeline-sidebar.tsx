@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
 import {
   Shield, GraduationCap, Youtube, Globe, BookOpen,
@@ -8,6 +9,7 @@ import {
   BookMarked, Search, BarChart3, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { getPipelineStats, getCurationSummaryStats, type PipelineStat } from "@/actions/curation";
+import { SWR_KEYS } from "@/lib/swr/keys";
 
 interface PipelineSidebarProps {
   onSourceSelect: (sourceType: string) => void;
@@ -28,20 +30,16 @@ const SOURCE_ICONS: Record<string, { icon: typeof Shield; color: string }> = {
 const CURRICULUM_SOURCES = new Set(["blueprint", "lecture"]);
 
 export function PipelineSidebar({ onSourceSelect, activeSource }: PipelineSidebarProps) {
-  const [stats, setStats] = useState<PipelineStat[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [summaryStats, setSummaryStats] = useState<{ total: number; withSummary: number; withoutSummary: number } | null>(null);
+  const { data: stats = [], isLoading: loadingStats } = useSWR<PipelineStat[]>(
+    SWR_KEYS.PIPELINE_STATS,
+    () => getPipelineStats(),
+  );
+  const { data: summaryStats = null } = useSWR(
+    SWR_KEYS.CURATION_SUMMARY_STATS,
+    () => getCurationSummaryStats(),
+  );
+  const loading = loadingStats;
   const [statsOpen, setStatsOpen] = useState(false);
-
-  useEffect(() => {
-    Promise.all([
-      getPipelineStats(),
-      getCurationSummaryStats(),
-    ]).then(([pStats, sStats]) => {
-      setStats(pStats);
-      setSummaryStats(sStats);
-    }).finally(() => setLoading(false));
-  }, []);
 
   if (loading) {
     return (

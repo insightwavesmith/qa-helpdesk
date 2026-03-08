@@ -57,6 +57,7 @@
     "recharts": "^3.7.0",
     "remark-gfm": "^4.0.1",
     "sonner": "^2.0.7",
+    "swr": "^2.4.1",
     "tailwind-merge": "^3.4.0",
     "tiptap-markdown": "^0.9.0",
     "turndown": "^7.2.2",

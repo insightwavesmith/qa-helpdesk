@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getQaReports, updateQaReportStatus, type QaReport } from "@/actions/qa-reports";
+import { SWR_KEYS } from "@/lib/swr/keys";
 
 const SEVERITY_CONFIG: Record<
   string,
@@ -41,25 +43,11 @@ function relativeTime(dateStr: string): string {
 }
 
 export function QaReportList() {
-  const [reports, setReports] = useState<QaReport[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: reports = [], isLoading, mutate } = useSWR<QaReport[]>(
+    SWR_KEYS.QA_REPORTS,
+    () => getQaReports({ limit: 50 }),
+  );
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  const loadReports = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await getQaReports({ limit: 50 });
-      setReports(data);
-    } catch (err) {
-      console.error("QA 리포트 로드 실패:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadReports();
-  }, [loadReports]);
 
   const handleStatusChange = async (
     reportId: string,
@@ -70,9 +58,10 @@ export function QaReportList() {
       alert(result.error);
       return;
     }
-    // 로컬 상태 업데이트
-    setReports((prev) =>
-      prev.map((r) => (r.id === reportId ? { ...r, status } : r))
+    // SWR 캐시 업데이트
+    mutate(
+      reports.map((r) => (r.id === reportId ? { ...r, status } : r)),
+      { revalidate: true },
     );
   };
 
@@ -187,7 +176,7 @@ export function QaReportList() {
       <div className="flex items-center justify-between border-b px-4 py-2">
         <span className="text-xs text-gray-500">{reports.length}건</span>
         <button
-          onClick={loadReports}
+          onClick={() => mutate()}
           className="rounded-md p-1 text-gray-400 transition-colors hover:text-gray-600"
           aria-label="새로고침"
         >

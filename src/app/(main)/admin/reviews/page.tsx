@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState, useMemo } from "react";
+import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,6 +13,7 @@ import {
 } from "@/actions/reviews";
 import { toast } from "sonner";
 import { Pin, Trash2, Loader2, Plus, X, Star, Film, Award } from "lucide-react";
+import { SWR_KEYS } from "@/lib/swr/keys";
 
 interface Review {
   id: string;
@@ -41,31 +43,19 @@ function formatDate(dateStr: string | null) {
 }
 
 export default function AdminReviewsPage() {
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState<string | null>(null);
+  const { data: reviewsResult, isLoading: loading, error: swrError, mutate } = useSWR(
+    SWR_KEYS.ADMIN_REVIEWS,
+    () => getReviewsAdmin(),
+  );
+  const reviews = useMemo(() => (reviewsResult?.data ?? []) as Review[], [reviewsResult]);
+  const fetchError = reviewsResult?.error ?? (swrError ? String(swrError) : null);
+
   const [actionId, setActionId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
 
   // T9: 필터 상태
   const [filterCohort, setFilterCohort] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
-
-  const fetchReviews = async () => {
-    setFetchError(null);
-    const result = await getReviewsAdmin();
-    if (result.error) {
-      setFetchError(result.error);
-    } else {
-      setReviews(result.data as Review[]);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    void fetchReviews();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // T9: 클라이언트 필터링
   const filteredReviews = useMemo(() => {
@@ -83,7 +73,7 @@ export default function AdminReviewsPage() {
       toast.error(result.error);
     } else {
       toast.success("고정 상태가 변경되었습니다.");
-      await fetchReviews();
+      await mutate();
     }
     setActionId(null);
   };
@@ -95,7 +85,7 @@ export default function AdminReviewsPage() {
       toast.error(result.error);
     } else {
       toast.success("베스트 상태가 변경되었습니다.");
-      await fetchReviews();
+      await mutate();
     }
     setActionId(null);
   };
@@ -108,7 +98,7 @@ export default function AdminReviewsPage() {
       toast.error(result.error);
     } else {
       toast.success("후기가 삭제되었습니다.");
-      await fetchReviews();
+      await mutate();
     }
     setActionId(null);
   };
@@ -300,7 +290,7 @@ export default function AdminReviewsPage() {
           onClose={() => setShowModal(false)}
           onCreated={() => {
             setShowModal(false);
-            fetchReviews();
+            mutate();
           }}
         />
       )}

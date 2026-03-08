@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
+import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -24,6 +25,7 @@ import { Loader2, FileText, Plus, Newspaper, Mail, Sparkles } from "lucide-react
 import { useRouter, useSearchParams } from "next/navigation";
 import { getContents } from "@/actions/contents";
 import { getCurationCount } from "@/actions/curation";
+import { SWR_KEYS } from "@/lib/swr/keys";
 import type { Content } from "@/types/content";
 import NewContentModal from "@/components/content/new-content-modal";
 import { InfoShareTab } from "@/components/curation/info-share-tab";
@@ -63,53 +65,40 @@ const TYPE_LABEL: Record<string, string> = {
   promo: "홍보",
 };
 
-// Module-level cache — 뒤로가기 시 로딩 스피너 방지 (컴포넌트 재마운트 되어도 캐시 유지)
-let _contentsCache: Content[] | null = null;
-let _contentsCacheCount = 0;
-
 export default function AdminContentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentTab = searchParams.get("tab") ?? "curation";
-  const [contents, setContents] = useState<Content[]>(_contentsCache ?? []);
-  const [totalCount, setTotalCount] = useState(_contentsCacheCount);
-  const [loading, setLoading] = useState(!_contentsCache);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [modalOpen, setModalOpen] = useState(false);
-  const [curationCount, setCurationCount] = useState(0);
   const [generateIds, setGenerateIds] = useState<string[] | null>(null);
   const [sidebarSource, setSidebarSource] = useState("all");
 
-  const loadContents = useCallback(async () => {
-    if (!_contentsCache) setLoading(true);
-    try {
+  // SWR: 콘텐츠 목록
+  const { data: contentsResult, isLoading: loading } = useSWR(
+    SWR_KEYS.ADMIN_CONTENTS(typeFilter, statusFilter),
+    async () => {
       const params: { type?: string; status?: string; sourceType?: string; pageSize?: number } =
         { pageSize: 100, sourceType: "info_share" };
       if (typeFilter !== "all") params.type = typeFilter;
       if (statusFilter !== "all" && statusFilter !== "sent") params.status = statusFilter;
-
       const { data, count } = await getContents(params);
       let filtered = data as Content[];
       if (statusFilter === "sent") {
         filtered = filtered.filter((c) => c.email_sent_at !== null);
       }
-      setContents(filtered);
-      setTotalCount(statusFilter === "sent" ? filtered.length : (count ?? 0));
-      _contentsCache = filtered;
-      _contentsCacheCount = statusFilter === "sent" ? filtered.length : (count ?? 0);
-    } catch {
-      setContents([]);
-      setTotalCount(0);
-    } finally {
-      setLoading(false);
-    }
-  }, [typeFilter, statusFilter]);
+      return { contents: filtered, totalCount: statusFilter === "sent" ? filtered.length : (count ?? 0) };
+    },
+  );
+  const contents = useMemo(() => contentsResult?.contents ?? [], [contentsResult]);
+  const totalCount = contentsResult?.totalCount ?? 0;
 
-  useEffect(() => {
-    loadContents();
-    getCurationCount().then(setCurationCount);
-  }, [loadContents]);
+  // SWR: 큐레이션 카운트
+  const { data: curationCount = 0, mutate: mutateCurationCount } = useSWR(
+    SWR_KEYS.ADMIN_CURATION_COUNT,
+    () => getCurationCount(),
+  );
 
   const handleRowClick = (contentId: string) => {
     router.push(`/admin/content/${contentId}?from=${currentTab}`);
@@ -442,7 +431,7 @@ export default function AdminContentPage() {
           contentIds={generateIds}
           onClose={() => {
             setGenerateIds(null);
-            getCurationCount().then(setCurationCount);
+            mutateCurationCount();
           }}
         />
       )}

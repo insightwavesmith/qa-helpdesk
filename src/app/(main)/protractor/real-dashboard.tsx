@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import useSWR from "swr";
 import { useSearchParams } from "next/navigation";
 import { type AdAccount } from "./components/account-selector";
 import { type AdInsightRow } from "./components/ad-metrics-table";
@@ -12,6 +13,8 @@ import { AlertTriangle, ArrowRight, BarChart3, LinkIcon } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { removeAdAccount } from "@/actions/onboarding";
+import { jsonFetcher } from "@/lib/swr/config";
+import { SWR_KEYS } from "@/lib/swr/keys";
 
 import {
   ProtractorHeader,
@@ -80,161 +83,84 @@ export default function RealDashboard() {
   const searchParams = useSearchParams();
   const accountParam = searchParams.get("account");
 
-  // 상태
-  const [accounts, setAccounts] = useState<AdAccount[]>([]);
+  // UI 상태
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<PeriodDateRange>(yesterday());
-  const [periodNum, setPeriodNum] = useState(1); // 기간 (일수)
-  const [insights, setInsights] = useState<AdInsightRow[]>([]);
-  const [totalValue, setTotalValue] = useState<T3Response | null>(null);
-
+  const [periodNum, setPeriodNum] = useState(1);
   const [activeTab, setActiveTab] = useState<"summary" | "content">("summary");
-  const [overlapData, setOverlapData] = useState<OverlapData | null>(null);
-  const [loadingOverlap, setLoadingOverlap] = useState(false);
-  const [overlapError, setOverlapError] = useState<string | null>(null);
 
-  const [loadingAccounts, setLoadingAccounts] = useState(true);
-  const [loadingData, setLoadingData] = useState(false);
-  const [loadingTotalValue, setLoadingTotalValue] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [totalValueError, setTotalValueError] = useState<string | null>(null);
+  // 1) SWR: 계정 목록
+  const { data: accountsData, error: accountsError, isLoading: loadingAccounts, mutate: mutateAccounts } = useSWR(
+    SWR_KEYS.PROTRACTOR_ACCOUNTS,
+    jsonFetcher,
+  );
+  const accounts: AdAccount[] = accountsData?.data ?? [];
 
-  // 1) 계정 목록 로드
+  // URL 파라미터 또는 첫 번째 계정 자동 선택
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/protractor/accounts");
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "계정 로드 실패");
-        const data: AdAccount[] = json.data ?? [];
-        setAccounts(data);
-        // URL 파라미터로 계정 지정된 경우 우선 선택, 아니면 첫 번째 자동 선택
-        if (accountParam && data.some((a) => a.account_id === accountParam)) {
-          setSelectedAccountId(accountParam);
-        } else if (data.length >= 1) {
-          setSelectedAccountId(data[0].account_id);
-        }
-      } catch (e) {
-        setError((e as Error).message);
-      } finally {
-        setLoadingAccounts(false);
-      }
-    })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // 1-a) 선택된 계정이 목록에 없으면 첫 번째 활성 계정으로 자동 전환
-  useEffect(() => {
-    if (!selectedAccountId || accounts.length === 0) return;
-    const exists = accounts.some((a) => a.account_id === selectedAccountId);
-    if (!exists) {
+    if (accounts.length === 0) return;
+    if (selectedAccountId) {
+      const exists = accounts.some((a) => a.account_id === selectedAccountId);
+      if (exists) return;
+    }
+    if (accountParam && accounts.some((a) => a.account_id === accountParam)) {
+      setSelectedAccountId(accountParam);
+    } else {
       setSelectedAccountId(accounts[0].account_id);
     }
-  }, [accounts, selectedAccountId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accounts]);
 
-  // 2) 계정 + 기간 변경 시 데이터 로드
-  const fetchData = useCallback(async () => {
-    if (!selectedAccountId) return;
+  // 2) SWR: insights
+  const { data: insightsData, error: insightsError, isLoading: loadingData } = useSWR(
+    selectedAccountId ? SWR_KEYS.protractorInsights(selectedAccountId, dateRange.start, dateRange.end) : null,
+    jsonFetcher,
+  );
+  const insights: AdInsightRow[] = insightsData?.data ?? [];
+  const error = accountsError ? String(accountsError) : insightsError ? String(insightsError) : null;
 
-    setLoadingData(true);
-    setError(null);
-
-    try {
-      const params = new URLSearchParams({
-        account_id: selectedAccountId,
-        start: dateRange.start,
-        end: dateRange.end,
-      });
-
-      const insightsRes = await fetch(`/api/protractor/insights?${params}`);
-      const insightsJson = await insightsRes.json();
-      if (!insightsRes.ok) throw new Error(insightsJson.error || "인사이트 조회 실패");
-      setInsights(insightsJson.data ?? []);
-    } catch (e) {
-      setError((e as Error).message);
-      setInsights([]);
-    } finally {
-      setLoadingData(false);
-    }
-  }, [selectedAccountId, dateRange]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  // 3) 총가치수준 T3 호출 (period 포함)
-  useEffect(() => {
-    if (!selectedAccountId) {
-      setTotalValue(null);
-      return;
-    }
-
-    (async () => {
-      setLoadingTotalValue(true);
-      setTotalValueError(null);
-      try {
-        const params = new URLSearchParams({
-          account_id: selectedAccountId,
-          period: String(periodNum),
-          date_start: dateRange.start,
-          date_end: dateRange.end,
-        });
-        const res = await fetch(`/api/protractor/total-value?${params}`);
-        const json = await res.json();
-        if (res.ok) {
-          setTotalValue(json as T3Response);
-          setTotalValueError(null);
-        } else {
-          setTotalValue(null);
-          setTotalValueError(
-            res.status === 403
-              ? "권한이 없습니다"
-              : (json as { error?: string }).error || "T3 점수 조회 실패"
-          );
-        }
-      } catch (e) {
-        setTotalValue(null);
-        setTotalValueError((e as Error).message || "T3 점수 조회 실패");
-      } finally {
-        setLoadingTotalValue(false);
+  // 3) SWR: 총가치수준 T3
+  const { data: totalValueRaw, error: tvError, isLoading: loadingTotalValue } = useSWR(
+    selectedAccountId ? SWR_KEYS.protractorTotalValue(selectedAccountId, periodNum, dateRange.start, dateRange.end) : null,
+    async (url: string) => {
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(
+          res.status === 403
+            ? "권한이 없습니다"
+            : (json as { error?: string }).error || "T3 점수 조회 실패"
+        );
       }
-    })();
-  }, [selectedAccountId, dateRange, periodNum]);
+      return json as T3Response;
+    },
+  );
+  const totalValue = totalValueRaw ?? null;
+  const totalValueError = tvError ? String(tvError) : null;
 
-  // 4) 타겟중복 분석 — 계정 선택 시 자동 fetch
+  // 4) SWR: 타겟중복 분석
+  const { data: overlapData = null, error: overlapErr, isLoading: loadingOverlap, mutate: mutateOverlap } = useSWR(
+    selectedAccountId ? SWR_KEYS.protractorOverlap(selectedAccountId, dateRange.start, dateRange.end) : null,
+    jsonFetcher,
+  );
+  const overlapError = overlapErr ? String(overlapErr) : null;
+
   const fetchOverlap = useCallback(
     async (force = false) => {
-      if (!selectedAccountId) return;
-
-      setLoadingOverlap(true);
-      setOverlapError(null);
-      try {
-        const params = new URLSearchParams({
-          account_id: selectedAccountId,
-          date_start: dateRange.start,
-          date_end: dateRange.end,
-        });
-        if (force) params.set("force", "true");
-        const res = await fetch(`/api/protractor/overlap?${params}`);
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "타겟중복 분석 실패");
-        setOverlapData(json);
-      } catch (e) {
-        setOverlapError((e as Error).message);
-        setOverlapData(null);
-      } finally {
-        setLoadingOverlap(false);
-      }
+      if (!selectedAccountId || !force) return;
+      const params = new URLSearchParams({
+        account_id: selectedAccountId,
+        date_start: dateRange.start,
+        date_end: dateRange.end,
+        force: "true",
+      });
+      const res = await fetch(`/api/protractor/overlap?${params}`);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "타겟중복 분석 실패");
+      mutateOverlap(json, { revalidate: false });
     },
-    [selectedAccountId, dateRange, periodNum]
+    [selectedAccountId, dateRange, mutateOverlap],
   );
-
-  // 계정 선택 시 성과 요약 탭에서 자동 fetch
-  useEffect(() => {
-    if (selectedAccountId) {
-      fetchOverlap();
-    }
-  }, [selectedAccountId, fetchOverlap]);
 
   const handlePeriodChange = (range: PeriodDateRange, days: number) => {
     setDateRange(range);
@@ -259,7 +185,7 @@ export default function RealDashboard() {
       toast.error(`계정 삭제 실패: ${result.error}`);
     } else {
       toast.success("광고계정이 삭제되었습니다.");
-      setAccounts((prev) => prev.filter((a) => a.account_id !== accountId));
+      mutateAccounts();
       if (selectedAccountId === accountId) {
         const remaining = accounts.filter((a) => a.account_id !== accountId);
         setSelectedAccountId(remaining.length > 0 ? remaining[0].account_id : null);

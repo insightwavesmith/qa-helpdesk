@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     100,
   );
 
-  if (!q) {
+  if (!q && !pageId) {
     return NextResponse.json(
       { error: "검색어를 입력하세요", code: "INVALID_QUERY" },
       { status: 400 },
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const result = await searchMetaAds({
-      searchTerms: q,
+      searchTerms: q || "",
       country,
       limit,
       mediaType,
