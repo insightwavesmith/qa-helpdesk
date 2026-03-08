@@ -41,9 +41,15 @@ export async function GET(req: NextRequest) {
   try {
     // 캐시에서 조회
     let cachedAd = await getAdFromCache(adId);
+    console.log("[download] 캐시 조회:", adId, cachedAd ? "있음" : "없음");
 
     // 캐시 없거나 URL 만료 시 재검색
     if (!cachedAd || isUrlExpired(cachedAd)) {
+      console.log("[download] 캐시 없음 또는 만료 → 재검색 시도", {
+        hasCache: !!cachedAd,
+        expired: cachedAd ? isUrlExpired(cachedAd) : false,
+        pageName: cachedAd?.page_name,
+      });
       try {
         // ad_archive_id로 직접 검색은 불가 → page_name으로 재검색
         if (cachedAd?.page_name) {
@@ -51,6 +57,7 @@ export async function GET(req: NextRequest) {
           cachedAd = await getAdFromCache(adId);
         }
       } catch (err) {
+        console.error("[download] 재검색 실패:", err);
         if (err instanceof MetaAdError) {
           return NextResponse.json(
             { error: "미디어 URL이 만료되었습니다. 다시 검색해 주세요.", code: "URL_EXPIRED" },
@@ -62,7 +69,7 @@ export async function GET(req: NextRequest) {
 
     if (!cachedAd) {
       return NextResponse.json(
-        { error: "광고를 찾을 수 없습니다", code: "AD_NOT_FOUND" },
+        { error: "광고를 찾을 수 없습니다. 다시 검색해 주세요.", code: "AD_NOT_FOUND" },
         { status: 404 },
       );
     }
@@ -72,6 +79,12 @@ export async function GET(req: NextRequest) {
       type === "video" ? cachedAd.video_url : cachedAd.image_url;
 
     if (!mediaUrl) {
+      console.log("[download] 미디어 URL 없음:", {
+        type,
+        hasImage: !!cachedAd.image_url,
+        hasVideo: !!cachedAd.video_url,
+        displayFormat: cachedAd.display_format,
+      });
       return NextResponse.json(
         { error: "다운로드할 미디어가 없습니다", code: "AD_NOT_FOUND" },
         { status: 404 },
@@ -82,13 +95,18 @@ export async function GET(req: NextRequest) {
     const mediaRes = await fetch(mediaUrl, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
       },
     });
 
     if (!mediaRes.ok) {
+      console.error("[download] fbcdn 응답 실패:", {
+        status: mediaRes.status,
+        statusText: mediaRes.statusText,
+        url: mediaUrl.substring(0, 100),
+      });
       return NextResponse.json(
-        { error: "파일을 다운로드할 수 없습니다. 잠시 후 다시 시도하세요.", code: "DOWNLOAD_FAILED" },
+        { error: "파일을 다운로드할 수 없습니다. 다시 검색 후 시도하세요.", code: "DOWNLOAD_FAILED" },
         { status: 502 },
       );
     }

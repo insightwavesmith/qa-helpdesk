@@ -122,18 +122,46 @@ export function AdMediaModal({ ad, isOpen, onClose }: AdMediaModalProps) {
               className="max-h-[70vh] w-full object-contain mx-auto"
               onError={() => setVideoError(true)}
             />
-          ) : ad.displayFormat === "VIDEO" && videoError ? (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-              <Play className="h-12 w-12 mb-2" />
-              <p className="text-sm">영상을 재생할 수 없습니다</p>
-              <a
-                href={ad.snapshotUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-[#F75D5D] mt-1 hover:underline"
-              >
-                Meta에서 보기
-              </a>
+          ) : ad.displayFormat === "VIDEO" ? (
+            <div className="flex flex-col items-center justify-center text-gray-400">
+              {ad.videoPreviewUrl ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={ad.videoPreviewUrl}
+                    alt={`${ad.pageName} 영상 프리뷰`}
+                    className="max-h-[60vh] object-contain mx-auto"
+                  />
+                  <div className="py-3 flex flex-col items-center">
+                    <p className="text-sm text-gray-500">
+                      {videoError
+                        ? "영상을 재생할 수 없습니다"
+                        : "영상 미리보기만 제공됩니다"}
+                    </p>
+                    <a
+                      href={ad.snapshotUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[#F75D5D] mt-1 hover:underline"
+                    >
+                      Meta에서 보기
+                    </a>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-64">
+                  <Play className="h-12 w-12 mb-2" />
+                  <p className="text-sm">영상을 재생할 수 없습니다</p>
+                  <a
+                    href={ad.snapshotUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-[#F75D5D] mt-1 hover:underline"
+                  >
+                    Meta에서 보기
+                  </a>
+                </div>
+              )}
             </div>
           ) : hasCarousel ? (
             /* 캐러셀 */

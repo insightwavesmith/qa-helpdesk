@@ -51,7 +51,10 @@ export async function upsertAdCache(ads: CompetitorAd[]): Promise<void> {
     .upsert(rows, { onConflict: "ad_archive_id" });
 
   if (error) {
-    console.error("[ad-cache] UPSERT 실패:", error.message);
+    console.error("[ad-cache] UPSERT 실패:", error.message, error.details, error.hint);
+    throw new Error(`[ad-cache] UPSERT 실패: ${error.message}`);
+  } else {
+    console.log(`[ad-cache] UPSERT 성공: ${rows.length}건`);
   }
 }
 

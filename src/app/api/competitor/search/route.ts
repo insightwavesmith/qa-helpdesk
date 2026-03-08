@@ -37,10 +37,12 @@ export async function GET(req: NextRequest) {
       mediaType,
     });
 
-    // 캐시 UPSERT (비동기 — 검색 응답 지연 방지)
-    upsertAdCache(result.ads).catch((err) => {
+    // 캐시 UPSERT (다운로드 시 캐시 필요 → await)
+    try {
+      await upsertAdCache(result.ads);
+    } catch (err) {
       console.error("[search] 캐시 UPSERT 실패:", err);
-    });
+    }
 
     // 클라이언트 필터 적용
     let filteredAds = result.ads;

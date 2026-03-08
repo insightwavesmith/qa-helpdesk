@@ -745,6 +745,16 @@
       "startedAt": "2026-03-07",
       "completedAt": "2026-03-07",
       "notes": "T1 코드리뷰(C3/H4/M10/L3). T2 모니터링(중복방지409+알림GET+PATCH에러). T3 AI숨기기(InsightSection제거+state정리+인증+timeout+JSON검증). T4 크론(slice방향+page_id제거+딜레이). T5 디버그로그삭제. ESC키+useMemo. curl 7테스트+tsc+build 통과."
+    },
+    "client-caching": {
+      "phase": "designing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/client-caching.plan.md",
+        "design": "02-design/features/client-caching.design.md"
+      },
+      "startedAt": "2026-03-08",
+      "notes": "useEffect+fetch → SWR 전환. 15개 파일 전수조사 완료. Plan+Design 작성 완료."
     }
   },
   "phaseMapping": {
