@@ -898,6 +898,16 @@
       "startedAt": "2026-03-08",
       "completedAt": "2026-03-08",
       "notes": "T1 개인정보처리방침 자사몰/광고데이터 항목추가. T2 더보기 toast피드백+중복제거0건시안내+에러가시성개선. T3 핀등록 toast성공/실패알림+json.monitor방어+디버그로그제거. 이전수정(9512b1c)은 console.log만 추가해 실제 수정 없었음. tsc+build 통과."
+    },
+    "competitor-bugfix-pin-loadmore": {
+      "phase": "designing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/competitor-bugfix-pin-loadmore.plan.md",
+        "design": "02-design/features/competitor-bugfix-pin-loadmore.design.md"
+      },
+      "startedAt": "2026-03-08",
+      "notes": "버그1: 핀등록시 빈brandName→400에러(근본원인: meta-ad-library.ts:269 page_name빈문자열변환). 버그2: 더보기 중복페이지→nextPageToken삭제→영구중단(근본원인: deduped===0시 토큰null설정). 이전2회수정(9512b1c,aad4e7f) 모두 증상만 수정(toast/stopPropagation)하고 데이터흐름 미추적."
     }
   },
   "phaseMapping": {

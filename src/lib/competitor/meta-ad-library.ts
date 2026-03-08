@@ -266,7 +266,14 @@ export async function searchBrandPages(query: string): Promise<BrandPage[]> {
 
   return rawPages.map((p) => ({
     page_id: String(p.page_id ?? ""),
-    page_name: String(p.page_name ?? ""),
+    page_name: String(
+      p.page_name ||
+        (p as Record<string, unknown>).name ||
+        p.page_alias ||
+        p.ig_username ||
+        p.page_id ||
+        "알 수 없는 브랜드",
+    ),
     category: (p.category as string) ?? null,
     image_uri: (p.image_uri as string) ?? null,
     likes: typeof p.likes === "number" ? p.likes : null,

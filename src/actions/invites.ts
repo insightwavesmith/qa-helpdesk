@@ -45,11 +45,20 @@ export async function useInviteCode(
 
     // UPDATE with WHERE 조건으로 race condition 방지
     // used_count가 조회 시점과 동일한지 확인
-    const { data: updated, error: updateError } = await svc
+    // NOTE: DB에 used_count가 NULL인 경우 .eq("used_count", 0)은 매칭 안 됨
+    //       (SQL: NULL ≠ 0). NULL과 0을 모두 처리해야 함.
+    const updateBuilder = svc
       .from("invite_codes")
       .update({ used_count: currentUsed + 1 } as never)
-      .ilike("code", trimmedCode)
-      .eq("used_count", currentUsed)
+      .ilike("code", trimmedCode);
+
+    if (inviteRow.used_count === null || inviteRow.used_count === undefined) {
+      updateBuilder.is("used_count", null);
+    } else {
+      updateBuilder.eq("used_count", currentUsed);
+    }
+
+    const { data: updated, error: updateError } = await updateBuilder
       .select("code")
       .maybeSingle();
 

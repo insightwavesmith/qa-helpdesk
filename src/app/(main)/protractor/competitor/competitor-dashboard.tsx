@@ -124,15 +124,22 @@ export default function CompetitorDashboard() {
       const newAds: CompetitorAd[] = json.ads ?? [];
       const existingIds = new Set(ads.map((a) => a.id));
       const deduped = newAds.filter((a) => !existingIds.has(a.id));
+      const serverNextToken: string | null = json.nextPageToken ?? null;
 
       if (deduped.length === 0) {
-        toast.info("더 이상 새로운 광고가 없습니다");
-        setNextPageToken(null);
+        // 중복 0건이어도 서버에 다음 페이지가 있으면 토큰 유지하여 다음 페이지 시도
+        if (serverNextToken) {
+          setNextPageToken(serverNextToken);
+          toast.info("중복 광고를 건너뛰고 다음 페이지를 불러옵니다");
+        } else {
+          toast.info("더 이상 새로운 광고가 없습니다");
+          setNextPageToken(null);
+        }
         return;
       }
 
       setAds((prev) => [...prev, ...deduped]);
-      setNextPageToken(json.nextPageToken ?? null);
+      setNextPageToken(serverNextToken);
       toast.success(`광고 ${deduped.length}건 추가 로드`);
     } catch {
       toast.error("네트워크 오류가 발생했습니다");

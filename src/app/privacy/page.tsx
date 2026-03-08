@@ -54,16 +54,36 @@ export default function PrivacyPage() {
               <li>광고 분석 기록 (경쟁사 광고 검색, 광고 소재 다운로드 이력)</li>
               <li>자사몰 데이터 (Meta 광고 계정 연동을 통한 광고 성과 데이터, ROAS, 전환율 등)</li>
               <li>광고 데이터 수집 (일일 광고 인사이트, 캠페인별 성과 지표, 타겟 중복 분석 데이터)</li>
+              <li>서비스 이용 분석 (Mixpanel을 통한 사용 패턴 분석)</li>
             </ul>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold mb-3">4. 개인정보 보유 및 파기</h2>
+            <p className="mb-2 text-[#334155]">수집된 정보는 항목별로 아래와 같이 보관되며, 보관 기간 종료 시 즉시 파기합니다.</p>
+
+            <h3 className="text-sm font-semibold text-[#475569] mt-4 mb-2">개인정보 (이름, 이메일, 비밀번호)</h3>
             <ul className="list-disc pl-6 space-y-1 text-[#334155]">
-              <li><strong>회원 정보:</strong> 회원 탈퇴 시까지 보유하며, 탈퇴 시 즉시 파기합니다.</li>
-              <li><strong>광고 데이터:</strong> 계정 삭제 후 30일 이내 파기합니다.</li>
-              <li><strong>서비스 이용 기록:</strong> 3개월 보관 후 파기합니다.</li>
-              <li>단, 법령에 따른 보존 의무가 있는 경우 해당 기간까지 보관합니다.</li>
+              <li><strong>보관 기간:</strong> 회원 탈퇴 후 즉시 파기</li>
+              <li>단, 법적 보관 의무가 있는 경우 해당 기간까지 보관합니다.</li>
+            </ul>
+
+            <h3 className="text-sm font-semibold text-[#475569] mt-4 mb-2">서비스 이용 기록 (접속 로그, 이용 기록, 쿠키)</h3>
+            <ul className="list-disc pl-6 space-y-1 text-[#334155]">
+              <li><strong>보관 기간:</strong> 회원 탈퇴 시까지 (또는 서비스 종료 시까지)</li>
+            </ul>
+
+            <h3 className="text-sm font-semibold text-[#475569] mt-4 mb-2">광고 데이터 / 자사몰 데이터 (광고 성과, 타겟 중복 분석 등)</h3>
+            <ul className="list-disc pl-6 space-y-1 text-[#334155]">
+              <li><strong>보관 기간:</strong> 계약 종료 후 5년 (전자상거래 등에서의 소비자보호에 관한 법률)</li>
+            </ul>
+
+            <h3 className="text-sm font-semibold text-[#475569] mt-4 mb-2">법적 보관 의무</h3>
+            <ul className="list-disc pl-6 space-y-1 text-[#334155]">
+              <li>계약 또는 청약 철회 등에 관한 기록: 5년 (전자상거래법)</li>
+              <li>대금 결제 및 재화 등의 공급에 관한 기록: 5년 (전자상거래법)</li>
+              <li>소비자 불만 또는 분쟁 처리에 관한 기록: 3년 (전자상거래법)</li>
+              <li>접속에 관한 기록: 3개월 (통신비밀보호법)</li>
             </ul>
           </section>
 
