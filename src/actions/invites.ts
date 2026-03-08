@@ -158,6 +158,28 @@ export async function createInviteCode(input: {
 }
 
 // ---------------------------------------------------------------------------
+// updateInviteCodeExpiry — 관리자용: 초대코드 만료일 연장 (재활성화)
+// ---------------------------------------------------------------------------
+export async function updateInviteCodeExpiry(
+  code: string,
+  expiresAt: string
+): Promise<{ error: string | null }> {
+  const svc = await requireAdmin();
+
+  const { error } = await svc
+    .from("invite_codes")
+    .update({ expires_at: expiresAt } as never)
+    .eq("code", code);
+
+  if (error) {
+    console.error("updateInviteCodeExpiry error:", error);
+    return { error: error.message };
+  }
+
+  return { error: null };
+}
+
+// ---------------------------------------------------------------------------
 // deleteInviteCode — 관리자용: 초대코드 삭제
 // ---------------------------------------------------------------------------
 export async function deleteInviteCode(

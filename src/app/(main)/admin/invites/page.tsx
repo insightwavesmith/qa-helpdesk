@@ -10,12 +10,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Loader2, Plus, Copy, Trash2 } from "lucide-react";
+import { Loader2, Plus, Copy, Trash2, CalendarPlus } from "lucide-react";
 import { toast } from "sonner";
 import {
   getInviteCodes,
   createInviteCode,
   deleteInviteCode,
+  updateInviteCodeExpiry,
 } from "@/actions/invites";
 
 interface InviteCode {
@@ -60,6 +61,11 @@ export default function AdminInvitesPage() {
   const [formLoading, setFormLoading] = useState(false);
 
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+
+  // 만료일 연장 state
+  const [editingExpiry, setEditingExpiry] = useState<string | null>(null);
+  const [newExpiryDate, setNewExpiryDate] = useState("");
+  const [expiryLoading, setExpiryLoading] = useState(false);
 
   const fetchCodes = useCallback(async () => {
     try {
@@ -128,6 +134,30 @@ export default function AdminInvitesPage() {
       toast.error("삭제에 실패했습니다.");
     } finally {
       setDeleteLoading(null);
+    }
+  };
+
+  const handleExtendExpiry = async (code: string) => {
+    if (!newExpiryDate) {
+      toast.error("새 만료일을 선택해주세요.");
+      return;
+    }
+
+    setExpiryLoading(true);
+    try {
+      const result = await updateInviteCodeExpiry(code, newExpiryDate);
+      if (result.error) {
+        toast.error(`만료일 연장에 실패했습니다: ${result.error}`);
+      } else {
+        toast.success("만료일이 연장되었습니다.");
+        setEditingExpiry(null);
+        setNewExpiryDate("");
+        await fetchCodes();
+      }
+    } catch {
+      toast.error("만료일 연장에 실패했습니다.");
+    } finally {
+      setExpiryLoading(false);
     }
   };
 
@@ -288,8 +318,8 @@ export default function AdminInvitesPage() {
                     </TableCell>
                     <TableCell>
                       {expired ? (
-                        <span className="inline-flex items-center bg-red-100 text-red-700 rounded-full px-3 py-1 text-xs">
-                          만료됨
+                        <span className="inline-flex items-center bg-gray-100 text-gray-500 rounded-full px-3 py-1 text-xs">
+                          만료
                         </span>
                       ) : maxReached ? (
                         <span className="inline-flex items-center bg-yellow-100 text-yellow-700 rounded-full px-3 py-1 text-xs">
@@ -303,27 +333,79 @@ export default function AdminInvitesPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg"
-                          onClick={() => handleCopy(invite.code)}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border border-red-200 text-red-600 hover:bg-red-50 rounded-lg"
-                          onClick={() => handleDelete(invite.code)}
-                          disabled={isDeleting}
-                        >
-                          {isDeleting ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
+                        {expired && editingExpiry === invite.code ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="date"
+                              value={newExpiryDate}
+                              min={new Date().toISOString().slice(0, 10)}
+                              onChange={(e) => setNewExpiryDate(e.target.value)}
+                              className="rounded-lg border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border border-green-300 text-green-700 hover:bg-green-50 rounded-lg text-xs px-2"
+                              onClick={() => handleExtendExpiry(invite.code)}
+                              disabled={expiryLoading || !newExpiryDate}
+                            >
+                              {expiryLoading ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                "확인"
+                              )}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border border-gray-300 text-gray-500 hover:bg-gray-50 rounded-lg text-xs px-2"
+                              onClick={() => {
+                                setEditingExpiry(null);
+                                setNewExpiryDate("");
+                              }}
+                            >
+                              취소
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            {expired && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                onClick={() => {
+                                  setEditingExpiry(invite.code);
+                                  setNewExpiryDate(getDefaultExpiresAt());
+                                }}
+                                title="만료일 연장"
+                              >
+                                <CalendarPlus className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg"
+                              onClick={() => handleCopy(invite.code)}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border border-red-200 text-red-600 hover:bg-red-50 rounded-lg"
+                              onClick={() => handleDelete(invite.code)}
+                              disabled={isDeleting}
+                            >
+                              {isDeleting ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
