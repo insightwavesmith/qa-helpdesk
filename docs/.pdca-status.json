@@ -827,6 +827,18 @@
       "startedAt": "2026-03-08",
       "completedAt": "2026-03-08",
       "notes": "T5.1 모니터링카드리디자인(프로필3단fallback+@IG+광고N건+시간전+NEW배지+PATCH리셋) + T5.2 핀등록강화(POST v2필드+BrandSearchBar onPinBrand연결) + T5.3 NEW Cron(page_id기반+중복캐시+new_ads_count누적) + T5.4 광고링크(Meta에서보기→FB/AdLibrary). tsc+lint+build 통과."
+    },
+    "competitor-v2-search-enhancement": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/competitor-v2-search-enhancement.plan.md",
+        "design": "02-design/features/competitor-v2-search-enhancement.design.md",
+        "analysis": "03-analysis/competitor-v2-search-enhancement.analysis.md"
+      },
+      "startedAt": "2026-03-08",
+      "completedAt": "2026-03-08",
+      "notes": "T1 브랜드검색고도화: page_search+ad_library 병렬검색(Promise.allSettled) + URL도메인추출(extractDomain) + ad_library결과 page_id별그룹핑→AdPage[] + 드롭다운2섹션(📌공식브랜드+🔗URL광고페이지) + 플레이스홀더변경. types/competitor.ts AdPage 타입추가. tsc+lint+build 통과. Match Rate 95%."
     }
   },
   "phaseMapping": {

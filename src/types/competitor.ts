@@ -204,6 +204,13 @@ export interface CompetitorInsightCacheRow {
   expires_at: string;
 }
 
+/** ad_library 키워드 검색에서 발견된 광고 페이지 (비공식 포함) */
+export interface AdPage {
+  page_id: string;
+  page_name: string;
+  ad_count: number;
+}
+
 /** 브랜드 페이지 검색 결과 (SearchAPI.io meta_ad_library_page_search) */
 export interface BrandPage {
   page_id: string;
