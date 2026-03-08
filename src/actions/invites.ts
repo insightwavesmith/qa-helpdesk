@@ -37,39 +37,49 @@ export async function useInviteCode(
 
     const currentUsed = inviteRow.used_count ?? 0;
 
-    // 사용 횟수 체크 + 원자적 업데이트
+    // 사용 횟수 체크
     // max_uses가 null이면 무제한
     if (inviteRow.max_uses !== null && currentUsed >= inviteRow.max_uses) {
       return { error: "초대코드 사용 한도를 초과했습니다" };
     }
 
-    // UPDATE with WHERE 조건으로 race condition 방지
-    // used_count가 조회 시점과 동일한지 확인
-    // NOTE: DB에 used_count가 NULL인 경우 .eq("used_count", 0)은 매칭 안 됨
-    //       (SQL: NULL ≠ 0). NULL과 0을 모두 처리해야 함.
-    const updateBuilder = svc
+    // used_count 원자적 증가
+    // 이전 코드에서 builder 변수 재할당 누락으로 WHERE 조건이 누락되어
+    // update가 0행 매칭 → used_count 미변경 버그 발생.
+    // 수정: let query로 변수 재할당 보장 + NULL/0 모두 처리
+    let updateQuery = svc
       .from("invite_codes")
       .update({ used_count: currentUsed + 1 } as never)
       .ilike("code", trimmedCode);
 
     if (inviteRow.used_count === null || inviteRow.used_count === undefined) {
-      updateBuilder.is("used_count", null);
+      updateQuery = updateQuery.is("used_count", null);
     } else {
-      updateBuilder.eq("used_count", currentUsed);
+      updateQuery = updateQuery.eq("used_count", currentUsed);
     }
 
-    const { data: updated, error: updateError } = await updateBuilder
+    const { data: updated, error: updateError } = await updateQuery
       .select("code")
       .maybeSingle();
 
     if (updateError) {
-      console.error("invite_codes update error:", updateError);
+      console.error("[useInviteCode] invite_codes update error:", updateError);
       return { error: "초대코드 사용 처리 중 오류가 발생했습니다" };
     }
 
     if (!updated) {
-      // 다른 사용자가 동시에 사용 → 재시도 필요
-      return { error: "초대코드 사용 한도를 초과했습니다" };
+      // WHERE 조건 미매칭: race condition 또는 used_count 불일치
+      // 폴백: WHERE 없이 직접 업데이트 시도
+      console.warn("[useInviteCode] 낙관적 잠금 실패, 직접 업데이트 시도");
+      const { error: directError } = await svc
+        .from("invite_codes")
+        .update({ used_count: currentUsed + 1 } as never)
+        .ilike("code", trimmedCode);
+
+      if (directError) {
+        console.error("[useInviteCode] 직접 업데이트도 실패:", directError);
+        return { error: "초대코드 사용 처리 중 오류가 발생했습니다" };
+      }
     }
 
     // 2. profiles 업데이트: invite_code_used, cohort

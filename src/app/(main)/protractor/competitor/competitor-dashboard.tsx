@@ -96,51 +96,64 @@ export default function CompetitorDashboard() {
     }
   }, []);
 
-  // 더보기 (다음 페이지 누적 로드)
+  // 더보기 (다음 페이지 누적 로드 — 중복 시 자동 재시도)
   const handleLoadMore = useCallback(async () => {
     if ((!searchQuery && !searchPageId) || !nextPageToken || loadingMore) return;
 
     setLoadingMore(true);
     setError(null);
 
+    let currentToken: string | null = nextPageToken;
+    const MAX_RETRIES = 3;
+
     try {
-      const params = new URLSearchParams({
-        page_token: nextPageToken,
-      });
-      if (searchPageId) {
-        params.set("page_id", searchPageId);
-      } else if (searchQuery) {
-        params.set("q", searchQuery);
-      }
-      const res = await fetch(`/api/competitor/search?${params}`);
-      const json = await res.json();
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        if (!currentToken) break;
 
-      if (!res.ok) {
-        toast.error(json.error || "더보기에 실패했습니다");
-        return;
-      }
+        const fetchParams: URLSearchParams = new URLSearchParams({
+          page_token: currentToken,
+        });
+        // page_token에 쿼리 컨텍스트가 인코딩되어 있으므로
+        // page_id/q는 첫 검색에서만 필요. 더보기에서는 page_token만 전송.
+        const res: Response = await fetch(`/api/competitor/search?${fetchParams}`);
+        const json: Record<string, unknown> = await res.json();
 
-      // 기존 ads에 누적 (중복 제거)
-      const newAds: CompetitorAd[] = json.ads ?? [];
-      const existingIds = new Set(ads.map((a) => a.id));
-      const deduped = newAds.filter((a) => !existingIds.has(a.id));
-      const serverNextToken: string | null = json.nextPageToken ?? null;
+        if (!res.ok) {
+          toast.error((json.error as string) || "더보기에 실패했습니다");
+          return;
+        }
 
-      if (deduped.length === 0) {
-        // 중복 0건이어도 서버에 다음 페이지가 있으면 토큰 유지하여 다음 페이지 시도
-        if (serverNextToken) {
+        const newAds: CompetitorAd[] = (json.ads as CompetitorAd[]) ?? [];
+        const existingIds = new Set(ads.map((a) => a.id));
+        const deduped = newAds.filter((a) => !existingIds.has(a.id));
+        const serverNextToken: string | null = (json.nextPageToken as string) ?? null;
+
+        if (deduped.length > 0) {
+          setAds((prev) => [...prev, ...deduped]);
           setNextPageToken(serverNextToken);
-          toast.info("중복 광고를 건너뛰고 다음 페이지를 불러옵니다");
+          toast.success(`광고 ${deduped.length}건 추가 로드`);
+          return;
+        }
+
+        // 중복만 나옴 → 다음 토큰이 있으면 자동 재시도
+        if (serverNextToken) {
+          currentToken = serverNextToken;
+          // 마지막 재시도가 아니면 계속 루프
+          continue;
         } else {
           toast.info("더 이상 새로운 광고가 없습니다");
           setNextPageToken(null);
+          return;
         }
-        return;
       }
 
-      setAds((prev) => [...prev, ...deduped]);
-      setNextPageToken(serverNextToken);
-      toast.success(`광고 ${deduped.length}건 추가 로드`);
+      // MAX_RETRIES 소진
+      setNextPageToken(currentToken);
+      if (currentToken) {
+        toast.info("중복 광고가 많습니다. 더보기를 다시 눌러주세요.");
+      } else {
+        toast.info("더 이상 새로운 광고가 없습니다");
+      }
     } catch {
       toast.error("네트워크 오류가 발생했습니다");
     } finally {

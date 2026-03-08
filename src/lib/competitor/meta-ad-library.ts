@@ -157,30 +157,28 @@ export async function searchMetaAds(
 
   const url = new URL(SEARCH_API_BASE);
   url.searchParams.set("engine", "meta_ad_library");
-  // search_page_ids가 있으면 q 파라미터를 아예 보내지 않음
-  // (빈 문자열 q=""를 보내면 SearchAPI.io가 "q must be present" 에러 반환)
-  // q와 search_page_ids를 동시에 보내면 q가 광고 텍스트 내 검색으로 작용하여 결과 0건
-  if (!params.searchPageIds) {
-    url.searchParams.set("q", params.searchTerms);
-  }
-  url.searchParams.set("country", country);
   url.searchParams.set("api_key", apiKey);
 
-  // 게재중 광고만 검색 (기본값)
-  url.searchParams.set("ad_active_status", "active");
-
-  if (params.mediaType && params.mediaType !== "all") {
-    url.searchParams.set("media_type", params.mediaType);
-  }
-
-  // 특정 페이지(브랜드) ID 필터
-  if (params.searchPageIds) {
-    url.searchParams.set("page_id", params.searchPageIds);
-  }
-
-  // 페이지네이션 토큰
   if (params.pageToken) {
+    // 페이지네이션: page_token에 전체 쿼리 컨텍스트가 인코딩됨
+    // page_id/q/country 등을 함께 보내면 SearchAPI.io가 새 쿼리로 해석하여
+    // 첫 페이지를 다시 반환 → 중복만 발생. page_token만 전송해야 함.
     url.searchParams.set("page_token", params.pageToken);
+  } else {
+    // 새 검색: 기존 로직 유지
+    if (!params.searchPageIds) {
+      url.searchParams.set("q", params.searchTerms);
+    }
+    url.searchParams.set("country", country);
+    url.searchParams.set("ad_active_status", "active");
+
+    if (params.mediaType && params.mediaType !== "all") {
+      url.searchParams.set("media_type", params.mediaType);
+    }
+
+    if (params.searchPageIds) {
+      url.searchParams.set("page_id", params.searchPageIds);
+    }
   }
 
   const res = await fetch(url.toString(), {

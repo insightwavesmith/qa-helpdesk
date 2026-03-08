@@ -4,6 +4,11 @@ import {
   searchMetaAds,
   MetaAdError,
 } from "@/lib/competitor/meta-ad-library";
+import {
+  lookupBrand,
+  containsKorean,
+  suggestEnglishName,
+} from "@/lib/competitor/brand-dictionary";
 import type { AdPage } from "@/types/competitor";
 
 export const runtime = "nodejs";
@@ -85,12 +90,43 @@ export async function GET(req: NextRequest) {
   const adLibraryQuery = domain ?? rawQ;
   const searchedDomain = domain;
 
+  // T4: 한글 브랜드명 → 영문 변환 (사전 매칭 우선, 없으면 Google Suggest)
+  let translatedQuery: string | null = null;
+  if (!isUrlInput(rawQ) && containsKorean(rawQ)) {
+    // 1단계: 브랜드 사전 조회
+    translatedQuery = lookupBrand(rawQ);
+    // 2단계: 사전에 없으면 Google Suggest API
+    if (!translatedQuery) {
+      translatedQuery = await suggestEnglishName(rawQ);
+    }
+  }
+
   try {
+    // 검색 쿼리 목록: 원본 + 영문 변환 (있으면)
+    const effectivePageSearch = translatedQuery ?? pageSearchQuery;
+    const effectiveAdLibrary = translatedQuery ?? adLibraryQuery;
+
     // 병렬 검색: page_search + ad_library
-    const [pageResult, adResult] = await Promise.allSettled([
-      searchBrandPages(pageSearchQuery),
-      searchMetaAds({ searchTerms: adLibraryQuery, limit: 50 }),
-    ]);
+    // 영문 변환이 있으면 영문으로 검색, 원본 한글로도 ad_library 검색 (폴백)
+    const searches: Promise<unknown>[] = [
+      searchBrandPages(effectivePageSearch),
+      searchMetaAds({ searchTerms: effectiveAdLibrary, limit: 50 }),
+    ];
+
+    // T4 폴백: 한글 원본이 영문 변환과 다르면, 원본으로도 ad_library 검색
+    if (translatedQuery && translatedQuery !== rawQ) {
+      searches.push(searchMetaAds({ searchTerms: rawQ, limit: 30 }));
+    }
+
+    const results = await Promise.allSettled(searches);
+
+    const [pageResult, adResult] = results as [
+      PromiseSettledResult<Awaited<ReturnType<typeof searchBrandPages>>>,
+      PromiseSettledResult<Awaited<ReturnType<typeof searchMetaAds>>>,
+    ];
+    const fallbackAdResult = results[2] as
+      | PromiseSettledResult<Awaited<ReturnType<typeof searchMetaAds>>>
+      | undefined;
 
     // page_search 결과
     const brands =
@@ -98,9 +134,18 @@ export async function GET(req: NextRequest) {
 
     // ad_library 결과 → page_id별 그룹핑
     const adPages: AdPage[] = [];
-    if (adResult.status === "fulfilled") {
+
+    // 영문 검색 + 한글 폴백 결과 합산
+    const allAds = [
+      ...(adResult.status === "fulfilled" ? adResult.value.ads : []),
+      ...(fallbackAdResult?.status === "fulfilled"
+        ? fallbackAdResult.value.ads
+        : []),
+    ];
+
+    if (allAds.length > 0) {
       const pageMap = new Map<string, { name: string; count: number }>();
-      for (const ad of adResult.value.ads) {
+      for (const ad of allAds) {
         const existing = pageMap.get(ad.pageId);
         if (existing) {
           existing.count++;
@@ -151,6 +196,7 @@ export async function GET(req: NextRequest) {
       brands,
       adPages,
       searchedDomain,
+      translatedQuery,
     });
   } catch (err) {
     if (err instanceof MetaAdError) {

@@ -351,11 +351,14 @@ export default function SignupPage() {
       // 실패해도 가입 자체는 완료 → 온보딩으로 넘어가야 함
       if (isStudentMode && inviteCode.trim()) {
         try {
-          await consumeInviteCode(
+          const inviteResult = await consumeInviteCode(
             authData.user.id,
             formData.email,
             inviteCode.trim()
           );
+          if (inviteResult?.error) {
+            console.error("[signup] consumeInviteCode returned error:", inviteResult.error);
+          }
         } catch (inviteErr) {
           console.error("[signup] consumeInviteCode failed:", inviteErr);
           // 초대코드 처리 실패해도 가입은 완료 — 리다이렉트 계속 진행

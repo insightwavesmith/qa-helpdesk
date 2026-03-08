@@ -450,7 +450,25 @@ function StepAdAccount({
   const [mixpanelBoardId, setMixpanelBoardId] = useState("");
   const [showSecretKey, setShowSecretKey] = useState(false);
 
+  // T3: 믹스패널 3개 필드 필수 — submit 시도 상태
+  const [submitted, setSubmitted] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const markTouched = (field: string) =>
+    setTouched((prev) => ({ ...prev, [field]: true }));
+
   const hasMetaAccount = accountId.trim().length > 0;
+  // T3: 믹스패널 3개 필드 모두 입력해야 활성화
+  const hasMixpanelFields =
+    mixpanelProjectId.trim().length > 0 &&
+    mixpanelBoardId.trim().length > 0 &&
+    mixpanelSecretKey.trim().length > 0;
+  const isAdStepValid = hasMetaAccount && hasMixpanelFields;
+
+  const handleAdSubmit = () => {
+    setSubmitted(true);
+    if (!isAdStepValid) return;
+    onConnect({ metaAccountId: accountId, accountName, mixpanelProjectId, mixpanelSecretKey, mixpanelBoardId });
+  };
 
   return (
     <div>
@@ -523,7 +541,7 @@ function StepAdAccount({
             htmlFor="onb-mixpanel-project"
             className="block text-sm font-medium text-[#111827]"
           >
-            믹스패널 프로젝트 ID (선택)
+            믹스패널 프로젝트 ID <span className="text-[#F75D5D]">*</span>
           </label>
           <input
             id="onb-mixpanel-project"
@@ -531,8 +549,14 @@ function StepAdAccount({
             placeholder="프로젝트 ID"
             value={mixpanelProjectId}
             onChange={(e) => setMixpanelProjectId(e.target.value)}
-            className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
+            onBlur={() => markTouched("mixpanelProjectId")}
+            className={`w-full px-4 h-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400 ${
+              (submitted || touched.mixpanelProjectId) && !mixpanelProjectId.trim() ? "border-red-300" : "border-gray-200"
+            }`}
           />
+          {(submitted || touched.mixpanelProjectId) && !mixpanelProjectId.trim() && (
+            <p className="text-xs text-red-500 mt-1">필수 항목입니다</p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -540,7 +564,7 @@ function StepAdAccount({
             htmlFor="onb-mixpanel-board"
             className="block text-sm font-medium text-[#111827]"
           >
-            믹스패널 보드 ID (선택)
+            믹스패널 보드 ID <span className="text-[#F75D5D]">*</span>
           </label>
           <input
             id="onb-mixpanel-board"
@@ -548,8 +572,14 @@ function StepAdAccount({
             placeholder="보드 ID"
             value={mixpanelBoardId}
             onChange={(e) => setMixpanelBoardId(e.target.value)}
-            className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400"
+            onBlur={() => markTouched("mixpanelBoardId")}
+            className={`w-full px-4 h-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400 ${
+              (submitted || touched.mixpanelBoardId) && !mixpanelBoardId.trim() ? "border-red-300" : "border-gray-200"
+            }`}
           />
+          {(submitted || touched.mixpanelBoardId) && !mixpanelBoardId.trim() && (
+            <p className="text-xs text-red-500 mt-1">필수 항목입니다</p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -557,7 +587,7 @@ function StepAdAccount({
             htmlFor="onb-mixpanel-secret"
             className="block text-sm font-medium text-[#111827]"
           >
-            믹스패널 시크릿키 (선택)
+            믹스패널 시크릿키 <span className="text-[#F75D5D]">*</span>
           </label>
           <div className="relative">
             <input
@@ -566,7 +596,10 @@ function StepAdAccount({
               placeholder="시크릿키"
               value={mixpanelSecretKey}
               onChange={(e) => setMixpanelSecretKey(e.target.value)}
-              className="w-full px-4 h-11 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400 pr-10"
+              onBlur={() => markTouched("mixpanelSecretKey")}
+              className={`w-full px-4 h-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400 pr-10 ${
+                (submitted || touched.mixpanelSecretKey) && !mixpanelSecretKey.trim() ? "border-red-300" : "border-gray-200"
+              }`}
             />
             <button
               type="button"
@@ -576,12 +609,15 @@ function StepAdAccount({
               {showSecretKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
+          {(submitted || touched.mixpanelSecretKey) && !mixpanelSecretKey.trim() && (
+            <p className="text-xs text-red-500 mt-1">필수 항목입니다</p>
+          )}
         </div>
 
         <div className="flex flex-col gap-3">
           <button
-            onClick={() => onConnect({ metaAccountId: accountId, accountName, mixpanelProjectId, mixpanelSecretKey, mixpanelBoardId })}
-            disabled={saving || !hasMetaAccount}
+            onClick={handleAdSubmit}
+            disabled={saving || !isAdStepValid}
             className="w-full bg-[#F75D5D] hover:bg-[#E54949] text-white h-11 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
             {saving ? (
