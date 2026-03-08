@@ -157,11 +157,10 @@ export async function searchMetaAds(
 
   const url = new URL(SEARCH_API_BASE);
   url.searchParams.set("engine", "meta_ad_library");
-  // search_page_ids가 있으면 q를 빈 문자열로 (해당 페이지 전체 광고 반환)
+  // search_page_ids가 있으면 q 파라미터를 아예 보내지 않음
+  // (빈 문자열 q=""를 보내면 SearchAPI.io가 "q must be present" 에러 반환)
   // q와 search_page_ids를 동시에 보내면 q가 광고 텍스트 내 검색으로 작용하여 결과 0건
-  if (params.searchPageIds) {
-    url.searchParams.set("q", "");
-  } else {
+  if (!params.searchPageIds) {
     url.searchParams.set("q", params.searchTerms);
   }
   url.searchParams.set("country", country);
