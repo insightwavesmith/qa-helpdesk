@@ -159,12 +159,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // v2 확장 필드 (BrandPage에서 전달)
+  const pageProfileUrl = body.pageProfileUrl?.trim() || null;
+  const igUsername = body.igUsername?.trim() || null;
+  const category = body.category?.trim() || null;
+  const totalAdsCount =
+    typeof body.totalAdsCount === "number" ? body.totalAdsCount : 0;
+
   const { data, error } = await svc
     .from("competitor_monitors")
     .insert({
       user_id: user.id,
       brand_name: brandName,
       page_id: pageId,
+      page_profile_url: pageProfileUrl,
+      ig_username: igUsername,
+      category: category,
+      total_ads_count: totalAdsCount,
     })
     .select()
     .single();

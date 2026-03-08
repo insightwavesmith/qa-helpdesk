@@ -10,12 +10,22 @@ interface MonitorRow {
   brand_name: string;
   page_id: string | null;
   last_ad_count: number | null;
+  latest_ad_date: string | null;
+  total_ads_count: number | null;
+  new_ads_count: number | null;
+}
+
+interface SearchResult {
+  serverTotalCount: number;
+  latestStartDate: string | null;
 }
 
 /**
  * GET /api/cron/competitor-check
  * Cron: 등록된 브랜드별 신규 광고 감지
  * 스케줄: 매일 09:00, 21:00 KST
+ *
+ * v2: page_id 기반 검색 + 중복 page_id 1회만 호출 + new_ads_count 갱신
  */
 export async function GET(req: NextRequest) {
   // Cron 인증 확인
@@ -52,45 +62,86 @@ export async function GET(req: NextRequest) {
   let processed = 0;
   let newAlerts = 0;
 
+  // page_id별 결과 캐시 (중복 호출 방지 — 크레딧 절약)
+  const pageIdCache = new Map<string, SearchResult>();
+
   for (let i = 0; i < monitorList.length; i++) {
     const monitor = monitorList[i];
     try {
-      const result = await searchMetaAds({
-        searchTerms: monitor.brand_name,
-        limit: 50,
-      });
+      let searchResult: SearchResult;
+      const cacheKey = monitor.page_id ?? `name:${monitor.brand_name}`;
 
-      const currentAdCount = result.totalCount;
-      const prevAdCount = monitor.last_ad_count ?? 0;
+      if (pageIdCache.has(cacheKey)) {
+        // 동일 page_id는 캐시된 결과 사용
+        searchResult = pageIdCache.get(cacheKey)!;
+      } else {
+        // page_id가 있으면 page_id로 검색, 없으면 brand_name으로 폴백
+        const result = await searchMetaAds(
+          monitor.page_id
+            ? {
+                searchTerms: monitor.brand_name,
+                searchPageIds: monitor.page_id,
+                limit: 1,
+              }
+            : {
+                searchTerms: monitor.brand_name,
+                limit: 1,
+              },
+        );
 
-      // 신규 광고 감지 (C1: slice 방향 수정 — 신규 광고는 durationDays가 짧아 리스트 끝에 위치)
-      if (currentAdCount > prevAdCount) {
-        const diff = currentAdCount - prevAdCount;
-        const newAdIds = result.ads.slice(-diff).map((ad) => ad.id);
+        const latestStartDate =
+          result.ads.length > 0 ? result.ads[0].startDate : null;
 
-        await svc.from("competitor_alerts").insert({
-          monitor_id: monitor.id,
-          new_ad_ids: newAdIds,
-        });
+        searchResult = {
+          serverTotalCount: result.serverTotalCount,
+          latestStartDate,
+        };
+        pageIdCache.set(cacheKey, searchResult);
 
+        // Rate limit 완화: API 호출 간 500ms 딜레이 (캐시 히트 시 스킵)
+        if (i < monitorList.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+      }
+
+      const prevTotalAds = monitor.total_ads_count ?? 0;
+      const currentTotalAds = searchResult.serverTotalCount;
+      const prevLatestDate = monitor.latest_ad_date ?? null;
+      const currentLatestDate = searchResult.latestStartDate;
+
+      // 신규 광고 감지: 전체 수 증가 또는 최신 광고 날짜가 더 최근
+      const hasNewByCount = currentTotalAds > prevTotalAds;
+      const hasNewByDate =
+        currentLatestDate &&
+        prevLatestDate &&
+        new Date(currentLatestDate) > new Date(prevLatestDate);
+      const hasNew = hasNewByCount || hasNewByDate;
+
+      // 업데이트 필드
+      const updateFields: Record<string, unknown> = {
+        last_checked_at: new Date().toISOString(),
+        total_ads_count: currentTotalAds,
+      };
+
+      if (currentLatestDate) {
+        updateFields.latest_ad_date = currentLatestDate;
+      }
+
+      if (hasNew) {
+        const newCount = hasNewByCount
+          ? currentTotalAds - prevTotalAds
+          : 1;
+        updateFields.new_ads_count =
+          (monitor.new_ads_count ?? 0) + newCount;
         newAlerts++;
       }
 
-      // 모니터 업데이트 (M7: page_id 자동 변경 제거)
       await svc
         .from("competitor_monitors")
-        .update({
-          last_checked_at: new Date().toISOString(),
-          last_ad_count: currentAdCount,
-        })
+        .update(updateFields)
         .eq("id", monitor.id);
 
       processed++;
-
-      // Rate limit 완화: 브랜드 간 500ms 딜레이 (M6)
-      if (i < monitorList.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
     } catch (err) {
       if (err instanceof MetaAdError && err.code === "RATE_LIMITED") {
         break;
@@ -106,5 +157,6 @@ export async function GET(req: NextRequest) {
     processed,
     newAlerts,
     total: monitorList.length,
+    cachedPages: pageIdCache.size,
   });
 }

@@ -259,6 +259,29 @@ export function AdCard({ ad, selected, onSelect }: AdCardProps) {
                 랜딩페이지
               </a>
             )}
+            {/* 외부 링크: Facebook + Ad Library */}
+            {ad.pageId && (
+              <>
+                <a
+                  href={`https://www.facebook.com/${ad.pageId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
+                  title="Facebook 페이지"
+                >
+                  📘 Facebook
+                </a>
+                <a
+                  href={`https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=KR&view_all_page_id=${ad.pageId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
+                  title="Ad Library에서 전체 광고 보기"
+                >
+                  🔍 Ad Library
+                </a>
+              </>
+            )}
           </div>
         </div>
       </div>

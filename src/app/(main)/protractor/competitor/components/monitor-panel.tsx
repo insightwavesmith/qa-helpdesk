@@ -67,6 +67,45 @@ export function MonitorPanel({
     [monitors, setMonitors],
   );
 
+  // 클릭 시 NEW 배지 리셋 + 검색 실행
+  const handleBrandClick = useCallback(
+    async (monitor: CompetitorMonitor) => {
+      // NEW 배지가 있으면 리셋
+      if ((monitor.newAdsCount ?? 0) > 0) {
+        // 로컬 상태 즉시 업데이트 (낙관적)
+        setMonitors(
+          monitors.map((m) =>
+            m.id === monitor.id
+              ? {
+                  ...m,
+                  newAdsCount: 0,
+                  lastCheckedAt: new Date().toISOString(),
+                }
+              : m,
+          ),
+        );
+
+        // 서버 업데이트 (백그라운드)
+        fetch(`/api/competitor/monitors/${monitor.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            newAdsCount: 0,
+            lastCheckedAt: new Date().toISOString(),
+          }),
+        }).catch(() => {
+          // 무시 — 다음 로드 시 복구
+        });
+      }
+
+      onBrandClick(monitor);
+    },
+    [monitors, setMonitors, onBrandClick],
+  );
+
+  // NEW 배지 있는 모니터 수
+  const newCount = monitors.filter((m) => (m.newAdsCount ?? 0) > 0).length;
+
   return (
     <div className="lg:w-[280px] shrink-0">
       {/* 헤더 */}
@@ -81,6 +120,11 @@ export function MonitorPanel({
           <span className="text-xs text-gray-400 font-normal">
             {monitors.length}/10
           </span>
+          {newCount > 0 && (
+            <span className="inline-flex items-center justify-center h-4 min-w-4 px-1 text-[10px] font-bold text-white bg-[#F75D5D] rounded-full">
+              {newCount}
+            </span>
+          )}
           {collapsed ? (
             <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
           ) : (
@@ -116,7 +160,7 @@ export function MonitorPanel({
                 key={monitor.id}
                 monitor={monitor}
                 isSearching={searchQuery === monitor.brandName}
-                onClick={() => onBrandClick(monitor)}
+                onClick={() => handleBrandClick(monitor)}
                 onDelete={() => handleDelete(monitor.id)}
               />
             ))

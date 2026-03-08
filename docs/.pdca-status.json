@@ -815,6 +815,18 @@
       "startedAt": "2026-03-08",
       "completedAt": "2026-03-08",
       "notes": "T4.1 클라이언트직접다운로드유틸(downloadFile+downloadFilesAsZip+JSZip) + T4.2 개별다운로드전환(서버API→클라이언트직접) + T4.3 선택다운로드(체크박스+selectedAds+ZIP진행표시) + T4.4 서버API유지(호출제거만). tsc+lint+build 통과."
+    },
+    "competitor-v2-pin-new": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/competitor-v2-pin-new.plan.md",
+        "design": "02-design/features/competitor-v2-pin-new.design.md",
+        "analysis": "03-analysis/competitor-v2-pin-new.analysis.md"
+      },
+      "startedAt": "2026-03-08",
+      "completedAt": "2026-03-08",
+      "notes": "T5.1 모니터링카드리디자인(프로필3단fallback+@IG+광고N건+시간전+NEW배지+PATCH리셋) + T5.2 핀등록강화(POST v2필드+BrandSearchBar onPinBrand연결) + T5.3 NEW Cron(page_id기반+중복캐시+new_ads_count누적) + T5.4 광고링크(Meta에서보기→FB/AdLibrary). tsc+lint+build 통과."
     }
   },
   "phaseMapping": {

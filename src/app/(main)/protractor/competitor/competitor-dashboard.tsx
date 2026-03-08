@@ -191,12 +191,69 @@ export default function CompetitorDashboard() {
     [],
   );
 
-  // 모니터링 브랜드 클릭 -> 해당 브랜드로 검색
+  // 모니터링 브랜드 클릭 -> 해당 브랜드로 검색 (page_id가 있으면 page_id로)
   const handleMonitorClick = useCallback(
     (monitor: CompetitorMonitor) => {
-      handleSearch(monitor.brandName);
+      if (monitor.pageId) {
+        handleBrandSelect({
+          page_id: monitor.pageId,
+          page_name: monitor.brandName,
+          category: monitor.category ?? null,
+          image_uri: monitor.pageProfileUrl ?? null,
+          likes: null,
+          ig_username: monitor.igUsername ?? null,
+          ig_followers: null,
+          ig_verification: false,
+          page_alias: null,
+        });
+      } else {
+        handleSearch(monitor.brandName);
+      }
     },
-    [handleSearch],
+    [handleSearch, handleBrandSelect],
+  );
+
+  // 브랜드 검색에서 핀 등록
+  const handlePinBrand = useCallback(
+    async (brand: BrandPage) => {
+      // 이미 등록된 브랜드 확인
+      const alreadyExists = monitors.some(
+        (m) => m.pageId === brand.page_id || m.brandName === brand.page_name,
+      );
+      if (alreadyExists) {
+        setError("이미 등록된 브랜드입니다");
+        return;
+      }
+      if (monitors.length >= 10) {
+        setError("모니터링은 최대 10개까지 등록할 수 있습니다");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/competitor/monitors", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            brandName: brand.page_name,
+            pageId: brand.page_id,
+            pageProfileUrl: brand.image_uri,
+            igUsername: brand.ig_username,
+            category: brand.category,
+          }),
+        });
+        const json = await res.json();
+
+        if (!res.ok) {
+          setError(json.error || "모니터링 등록에 실패했습니다");
+          return;
+        }
+
+        setMonitors((prev) => [...prev, json.monitor]);
+      } catch {
+        setError("네트워크 오류가 발생했습니다");
+      }
+    },
+    [monitors, setMonitors],
   );
 
   return (
@@ -233,6 +290,7 @@ export default function CompetitorDashboard() {
       {searchMode === "brand" ? (
         <BrandSearchBar
           onBrandSelect={handleBrandSelect}
+          onPinBrand={handlePinBrand}
           loading={loadingSearch}
         />
       ) : (

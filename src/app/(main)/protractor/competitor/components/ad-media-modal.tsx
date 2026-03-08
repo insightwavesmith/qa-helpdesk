@@ -98,15 +98,28 @@ export function AdMediaModal({ ad, isOpen, onClose }: AdMediaModalProps) {
             {ad.pageName}
           </h3>
           <div className="flex items-center gap-2">
-            <a
-              href={ad.snapshotUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              Meta에서 보기
-            </a>
+            {ad.pageId && (
+              <>
+                <a
+                  href={`https://www.facebook.com/${ad.pageId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                  title="Facebook 페이지"
+                >
+                  📘
+                </a>
+                <a
+                  href={`https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=KR&view_all_page_id=${ad.pageId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 rounded-lg transition"
+                  title="Ad Library"
+                >
+                  🔍
+                </a>
+              </>
+            )}
             <button
               onClick={onClose}
               className="p-1.5 rounded-lg hover:bg-gray-100 transition"
@@ -143,14 +156,16 @@ export function AdMediaModal({ ad, isOpen, onClose }: AdMediaModalProps) {
                         ? "영상을 재생할 수 없습니다"
                         : "영상 미리보기만 제공됩니다"}
                     </p>
-                    <a
-                      href={ad.snapshotUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-[#F75D5D] mt-1 hover:underline"
-                    >
-                      Meta에서 보기
-                    </a>
+                    {ad.pageId && (
+                      <a
+                        href={`https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=KR&view_all_page_id=${ad.pageId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-[#F75D5D] mt-1 hover:underline"
+                      >
+                        Ad Library에서 보기
+                      </a>
+                    )}
                   </div>
                 </>
               ) : (

@@ -189,6 +189,7 @@ export function AddMonitorDialog({
         body: JSON.stringify({
           brandName: name,
           pageId: selectedPage?.pageId ?? null,
+          pageProfileUrl: selectedPage?.profileImageUrl ?? null,
         }),
       });
       const json = await res.json();
