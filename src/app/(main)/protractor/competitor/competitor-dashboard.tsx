@@ -97,18 +97,19 @@ export default function CompetitorDashboard() {
 
   // 더보기 (다음 페이지 누적 로드)
   const handleLoadMore = useCallback(async () => {
-    if (!searchQuery || !nextPageToken || loadingMore) return;
+    if ((!searchQuery && !searchPageId) || !nextPageToken || loadingMore) return;
 
     setLoadingMore(true);
     setError(null);
 
     try {
       const params = new URLSearchParams({
-        q: searchQuery,
         page_token: nextPageToken,
       });
       if (searchPageId) {
         params.set("page_id", searchPageId);
+      } else if (searchQuery) {
+        params.set("q", searchQuery);
       }
       const res = await fetch(`/api/competitor/search?${params}`);
       const json = await res.json();
@@ -179,7 +180,6 @@ export default function CompetitorDashboard() {
 
       try {
         const params = new URLSearchParams({
-          q: brand.page_name,
           page_id: brand.page_id,
         });
         const res = await fetch(`/api/competitor/search?${params}`);
