@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchMetaAds, MetaAdError } from "@/lib/competitor/meta-ad-library";
+import { upsertAdCache } from "@/lib/competitor/ad-cache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
  * GET /api/competitor/search
- * 경쟁사 광고 검색 — Meta Ad Library API 연동
+ * 경쟁사 광고 검색 — SearchAPI.io Meta Ad Library 엔진
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -15,6 +16,7 @@ export async function GET(req: NextRequest) {
   const activeOnly = searchParams.get("active_only") === "true";
   const minDays = parseInt(searchParams.get("min_days") ?? "0", 10) || 0;
   const platform = searchParams.get("platform") ?? "";
+  const mediaType = searchParams.get("media_type") ?? "all";
   const limit = Math.min(
     parseInt(searchParams.get("limit") ?? "50", 10) || 50,
     100,
@@ -32,6 +34,12 @@ export async function GET(req: NextRequest) {
       searchTerms: q,
       country,
       limit,
+      mediaType,
+    });
+
+    // 캐시 UPSERT (비동기 — 검색 응답 지연 방지)
+    upsertAdCache(result.ads).catch((err) => {
+      console.error("[search] 캐시 UPSERT 실패:", err);
     });
 
     // 클라이언트 필터 적용
@@ -60,9 +68,11 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     if (err instanceof MetaAdError) {
       const statusMap: Record<string, number> = {
+        API_KEY_MISSING: 503,
         TOKEN_MISSING: 503,
         RATE_LIMITED: 429,
         META_API_ERROR: 502,
+        SEARCH_API_ERROR: 502,
       };
       return NextResponse.json(
         { error: err.message, code: err.code },

@@ -1,25 +1,19 @@
 /**
- * Meta Ad Library API 클라이언트
- * - META_AD_LIBRARY_TOKEN 없어도 빌드 성공
- * - 런타임에서만 토큰 확인
+ * SearchAPI.io Meta Ad Library 클라이언트
+ * - 기존 Meta Graph API → SearchAPI.io 엔진 전환
+ * - SEARCH_API_KEY 없어도 빌드 성공 (런타임에서만 확인)
+ * - 기존 searchMetaAds() 시그니처 유지 (하위 호환)
  */
 
-import type { MetaAdRaw, CompetitorAd } from "@/types/competitor";
+import type {
+  CompetitorAd,
+  SearchApiAdRaw,
+  SearchApiSnapshot,
+  DisplayFormat,
+  CarouselCard,
+} from "@/types/competitor";
 
-const META_API_BASE = "https://graph.facebook.com/v19.0/ads_archive";
-
-const AD_FIELDS = [
-  "id",
-  "page_id",
-  "page_name",
-  "ad_creative_bodies",
-  "ad_creative_link_titles",
-  "ad_creative_link_captions",
-  "ad_delivery_start_time",
-  "ad_delivery_stop_time",
-  "publisher_platforms",
-  "ad_snapshot_url",
-].join(",");
+const SEARCH_API_BASE = "https://www.searchapi.io/api/v1/search";
 
 /** 운영기간(일수) 계산 */
 function calcDurationDays(startDate: string, endDate: string | null): number {
@@ -29,22 +23,96 @@ function calcDurationDays(startDate: string, endDate: string | null): number {
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
-/** Meta raw 데이터 → CompetitorAd 변환 */
-function transformAd(raw: MetaAdRaw): CompetitorAd {
-  const endDate = raw.ad_delivery_stop_time ?? null;
+/** snapshot.body에서 텍스트 추출 (string | { text?: string } 대응) */
+function extractBodyText(body?: SearchApiSnapshot["body"]): string {
+  if (!body) return "";
+  if (typeof body === "string") return body;
+  return body.text ?? "";
+}
+
+/** 미디어 URL 방어적 추출 */
+function extractMediaUrls(snapshot?: SearchApiSnapshot) {
+  const imageUrl =
+    snapshot?.images?.[0]?.original_image_url ??
+    snapshot?.cards?.[0]?.original_image_url ??
+    null;
+
+  const videoUrl =
+    snapshot?.videos?.[0]?.video_hd_url ??
+    snapshot?.videos?.[0]?.video_sd_url ??
+    null;
+
+  const videoPreviewUrl =
+    snapshot?.videos?.[0]?.video_preview_image_url ?? null;
+
+  const displayFormat = detectDisplayFormat(snapshot);
+
+  return { imageUrl, videoUrl, videoPreviewUrl, displayFormat };
+}
+
+/** 광고 포맷 감지 */
+function detectDisplayFormat(snapshot?: SearchApiSnapshot): DisplayFormat {
+  const fmt = snapshot?.display_format?.toUpperCase();
+  if (fmt === "VIDEO" || (snapshot?.videos?.length ?? 0) > 0) return "VIDEO";
+  if (fmt === "CAROUSEL" || fmt === "DCO" || fmt === "MULTI_IMAGES")
+    return "CAROUSEL";
+  if (fmt === "IMAGE" || (snapshot?.images?.length ?? 0) > 0) return "IMAGE";
+  return "UNKNOWN";
+}
+
+/** 캐러셀 카드 추출 */
+function extractCarouselCards(snapshot?: SearchApiSnapshot): CarouselCard[] {
+  if (!snapshot?.cards?.length) return [];
+  return snapshot.cards.map((card) => ({
+    title: card.title ?? "",
+    body: card.body ?? "",
+    imageUrl: card.original_image_url ?? card.resized_image_url ?? null,
+    linkUrl: card.link_url ?? null,
+  }));
+}
+
+/** 영상 URL의 oe 파라미터(hex timestamp)에서 만료 시점 추출 */
+export function extractExpiresAt(url: string | null): Date | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    const oe = u.searchParams.get("oe");
+    if (!oe) return null;
+    const timestamp = parseInt(oe, 16);
+    if (isNaN(timestamp)) return null;
+    return new Date(timestamp * 1000);
+  } catch {
+    return null;
+  }
+}
+
+/** SearchAPI.io raw 데이터 → CompetitorAd 변환 */
+export function transformSearchApiAd(raw: SearchApiAdRaw): CompetitorAd {
+  const endDate = raw.end_date ?? null;
+  const snapshot = raw.snapshot;
+  const { imageUrl, videoUrl, videoPreviewUrl, displayFormat } =
+    extractMediaUrls(snapshot);
+  const carouselCards = extractCarouselCards(snapshot);
+
   return {
-    id: raw.id,
+    id: raw.ad_archive_id,
     pageId: raw.page_id,
     pageName: raw.page_name,
-    body: raw.ad_creative_bodies?.[0] ?? "",
-    title: raw.ad_creative_link_titles?.[0] ?? "",
-    caption: raw.ad_creative_link_captions?.[0] ?? "",
-    startDate: raw.ad_delivery_start_time,
+    body: extractBodyText(snapshot?.body),
+    title: snapshot?.title ?? "",
+    caption: snapshot?.caption ?? "",
+    startDate: raw.start_date,
     endDate,
-    durationDays: calcDurationDays(raw.ad_delivery_start_time, endDate),
-    isActive: endDate === null,
-    platforms: raw.publisher_platforms ?? [],
-    snapshotUrl: raw.ad_snapshot_url,
+    durationDays: calcDurationDays(raw.start_date, endDate),
+    isActive: raw.is_active ?? endDate === null,
+    platforms: (raw.publisher_platform ?? []).map((p) => p.toLowerCase()),
+    snapshotUrl: `https://www.facebook.com/ads/archive/render_ad/?id=${raw.ad_archive_id}`,
+    imageUrl,
+    videoUrl,
+    videoPreviewUrl,
+    displayFormat,
+    linkUrl: snapshot?.link_url ?? null,
+    carouselCards,
   };
 }
 
@@ -52,6 +120,7 @@ export interface SearchParams {
   searchTerms: string;
   country?: string;
   limit?: number;
+  mediaType?: string;
 }
 
 export interface MetaApiResult {
@@ -60,30 +129,32 @@ export interface MetaApiResult {
 }
 
 /**
- * Meta Ad Library API에서 광고 검색
- * @throws Error 토큰 미설정, API 에러, Rate Limit 시
+ * SearchAPI.io Meta Ad Library 엔진에서 광고 검색
+ * @throws MetaAdError API 키 미설정, API 에러, Rate Limit 시
  */
 export async function searchMetaAds(
   params: SearchParams,
 ): Promise<MetaApiResult> {
-  const token = process.env.META_AD_LIBRARY_TOKEN;
-  if (!token) {
+  const apiKey = process.env.SEARCH_API_KEY;
+  if (!apiKey) {
     throw new MetaAdError(
-      "META_AD_LIBRARY_TOKEN이 설정되지 않았습니다",
-      "TOKEN_MISSING",
+      "SearchAPI.io API 키가 설정되지 않았습니다",
+      "API_KEY_MISSING",
     );
   }
 
   const country = params.country ?? "KR";
   const limit = Math.min(params.limit ?? 50, 100);
 
-  const url = new URL(META_API_BASE);
-  url.searchParams.set("access_token", token);
-  url.searchParams.set("search_terms", params.searchTerms);
-  url.searchParams.set("ad_reached_countries", JSON.stringify([country]));
-  url.searchParams.set("ad_type", "ALL");
-  url.searchParams.set("fields", AD_FIELDS);
-  url.searchParams.set("limit", String(limit));
+  const url = new URL(SEARCH_API_BASE);
+  url.searchParams.set("engine", "meta_ad_library");
+  url.searchParams.set("q", params.searchTerms);
+  url.searchParams.set("country", country);
+  url.searchParams.set("api_key", apiKey);
+
+  if (params.mediaType && params.mediaType !== "all") {
+    url.searchParams.set("media_type", params.mediaType);
+  }
 
   const res = await fetch(url.toString(), {
     headers: { "Content-Type": "application/json" },
@@ -99,14 +170,14 @@ export async function searchMetaAds(
   if (!res.ok) {
     const errBody = await res.text().catch(() => "");
     throw new MetaAdError(
-      `Meta API 호출 실패: ${errBody.substring(0, 200)}`,
-      "META_API_ERROR",
+      `검색 API 호출 실패: ${errBody.substring(0, 200)}`,
+      "SEARCH_API_ERROR",
     );
   }
 
   const json = await res.json();
-  const rawAds: MetaAdRaw[] = json.data ?? [];
-  const ads = rawAds.map(transformAd);
+  const rawAds: SearchApiAdRaw[] = json.ads ?? json.data ?? [];
+  const ads = rawAds.slice(0, limit).map(transformSearchApiAd);
 
   // 운영기간 DESC 정렬
   ads.sort((a, b) => b.durationDays - a.durationDays);
@@ -117,7 +188,7 @@ export async function searchMetaAds(
   };
 }
 
-/** Meta Ad Library 전용 에러 클래스 */
+/** Meta Ad Library / SearchAPI.io 전용 에러 클래스 */
 export class MetaAdError extends Error {
   code: string;
   constructor(message: string, code: string) {

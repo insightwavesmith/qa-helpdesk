@@ -1,7 +1,19 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-07T14:00:00.000Z",
+  "lastUpdated": "2026-03-08T10:00:00.000Z",
   "features": {
+    "competitor-searchapi": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/competitor-searchapi.plan.md",
+        "design": "02-design/features/competitor-searchapi.design.md",
+        "analysis": "03-analysis/competitor-searchapi.analysis.md"
+      },
+      "startedAt": "2026-03-08",
+      "completedAt": "2026-03-08",
+      "notes": "T1 SearchAPI.io 전환(meta-ad-library.ts 교체+SearchApiAdRaw→CompetitorAd+extractMediaUrls/extractExpiresAt) + T2 미리보기UI(MediaPreview+AdMediaModal 모달+mediaType필터칩) + T3 다운로드API(서버프록시스트림+캐시조회+만료재검색) + T4 캐싱(competitor_ad_cache 테이블+RLS+upsertAdCache비동기) + T5 외부링크→인앱모달교체(소재보기onClick+다운로드버튼). Cron 호환성 유지. tsc+lint+build 통과. Match Rate 95%."
+    },
     "competitor-brand-registration": {
       "phase": "completed",
       "matchRate": 95,

@@ -18,6 +18,7 @@ export default function CompetitorDashboard() {
     activeOnly: false,
     minDays: 0,
     platform: "",
+    mediaType: "all",
   });
 
   // 모니터링 상태
@@ -61,6 +62,8 @@ export default function CompetitorDashboard() {
       if (filters.activeOnly && !ad.isActive) return false;
       if (filters.minDays > 0 && ad.durationDays < filters.minDays) return false;
       if (filters.platform && !ad.platforms.includes(filters.platform)) return false;
+      if (filters.mediaType === "image" && ad.displayFormat !== "IMAGE" && ad.displayFormat !== "CAROUSEL") return false;
+      if (filters.mediaType === "video" && ad.displayFormat !== "VIDEO") return false;
       return true;
     });
   }, [ads, filters]);

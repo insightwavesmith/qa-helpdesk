@@ -4,6 +4,7 @@ export interface FilterState {
   activeOnly: boolean;
   minDays: number;
   platform: string;
+  mediaType: "all" | "image" | "video";
 }
 
 interface FilterChipsProps {
@@ -42,6 +43,22 @@ const CHIPS: ChipDef[] = [
     toggle: (f) => ({
       ...f,
       platform: f.platform === "instagram" ? "" : "instagram",
+    }),
+  },
+  {
+    label: "이미지",
+    isActive: (f) => f.mediaType === "image",
+    toggle: (f) => ({
+      ...f,
+      mediaType: f.mediaType === "image" ? "all" : "image",
+    }),
+  },
+  {
+    label: "영상",
+    isActive: (f) => f.mediaType === "video",
+    toggle: (f) => ({
+      ...f,
+      mediaType: f.mediaType === "video" ? "all" : "video",
     }),
   },
 ];

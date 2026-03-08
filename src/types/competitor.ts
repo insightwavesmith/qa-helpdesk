@@ -26,6 +26,83 @@ export interface CompetitorAd {
   isActive: boolean;
   platforms: string[];
   snapshotUrl: string;
+
+  // === SearchAPI.io 전환 필드 ===
+  imageUrl: string | null;
+  videoUrl: string | null;
+  videoPreviewUrl: string | null;
+  displayFormat: DisplayFormat;
+  linkUrl: string | null;
+  carouselCards: CarouselCard[];
+}
+
+export type DisplayFormat = "IMAGE" | "VIDEO" | "CAROUSEL" | "UNKNOWN";
+
+export interface CarouselCard {
+  title: string;
+  body: string;
+  imageUrl: string | null;
+  linkUrl: string | null;
+}
+
+/** SearchAPI.io Meta Ad Library 응답 항목 */
+export interface SearchApiAdRaw {
+  ad_archive_id: string;
+  page_id: string;
+  page_name: string;
+  start_date: string;
+  end_date?: string;
+  is_active: boolean;
+  publisher_platform?: string[];
+  snapshot?: SearchApiSnapshot;
+}
+
+export interface SearchApiSnapshot {
+  body?: { text?: string } | string;
+  title?: string;
+  caption?: string;
+  link_url?: string;
+  display_format?: string;
+  images?: Array<{
+    original_image_url?: string;
+    resized_image_url?: string;
+  }>;
+  videos?: Array<{
+    video_hd_url?: string;
+    video_sd_url?: string;
+    video_preview_image_url?: string;
+  }>;
+  cards?: Array<{
+    title?: string;
+    body?: string;
+    link_url?: string;
+    original_image_url?: string;
+    resized_image_url?: string;
+  }>;
+}
+
+/** competitor_ad_cache DB Row 타입 */
+export interface CompetitorAdCacheRow {
+  ad_archive_id: string;
+  page_id: string;
+  page_name: string;
+  ad_text: string | null;
+  ad_title: string | null;
+  image_url: string | null;
+  video_url: string | null;
+  video_preview_url: string | null;
+  display_format: string;
+  link_url: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_active: boolean;
+  platforms: string[];
+  snapshot_url: string | null;
+  carousel_cards: CarouselCard[];
+  metadata: Record<string, unknown>;
+  expires_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 /** 검색 응답 */
@@ -118,4 +195,9 @@ export type CompetitorErrorCode =
   | "DUPLICATE_MONITOR"
   | "UNAUTHORIZED"
   | "INSIGHT_ERROR"
-  | "DB_ERROR";
+  | "DB_ERROR"
+  | "API_KEY_MISSING"
+  | "SEARCH_API_ERROR"
+  | "AD_NOT_FOUND"
+  | "URL_EXPIRED"
+  | "DOWNLOAD_FAILED";

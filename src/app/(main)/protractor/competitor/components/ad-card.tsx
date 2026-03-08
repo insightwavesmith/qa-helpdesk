@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import type { CompetitorAd } from "@/types/competitor";
 import { DurationBar } from "./duration-bar";
-import { ExternalLink, Eye } from "lucide-react";
+import { AdMediaModal } from "./ad-media-modal";
+import { ExternalLink, Eye, Download, Play, ImageOff } from "lucide-react";
 
 interface AdCardProps {
   ad: CompetitorAd;
@@ -32,95 +34,185 @@ function formatDate(dateStr: string): string {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export function AdCard({ ad }: AdCardProps) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition overflow-hidden">
-      {/* 소재 썸네일 (ad_snapshot_url) */}
-      <div className="relative w-full h-48 bg-gray-50 border-b border-gray-100">
-        <iframe
-          src={ad.snapshotUrl}
-          title={`${ad.pageName} 광고 소재`}
-          className="w-full h-full"
-          sandbox="allow-scripts allow-same-origin"
-          loading="lazy"
-          onError={(e) => {
-            const target = e.currentTarget;
-            target.style.display = "none";
-            const parent = target.parentElement;
-            if (parent) {
-              const fallback = document.createElement("div");
-              fallback.className =
-                "flex items-center justify-center w-full h-full text-gray-400 text-sm";
-              fallback.textContent = "소재 미리보기를 불러올 수 없습니다";
-              parent.appendChild(fallback);
-            }
-          }}
-        />
-      </div>
+/** 소재 미리보기 영역 */
+function MediaPreview({
+  ad,
+  onClick,
+}: {
+  ad: CompetitorAd;
+  onClick: () => void;
+}) {
+  const [imgError, setImgError] = useState(false);
 
-      <div className="p-4 space-y-3">
-        {/* 헤더: 브랜드명 + 플랫폼 아이콘 */}
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900 truncate">
-            {ad.pageName}
-          </h3>
-          <div className="flex items-center gap-1.5">
-            {ad.platforms.map((p) => (
-              <PlatformIcon key={p} platform={p} />
-            ))}
+  // 영상 광고: 프리뷰 이미지 + 재생 아이콘
+  if (
+    ad.displayFormat === "VIDEO" &&
+    (ad.videoPreviewUrl || ad.imageUrl) &&
+    !imgError
+  ) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="relative w-full h-48 bg-gray-50 border-b border-gray-100 cursor-pointer group overflow-hidden"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={(ad.videoPreviewUrl ?? ad.imageUrl)!}
+          alt={`${ad.pageName} 영상 프리뷰`}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={() => setImgError(true)}
+        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="bg-black/50 rounded-full w-12 h-12 flex items-center justify-center">
+            <Play className="h-6 w-6 text-white fill-white" />
           </div>
         </div>
+      </button>
+    );
+  }
 
-        {/* 광고 문구 */}
-        {ad.body && (
-          <p className="text-sm text-gray-600 line-clamp-3">{ad.body}</p>
-        )}
-
-        {/* 운영기간 바 */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <DurationBar durationDays={ad.durationDays} />
-            <span className="ml-2 text-xs font-semibold text-gray-700 whitespace-nowrap">
-              {ad.durationDays}일
-            </span>
+  // 이미지 광고 (단일 또는 캐러셀)
+  if (ad.imageUrl && !imgError) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="relative w-full h-48 bg-gray-50 border-b border-gray-100 cursor-pointer group overflow-hidden"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={ad.imageUrl}
+          alt={`${ad.pageName} 광고 소재`}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={() => setImgError(true)}
+        />
+        {/* 캐러셀 뱃지 */}
+        {ad.displayFormat === "CAROUSEL" && ad.carouselCards.length > 0 && (
+          <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
+            1/{ad.carouselCards.length}
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-gray-500">
-            <span>{formatDate(ad.startDate)}</span>
-            <span>~</span>
-            {ad.isActive ? (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
-                게재중
+        )}
+      </button>
+    );
+  }
+
+  // fallback: URL 없거나 이미지 로드 실패
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="relative w-full h-48 bg-gray-50 border-b border-gray-100 flex items-center justify-center cursor-pointer"
+    >
+      <div className="flex flex-col items-center text-gray-400">
+        <ImageOff className="h-8 w-8 mb-1" />
+        <span className="text-xs">소재 없음</span>
+      </div>
+    </button>
+  );
+}
+
+export function AdCard({ ad }: AdCardProps) {
+  const [modalOpen, setModalOpen] = useState(false);
+
+  return (
+    <>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition overflow-hidden">
+        {/* 소재 미리보기 */}
+        <MediaPreview ad={ad} onClick={() => setModalOpen(true)} />
+
+        <div className="p-4 space-y-3">
+          {/* 헤더: 브랜드명 + 플랫폼 아이콘 */}
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-900 truncate">
+              {ad.pageName}
+            </h3>
+            <div className="flex items-center gap-1.5">
+              {ad.platforms.map((p) => (
+                <PlatformIcon key={p} platform={p} />
+              ))}
+            </div>
+          </div>
+
+          {/* 광고 문구 */}
+          {ad.body && (
+            <p className="text-sm text-gray-600 line-clamp-3">{ad.body}</p>
+          )}
+
+          {/* 운영기간 바 */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <DurationBar durationDays={ad.durationDays} />
+              <span className="ml-2 text-xs font-semibold text-gray-700 whitespace-nowrap">
+                {ad.durationDays}일
               </span>
-            ) : (
-              <span>{ad.endDate ? formatDate(ad.endDate) : ""}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+              <span>{formatDate(ad.startDate)}</span>
+              <span>~</span>
+              {ad.isActive ? (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                  게재중
+                </span>
+              ) : (
+                <span>{ad.endDate ? formatDate(ad.endDate) : ""}</span>
+              )}
+            </div>
+          </div>
+
+          {/* CTA 버튼 */}
+          <div className="flex flex-wrap gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
+            >
+              <Eye className="h-3.5 w-3.5" />
+              소재 보기
+            </button>
+            {(ad.imageUrl || ad.videoUrl) && (
+              <a
+                href={`/api/competitor/download?ad_id=${ad.id}&type=${ad.videoUrl ? "video" : "image"}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#F75D5D] bg-red-50 hover:bg-red-100 rounded-lg transition"
+              >
+                <Download className="h-3.5 w-3.5" />
+                다운로드
+              </a>
+            )}
+            {ad.linkUrl && /^https?:\/\//.test(ad.linkUrl) && (
+              <a
+                href={ad.linkUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                랜딩페이지
+              </a>
+            )}
+            {!ad.linkUrl && ad.caption && /^https?:\/\//.test(ad.caption) && (
+              <a
+                href={ad.caption}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                랜딩페이지
+              </a>
             )}
           </div>
         </div>
-
-        {/* CTA 버튼 */}
-        <div className="flex gap-2 pt-1">
-          <a
-            href={ad.snapshotUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
-          >
-            <Eye className="h-3.5 w-3.5" />
-            소재 보기
-          </a>
-          {ad.caption && /^https?:\/\//.test(ad.caption) && (
-            <a
-              href={ad.caption}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#F75D5D] bg-red-50 hover:bg-red-100 rounded-lg transition"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              랜딩페이지
-            </a>
-          )}
-        </div>
       </div>
-    </div>
+
+      {/* 소재 확대 모달 */}
+      <AdMediaModal
+        ad={ad}
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+      />
+    </>
   );
 }

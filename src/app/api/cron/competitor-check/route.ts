@@ -26,10 +26,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const token = process.env.META_AD_LIBRARY_TOKEN;
-  if (!token) {
+  const apiKey = process.env.SEARCH_API_KEY;
+  if (!apiKey) {
     return NextResponse.json(
-      { error: "META_AD_LIBRARY_TOKEN 미설정", processed: 0 },
+      { error: "SEARCH_API_KEY 미설정", processed: 0 },
       { status: 200 },
     );
   }
