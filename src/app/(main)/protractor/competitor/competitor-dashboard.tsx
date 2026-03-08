@@ -113,8 +113,13 @@ export default function CompetitorDashboard() {
         const fetchParams: URLSearchParams = new URLSearchParams({
           page_token: currentToken,
         });
-        // page_token에 쿼리 컨텍스트가 인코딩되어 있으므로
-        // page_id/q는 첫 검색에서만 필요. 더보기에서는 page_token만 전송.
+        // page_token + 원래 검색 키(q 또는 page_id)를 함께 전송
+        // 필터 파라미터(country, media_type 등)는 제외
+        if (searchPageId) {
+          fetchParams.set("page_id", searchPageId);
+        } else if (searchQuery) {
+          fetchParams.set("q", searchQuery);
+        }
         const res: Response = await fetch(`/api/competitor/search?${fetchParams}`);
         const json: Record<string, unknown> = await res.json();
 
