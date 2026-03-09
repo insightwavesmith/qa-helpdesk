@@ -137,9 +137,15 @@ export default function DetailSidebar({
               className="w-full aspect-video object-cover rounded-md border border-gray-200"
             />
           ) : (
-            <div className="w-full aspect-video bg-gray-100 rounded-md border border-gray-200 flex items-center justify-center">
-              <span className="text-xs text-gray-400">이미지 없음</span>
-            </div>
+            <NextImage
+              key={`thumb-og-${content.title}`}
+              src={`/api/og?title=${encodeURIComponent(content.title)}&category=${encodeURIComponent(content.category || content.type || "")}`}
+              alt="썸네일"
+              width={240}
+              height={135}
+              className="w-full aspect-video object-cover rounded-md border border-gray-200"
+              unoptimized
+            />
           )}
           <input
             ref={fileInputRef}
