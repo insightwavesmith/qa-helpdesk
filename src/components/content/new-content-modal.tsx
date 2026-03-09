@@ -124,7 +124,7 @@ export default function NewContentModal({
   const handleCardClick = useCallback(
     async (cardId: string) => {
       if (cardId === "direct") {
-        await handleCreate("새 콘텐츠", "");
+        await handleCreate("새 콘텐츠", "", "manual");
       } else {
         setStep(cardId as FlowStep);
       }

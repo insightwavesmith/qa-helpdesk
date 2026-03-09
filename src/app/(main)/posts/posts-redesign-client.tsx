@@ -35,7 +35,7 @@ interface PostsRedesignClientProps {
 }
 
 // 카테고리 섹션 표시 순서: 고객사례 → 교육
-const categoryOrder = ["case_study", "education"];
+const categoryOrder = ["case_study", "education", "webinar", "promo"];
 
 export function PostsRedesignClient({
   posts,

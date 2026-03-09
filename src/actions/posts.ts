@@ -46,7 +46,7 @@ export async function getPosts({
     query = query.eq("category", category);
   } else {
     // 기본: 정보공유 + 공지 카테고리 통합 표시
-    query = query.in("category", ["education", "case_study", "notice"]);
+    query = query.in("category", ["education", "case_study", "notice", "webinar", "promo"]);
   }
 
   if (type) {

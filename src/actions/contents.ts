@@ -153,6 +153,11 @@ export async function createContent(input: {
 }) {
   const supabase = await requireStaff();
 
+  // type → category 자동 동기화: category가 비어있으면 type 값으로 채움
+  if (input.type && !input.category) {
+    input.category = input.type;
+  }
+
   // crawl/youtube/url 타입은 큐레이션 대상 — curation_status를 "new"로 자동 설정
   const curationSourceTypes = ["crawl", "youtube", "url"];
   const insertPayload: Record<string, unknown> = { ...input };
@@ -208,6 +213,11 @@ export async function updateContent(
   }
 ) {
   const supabase = await requireStaff();
+
+  // type 변경 시 category도 동기화
+  if (input.type && !input.category) {
+    input.category = input.type;
+  }
 
   const { data, error } = await supabase
     .from("contents")
