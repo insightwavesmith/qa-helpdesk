@@ -275,7 +275,7 @@ export function AdMediaModal({ ad, isOpen, onClose }: AdMediaModalProps) {
 
           {/* 광고 문구 */}
           {ad.body && (
-            <p className="text-sm text-gray-600 whitespace-pre-line line-clamp-4">
+            <p className="text-sm text-gray-600 whitespace-pre-line">
               {ad.body}
             </p>
           )}

@@ -36,7 +36,7 @@ export interface CompetitorAd {
   carouselCards: CarouselCard[];
 }
 
-export type DisplayFormat = "IMAGE" | "VIDEO" | "CAROUSEL" | "UNKNOWN";
+export type DisplayFormat = "IMAGE" | "VIDEO" | "CAROUSEL" | "DPA" | "DCO" | "UNKNOWN";
 
 export interface CarouselCard {
   title: string;

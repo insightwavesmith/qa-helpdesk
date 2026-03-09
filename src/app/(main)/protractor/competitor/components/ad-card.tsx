@@ -116,6 +116,8 @@ function MediaPreview({
   }
 
   // fallback: URL 없거나 이미지 로드 실패
+  const isCatalog = ad.displayFormat === "DPA" || ad.displayFormat === "DCO" ||
+    (ad.body?.includes("{{") && ad.body?.includes("}}"));
   return (
     <button
       type="button"
@@ -124,7 +126,7 @@ function MediaPreview({
     >
       <div className="flex flex-col items-center text-gray-400">
         <ImageOff className="h-8 w-8 mb-1" />
-        <span className="text-xs">소재 없음</span>
+        <span className="text-xs">{isCatalog ? "카탈로그 광고 (동적 소재)" : "소재 없음"}</span>
       </div>
     </button>
   );
