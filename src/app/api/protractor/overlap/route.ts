@@ -3,6 +3,7 @@ import { requireProtractorAccess, verifyAccountOwnership } from "../_shared";
 import {
   fetchActiveAdsets,
   fetchCombinedReach,
+  fetchPerAdsetReach,
   makePairKey,
   type OverlapPair,
 } from "@/lib/protractor/overlap-utils";
@@ -115,26 +116,41 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 2) 개별 reach — DB에서 조회 (rate limit 대응)
-    const { data: reachRows } = await svc
-      .from("daily_ad_insights")
-      .select("adset_id, reach")
-      .eq("account_id", accountId)
-      .gte("date", dateStart)
-      .lte("date", dateEnd)
-      .in(
-        "adset_id",
-        adsets.map((a) => a.id)
+    // 2) 개별 reach — Meta API에서 기간별 조회 (reach는 유니크 수치 → 일별 합산 불가)
+    let reachByAdset: Record<string, number>;
+    try {
+      reachByAdset = await fetchPerAdsetReach(
+        accountId,
+        adsets.map((a) => a.id),
+        dateStart,
+        dateEnd
       );
+    } catch {
+      // Meta API 실패 시 DB fallback — 기간 내 최대 일별 reach 사용 (합산 아님)
+      const { data: reachRows } = await svc
+        .from("daily_ad_insights")
+        .select("adset_id, reach")
+        .eq("account_id", accountId)
+        .gte("date", dateStart)
+        .lte("date", dateEnd)
+        .in(
+          "adset_id",
+          adsets.map((a) => a.id)
+        );
 
-    const reachByAdset: Record<string, number> = {};
-    for (const row of (reachRows ?? []) as {
-      adset_id: string;
-      reach: number | null;
-    }[]) {
-      if (!row.adset_id) continue;
-      reachByAdset[row.adset_id] =
-        (reachByAdset[row.adset_id] ?? 0) + (row.reach ?? 0);
+      reachByAdset = {};
+      for (const row of (reachRows ?? []) as {
+        adset_id: string;
+        reach: number | null;
+      }[]) {
+        if (!row.adset_id) continue;
+        // 일별 reach 중 최대값 사용 (유니크 수치이므로 합산하면 안 됨)
+        const val = row.reach ?? 0;
+        reachByAdset[row.adset_id] = Math.max(
+          reachByAdset[row.adset_id] ?? 0,
+          val
+        );
+      }
     }
 
     // reach가 0인 adset 제외

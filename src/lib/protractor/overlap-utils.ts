@@ -111,6 +111,32 @@ export async function fetchCombinedReach(
   return rows.length > 0 ? parseInt(rows[0].reach ?? "0", 10) : 0;
 }
 
+// ── 광고세트별 기간 reach 조회 (level=adset) ─────────────────
+export async function fetchPerAdsetReach(
+  accountId: string,
+  adsetIds: string[],
+  dateStart: string,
+  dateEnd: string
+): Promise<Record<string, number>> {
+  const filtering = JSON.stringify([
+    { field: "adset.id", operator: "IN", value: adsetIds },
+  ]);
+
+  const data = await metaGet(`act_${accountId}/insights`, {
+    filtering,
+    fields: "reach,adset_id",
+    time_range: JSON.stringify({ since: dateStart, until: dateEnd }),
+    level: "adset",
+    limit: "100",
+  });
+
+  const result: Record<string, number> = {};
+  for (const row of (data.data ?? []) as { adset_id: string; reach?: string }[]) {
+    result[row.adset_id] = parseInt(row.reach ?? "0", 10);
+  }
+  return result;
+}
+
 // ── adset_pair 키 생성 (항상 정렬) ──────────────────────────
 export function makePairKey(a: string, b: string): string {
   return [a, b].sort().join("_");

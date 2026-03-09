@@ -11,6 +11,7 @@ import { fetchMixpanelRevenue, lookupMixpanelSecret } from "@/lib/protractor/mix
 import {
   fetchActiveAdsets,
   fetchCombinedReach,
+  fetchPerAdsetReach,
   makePairKey,
 } from "@/lib/protractor/overlap-utils";
 
@@ -258,19 +259,31 @@ export async function POST(request: NextRequest) {
             const dateStart = dates[0];
             const dateEnd = dates[dates.length - 1];
 
-            // 개별 reach — daily_ad_insights에서 조회
-            const { data: reachRows } = await svc
-              .from("daily_ad_insights")
-              .select("adset_id, reach")
-              .eq("account_id", account_id)
-              .gte("date", dateStart)
-              .lte("date", dateEnd)
-              .in("adset_id", adsets.map(a => a.id));
+            // 개별 reach — Meta API에서 기간별 조회 (reach는 유니크 → 일별 합산 불가)
+            let reachByAdset: Record<string, number>;
+            try {
+              reachByAdset = await fetchPerAdsetReach(
+                account_id,
+                adsets.map(a => a.id),
+                dateStart,
+                dateEnd
+              );
+            } catch {
+              // Meta API 실패 시 DB fallback — 기간 내 최대 일별 reach 사용
+              const { data: reachRows } = await svc
+                .from("daily_ad_insights")
+                .select("adset_id, reach")
+                .eq("account_id", account_id)
+                .gte("date", dateStart)
+                .lte("date", dateEnd)
+                .in("adset_id", adsets.map(a => a.id));
 
-            const reachByAdset: Record<string, number> = {};
-            for (const row of (reachRows ?? []) as { adset_id: string; reach: number | null }[]) {
-              if (!row.adset_id) continue;
-              reachByAdset[row.adset_id] = (reachByAdset[row.adset_id] ?? 0) + (row.reach ?? 0);
+              reachByAdset = {};
+              for (const row of (reachRows ?? []) as { adset_id: string; reach: number | null }[]) {
+                if (!row.adset_id) continue;
+                const val = row.reach ?? 0;
+                reachByAdset[row.adset_id] = Math.max(reachByAdset[row.adset_id] ?? 0, val);
+              }
             }
 
             const activeAdsets = adsets.filter(a => (reachByAdset[a.id] ?? 0) > 0);
