@@ -82,7 +82,8 @@ export default function AdminContentPage() {
     async () => {
       const params: { type?: string; status?: string; sourceType?: string; pageSize?: number } =
         { pageSize: 100 };
-      if (sourceFilter !== "all") params.sourceType = sourceFilter;
+      // "all"이면 큐레이션 원본 제외 필터, 그 외는 해당 소스만
+      params.sourceType = sourceFilter === "all" ? "all" : sourceFilter;
       if (typeFilter !== "all") params.type = typeFilter;
       if (statusFilter !== "all" && statusFilter !== "sent") params.status = statusFilter;
       const { data, count } = await getContents(params);
