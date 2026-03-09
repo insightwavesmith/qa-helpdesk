@@ -79,9 +79,9 @@ export function diagnoseAd(
   const effectiveCreativeType =
     creativeType ?? (adData.creative_type as string | undefined) ?? 'VIDEO';
 
-  // creative_type별 engAbove/convAbove 추출
+  // creative_type별 engAbove/convAbove 추출 — ALL fallback 포함
   const ctBench =
-    benchmarks[effectiveCreativeType] ?? benchmarks['VIDEO'] ?? {};
+    benchmarks[effectiveCreativeType] ?? benchmarks['ALL'] ?? benchmarks['VIDEO'] ?? {};
   const engAbove: AboveAvgMap = ctBench.engagement?.above_avg ?? {};
   const convAbove: AboveAvgMap = ctBench.conversion?.above_avg ?? {};
 
