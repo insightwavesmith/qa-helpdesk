@@ -11,8 +11,8 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const accountId = searchParams.get("account_id");
-    const start = searchParams.get("start");
-    const end = searchParams.get("end");
+    let start = searchParams.get("start");
+    let end = searchParams.get("end");
 
     if (!accountId) {
       return NextResponse.json(
@@ -30,14 +30,32 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // start/end 기본값: 미입력 시 최근 90일
+    if (!start) {
+      const d = new Date();
+      d.setDate(d.getDate() - 90);
+      start = d.toISOString().slice(0, 10);
+    }
+    if (!end) {
+      end = new Date().toISOString().slice(0, 10);
+    }
+
     let query = svc
       .from("daily_ad_insights")
-      .select("*")
+      .select(
+        "date,account_id,ad_id,ad_name,adset_name,campaign_name,creative_type," +
+        "impressions,reach,clicks,ctr,spend,purchases,purchase_value,roas," +
+        "video_p3s_rate,thruplay_rate,retention_rate," +
+        "reactions_per_10k,comments_per_10k,shares_per_10k,saves_per_10k,engagement_per_10k," +
+        "click_to_checkout_rate,checkout_to_purchase_rate,click_to_purchase_rate,reach_to_purchase_rate," +
+        "engagement_ranking,conversion_ranking"
+      )
       .eq("account_id", accountId)
-      .order("date", { ascending: true });
+      .order("date", { ascending: true })
+      .limit(10000);
 
-    if (start) query = query.gte("date", start);
-    if (end) query = query.lte("date", end);
+    query = query.gte("date", start);
+    query = query.lte("date", end);
 
     const { data, error } = await query;
 

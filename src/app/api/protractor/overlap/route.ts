@@ -203,66 +203,87 @@ export async function GET(request: NextRequest) {
     const cappedAdsets = sortedAdsets.slice(0, 8);
     const adsetsTruncated = activeAdsets.length > 8;
 
-    const startTime = Date.now();
-    let deadlineHit = false;
-    for (let i = 0; i < cappedAdsets.length && !deadlineHit; i++) {
+    // pair 목록 생성 (pairSum === 0 제외)
+    type PairTask = {
+      a: (typeof cappedAdsets)[0];
+      b: (typeof cappedAdsets)[0];
+      reachA: number;
+      reachB: number;
+    };
+    const allPairTasks: PairTask[] = [];
+    for (let i = 0; i < cappedAdsets.length; i++) {
       for (let j = i + 1; j < cappedAdsets.length; j++) {
-        if (Date.now() - startTime > 55_000) {
-          deadlineHit = true;
-          break;
-        }
         const a = cappedAdsets[i];
         const b = cappedAdsets[j];
         const reachA = reachByAdset[a.id] ?? 0;
         const reachB = reachByAdset[b.id] ?? 0;
-        const pairSum = reachA + reachB;
+        if (reachA + reachB === 0) continue;
+        allPairTasks.push({ a, b, reachA, reachB });
+      }
+    }
 
-        if (pairSum === 0) continue;
+    const CONCURRENCY = 5;
+    const startTime = Date.now();
+    let deadlineHit = false;
 
-        try {
-          const combinedUnique = await fetchCombinedReach(
-            accountId,
-            [a.id, b.id],
-            dateStart,
-            dateEnd
-          );
-          const pairOverlap = Math.max(
-            0,
-            ((pairSum - combinedUnique) / pairSum) * 100
-          );
+    for (let c = 0; c < allPairTasks.length; c += CONCURRENCY) {
+      if (Date.now() - startTime > 55_000) {
+        deadlineHit = true;
+        break;
+      }
+      const chunk = allPairTasks.slice(c, c + CONCURRENCY);
+      const results = await Promise.allSettled(
+        chunk.map(({ a, b, reachA, reachB }) =>
+          (async () => {
+            const pairSum = reachA + reachB;
+            const combinedUnique = await fetchCombinedReach(
+              accountId,
+              [a.id, b.id],
+              dateStart,
+              dateEnd
+            );
+            const pairOverlap = Math.max(
+              0,
+              ((pairSum - combinedUnique) / pairSum) * 100
+            );
 
-          pairs.push({
-            adset_a_name: a.name,
-            adset_b_name: b.name,
-            campaign_a: a.campaignName,
-            campaign_b: b.campaignName,
-            overlap_rate: Math.round(pairOverlap * 10) / 10,
-          });
+            pairs.push({
+              adset_a_name: a.name,
+              adset_b_name: b.name,
+              campaign_a: a.campaignName,
+              campaign_b: b.campaignName,
+              overlap_rate: Math.round(pairOverlap * 10) / 10,
+            });
 
-          // pair별 캐시 저장
-          await svc.from("adset_overlap_cache" as never).upsert(
-            {
-              account_id: accountId,
-              adset_pair: makePairKey(a.id, b.id),
-              period_start: dateStart,
-              period_end: dateEnd,
-              overlap_data: {
-                overlap_rate: Math.round(pairOverlap * 10) / 10,
-                reach_a: reachA,
-                reach_b: reachB,
-                combined_unique: combinedUnique,
-                adset_a_name: a.name,
-                adset_b_name: b.name,
-                campaign_a: a.campaignName,
-                campaign_b: b.campaignName,
-              },
-              cached_at: now,
-            } as never,
-            { onConflict: "account_id,adset_pair,period_start,period_end" }
-          );
-        } catch {
-          // 개별 pair 실패 시 건너뛰기 (rate limit 등)
-          continue;
+            // pair별 캐시 저장
+            await svc.from("adset_overlap_cache" as never).upsert(
+              {
+                account_id: accountId,
+                adset_pair: makePairKey(a.id, b.id),
+                period_start: dateStart,
+                period_end: dateEnd,
+                overlap_data: {
+                  overlap_rate: Math.round(pairOverlap * 10) / 10,
+                  reach_a: reachA,
+                  reach_b: reachB,
+                  combined_unique: combinedUnique,
+                  adset_a_name: a.name,
+                  adset_b_name: b.name,
+                  campaign_a: a.campaignName,
+                  campaign_b: b.campaignName,
+                },
+                cached_at: now,
+              } as never,
+              { onConflict: "account_id,adset_pair,period_start,period_end" }
+            );
+          })()
+        )
+      );
+
+      // 실패한 pair는 건너뜀 (rate limit 등) — allSettled이므로 나머지는 정상
+      for (const result of results) {
+        if (result.status === "rejected") {
+          console.warn("overlap pair 처리 실패:", result.reason);
         }
       }
     }

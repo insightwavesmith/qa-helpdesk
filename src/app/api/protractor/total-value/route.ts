@@ -93,11 +93,10 @@ export async function GET(request: NextRequest) {
     // ── 1. daily_ad_insights 조회 ──
     const { data: rawData } = await svc
       .from("daily_ad_insights")
-      .select("*")
+      .select("spend,impressions,reach,clicks,purchases,purchase_value,date,ad_id,adset_id,initiate_checkout,video_p3s_rate,thruplay_rate,retention_rate,reactions_per_10k,comments_per_10k,shares_per_10k,saves_per_10k,creative_type")
       .eq("account_id", accountId)
       .gte("date", dateStart)
-      .lte("date", dateEnd)
-      .limit(1000);
+      .lte("date", dateEnd);
 
     const rows = rawData as unknown as Record<string, unknown>[] | null;
 
