@@ -55,7 +55,7 @@ export const METRIC_GROUPS: MetricGroupDef[] = [
       { key: "click_to_purchase_rate", label: "구매전환율", ascending: true, unit: "pct", benchKey: "avg_click_to_purchase_rate", benchGroup: "conversion" },
       { key: "checkout_to_purchase_rate", label: "결제→구매율", ascending: true, unit: "pct", benchKey: "avg_checkout_to_purchase_rate", benchGroup: "conversion" },
       { key: "reach_to_purchase_rate", label: "노출당구매확률", ascending: true, unit: "pct", benchKey: "avg_reach_to_purchase_rate", benchGroup: "conversion" },
-      { key: "roas", label: "ROAS", ascending: true, unit: "decimal", benchKey: "avg_roas", benchGroup: "conversion" },
+      { key: "roas", label: "ROAS", ascending: true, unit: "decimal", benchKey: "", benchGroup: "conversion" },
     ],
   },
 ];

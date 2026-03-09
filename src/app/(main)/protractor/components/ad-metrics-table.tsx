@@ -173,7 +173,6 @@ export function AdMetricsTable({ insights, benchmarks, accountId, mixpanelProjec
             </TableHeader>
             <TableBody>
               {ads.slice(0, 10).map((ad) => {
-                const roasV = getVerdict(ad.roas, convBench?.avg_roas);
                 const ctrV = getVerdict(ad.ctr, convBench?.avg_ctr);
                 const diag = diagMap.get(ad.ad_id);
 
@@ -200,7 +199,7 @@ export function AdMetricsTable({ insights, benchmarks, accountId, mixpanelProjec
                     <TableCell className="text-right whitespace-nowrap">
                       {fmtCurrency(ad.purchase_value)}
                     </TableCell>
-                    <TableCell className={`text-right whitespace-nowrap font-bold ${roasV.className}`}>
+                    <TableCell className="text-right whitespace-nowrap font-bold">
                       {ad.roas?.toFixed(2) || "-"}
                     </TableCell>
                     <TableCell className="text-center">
@@ -213,7 +212,7 @@ export function AdMetricsTable({ insights, benchmarks, accountId, mixpanelProjec
                           ))}
                         </div>
                       ) : (
-                        <VerdictDot label={roasV.label} />
+                        <VerdictDot label={ctrV.label} />
                       )}
                     </TableCell>
                     <TableCell className="text-center">

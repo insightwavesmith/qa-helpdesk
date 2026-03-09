@@ -159,19 +159,32 @@ export async function searchMetaAds(
   url.searchParams.set("engine", "meta_ad_library");
   url.searchParams.set("api_key", apiKey);
 
+  let res: Response;
+
   if (params.pageToken) {
-    // 페이지네이션: page_token + 검색 조건(q 또는 page_id) 함께 전송
-    // SearchAPI.io는 page_token만으로는 검색 조건을 인식하지 못함
-    url.searchParams.set("page_token", params.pageToken);
+    // 페이지네이션: POST + next_page_token (토큰이 길어 URL 제한 방지)
+    const body: Record<string, string> = {
+      engine: "meta_ad_library",
+      next_page_token: params.pageToken,
+      country,
+      ad_active_status: "active",
+    };
     if (params.searchPageIds) {
-      url.searchParams.set("page_id", params.searchPageIds);
+      body.page_id = params.searchPageIds;
     } else if (params.searchTerms) {
-      url.searchParams.set("q", params.searchTerms);
+      body.q = params.searchTerms;
     }
-    url.searchParams.set("country", country);
-    url.searchParams.set("ad_active_status", "active");
+
+    res = await fetch(SEARCH_API_BASE, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
   } else {
-    // 새 검색: 기존 로직 유지
+    // 새 검색: 기존 GET 방식 유지
     if (!params.searchPageIds) {
       url.searchParams.set("q", params.searchTerms);
     }
@@ -185,11 +198,11 @@ export async function searchMetaAds(
     if (params.searchPageIds) {
       url.searchParams.set("page_id", params.searchPageIds);
     }
-  }
 
-  const res = await fetch(url.toString(), {
-    headers: { "Content-Type": "application/json" },
-  });
+    res = await fetch(url.toString(), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   if (res.status === 429) {
     throw new MetaAdError(
