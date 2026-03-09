@@ -132,15 +132,13 @@ export default function CompetitorDashboard() {
 
       if (newAds.length > 0) {
         // 방어적 dedup: 혹시 중복이 있을 경우 클라이언트에서 제거
-        let addedCount = 0;
         setAds((prev) => {
           const existingIds = new Set(prev.map((a) => a.id));
           const uniqueNew = newAds.filter((a) => !existingIds.has(a.id));
-          addedCount = uniqueNew.length;
           return [...prev, ...uniqueNew];
         });
         setNextPageToken(serverNextToken);
-        toast.success(`광고 ${addedCount}건 추가 로드`);
+        toast.success(`광고 ${newAds.length}건 추가 로드`);
       } else if (serverNextToken) {
         setNextPageToken(serverNextToken);
         toast.info("더 이상 새로운 광고가 없습니다");
