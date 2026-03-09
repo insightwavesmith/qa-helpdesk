@@ -186,37 +186,51 @@ export function AdMediaModal({ ad, isOpen, onClose }: AdMediaModalProps) {
           ) : hasCarousel ? (
             /* 캐러셀 */
             <div className="relative">
-              {ad.carouselCards[carouselIndex]?.imageUrl ? (
+              {ad.carouselCards[carouselIndex]?.imageUrl && !imageError ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={ad.carouselCards[carouselIndex].imageUrl!}
                   alt={`${ad.pageName} 캐러셀 ${carouselIndex + 1}`}
                   className="max-h-[70vh] object-contain mx-auto"
+                  onError={() => setImageError(true)}
                 />
               ) : (
-                <div className="flex items-center justify-center h-64 text-gray-400">
-                  <ImageOff className="h-12 w-12" />
+                <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                  <ImageOff className="h-12 w-12 mb-2" />
+                  <p className="text-sm">이미지를 불러올 수 없습니다</p>
+                  {ad.snapshotUrl && (
+                    <a
+                      href={ad.snapshotUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[#F75D5D] mt-1 hover:underline"
+                    >
+                      Meta에서 보기
+                    </a>
+                  )}
                 </div>
               )}
               {/* 네비게이션 */}
               {carouselTotal > 1 && (
                 <>
                   <button
-                    onClick={() =>
+                    onClick={() => {
+                      setImageError(false);
                       setCarouselIndex((i) =>
                         i > 0 ? i - 1 : carouselTotal - 1,
-                      )
-                    }
+                      );
+                    }}
                     className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow"
                   >
                     <ChevronLeft className="h-5 w-5 text-gray-700" />
                   </button>
                   <button
-                    onClick={() =>
+                    onClick={() => {
+                      setImageError(false);
                       setCarouselIndex((i) =>
                         i < carouselTotal - 1 ? i + 1 : 0,
-                      )
-                    }
+                      );
+                    }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow"
                   >
                     <ChevronRight className="h-5 w-5 text-gray-700" />
