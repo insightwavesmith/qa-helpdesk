@@ -230,7 +230,7 @@ export function AdMetricsTable({ insights, benchmarks, accountId, mixpanelProjec
                         )}
                         {mixpanelProjectId && mixpanelBoardId && (
                           <a
-                            href={`https://mixpanel.com/project/${mixpanelProjectId}/view/${mixpanelBoardId}`}
+                            href={`https://mixpanel.com/project/${mixpanelProjectId}/view/${mixpanelBoardId}/app/boards#persistent_filters=${encodeURIComponent(JSON.stringify([["utm_term", "=", [ad.ad_id]]]))}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="rounded-md px-2.5 py-1 text-[11px] font-medium bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white transition-colors"

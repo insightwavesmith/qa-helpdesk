@@ -237,7 +237,7 @@ function AdRankCard({
   const metaUrl = `https://adsmanager.facebook.com/adsmanager/manage/ads/insights?act=${accountId}&selected_ad_ids=${ad.ad_id}&nav_source=no_referrer`;
   const mixpanelUrl = mixpanelProjectId
     ? mixpanelBoardId
-      ? `https://mixpanel.com/project/${mixpanelProjectId}/view/${mixpanelBoardId}/app/boards`
+      ? `https://mixpanel.com/project/${mixpanelProjectId}/view/${mixpanelBoardId}/app/boards#persistent_filters=${encodeURIComponent(JSON.stringify([["utm_term", "=", [ad.ad_id]]]))}`
       : `https://mixpanel.com/project/${mixpanelProjectId}`
     : null;
 
