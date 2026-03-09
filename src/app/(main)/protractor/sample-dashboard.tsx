@@ -3,13 +3,24 @@
 import { ArrowRight, BarChart3, LinkIcon } from "lucide-react";
 import Link from "next/link";
 
+import dynamic from "next/dynamic";
 import {
   SummaryCards,
   DiagnosticPanel,
-  PerformanceTrendChart,
   ConversionFunnel,
   DailyMetricsTable,
 } from "@/components/protractor";
+
+const PerformanceTrendChart = dynamic(
+  () =>
+    import("@/components/protractor/PerformanceTrendChart").then(
+      (m) => m.PerformanceTrendChart
+    ),
+  {
+    ssr: false,
+    loading: () => <div className="h-[300px] animate-pulse rounded-xl bg-gray-100" />,
+  }
+);
 
 // ── 샘플 데이터 ──────────────────────────────────────
 

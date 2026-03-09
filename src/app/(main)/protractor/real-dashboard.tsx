@@ -16,13 +16,21 @@ import { removeAdAccount } from "@/actions/onboarding";
 import { jsonFetcher } from "@/lib/swr/config";
 import { SWR_KEYS } from "@/lib/swr/keys";
 
+import dynamic from "next/dynamic";
 import {
   ProtractorHeader,
   SummaryCards,
   TotalValueGauge,
-  OverlapAnalysis,
   type OverlapData,
 } from "@/components/protractor";
+
+const OverlapAnalysis = dynamic(
+  () => import("@/components/protractor/OverlapAnalysis").then((m) => m.OverlapAnalysis),
+  {
+    ssr: false,
+    loading: () => <div className="h-[300px] animate-pulse rounded-xl bg-gray-100" />,
+  }
+);
 
 import {
   aggregateSummary,

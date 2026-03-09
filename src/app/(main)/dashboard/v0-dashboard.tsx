@@ -8,10 +8,21 @@ import {
   MousePointerClick,
   Users,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { StatCards } from "@/components/dashboard/StatCards";
-import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
 import { ChannelBreakdown } from "@/components/dashboard/ChannelBreakdown";
 import { CampaignTable } from "@/components/dashboard/CampaignTable";
+
+const PerformanceChart = dynamic(
+  () =>
+    import("@/components/dashboard/PerformanceChart").then(
+      (m) => m.PerformanceChart
+    ),
+  {
+    ssr: false,
+    loading: () => <div className="h-[300px] animate-pulse rounded-xl bg-gray-100" />,
+  }
+);
 
 interface AdminSummary {
   totalRevenue: number;

@@ -89,6 +89,7 @@ if [ -n "$MISSING_DOCS" ]; then
     echo ""
     echo "src/ 파일이 변경되었지만 관련 설계서가 업데이트되지 않았습니다."
     echo "설계서를 갱신한 후 다시 커밋하세요."
+    source /Users/smith/projects/qa-helpdesk/.claude/hooks/notify-hook.sh && notify_hook "⚠️ [게이트 차단] 설계서 미갱신으로 commit 차단됨. tmux 확인" "validate-design"
     exit 2
 fi
 

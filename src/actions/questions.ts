@@ -28,7 +28,7 @@ export async function getQuestions({
   let query = supabase
     .from("questions")
     .select(
-      "*, author:profiles!questions_author_id_fkey(id, name, shop_name), category:qa_categories!questions_category_id_fkey(id, name, slug)",
+      "*, author:profiles!questions_author_id_fkey(id, name, shop_name), category:qa_categories!questions_category_id_fkey(id, name, slug), answers(count)",
       { count: "exact" }
     )
     .order("created_at", { ascending: false })
@@ -59,32 +59,16 @@ export async function getQuestions({
     return { data: [], count: 0, error: error.message };
   }
 
-  // Get answer counts for each question
-  if (data && data.length > 0) {
-    const questionIds = data.map((q) => q.id);
-    const countResults = await Promise.all(
-      questionIds.map((qid) =>
-        supabase
-          .from("answers")
-          .select("*", { count: "exact", head: true })
-          .eq("question_id", qid)
-      )
-    );
+  // answers(count) 결과를 answers_count 필드로 정규화
+  const enriched = (data || []).map((q) => {
+    const answersArray = q.answers as { count: number }[] | null;
+    const answers_count = answersArray?.[0]?.count ?? 0;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { answers: _answers, ...rest } = q;
+    return { ...rest, answers_count };
+  });
 
-    const countMap: Record<string, number> = {};
-    questionIds.forEach((qid, i) => {
-      countMap[qid] = countResults[i].count || 0;
-    });
-
-    const enriched = data.map((q) => ({
-      ...q,
-      answers_count: countMap[q.id] || 0,
-    }));
-
-    return { data: enriched, count: count || 0, error: null };
-  }
-
-  return { data: data || [], count: count || 0, error: null };
+  return { data: enriched, count: count || 0, error: null };
 }
 
 export async function getQuestionById(id: string) {

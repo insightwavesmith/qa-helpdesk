@@ -10,6 +10,25 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// 한글→영문 변환 결과 서버 메모리 캐시 (Vercel 인스턴스 재활용 시 유효)
+const brandNameCache = new Map<string, { englishName: string; timestamp: number }>();
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
+
+function getCachedBrandName(koreanName: string): string | null {
+  const normalized = koreanName.toLowerCase().trim();
+  const cached = brandNameCache.get(normalized);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.englishName;
+  }
+  brandNameCache.delete(normalized); // 만료된 항목 삭제
+  return null;
+}
+
+function setCachedBrandName(koreanName: string, englishName: string): void {
+  const normalized = koreanName.toLowerCase().trim();
+  brandNameCache.set(normalized, { englishName, timestamp: Date.now() });
+}
+
 /**
  * GET /api/competitor/search
  * 경쟁사 광고 검색 — SearchAPI.io Meta Ad Library 엔진
@@ -48,9 +67,17 @@ export async function GET(req: NextRequest) {
     if (q && !pageId && !pageToken && containsKorean(q)) {
       // 1단계: 브랜드 사전 조회
       translatedQuery = lookupBrand(q);
-      // 2단계: 사전에 없으면 Google Suggest API
+      // 2단계: 사전에 없으면 캐시 확인 → 캐시 미스 시 Google Suggest API
       if (!translatedQuery) {
-        translatedQuery = await suggestEnglishName(q);
+        const cached = getCachedBrandName(q);
+        if (cached) {
+          translatedQuery = cached;
+        } else {
+          translatedQuery = await suggestEnglishName(q);
+          if (translatedQuery) {
+            setCachedBrandName(q, translatedQuery);
+          }
+        }
       }
       if (translatedQuery) {
         effectiveQuery = translatedQuery;

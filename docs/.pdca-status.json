@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-08T10:00:00.000Z",
+  "lastUpdated": "2026-03-09T12:00:00.000Z",
   "features": {
     "competitor-searchapi": {
       "phase": "completed",
@@ -468,31 +468,34 @@
       "notes": "collect-daily/route.ts overlap 전체 삭제. 광고 수집만 유지. on-demand API 무영향. cron_runs 정상."
     },
     "b1-profile-card-text": {
-      "phase": "implementing",
+      "phase": "completed",
       "matchRate": null,
       "documents": {
         "plan": "01-plan/features/b1-profile-card-text.plan.md",
         "design": "02-design/features/b1-profile-card-text.design.md"
       },
-      "notes": "구현 완료. 3개 파일 텍스트 변경: author-profile-card.tsx, email-default-template.ts, newsletter-row-templates.ts"
+      "completedAt": "2026-03-02",
+      "notes": "구현 완료. 3개 파일 텍스트 변경: author-profile-card.tsx, email-default-template.ts, newsletter-row-templates.ts. Gap 분석 미작성."
     },
     "b2-post-css-tuning": {
-      "phase": "implementing",
+      "phase": "completed",
       "matchRate": null,
       "documents": {
         "plan": "01-plan/features/b2-post-css-tuning.plan.md",
         "design": "02-design/features/b2-post-css-tuning.design.md"
       },
-      "notes": "구현 완료. post-body.css (letter-spacing, p margin, img margin) + author-profile-card.tsx (border-t-2, mt-10)"
+      "completedAt": "2026-03-02",
+      "notes": "구현 완료. post-body.css (letter-spacing, p margin, img margin) + author-profile-card.tsx (border-t-2, mt-10). Gap 분석 미작성."
     },
     "b3-ai-prompt-humanize": {
-      "phase": "implementing",
+      "phase": "completed",
       "matchRate": null,
       "documents": {
         "plan": "01-plan/features/b3-ai-prompt-humanize.plan.md",
         "design": "02-design/features/b3-ai-prompt-humanize.design.md"
       },
-      "notes": "구현 완료. route.ts systemPrompt에 문체 규칙 블록 추가 (어미다양화/리듬/상투어금지/경험담톤)."
+      "completedAt": "2026-03-02",
+      "notes": "구현 완료. route.ts systemPrompt에 문체 규칙 블록 추가 (어미다양화/리듬/상투어금지/경험담톤). Gap 분석 미작성."
     },
     "c1-protractor-summary-cleanup": {
       "phase": "completed",
@@ -525,13 +528,14 @@
       "completedAt": "2026-03-02"
     },
     "c3-best-reviews": {
-      "phase": "implementing",
+      "phase": "completed",
       "matchRate": null,
       "documents": {
         "plan": "01-plan/features/c3-best-reviews.plan.md",
         "design": "02-design/features/c3-best-reviews.design.md"
       },
-      "notes": "구현 완료. 마이그레이션+타입+toggleFeaturedReview 액션+정렬 수정+관리자 토글+목록 하이라이트."
+      "completedAt": "2026-03-02",
+      "notes": "구현 완료. 마이그레이션+타입+toggleFeaturedReview 액션+정렬 수정+관리자 토글+목록 하이라이트. Gap 분석 미작성."
     },
     "protractor-v5-tabs": {
       "phase": "completed",
@@ -866,14 +870,15 @@
       "notes": "S1 meta-ad-library.ts searchPageIds 존재 시 q 빈 문자열 설정 + S2 route.ts page_id만으로 검색 허용(validation 완화). tsc+lint+build 통과. Match Rate 100%."
     },
     "brand-search-bugfix": {
-      "phase": "designing",
-      "matchRate": null,
+      "phase": "completed",
+      "matchRate": 100,
       "documents": {
         "plan": "01-plan/features/brand-search-bugfix.plan.md",
         "design": "02-design/features/brand-search-bugfix.design.md"
       },
       "startedAt": "2026-03-08",
-      "notes": "근본 원인: meta-ad-library.ts에서 SearchAPI.io에 search_page_ids(Meta Graph API 파라미터명)를 보내지만, SearchAPI.io는 page_id를 기대. 1줄 수정(search_page_ids→page_id)으로 해결 가능. Plan+Design만 작성."
+      "completedAt": "2026-03-09",
+      "notes": "search_page_ids→page_id 파라미터명 수정. 커밋 b1667b8. Gap 분석 미작성(1줄 버그픽스)."
     },
     "open-final-t2-qa-bold-removal": {
       "phase": "completed",
@@ -900,24 +905,26 @@
       "notes": "T1 개인정보처리방침 자사몰/광고데이터 항목추가. T2 더보기 toast피드백+중복제거0건시안내+에러가시성개선. T3 핀등록 toast성공/실패알림+json.monitor방어+디버그로그제거. 이전수정(9512b1c)은 console.log만 추가해 실제 수정 없었음. tsc+build 통과."
     },
     "competitor-bugfix-pin-loadmore": {
-      "phase": "designing",
+      "phase": "completed",
       "matchRate": null,
       "documents": {
         "plan": "01-plan/features/competitor-bugfix-pin-loadmore.plan.md",
         "design": "02-design/features/competitor-bugfix-pin-loadmore.design.md"
       },
       "startedAt": "2026-03-08",
-      "notes": "버그1: 핀등록시 빈brandName→400에러(근본원인: meta-ad-library.ts:269 page_name빈문자열변환). 버그2: 더보기 중복페이지→nextPageToken삭제→영구중단(근본원인: deduped===0시 토큰null설정). 이전2회수정(9512b1c,aad4e7f) 모두 증상만 수정(toast/stopPropagation)하고 데이터흐름 미추적."
+      "completedAt": "2026-03-09",
+      "notes": "핀등록 빈brandName + 더보기 중복페이지 근본 수정. 커밋 3c50f58, f604ba6, 1484ca8. Gap 분석 미작성."
     },
     "bugfix-0308-4th": {
-      "phase": "implementing",
+      "phase": "completed",
       "matchRate": null,
       "documents": {
         "plan": "01-plan/features/bugfix-0308-4th.plan.md",
         "design": "02-design/features/bugfix-0308-4th.design.md"
       },
       "startedAt": "2026-03-08",
-      "notes": "수정사항 4차(4건): T1 더보기페이지네이션(pageToken시 page_id제외), T2 초대코드used_count(쿼리빌더재할당), T3 믹스패널필드필수화, T4 키워드검색강화(브랜드사전+폴백+자동영문변환)."
+      "completedAt": "2026-03-08",
+      "notes": "수정사항 4차(4건): T1 더보기페이지네이션(pageToken시 page_id제외), T2 초대코드used_count(쿼리빌더재할당), T3 믹스패널필드필수화, T4 키워드검색강화(브랜드사전+폴백+자동영문변환). 커밋 c56430e."
     },
     "bugfix-invite-code-consumption": {
       "phase": "completed",
@@ -932,14 +939,15 @@
       "notes": "초대코드 근본 수정: (A) handle_new_user 트리거에 invite_code_used 추가, (B) consume_invite_code RPC 함수(FOR UPDATE 행잠금+원자적 처리), (C) 기존 5명 데이터 복구 마이그레이션. tsc+lint+build 통과."
     },
     "bugfix-loadmore-pagination": {
-      "phase": "designing",
-      "matchRate": null,
+      "phase": "completed",
+      "matchRate": 100,
       "documents": {
         "plan": "01-plan/features/bugfix-loadmore-pagination.plan.md",
         "design": "02-design/features/bugfix-loadmore-pagination.design.md"
       },
       "startedAt": "2026-03-09",
-      "notes": "더보기 1건 로드 버그: 근본원인=page_token과 q/page_id 동시전송→SearchAPI.io 새 검색으로 해석→page1과 동일결과→seen_ids dedup에서 29/30건 제거→1건만 남음. 10번째 시도에서 최초로 전체 흐름 추적 완료. Plan+Design만 작성, 코드수정 없음."
+      "completedAt": "2026-03-09",
+      "notes": "더보기 근본 수정: page_token 있을 때 q/page_id 제외하여 단독 전송. 커밋 f604ba6, 1484ca8. Gap 분석 미작성."
     }
   },
   "phaseMapping": {

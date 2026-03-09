@@ -1,6 +1,7 @@
 # CLAUDE.md — 프로젝트 규칙 (에이전트팀 필수 읽기)
 
 ## 절대 규칙
+0. **세션 시작 즉시 delegate 모드 진입**: Shift+Tab → delegate 모드. 팀원(frontend-dev, backend-dev, qa-engineer) 생성 후 작업 배정. Leader가 직접 코드 쓰면 리젝. 팀 없이 단독 작업 금지.
 1. **코드 품질**: lint 에러 0개 유지. `npm run build` 반드시 성공.
 2. **한국어 UI**: 모든 사용자 노출 텍스트는 한국어. 영어 라벨 금지.
 3. **기존 파일 최소 변경**: 신규 파일 추가 선호. 기존 파일 대폭 수정 지양.

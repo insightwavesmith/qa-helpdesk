@@ -101,7 +101,9 @@ if [ -n "$MISSING" ]; then
     echo ""
     echo "이 태스크들의 관련 파일이 커밋에 포함되지 않았습니다."
     echo "빠뜨린 게 맞다면 구현 후 다시 커밋하세요."
+    source /Users/smith/projects/qa-helpdesk/.claude/hooks/notify-hook.sh && notify_hook "⚠️ [게이트 차단] Gap 분석 미완료로 commit 차단됨. tmux 확인" "gap-analysis"
     # exit 2 = 차단 (사용자에게 경고 후 진행 여부 묻기)
+    source /Users/smith/projects/qa-helpdesk/.claude/hooks/notify-hook.sh && notify_hook "⚠️ [게이트 차단] Gap 분석 미완료로 commit 차단됨. tmux 확인" "gap-analysis"
     exit 2
 fi
 
