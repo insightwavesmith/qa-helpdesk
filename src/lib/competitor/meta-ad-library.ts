@@ -169,6 +169,7 @@ export async function searchMetaAds(
       url.searchParams.set("q", params.searchTerms);
     }
     url.searchParams.set("country", country);
+    url.searchParams.set("ad_active_status", "active");
   } else {
     // 새 검색: 기존 로직 유지
     if (!params.searchPageIds) {

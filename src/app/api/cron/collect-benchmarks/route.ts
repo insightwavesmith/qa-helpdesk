@@ -527,63 +527,26 @@ export async function GET(req: NextRequest) {
     const rankingTypes = ["quality", "engagement", "conversion"] as const;
     const rankingGroups = ["ABOVE_AVERAGE", "AVERAGE", "BELOW_AVERAGE"] as const;
 
-    // 계정별 카테고리를 광고 데이터에 매핑
-    const categories = [
-      ...new Set(
-        allClassified.map(
-          (ad) => accountCategoryMap[ad.account_id] || "uncategorized"
-        )
-      ),
-    ];
-
     const benchmarkRows: Record<string, unknown>[] = [];
     const weekDate = getMondayOfWeek(); // A4: 해당 주의 월요일
 
-    for (const category of categories) {
-      const categoryAds = allClassified.filter(
-        (ad) => (accountCategoryMap[ad.account_id] || "uncategorized") === category
-      );
+    // STEP 2: 전체 광고 합산 벤치마크 계산 (카테고리 분리 없음)
+    for (const ct of creativeTypes) {
+      for (const rankingType of rankingTypes) {
+        const rankingKey = `${rankingType}_ranking` as keyof ClassifiedAd;
+        for (const rankingGroup of rankingGroups) {
+          const filtered = allClassified.filter(
+            (r) => r.creative_type === ct && r[rankingKey] === rankingGroup
+          );
+          if (filtered.length === 0) continue;
 
-      for (const ct of creativeTypes) {
-        for (const rankingType of rankingTypes) {
-          const rankingKey = `${rankingType}_ranking` as keyof ClassifiedAd;
-          for (const rankingGroup of rankingGroups) {
-            const filtered = categoryAds.filter(
-              (r) => r.creative_type === ct && r[rankingKey] === rankingGroup
-            );
-            if (filtered.length === 0) continue;
-
-            benchmarkRows.push(
-              calcGroupAvg(filtered, {
-                creative_type: ct,
-                ranking_type: rankingType,
-                ranking_group: rankingGroup,
-                category,
-                sample_count: filtered.length,
-                calculated_at: collectedAt,
-                date: weekDate,
-              })
-            );
-          }
-        }
-      }
-
-      // ────────────────────────────────────────────────────────
-      // STEP 3: MEDIAN_ALL — 랭킹 무관 전체 평균 (카테고리별)
-      // ────────────────────────────────────────────────────────
-      const medianRankingTypes = ["engagement", "conversion"] as const;
-      for (const ct of creativeTypes) {
-        const ctAds = categoryAds.filter((r) => r.creative_type === ct);
-        if (ctAds.length === 0) continue;
-
-        for (const rankingType of medianRankingTypes) {
           benchmarkRows.push(
-            calcGroupAvg(ctAds, {
+            calcGroupAvg(filtered, {
               creative_type: ct,
               ranking_type: rankingType,
-              ranking_group: "MEDIAN_ALL",
-              category,
-              sample_count: ctAds.length,
+              ranking_group: rankingGroup,
+              category: "all",
+              sample_count: filtered.length,
               calculated_at: collectedAt,
               date: weekDate,
             })
@@ -593,7 +556,30 @@ export async function GET(req: NextRequest) {
     }
 
     // ────────────────────────────────────────────────────────
-    // benchmarks 테이블 UPSERT (A4: 이력 보존, category 포함)
+    // STEP 3: MEDIAN_ALL — 랭킹 무관 전체 평균
+    // ────────────────────────────────────────────────────────
+    const medianRankingTypes = ["engagement", "conversion"] as const;
+    for (const ct of creativeTypes) {
+      const ctAds = allClassified.filter((r) => r.creative_type === ct);
+      if (ctAds.length === 0) continue;
+
+      for (const rankingType of medianRankingTypes) {
+        benchmarkRows.push(
+          calcGroupAvg(ctAds, {
+            creative_type: ct,
+            ranking_type: rankingType,
+            ranking_group: "MEDIAN_ALL",
+            category: "all",
+            sample_count: ctAds.length,
+            calculated_at: collectedAt,
+            date: weekDate,
+          })
+        );
+      }
+    }
+
+    // ────────────────────────────────────────────────────────
+    // benchmarks 테이블 UPSERT (전체 합산, category=all 고정)
     // ────────────────────────────────────────────────────────
     if (benchmarkRows.length > 0) {
       const { error: insertBenchErr } = await anySvc
@@ -617,7 +603,7 @@ export async function GET(req: NextRequest) {
       ads_classified: allClassified.length,
       benchmarks_saved: benchmarkRows.length,
       newly_classified: classifiedCount,
-      categories_used: categories,
+      categories_used: [...new Set(Object.values(accountCategoryMap))],
       creative_type_breakdown: {
         VIDEO: allClassified.filter((r) => r.creative_type === "VIDEO").length,
         IMAGE: allClassified.filter((r) => r.creative_type === "IMAGE").length,
