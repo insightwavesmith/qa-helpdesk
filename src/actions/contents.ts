@@ -83,7 +83,11 @@ export async function getContents({
     .range(from, to);
 
   if (sourceType) {
-    query = query.eq("source_type", sourceType);
+    if (sourceType.includes(",")) {
+      query = query.in("source_type", sourceType.split(","));
+    } else {
+      query = query.eq("source_type", sourceType);
+    }
   }
 
   if (type) {
