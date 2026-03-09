@@ -13,6 +13,7 @@ import {
   Check,
   Loader2,
   Pin,
+  ExternalLink,
 } from "lucide-react";
 
 interface AdCardProps {
@@ -240,6 +241,17 @@ export function AdCard({ ad, selected, onSelect, isPinned, onPinBrand }: AdCardP
                 )}
                 다운로드
               </button>
+            )}
+            {ad.linkUrl && (
+              <a
+                href={ad.linkUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                랜딩페이지
+              </a>
             )}
             {ad.pageId && onPinBrand && (
               <button

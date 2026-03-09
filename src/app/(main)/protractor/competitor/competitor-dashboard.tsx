@@ -96,7 +96,7 @@ export default function CompetitorDashboard() {
     }
   }, []);
 
-  // 더보기 (다음 페이지 누적 로드 — page_token만 단독 전송)
+  // 더보기 (다음 페이지 누적 로드)
   const handleLoadMore = useCallback(async () => {
     if ((!searchQuery && !searchPageId) || !nextPageToken || loadingMore) return;
 
@@ -104,10 +104,15 @@ export default function CompetitorDashboard() {
     setError(null);
 
     try {
-      // page_token만 전송 — 검색 조건이 토큰에 이미 인코딩되어 있음
+      // page_token + 원래 검색 조건(q 또는 page_id) 함께 전송
       const fetchParams = new URLSearchParams({
         page_token: nextPageToken,
       });
+      if (searchPageId) {
+        fetchParams.set("page_id", searchPageId);
+      } else if (searchQuery) {
+        fetchParams.set("q", searchQuery);
+      }
 
       const res = await fetch(`/api/competitor/search?${fetchParams}`);
       const json: Record<string, unknown> = await res.json();
@@ -253,16 +258,37 @@ export default function CompetitorDashboard() {
         return;
       }
 
+      // ig_username이 없으면 브랜드 페이지 조회로 보완
+      let enrichedBrand = brand;
+      if (!brand.ig_username && brand.page_name) {
+        try {
+          const brandRes = await fetch(
+            `/api/competitor/brands?q=${encodeURIComponent(brand.page_name)}`,
+          );
+          if (brandRes.ok) {
+            const brandJson = await brandRes.json();
+            const matched = (brandJson.brands as BrandPage[] | undefined)?.find(
+              (b) => b.page_id === brand.page_id,
+            );
+            if (matched) {
+              enrichedBrand = { ...brand, ...matched };
+            }
+          }
+        } catch {
+          // 조회 실패해도 핀 등록은 계속 진행
+        }
+      }
+
       try {
         const res = await fetch("/api/competitor/monitors", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            brandName: brand.page_name,
-            pageId: brand.page_id,
-            pageProfileUrl: brand.image_uri,
-            igUsername: brand.ig_username,
-            category: brand.category,
+            brandName: enrichedBrand.page_name,
+            pageId: enrichedBrand.page_id,
+            pageProfileUrl: enrichedBrand.image_uri,
+            igUsername: enrichedBrand.ig_username,
+            category: enrichedBrand.category,
           }),
         });
         const json = await res.json();
@@ -274,7 +300,7 @@ export default function CompetitorDashboard() {
 
         if (json.monitor) {
           setMonitors((prev) => [...prev, json.monitor]);
-          toast.success(`${brand.page_name} 모니터링 등록 완료`);
+          toast.success(`${enrichedBrand.page_name} 모니터링 등록 완료`);
         } else {
           toast.error("등록 응답 데이터가 올바르지 않습니다");
         }

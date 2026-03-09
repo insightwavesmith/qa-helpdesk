@@ -160,10 +160,15 @@ export async function searchMetaAds(
   url.searchParams.set("api_key", apiKey);
 
   if (params.pageToken) {
-    // 페이지네이션: page_token만 단독 전송
-    // page_token이 검색 조건(q, page_id, country 등)을 내부에 인코딩하고 있으므로
-    // 추가 파라미터를 보내면 SearchAPI.io가 새 검색으로 해석하여 중복 반환됨
+    // 페이지네이션: page_token + 검색 조건(q 또는 page_id) 함께 전송
+    // SearchAPI.io는 page_token만으로는 검색 조건을 인식하지 못함
     url.searchParams.set("page_token", params.pageToken);
+    if (params.searchPageIds) {
+      url.searchParams.set("page_id", params.searchPageIds);
+    } else if (params.searchTerms) {
+      url.searchParams.set("q", params.searchTerms);
+    }
+    url.searchParams.set("country", country);
   } else {
     // 새 검색: 기존 로직 유지
     if (!params.searchPageIds) {
