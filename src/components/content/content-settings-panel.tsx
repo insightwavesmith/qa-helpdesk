@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Save, Trash2, Loader2, AlertTriangle } from "lucide-react";
+import { Save, Trash2, Archive, Loader2, AlertTriangle } from "lucide-react";
 import { updateContent, deleteContent } from "@/actions/contents";
 import { toast } from "sonner";
 import type { Content } from "@/types/content";
@@ -39,6 +39,7 @@ export default function ContentSettingsPanel({
   const [type, setType] = useState(content.type);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [archiving, setArchiving] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [dirty, setDirty] = useState(false);
 
@@ -58,6 +59,22 @@ export default function ContentSettingsPanel({
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleArchive = async () => {
+    if (!confirm("아카이브하시겠습니까? 목록에서 숨겨집니다.")) return;
+    setArchiving(true);
+    try {
+      const { error } = await updateContent(content.id, { status: "archived" });
+      if (error) {
+        toast.error("아카이브에 실패했습니다.");
+      } else {
+        toast.success("아카이브되었습니다.");
+        router.push("/admin/content");
+      }
+    } finally {
+      setArchiving(false);
     }
   };
 
@@ -191,6 +208,21 @@ export default function ContentSettingsPanel({
             콘텐츠를 삭제하면 복구할 수 없습니다. 관련 배포 기록도 함께
             삭제됩니다.
           </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleArchive}
+              disabled={archiving}
+              className="gap-1 text-xs"
+            >
+              {archiving ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Archive className="size-3.5" />
+              )}
+              아카이브
+            </Button>
           <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
             <DialogTrigger asChild>
               <Button
@@ -234,6 +266,7 @@ export default function ContentSettingsPanel({
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         </CardContent>
       </Card>
     </div>

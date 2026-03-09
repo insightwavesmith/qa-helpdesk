@@ -227,6 +227,25 @@ export async function updateContent(
 export async function deleteContent(id: string) {
   const supabase = await requireStaff();
 
+  // FK 참조 테이블 먼저 정리 (best-effort: 에러가 나도 계속 진행)
+  const { error: chunksError } = await supabase
+    .from("knowledge_chunks")
+    .delete()
+    .eq("content_id", id);
+  if (chunksError) console.error("deleteContent knowledge_chunks 정리 오류:", chunksError);
+
+  const { error: emailLogsError } = await supabase
+    .from("email_logs")
+    .delete()
+    .eq("content_id", id);
+  if (emailLogsError) console.error("deleteContent email_logs 정리 오류:", emailLogsError);
+
+  const { error: emailSendsError } = await supabase
+    .from("email_sends")
+    .delete()
+    .eq("content_id", id);
+  if (emailSendsError) console.error("deleteContent email_sends 정리 오류:", emailSendsError);
+
   const { error } = await supabase.from("contents").delete().eq("id", id);
 
   if (error) {
