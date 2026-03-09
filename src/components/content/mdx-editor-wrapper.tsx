@@ -25,36 +25,13 @@ import {
 } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
 import "@/components/posts/post-body.css";
-import { useRef } from "react";
+import { useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 interface MDXEditorWrapperProps {
   markdown: string;
   onChange: (md: string) => void;
-}
-
-async function imageUploadHandler(image: File): Promise<string> {
-  const supabase = createClient();
-  const ext = image.name.split(".").pop() || "jpg";
-  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const filePath = `contents/${fileName}`;
-
-  const { error } = await supabase.storage
-    .from("content-images")
-    .upload(filePath, image, {
-      cacheControl: "3600",
-      upsert: false,
-    });
-
-  if (error) {
-    throw new Error(`이미지 업로드 실패: ${image.name}`);
-  }
-
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from("content-images").getPublicUrl(filePath);
-
-  return publicUrl;
 }
 
 export default function MDXEditorWrapper({
@@ -62,6 +39,32 @@ export default function MDXEditorWrapper({
   onChange,
 }: MDXEditorWrapperProps) {
   const editorRef = useRef<MDXEditorMethods>(null);
+
+  const imageUploadHandler = useCallback(async (image: File): Promise<string> => {
+    const supabase = createClient();
+    const ext = image.name.split(".").pop() || "jpg";
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const filePath = `contents/${fileName}`;
+
+    const { error } = await supabase.storage
+      .from("content-images")
+      .upload(filePath, image, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (error) {
+      toast.error(`이미지 업로드 실패: ${error.message}`);
+      throw new Error(`이미지 업로드 실패: ${image.name}`);
+    }
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("content-images").getPublicUrl(filePath);
+
+    toast.success("이미지가 삽입되었습니다.");
+    return publicUrl;
+  }, []);
 
   return (
     <div className="mdx-editor-container [&_.mdxeditor]:min-h-[500px] [&_.mdxeditor]:border [&_.mdxeditor]:border-gray-200 [&_.mdxeditor]:rounded-md">

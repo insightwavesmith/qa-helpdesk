@@ -71,16 +71,18 @@ export default function AdminContentPage() {
   const currentTab = searchParams.get("tab") ?? "curation";
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [generateIds, setGenerateIds] = useState<string[] | null>(null);
   const [sidebarSource, setSidebarSource] = useState("all");
 
   // SWR: 콘텐츠 목록
   const { data: contentsResult, isLoading: loading } = useSWR(
-    SWR_KEYS.ADMIN_CONTENTS(typeFilter, statusFilter),
+    `${SWR_KEYS.ADMIN_CONTENTS(typeFilter, statusFilter)}:${sourceFilter}`,
     async () => {
       const params: { type?: string; status?: string; sourceType?: string; pageSize?: number } =
-        { pageSize: 100, sourceType: "info_share" };
+        { pageSize: 100 };
+      if (sourceFilter !== "all") params.sourceType = sourceFilter;
       if (typeFilter !== "all") params.type = typeFilter;
       if (statusFilter !== "all" && statusFilter !== "sent") params.status = statusFilter;
       const { data, count } = await getContents(params);
@@ -269,6 +271,21 @@ export default function AdminContentPage() {
 
           {/* Filters */}
           <div className="flex gap-3">
+            <Select value={sourceFilter} onValueChange={setSourceFilter}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="소스" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체 소스</SelectItem>
+                <SelectItem value="info_share">정보공유</SelectItem>
+                <SelectItem value="manual">직접 작성</SelectItem>
+                <SelectItem value="crawl">블로그</SelectItem>
+                <SelectItem value="youtube">YouTube</SelectItem>
+                <SelectItem value="blueprint">블루프린트</SelectItem>
+                <SelectItem value="lecture">사관학교</SelectItem>
+              </SelectContent>
+            </Select>
+
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="유형" />

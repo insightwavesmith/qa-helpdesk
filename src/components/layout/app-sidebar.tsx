@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   MessageCircleQuestion,
   FileText,
-  Megaphone,
   Settings,
   Users,
   CheckCircle,
@@ -54,7 +53,6 @@ const mainNavItems: NavItem[] = [
   { label: "대시보드", href: "/dashboard", icon: LayoutDashboard },
   { label: "Q&A", href: "/questions", icon: MessageCircleQuestion },
   { label: "정보 공유", href: "/posts", icon: FileText },
-  { label: "공지사항", href: "/notices", icon: Megaphone },
   { label: "총가치각도기", href: "/protractor", icon: Crosshair },
   { label: "설정", href: "/settings", icon: Settings },
 ];

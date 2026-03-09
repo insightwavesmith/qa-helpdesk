@@ -39,6 +39,7 @@ export default function DetailSidebar({
   onContentUpdate,
 }: DetailSidebarProps) {
   const [uploading, setUploading] = useState(false);
+  const [thumbnailVersion, setThumbnailVersion] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,7 +57,10 @@ export default function DetailSidebar({
         .from("content-images")
         .upload(filePath, file, { cacheControl: "3600", upsert: false });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        toast.error(`스토리지 업로드 실패: ${uploadError.message}`);
+        throw uploadError;
+      }
 
       const {
         data: { publicUrl },
@@ -65,10 +69,13 @@ export default function DetailSidebar({
       const { error } = await updateContent(content.id, { thumbnail_url: publicUrl });
       if (error) throw new Error(error);
 
+      setThumbnailVersion((v) => v + 1);
       toast.success("썸네일이 변경되었습니다.");
       onContentUpdate();
     } catch (err) {
-      toast.error("썸네일 업로드에 실패했습니다.");
+      if (!(err instanceof Error && err.message.includes("스토리지"))) {
+        toast.error("썸네일 저장에 실패했습니다.");
+      }
       console.error(err);
     } finally {
       setUploading(false);
@@ -92,6 +99,7 @@ export default function DetailSidebar({
           </p>
           {content.thumbnail_url ? (
             <NextImage
+              key={`thumb-${thumbnailVersion}-${content.thumbnail_url}`}
               src={content.thumbnail_url}
               alt="썸네일"
               width={240}

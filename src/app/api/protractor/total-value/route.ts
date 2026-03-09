@@ -32,12 +32,13 @@ async function fetchBenchmarks(svc: any, dominantCT: string): Promise<Record<str
 
     const latestAt = (latestBench[0].calculated_at as string).slice(0, 10);
 
-    // creative_type + ABOVE_AVERAGE 행 조회 (engagement + conversion 두 행)
+    // creative_type + ABOVE_AVERAGE 행 조회 (DB에 above_avg 또는 ABOVE_AVERAGE 혼재)
+    const aboveAvgValues = ["ABOVE_AVERAGE", "above_avg"];
     const { data: rows } = await benchSvc
       .from("benchmarks")
       .select("*")
       .eq("creative_type", dominantCT)
-      .eq("ranking_group", "ABOVE_AVERAGE")
+      .in("ranking_group", aboveAvgValues)
       .gte("calculated_at", latestAt);
 
     if (!rows || rows.length === 0) {
@@ -46,7 +47,7 @@ async function fetchBenchmarks(svc: any, dominantCT: string): Promise<Record<str
         .from("benchmarks")
         .select("*")
         .eq("creative_type", "ALL")
-        .eq("ranking_group", "ABOVE_AVERAGE")
+        .in("ranking_group", aboveAvgValues)
         .gte("calculated_at", latestAt);
 
       if (!fallbackRows || fallbackRows.length === 0) return benchMap;

@@ -45,8 +45,8 @@ export async function getPosts({
   if (category && category !== "all") {
     query = query.eq("category", category);
   } else {
-    // 기본: notice 카테고리 제외 (공지사항은 /notices 페이지에서 별도 표시)
-    query = query.in("category", ["education", "case_study"]);
+    // 기본: 정보공유 + 공지 카테고리 통합 표시
+    query = query.in("category", ["education", "case_study", "notice"]);
   }
 
   if (type) {
