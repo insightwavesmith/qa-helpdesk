@@ -235,8 +235,9 @@ function AdRankCard({
   diagnosis?: RawDiagnosis;
 }) {
   const metaUrl = `https://adsmanager.facebook.com/adsmanager/manage/ads/insights?act=${accountId}&selected_ad_ids=${ad.ad_id}&nav_source=no_referrer`;
-  const mixpanelUrl = mixpanelProjectId && mixpanelBoardId
-    ? `https://mixpanel.com/project/${mixpanelProjectId}/view/4299452/app/boards#id=${mixpanelBoardId}&filters=~(~(resourceType~'event~propertyName~'utm_term~propertyObjectKey~null~propertyDefaultType~'string~propertyType~'string~filterOperator~'equals~filterValue~(~'${ad.ad_id})~limitValues~false~defaultEmpty~false~activeValue~(~'${ad.ad_id})))`
+  const mixpanelFilter = encodeURIComponent(`~(~(resourceType~'event~propertyName~'utm_term~propertyObjectKey~null~propertyDefaultType~'string~propertyType~'string~filterOperator~'equals~filterValue~(~'${ad.ad_id})~limitValues~false~defaultEmpty~false~activeValue~(~'${ad.ad_id})))`);
+  const mixpanelUrl = mixpanelProjectId
+    ? `https://mixpanel.com/project/${mixpanelProjectId}/app/boards#id=${mixpanelBoardId || ""}&filters=${mixpanelFilter}`
     : null;
 
   const parts = diagnosis?.parts ?? [];

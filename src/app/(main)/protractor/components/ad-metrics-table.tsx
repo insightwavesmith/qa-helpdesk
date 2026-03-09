@@ -228,9 +228,9 @@ export function AdMetricsTable({ insights, benchmarks, accountId, mixpanelProjec
                             Meta 광고통계
                           </a>
                         )}
-                        {mixpanelProjectId && mixpanelBoardId && (
+                        {mixpanelProjectId && (
                           <a
-                            href={`https://mixpanel.com/project/${mixpanelProjectId}/view/4299452/app/boards#id=${mixpanelBoardId}&filters=~(~(resourceType~'event~propertyName~'utm_term~propertyObjectKey~null~propertyDefaultType~'string~propertyType~'string~filterOperator~'equals~filterValue~(~'${ad.ad_id})~limitValues~false~defaultEmpty~false~activeValue~(~'${ad.ad_id})))`}
+                            href={(() => { const f = encodeURIComponent(`~(~(resourceType~'event~propertyName~'utm_term~propertyObjectKey~null~propertyDefaultType~'string~propertyType~'string~filterOperator~'equals~filterValue~(~'${ad.ad_id})~limitValues~false~defaultEmpty~false~activeValue~(~'${ad.ad_id})))`); return `https://mixpanel.com/project/${mixpanelProjectId}/app/boards#id=${mixpanelBoardId || ""}&filters=${f}`; })()}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="rounded-md px-2.5 py-1 text-[11px] font-medium bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white transition-colors"
