@@ -521,37 +521,33 @@ export async function GET(req: NextRequest) {
     }
 
     // ────────────────────────────────────────────────────────
-    // STEP 2: 벤치마크 계산 — creative_type × ranking_type × ranking_group × category
+    // STEP 2: 벤치마크 계산 — creative_type 구분 없이 전체 합산 (ALL)
     // ────────────────────────────────────────────────────────
-    const creativeTypes = ["VIDEO", "IMAGE", "CATALOG"] as const;
     const rankingTypes = ["quality", "engagement", "conversion"] as const;
     const rankingGroups = ["ABOVE_AVERAGE", "AVERAGE", "BELOW_AVERAGE"] as const;
 
     const benchmarkRows: Record<string, unknown>[] = [];
     const weekDate = getMondayOfWeek(); // A4: 해당 주의 월요일
 
-    // STEP 2: 전체 광고 합산 벤치마크 계산 (카테고리 분리 없음)
-    for (const ct of creativeTypes) {
-      for (const rankingType of rankingTypes) {
-        const rankingKey = `${rankingType}_ranking` as keyof ClassifiedAd;
-        for (const rankingGroup of rankingGroups) {
-          const filtered = allClassified.filter(
-            (r) => r.creative_type === ct && r[rankingKey] === rankingGroup
-          );
-          if (filtered.length === 0) continue;
+    for (const rankingType of rankingTypes) {
+      const rankingKey = `${rankingType}_ranking` as keyof ClassifiedAd;
+      for (const rankingGroup of rankingGroups) {
+        const filtered = allClassified.filter(
+          (r) => r[rankingKey] === rankingGroup
+        );
+        if (filtered.length === 0) continue;
 
-          benchmarkRows.push(
-            calcGroupAvg(filtered, {
-              creative_type: ct,
-              ranking_type: rankingType,
-              ranking_group: rankingGroup,
-              category: "all",
-              sample_count: filtered.length,
-              calculated_at: collectedAt,
-              date: weekDate,
-            })
-          );
-        }
+        benchmarkRows.push(
+          calcGroupAvg(filtered, {
+            creative_type: "ALL",
+            ranking_type: rankingType,
+            ranking_group: rankingGroup,
+            category: "all",
+            sample_count: filtered.length,
+            calculated_at: collectedAt,
+            date: weekDate,
+          })
+        );
       }
     }
 
@@ -559,23 +555,18 @@ export async function GET(req: NextRequest) {
     // STEP 3: MEDIAN_ALL — 랭킹 무관 전체 평균
     // ────────────────────────────────────────────────────────
     const medianRankingTypes = ["engagement", "conversion"] as const;
-    for (const ct of creativeTypes) {
-      const ctAds = allClassified.filter((r) => r.creative_type === ct);
-      if (ctAds.length === 0) continue;
-
-      for (const rankingType of medianRankingTypes) {
-        benchmarkRows.push(
-          calcGroupAvg(ctAds, {
-            creative_type: ct,
-            ranking_type: rankingType,
-            ranking_group: "MEDIAN_ALL",
-            category: "all",
-            sample_count: ctAds.length,
-            calculated_at: collectedAt,
-            date: weekDate,
-          })
-        );
-      }
+    for (const rankingType of medianRankingTypes) {
+      benchmarkRows.push(
+        calcGroupAvg(allClassified, {
+          creative_type: "ALL",
+          ranking_type: rankingType,
+          ranking_group: "MEDIAN_ALL",
+          category: "all",
+          sample_count: allClassified.length,
+          calculated_at: collectedAt,
+          date: weekDate,
+        })
+      );
     }
 
     // ────────────────────────────────────────────────────────

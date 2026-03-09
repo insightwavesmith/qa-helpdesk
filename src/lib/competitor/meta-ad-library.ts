@@ -58,6 +58,8 @@ function detectDisplayFormat(snapshot?: SearchApiSnapshot): DisplayFormat {
   if (fmt === "CAROUSEL" || fmt === "DCO" || fmt === "MULTI_IMAGES")
     return "CAROUSEL";
   if (fmt === "IMAGE" || (snapshot?.images?.length ?? 0) > 0) return "IMAGE";
+  // display_format 필드가 없더라도 cards가 있으면 CAROUSEL로 판단
+  if ((snapshot?.cards?.length ?? 0) > 0) return "CAROUSEL";
   return "UNKNOWN";
 }
 

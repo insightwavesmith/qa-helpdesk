@@ -81,7 +81,7 @@ export default function AdminContentPage() {
     `${SWR_KEYS.ADMIN_CONTENTS(typeFilter, statusFilter)}:${sourceFilter}`,
     async () => {
       const params: { type?: string; status?: string; sourceType?: string; pageSize?: number } =
-        { pageSize: 100, sourceType: "info_share" };
+        { pageSize: 100 };
       if (sourceFilter !== "all") params.sourceType = sourceFilter;
       if (typeFilter !== "all") params.type = typeFilter;
       if (statusFilter !== "all" && statusFilter !== "sent") params.status = statusFilter;

@@ -5,7 +5,6 @@ import {
   ALL_METRIC_DEFS,
   type BenchEntry,
   computeMetricValues,
-  getDominantCreativeType,
   calculateT3Score,
 } from "@/lib/protractor/t3-engine";
 
@@ -210,9 +209,8 @@ export async function getStudentPerformance(
     let t3Grade: string | null = null;
     if (rawRows && rawRows.length > 0) {
       const metricValues = computeMetricValues(rawRows);
-      const dominantCT = getDominantCreativeType(rawRows);
-      // creative_type별 벤치마크 매핑
-      const userBench = resolveBenchmarks(benchMap, dominantCT);
+      // creative_type 구분 없이 ALL 벤치마크만 사용
+      const userBench = resolveBenchmarks(benchMap, "ALL");
       const t3Result = calculateT3Score(metricValues, userBench);
       t3Score = t3Result.score;
       t3Grade = t3Result.grade.grade;

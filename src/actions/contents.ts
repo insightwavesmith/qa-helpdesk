@@ -153,9 +153,16 @@ export async function createContent(input: {
 }) {
   const supabase = await requireStaff();
 
+  // crawl/youtube/url 타입은 큐레이션 대상 — curation_status를 "new"로 자동 설정
+  const curationSourceTypes = ["crawl", "youtube", "url"];
+  const insertPayload: Record<string, unknown> = { ...input };
+  if (input.source_type && curationSourceTypes.includes(input.source_type)) {
+    insertPayload.curation_status = "new";
+  }
+
   const { data, error } = await supabase
     .from("contents")
-    .insert(input)
+    .insert(insertPayload as never)
     .select()
     .single();
 

@@ -62,10 +62,15 @@ function MediaPreview({
 }) {
   const [imgError, setImgError] = useState(false);
 
+  // 카탈로그(CAROUSEL/DCO): imageUrl 없을 때 carouselCards[0] 이미지 fallback
+  const effectiveImageUrl =
+    ad.imageUrl ??
+    (ad.carouselCards.length > 0 ? ad.carouselCards[0].imageUrl : null);
+
   // 영상 광고: 프리뷰 이미지 + 재생 아이콘
   if (
     ad.displayFormat === "VIDEO" &&
-    (ad.videoPreviewUrl || ad.imageUrl) &&
+    (ad.videoPreviewUrl || effectiveImageUrl) &&
     !imgError
   ) {
     return (
@@ -76,7 +81,7 @@ function MediaPreview({
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={(ad.videoPreviewUrl ?? ad.imageUrl)!}
+          src={(ad.videoPreviewUrl ?? effectiveImageUrl)!}
           alt={`${ad.pageName} 영상 프리뷰`}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onError={() => setImgError(true)}
@@ -90,8 +95,8 @@ function MediaPreview({
     );
   }
 
-  // 이미지 광고 (단일 또는 캐러셀)
-  if (ad.imageUrl && !imgError) {
+  // 이미지 광고 (단일 또는 카탈로그/캐러셀) — effectiveImageUrl로 카드 이미지 포함
+  if (effectiveImageUrl && !imgError) {
     return (
       <button
         type="button"
@@ -100,12 +105,12 @@ function MediaPreview({
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={ad.imageUrl}
+          src={effectiveImageUrl}
           alt={`${ad.pageName} 광고 소재`}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onError={() => setImgError(true)}
         />
-        {/* 캐러셀 뱃지 */}
+        {/* 캐러셀/카탈로그 뱃지 */}
         {ad.displayFormat === "CAROUSEL" && ad.carouselCards.length > 0 && (
           <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
             1/{ad.carouselCards.length}

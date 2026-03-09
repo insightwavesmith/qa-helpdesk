@@ -4,17 +4,15 @@ import {
   ALL_METRIC_DEFS,
   type BenchEntry,
   computeMetricValues,
-  getDominantCreativeType,
   calculateT3Score,
   periodToDateRange,
 } from "@/lib/protractor/t3-engine";
 
 /**
- * wide format 벤치마크 조회 — ranking_group=ABOVE_AVERAGE 기준 단일 값
- * dominantCT: creative_type (VIDEO/IMAGE/CATALOG/ALL)
+ * wide format 벤치마크 조회 — ranking_group=ABOVE_AVERAGE, creative_type=ALL 고정
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchBenchmarks(svc: any, dominantCT: string): Promise<Record<string, BenchEntry>> {
+async function fetchBenchmarks(svc: any): Promise<Record<string, BenchEntry>> {
   const benchMap: Record<string, BenchEntry> = {};
 
   try {
@@ -32,36 +30,16 @@ async function fetchBenchmarks(svc: any, dominantCT: string): Promise<Record<str
 
     const latestAt = (latestBench[0].calculated_at as string).slice(0, 10);
 
-    // creative_type + ABOVE_AVERAGE 행 조회 (DB에 above_avg 또는 ABOVE_AVERAGE 혼재)
+    // creative_type=ALL + ABOVE_AVERAGE 행 조회
     const aboveAvgValues = ["ABOVE_AVERAGE", "above_avg"];
     const { data: rows } = await benchSvc
       .from("benchmarks")
       .select("*")
-      .eq("creative_type", dominantCT)
+      .eq("creative_type", "ALL")
       .in("ranking_group", aboveAvgValues)
       .gte("calculated_at", latestAt);
 
-    if (!rows || rows.length === 0) {
-      // fallback: ALL creative_type 시도
-      const { data: fallbackRows } = await benchSvc
-        .from("benchmarks")
-        .select("*")
-        .eq("creative_type", "ALL")
-        .in("ranking_group", aboveAvgValues)
-        .gte("calculated_at", latestAt);
-
-      if (!fallbackRows || fallbackRows.length === 0) return benchMap;
-
-      for (const row of fallbackRows as Record<string, unknown>[]) {
-        for (const def of ALL_METRIC_DEFS) {
-          const val = row[def.key];
-          if (val != null && typeof val === "number" && benchMap[def.key] == null) {
-            benchMap[def.key] = val;
-          }
-        }
-      }
-      return benchMap;
-    }
+    if (!rows || rows.length === 0) return benchMap;
 
     // engagement + conversion 두 행에서 지표값 추출 (먼저 발견된 값 우선)
     for (const row of rows as Record<string, unknown>[]) {
@@ -139,7 +117,6 @@ export async function GET(request: NextRequest) {
 
     // ── 2. 지표 계산 (엔진 사용) ──
     const metricValues = computeMetricValues(rows);
-    const dominantCT = getDominantCreativeType(rows);
 
     // summary용 집계 (엔진에 없는 필드)
     let totalSpend = 0;
@@ -165,7 +142,7 @@ export async function GET(request: NextRequest) {
     const dataAvailableDays = uniqueDates.size;
 
     // ── 3. 벤치마크 조회 ──
-    const benchMap = await fetchBenchmarks(svc, dominantCT);
+    const benchMap = await fetchBenchmarks(svc);
     const hasBenchmarkData = Object.keys(benchMap).length > 0;
 
     // ── 4. T3 점수 계산 (엔진) ──
