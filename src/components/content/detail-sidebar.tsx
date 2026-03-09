@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import NextImage from "next/image";
-import { Image as ImageIcon, Eye, Calendar, Mail, Upload, Loader2 } from "lucide-react";
+import { Image as ImageIcon, Eye, Calendar, Mail, Upload, Loader2, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { updateContent } from "@/actions/contents";
 import { toast } from "sonner";
@@ -39,6 +39,7 @@ export default function DetailSidebar({
   onContentUpdate,
 }: DetailSidebarProps) {
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [thumbnailVersion, setThumbnailVersion] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -83,6 +84,35 @@ export default function DetailSidebar({
     }
   };
 
+  const handleThumbnailDelete = async () => {
+    if (!content.thumbnail_url) return;
+    setDeleting(true);
+    try {
+      const supabase = createClient();
+
+      // Storage 파일 경로 추출 (content-images 버킷 기준)
+      const url = content.thumbnail_url;
+      const bucketSegment = "/content-images/";
+      const idx = url.indexOf(bucketSegment);
+      if (idx !== -1) {
+        const storagePath = url.slice(idx + bucketSegment.length);
+        await supabase.storage.from("content-images").remove([storagePath]);
+      }
+
+      const { error } = await updateContent(content.id, { thumbnail_url: null });
+      if (error) throw new Error(error);
+
+      setThumbnailVersion((v) => v + 1);
+      toast.success("썸네일이 삭제되었습니다.");
+      onContentUpdate();
+    } catch (err) {
+      toast.error("썸네일 삭제에 실패했습니다.");
+      console.error(err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const statusInfo = STATUS_BADGE[content.status] ?? {
     label: content.status,
     className: "",
@@ -118,20 +148,38 @@ export default function DetailSidebar({
             className="hidden"
             onChange={handleThumbnailUpload}
           />
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full text-xs gap-1"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-          >
-            {uploading ? (
-              <Loader2 className="size-3 animate-spin" />
-            ) : (
-              <Upload className="size-3" />
+          <div className="flex gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs gap-1"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading || deleting}
+            >
+              {uploading ? (
+                <Loader2 className="size-3 animate-spin" />
+              ) : (
+                <Upload className="size-3" />
+              )}
+              {content.thumbnail_url ? "변경" : "업로드"}
+            </Button>
+            {content.thumbnail_url && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs gap-1 text-red-500 hover:text-red-600 hover:bg-red-50"
+                onClick={handleThumbnailDelete}
+                disabled={uploading || deleting}
+              >
+                {deleting ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : (
+                  <Trash2 className="size-3" />
+                )}
+                삭제
+              </Button>
             )}
-            이미지 변경
-          </Button>
+          </div>
         </CardContent>
       </Card>
 

@@ -71,7 +71,7 @@ export default function AdminContentPage() {
   const currentTab = searchParams.get("tab") ?? "curation";
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("info_share");
   const [modalOpen, setModalOpen] = useState(false);
   const [generateIds, setGenerateIds] = useState<string[] | null>(null);
   const [sidebarSource, setSidebarSource] = useState("all");
@@ -276,13 +276,8 @@ export default function AdminContentPage() {
                 <SelectValue placeholder="소스" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">전체 소스</SelectItem>
                 <SelectItem value="info_share">정보공유</SelectItem>
                 <SelectItem value="manual">직접 작성</SelectItem>
-                <SelectItem value="crawl">블로그</SelectItem>
-                <SelectItem value="youtube">YouTube</SelectItem>
-                <SelectItem value="blueprint">블루프린트</SelectItem>
-                <SelectItem value="lecture">사관학교</SelectItem>
               </SelectContent>
             </Select>
 
