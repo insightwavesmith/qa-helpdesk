@@ -101,7 +101,7 @@ export default function NewContentModal({
           title,
           body_md: bodyMd,
           type: contentType,
-          source_type: sourceType || null,
+          source_type: "manual",
           source_ref: sourceRef || null,
           email_summary: emailSummary || null,
         });
