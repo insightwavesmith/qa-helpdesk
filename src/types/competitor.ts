@@ -78,6 +78,7 @@ export interface SearchApiSnapshot {
     link_url?: string;
     original_image_url?: string;
     resized_image_url?: string;
+    video_preview_image_url?: string;
   }>;
 }
 

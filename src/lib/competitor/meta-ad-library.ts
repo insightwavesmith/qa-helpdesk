@@ -69,7 +69,7 @@ function extractCarouselCards(snapshot?: SearchApiSnapshot): CarouselCard[] {
   return snapshot.cards.map((card) => ({
     title: card.title ?? "",
     body: card.body ?? "",
-    imageUrl: card.original_image_url ?? card.resized_image_url ?? null,
+    imageUrl: card.original_image_url ?? card.resized_image_url ?? card.video_preview_image_url ?? null,
     linkUrl: card.link_url ?? null,
   }));
 }
