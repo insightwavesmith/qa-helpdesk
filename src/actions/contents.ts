@@ -83,7 +83,10 @@ export async function getContents({
     .range(from, to);
 
   if (sourceType) {
-    if (sourceType.includes(",")) {
+    if (sourceType === "all") {
+      // 전체: 큐레이션 원본(crawl/youtube/blueprint/lecture) 제외
+      query = query.not("source_type", "in", '("crawl","youtube","blueprint","lecture")');
+    } else if (sourceType.includes(",")) {
       query = query.in("source_type", sourceType.split(","));
     } else {
       query = query.eq("source_type", sourceType);
