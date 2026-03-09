@@ -159,10 +159,13 @@ export async function createContent(input: {
   }
 
   // crawl/youtube/url 타입은 큐레이션 대상 — curation_status를 "new"로 자동 설정
+  // 그 외(manual/ai/file 등)는 큐레이션 비대상 — DB 기본값이 "new"이므로 명시적으로 null 설정
   const curationSourceTypes = ["crawl", "youtube", "url"];
   const insertPayload: Record<string, unknown> = { ...input };
   if (input.source_type && curationSourceTypes.includes(input.source_type)) {
     insertPayload.curation_status = "new";
+  } else {
+    insertPayload.curation_status = null;
   }
 
   const { data, error } = await supabase
