@@ -64,6 +64,45 @@ export type Database = {
           },
         ]
       }
+      ad_diagnosis_cache: {
+        Row: {
+          id: string
+          account_id: string
+          ad_id: string
+          ad_name: string | null
+          creative_type: string | null
+          overall_verdict: string | null
+          one_liner: string | null
+          parts_json: Json | null
+          spend: number | null
+          computed_at: string | null
+        }
+        Insert: {
+          id?: string
+          account_id: string
+          ad_id: string
+          ad_name?: string | null
+          creative_type?: string | null
+          overall_verdict?: string | null
+          one_liner?: string | null
+          parts_json?: Json | null
+          spend?: number | null
+          computed_at?: string | null
+        }
+        Update: {
+          id?: string
+          account_id?: string
+          ad_id?: string
+          ad_name?: string | null
+          creative_type?: string | null
+          overall_verdict?: string | null
+          one_liner?: string | null
+          parts_json?: Json | null
+          spend?: number | null
+          computed_at?: string | null
+        }
+        Relationships: []
+      }
       ad_insights_classified: {
         Row: {
           id: string
@@ -1836,6 +1875,60 @@ export type Database = {
         }
         Relationships: []
       }
+      student_performance_daily: {
+        Row: {
+          id: string
+          student_id: string
+          period: number
+          cohort: string | null
+          name: string | null
+          email: string | null
+          spend: number | null
+          revenue: number | null
+          roas: number | null
+          purchases: number | null
+          t3_score: number | null
+          t3_grade: string | null
+          mixpanel_revenue: number | null
+          mixpanel_purchases: number | null
+          computed_at: string | null
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          period?: number
+          cohort?: string | null
+          name?: string | null
+          email?: string | null
+          spend?: number | null
+          revenue?: number | null
+          roas?: number | null
+          purchases?: number | null
+          t3_score?: number | null
+          t3_grade?: string | null
+          mixpanel_revenue?: number | null
+          mixpanel_purchases?: number | null
+          computed_at?: string | null
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          period?: number
+          cohort?: string | null
+          name?: string | null
+          email?: string | null
+          spend?: number | null
+          revenue?: number | null
+          roas?: number | null
+          purchases?: number | null
+          t3_score?: number | null
+          t3_grade?: string | null
+          mixpanel_revenue?: number | null
+          mixpanel_purchases?: number | null
+          computed_at?: string | null
+        }
+        Relationships: []
+      }
       student_registry: {
         Row: {
           cohort: string | null
@@ -1879,6 +1972,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      t3_scores_precomputed: {
+        Row: {
+          id: string
+          account_id: string
+          period: number
+          creative_type: string
+          score: number | null
+          grade: string | null
+          grade_label: string | null
+          metrics_json: Json | null
+          diagnostics_json: Json | null
+          summary_json: Json | null
+          data_available_days: number | null
+          has_benchmark_data: boolean | null
+          computed_at: string | null
+        }
+        Insert: {
+          id?: string
+          account_id: string
+          period: number
+          creative_type?: string
+          score?: number | null
+          grade?: string | null
+          grade_label?: string | null
+          metrics_json?: Json | null
+          diagnostics_json?: Json | null
+          summary_json?: Json | null
+          data_available_days?: number | null
+          has_benchmark_data?: boolean | null
+          computed_at?: string | null
+        }
+        Update: {
+          id?: string
+          account_id?: string
+          period?: number
+          creative_type?: string
+          score?: number | null
+          grade?: string | null
+          grade_label?: string | null
+          metrics_json?: Json | null
+          diagnostics_json?: Json | null
+          summary_json?: Json | null
+          data_available_days?: number | null
+          has_benchmark_data?: boolean | null
+          computed_at?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {

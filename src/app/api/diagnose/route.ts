@@ -40,6 +40,39 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '해당 계정에 접근 권한이 없습니다.' }, { status: 403 });
   }
 
+  // ── 사전계산 캐시 조회 (24시간 이내) ──
+  try {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cacheSvc = svc as any;
+    const { data: cachedDiag } = await cacheSvc
+      .from("ad_diagnosis_cache")
+      .select("ad_id,ad_name,overall_verdict,one_liner,parts_json,spend,computed_at")
+      .eq("account_id", accountId)
+      .gte("computed_at", twentyFourHoursAgo)
+      .order("spend", { ascending: false })
+      .limit(limit);
+
+    if (cachedDiag && cachedDiag.length > 0) {
+      const diagnoses = cachedDiag.map((r: Record<string, unknown>) => ({
+        ad_id: r.ad_id,
+        ad_name: r.ad_name,
+        overall_verdict: r.overall_verdict,
+        one_line_diagnosis: r.one_liner,
+        parts: r.parts_json,
+      }));
+      return NextResponse.json({
+        account_id: accountId,
+        diagnoses,
+        has_benchmark_data: true,
+        computed_at: cachedDiag[0].computed_at,
+        source: "precomputed",
+      });
+    }
+  } catch {
+    // 캐시 조회 실패 → 기존 실시간 진단으로 폴백
+  }
+
   try {
     // 4. 벤치마크 조회 — wide format, ABOVE_AVERAGE 그룹만
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

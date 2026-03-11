@@ -66,6 +66,62 @@ export async function getStudentPerformance(
   const supabase = createServiceClient();
   const validPeriod = [7, 14, 30].includes(period) ? period : 30;
 
+  // ── 사전계산 캐시 조회 (24시간 이내) ──
+  try {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cacheSvc = supabase as any;
+
+    let cacheQuery = cacheSvc
+      .from("student_performance_daily")
+      .select("*")
+      .eq("period", validPeriod)
+      .gte("computed_at", twentyFourHoursAgo);
+
+    if (cohortFilter) {
+      cacheQuery = cacheQuery.eq("cohort", cohortFilter);
+    }
+
+    const { data: cachedRows } = await cacheQuery;
+
+    if (cachedRows && cachedRows.length > 0) {
+      const { data: cohorts } = await supabase
+        .from("cohorts")
+        .select("id, name")
+        .order("name", { ascending: false });
+
+      const rows: StudentPerformanceRow[] = cachedRows.map((r: Record<string, unknown>) => ({
+        userId: r.student_id as string,
+        name: (r.name as string) ?? "",
+        email: (r.email as string) ?? "",
+        cohort: r.cohort as string | null,
+        spend: Number(r.spend) || 0,
+        revenue: Number(r.revenue) || 0,
+        roas: Number(r.roas) || 0,
+        purchases: Number(r.purchases) || 0,
+        t3Score: r.t3_score != null ? Number(r.t3_score) : null,
+        t3Grade: r.t3_grade as string | null,
+        mixpanelRevenue: Number(r.mixpanel_revenue) || 0,
+        mixpanelPurchases: Number(r.mixpanel_purchases) || 0,
+      }));
+
+      const totalSpend = rows.reduce((s, r) => s + r.spend, 0);
+      const totalRevenue = rows.reduce((s, r) => s + r.revenue, 0);
+      const totalMixpanelRevenue = rows.reduce((s, r) => s + r.mixpanelRevenue, 0);
+      const roasValues = rows.filter((r) => r.roas > 0);
+      const avgRoas = roasValues.length > 0
+        ? roasValues.reduce((s, r) => s + r.roas, 0) / roasValues.length : 0;
+
+      return {
+        rows,
+        summary: { totalStudents: rows.length, totalSpend, avgRoas, totalRevenue, totalMixpanelRevenue },
+        cohorts: cohorts ?? [],
+      };
+    }
+  } catch {
+    // 캐시 조회 실패 → 기존 실시간 계산으로 폴백
+  }
+
   // 1. 기수 목록
   const { data: cohorts } = await supabase
     .from("cohorts")
@@ -122,10 +178,12 @@ export async function getStudentPerformance(
     };
   }
 
-  // 4. daily_ad_insights — 기간 동적 계산
-  const periodStart = new Date(Date.now() - validPeriod * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .split("T")[0];
+  // 4. daily_ad_insights — 기간 동적 계산 (periodToDateRange와 동일한 로컬 날짜 기준)
+  const periodEnd = new Date();
+  periodEnd.setDate(periodEnd.getDate() - 1); // 어제까지
+  const periodStartDate = new Date(periodEnd);
+  periodStartDate.setDate(periodStartDate.getDate() - (validPeriod - 1));
+  const periodStart = `${periodStartDate.getFullYear()}-${String(periodStartDate.getMonth() + 1).padStart(2, "0")}-${String(periodStartDate.getDate()).padStart(2, "0")}`;
 
   const accountIds = adAccounts.map((a) => a.account_id);
   // T4: 전체 컬럼 조회 (T3 계산에 필요)

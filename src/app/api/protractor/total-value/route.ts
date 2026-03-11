@@ -110,6 +110,42 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "접근 권한 없음" }, { status: 403 });
   }
 
+  // ── 사전계산 캐시 조회 (24시간 이내 데이터만) ──
+  const PRECOMPUTED_PERIODS = [7, 30, 90];
+  if (PRECOMPUTED_PERIODS.includes(period)) {
+    try {
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cacheSvc = svc as any;
+      const { data: cachedRows } = await cacheSvc
+        .from("t3_scores_precomputed")
+        .select("score,grade,grade_label,metrics_json,diagnostics_json,summary_json,data_available_days,has_benchmark_data,computed_at")
+        .eq("account_id", accountId)
+        .eq("period", period)
+        .gte("computed_at", twentyFourHoursAgo)
+        .order("computed_at", { ascending: false })
+        .limit(1);
+
+      const cached = cachedRows?.[0];
+      if (cached) {
+        return NextResponse.json({
+          score: cached.score,
+          period,
+          dataAvailableDays: cached.data_available_days,
+          grade: cached.grade ? { grade: cached.grade, label: cached.grade_label } : null,
+          diagnostics: cached.diagnostics_json,
+          metrics: cached.metrics_json,
+          hasBenchmarkData: cached.has_benchmark_data,
+          summary: cached.summary_json,
+          computed_at: cached.computed_at,
+          source: "precomputed",
+        });
+      }
+    } catch {
+      // 캐시 조회 실패 → 기존 실시간 계산으로 폴백
+    }
+  }
+
   try {
     // ── 1. daily_ad_insights 조회 ──
     const { data: rawData } = await svc

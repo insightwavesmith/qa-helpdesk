@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { startCronRun, completeCronRun } from "@/lib/cron-logger";
+import { runPrecomputeAll } from "@/lib/precompute";
 
 // ── Vercel Cron 인증 ──────────────────────────────────────────
 function verifyCron(req: NextRequest): boolean {
@@ -229,6 +230,7 @@ export interface CollectDailyResult {
   accounts: number;
   share_to_video_fixed: number;
   results: Record<string, unknown>[];
+  precompute?: Record<string, unknown> | null;
 }
 
 // ── 핵심 수집 로직 (크론 + 수동수집 공용) ───────────────────
@@ -346,12 +348,21 @@ export async function runCollectDaily(dateParam?: string): Promise<CollectDailyR
       hasPartialError ? "일부 계정 실패" : undefined
     );
 
+    // ── 사전계산 실행 (실패해도 크론 결과에 영향 없음) ──
+    let precomputeResult: Record<string, unknown> | null = null;
+    try {
+      precomputeResult = await runPrecomputeAll(svc) as unknown as Record<string, unknown>;
+    } catch (e) {
+      console.error("[collect-daily] 사전계산 실패 (크론 결과 영향 없음):", e);
+    }
+
     return {
       message: "collect-daily completed",
       date: yesterday,
       accounts: accounts.length,
       share_to_video_fixed: shareFixed?.length ?? 0,
       results,
+      precompute: precomputeResult,
     };
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? (e as { message: string }).message : "Unknown error";
