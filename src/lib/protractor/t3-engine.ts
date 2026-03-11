@@ -205,7 +205,9 @@ export function computeMetricValues(rows: Record<string, unknown>[]): Record<str
 export function getDominantCreativeType(rows: Record<string, unknown>[]): string {
   const ctCounts = new Map<string, number>();
   for (const row of rows) {
-    const ct = ((row.creative_type as string) ?? "ALL").toUpperCase();
+    let ct = ((row.creative_type as string) ?? "ALL").toUpperCase();
+    // SHARE는 카탈로그+수동업로드 영상 → VIDEO로 매핑
+    if (ct === "SHARE") ct = "VIDEO";
     ctCounts.set(ct, (ctCounts.get(ct) ?? 0) + 1);
   }
   let dominantCT = "ALL";
