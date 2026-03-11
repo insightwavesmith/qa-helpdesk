@@ -1,7 +1,40 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-09T12:00:00.000Z",
+  "lastUpdated": "2026-03-11T12:00:00.000Z",
   "features": {
+    "sprint-0311-t1-source-hide": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/sprint-0311-t1-source-hide.plan.md",
+        "design": "02-design/features/sprint-0311-t1-source-hide.design.md"
+      },
+      "startedAt": "2026-03-11",
+      "completedAt": "2026-03-11",
+      "notes": "질문 상세페이지에서 AI 답변의 SourceReferences를 관리자에게만 표시. page.tsx 조건에 isAdmin 추가. tsc+lint+build 통과."
+    },
+    "sprint-0311-t2-answer-edit": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/sprint-0311-t2-answer-edit.plan.md",
+        "design": "02-design/features/sprint-0311-t2-answer-edit.design.md"
+      },
+      "startedAt": "2026-03-11",
+      "completedAt": "2026-03-11",
+      "notes": "updateAnswerByAuthor() 서버액션 추가 (본인+staff), answer-edit-button.tsx 인라인 편집 UI, page.tsx에 수정 버튼 삽입. tsc+lint+build 통과."
+    },
+    "sprint-0311-t3-bulk-collect": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/sprint-0311-t3-bulk-collect.plan.md",
+        "design": "02-design/features/sprint-0311-t3-bulk-collect.design.md"
+      },
+      "startedAt": "2026-03-11",
+      "completedAt": "2026-03-11",
+      "notes": "POST /api/admin/protractor/collect SSE 스트리밍 API + BulkCollectSection UI(전체수집/선택수집/체크박스/진행상태). 캠페인 범위 확인: collect-daily에 objective 필터 없음 — 이미 전체 캠페인 수집 중. tsc+lint+build 통과."
+    },
     "competitor-searchapi": {
       "phase": "completed",
       "matchRate": 95,
