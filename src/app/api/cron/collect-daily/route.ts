@@ -19,7 +19,7 @@ const AD_FIELDS = [
   "campaign_name",
   "account_id",
   "account_name",
-  "creative.fields(object_type)",
+  "creative.fields(object_type,product_set_id,video_id,image_hash)",
 ].join(",");
 
 const INSIGHT_FIELDS = [
@@ -77,17 +77,33 @@ function normalizeRanking(raw: string | null | undefined): string {
   return "UNKNOWN";
 }
 
-// creative.object_type → creative_type (GCP 방식)
+// creative 필드 기반 분류 (벤치마크와 동일한 로직)
+// 1순위: video_id → VIDEO, 2순위: image_hash(+no product_set) → IMAGE
+// 3순위: product_set_id → CATALOG, fallback: object_type 기반
 function getCreativeType(ad: Record<string, unknown>): string {
-  const creative = ad.creative as { object_type?: string } | undefined;
+  const creative = ad.creative as {
+    object_type?: string;
+    product_set_id?: string;
+    video_id?: string;
+    image_hash?: string;
+  } | undefined;
+
+  const videoId = creative?.video_id;
+  const imageHash = creative?.image_hash;
+  const productSetId = creative?.product_set_id;
   const objectType = creative?.object_type ?? "UNKNOWN";
-  const typeMap: Record<string, string> = {
-    VIDEO: "VIDEO",
-    SHARE: "SHARE",
-    IMAGE: "IMAGE",
-    PRIVACY_CHECK_FAIL: "VIDEO",
-  };
-  return typeMap[objectType] ?? "UNKNOWN";
+
+  // 1순위: video_id 존재 → VIDEO
+  if (videoId) return "VIDEO";
+  // 2순위: image_hash 존재 + product_set_id 없음 → IMAGE
+  if (imageHash && !productSetId) return "IMAGE";
+  // 3순위: product_set_id 존재 → CATALOG
+  if (productSetId) return "CATALOG";
+
+  // fallback: object_type 기반 (기존 로직)
+  if (objectType === "VIDEO" || objectType === "PRIVACY_CHECK_FAIL") return "VIDEO";
+  if (objectType === "SHARE") return "CATALOG";
+  return "IMAGE";
 }
 
 // ── 지표 계산 (GCP 스펙 기준) ──────────────────────────────────
