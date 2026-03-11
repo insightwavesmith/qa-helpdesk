@@ -363,25 +363,17 @@ embed-pipeline.ts → gemini.ts → chunk-utils.ts
 - style: UI/스타일
 - chore: 설정/빌드
 
-## 단계별 강제 보고 (절대 규칙)
+## 커밋/푸시 규칙
 
-작업 단계 완료 시 반드시 보고 스크립트를 실행해야 합니다.
-보고 없이 다음 단계로 넘어가면 시스템이 차단합니다.
+- 갭분석 + 빌드 검증(tsc + lint + build) 후 커밋+푸시까지 자유롭게 진행
+- 배포 전 리뷰는 관리자(Smith님/모찌)가 별도로 수행
+- REVIEW_DONE / QA_DONE 등 stage 마커 불필요 — 커밋/푸시 차단 없음
+- report-stage.sh 실행 불필요
 
-```bash
-# 코드리뷰 완료 시
-~/.claude/scripts/report-stage.sh REVIEW_DONE "리뷰 요약"
+## 개발 완료 상태 업데이트 (절대 규칙)
 
-# 개발 + 커밋 완료 시
-~/.claude/scripts/report-stage.sh DEV_DONE "커밋해시 변경사항"
-
-# 자체 QA 완료 시
-~/.claude/scripts/report-stage.sh QA_DONE "QA 결과 요약"
-
-# npm run build 성공 시
-~/.claude/scripts/report-stage.sh BUILD_PASS "빌드 성공"
-```
-
-순서: REVIEW_DONE → DEV_DONE → QA_DONE → BUILD_PASS
-- REVIEW_DONE 없이 git commit → 차단
-- QA_DONE + BUILD_PASS 없이 git push → 차단
+TASK 완료 후 반드시 `project-status.md`를 업데이트해라.
+- 완료된 기능을 "완료" 섹션으로 이동
+- 커밋 해시 기록
+- 미완료 항목은 "개발 대기" 섹션에 유지
+- 이 파일이 현재 프로젝트의 진행 상태 정본(source of truth)

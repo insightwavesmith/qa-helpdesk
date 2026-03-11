@@ -12,6 +12,16 @@
  * - fallback: object_type 기반
  */
 export function getCreativeType(ad: Record<string, unknown>): string {
+  // 디버깅: creative 객체 구조 확인
+  const rawCreative = ad.creative;
+  if (rawCreative && typeof rawCreative === "object" && (rawCreative as Record<string, unknown>).object_type === "SHARE") {
+    console.log("[getCreativeType] SHARE detected!", JSON.stringify({
+      ad_id: ad.id ?? ad.ad_id,
+      creative_keys: Object.keys(rawCreative as object),
+      creative: rawCreative,
+    }).slice(0, 500));
+  }
+
   const creative = ad.creative as
     | {
         object_type?: string;
@@ -31,7 +41,10 @@ export function getCreativeType(ad: Record<string, unknown>): string {
   const afsVideos = creative?.asset_feed_spec?.videos;
 
   // 최우선: object_type SHARE → VIDEO (카탈로그+수동업로드 영상)
-  if (objectType === "SHARE") return "VIDEO";
+  if (objectType === "SHARE") {
+    console.log("[getCreativeType] SHARE→VIDEO 변환 실행!", ad.id ?? ad.ad_id);
+    return "VIDEO";
+  }
 
   // 1순위: video_id 존재 → VIDEO (직접 업로드 영상)
   if (videoId) return "VIDEO";
