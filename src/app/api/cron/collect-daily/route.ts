@@ -102,7 +102,7 @@ function getCreativeType(ad: Record<string, unknown>): string {
 
   // fallback: object_type 기반 (기존 로직)
   if (objectType === "VIDEO" || objectType === "PRIVACY_CHECK_FAIL") return "VIDEO";
-  if (objectType === "SHARE") return "CATALOG";
+  if (objectType === "SHARE") return "VIDEO";
   return "IMAGE";
 }
 
