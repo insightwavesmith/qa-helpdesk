@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-11T15:00:00.000Z",
+  "lastUpdated": "2026-03-11T16:00:00.000Z",
   "features": {
     "sprint-0311-t1-source-hide": {
       "phase": "completed",
@@ -992,6 +992,17 @@
       "startedAt": "2026-03-11",
       "completedAt": "2026-03-11",
       "notes": "mixpanel-browser SDK 설치, mp 헬퍼 모듈, MixpanelProvider, Phase 1 이벤트 12종 트래킹. 변경 파일 10개. tsc+lint+build 통과."
+    },
+    "benchmark-view": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/benchmark-view.plan.md",
+        "design": "02-design/features/benchmark-view.design.md"
+      },
+      "startedAt": "2026-03-11",
+      "completedAt": "2026-03-11",
+      "notes": "benchmark-admin.tsx 카테고리별(기반/참여/전환) 리팩토링 + 계산방식 툴팁 + IMAGE/CATALOG 영상지표 숨김. content-ranking.tsx creative_type별 foundation 그룹 숨김. tsc+lint+build 통과."
     }
   },
   "phaseMapping": {

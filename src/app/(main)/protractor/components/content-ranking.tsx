@@ -187,6 +187,12 @@ function BenchmarkCompareGrid({
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       {METRIC_GROUPS.map((group) => {
+        // IMAGE/CATALOG 광고는 영상 지표(foundation) 숨기기
+        const ct = ((ad.creative_type as string) ?? "").toUpperCase();
+        if (group.groupKey === "foundation" && (ct === "IMAGE" || ct === "CATALOG")) {
+          return null;
+        }
+
         const allMetrics = [...group.metrics, ...(group.summaryMetric ? [group.summaryMetric] : [])];
         const hasAnyData = allMetrics.some((m) => ad[m.key as keyof AdInsightRow] != null);
         if (!hasAnyData) return null;
