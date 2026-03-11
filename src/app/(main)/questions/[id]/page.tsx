@@ -9,6 +9,7 @@ import { ImageGallery } from "@/components/questions/ImageGallery";
 import { SourceReferences } from "@/components/questions/SourceReferences";
 import { Badge } from "@/components/ui/badge";
 import { DeleteQuestionButton } from "@/components/questions/DeleteQuestionButton";
+import { AnswerEditButton } from "./answer-edit-button";
 import { mdToHtml } from "@/lib/markdown";
 
 const categoryColorMap: Record<string, string> = {
@@ -240,11 +241,22 @@ export default async function QuestionDetailPage({
                     dangerouslySetInnerHTML={{ __html: mdToHtml(answer.content) }}
                   />
 
-                  {/* Source references for AI answers */}
-                  {isAI && (
+                  {/* Source references for AI answers — 관리자만 표시 */}
+                  {isAI && isAdmin && (
                     <div className="pl-[42px]">
                       <SourceReferences
                         rawSourceRefs={(answer as Record<string, unknown>).source_refs}
+                      />
+                    </div>
+                  )}
+
+                  {/* 수정 버튼 — 본인 답변 또는 관리자 */}
+                  {(isAdmin || (currentUserId && answer.author?.id === currentUserId)) && (
+                    <div className="flex justify-end mt-3 pr-2">
+                      <AnswerEditButton
+                        answerId={answer.id}
+                        initialContent={answer.content}
+                        questionId={id}
                       />
                     </div>
                   )}
