@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { getCreativeType } from "@/lib/protractor/creative-type";
 
 // ── collect-daily에서 재사용할 유틸리티 (동일 로직) ──
 
 const AD_FIELDS = [
   "id", "name", "adset_id", "adset_name",
   "campaign_id", "campaign_name", "account_id", "account_name",
-  "creative.fields(object_type)",
+  "creative.fields(object_type,product_set_id,video_id,image_hash,asset_feed_spec)",
 ].join(",");
 
 const INSIGHT_FIELDS = [
@@ -55,14 +56,7 @@ function normalizeRanking(raw: string | null | undefined): string {
   return "UNKNOWN";
 }
 
-function getCreativeType(ad: Record<string, unknown>): string {
-  const creative = ad.creative as { object_type?: string } | undefined;
-  const objectType = creative?.object_type ?? "UNKNOWN";
-  const typeMap: Record<string, string> = {
-    VIDEO: "VIDEO", SHARE: "SHARE", IMAGE: "IMAGE", PRIVACY_CHECK_FAIL: "VIDEO",
-  };
-  return typeMap[objectType] ?? "UNKNOWN";
-}
+// getCreativeType은 공용 모듈에서 import (@/lib/protractor/creative-type)
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function calculateMetrics(insight: Record<string, any>) {
