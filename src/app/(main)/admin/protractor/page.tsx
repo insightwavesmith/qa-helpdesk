@@ -2,6 +2,7 @@ import { ProtractorAdminClient } from "./protractor-admin-client";
 import { BenchmarkAdmin } from "../../protractor/components/benchmark-admin";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BackfillSection } from "./backfill-section";
+import { BulkCollectSection } from "./bulk-collect-section";
 import { createServiceClient } from "@/lib/supabase/server";
 
 export default async function AdminProtractorPage() {
@@ -26,6 +27,7 @@ export default async function AdminProtractorPage() {
           계정별 Meta 데이터 동기화 상태를 확인하고 관리합니다.
         </p>
       </div>
+      <BulkCollectSection accounts={backfillAccounts} />
       <BackfillSection accounts={backfillAccounts} />
       <Tabs defaultValue="accounts">
         <TabsList>
