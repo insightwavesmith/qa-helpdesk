@@ -515,18 +515,13 @@ export async function GET(req: NextRequest) {
 
         const rawAds: Record<string, unknown>[] = adsJson.data ?? [];
 
-        // insights가 있는 광고만 필터 + spend 기준 상위 10개
-        const adsWithInsights = rawAds
-          .filter((ad) => {
-            const ins = ad.insights as { data?: unknown[] } | undefined;
-            return ins?.data && ins.data.length > 0;
-          })
-          .sort((a, b) => {
-            const insA = (a.insights as { data: Record<string, unknown>[] }).data[0];
-            const insB = (b.insights as { data: Record<string, unknown>[] }).data[0];
-            return safeFloat(insB.spend) - safeFloat(insA.spend);
-          })
-          .slice(0, 10);
+        // insights가 있고 impressions >= 3500인 광고만 필터 (데일리 수집 기준 통일)
+        const adsWithInsights = rawAds.filter((ad) => {
+          const ins = ad.insights as { data?: Record<string, unknown>[] } | undefined;
+          if (!ins?.data || ins.data.length === 0) return false;
+          const impressions = safeFloat(ins.data[0].impressions);
+          return impressions >= 3500;
+        });
 
         for (const ad of adsWithInsights) {
           const insight = (ad.insights as { data: Record<string, unknown>[] }).data[0];
