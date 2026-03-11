@@ -62,23 +62,27 @@ export async function fetchActiveAdsets(accountId: string): Promise<AdsetInfo[]>
 
   if (salesCampaigns.length === 0) return [];
 
-  // 2) 각 캠페인의 활성 광고세트
+  // 2) 각 캠페인의 활성 광고세트 (병렬 조회)
   const adsets: AdsetInfo[] = [];
-  for (const campaign of salesCampaigns) {
-    const adsetsData = await metaGet(`${campaign.id}/adsets`, {
-      effective_status: '["ACTIVE"]',
-      fields: "id,name",
-      limit: "100",
-    });
-    for (const adset of (adsetsData.data ?? []) as {
-      id: string;
-      name: string;
-    }[]) {
-      adsets.push({
-        id: adset.id,
-        name: adset.name,
-        campaignName: campaign.name,
+  const adsetResults = await Promise.allSettled(
+    salesCampaigns.map(async (campaign) => {
+      const adsetsData = await metaGet(`${campaign.id}/adsets`, {
+        effective_status: '["ACTIVE"]',
+        fields: "id,name",
+        limit: "100",
       });
+      return ((adsetsData.data ?? []) as { id: string; name: string }[]).map(
+        (adset) => ({
+          id: adset.id,
+          name: adset.name,
+          campaignName: campaign.name,
+        })
+      );
+    })
+  );
+  for (const result of adsetResults) {
+    if (result.status === "fulfilled") {
+      adsets.push(...result.value);
     }
   }
 

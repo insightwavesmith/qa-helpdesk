@@ -9,7 +9,6 @@ import { SWR_KEYS } from "@/lib/swr/keys";
 function usePrefetch() {
   useEffect(() => {
     const prefetchKeys = [
-      SWR_KEYS.PROTRACTOR_ACCOUNTS,
       SWR_KEYS.SALES_SUMMARY,
     ];
     for (const key of prefetchKeys) {

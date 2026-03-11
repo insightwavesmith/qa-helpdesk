@@ -21,18 +21,7 @@ async function fetchBenchmarks(svc: any, dominantCreativeType: string): Promise<
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const benchSvc = svc as any;
 
-    // 최신 calculated_at 조회
-    const { data: latestBench } = await benchSvc
-      .from("benchmarks")
-      .select("calculated_at")
-      .order("calculated_at", { ascending: false })
-      .limit(1);
-
-    if (!latestBench || latestBench.length === 0) return benchMap;
-
-    const latestAt = (latestBench[0].calculated_at as string).slice(0, 10);
-
-    // creative_type별 + ALL 벤치마크를 함께 조회 (ABOVE_AVERAGE만)
+    // 1회 쿼리: ABOVE_AVERAGE 벤치마크를 calculated_at 내림차순으로 조회
     const aboveAvgValues = ["ABOVE_AVERAGE", "above_avg"];
     const ctValues = dominantCreativeType !== "ALL"
       ? [dominantCreativeType, "ALL"]
@@ -43,14 +32,20 @@ async function fetchBenchmarks(svc: any, dominantCreativeType: string): Promise<
       .select("*")
       .in("creative_type", ctValues)
       .in("ranking_group", aboveAvgValues)
-      .gte("calculated_at", latestAt);
+      .order("calculated_at", { ascending: false })
+      .limit(20);
 
     if (!rows || rows.length === 0) return benchMap;
 
-    // creative_type별 벤치마크 우선, ALL은 fallback
+    // 최신 calculated_at 기준으로 필터 (1회 쿼리에서 최신 데이터만 사용)
     const typedRows = rows as Record<string, unknown>[];
-    const ctRows = typedRows.filter((r) => r.creative_type === dominantCreativeType);
-    const allRows = typedRows.filter((r) => r.creative_type === "ALL");
+    const latestAt = typedRows[0]?.calculated_at as string | undefined;
+    const latestDate = latestAt?.slice(0, 10);
+    const filteredRows = latestDate
+      ? typedRows.filter((r) => (r.calculated_at as string)?.slice(0, 10) === latestDate)
+      : typedRows;
+    const ctRows = filteredRows.filter((r) => r.creative_type === dominantCreativeType);
+    const allRows = filteredRows.filter((r) => r.creative_type === "ALL");
 
     // 1차: creative_type별 값 적용
     for (const row of ctRows) {
@@ -111,7 +106,7 @@ export async function GET(request: NextRequest) {
   }
 
   // ── 사전계산 캐시 조회 (24시간 이내 데이터만) ──
-  const PRECOMPUTED_PERIODS = [7, 30, 90];
+  const PRECOMPUTED_PERIODS = [1, 7, 14, 30, 90];
   if (PRECOMPUTED_PERIODS.includes(period)) {
     try {
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();

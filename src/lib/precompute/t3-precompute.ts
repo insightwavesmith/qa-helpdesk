@@ -12,7 +12,7 @@ import {
   getDominantCreativeType,
 } from "@/lib/protractor/t3-engine";
 
-const PERIODS = [7, 30, 90];
+const PERIODS = [1, 7, 14, 30, 90];
 
 /** total-value route와 동일한 벤치마크 조회 로직 */
 async function fetchBenchmarks(
@@ -21,15 +21,7 @@ async function fetchBenchmarks(
 ): Promise<Record<string, BenchEntry>> {
   const benchMap: Record<string, BenchEntry> = {};
   try {
-    const { data: latestBench } = await svc
-      .from("benchmarks")
-      .select("calculated_at")
-      .order("calculated_at", { ascending: false })
-      .limit(1);
-
-    if (!latestBench || latestBench.length === 0) return benchMap;
-    const latestAt = (latestBench[0].calculated_at as string).slice(0, 10);
-
+    // 1회 쿼리: 최신 벤치마크 조회
     const aboveAvgValues = ["ABOVE_AVERAGE", "above_avg"];
     const ctValues = dominantCT !== "ALL" ? [dominantCT, "ALL"] : ["ALL"];
 
@@ -38,13 +30,20 @@ async function fetchBenchmarks(
       .select("*")
       .in("creative_type", ctValues)
       .in("ranking_group", aboveAvgValues)
-      .gte("calculated_at", latestAt);
+      .order("calculated_at", { ascending: false })
+      .limit(20);
 
     if (!rows || rows.length === 0) return benchMap;
 
     const typedRows = rows as unknown as Record<string, unknown>[];
-    const ctRows = typedRows.filter((r) => r.creative_type === dominantCT);
-    const allRows = typedRows.filter((r) => r.creative_type === "ALL");
+    // 최신 calculated_at 기준으로만 사용
+    const latestAt = typedRows[0]?.calculated_at as string | undefined;
+    const latestDate = latestAt?.slice(0, 10);
+    const filteredRows = latestDate
+      ? typedRows.filter((r) => (r.calculated_at as string)?.slice(0, 10) === latestDate)
+      : typedRows;
+    const ctRows = filteredRows.filter((r) => r.creative_type === dominantCT);
+    const allRows = filteredRows.filter((r) => r.creative_type === "ALL");
 
     for (const row of ctRows) {
       for (const def of ALL_METRIC_DEFS) {

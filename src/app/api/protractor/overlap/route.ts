@@ -313,14 +313,33 @@ export async function GET(request: NextRequest) {
     pairs.sort((a, b) => b.overlap_rate - a.overlap_rate);
 
     const truncated = adsetsTruncated || deadlineHit;
+    const roundedOverallRate = Math.round(overallRate * 10) / 10;
     const response: OverlapResponse = {
-      overall_rate: Math.round(overallRate * 10) / 10,
+      overall_rate: roundedOverallRate,
       total_unique: totalUnique,
       individual_sum: individualSum,
       cached_at: now,
       pairs,
       ...(truncated ? { truncated: true } : {}),
     };
+
+    // daily_overlap_insights에 저장 (다음 조회 시 즉시 캐시 히트)
+    try {
+      await svc.from("daily_overlap_insights" as never).upsert(
+        {
+          account_id: accountId,
+          date: dateEnd,
+          overall_rate: roundedOverallRate,
+          total_unique_reach: totalUnique,
+          individual_sum: individualSum,
+          pairs,
+          collected_at: now,
+        } as never,
+        { onConflict: "account_id,date" }
+      );
+    } catch {
+      // 캐시 저장 실패는 응답에 영향 없음
+    }
 
     return NextResponse.json(response);
   } catch (e) {
