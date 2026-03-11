@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { SettingsForm } from "./settings-form";
+import { PageViewTracker } from "@/components/tracking/page-view-tracker";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
+      <PageViewTracker event="settings_viewed" />
       <SettingsForm
         profile={profile}
         userId={user.id}

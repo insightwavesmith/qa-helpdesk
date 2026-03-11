@@ -13,6 +13,7 @@ import { AlertTriangle, ArrowRight, BarChart3, LinkIcon } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { removeAdAccount } from "@/actions/onboarding";
+import { mp } from "@/lib/mixpanel";
 import { jsonFetcher } from "@/lib/swr/config";
 import { SWR_KEYS } from "@/lib/swr/keys";
 
@@ -103,6 +104,11 @@ export default function RealDashboard() {
     jsonFetcher,
   );
   const accounts: AdAccount[] = accountsData?.data ?? [];
+
+  // Mixpanel: 총가치각도기 페이지 뷰
+  useEffect(() => {
+    mp.track("protractor_viewed");
+  }, []);
 
   // URL 파라미터 또는 첫 번째 계정 자동 선택
   useEffect(() => {
@@ -263,7 +269,10 @@ export default function RealDashboard() {
       {/* 3. 탭 구조: 성과 요약 / 콘텐츠 */}
       <Tabs
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v as "summary" | "content")}
+        onValueChange={(v) => {
+          setActiveTab(v as "summary" | "content");
+          mp.track("protractor_tab_switched", { tab: v });
+        }}
       >
         <TabsList>
           <TabsTrigger value="summary">성과 요약</TabsTrigger>

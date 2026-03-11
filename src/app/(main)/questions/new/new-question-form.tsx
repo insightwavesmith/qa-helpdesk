@@ -27,6 +27,7 @@ import {
 import { ArrowLeft, Send, ImagePlus, X } from "lucide-react";
 import { createQuestion } from "@/actions/questions";
 import { createClient } from "@/lib/supabase/client";
+import { mp } from "@/lib/mixpanel";
 import { toast } from "sonner";
 
 const MAX_IMAGES = 5;
@@ -180,6 +181,12 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
       }
 
       toast.success("질문이 등록되었습니다.");
+      mp.track("question_created", {
+        question_id: data?.id,
+        category_id: values.categoryId,
+        has_images: imageUrls.length > 0,
+        image_count: imageUrls.length,
+      });
       router.push(`/questions/${data?.id || ""}`);
     } catch (err) {
       toast.error(

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { mp } from "@/lib/mixpanel";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
 
@@ -35,6 +36,39 @@ export default function LoginPage() {
           setError("로그인 중 오류가 발생했습니다.");
         }
         return;
+      }
+
+      // Mixpanel: 로그인 트래킹
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        mp.identify(user.id);
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("name, role, cohort, shop_name, shop_url, annual_revenue, monthly_ad_budget, category, onboarding_status")
+          .eq("id", user.id)
+          .single();
+        if (profile) {
+          mp.people.set({
+            $name: profile.name,
+            $email: user.email,
+            role: profile.role,
+            cohort: profile.cohort,
+            brand_name: profile.shop_name,
+            shop_url: profile.shop_url,
+            annual_revenue: profile.annual_revenue,
+            monthly_ad_budget: profile.monthly_ad_budget,
+            category: profile.category,
+            onboarding_completed: profile.onboarding_status === "completed",
+            last_login: new Date().toISOString(),
+          });
+          mp.register({
+            platform: "web",
+            app_version: "1.0.0",
+            user_role: profile.role,
+            user_cohort: profile.cohort,
+          });
+        }
+        mp.track("login", { method: "email" });
       }
 
       router.push("/dashboard");

@@ -29,6 +29,7 @@ import {
   saveAdAccount,
   completeOnboarding,
 } from "@/actions/onboarding";
+import { mp } from "@/lib/mixpanel";
 
 interface OnboardingProfile {
   name: string;
@@ -701,6 +702,7 @@ export default function OnboardingPage() {
     if (step === 3 && !completed) {
       setCompleted(true);
       completeOnboarding();
+      mp.track("onboarding_completed");
     }
   }, [step, completed]);
 
@@ -711,6 +713,7 @@ export default function OnboardingPage() {
       setError(result.error);
     } else {
       setStep(1);
+      mp.track("onboarding_step_completed", { step: 0, step_name: "welcome" });
     }
     setSaving(false);
   }, []);
@@ -744,6 +747,13 @@ export default function OnboardingPage() {
             : prev
         );
         setStep(2);
+        mp.track("onboarding_step_completed", {
+          step: 1,
+          step_name: "profile",
+          annual_revenue: data.annualRevenue,
+          monthly_ad_budget: data.monthlyAdBudget,
+          category: data.category,
+        });
       }
       setSaving(false);
     },
@@ -763,6 +773,14 @@ export default function OnboardingPage() {
       setError(result.error);
     } else {
       setStep(3);
+      mp.track("onboarding_step_completed", {
+        step: 2,
+        step_name: "ad_account",
+        has_meta_account: !!data.metaAccountId,
+      });
+      mp.track("ad_account_connected", {
+        source: "onboarding",
+      });
     }
     setSaving(false);
   }, []);

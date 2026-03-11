@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import ClientToaster from "@/components/layout/client-toaster";
 import ThemeProvider from "@/components/layout/theme-provider";
+import MixpanelProvider from "@/components/mixpanel-provider";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
 
@@ -48,6 +49,7 @@ export default function RootLayout({
             disableTransitionOnChange
             enableColorScheme
           >
+            <MixpanelProvider />
             <ClientToaster />
             {children}
           </ThemeProvider>

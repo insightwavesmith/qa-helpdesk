@@ -10,6 +10,7 @@ import { SourceReferences } from "@/components/questions/SourceReferences";
 import { Badge } from "@/components/ui/badge";
 import { DeleteQuestionButton } from "@/components/questions/DeleteQuestionButton";
 import { AnswerEditButton } from "./answer-edit-button";
+import { PageViewTracker } from "@/components/tracking/page-view-tracker";
 import { mdToHtml } from "@/lib/markdown";
 
 const categoryColorMap: Record<string, string> = {
@@ -94,6 +95,15 @@ export default async function QuestionDetailPage({
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
+      <PageViewTracker
+        event="question_detail_viewed"
+        props={{
+          question_id: id,
+          category: question.category?.name,
+          status: question.status,
+          has_answers: approvedAnswers.length > 0,
+        }}
+      />
       {/* Breadcrumb */}
       <nav className="mb-6">
         <ol className="flex items-center gap-1.5 text-sm text-muted-foreground">

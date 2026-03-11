@@ -16,6 +16,7 @@ import { Bell, Save, Eye, EyeOff, Plus, Trash2, Star, Pencil, X, Check } from "l
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { syncAdAccount, addAdAccount, removeAdAccount, updateAdAccount } from "@/actions/onboarding";
+import { mp } from "@/lib/mixpanel";
 
 interface Profile {
   name: string | null;
@@ -107,6 +108,9 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
       toast.error("저장에 실패했습니다.");
     } else {
       toast.success("프로필이 저장되었습니다.");
+      mp.track("profile_updated", {
+        annual_revenue: annualRevenue || null,
+      });
     }
   };
 
@@ -131,6 +135,10 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
       toast.error(`계정 추가 실패: ${result.error}`);
     } else {
       toast.success("광고계정이 추가되었습니다.");
+      mp.track("ad_account_connected", {
+        source: "settings",
+        account_count: accounts.length + 1,
+      });
       // 로컬 상태 업데이트
       setAccounts((prev) => [
         ...prev,

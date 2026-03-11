@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { createClient } from "@/lib/supabase/client";
+import { mp } from "@/lib/mixpanel";
 
 interface NavItem {
   label: string;
@@ -91,6 +92,8 @@ export default function AppSidebar({
   const initials = userName.charAt(0);
 
   const handleLogout = async () => {
+    mp.track("logout");
+    mp.reset();
     const supabase = createClient();
     try { await supabase.auth.signOut(); } finally {
       document.cookie = "x-user-role=; path=/; max-age=0";

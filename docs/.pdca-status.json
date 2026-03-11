@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-11T12:00:00.000Z",
+  "lastUpdated": "2026-03-11T15:00:00.000Z",
   "features": {
     "sprint-0311-t1-source-hide": {
       "phase": "completed",
@@ -981,6 +981,17 @@
       "startedAt": "2026-03-09",
       "completedAt": "2026-03-09",
       "notes": "더보기 근본 수정: page_token 있을 때 q/page_id 제외하여 단독 전송. 커밋 f604ba6, 1484ca8. Gap 분석 미작성."
+    },
+    "mixpanel-client-sdk": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/mixpanel-sdk.plan.md",
+        "design": "02-design/features/mixpanel-sdk.design.md"
+      },
+      "startedAt": "2026-03-11",
+      "completedAt": "2026-03-11",
+      "notes": "mixpanel-browser SDK 설치, mp 헬퍼 모듈, MixpanelProvider, Phase 1 이벤트 12종 트래킹. 변경 파일 10개. tsc+lint+build 통과."
     }
   },
   "phaseMapping": {

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/client";
+import { mp } from "@/lib/mixpanel";
 import { updateBusinessCertUrl, savePrivacyConsent } from "@/actions/auth";
 import { useInviteCode as consumeInviteCode } from "@/actions/invites";
 import Image from "next/image";
@@ -364,6 +365,12 @@ export default function SignupPage() {
           // 초대코드 처리 실패해도 가입은 완료 — 리다이렉트 계속 진행
         }
       }
+
+      // Mixpanel: 회원가입 완료 트래킹
+      mp.track("signup_completed", {
+        user_type: isStudentMode ? "student" : "lead",
+        cohort: formData.cohort || null,
+      });
 
       // 가입 후 리다이렉트 분기
       if (isStudentMode) {

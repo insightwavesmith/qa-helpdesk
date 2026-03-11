@@ -6,6 +6,7 @@ import { getPostById, getPosts } from "@/actions/posts";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import PostDetailClient from "./PostDetailClient";
+import { PageViewTracker } from "@/components/tracking/page-view-tracker";
 
 async function checkIsAdmin(): Promise<boolean> {
   try {
@@ -58,6 +59,14 @@ export default async function PostDetailPage({
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
+      <PageViewTracker
+        event="content_detail_viewed"
+        props={{
+          content_id: post.id,
+          category: post.category,
+          title: post.title,
+        }}
+      />
       {/* Back */}
       <Link
         href="/posts"
