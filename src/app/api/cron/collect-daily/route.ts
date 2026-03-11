@@ -77,46 +77,8 @@ function normalizeRanking(raw: string | null | undefined): string {
   return "UNKNOWN";
 }
 
-// creative 필드 기반 분류 (벤치마크와 동일한 로직)
-// 1순위: video_id 또는 asset_feed_spec.videos → VIDEO
-// 2순위: image_hash(+no product_set) → IMAGE
-// 3순위: product_set_id → CATALOG, fallback: object_type 기반
-function getCreativeType(ad: Record<string, unknown>): string {
-  const creative = ad.creative as {
-    object_type?: string;
-    product_set_id?: string;
-    video_id?: string;
-    image_hash?: string;
-    asset_feed_spec?: {
-      videos?: { video_id?: string }[];
-    };
-  } | undefined;
-
-  const videoId = creative?.video_id;
-  const imageHash = creative?.image_hash;
-  const productSetId = creative?.product_set_id;
-  const objectType = creative?.object_type ?? "UNKNOWN";
-  const afsVideos = creative?.asset_feed_spec?.videos;
-
-  // 디버깅: SHARE 광고의 creative 구조 확인
-  if (objectType === "SHARE") {
-    console.log(`[getCreativeType] ad=${(ad as Record<string, string>).name}, object_type=${objectType}, video_id=${videoId}, has_afs_videos=${!!afsVideos?.length}, afs_videos_count=${afsVideos?.length ?? 0}, creative_keys=${creative ? Object.keys(creative).join(",") : "undefined"}`);
-  }
-
-  // 1순위: video_id 존재 → VIDEO (직접 업로드 영상)
-  if (videoId) return "VIDEO";
-  // 1-b: asset_feed_spec.videos 존재 → VIDEO (Advantage+ 크리에이티브 영상)
-  if (afsVideos && afsVideos.length > 0) return "VIDEO";
-  // 2순위: image_hash 존재 + product_set_id 없음 → IMAGE
-  if (imageHash && !productSetId) return "IMAGE";
-  // 3순위: product_set_id 존재 → CATALOG
-  if (productSetId) return "CATALOG";
-
-  // fallback: object_type 기반 (asset_feed_spec 없는 엣지 케이스)
-  const result = (objectType === "VIDEO" || objectType === "PRIVACY_CHECK_FAIL" || objectType === "SHARE") ? "VIDEO" : "IMAGE";
-  console.log(`[getCreativeType] FALLBACK: ad=${(ad as Record<string, string>).name}, object_type=${objectType}, result=${result}`);
-  return result;
-}
+// creative 필드 기반 분류 — 공용 모듈에서 import
+import { getCreativeType } from "@/lib/protractor/creative-type";
 
 // ── 지표 계산 (GCP 스펙 기준) ──────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -260,17 +222,20 @@ async function fetchAccountAds(accountId: string, targetDate?: string): Promise<
 
 export const maxDuration = 300; // 5분 (Vercel Pro 최대)
 
-// ── GET /api/cron/collect-daily ──────────────────────────────
-// Vercel Cron: 매일 18:00 UTC (KST 다음날 03:00)
-export async function GET(req: NextRequest) {
-  if (!verifyCron(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+// ── 수집 결과 타입 ──────────────────────────────────────────
+export interface CollectDailyResult {
+  message: string;
+  date: string;
+  accounts: number;
+  share_to_video_fixed: number;
+  results: Record<string, unknown>[];
+}
 
+// ── 핵심 수집 로직 (크론 + 수동수집 공용) ───────────────────
+export async function runCollectDaily(dateParam?: string): Promise<CollectDailyResult> {
   const svc = createServiceClient();
   const cronRunId = await startCronRun("collect-daily");
-  const { searchParams } = new URL(req.url);
-  const dateParam = searchParams.get("date"); // optional: YYYY-MM-DD
+
   // KST(UTC+9) 기준 어제 날짜
   const yesterday = dateParam ?? (() => {
     const now = new Date(Date.now() + 9 * 3600_000); // UTC → KST
@@ -291,7 +256,7 @@ export async function GET(req: NextRequest) {
       throw new Error(`ad_accounts 조회 실패: ${adAccountsErr.message}`);
     }
     if (!adAccountRows || adAccountRows.length === 0) {
-      return NextResponse.json({ message: "등록된 활성 계정 없음", results: [] });
+      return { message: "등록된 활성 계정 없음", date: yesterday, accounts: 0, share_to_video_fixed: 0, results: [] };
     }
 
     const accounts = adAccountRows.map((a) => ({
@@ -381,20 +346,36 @@ export async function GET(req: NextRequest) {
       hasPartialError ? "일부 계정 실패" : undefined
     );
 
-    return NextResponse.json({
+    return {
       message: "collect-daily completed",
       date: yesterday,
       accounts: accounts.length,
       share_to_video_fixed: shareFixed?.length ?? 0,
       results,
-    });
+    };
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? (e as { message: string }).message : "Unknown error";
     console.error("collect-daily fatal error:", e);
     await completeCronRun(cronRunId, "error", 0, errorMessage);
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    throw new Error(errorMessage);
+  }
+}
+
+// ── GET /api/cron/collect-daily ──────────────────────────────
+// Vercel Cron: 매일 18:00 UTC (KST 다음날 03:00)
+export async function GET(req: NextRequest) {
+  if (!verifyCron(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(req.url);
+  const dateParam = searchParams.get("date") ?? undefined;
+
+  try {
+    const result = await runCollectDaily(dateParam);
+    return NextResponse.json(result);
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : "Unknown error";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
