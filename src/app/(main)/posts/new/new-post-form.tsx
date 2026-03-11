@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/form";
 import { createPost } from "@/actions/posts";
 import { toast } from "sonner";
+import { mp } from "@/lib/mixpanel";
 
 const postSchema = z.object({
   title: z
@@ -74,6 +75,7 @@ export function NewPostForm() {
         return;
       }
 
+      mp.track("post_created", { category: values.category });
       toast.success("게시글이 등록되었습니다. 관리자 승인 후 공개됩니다.");
       router.push(`/posts/${data?.id || ""}`);
     } catch {

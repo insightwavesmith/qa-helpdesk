@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { mp } from "@/lib/mixpanel";
 import {
   Table,
   TableBody,
@@ -45,6 +47,15 @@ export function BenchmarkCompare({
   insights,
   benchmarks,
 }: BenchmarkCompareProps) {
+  useEffect(() => {
+    if (insights.length > 0 && benchmarks.length > 0) {
+      mp.track("protractor_benchmark_viewed", {
+        benchmark_count: benchmarks.length,
+        insight_count: insights.length,
+      });
+    }
+  }, [insights.length, benchmarks.length]);
+
   if (insights.length === 0 || benchmarks.length === 0) {
     return (
       <Card>

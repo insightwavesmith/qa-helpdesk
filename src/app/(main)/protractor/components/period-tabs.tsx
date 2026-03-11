@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { mp } from "@/lib/mixpanel";
 
 export type PeriodKey = "yesterday" | "7d" | "14d" | "30d" | "custom";
 
@@ -73,7 +74,13 @@ export function PeriodTabs({ onPeriodChange }: PeriodTabsProps) {
     setActivePeriod(period);
 
     if (period !== "custom") {
-      onPeriodChange(getDateRange(period), PERIOD_DAYS[period]);
+      const range = getDateRange(period);
+      onPeriodChange(range, PERIOD_DAYS[period]);
+      mp.track("protractor_date_changed", {
+        range_type: period,
+        start_date: range.start,
+        end_date: range.end,
+      });
     }
   };
 
@@ -82,6 +89,11 @@ export function PeriodTabs({ onPeriodChange }: PeriodTabsProps) {
     if (customStart > customEnd) return;
     const days = Math.round((new Date(customEnd).getTime() - new Date(customStart).getTime()) / 86400000) + 1;
     onPeriodChange({ start: customStart, end: customEnd }, days);
+    mp.track("protractor_date_changed", {
+      range_type: "custom",
+      start_date: customStart,
+      end_date: customEnd,
+    });
   };
 
   // 현재 활성 기간의 날짜 범위 라벨

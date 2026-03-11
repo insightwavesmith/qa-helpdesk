@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { updateMember, changeRole, deactivateMember, deleteMember, updateAdAccount, deleteAdAccountHard, addAdAccount } from "@/actions/admin";
 import { toast } from "sonner";
+import { mp } from "@/lib/mixpanel";
 
 interface AdAccount {
   id: string;
@@ -169,6 +170,13 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
       if (error) {
         toast.error(`수정 실패: ${error}`);
       } else {
+        const changedFields: string[] = [];
+        if (name !== profile.name) changedFields.push("name");
+        if (phone !== (profile.phone ?? "")) changedFields.push("phone");
+        if (shopName !== (profile.shop_name ?? "")) changedFields.push("shop_name");
+        if (shopUrl !== (profile.shop_url ?? "")) changedFields.push("shop_url");
+        if (cohort !== (profile.cohort ?? "")) changedFields.push("cohort");
+        mp.track("admin_member_edited", { fields_changed: changedFields });
         toast.success("프로필이 수정되었습니다.");
         setEditing(false);
         onUpdated();

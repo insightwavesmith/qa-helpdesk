@@ -171,6 +171,7 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
     if (result.error) {
       toast.error(`계정 삭제 실패: ${result.error}`);
     } else {
+      mp.track("ad_account_disconnected");
       toast.success("광고계정이 삭제되었습니다.");
       setAccounts((prev) => prev.filter((a) => a.account_id !== accountId));
       // 대표 계정 재할당은 서버 액션(removeAdAccount)에서 처리

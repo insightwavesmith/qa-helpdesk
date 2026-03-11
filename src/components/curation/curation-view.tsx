@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { mp } from "@/lib/mixpanel";
 import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import {
@@ -112,6 +113,7 @@ export function CurationView({ sourceFilter, onGenerateInfoShare }: CurationView
     if (error) {
       toast.error("스킵 처리에 실패했습니다.");
     } else {
+      mp.track("admin_content_action", { action: "skip", count: ids.length });
       toast.success(`${ids.length}개 콘텐츠를 스킵했습니다.`);
       setSelectedIds(new Set());
       mutateContents();
@@ -122,6 +124,7 @@ export function CurationView({ sourceFilter, onGenerateInfoShare }: CurationView
   const handleGenerate = (id?: string) => {
     const ids = id ? [id] : Array.from(selectedIds);
     if (ids.length === 0) return;
+    mp.track("admin_content_action", { action: "publish", count: ids.length });
     onGenerateInfoShare(ids);
   };
 

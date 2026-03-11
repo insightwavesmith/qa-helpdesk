@@ -40,7 +40,31 @@ export async function getMembers({
     return { data: [], count: 0, error: error.message };
   }
 
-  return { data: data || [], count: count || 0, error: null };
+  // Fetch ad_accounts for these members to show 광고관리자 바로가기
+  const memberIds = (data || []).map((m) => m.id);
+  const accountMap: Record<string, string> = {};
+  if (memberIds.length > 0) {
+    const { data: accounts } = await supabase
+      .from("ad_accounts")
+      .select("user_id, account_id")
+      .in("user_id", memberIds)
+      .eq("active", true);
+
+    if (accounts) {
+      for (const acc of accounts) {
+        if (acc.user_id && !accountMap[acc.user_id]) {
+          accountMap[acc.user_id] = acc.account_id;
+        }
+      }
+    }
+  }
+
+  const membersWithAccounts = (data || []).map((m) => ({
+    ...m,
+    ad_account_id: accountMap[m.id] || null,
+  }));
+
+  return { data: membersWithAccounts, count: count || 0, error: null };
 }
 
 export async function getDistinctCohorts(): Promise<string[]> {

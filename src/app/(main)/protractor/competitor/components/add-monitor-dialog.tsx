@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import type { CompetitorMonitor, MetaPage } from "@/types/competitor";
 import { X, Search, Loader2, Link, CheckCircle2 } from "lucide-react";
+import { mp } from "@/lib/mixpanel";
 
 interface AddMonitorDialogProps {
   onClose: () => void;
@@ -198,6 +199,7 @@ export function AddMonitorDialog({
         setError(json.error || "등록에 실패했습니다");
         return;
       }
+      mp.track("competitor_monitor_created", { method: "search" });
       onAdded(json.monitor);
     } catch {
       setError("네트워크 오류가 발생했습니다");
@@ -260,6 +262,7 @@ export function AddMonitorDialog({
         setUrlError(json.error || "등록에 실패했습니다");
         return;
       }
+      mp.track("competitor_monitor_created", { method: "url" });
       onAdded(json.monitor);
     } catch {
       setUrlError("네트워크 오류가 발생했습니다");

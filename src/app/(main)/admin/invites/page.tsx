@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { mp } from "@/lib/mixpanel";
 import {
   Table,
   TableBody,
@@ -104,6 +105,7 @@ export default function AdminInvitesPage() {
       if (result.error) {
         toast.error(`초대코드 생성에 실패했습니다: ${result.error}`);
       } else {
+        mp.track("admin_invite_code_created", { cohort: formCohort.trim() || formCode.trim() });
         toast.success("초대코드가 생성되었습니다.");
         setFormCode("");
         setFormCohort("");

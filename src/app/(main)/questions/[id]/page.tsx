@@ -251,6 +251,16 @@ export default async function QuestionDetailPage({
                     dangerouslySetInnerHTML={{ __html: mdToHtml(answer.content) }}
                   />
 
+                  {/* 답변 이미지 */}
+                  {Array.isArray((answer as Record<string, unknown>).image_urls) &&
+                    ((answer as Record<string, unknown>).image_urls as string[]).length > 0 && (
+                      <div className="pl-[42px] mt-2">
+                        <ImageGallery
+                          imageUrls={(answer as Record<string, unknown>).image_urls as string[]}
+                        />
+                      </div>
+                    )}
+
                   {/* Source references for AI answers — 관리자만 표시 */}
                   {isAI && isAdmin && (
                     <div className="pl-[42px]">
@@ -266,7 +276,7 @@ export default async function QuestionDetailPage({
                       <AnswerEditButton
                         answerId={answer.id}
                         initialContent={answer.content}
-                        questionId={id}
+                        initialImageUrls={(answer as Record<string, unknown>).image_urls as string[] | undefined}
                       />
                     </div>
                   )}

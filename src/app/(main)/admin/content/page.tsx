@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,6 +25,7 @@ import { Loader2, FileText, Plus, Newspaper, Mail, Sparkles } from "lucide-react
 import { useRouter, useSearchParams } from "next/navigation";
 import { getContents } from "@/actions/contents";
 import { getCurationCount } from "@/actions/curation";
+import { mp } from "@/lib/mixpanel";
 import { SWR_KEYS } from "@/lib/swr/keys";
 import type { Content } from "@/types/content";
 import NewContentModal from "@/components/content/new-content-modal";
@@ -101,6 +102,14 @@ export default function AdminContentPage() {
     SWR_KEYS.ADMIN_CURATION_COUNT,
     () => getCurationCount(),
   );
+
+  // content_list_viewed 트래킹
+  useEffect(() => {
+    mp.track("content_list_viewed", {
+      view_mode: currentTab,
+      source_filter: sourceFilter,
+    });
+  }, [currentTab, sourceFilter]);
 
   const handleRowClick = (contentId: string) => {
     router.push(`/admin/content/${contentId}?from=${currentTab}`);

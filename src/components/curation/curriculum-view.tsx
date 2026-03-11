@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useSWR from "swr";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, BookOpen, ChevronDown, ChevronUp, Shield, GraduationCap, CheckCircle, ArrowRight, Lock, Sparkles } from "lucide-react";
 import { getCurriculumContents } from "@/actions/curation";
 import { SWR_KEYS } from "@/lib/swr/keys";
+import { mp } from "@/lib/mixpanel";
 import { renderInlineMarkdown } from "./curation-card";
 import { filterValidTopics } from "@/lib/topic-utils";
 import type { Content } from "@/types/content";
@@ -213,6 +214,10 @@ export function CurriculumView({ sourceType, onGenerateInfoShare }: CurriculumVi
     () => getCurriculumContents(sourceType),
   );
   const contents = (curriculumData?.data ?? []) as unknown as Content[];
+
+  useEffect(() => {
+    mp.track("curriculum_viewed", { category: sourceType });
+  }, [sourceType]);
 
   if (loading) {
     return (

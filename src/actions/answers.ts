@@ -217,7 +217,7 @@ export async function updateAnswer(answerId: string, content: string) {
   return { error: null };
 }
 
-export async function updateAnswerByAuthor(answerId: string, content: string) {
+export async function updateAnswerByAuthor(answerId: string, content: string, imageUrls?: string[]) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -252,9 +252,14 @@ export async function updateAnswerByAuthor(answerId: string, content: string) {
     return { error: "수정 권한이 없습니다." };
   }
 
+  const updateData: Record<string, unknown> = { content, updated_at: new Date().toISOString() };
+  if (imageUrls !== undefined) {
+    updateData.image_urls = imageUrls;
+  }
+
   const { error } = await svc
     .from("answers")
-    .update({ content, updated_at: new Date().toISOString() })
+    .update(updateData)
     .eq("id", answerId);
 
   if (error) {

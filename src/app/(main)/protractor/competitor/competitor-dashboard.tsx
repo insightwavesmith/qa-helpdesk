@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { mp } from "@/lib/mixpanel";
 import type {
   CompetitorAd,
   CompetitorMonitor,
@@ -99,6 +100,10 @@ export default function CompetitorDashboard() {
   // 더보기 (다음 페이지 누적 로드)
   const handleLoadMore = useCallback(async () => {
     if ((!searchQuery && !searchPageId) || !nextPageToken || loadingMore) return;
+
+    mp.track("competitor_load_more_clicked", {
+      loaded_count: ads.length,
+    });
 
     setLoadingMore(true);
     setError(null);

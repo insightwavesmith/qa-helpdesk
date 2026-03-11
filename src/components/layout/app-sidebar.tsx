@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
+import { useRef } from "react";
 import {
   LayoutDashboard,
   MessageCircleQuestion,
@@ -90,9 +91,12 @@ export default function AppSidebar({
   const pathname = usePathname();
   const router = useRouter();
   const initials = userName.charAt(0);
+  const loginTime = useRef(Date.now());
 
   const handleLogout = async () => {
-    mp.track("logout");
+    mp.track("logout", {
+      session_duration_seconds: Math.round((Date.now() - loginTime.current) / 1000),
+    });
     mp.reset();
     const supabase = createClient();
     try { await supabase.auth.signOut(); } finally {

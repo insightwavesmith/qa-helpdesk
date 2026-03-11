@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CheckCircle, XCircle, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { mp } from "@/lib/mixpanel";
 
 interface Account {
   account_id: string;
@@ -30,6 +31,11 @@ export function BulkCollectSection({ accounts }: Props) {
 
   const handleCollect = async () => {
     const accountIds = "all" as const;
+
+    mp.track("protractor_collect_triggered", {
+      mode: "bulk",
+      account_count: accounts.length,
+    });
 
     setStatus("running");
     setResults(new Map());

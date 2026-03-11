@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { mp } from "@/lib/mixpanel";
 import { useSearchParams } from "next/navigation";
 import { Pencil } from "lucide-react";
 import { toast } from "sonner";
@@ -76,6 +77,15 @@ export default function PostDetailClient({
   // Auto-save debounce
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef({ title: post.title, content: post.body_md || post.content });
+
+  // post_viewed 트래킹 (마운트 시 1회)
+  useEffect(() => {
+    mp.track("post_viewed", {
+      post_id: post.id,
+      category: post.category,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Enter edit mode via ?edit=true
   useEffect(() => {

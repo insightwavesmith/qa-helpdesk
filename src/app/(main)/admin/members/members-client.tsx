@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { mp } from "@/lib/mixpanel";
 import {
   Table,
   TableBody,
@@ -24,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle, Loader2, Mail, Users } from "lucide-react";
+import { CheckCircle, ExternalLink, Loader2, Mail, Users } from "lucide-react";
 import { MemberDetailModal } from "./member-detail-modal";
 import { SubscriberTab } from "@/components/admin/SubscriberTab";
 
@@ -43,6 +44,7 @@ interface Member {
   mixpanel_secret_key: string | null;
   role: string;
   created_at: string | null;
+  ad_account_id?: string | null;
 }
 
 interface MembersClientProps {
@@ -98,6 +100,10 @@ export function MembersClient({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [detailModal, setDetailModal] = useState<{ profile: Member; accounts: Array<{ id: string; account_id: string; account_name: string | null; mixpanel_project_id: string | null; mixpanel_board_id: string | null; active: boolean | null }> } | null>(null);
   const [detailLoading, setDetailLoading] = useState<string | null>(null);
+
+  useEffect(() => {
+    mp.track("admin_member_list_viewed");
+  }, []);
   // 수강생 전환 모달
   const [studentModal, setStudentModal] = useState<{ userId: string; name: string } | null>(null);
   const [studentForm, setStudentForm] = useState({ cohort: "", metaAccountId: "", mixpanelProjectId: "", mixpanelSecretKey: "", mixpanelBoardId: "" });
@@ -255,6 +261,7 @@ export function MembersClient({
                   <TableHead className="text-xs font-medium text-gray-500 uppercase">쇼핑몰</TableHead>
                   <TableHead className="text-xs font-medium text-gray-500 uppercase">기수</TableHead>
                   <TableHead className="text-xs font-medium text-gray-500 uppercase">상태</TableHead>
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase">광고관리자</TableHead>
                   <TableHead className="text-xs font-medium text-gray-500 uppercase">가입일</TableHead>
                   <TableHead className="text-xs font-medium text-gray-500 uppercase text-right">관리</TableHead>
                 </TableRow>
@@ -283,6 +290,21 @@ export function MembersClient({
                       </TableCell>
                       <TableCell>
                         <Badge variant={role.variant} className={role.className}>{role.label}</Badge>
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        {member.ad_account_id ? (
+                          <a
+                            href={`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${member.ad_account_id.replace("act_", "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            광고관리자
+                          </a>
+                        ) : (
+                          <span className="text-xs text-gray-400">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-sm text-gray-500">
                         {formatDate(member.created_at)}

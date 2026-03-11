@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { MessageCircle, Send } from "lucide-react";
 import { createComment } from "@/actions/posts";
 import { toast } from "sonner";
+import { mp } from "@/lib/mixpanel";
 
 interface Comment {
   id: string;
@@ -17,6 +18,7 @@ interface Comment {
 
 interface CommentSectionProps {
   initialComments: Comment[];
+  postId?: string;
 }
 
 function timeAgo(dateStr: string | null) {
@@ -36,6 +38,7 @@ function timeAgo(dateStr: string | null) {
 
 export function CommentSection({
   initialComments,
+  postId,
 }: CommentSectionProps) {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
@@ -57,6 +60,7 @@ export function CommentSection({
       if (error) {
         toast.error(`댓글 등록 실패: ${error}`);
       } else {
+        mp.track("comment_created", { post_id: postId });
         toast.success("댓글이 등록되었습니다.");
         setContent("");
         router.refresh();

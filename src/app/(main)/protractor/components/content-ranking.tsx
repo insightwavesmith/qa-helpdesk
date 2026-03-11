@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { AdInsightRow } from "./ad-metrics-table";
 import { getTop5Ads } from "@/lib/protractor/aggregate";
 import { METRIC_GROUPS, type CommonMetricDef } from "@/lib/protractor/metric-groups";
+import { mp } from "@/lib/mixpanel";
 
 // ============================================================
 // 타입 정의
@@ -327,6 +328,16 @@ export function ContentRanking({
   const [diagnoses, setDiagnoses] = useState<RawDiagnosis[] | null>(null);
   const [loadingDiagnosis, setLoadingDiagnosis] = useState(false);
   const [diagnosisError, setDiagnosisError] = useState<string | null>(null);
+
+  // TOP5 조회 트래킹
+  useEffect(() => {
+    if (top5.length > 0) {
+      mp.track("protractor_top5_viewed", {
+        ranking_type: "purchases",
+        top5_count: top5.length,
+      });
+    }
+  }, [top5.length]);
 
   // 진단 API 호출 (insights 로드 완료 후)
   useEffect(() => {

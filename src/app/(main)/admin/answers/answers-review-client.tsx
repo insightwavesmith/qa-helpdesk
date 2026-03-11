@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Pagination } from "@/components/shared/Pagination";
 import { approveAnswer, deleteAnswer, updateAnswer } from "@/actions/answers";
 import { toast } from "sonner";
+import { mp } from "@/lib/mixpanel";
 import {
   Bot,
   User,
@@ -63,6 +64,7 @@ export function AnswersReviewClient({
       if (error) {
         toast.error(`승인 실패: ${error}`);
       } else {
+        mp.track("admin_answer_reviewed", { action: "approve" });
         toast.success("답변이 승인되었습니다.");
         router.refresh();
       }

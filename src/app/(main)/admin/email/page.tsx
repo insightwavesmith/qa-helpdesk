@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/dialog";
 import { Send, Eye, Loader2, Users, Mail, AlertCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { mp } from "@/lib/mixpanel";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import AiWriteDialog from "@/components/email/ai-write-dialog";
@@ -264,6 +265,11 @@ function AdminEmailPageInner() {
         return;
       }
 
+      mp.track("admin_email_sent", {
+        target,
+        template: templateType,
+        sent_count: result.sent as number,
+      });
       toast.success(
         `발송 완료: ${result.sent}건 성공, ${result.failed}건 실패`
       );

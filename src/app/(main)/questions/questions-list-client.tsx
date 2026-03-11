@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { mp } from "@/lib/mixpanel";
 import Link from "next/link";
 import { Search, Plus, MessageSquare } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -75,6 +76,14 @@ export function QuestionsListClient({
   const searchParams = useSearchParams();
   const [searchInput, setSearchInput] = useState(currentSearch);
   const [memberDialogOpen, setMemberDialogOpen] = useState(false);
+
+  useEffect(() => {
+    mp.track("question_list_viewed", {
+      tab: currentTab || "all",
+      page: currentPage,
+      total_count: totalCount,
+    });
+  }, [currentTab, currentPage, totalCount]);
 
   const updateParams = useCallback(
     (updates: Record<string, string>) => {

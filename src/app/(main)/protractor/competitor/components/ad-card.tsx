@@ -5,6 +5,7 @@ import type { CompetitorAd, BrandPage } from "@/types/competitor";
 import { DurationBar } from "./duration-bar";
 import { AdMediaModal } from "./ad-media-modal";
 import { downloadFile } from "@/lib/competitor/client-download";
+import { mp } from "@/lib/mixpanel";
 import {
   Eye,
   Download,
@@ -266,6 +267,10 @@ export function AdCard({ ad, selected, onSelect, isPinned, onPinBrand }: AdCardP
                 disabled={isPinned}
                 onClick={(e) => {
                   e.stopPropagation();
+                  mp.track("competitor_pinned", {
+                    action: isPinned ? "unpin" : "pin",
+                    brand_name: ad.pageName,
+                  });
                   onPinBrand({
                     page_id: ad.pageId,
                     page_name: ad.pageName,
