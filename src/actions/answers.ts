@@ -262,6 +262,10 @@ export async function updateAnswerByAuthor(answerId: string, content: string) {
     return { error: error.message };
   }
 
+  // fire-and-forget: QA 재임베딩 (수정된 내용 반영)
+  Promise.resolve(embedQAPair(answer.question_id, answerId))
+    .catch(err => console.error("[re-embed] failed:", err));
+
   revalidatePath(`/questions/${answer.question_id}`);
   revalidatePath("/admin/answers");
   revalidatePath("/questions");

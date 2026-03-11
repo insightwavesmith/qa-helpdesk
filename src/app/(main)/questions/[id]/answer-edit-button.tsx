@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Pencil, Check, X, Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { updateAnswerByAuthor } from "@/actions/answers";
 import { useRouter } from "next/navigation";
 
@@ -55,10 +56,11 @@ export function AnswerEditButton({ answerId, initialContent, questionId }: Answe
 
   return (
     <div className="mt-3 pl-[42px]">
-      <textarea
+      <Textarea
         value={editContent}
         onChange={(e) => setEditContent(e.target.value)}
-        className="w-full min-h-[120px] rounded-lg border border-border bg-background p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+        rows={5}
+        className="resize-none text-[15px] leading-relaxed"
         disabled={isLoading}
       />
       <div className="flex items-center gap-2 mt-2">

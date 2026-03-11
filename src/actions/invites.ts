@@ -60,7 +60,27 @@ export async function getInviteCodes() {
     return { data: [], error: error.message };
   }
 
-  return { data: data || [], error: null };
+  // used_count 비정규화 값 대신 profiles 테이블에서 실제 사용 수 계산
+  const { data: profileCounts } = await svc
+    .from("profiles")
+    .select("invite_code_used");
+
+  const actualCounts = new Map<string, number>();
+  if (profileCounts) {
+    for (const p of profileCounts) {
+      if (p.invite_code_used) {
+        const key = p.invite_code_used.toLowerCase();
+        actualCounts.set(key, (actualCounts.get(key) || 0) + 1);
+      }
+    }
+  }
+
+  const merged = (data || []).map((invite) => ({
+    ...invite,
+    used_count: actualCounts.get(invite.code.toLowerCase()) ?? 0,
+  }));
+
+  return { data: merged, error: null };
 }
 
 // ---------------------------------------------------------------------------
