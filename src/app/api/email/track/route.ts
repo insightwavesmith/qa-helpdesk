@@ -8,7 +8,7 @@ const TRANSPARENT_GIF = Buffer.from(
 );
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://qa-helpdesk.vercel.app";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://bscamp.vercel.app";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;

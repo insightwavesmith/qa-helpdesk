@@ -892,7 +892,7 @@ function extractClosingText(sections: SummarySection[]): string {
  */
 export function buildDesignFromSummary(content: Content): object {
   const contentType = content.type ?? "education";
-  const articleUrl = `https://qa-helpdesk.vercel.app/posts/${content.id}`;
+  const articleUrl = `https://bscamp.vercel.app/posts/${content.id}`;
 
   // Base template shell (counters, body.values, schemaVersion 등)
   const baseTemplate =

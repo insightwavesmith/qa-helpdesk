@@ -18,7 +18,7 @@ export default function ForgotPasswordPage() {
     try {
       const supabase = createClient();
       const siteUrl =
-        process.env.NEXT_PUBLIC_SITE_URL ?? "https://qa-helpdesk.vercel.app";
+        process.env.NEXT_PUBLIC_SITE_URL ?? "https://bscamp.vercel.app";
 
       await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${siteUrl}/reset-password`,

@@ -1,7 +1,7 @@
 # BS CAMP QA Helpdesk — bkit PDCA 프로젝트 현황
 
 > 최종 업데이트: 2026-02-22 KST
-> 프로젝트: https://qa-helpdesk.vercel.app
+> 프로젝트: https://bscamp.vercel.app
 > GitHub: https://github.com/insightwavesmith/qa-helpdesk
 > 최신 커밋: `401dc72`
 

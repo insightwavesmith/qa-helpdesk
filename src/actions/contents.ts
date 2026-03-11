@@ -496,7 +496,7 @@ export async function crawlUrl(
     const res = await fetch(url, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; QA-Helpdesk-Bot/1.0; +https://qa-helpdesk.vercel.app)",
+          "Mozilla/5.0 (compatible; QA-Helpdesk-Bot/1.0; +https://bscamp.vercel.app)",
       },
       signal: AbortSignal.timeout(15000),
     });
