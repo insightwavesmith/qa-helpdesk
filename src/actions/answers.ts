@@ -216,3 +216,54 @@ export async function updateAnswer(answerId: string, content: string) {
   revalidatePath("/admin/answers");
   return { error: null };
 }
+
+export async function updateAnswerByAuthor(answerId: string, content: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "로그인이 필요합니다." };
+  }
+
+  const svc = createServiceClient();
+
+  // 답변 조회 (작성자 확인용)
+  const { data: answer, error: fetchError } = await svc
+    .from("answers")
+    .select("author_id, question_id")
+    .eq("id", answerId)
+    .single();
+
+  if (fetchError || !answer) {
+    return { error: "답변을 찾을 수 없습니다." };
+  }
+
+  // 권한 확인: 본인 OR staff
+  const { data: profile } = await svc
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const isStaff = profile?.role === "admin" || profile?.role === "assistant";
+  const isAuthor = answer.author_id === user.id;
+
+  if (!isAuthor && !isStaff) {
+    return { error: "수정 권한이 없습니다." };
+  }
+
+  const { error } = await svc
+    .from("answers")
+    .update({ content, updated_at: new Date().toISOString() })
+    .eq("id", answerId);
+
+  if (error) {
+    console.error("updateAnswerByAuthor error:", error);
+    return { error: error.message };
+  }
+
+  revalidatePath(`/questions/${answer.question_id}`);
+  revalidatePath("/admin/answers");
+  revalidatePath("/questions");
+  return { error: null };
+}
