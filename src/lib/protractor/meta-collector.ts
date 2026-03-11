@@ -14,7 +14,7 @@ export const AD_FIELDS = [
   "campaign_name",
   "account_id",
   "account_name",
-  "creative.fields(object_type)",
+  "creative.fields(object_type,product_set_id,video_id,image_hash,asset_feed_spec)",
 ].join(",");
 
 export const INSIGHT_FIELDS = [
@@ -74,18 +74,8 @@ function normalizeRanking(raw: string | null | undefined): string {
   return "UNKNOWN";
 }
 
-// creative.object_type → creative_type
-function getCreativeType(ad: Record<string, unknown>): string {
-  const creative = ad.creative as { object_type?: string } | undefined;
-  const objectType = creative?.object_type ?? "UNKNOWN";
-  const typeMap: Record<string, string> = {
-    VIDEO: "VIDEO",
-    SHARE: "SHARE",
-    IMAGE: "IMAGE",
-    PRIVACY_CHECK_FAIL: "VIDEO",
-  };
-  return typeMap[objectType] ?? "UNKNOWN";
-}
+// creative_type 분류 — 공용 모듈 사용
+import { getCreativeType } from "@/lib/protractor/creative-type";
 
 // ── 지표 계산 ──────────────────────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
