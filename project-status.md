@@ -1,78 +1,75 @@
-# BS CAMP QA Helpdesk — PDCA 프로젝트 현황
+# BS CAMP QA Helpdesk — 프로젝트 현황
 
-> 최종 업데이트: 2026-03-01 13:10 KST
+> 최종 업데이트: 2026-03-11 12:30 KST
 > 프로젝트: https://bscamp.vercel.app
 > GitHub: https://github.com/insightwavesmith/qa-helpdesk
 
 ---
 
-## Phase: Act (반복 개선)
+## 오늘 완료 (2026-03-11)
 
-## 최근 완료 (2026-03-01)
+### Sprint 0311 — T1/T2/T3
+- [x] T1: QA 답변 소스 참조 수강생에게 숨기기 → `3ff5a6d`
+- [x] T2: 답변 수정 기능 추가 (본인+관리자) → `ba98133`
+- [x] T3: 총가치각도기 전체/선택 일괄 수집 → `c35b053`
 
-### 보안 수정 T1~T9 (완료, push 완료)
-- T1: RLS 정책 강화 → a20bf82
-- T2: 시크릿 하드코딩 제거
-- T3: 각도기 비즈니스 로직 보호
-- T4: XSS 방어
-- T5: 시크릿키 암호화
-- T6: Rate Limiting → 30be15c
-- T7: 무제한 쿼리 방어 → cb829ba
-- T8: requireAdmin 적용
-- T9: 미사용 API 삭제
-- 벤치마크 API admin-only → 47a9430, 27fea93
+### 믹스패널 SDK
+- [x] SDK 설치 + Phase 1 이벤트 17개 트래킹 → `6defb43`
+- [x] Vercel 환경변수 `NEXT_PUBLIC_MIXPANEL_TOKEN` 추가 완료 (Smith님)
+- [x] Phase 2 이벤트 20개 추가 → `4644e7d`
 
-### UI 개선 U1~U4 (완료, push 완료)
-- U1: 지표 바 → 기준 대비 % → 16a5952
-- U2: 파트별 A/B/C 등급
-- U3: 콘텐츠 탭 벤치마크 기준값
-- U4: 타임존 버그 수정
-- 개별지표 등급 제거 + status key_name → 12c2fb1
+### Sprint 0311-2 — T1/T2/T3
+- [x] T1: 답변 수정 UI 개선 (이미지 첨부, 큰 textarea) → `4644e7d`
+- [x] T2: 수강생 관리 탭에 광고관리자 바로가기 → `4644e7d`
+- [x] T3: 믹스패널 Phase 2 이벤트 20개 추가 → `4644e7d`
 
-### 5필드 통합 (완료, push 완료)
-- F1: key_name 패턴 통일
-- F2: profiles 레거시 쓰기 제거
-- F3: Mixpanel 상태 3단계 (미연동/보드없음/연동완료)
-- F4: 온보딩 계정명 추가
-- F5: 수정 폼 5개 필드 노출
-- → 446f323
+### 핫픽스
+- [x] H1: 초대코드 사용량 카운트 버그 → `e1d6170`
+- [x] H2: 수집 UI 간소화 (선택 제거, 전체 수집만) → `e1d6170`
+- [x] H3: 답변 수정 재임베딩 + textarea 크기 → `e1d6170`
 
-### 인프라
-- 크론 KST 03:00 변경 → e0befa0
-- TASK.md 포맷 규칙 (rules/task-format.md)
-- Agent SDK 설치 + Max Pro 인증 성공
+### DB 작업
+- [x] 유령 광고계정 4건 active=false 처리 (33, 123, 언버터, 자사몰사관학교)
+
+### 프로세스 변경
+- [x] CLAUDE.md 게이트 해제: 커밋+푸시 자유, 배포전 리뷰는 관리자
+- [x] project-status.md 업데이트 절대 규칙 추가
 
 ---
 
-## 현재 진행 중
-- 5필드 통합 QA (서브에이전트)
-- Agent SDK 전환 검토
+## 개발 대기 (다음 TASK)
+
+### 즉시 (Smith님 지시 완료)
+1. **광고계정 관리탭 제거/간소화** — 수강생 1명에 계정 추가되는 구조라 별도 관리 불필요
+
+### 기획 확정 후
+2. **P1+P4: 알림 시스템** — 슬랙 + 카톡 알림톡 (답변알림/새질문/경쟁사새광고)
+3. **P2: 기수별 광고성과 뷰** — 강의 시 기수 단위 성과 디테일
+
+### 기존 잔여
+6. 블루프린트 soft delete 11건
+7. 수강생 랭킹 TASK (팀 매핑 DB, UI 위치 미확정)
+8. 초안 탭 154건 정리
+9. content-images RLS INSERT 정책
+10. 카탈로그 이미지 cards 필드 파싱
+11. 온보딩 스킵 이슈 (광고계정 미입력 시 접근 불가)
 
 ---
 
-## 대기 (다음 작업)
-
-### 우선순위 높음
-1. 수강생 등수/랭킹 기능 (2026-03-01 지시)
-2. 콘텐츠 이미지 기획
-3. daily_ad_insights 과거 재수집 (2/06~2/25)
-4. encrypt/decrypt 호환 수정
-
-### 보통
-5. 메타 배지 로고 → UI
-6. NOTION_TOKEN Vercel 등록
-7. Agent SDK 에이전트팀 스크립트
-
-### 백로그
-- Context Warehouse (파킹)
-- 초대코드 만료 기능
+## 외부 문의
+- **에듀플렉스 챗봇**: 임베딩된 데이터로 챗봇 답변 기능 제공 요청. 방안: A) API 제공, B) 위젯, C) 데이터 export. Smith님 방향 결정 대기.
 
 ---
 
-## 핵심 지표
-- 배포: https://bscamp.vercel.app (READY)
-- 최신 커밋: 446f323
-- 빌드: 성공
-- 크론: KST 03:00
-- 에이전트팀: Claude Code Agent Teams (tmux)
-- 모델: Opus 4.6 (메인), Sonnet 4.6 (서브/크론)
+## 크론 (vercel.json)
+| 크론 | 스케줄 (UTC) | KST | 설명 |
+|------|-------------|-----|------|
+| collect-daily | 0 18 * * * | 03:00 | Meta 광고 성과 |
+| collect-mixpanel | 30 18 * * * | 03:30 | 믹스패널 매출 |
+| collect-benchmarks | 0 17 * * 1 | 월 02:00 | 벤치마크 재계산 |
+| sync-notion | 0 19 * * * | 04:00 | Notion 동기화 |
+| cleanup-deleted | 0 19 * * * | 04:00 | 삭제 데이터 정리 |
+
+## 택소노미
+- 문서: `docs/bscamp-mixpanel-taxonomy.md`
+- 고객프로퍼티 16개 + 이벤트 37개 + 슈퍼프로퍼티 7개 + KPI 매핑 9개
