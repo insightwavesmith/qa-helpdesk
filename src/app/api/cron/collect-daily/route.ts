@@ -96,11 +96,16 @@ function getCreativeType(ad: Record<string, unknown>): string {
   const imageHash = creative?.image_hash;
   const productSetId = creative?.product_set_id;
   const objectType = creative?.object_type ?? "UNKNOWN";
+  const afsVideos = creative?.asset_feed_spec?.videos;
+
+  // 디버깅: SHARE 광고의 creative 구조 확인
+  if (objectType === "SHARE") {
+    console.log(`[getCreativeType] ad=${(ad as Record<string, string>).name}, object_type=${objectType}, video_id=${videoId}, has_afs_videos=${!!afsVideos?.length}, afs_videos_count=${afsVideos?.length ?? 0}, creative_keys=${creative ? Object.keys(creative).join(",") : "undefined"}`);
+  }
 
   // 1순위: video_id 존재 → VIDEO (직접 업로드 영상)
   if (videoId) return "VIDEO";
   // 1-b: asset_feed_spec.videos 존재 → VIDEO (Advantage+ 크리에이티브 영상)
-  const afsVideos = creative?.asset_feed_spec?.videos;
   if (afsVideos && afsVideos.length > 0) return "VIDEO";
   // 2순위: image_hash 존재 + product_set_id 없음 → IMAGE
   if (imageHash && !productSetId) return "IMAGE";
@@ -108,9 +113,9 @@ function getCreativeType(ad: Record<string, unknown>): string {
   if (productSetId) return "CATALOG";
 
   // fallback: object_type 기반 (asset_feed_spec 없는 엣지 케이스)
-  if (objectType === "VIDEO" || objectType === "PRIVACY_CHECK_FAIL") return "VIDEO";
-  if (objectType === "SHARE") return "VIDEO";
-  return "IMAGE";
+  const result = (objectType === "VIDEO" || objectType === "PRIVACY_CHECK_FAIL" || objectType === "SHARE") ? "VIDEO" : "IMAGE";
+  console.log(`[getCreativeType] FALLBACK: ad=${(ad as Record<string, string>).name}, object_type=${objectType}, result=${result}`);
+  return result;
 }
 
 // ── 지표 계산 (GCP 스펙 기준) ──────────────────────────────────
@@ -355,6 +360,19 @@ export async function GET(req: NextRequest) {
       results.push(accountResult);
     }
 
+    // 기존 SHARE → VIDEO 일괄 수정 (이전 버전 코드로 수집된 데이터 보정)
+    const { data: shareFixed, error: shareFixErr } = await svc
+      .from("daily_ad_insights")
+      .update({ creative_type: "VIDEO" })
+      .eq("creative_type", "SHARE")
+      .select("ad_id");
+
+    if (shareFixErr) {
+      console.error("[collect-daily] SHARE→VIDEO 일괄 수정 실패:", shareFixErr);
+    } else if (shareFixed && shareFixed.length > 0) {
+      console.log(`[collect-daily] SHARE→VIDEO 일괄 수정: ${shareFixed.length}건`);
+    }
+
     const totalRecords = results.reduce((sum, r) => sum + (typeof r.meta_ads === "number" ? r.meta_ads : 0), 0);
     await completeCronRun(
       cronRunId,
@@ -367,6 +385,7 @@ export async function GET(req: NextRequest) {
       message: "collect-daily completed",
       date: yesterday,
       accounts: accounts.length,
+      share_to_video_fixed: shareFixed?.length ?? 0,
       results,
     });
   } catch (e) {
