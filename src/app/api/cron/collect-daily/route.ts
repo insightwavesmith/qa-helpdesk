@@ -276,30 +276,23 @@ export async function GET(req: NextRequest) {
   let hasPartialError = false;
 
   try {
-    // 1. Meta API로 접근 가능한 전체 광고계정 조회
-    const token = process.env.META_ACCESS_TOKEN;
-    if (!token) throw new Error("META_ACCESS_TOKEN not set");
+    // 1. Supabase ad_accounts 테이블에서 등록된 활성 계정만 조회
+    const { data: adAccountRows, error: adAccountsErr } = await svc
+      .from("ad_accounts")
+      .select("account_id, account_name")
+      .eq("active", true);
 
-    const adAccountsUrl = new URL("https://graph.facebook.com/v21.0/me/adaccounts");
-    adAccountsUrl.searchParams.set("access_token", token);
-    adAccountsUrl.searchParams.set("fields", "account_id,name,account_status");
-    adAccountsUrl.searchParams.set("limit", "500");
-
-    const adAccountsRes = await fetch(adAccountsUrl.toString());
-    const adAccountsJson = await adAccountsRes.json();
-
-    if (!adAccountsJson.data || adAccountsJson.data.length === 0) {
-      return NextResponse.json({ message: "No accessible accounts", results: [] });
+    if (adAccountsErr) {
+      throw new Error(`ad_accounts 조회 실패: ${adAccountsErr.message}`);
+    }
+    if (!adAccountRows || adAccountRows.length === 0) {
+      return NextResponse.json({ message: "등록된 활성 계정 없음", results: [] });
     }
 
-    // 활성 계정만 필터 (account_status === 1)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const accounts = adAccountsJson.data
-      .filter((a: any) => Number(a.account_status) === 1)
-      .map((a: any) => ({
-        account_id: (a.account_id as string).replace(/^act_/, ""),
-        account_name: a.name as string,
-      }));
+    const accounts = adAccountRows.map((a) => ({
+      account_id: a.account_id.replace(/^act_/, ""),
+      account_name: a.account_name ?? "",
+    }));
 
     const results: Record<string, unknown>[] = [];
 
