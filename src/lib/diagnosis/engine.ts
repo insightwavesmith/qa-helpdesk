@@ -50,24 +50,32 @@ export function judgeMetric(
   }
 }
 
-/** 파트별 종합 판정 */
+/** 파트별 종합 판정 — 개별 지표의 실제값/기준값 비율 평균 기반 */
 export function judgePart(metricResults: MetricResult[]): Verdict {
   if (metricResults.length === 0) return Verdict.UNKNOWN;
 
-  const verdicts = metricResults
-    .filter((m) => m.verdict !== Verdict.UNKNOWN)
-    .map((m) => m.verdict);
+  // 비율 계산 가능한 지표만 추출 (myValue, aboveAvg 모두 존재)
+  const ratios: number[] = [];
+  for (const m of metricResults) {
+    if (m.verdict === Verdict.UNKNOWN) continue;
+    if (m.myValue != null && m.aboveAvg != null && m.aboveAvg > 0) {
+      if (m.isReverse) {
+        // 역방향 지표: 기준값/실제값 (낮을수록 좋으므로 반전)
+        ratios.push(m.myValue > 0 ? m.aboveAvg / m.myValue : 1);
+      } else {
+        ratios.push(m.myValue / m.aboveAvg);
+      }
+    }
+  }
 
-  if (verdicts.length === 0) return Verdict.UNKNOWN;
+  if (ratios.length === 0) return Verdict.UNKNOWN;
 
-  // 🔴 하나라도 있으면 → 파트 🔴
-  if (verdicts.includes(Verdict.POOR)) return Verdict.POOR;
+  const avgRatio = ratios.reduce((a, b) => a + b, 0) / ratios.length;
 
-  // 전부 🟢이면 → 파트 🟢
-  if (verdicts.every((v) => v === Verdict.GOOD)) return Verdict.GOOD;
-
-  // 그 외 → 파트 🟡
-  return Verdict.NORMAL;
+  // 비율 ≥ 1.0 → 🟢, 0.75 ≤ 비율 < 1.0 → 🟡, 비율 < 0.75 → 🔴
+  if (avgRatio >= 1.0) return Verdict.GOOD;
+  if (avgRatio >= 0.75) return Verdict.NORMAL;
+  return Verdict.POOR;
 }
 
 /** 메인 진단 함수 — GCP 벤치마크 기반 (T6 재작성) */

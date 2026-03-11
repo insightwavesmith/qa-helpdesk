@@ -308,11 +308,6 @@ function AdRankCard({
 
       {/* 지표 비교 (1~5등 동일 구조: 영상3 + 참여5 + 전환5) */}
       <div className="border-t border-gray-100 px-5 py-4">
-        {diagnosis?.one_line_diagnosis && (
-          <p className="mb-4 text-sm font-medium text-gray-600">
-            {diagnosis.overall_verdict} {diagnosis.one_line_diagnosis}
-          </p>
-        )}
         <BenchmarkCompareGrid ad={ad} diagnosis={diagnosis} />
       </div>
     </div>

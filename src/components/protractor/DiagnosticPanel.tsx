@@ -218,23 +218,35 @@ function LegacyDiagnosticView({ diagnoses }: { diagnoses: DiagnosisEntry[] }) {
     }
   }
 
-  function aggregateVerdict(verdicts: string[]): string {
-    if (verdicts.includes("🔴")) return "🔴";
-    if (verdicts.every((v) => v === "🟢")) return "🟢";
-    if (verdicts.includes("🟢") || verdicts.includes("🟡")) return "🟡";
+  function aggregateVerdict(_verdicts: string[], pctOfBenchmarks: number[]): string {
+    // 비율 데이터가 있으면 평균 비율 기반 판정
+    const validPcts = pctOfBenchmarks.filter((p) => p > 0);
+    if (validPcts.length > 0) {
+      const avgPct = validPcts.reduce((a, b) => a + b, 0) / validPcts.length;
+      // pct_of_benchmark는 % 단위 (100 = 기준선과 동일)
+      if (avgPct >= 100) return "🟢";
+      if (avgPct >= 75) return "🟡";
+      return "🔴";
+    }
+    // 비율 데이터 없으면 fallback
+    if (_verdicts.every((v) => v === "🟢")) return "🟢";
+    if (_verdicts.includes("🟢") || _verdicts.includes("🟡")) return "🟡";
+    if (_verdicts.includes("🔴")) return "🔴";
     return "⚪";
   }
 
   const parts = Array.from(partMap.entries()).map(([partName, data]) => {
     const allPartVerdicts: string[] = [];
+    const allPartPcts: number[] = [];
     const metrics = Array.from(data.metrics.entries()).map(([name, mm]) => {
       const avgVal = mm.values.length > 0 ? mm.values.reduce((a, b) => a + b, 0) / mm.values.length : null;
       const avgPct = mm.pctOfBenchmarks.length > 0 ? Math.round(mm.pctOfBenchmarks.reduce((a, b) => a + b, 0) / mm.pctOfBenchmarks.length) : null;
-      const verdict = aggregateVerdict(mm.verdicts);
+      const verdict = aggregateVerdict(mm.verdicts, mm.pctOfBenchmarks);
       allPartVerdicts.push(verdict);
+      if (avgPct != null) allPartPcts.push(avgPct);
       return { name, my_value: avgVal, pct_of_benchmark: avgPct, verdict };
     });
-    const partVerdict = aggregateVerdict(allPartVerdicts);
+    const partVerdict = aggregateVerdict(allPartVerdicts, allPartPcts);
     return { partName, verdict: partVerdict, metrics };
   });
 
