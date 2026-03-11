@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 interface BackfillAccount {
   account_id: string;
@@ -27,12 +28,121 @@ interface PhaseProgress {
   message?: string;
 }
 
+// ── 전체계정 수집 결과 ──
+interface BulkAccountResult {
+  account_id: string;
+  account_name: string;
+  status: "pending" | "running" | "done" | "error";
+  message?: string;
+}
+
 export function BackfillSection({ accounts }: BackfillSectionProps) {
   const [selectedAccountId, setSelectedAccountId] = useState("");
   const [days, setDays] = useState<1 | 7 | 30 | 90>(30);
   const [status, setStatus] = useState<BackfillStatus>("idle");
   const [phases, setPhases] = useState<PhaseProgress[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // ── 전체계정 수집 상태 ──
+  const [bulkStatus, setBulkStatus] = useState<BackfillStatus>("idle");
+  const [bulkResults, setBulkResults] = useState<BulkAccountResult[]>([]);
+  const [bulkCurrent, setBulkCurrent] = useState(0);
+
+  const isAnyRunning = status === "running" || bulkStatus === "running";
+
+  // ── SSE 스트림 소비 헬퍼 (개별/전체 공용) ──
+  async function consumeBackfillStream(res: Response): Promise<"done" | "error"> {
+    if (!res.body) throw new Error("스트리밍 응답 없음");
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let result: "done" | "error" = "done";
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        try {
+          const data = JSON.parse(line.slice(6));
+          if (data.type === "error") result = "error";
+        } catch {
+          // JSON 파싱 실패 무시
+        }
+      }
+    }
+    return result;
+  }
+
+  // ── 전체계정 수집 ──
+  async function handleBulkCollect() {
+    if (accounts.length === 0) return;
+
+    setBulkStatus("running");
+    setBulkCurrent(0);
+    const initial: BulkAccountResult[] = accounts.map((a) => ({
+      account_id: a.account_id,
+      account_name: a.account_name,
+      status: "pending",
+    }));
+    setBulkResults(initial);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < accounts.length; i++) {
+      const account = accounts[i];
+      setBulkCurrent(i + 1);
+      setBulkResults((prev) =>
+        prev.map((r) =>
+          r.account_id === account.account_id ? { ...r, status: "running" } : r
+        )
+      );
+
+      try {
+        const res = await fetch("/api/admin/backfill", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ account_id: account.account_id, days }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error((err as { error?: string }).error || "수집 실패");
+        }
+
+        const streamResult = await consumeBackfillStream(res);
+
+        setBulkResults((prev) =>
+          prev.map((r) =>
+            r.account_id === account.account_id
+              ? { ...r, status: streamResult === "done" ? "done" : "error", message: streamResult === "error" ? "수집 중 오류" : undefined }
+              : r
+          )
+        );
+        if (streamResult === "done") successCount++;
+        else failCount++;
+      } catch (e) {
+        failCount++;
+        setBulkResults((prev) =>
+          prev.map((r) =>
+            r.account_id === account.account_id
+              ? { ...r, status: "error", message: (e as Error).message }
+              : r
+          )
+        );
+      }
+    }
+
+    setBulkStatus("done");
+    toast.success(`전체계정 수집 완료: ${successCount}개 성공, ${failCount}개 실패`);
+  }
 
   async function handleBackfill() {
     if (!selectedAccountId) return;
@@ -75,7 +185,6 @@ export function BackfillSection({ accounts }: BackfillSectionProps) {
             const data = JSON.parse(line.slice(6));
 
             if (data.type === "start") {
-              // phase 목록으로 초기 상태 설정
               const initial: PhaseProgress[] = (
                 data.phases as { phase: PhaseName; label: string }[]
               ).map((p) => ({
@@ -147,7 +256,6 @@ export function BackfillSection({ accounts }: BackfillSectionProps) {
                 )
               );
             } else if (data.type === "day_error") {
-              // 개별 날짜 에러는 콘솔만
               console.warn(
                 `[backfill] ${data.phase as string} ${data.date as string} 실패:`,
                 data.message
@@ -175,7 +283,6 @@ export function BackfillSection({ accounts }: BackfillSectionProps) {
         }
       }
 
-      // 스트림 종료 후에도 status가 running이면 완료 처리
       setStatus((prev) => (prev === "running" ? "done" : prev));
     } catch (e) {
       setStatus("error");
@@ -190,11 +297,10 @@ export function BackfillSection({ accounts }: BackfillSectionProps) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6">
       <h3 className="text-base font-bold text-gray-900 mb-1">
-        과거 데이터 수동 수집
+        데이터 수집
       </h3>
       <p className="text-sm text-gray-500 mb-4">
-        특정 계정의 과거 데이터를 수동으로 수집합니다. (광고데이터 + 매출데이터 +
-        타겟중복을 한번에 수집)
+        광고데이터 + 매출데이터 + 타겟중복을 한번에 수집합니다.
       </p>
 
       <div className="flex gap-3 items-end flex-wrap">
@@ -206,7 +312,7 @@ export function BackfillSection({ accounts }: BackfillSectionProps) {
           <select
             value={selectedAccountId}
             onChange={(e) => setSelectedAccountId(e.target.value)}
-            disabled={status === "running"}
+            disabled={isAnyRunning}
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm min-w-[200px] bg-white disabled:opacity-50"
           >
             <option value="">계정 선택</option>
@@ -228,7 +334,7 @@ export function BackfillSection({ accounts }: BackfillSectionProps) {
               <button
                 key={d}
                 onClick={() => setDays(d)}
-                disabled={status === "running"}
+                disabled={isAnyRunning}
                 className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
                   days === d
                     ? "bg-[#F75D5D] text-white border-[#F75D5D]"
@@ -241,13 +347,30 @@ export function BackfillSection({ accounts }: BackfillSectionProps) {
           </div>
         </div>
 
-        {/* 수집 버튼 */}
+        {/* 개별 수집 버튼 */}
         <button
           onClick={handleBackfill}
-          disabled={!selectedAccountId || status === "running"}
+          disabled={!selectedAccountId || isAnyRunning}
           className="px-5 py-2 text-sm font-semibold rounded-lg bg-[#F75D5D] text-white hover:bg-[#E54949] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {status === "running" ? "수집 중..." : "수동 수집"}
+        </button>
+
+        {/* 구분선 */}
+        <div className="h-8 w-px bg-gray-300" />
+
+        {/* 전체계정 수집 버튼 */}
+        <button
+          onClick={handleBulkCollect}
+          disabled={isAnyRunning || accounts.length === 0}
+          className="flex items-center gap-2 px-5 py-2 text-sm font-semibold rounded-lg border-2 border-[#F75D5D] text-[#F75D5D] hover:bg-[#F75D5D] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {bulkStatus === "running" && (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          )}
+          {bulkStatus === "running"
+            ? `전체계정 수집 중 (${bulkCurrent}/${accounts.length})`
+            : `전체계정 수집 (${accounts.length}개)`}
         </button>
       </div>
 
@@ -274,6 +397,33 @@ export function BackfillSection({ accounts }: BackfillSectionProps) {
       {status === "error" && errorMsg && (
         <div className="mt-4 p-3 bg-red-50 rounded-lg text-sm text-red-700">
           오류: {errorMsg}
+        </div>
+      )}
+
+      {/* 전체계정 수집 결과 */}
+      {bulkResults.length > 0 && (
+        <div className="mt-4 space-y-1">
+          <h4 className="text-sm font-semibold text-gray-700 mb-2">
+            전체계정 수집 진행 상태
+            {bulkStatus === "done" && (
+              <span className="ml-2 text-xs font-normal text-green-600">
+                ({bulkResults.filter((r) => r.status === "done").length}/{bulkResults.length} 성공)
+              </span>
+            )}
+          </h4>
+          {bulkResults.map((r) => (
+            <div key={r.account_id} className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg bg-gray-50">
+              <span className="flex-1 truncate text-gray-700">{r.account_name}</span>
+              {r.status === "pending" && <span className="text-xs text-gray-400">대기</span>}
+              {r.status === "running" && <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500 shrink-0" />}
+              {r.status === "done" && (
+                <span className="text-xs text-green-600 shrink-0">완료</span>
+              )}
+              {r.status === "error" && (
+                <span className="text-xs text-red-500 shrink-0" title={r.message}>실패</span>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
