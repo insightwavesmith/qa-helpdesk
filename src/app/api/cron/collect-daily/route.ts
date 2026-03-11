@@ -19,7 +19,7 @@ const AD_FIELDS = [
   "campaign_name",
   "account_id",
   "account_name",
-  "creative.fields(object_type,product_set_id,video_id,image_hash)",
+  "creative.fields(object_type,product_set_id,video_id,image_hash,asset_feed_spec)",
 ].join(",");
 
 const INSIGHT_FIELDS = [
@@ -78,7 +78,8 @@ function normalizeRanking(raw: string | null | undefined): string {
 }
 
 // creative 필드 기반 분류 (벤치마크와 동일한 로직)
-// 1순위: video_id → VIDEO, 2순위: image_hash(+no product_set) → IMAGE
+// 1순위: video_id 또는 asset_feed_spec.videos → VIDEO
+// 2순위: image_hash(+no product_set) → IMAGE
 // 3순위: product_set_id → CATALOG, fallback: object_type 기반
 function getCreativeType(ad: Record<string, unknown>): string {
   const creative = ad.creative as {
@@ -86,6 +87,9 @@ function getCreativeType(ad: Record<string, unknown>): string {
     product_set_id?: string;
     video_id?: string;
     image_hash?: string;
+    asset_feed_spec?: {
+      videos?: { video_id?: string }[];
+    };
   } | undefined;
 
   const videoId = creative?.video_id;
@@ -93,14 +97,17 @@ function getCreativeType(ad: Record<string, unknown>): string {
   const productSetId = creative?.product_set_id;
   const objectType = creative?.object_type ?? "UNKNOWN";
 
-  // 1순위: video_id 존재 → VIDEO
+  // 1순위: video_id 존재 → VIDEO (직접 업로드 영상)
   if (videoId) return "VIDEO";
+  // 1-b: asset_feed_spec.videos 존재 → VIDEO (Advantage+ 크리에이티브 영상)
+  const afsVideos = creative?.asset_feed_spec?.videos;
+  if (afsVideos && afsVideos.length > 0) return "VIDEO";
   // 2순위: image_hash 존재 + product_set_id 없음 → IMAGE
   if (imageHash && !productSetId) return "IMAGE";
   // 3순위: product_set_id 존재 → CATALOG
   if (productSetId) return "CATALOG";
 
-  // fallback: object_type 기반 (기존 로직)
+  // fallback: object_type 기반 (asset_feed_spec 없는 엣지 케이스)
   if (objectType === "VIDEO" || objectType === "PRIVACY_CHECK_FAIL") return "VIDEO";
   if (objectType === "SHARE") return "VIDEO";
   return "IMAGE";
