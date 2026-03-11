@@ -4,7 +4,7 @@
  *
  * STEP 0: 계정 카테고리 분류 (profiles 매칭 → account_categories → AI 자동 분류)
  * STEP 1: Meta API로 활성 계정의 광고 원본 수집 → ad_insights_classified UPSERT
- * STEP 2: creative_type × ranking_type × ranking_group × category별 평균 계산 → benchmarks UPSERT
+ * STEP 2: creative_type × ranking_type × ranking_group × category별 Trimmed Weighted Mean → benchmarks UPSERT
  * STEP 3: MEDIAN_ALL (랭킹 무관 전체 평균) → benchmarks UPSERT
  */
 
@@ -115,7 +115,7 @@ const AD_FIELDS = [
   "id",
   "name",
   "adset_id",
-  "creative.fields(object_type,product_set_id)",
+  "creative.fields(object_type,product_set_id,video_id,image_hash)",
 ].join(",");
 
 // INSIGHT_FIELDS: nested insights 안에 들어갈 지표 필드
@@ -134,20 +134,33 @@ const INSIGHT_FIELDS = [
   "conversion_rate_ranking",
 ].join(",");
 
-// creative.object_type + product_set_id → creative_type (GCP 방식)
-// VIDEO = object_type VIDEO | PRIVACY_CHECK_FAIL
-// CATALOG = object_type SHARE 또는 (IMAGE + product_set_id 존재)
-// IMAGE = 나머지
+// creative 필드 기반 분류 (소재 형식 우선)
+// 1순위: video_id → VIDEO, 2순위: image_hash(+no product_set) → IMAGE
+// 3순위: product_set_id → CATALOG, fallback: object_type 기반
 function getCreativeType(ad: Record<string, unknown>): string {
-  const creative = ad.creative as { object_type?: string; product_set_id?: string } | undefined;
-  const objectType = creative?.object_type ?? "UNKNOWN";
-  const productSetId = creative?.product_set_id;
+  const creative = ad.creative as {
+    object_type?: string;
+    product_set_id?: string;
+    video_id?: string;
+    image_hash?: string;
+  } | undefined;
 
+  const videoId = creative?.video_id;
+  const imageHash = creative?.image_hash;
+  const productSetId = creative?.product_set_id;
+  const objectType = creative?.object_type ?? "UNKNOWN";
+
+  // 1순위: video_id 존재 → VIDEO
+  if (videoId) return "VIDEO";
+  // 2순위: image_hash 존재 + product_set_id 없음 → IMAGE
+  if (imageHash && !productSetId) return "IMAGE";
+  // 3순위: product_set_id 존재 → CATALOG
+  if (productSetId) return "CATALOG";
+
+  // fallback: object_type 기반 (기존 로직)
   if (objectType === "VIDEO" || objectType === "PRIVACY_CHECK_FAIL") return "VIDEO";
   if (objectType === "SHARE") return "CATALOG";
-  if (objectType === "IMAGE" && productSetId) return "CATALOG";
-  if (objectType === "IMAGE") return "IMAGE";
-  return "IMAGE"; // fallback
+  return "IMAGE";
 }
 
 // 광고 인사이트 → 13개 지표 계산 (GCP 스펙 기준)
@@ -243,20 +256,71 @@ async function fetchWithRetry(url: string, maxRetries = 3): Promise<Response> {
   return fetch(url, { signal: AbortSignal.timeout(60_000) });
 }
 
-// 그룹 평균 계산: 13개 지표의 양수값만 평균
-function calcGroupAvg(
+// Trimmed Weighted Mean: 상하 10% 제거 + 지표별 가중 평균
+
+// 지표별 가중치 필드 매핑
+function getWeightKey(metric: MetricKey): keyof ClassifiedAd {
+  switch (metric) {
+    case "click_to_checkout_rate":
+    case "click_to_purchase_rate":
+    case "checkout_to_purchase_rate":
+      return "clicks";
+    case "roas":
+      return "spend";
+    case "reach_to_purchase_rate":
+      return "reach";
+    default:
+      // 기반/참여 지표: impressions
+      return "impressions";
+  }
+}
+
+// Trimmed Weighted Mean: 상하 10% 제거 + 가중 평균
+function calcTrimmedWeightedAvg(
   ads: ClassifiedAd[],
   extra: Record<string, unknown>
 ): Record<string, unknown> {
   const row: Record<string, unknown> = { ...extra };
 
   for (const key of METRIC_KEYS) {
-    const values = ads
-      .map((a) => a[key as MetricKey])
-      .filter((v): v is number => v != null && Number.isFinite(v) && v > 0);
-    row[key] = values.length > 0
-      ? round(values.reduce((s, v) => s + v, 0) / values.length, 4)
-      : null;
+    // 해당 지표가 양수인 광고만 필터
+    const entries = ads
+      .filter((a) => {
+        const v = a[key as MetricKey];
+        return v != null && Number.isFinite(v) && v > 0;
+      })
+      .sort((a, b) => (a[key as MetricKey] as number) - (b[key as MetricKey] as number));
+
+    if (entries.length === 0) {
+      row[key] = null;
+      continue;
+    }
+
+    // 3건 이상이면 상하위 10% 제거 (최소 1개씩)
+    let trimmed: ClassifiedAd[];
+    if (entries.length >= 3) {
+      const trimCount = Math.max(1, Math.floor(entries.length * 0.1));
+      trimmed = entries.slice(trimCount, entries.length - trimCount);
+      // trim 후 비어있으면 원본 사용
+      if (trimmed.length === 0) trimmed = entries;
+    } else {
+      trimmed = entries;
+    }
+
+    // 가중 평균 계산
+    const weightKey = getWeightKey(key as MetricKey);
+    let weightedSum = 0;
+    let totalWeight = 0;
+    for (const ad of trimmed) {
+      const value = ad[key as MetricKey] as number;
+      const weight = ad[weightKey] as number;
+      if (weight > 0) {
+        weightedSum += value * weight;
+        totalWeight += weight;
+      }
+    }
+
+    row[key] = totalWeight > 0 ? round(weightedSum / totalWeight, 4) : null;
   }
 
   return row;
@@ -521,52 +585,65 @@ export async function GET(req: NextRequest) {
     }
 
     // ────────────────────────────────────────────────────────
-    // STEP 2: 벤치마크 계산 — creative_type 구분 없이 전체 합산 (ALL)
+    // STEP 2: 벤치마크 계산 — ALL + creative_type별 (Trimmed Weighted Mean)
     // ────────────────────────────────────────────────────────
     const rankingTypes = ["quality", "engagement", "conversion"] as const;
     const rankingGroups = ["ABOVE_AVERAGE", "AVERAGE", "BELOW_AVERAGE"] as const;
+    const creativeTypes = ["ALL", "VIDEO", "IMAGE", "CATALOG"] as const;
 
     const benchmarkRows: Record<string, unknown>[] = [];
-    const weekDate = getMondayOfWeek(); // A4: 해당 주의 월요일
+    const weekDate = getMondayOfWeek();
 
-    for (const rankingType of rankingTypes) {
-      const rankingKey = `${rankingType}_ranking` as keyof ClassifiedAd;
-      for (const rankingGroup of rankingGroups) {
-        const filtered = allClassified.filter(
-          (r) => r[rankingKey] === rankingGroup
-        );
-        if (filtered.length === 0) continue;
+    for (const ct of creativeTypes) {
+      const pool = ct === "ALL"
+        ? allClassified
+        : allClassified.filter((a) => a.creative_type === ct);
+      if (pool.length === 0) continue;
 
+      for (const rankingType of rankingTypes) {
+        const rankingKey = `${rankingType}_ranking` as keyof ClassifiedAd;
+        for (const rankingGroup of rankingGroups) {
+          const filtered = pool.filter((r) => r[rankingKey] === rankingGroup);
+          if (filtered.length === 0) continue;
+
+          benchmarkRows.push(
+            calcTrimmedWeightedAvg(filtered, {
+              creative_type: ct,
+              ranking_type: rankingType,
+              ranking_group: rankingGroup,
+              category: "all",
+              sample_count: filtered.length,
+              calculated_at: collectedAt,
+              date: weekDate,
+            })
+          );
+        }
+      }
+    }
+
+    // ────────────────────────────────────────────────────────
+    // STEP 3: MEDIAN_ALL — 랭킹 무관 전체 평균 (creative_type별)
+    // ────────────────────────────────────────────────────────
+    const medianRankingTypes = ["engagement", "conversion"] as const;
+    for (const ct of creativeTypes) {
+      const pool = ct === "ALL"
+        ? allClassified
+        : allClassified.filter((a) => a.creative_type === ct);
+      if (pool.length === 0) continue;
+
+      for (const rankingType of medianRankingTypes) {
         benchmarkRows.push(
-          calcGroupAvg(filtered, {
-            creative_type: "ALL",
+          calcTrimmedWeightedAvg(pool, {
+            creative_type: ct,
             ranking_type: rankingType,
-            ranking_group: rankingGroup,
+            ranking_group: "MEDIAN_ALL",
             category: "all",
-            sample_count: filtered.length,
+            sample_count: pool.length,
             calculated_at: collectedAt,
             date: weekDate,
           })
         );
       }
-    }
-
-    // ────────────────────────────────────────────────────────
-    // STEP 3: MEDIAN_ALL — 랭킹 무관 전체 평균
-    // ────────────────────────────────────────────────────────
-    const medianRankingTypes = ["engagement", "conversion"] as const;
-    for (const rankingType of medianRankingTypes) {
-      benchmarkRows.push(
-        calcGroupAvg(allClassified, {
-          creative_type: "ALL",
-          ranking_type: rankingType,
-          ranking_group: "MEDIAN_ALL",
-          category: "all",
-          sample_count: allClassified.length,
-          calculated_at: collectedAt,
-          date: weekDate,
-        })
-      );
     }
 
     // ────────────────────────────────────────────────────────
