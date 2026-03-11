@@ -21,13 +21,13 @@ export function SummaryCards({ cards }: SummaryCardsProps) {
         const isRoas = card.label === "ROAS";
         const hasBenchmark = card.benchmarkText != null;
 
-        // 벤치마크 텍스트 색상
+        // 벤치마크 텍스트 색상 (3단계: 초록/노란/빨강)
         const benchColor = hasBenchmark
           ? card.benchmarkGood === true
             ? "text-green-600"
             : card.benchmarkGood === false
               ? "text-red-500"
-              : "text-gray-400"
+              : "text-yellow-600"
           : "text-gray-400";
 
         // ▲/▼ 화살표

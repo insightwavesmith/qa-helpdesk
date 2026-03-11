@@ -110,7 +110,9 @@ export function toSummaryCards(
     }
   }
 
-  /** 벤치마크 비교 정보 생성 (ascending: true=클수록 좋음) */
+  /** 벤치마크 비교 정보 생성 (ascending: true=클수록 좋음)
+   *  3단계 판정: true=우수(100%↑), null=보통(75~100%), false=미달(75%↓)
+   */
   function bm(
     key: string,
     myValue: number,
@@ -120,7 +122,20 @@ export function toSummaryCards(
     const benchVal = benchMap.get(key) ?? null;
     if (benchVal == null) return { benchmarkText: null, benchmarkGood: null, benchmarkAbove: null };
     const isAbove = myValue > benchVal;
-    const isGood = ascending ? isAbove : !isAbove;
+
+    let isGood: boolean | null;
+    if (ascending) {
+      // 높을수록 좋음: >=100% 초록, >=75% 노란, <75% 빨강
+      if (myValue >= benchVal) isGood = true;
+      else if (myValue >= benchVal * 0.75) isGood = null;
+      else isGood = false;
+    } else {
+      // 낮을수록 좋음: <=100% 초록, <=125% 노란, >125% 빨강
+      if (myValue <= benchVal) isGood = true;
+      else if (myValue <= benchVal * 1.25) isGood = null;
+      else isGood = false;
+    }
+
     return {
       benchmarkText: `기준 ${formatBench(benchVal)}`,
       benchmarkGood: isGood,
