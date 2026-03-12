@@ -33,23 +33,29 @@ export default async function ProtractorPage() {
 
   const role = profile.role;
 
-  // admin → 실제 대시보드
+  // admin → 실제 대시보드 (전체 계정 조회)
   if (role === "admin") {
-    return <Suspense><RealDashboard /></Suspense>;
+    const { data: allAccounts } = await svc
+      .from("ad_accounts")
+      .select("*")
+      .eq("active", true)
+      .order("created_at", { ascending: false });
+    return <Suspense><RealDashboard initialAccounts={allAccounts ?? []} /></Suspense>;
   }
 
   // student/member → 광고계정 연결 여부 확인
   if (role === "student" || role === "member") {
     const { data: adAccounts } = await svc
       .from("ad_accounts")
-      .select("id")
+      .select("*")
       .eq("user_id", user.id)
-      .limit(1);
+      .eq("active", true)
+      .order("created_at", { ascending: false });
 
     const hasAdAccount = adAccounts && adAccounts.length > 0;
 
     if (hasAdAccount) {
-      return <Suspense><RealDashboard /></Suspense>;
+      return <Suspense><RealDashboard initialAccounts={adAccounts} /></Suspense>;
     }
 
     // 미연결 수강생 → 샘플 + 연결 안내

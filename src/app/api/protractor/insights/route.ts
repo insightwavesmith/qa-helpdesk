@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
       )
       .eq("account_id", accountId)
       .order("date", { ascending: true })
-      .limit(10000);
+      .limit(5000);
 
     query = query.gte("date", start);
     query = query.lte("date", end);
@@ -67,7 +67,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ data });
+    return NextResponse.json({ data }, {
+      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+    });
   } catch {
     return NextResponse.json(
       { error: "서버 오류가 발생했습니다." },

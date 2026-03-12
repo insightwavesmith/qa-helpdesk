@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { StudentHeader } from "@/components/layout/student-header";
 import { getPendingAnswersCount } from "@/actions/answers";
@@ -9,6 +10,12 @@ import { MobileSidebar } from "@/components/dashboard/MobileSidebar";
 import { Button } from "@/components/ui/button";
 import { QaChatButton } from "@/components/qa-chatbot/QaChatButton";
 import { SWRProvider } from "@/components/providers/swr-provider";
+
+const getCachedPendingAnswersCount = unstable_cache(
+  getPendingAnswersCount,
+  ["pending-answers-count"],
+  { revalidate: 60 }
+);
 
 export default async function MainLayout({
   children,
@@ -71,7 +78,7 @@ export default async function MainLayout({
 
   // admin/lead/member: 사이드바 레이아웃
   const pendingAnswersCount =
-    (role === "admin" || role === "assistant") ? await getPendingAnswersCount() : 0;
+    (role === "admin" || role === "assistant") ? await getCachedPendingAnswersCount() : 0;
 
   return (
     <div className="flex h-screen overflow-hidden">

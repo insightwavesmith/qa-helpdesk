@@ -88,7 +88,11 @@ interface T3Response {
   hasBenchmarkData?: boolean;
 }
 
-export default function RealDashboard() {
+interface RealDashboardProps {
+  initialAccounts?: Record<string, unknown>[];
+}
+
+export default function RealDashboard({ initialAccounts }: RealDashboardProps) {
   const searchParams = useSearchParams();
   const accountParam = searchParams.get("account");
 
@@ -102,6 +106,7 @@ export default function RealDashboard() {
   const { data: accountsData, error: accountsError, isLoading: loadingAccounts, mutate: mutateAccounts } = useSWR(
     SWR_KEYS.PROTRACTOR_ACCOUNTS,
     jsonFetcher,
+    initialAccounts ? { fallbackData: { data: initialAccounts } } : undefined,
   );
   const accounts: AdAccount[] = accountsData?.data ?? [];
 

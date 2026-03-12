@@ -200,8 +200,8 @@ export async function GET(request: NextRequest) {
     const sortedAdsets = [...activeAdsets].sort(
       (a, b) => (reachByAdset[b.id] ?? 0) - (reachByAdset[a.id] ?? 0)
     );
-    const cappedAdsets = sortedAdsets.slice(0, 8);
-    const adsetsTruncated = activeAdsets.length > 8;
+    const cappedAdsets = sortedAdsets.slice(0, 6);
+    const adsetsTruncated = activeAdsets.length > 6;
 
     // pair 목록 생성 (pairSum === 0 제외)
     type PairTask = {
@@ -222,7 +222,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const CONCURRENCY = 5;
+    const CONCURRENCY = 10;
     const startTime = Date.now();
     let deadlineHit = false;
 
