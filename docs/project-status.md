@@ -1,9 +1,9 @@
 # BS CAMP QA Helpdesk — bkit PDCA 프로젝트 현황
 
-> 최종 업데이트: 2026-02-22 KST
+> 최종 업데이트: 2026-03-12 KST
 > 프로젝트: https://bscamp.vercel.app
 > GitHub: https://github.com/insightwavesmith/qa-helpdesk
-> 최신 커밋: `401dc72`
+> 최신 커밋: `5f1fbe6`
 
 ---
 
@@ -412,6 +412,147 @@
 
 ---
 
+## Creative Type 근본 수정 (2026-03-05~06)
+
+> 상태: Plan ✅ | Design ✅ | Do ✅ | Check ✅ | Act ✅
+
+### Do
+- 커밋: `1be4845` → `52695ee` → `af929e1` → `4f11e0f` → `3a794e6` → `2097fa5` → `876bb8b` → `aeca7b8`
+- 근본 원인: `getCreativeType()` 함수가 SHARE 타입 반환 → Meta API의 `asset_feed_spec.videos`에서 video_id 감지 실패
+- 수정: 공용 모듈 통합 (`src/lib/protractor/creative-type.ts`), SHARE→VIDEO 매핑, 수동수집+크론수집 모두 통일
+- DB: 기존 SHARE 데이터 일괄 VIDEO로 수정
+
+---
+
+## 데일리 수집 스코프 수정 (2026-03-06)
+
+> 상태: Do ✅ | Check ✅ | Act ✅
+
+### Do
+- 커밋: `0c2f978`
+- 변경: 전체 계정 → `ad_accounts` 등록 계정만 수집 + 기존 미등록 데이터 정리
+- 영향: 불필요한 API 호출 제거, 수집 속도 향상
+
+---
+
+## 봇/크롤러 트래픽 필터링 (2026-03-06)
+
+> 상태: Do ✅ | Check ✅ | Act ✅
+
+### Do
+- 커밋: `f88ddf5`
+- 변경: 믹스패널 데이터에서 봇/크롤러 트래픽 필터링 추가
+
+---
+
+## 수강생 질문 슬랙 알림 (2026-03-07)
+
+> 상태: Do ✅ | Check ✅ | Act ✅
+
+### Do
+- 커밋: `8a79829`
+- 변경: 수강생이 질문 등록 시 슬랙 채널에 자동 알림
+
+---
+
+## 비밀번호 재설정 URL 수정 (2026-03-07)
+
+> 상태: Do ✅ | Check ✅ | Act ✅
+
+### Do
+- 커밋: `15d8800`
+- 변경: 리다이렉트 URL `qa-helpdesk` → `bscamp` 수정
+
+---
+
+## 경쟁사 분석기 v2 (2026-03-08)
+
+> 상태: Plan ✅ | Design ✅ | Do ✅ | Check ✅ | Act ✅
+
+### Plan
+- 5개 TASK 분리: T1 구조/T2 검색UI/T3 필터정렬/T4 다운로드/T5 핀NEW
+- 기획서: `mozzi-reports.vercel.app/reports/plan/2026-03-08-competitor-ux-redesign.html`
+
+### Do
+- 커밋: `677acff` → `f18fa77` → `7c7011e` → `36cb118` → `456fd3d` → `85e916d` (핫픽스) → `a7226d6` (검색 고도화)
+- 주요: page_results 파싱, 더보기, 정렬, 필터, 카드 버튼, page_search+ad_library 병렬, URL contain
+
+---
+
+## 타겟중복률 버그 수정 (2026-03-09)
+
+> 상태: Do ✅ | Check ✅ | Act ✅
+
+### Do
+- 커밋: `dae1602`
+- 근본 원인: `daily_ad_insights`에서 일별 reach `+=` 합산 → reach는 유니크 수치, 합산하면 뻥튀기
+- 수정: `fetchPerAdsetReach()` — Meta API `level=adset` + 기간 `time_range`로 1회 호출, fallback `Math.max`
+
+---
+
+## 사전계산 Phase 1 (2026-03-12)
+
+> 상태: Do ✅ | Check ✅ | Act ✅
+
+### Do
+- 커밋: `5df2884`
+- 신규 테이블 3개:
+  - `t3_scores_precomputed` — 계정별 × 기간별 T3 점수 사전계산
+  - `student_performance_daily` — 수강생별 성과 사전계산
+  - `ad_diagnosis_cache` — 계정별 상위 광고 진단 캐시
+- 감사 문서: `docs/precompute-audit.md` (전수 조사 11개 영역)
+
+---
+
+## 성능 개선 P0+P1+P2 (2026-03-12)
+
+> 상태: Do ✅ | Check ✅ | Act ✅
+
+### Do
+- P0+P1 커밋: `2690138`, `51cb1c5` (accounts 중복제거, overlap 병렬화+캐시, SWR 캐시, CDN 헤더, loading skeleton)
+- P2 커밋: `f5655f4` (overlap cron 사전계산, insights 집계, recharts→SVG)
+- 진단 색상: `6709a46` (3단계 판정 — 벤치마크 75~100% 구간 노란색 추가)
+- 성능 분석: `docs/performance-analysis.md` (438 lines)
+- 신규 테이블 2개:
+  - `daily_overlap_insights` — overlap 사전계산
+  - `insights_aggregated_daily` — 인사이트 일별 집계
+- 결과: accounts -80%, insights -84%, overlap -76%, total-value -38%
+
+---
+
+## Q&A 질문 수정 기능 (2026-03-12)
+
+> 상태: Do ✅ | Check ✅ | Act ✅
+
+### Do
+- 커밋: `75a6c83` (6파일, +328/-44)
+- 변경: 소유자 + 관리자/부관리자 수정 가능, 기존 NewQuestionForm 재활용
+- 라우트: `/questions/[id]/edit`
+
+---
+
+## 탭 전환 속도 개선 (2026-03-12)
+
+> 상태: Do ✅ | Check ✅ | Act ✅
+
+### Do
+- 커밋: `b8a16fa` (6파일, +90/-3)
+- 변경: `staleTimes.dynamic: 30` (30초 캐시), 이미지 sizes 최적화, loading skeleton
+
+---
+
+## Google Search Console 연동 (2026-03-12)
+
+> 상태: Do ✅ | Check ✅ | Act ✅
+
+### Do
+- 커밋: `5f1fbe6`
+- 변경: verification meta tag (HTML 태그 방식)
+- 소유권 인증: ✅ 완료 (smith.kim@inwv.co)
+- URL: `https://bscamp.vercel.app`
+
+---
+
 ## 순환학습루프 / Gold Standard (미착수)
 
 > 상태: Plan ⏸ | Design ❌ | Do ❌ | Check ❌ | Act ❌
@@ -536,38 +677,53 @@
 
 ## 기술 현황 요약
 
-### 커밋 히스토리 (최근 30개)
+### 커밋 히스토리 (최근 30개, 2026-03-12 기준)
 ```
-401dc72 feat: 콘텐츠 파이프라인 v2 (T2~T8) — 소스 확장, RAG 비교, 사이드바, 카드 토글
-180ded7 fix: 큐레이션 draft 구조 변경 + Gemini 분석 실패 수정
-46f3c5a fix: publishInfoShare 원본 curation_status 업데이트 수정
-9dd3534 fix: middleware.ts → proxy.ts (Next.js 16 Edge runtime 호환성)
-0a659e7 feat: 콘텐츠 큐레이션 대시보드 T0~T8 구현
-bd2c9c6 fix: Phase 3b 핫픽스 — 승인접근/메일/로그아웃/온보딩/사업자검증/프로필/카테고리/기수
-ecad07b feat: Phase 3b 회원 관리 전체 정비 (T1~T10)
-6f9b47b fix: 미들웨어 캐시 쿠키 버그 2건 수정 (온보딩 완료 + 로그아웃)
-6d4f24a feat: Phase 3 — 회원가입 리팩토링 + 초대코드 + 미들웨어 + 온보딩 (T0~T6)
-951d1bd feat: QA 지능화 (RAG Layer 3) — 분리 임베딩 + 2단계 검색 + Extended Thinking
-7bb1232 feat(rag): QA/chatbot 모델을 Sonnet 4.6으로 변경
-8aa2fc7 fix(admin): DashboardSidebar에 "지식 베이스" 메뉴 추가
-51df2d9 fix: knowledge stats API — RPC로 group by 처리
-4b30407 feat(qa): T5a 답변 이미지 첨부 UI + T5b 자동 임베딩 훅
-bbf430c feat(rag): P2 Reranking + Query Expansion + Image Vision + Monitoring (T0~T8)
-ef889c5 feat(rag): P1 Embed Pipeline + Hybrid Search (T1~T6)
-8fbc017 feat(rag): P0 RAG Layer 0 — knowledge_chunks 통합 마이그레이션 + 5-Tier 가중 검색
-94acd95 feat: 총가치각도기 샘플 대시보드 + 접근 제어
+5f1fbe6 feat: add Google Search Console verification meta tag
+b8a16fa perf: 탭 전환 속도 개선 — staleTimes 캐시·이미지 sizes·loading skeleton
+75a6c83 feat: Q&A 질문 수정 기능 — 본인/관리자 글 편집, 기존 작성 UI 재활용
+f5655f4 perf: 성능 개선 P2 — overlap cron 사전계산·insights 집계·recharts→SVG
+51cb1c5 perf: 성능 개선 P0+P1 — SWR 캐시·CDN 헤더·overlap 최적화·loading skeleton
+2690138 perf: 총가치각도기 API 응답속도 개선 — accounts 중복제거, overlap 병렬화+캐시
+6709a46 fix: 진단 색상 3단계 판정 — 벤치마크 75~100% 구간 노란색 추가
+5df2884 feat: 사전계산 Phase 1 — T3 점수, 수강생 성과, 광고 진단
+aeca7b8 fix: meta-collector.ts — 공용 모듈 + AD_FIELDS 통일 (SHARE 2차)
+876bb8b fix: 수동수집 API — 공용 모듈 import + AD_FIELDS 통일 (SHARE 근본)
+2097fa5 fix: T3 엔진 getDominantCreativeType — SHARE→VIDEO 매핑 추가
+4f11e0f fix: creative_type 분류 근본 해결 — 공용 모듈 + 수동수집 직접 호출
+af929e1 fix: creative_type SHARE→VIDEO 디버깅 + 기존 데이터 일괄 수정
+8a79829 feat: 수강생 질문 등록 시 슬랙 채널 알림 추가
+0c2f978 fix: 데일리 수집 — 전체 계정 → ad_accounts 등록 계정만 수집
+1be4845 fix: creative_type 분류 근본 수정 — asset_feed_spec.videos video_id 감지
+52695ee fix: getCreativeType() SHARE → VIDEO 매핑 (collect-daily, collect-benchmarks)
+f88ddf5 fix: 믹스패널 봇/크롤러 트래픽 필터링 추가
+15d8800 fix: 비밀번호 재설정 리다이렉트 — qa-helpdesk → bscamp URL 수정
+dae1602 fix: 타겟중복률 계산 버그 수정 — reach 유니크 메트릭 합산 방지
+a7226d6 feat: 경쟁사 검색 고도화 — page_search+ad_library 병렬, URL contain
+85e916d fix: 경쟁사 핫픽스 — page_results 파싱, 더보기, 정렬, 필터, 카드 버튼
+456fd3d feat: 경쟁사 T5 — 핀/NEW 기능
+36cb118 feat: 경쟁사 T4 — 다운로드
+7c7011e feat: 경쟁사 T3 — 필터 정렬
+f18fa77 feat: 경쟁사 T2 — 검색 UI
+677acff feat: 경쟁사 T1 — 구조 리팩토링
+401dc72 feat: 콘텐츠 파이프라인 v2 (T2~T8)
 ```
 
-### DB 현황 (2026-02-22 기준)
-- daily_ad_insights: 7,366 rows
-- benchmarks: 3,026 rows
-- ad_accounts: 30
-- profiles: admin 1, student 4+, lead 3+, member 1
-- knowledge_chunks: 3,088 (blueprint 1,501 + lecture 547 + crawl 396 + file 140 + notion 128 + marketing_theory 122 + youtube 102 + webinar 98 + papers 35 + meeting 12 + info_share 7)
-- contents: notion 135, blueprint 68, crawl 57, file 9, youtube 7, info_share 3, webinar 1
-- reviews: 2건 (테스트)
+### DB 현황 (2026-03-12 기준)
+- daily_ad_insights: 1,562+ rows (수집 스코프 정리 후)
+- benchmarks: 3,026+ rows
+- ad_accounts: ~20 (등록 계정만)
+- profiles: admin 1, student 30, lead 3+, member 1
+- t3_scores_precomputed: 39 rows (Phase 1)
+- student_performance_daily: 28 rows (Phase 1)
+- ad_diagnosis_cache: 66 rows (Phase 1)
+- daily_overlap_insights: 37 rows (P2)
+- insights_aggregated_daily: 0 rows (다음 cron 후 populate)
+- knowledge_chunks: 3,088+ rows
+- contents: notion 135+, blueprint 68, crawl 57+, file 9, youtube 7+, info_share 3+, webinar 1
+- reviews: 2건
 
-### DB 마이그레이션 전체 (00001~00023)
+### DB 마이그레이션 전체 (00001~00023 + 신규)
 | 번호 | 파일 | 내용 |
 |------|------|------|
 | 00001 | initial_schema | 기본 스키마 |
@@ -593,6 +749,8 @@ ef889c5 feat(rag): P1 Embed Pipeline + Hybrid Search (T1~T6)
 | 00021 | phase3_signup | Phase 3 회원가입 |
 | 00022 | member_management | 회원 관리 |
 | 00023 | content_curation | 콘텐츠 큐레이션 |
+| 20260312 | daily_overlap_insights | 오버랩 사전계산 |
+| 20260312 | insights_aggregated_daily | 인사이트 일별 집계 |
 
 ### 환경
 - Vercel 배포 (자동, QA 환경: https://qa-helpdesk-coral.vercel.app)
@@ -603,8 +761,16 @@ ef889c5 feat(rag): P1 Embed Pipeline + Hybrid Search (T1~T6)
 - TranscriptAPI.com: YouTube 자막 수집 (API key: sk_dz9E62QhUbAPkmxfn_fgA4XTGwGtqHJYAs7fKUfNqv8, 무료 100크레딧)
 
 ### 다음 작업 우선순위
-1. ~~T4 블루프린트 EP별 분리~~ → 완료 (2026-02-22)
-2. 진단 엔진 총가치각도기 기획 확정
-3. 순환학습루프 MVP (데이터 누적 후)
-4. 이메일/뉴스레터 자동화
-5. Notion 피드백반 동기화
+1. 사전계산 Phase 2 — 집계 캐시 4개 (TASK 작성 완료)
+2. 오가닉 마케팅 자동화 파이프라인 (네이버 API 준비 완료)
+3. 수강생 랭킹 기능 (성장률 기반)
+4. 알림 시스템 (슬랙+카톡)
+5. 기수별 광고성과 뷰
+6. 순환학습루프 MVP (데이터 누적 후)
+7. 이메일/뉴스레터 자동화
+
+### 외부 연동 현황 (2026-03-12 신규)
+- **네이버 개발자센터**: bscamp 앱 등록 (insight-wave), API 3종 (로그인/카페/검색)
+- **Google Search Console**: bscamp.vercel.app 소유권 인증 완료
+- **네이버 카페**: 자사몰사관학교 (cafe.naver.com/1bpluschool, 160명)
+- **오가닉 프롬프트**: 4채널 v2.0 완성 (블로그/카페/SEO/GEO)
