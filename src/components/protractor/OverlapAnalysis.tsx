@@ -1,12 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-} from "recharts";
+// T3: recharts PieChart → SVG 도넛 (번들 -600KB)
 import {
   Card,
   CardContent,
@@ -193,12 +188,11 @@ export function OverlapAnalysis({
     }
   };
 
-  // 도넛 데이터
-  const donutData = [
-    { name: "중복", value: overall_rate },
-    { name: "고유", value: Math.max(0, 100 - overall_rate) },
-  ];
-  const DONUT_COLORS = ["#F75D5D", "#E5E7EB"];
+  // SVG 도넛 계산
+  const DONUT_R = 74;
+  const DONUT_STROKE = 24;
+  const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_R;
+  const overlapArc = (overall_rate / 100) * DONUT_CIRCUMFERENCE;
 
   // 세트별 최고중복 계산
   const maxOverlapByAdset: Record<string, number> = {};
@@ -238,27 +232,25 @@ export function OverlapAnalysis({
       {/* ── 히어로: 전체 중복률 ─────────────────────────────── */}
       <Card>
         <CardContent className="flex flex-col items-center gap-6 py-8 sm:flex-row">
-          {/* 도넛 차트 — 200x200 */}
+          {/* SVG 도넛 차트 — 200x200 */}
           <div className="relative h-[200px] w-[200px] shrink-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={donutData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={62}
-                  outerRadius={86}
-                  dataKey="value"
-                  startAngle={90}
-                  endAngle={-270}
-                  stroke="none"
-                >
-                  {donutData.map((_, idx) => (
-                    <Cell key={idx} fill={DONUT_COLORS[idx]} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
+            <svg viewBox="0 0 200 200" width={200} height={200}>
+              {/* 배경 원 (고유 도달) */}
+              <circle
+                cx={100} cy={100} r={DONUT_R}
+                fill="none" stroke="#E5E7EB" strokeWidth={DONUT_STROKE}
+              />
+              {/* 중복 부분 (빨간색) */}
+              {overlapArc > 0 && (
+                <circle
+                  cx={100} cy={100} r={DONUT_R}
+                  fill="none" stroke="#F75D5D" strokeWidth={DONUT_STROKE}
+                  strokeDasharray={`${overlapArc} ${DONUT_CIRCUMFERENCE - overlapArc}`}
+                  strokeLinecap="round"
+                  transform="rotate(-90 100 100)"
+                />
+              )}
+            </svg>
             {/* 중앙 텍스트 오버레이 */}
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
               <p className="text-2xl font-bold">{overall_rate.toFixed(1)}%</p>

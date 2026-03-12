@@ -40,6 +40,58 @@ export async function GET(request: NextRequest) {
       end = new Date().toISOString().slice(0, 10);
     }
 
+    // T2: mode=aggregated → 사전집계 테이블 우선 조회 (30~90행 vs 5,000행)
+    const mode = searchParams.get("mode");
+    if (mode === "aggregated") {
+      const { data: aggData, error: aggErr } = await svc
+        .from("insights_aggregated_daily" as never)
+        .select("*")
+        .eq("account_id", accountId)
+        .gte("date", start)
+        .lte("date", end)
+        .order("date", { ascending: true });
+
+      if (!aggErr && aggData && (aggData as unknown[]).length > 0) {
+        // 집계 데이터를 AdInsightRow 호환 형태로 변환
+        const rows = (aggData as Record<string, unknown>[]).map((row) => ({
+          date: row.date,
+          account_id: accountId,
+          ad_id: "__daily_agg__",
+          ad_name: `일자집계 ${row.date}`,
+          adset_name: null,
+          campaign_name: null,
+          creative_type: "ALL",
+          impressions: row.impressions ?? 0,
+          reach: row.reach ?? 0,
+          clicks: row.clicks ?? 0,
+          ctr: row.ctr ?? 0,
+          spend: row.spend ?? 0,
+          purchases: row.purchases ?? 0,
+          purchase_value: row.purchase_value ?? 0,
+          roas: row.roas ?? 0,
+          video_p3s_rate: row.video_p3s_rate,
+          thruplay_rate: row.thruplay_rate,
+          retention_rate: row.retention_rate,
+          reactions_per_10k: row.reactions_per_10k,
+          comments_per_10k: row.comments_per_10k,
+          shares_per_10k: row.shares_per_10k,
+          saves_per_10k: row.saves_per_10k,
+          engagement_per_10k: row.engagement_per_10k,
+          click_to_checkout_rate: row.click_to_checkout_rate,
+          checkout_to_purchase_rate: row.checkout_to_purchase_rate,
+          click_to_purchase_rate: row.click_to_purchase_rate,
+          reach_to_purchase_rate: row.reach_to_purchase_rate,
+          engagement_ranking: null,
+          conversion_ranking: null,
+        }));
+
+        return NextResponse.json({ data: rows, aggregated: true }, {
+          headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" },
+        });
+      }
+      // 집계 데이터 없으면 raw 쿼리 폴백
+    }
+
     let query = svc
       .from("daily_ad_insights")
       .select(
