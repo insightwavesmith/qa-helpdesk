@@ -198,6 +198,74 @@ export async function deleteQuestion(id: string) {
   return { error: null };
 }
 
+export async function updateQuestion(formData: {
+  id: string;
+  title: string;
+  content: string;
+  categoryId: number | null;
+  imageUrls?: string[];
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { data: null, error: "인증되지 않은 사용자입니다." };
+  }
+
+  const svc = createServiceClient();
+
+  // 권한 체크: 본인 또는 admin/assistant
+  const { data: profile } = await svc
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const isStaff =
+    profile?.role === "admin" || profile?.role === "assistant";
+
+  const { data: question } = await svc
+    .from("questions")
+    .select("author_id")
+    .eq("id", formData.id)
+    .single();
+
+  if (!question) {
+    return { data: null, error: "질문을 찾을 수 없습니다." };
+  }
+
+  const isOwner = question.author_id === user.id;
+  if (!isStaff && !isOwner) {
+    return { data: null, error: "수정 권한이 없습니다." };
+  }
+
+  const { data, error } = await svc
+    .from("questions")
+    .update({
+      title: formData.title,
+      content: formData.content,
+      category_id: formData.categoryId,
+      image_urls:
+        formData.imageUrls && formData.imageUrls.length > 0
+          ? formData.imageUrls
+          : [],
+    })
+    .eq("id", formData.id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("updateQuestion error:", error);
+    return { data: null, error: error.message };
+  }
+
+  revalidatePath(`/questions/${formData.id}`);
+  revalidatePath("/questions");
+  return { data, error: null };
+}
+
 export async function getCategories() {
   const supabase = createServiceClient();
 

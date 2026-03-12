@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronRight, MessageSquare, Sparkles, User, Shield } from "lucide-react";
+import { ChevronRight, MessageSquare, Sparkles, User, Shield, Pencil } from "lucide-react";
 import { getQuestionById } from "@/actions/questions";
 import { getAnswersByQuestionId } from "@/actions/answers";
 import { AnswerForm } from "./answer-form";
@@ -149,7 +149,16 @@ export default async function QuestionDetailPage({
             {question.title}
           </h1>
           {(isAdmin || (currentUserId && question.author?.id === currentUserId)) && (
-            <DeleteQuestionButton questionId={id} />
+            <div className="flex items-center gap-2 shrink-0">
+              <Link
+                href={`/questions/${id}/edit`}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-md border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                수정
+              </Link>
+              <DeleteQuestionButton questionId={id} />
+            </div>
           )}
         </div>
 

@@ -25,7 +25,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ArrowLeft, Send, ImagePlus, X } from "lucide-react";
-import { createQuestion } from "@/actions/questions";
+import { createQuestion, updateQuestion } from "@/actions/questions";
 import { createClient } from "@/lib/supabase/client";
 import { mp } from "@/lib/mixpanel";
 import { toast } from "sonner";
@@ -52,15 +52,35 @@ interface ImagePreview {
   preview: string;
 }
 
-interface NewQuestionFormProps {
-  categories: { id: number; name: string; slug: string }[];
+interface ExistingImage {
+  url: string;
+  preview: string;
 }
 
-export function NewQuestionForm({ categories }: NewQuestionFormProps) {
+interface NewQuestionFormProps {
+  categories: { id: number; name: string; slug: string }[];
+  mode?: "create" | "edit";
+  initialData?: {
+    id: string;
+    title: string;
+    content: string;
+    categoryId: string;
+    imageUrls?: string[];
+  };
+}
+
+export function NewQuestionForm({ categories, mode = "create", initialData }: NewQuestionFormProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [images, setImages] = useState<ImagePreview[]>([]);
+  const [existingImages, setExistingImages] = useState<ExistingImage[]>(() => {
+    if (mode === "edit" && initialData?.imageUrls) {
+      return initialData.imageUrls.map((url) => ({ url, preview: url }));
+    }
+    return [];
+  });
   const [uploading, setUploading] = useState(false);
+  const isEdit = mode === "edit";
 
   // 컴포넌트 언마운트 시 미리보기 blob URL 해제
   useEffect(() => {
@@ -73,18 +93,24 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
   const form = useForm<QuestionFormValues>({
     resolver: zodResolver(questionSchema),
     defaultValues: {
-      title: "",
-      content: "",
-      categoryId: "",
+      title: initialData?.title || "",
+      content: initialData?.content || "",
+      categoryId: initialData?.categoryId || "",
     },
   });
+
+  const removeExistingImage = useCallback((index: number) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const totalImageCount = existingImages.length + images.length;
 
   const handleImageSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files || []);
       if (files.length === 0) return;
 
-      const remaining = MAX_IMAGES - images.length;
+      const remaining = MAX_IMAGES - existingImages.length - images.length;
       if (remaining <= 0) {
         toast.error(`이미지는 최대 ${MAX_IMAGES}개까지 첨부할 수 있습니다.`);
         return;
@@ -114,7 +140,7 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
         fileInputRef.current.value = "";
       }
     },
-    [images.length]
+    [images.length, existingImages.length]
   );
 
   const removeImage = useCallback((index: number) => {
@@ -162,35 +188,63 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
     try {
       setUploading(true);
 
-      // Upload images first
-      let imageUrls: string[] = [];
+      // Upload new images
+      let newImageUrls: string[] = [];
       if (images.length > 0) {
-        imageUrls = await uploadImages();
+        newImageUrls = await uploadImages();
       }
 
-      const { data, error } = await createQuestion({
-        title: values.title,
-        content: values.content,
-        categoryId: parseInt(values.categoryId, 10),
-        imageUrls,
-      });
+      // Combine existing + new image URLs
+      const allImageUrls = [
+        ...existingImages.map((img) => img.url),
+        ...newImageUrls,
+      ];
 
-      if (error) {
-        toast.error(`질문 등록 실패: ${error}`);
-        return;
+      if (isEdit && initialData) {
+        const { error } = await updateQuestion({
+          id: initialData.id,
+          title: values.title,
+          content: values.content,
+          categoryId: parseInt(values.categoryId, 10),
+          imageUrls: allImageUrls,
+        });
+
+        if (error) {
+          toast.error(`수정 실패: ${error}`);
+          return;
+        }
+
+        toast.success("질문이 수정되었습니다.");
+        mp.track("question_updated", {
+          question_id: initialData.id,
+          category_id: values.categoryId,
+        });
+        router.push(`/questions/${initialData.id}`);
+      } else {
+        const { data, error } = await createQuestion({
+          title: values.title,
+          content: values.content,
+          categoryId: parseInt(values.categoryId, 10),
+          imageUrls: allImageUrls,
+        });
+
+        if (error) {
+          toast.error(`질문 등록 실패: ${error}`);
+          return;
+        }
+
+        toast.success("질문이 등록되었습니다.");
+        mp.track("question_created", {
+          question_id: data?.id,
+          category_id: values.categoryId,
+          has_images: allImageUrls.length > 0,
+          image_count: allImageUrls.length,
+        });
+        router.push(`/questions/${data?.id || ""}`);
       }
-
-      toast.success("질문이 등록되었습니다.");
-      mp.track("question_created", {
-        question_id: data?.id,
-        category_id: values.categoryId,
-        has_images: imageUrls.length > 0,
-        image_count: imageUrls.length,
-      });
-      router.push(`/questions/${data?.id || ""}`);
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "질문 등록 중 오류가 발생했습니다."
+        err instanceof Error ? err.message : isEdit ? "수정 중 오류가 발생했습니다." : "질문 등록 중 오류가 발생했습니다."
       );
     } finally {
       setUploading(false);
@@ -208,13 +262,17 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
 
       <div className="bg-white rounded-xl border border-gray-200 p-8 fade-in">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">새 질문 작성</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            메타 광고 관련 궁금한 점을 자유롭게 질문해주세요.
-            <br />
-            AI가 강의 자료를 기반으로 초안 답변을 드리고, Smith님이 검토 후
-            승인합니다.
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {isEdit ? "질문 수정" : "새 질문 작성"}
+          </h1>
+          {!isEdit && (
+            <p className="text-sm text-gray-500 mt-1">
+              메타 광고 관련 궁금한 점을 자유롭게 질문해주세요.
+              <br />
+              AI가 강의 자료를 기반으로 초안 답변을 드리고, Smith님이 검토 후
+              승인합니다.
+            </p>
+          )}
         </div>
 
         <Form {...form}>
@@ -296,14 +354,40 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
                   (선택, 최대 {MAX_IMAGES}개)
                 </span>
               </label>
-              {images.length > 0 && (
+              {totalImageCount > 0 && (
                 <span className="text-xs text-gray-500">
-                  {images.length}/{MAX_IMAGES}
+                  {totalImageCount}/{MAX_IMAGES}
                 </span>
               )}
             </div>
 
-            {/* Image previews */}
+            {/* Existing image previews (edit mode) */}
+            {existingImages.length > 0 && (
+              <div className="flex flex-wrap gap-3">
+                {existingImages.map((img, idx) => (
+                  <div
+                    key={`existing-${idx}`}
+                    className="relative group rounded-lg overflow-hidden border w-24 h-24"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={img.preview}
+                      alt={`기존 이미지 ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeExistingImage(idx)}
+                      className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* New image previews */}
             {images.length > 0 && (
               <div className="flex flex-wrap gap-3">
                 {images.map((img, idx) => (
@@ -330,7 +414,7 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
             )}
 
             {/* Upload button */}
-            {images.length < MAX_IMAGES && (
+            {totalImageCount < MAX_IMAGES && (
               <div>
                 <input
                   ref={fileInputRef}
@@ -375,8 +459,8 @@ export function NewQuestionForm({ categories }: NewQuestionFormProps) {
               {uploading && images.length > 0
                 ? "이미지 업로드 중..."
                 : form.formState.isSubmitting || uploading
-                  ? "등록 중..."
-                  : "질문 등록"}
+                  ? isEdit ? "수정 중..." : "등록 중..."
+                  : isEdit ? "수정 완료" : "질문 등록"}
             </Button>
           </div>
           </form>
