@@ -11,6 +11,9 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
+    staleTimes: {
+      dynamic: 30,
+    },
     optimizePackageImports: ["lucide-react", "recharts", "@tiptap/react"],
   },
 };

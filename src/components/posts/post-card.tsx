@@ -60,7 +60,7 @@ function CategoryBadge({ category }: { category: string }) {
   );
 }
 
-function Thumbnail({ title, category, thumbnailUrl }: { title: string; category: string; thumbnailUrl?: string | null }) {
+function Thumbnail({ title, category, thumbnailUrl, priority = false }: { title: string; category: string; thumbnailUrl?: string | null; priority?: boolean }) {
   const isOgFallback = !thumbnailUrl;
   return (
     <Image
@@ -68,8 +68,10 @@ function Thumbnail({ title, category, thumbnailUrl }: { title: string; category:
       alt={title}
       width={640}
       height={360}
+      sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
       className="w-full aspect-video object-cover"
       unoptimized={isOgFallback}
+      priority={priority}
     />
   );
 }
@@ -80,7 +82,7 @@ export function PostCard({ post, featured = false }: PostCardProps) {
       <Link href={`/posts/${post.id}`} className="block group">
         <article className="flex flex-col md:flex-row bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
           <div className="md:w-3/5 shrink-0">
-            <Thumbnail title={post.title} category={post.category} thumbnailUrl={post.thumbnail_url} />
+            <Thumbnail title={post.title} category={post.category} thumbnailUrl={post.thumbnail_url} priority />
           </div>
           <div className="flex flex-col justify-center p-5 md:p-6 md:w-2/5">
             <CategoryBadge category={post.category} />
