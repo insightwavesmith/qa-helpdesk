@@ -14,6 +14,37 @@ export async function GET() {
     if ("response" in auth) return auth.response;
     const { svc } = auth;
 
+    // 캐시 우선 조회 (Phase 2)
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: cached, error: cacheErr } = await (svc as any)
+        .from("email_campaign_stats")
+        .select("subject, content_id, sent_at, recipients, opens, clicks, open_rate, click_rate, sends_json, updated_at")
+        .order("sent_at", { ascending: false });
+
+      if (!cacheErr && cached && cached.length > 0) {
+        const newest = cached[0];
+        const age = Date.now() - new Date(newest.updated_at).getTime();
+        if (age < 24 * 60 * 60 * 1000) { // 24시간 이내
+          const campaigns = cached.map((c: Record<string, unknown>) => ({
+            subject: c.subject,
+            sentAt: c.sent_at,
+            contentId: c.content_id,
+            recipients: c.recipients,
+            opens: c.opens,
+            clicks: c.clicks,
+            openRate: Number(c.open_rate),
+            clickRate: Number(c.click_rate),
+            sends: c.sends_json || [],
+          }));
+          return NextResponse.json({ campaigns });
+        }
+      }
+    } catch {
+      // 캐시 테이블 없으면 폴백
+    }
+
+    // 폴백: 기존 실시간 집계
     const { data: sends, error } = await svc
       .from("email_sends")
       .select("id, subject, recipient_email, recipient_type, status, sent_at, opened_at, clicked_at, content_id")

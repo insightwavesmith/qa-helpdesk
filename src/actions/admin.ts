@@ -230,6 +230,29 @@ export async function rejectMember(userId: string, reason?: string) {
 export async function getDashboardStats() {
   const supabase = createServiceClient();
 
+  // 캐시 우선 조회 (Phase 2)
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: cached } = await (supabase as any)
+      .from("dashboard_stats_cache")
+      .select("stat_value, updated_at")
+      .eq("stat_key", "counts")
+      .single();
+
+    if (cached?.stat_value && cached.updated_at) {
+      const age = Date.now() - new Date(cached.updated_at).getTime();
+      if (age < 60 * 60 * 1000) { // 1시간 이내
+        return cached.stat_value as {
+          totalQuestions: number; weeklyQuestions: number; openQuestions: number;
+          pendingAnswers: number; totalPosts: number; activeMembers: number;
+        };
+      }
+    }
+  } catch {
+    // 캐시 테이블 없으면 폴백
+  }
+
+  // 폴백: 기존 실시간 쿼리
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
@@ -271,7 +294,26 @@ export async function getDashboardStats() {
 export async function getWeeklyQuestionStats() {
   const supabase = createServiceClient();
 
-  // Last 4 weeks of daily question counts
+  // 캐시 우선 조회 (Phase 2)
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: cached } = await (supabase as any)
+      .from("dashboard_stats_cache")
+      .select("stat_value, updated_at")
+      .eq("stat_key", "weekly_questions")
+      .single();
+
+    if (cached?.stat_value && cached.updated_at) {
+      const age = Date.now() - new Date(cached.updated_at).getTime();
+      if (age < 60 * 60 * 1000) { // 1시간 이내
+        return cached.stat_value as { date: string; label: string; 질문수: number }[];
+      }
+    }
+  } catch {
+    // 캐시 테이블 없으면 폴백
+  }
+
+  // 폴백: 기존 실시간 쿼리
   const fourWeeksAgo = new Date();
   fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
 

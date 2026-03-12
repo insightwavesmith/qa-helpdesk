@@ -7,6 +7,61 @@ export async function GET() {
     if ("response" in auth) return auth.response;
     const { svc } = auth;
 
+    // 캐시 우선 조회 (Phase 2)
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: cached, error: cacheErr } = await (svc as any)
+        .from("account_sync_status")
+        .select("account_id, account_name, meta_ok, meta_last_date, meta_ad_count, mixpanel_ok, mixpanel_state, updated_at");
+
+      if (!cacheErr && cached && cached.length > 0) {
+        const newest = cached[0];
+        const age = Date.now() - new Date(newest.updated_at).getTime();
+        if (age < 60 * 60 * 1000) { // 1시간 이내
+          // ad_accounts에서 id, created_at 보충
+          const { data: accounts } = await svc
+            .from("ad_accounts")
+            .select("id, account_id, created_at")
+            .order("created_at", { ascending: false });
+
+          const accountMap = new Map((accounts || []).map((a: { id: string; account_id: string; created_at: string | null }) => [a.account_id, a]));
+
+          const result = cached.map((c: Record<string, unknown>) => {
+            const acc = accountMap.get(c.account_id as string);
+            return {
+              id: acc?.id || c.account_id,
+              account_id: c.account_id,
+              account_name: c.account_name,
+              created_at: acc?.created_at || null,
+              meta: {
+                ok: c.meta_ok,
+                last_date: c.meta_last_date || null,
+                ad_count: c.meta_ad_count || 0,
+              },
+              mixpanel: {
+                ok: c.mixpanel_ok,
+                state: c.mixpanel_state || "not_configured",
+                last_date: null,
+                sessions: 0,
+              },
+            };
+          });
+
+          const stats = {
+            total: result.length,
+            metaOk: result.filter((r: { meta: { ok: boolean } }) => r.meta.ok).length,
+            mixpanelOk: result.filter((r: { mixpanel: { ok: boolean } }) => r.mixpanel.ok).length,
+            error: result.filter((r: { meta: { ok: boolean }; mixpanel: { ok: boolean } }) => !r.meta.ok || !r.mixpanel.ok).length,
+          };
+
+          return NextResponse.json({ accounts: result, stats });
+        }
+      }
+    } catch {
+      // 캐시 테이블 없으면 폴백
+    }
+
+    // 폴백: 기존 실시간 조회
     // 1) 전체 계정 목록
     const { data: accounts, error: accountsError } = await svc
       .from("ad_accounts")

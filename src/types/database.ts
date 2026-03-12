@@ -2021,6 +2021,126 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_stats_cache: {
+        Row: {
+          stat_key: string
+          stat_value: Json
+          updated_at: string | null
+        }
+        Insert: {
+          stat_key: string
+          stat_value: Json
+          updated_at?: string | null
+        }
+        Update: {
+          stat_key?: string
+          stat_value?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      email_campaign_stats: {
+        Row: {
+          id: string
+          subject: string
+          content_id: string | null
+          sent_at: string | null
+          recipients: number | null
+          opens: number | null
+          clicks: number | null
+          open_rate: number | null
+          click_rate: number | null
+          sends_json: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          subject: string
+          content_id?: string | null
+          sent_at?: string | null
+          recipients?: number | null
+          opens?: number | null
+          clicks?: number | null
+          open_rate?: number | null
+          click_rate?: number | null
+          sends_json?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          subject?: string
+          content_id?: string | null
+          sent_at?: string | null
+          recipients?: number | null
+          opens?: number | null
+          clicks?: number | null
+          open_rate?: number | null
+          click_rate?: number | null
+          sends_json?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      knowledge_daily_stats: {
+        Row: {
+          stat_date: string
+          total_cost: number | null
+          avg_duration_ms: number | null
+          call_count: number | null
+          consumer_counts: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          stat_date: string
+          total_cost?: number | null
+          avg_duration_ms?: number | null
+          call_count?: number | null
+          consumer_counts?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          stat_date?: string
+          total_cost?: number | null
+          avg_duration_ms?: number | null
+          call_count?: number | null
+          consumer_counts?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      account_sync_status: {
+        Row: {
+          account_id: string
+          account_name: string | null
+          meta_ok: boolean | null
+          meta_last_date: string | null
+          meta_ad_count: number | null
+          mixpanel_ok: boolean | null
+          mixpanel_state: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_id: string
+          account_name?: string | null
+          meta_ok?: boolean | null
+          meta_last_date?: string | null
+          meta_ad_count?: number | null
+          mixpanel_ok?: boolean | null
+          mixpanel_state?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: string
+          account_name?: string | null
+          meta_ok?: boolean | null
+          meta_last_date?: string | null
+          meta_ad_count?: number | null
+          mixpanel_ok?: boolean | null
+          mixpanel_state?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       lecture_chunks: {

@@ -7,13 +7,23 @@ import { precomputeStudentPerformance } from "./performance-precompute";
 import { precomputeDiagnosis } from "./diagnosis-precompute";
 import { precomputeInsights } from "./insights-precompute";
 import { precomputeOverlap } from "./overlap-precompute";
+import { precomputeDashboardStats } from "./dashboard-precompute";
+import { precomputeEmailCampaigns } from "./email-precompute";
+import { precomputeKnowledgeStats } from "./knowledge-precompute";
+import { precomputeSyncStatus } from "./sync-status-precompute";
+
+interface SubResult { computed: number; errors: string[] }
 
 export interface PrecomputeResult {
-  t3: { computed: number; errors: string[] };
-  performance: { computed: number; errors: string[] };
-  diagnosis: { computed: number; errors: string[] };
-  insights: { computed: number; errors: string[] };
-  overlap: { computed: number; errors: string[] };
+  t3: SubResult;
+  performance: SubResult;
+  diagnosis: SubResult;
+  insights: SubResult;
+  overlap: SubResult;
+  dashboard: SubResult;
+  email: SubResult;
+  knowledge: SubResult;
+  syncStatus: SubResult;
 }
 
 export async function runPrecomputeAll(
@@ -38,15 +48,29 @@ export async function runPrecomputeAll(
   const overlap = await precomputeOverlap(supabase);
   console.log(`[precompute] 타겟중복 완료: ${overlap.computed}건, 에러 ${overlap.errors.length}건`);
 
+  // Phase 2: 집계 캐시 4개
+  const dashboard = await precomputeDashboardStats(supabase);
+  console.log(`[precompute] 대시보드 완료: ${dashboard.computed}건, 에러 ${dashboard.errors.length}건`);
+
+  const email = await precomputeEmailCampaigns(supabase);
+  console.log(`[precompute] 이메일 완료: ${email.computed}건, 에러 ${email.errors.length}건`);
+
+  const knowledge = await precomputeKnowledgeStats(supabase);
+  console.log(`[precompute] 지식관리 완료: ${knowledge.computed}건, 에러 ${knowledge.errors.length}건`);
+
+  const syncStatus = await precomputeSyncStatus(supabase);
+  console.log(`[precompute] 동기화상태 완료: ${syncStatus.computed}건, 에러 ${syncStatus.errors.length}건`);
+
   // 에러 로깅
   const allErrors = [
     ...t3.errors, ...performance.errors, ...diagnosis.errors,
     ...insights.errors, ...overlap.errors,
+    ...dashboard.errors, ...email.errors, ...knowledge.errors, ...syncStatus.errors,
   ];
   if (allErrors.length > 0) {
     console.error("[precompute] 에러:", allErrors);
   }
 
   console.log("[precompute] 사전계산 완료");
-  return { t3, performance, diagnosis, insights, overlap };
+  return { t3, performance, diagnosis, insights, overlap, dashboard, email, knowledge, syncStatus };
 }

@@ -1,7 +1,18 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-11T16:00:00.000Z",
+  "lastUpdated": "2026-03-12T12:00:00.000Z",
   "features": {
+    "precompute-phase2": {
+      "phase": "completed",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/precompute-phase2.plan.md",
+        "design": "02-design/features/precompute-phase2.design.md"
+      },
+      "startedAt": "2026-03-12",
+      "completedAt": "2026-03-12",
+      "notes": "집계 캐시 4개 (dashboard_stats_cache, email_campaign_stats, knowledge_daily_stats, account_sync_status) 테이블 신설. 사전계산 모듈 4개 + 오케스트레이터 업데이트 + 기존 API 폴백 로직. tsc+lint+build 통과."
+    },
     "sprint-0311-t1-source-hide": {
       "phase": "completed",
       "matchRate": 100,
