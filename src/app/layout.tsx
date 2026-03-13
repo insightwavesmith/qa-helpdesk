@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   description: "자사몰사관학교 수강생 전용 Q&A 헬프데스크",
   verification: {
     google: "P0GjNhgUWMBu2HXupiqnIjKb9f7CbZe4B3Bm6zEiXvc",
+    other: {
+      "naver-site-verification": "6a4061654e73ee852828f8e371a5a0c26660915f",
+    },
   },
   icons: {
     icon: [
