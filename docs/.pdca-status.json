@@ -1,7 +1,19 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-12T12:00:00.000Z",
+  "lastUpdated": "2026-03-13T00:00:00.000Z",
   "features": {
+    "solapi-kakao-notification": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/solapi-kakao-notification.plan.md",
+        "design": "02-design/features/solapi-kakao-notification.design.md",
+        "analysis": "03-analysis/solapi-kakao-notification.analysis.md"
+      },
+      "startedAt": "2026-03-13",
+      "completedAt": "2026-03-13",
+      "notes": "답변 승인 시 솔라피 카카오 알림톡 자동 발송. src/lib/solapi.ts 신규 + answers.ts 수정. tsc+lint+build 통과."
+    },
     "precompute-phase2": {
       "phase": "completed",
       "matchRate": null,

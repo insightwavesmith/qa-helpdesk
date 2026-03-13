@@ -6,6 +6,7 @@ import { requireStaff } from "@/lib/auth-utils";
 import { embedImage } from "@/lib/image-embedder";
 import { embedQAPair } from "@/lib/qa-embedder";
 import { runStyleLearning } from "@/lib/style-learner";
+import { sendKakaoNotification } from "@/lib/solapi";
 
 export async function getAnswersByQuestionId(
   questionId: string,
@@ -174,6 +175,28 @@ export async function approveAnswer(answerId: string) {
     // fire-and-forget: QA 분리 임베딩 (실패해도 승인은 정상)
     Promise.resolve(embedQAPair(answer.question_id, answerId))
       .catch(err => console.error("[QAEmbed] Failed:", err));
+
+    // fire-and-forget: 질문 작성자에게 카카오 알림톡 발송
+    const svcForPhone = createServiceClient();
+    Promise.resolve(
+      (async () => {
+        const { data: question } = await svcForPhone
+          .from("questions")
+          .select("author_id")
+          .eq("id", answer.question_id)
+          .single();
+        if (!question?.author_id) return;
+
+        const { data: authorProfile } = await svcForPhone
+          .from("profiles")
+          .select("phone")
+          .eq("id", question.author_id)
+          .single();
+        if (!authorProfile?.phone) return;
+
+        await sendKakaoNotification(authorProfile.phone);
+      })()
+    ).catch(err => console.error("[KakaoNotify] Failed:", err));
 
     revalidatePath(`/questions/${answer.question_id}`);
   }
