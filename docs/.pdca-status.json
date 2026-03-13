@@ -2,6 +2,18 @@
   "version": "3.0",
   "lastUpdated": "2026-03-13T00:00:00.000Z",
   "features": {
+    "organic-channel": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/organic-channel.plan.md",
+        "design": "02-design/features/organic-channel.design.md",
+        "analysis": "03-analysis/organic-channel.analysis.md"
+      },
+      "startedAt": "2026-03-13",
+      "completedAt": "2026-03-13",
+      "notes": "오가닉 채널 관리 Phase 1 MVP 완료. 6개 테이블 + 사이드바 + 탭 허브 + Server Actions 8개 + UI 4개 컴포넌트. 카페 요약 생성 버튼은 Phase 2로 이관."
+    },
     "solapi-kakao-notification": {
       "phase": "completed",
       "matchRate": 100,

@@ -21,6 +21,7 @@ import {
   BarChart3,
   Star,
   Megaphone,
+  Share2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -66,6 +67,7 @@ const adminNavItems: NavItem[] = [
   { label: "수강생 성과", href: "/admin/performance", icon: TrendingUp },
   { label: "답변 검토", href: "/admin/answers", icon: CheckCircle },
   { label: "콘텐츠 관리", href: "/admin/content", icon: FileText },
+  { label: "오가닉 채널", href: "/admin/organic", icon: Share2 },
   // 지식 베이스: 현재 미사용 — 메뉴 숨김 처리 (코드/DB 유지)
   // { label: "지식 베이스", href: "/admin/knowledge", icon: Brain },
   { label: "총가치각도기 관리", href: "/admin/protractor", icon: Crosshair },
