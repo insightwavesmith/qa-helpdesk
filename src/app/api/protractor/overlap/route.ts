@@ -80,7 +80,12 @@ export async function GET(request: NextRequest) {
           individual_sum: Number(row.individual_sum) || 0,
           cached_at: (row.collected_at as string) || new Date().toISOString(),
           pairs: (row.pairs || []) as OverlapPair[],
-        } satisfies OverlapResponse);
+        } satisfies OverlapResponse, {
+          headers: {
+            "Cache-Control": "private, no-store, must-revalidate",
+            "Vary": "Cookie",
+          },
+        });
       }
 
       // DB에 없으면 기존 adset_overlap_cache 확인
@@ -341,7 +346,12 @@ export async function GET(request: NextRequest) {
       // 캐시 저장 실패는 응답에 영향 없음
     }
 
-    return NextResponse.json(response);
+    return NextResponse.json(response, {
+      headers: {
+        "Cache-Control": "private, no-store, must-revalidate",
+        "Vary": "Cookie",
+      },
+    });
   } catch (e) {
     console.error("overlap API error:", e);
     const msg = (e as Error).message || "";
@@ -415,5 +425,10 @@ function buildResponseFromCache(
     pairs,
   };
 
-  return NextResponse.json(response);
+  return NextResponse.json(response, {
+    headers: {
+      "Cache-Control": "private, no-store, must-revalidate",
+      "Vary": "Cookie",
+    },
+  });
 }

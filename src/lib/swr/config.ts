@@ -1,8 +1,8 @@
 import type { SWRConfiguration } from "swr";
 
-/** 표준 JSON API fetcher */
+/** 표준 JSON API fetcher — CDN 캐시 무력화 */
 export const jsonFetcher = (url: string) =>
-  fetch(url).then((r) => {
+  fetch(url, { cache: "no-store" }).then((r) => {
     if (!r.ok) throw new Error(`API error: ${r.status}`);
     return r.json();
   });

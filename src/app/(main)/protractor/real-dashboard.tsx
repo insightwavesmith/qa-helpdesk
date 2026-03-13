@@ -142,7 +142,7 @@ export default function RealDashboard({ initialAccounts }: RealDashboardProps) {
   const { data: totalValueRaw, error: tvError, isLoading: loadingTotalValue } = useSWR(
     selectedAccountId ? SWR_KEYS.protractorTotalValue(selectedAccountId, periodNum, dateRange.start, dateRange.end) : null,
     async (url: string) => {
-      const res = await fetch(url);
+      const res = await fetch(url, { cache: "no-store" });
       const json = await res.json();
       if (!res.ok) {
         throw new Error(
@@ -173,7 +173,7 @@ export default function RealDashboard({ initialAccounts }: RealDashboardProps) {
         date_end: dateRange.end,
         force: "true",
       });
-      const res = await fetch(`/api/protractor/overlap?${params}`);
+      const res = await fetch(`/api/protractor/overlap?${params}`, { cache: "no-store" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "타겟중복 분석 실패");
       mutateOverlap(json, { revalidate: false });

@@ -26,7 +26,10 @@ export async function GET() {
     }
 
     return NextResponse.json({ data }, {
-      headers: { "Cache-Control": "private, no-store" },
+      headers: {
+        "Cache-Control": "private, no-store, must-revalidate",
+        "Vary": "Cookie",
+      },
     });
   } catch {
     return NextResponse.json(

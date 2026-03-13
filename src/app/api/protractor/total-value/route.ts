@@ -244,6 +244,11 @@ export async function GET(request: NextRequest) {
         roas: totalSpend > 0 ? Math.round((totalPurchaseValue / totalSpend) * 100) / 100 : 0,
         adCount: adIds.size,
       },
+    }, {
+      headers: {
+        "Cache-Control": "private, no-store, must-revalidate",
+        "Vary": "Cookie",
+      },
     });
   } catch (e) {
     console.error("[total-value] Error:", {

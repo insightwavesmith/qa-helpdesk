@@ -86,7 +86,10 @@ export async function GET(request: NextRequest) {
         }));
 
         return NextResponse.json({ data: rows, aggregated: true }, {
-          headers: { "Cache-Control": "private, no-store" },
+          headers: {
+            "Cache-Control": "private, no-store, must-revalidate",
+            "Vary": "Cookie",
+          },
         });
       }
       // 집계 데이터 없으면 raw 쿼리 폴백
@@ -120,7 +123,10 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ data }, {
-      headers: { "Cache-Control": "private, no-store" },
+      headers: {
+        "Cache-Control": "private, no-store, must-revalidate",
+        "Vary": "Cookie",
+      },
     });
   } catch {
     return NextResponse.json(
