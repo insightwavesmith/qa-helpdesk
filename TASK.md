@@ -1,74 +1,31 @@
-# TASK: AI 답변 말투 순환학습 파이프라인 + 프롬프트 즉시 교정
+# TASK: 답변 승인 10개마다 말투 자동 학습
 
-## 1단계: 프롬프트 즉시 교정 (knowledge.ts)
+## What
+답변 승인(`approveAnswer`)할 때, 승인된 답변이 마지막 학습 이후 10개 이상 쌓이면 말투 순환학습을 자동 실행한다.
 
-### What
-`src/lib/knowledge.ts`의 `QA_SYSTEM_PROMPT` [말투] 섹션을 Smith님 실제 답변 스타일에 맞게 교정.
+## Why
+- Smith님이 답변을 승인/수정할수록 AI 말투가 자동으로 개선되어야 함
+- 수동 API 호출 없이 자연스럽게 학습이 돌아가는 구조
 
-### 현재 문제
-프롬프트에 "요체 기본"이라고 돼있지만, Smith님 실제 답변은 요체+합니다체 혼합이다.
+## 구현
+`src/actions/answers.ts`의 `approveAnswer()` 함수 끝에:
 
-### Smith님 실제 말투 패턴 (DB에서 확인한 실제 답변)
-```
-- "결론부터 말하면, 자사몰 내에서 상품 URL이 분리되어 있다면 같은 상황이에요."  ← 요체
-- "픽셀은 URL 단위로 전환 데이터를 쌓아요."  ← 요체
-- "구매 신호가 분산되는 거죠."  ← 죠체
-- "메타는 제품이 여러개로 봅니다."  ← 합니다체
-- "매우 유효합니다."  ← 합니다체
-- "매우예민하게 반응하시는 케이스가 많아서 지금 대표님의 히스토리를 들어보면 좋겠습니다."  ← 합니다체
-- "인스타 공동구매는 메타 광고 성과와 직접 연결되진 않아요."  ← 요체
-- "공구캠페인을 하나 따서 [파트너광고] 로 시너지를 부여한다."  ← 평서체/한다체
-```
+1. `style_profiles` 테이블에서 최신 레코드의 `created_at` 조회
+2. `answers` 테이블에서 `is_approved=true AND updated_at > 최신학습시점` 카운트
+3. 10개 이상이면 `runStyleLearning()` fire-and-forget 실행
+4. 실패해도 승인 자체는 정상 처리 (try-catch + console.error)
 
-### 교정 방향
-[말투] 섹션을 아래로 교체:
-```
-[말투]
-- 요체(~요, ~거든요, ~이에요)를 기본으로 하되, 합니다체(~합니다, ~됩니다)를 자연스럽게 섞어라.
-- 설명/해설 부분은 요체, 결론/강조/팩트 전달은 합니다체. 이게 Smith 말투의 핵심이다.
-- "~입니다"가 딱딱하게 느껴질 수 있지만, Smith는 실제로 중요한 팩트를 전달할 때 "~합니다"를 쓴다.
-- 한다체(~한다, ~된다)도 가끔 섞어라. "구매 신호가 분산되는 거죠." 이런 식.
-- "~죠" 어미를 적극 활용. "~거든요"와 함께 대화 느낌을 살려라.
-- "안녕하세요!", "도움이 되셨길 바랍니다" 같은 챗봇 인사 금지
-- 이모지 금지
-```
+## Files
+- `src/actions/answers.ts` — `approveAnswer()` 함수에 자동 학습 트리거 추가
+- `src/lib/style-learner.ts` — 기존 `runStyleLearning()` 재사용, 변경 불필요
 
-### Files
-- `src/lib/knowledge.ts` — QA_SYSTEM_PROMPT의 [말투] 섹션 교체
+## Validation
+- [ ] 답변 승인이 정상 동작한다 (기존 기능 영향 없음)
+- [ ] 10번째 승인 시 학습이 자동 실행된다
+- [ ] 학습 실패해도 승인은 성공한다
+- [ ] `tsc --noEmit` 통과
 
----
-
-## 2단계: 말투 순환학습 파이프라인
-
-### What
-승인된 답변(특히 Smith님 작성/수정분)에서 말투 패턴을 자동 분석하고, 주기적으로 QA_SYSTEM_PROMPT를 갱신하는 파이프라인.
-
-### 구조
-1. `src/lib/style-learner.ts` 신규 파일
-   - `analyzeApprovedAnswers()`: 최근 승인 답변 N개에서 어미 패턴 추출
-   - `generateStyleProfile()`: Claude에게 패턴 분석 요청 → 말투 프로필 JSON 생성
-   - `updateSystemPrompt()`: 프로필 기반으로 [말투] 섹션 텍스트 생성
-
-2. `src/app/api/admin/style-learn/route.ts` — 수동 트리거 API
-   - POST /api/admin/style-learn → 즉시 말투 분석 실행
-   - 결과를 DB에 저장 (style_profiles 테이블 또는 기존 테이블에 저장)
-
-3. 시스템 프롬프트에 동적 말투 삽입
-   - knowledge.ts에서 DB의 최신 style_profile을 읽어서 프롬프트에 주입
-
-### 데이터 우선순위
-- 가중치 최고: Smith님(author_id = '9e81230e-...') 직접 작성 답변
-- 가중치 높음: Smith님이 수정 후 승인한 답변 (수정 전/후 diff)
-- 가중치 보통: 그냥 승인만 된 답변
-
-### Validation
-- [ ] 프롬프트 [말투] 섹션 교정 완료
-- [ ] /api/admin/style-learn POST 호출 시 분석 실행
-- [ ] 분석 결과가 다음 AI 답변에 반영
-- [ ] tsc --noEmit 통과
-- [ ] 기존 QA 답변 생성 기능 정상 동작
-
-### 하지 말 것
-- 임베딩 파이프라인 건드리지 말 것 — 완전 별개 레이어
-- 기존 QA_SYSTEM_PROMPT의 [답변 구조], [AI 상투어 금지] 등 다른 섹션 변경 금지
-- 자동 cron은 아직 만들지 말 것 — 수동 트리거만 먼저
+## 하지 말 것
+- cron이나 별도 스케줄러 만들지 말 것
+- 승인 응답 시간에 영향 주지 말 것 — fire-and-forget (Promise.resolve + catch)
+- style-learner.ts 수정하지 말 것

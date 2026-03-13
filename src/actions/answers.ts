@@ -5,6 +5,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/auth-utils";
 import { embedImage } from "@/lib/image-embedder";
 import { embedQAPair } from "@/lib/qa-embedder";
+import { runStyleLearning } from "@/lib/style-learner";
 
 export async function getAnswersByQuestionId(
   questionId: string,
@@ -180,6 +181,35 @@ export async function approveAnswer(answerId: string) {
   revalidatePath("/admin/answers");
   revalidatePath("/questions");
   revalidatePath("/dashboard");
+
+  // 승인 10개마다 말투 자동 학습 (fire-and-forget)
+  try {
+    const svc = createServiceClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: latestProfile } = await (svc as any)
+      .from("style_profiles")
+      .select("created_at")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    const sinceDate = latestProfile?.created_at || "1970-01-01T00:00:00Z";
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count } = await (svc as any)
+      .from("answers")
+      .select("*", { count: "exact", head: true })
+      .eq("is_approved", true)
+      .gt("updated_at", sinceDate);
+
+    if ((count ?? 0) >= 10) {
+      Promise.resolve(runStyleLearning())
+        .catch(err => console.error("[StyleAutoLearn] Failed:", err));
+    }
+  } catch (err) {
+    console.error("[StyleAutoLearn] Check failed:", err);
+  }
+
   return { error: null };
 }
 
