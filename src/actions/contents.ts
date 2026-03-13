@@ -2,6 +2,7 @@
 
 import { after } from "next/server";
 import { requireStaff } from "@/lib/auth-utils";
+import { createServiceClient } from "@/lib/supabase/server";
 import { generateEmbedding } from "@/lib/gemini";
 import { embedContentToChunks } from "@/actions/embed-pipeline";
 import { generate as ksGenerate, type ConsumerType } from "@/lib/knowledge";
@@ -14,6 +15,84 @@ function escapeHtml(str: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+/** alt 텍스트를 파일명에 안전한 slug로 변환 */
+function slugifyAlt(alt: string): string {
+  return alt
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣ㄱ-ㅎㅏ-ㅣ\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 60) || "image";
+}
+
+/**
+ * body_md 안의 IMAGE_PLACEHOLDER 패턴을 Supabase Storage URL로 교체.
+ * - Unsplash API 키 없으면 원본 반환 (skip)
+ * - 개별 이미지 처리 실패 시 해당 패턴만 skip, 나머지 계속
+ */
+async function resolveImagePlaceholders(bodyMd: string, contentId: string): Promise<string> {
+  const accessKey = process.env.UNSPLASH_ACCESS_KEY;
+  if (!accessKey) return bodyMd;
+
+  // IMAGE_PLACEHOLDER 또는 IMAGE\_PLACEHOLDER 패턴 감지
+  const PLACEHOLDER_RE = /!\[([^\]]*)\]\(IMAGE\\?_PLACEHOLDER\)/g;
+  const matches = [...bodyMd.matchAll(PLACEHOLDER_RE)];
+  if (matches.length === 0) return bodyMd;
+
+  const supabase = createServiceClient();
+  let result = bodyMd;
+
+  for (const match of matches) {
+    const fullMatch = match[0];
+    const alt = match[1] || "image";
+
+    try {
+      // 1. Unsplash 검색
+      const unsplashRes = await fetch(
+        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(alt)}&orientation=landscape&per_page=1`,
+        { headers: { Authorization: `Client-ID ${accessKey}` } }
+      );
+      if (!unsplashRes.ok) continue;
+
+      const unsplashData = (await unsplashRes.json()) as {
+        results?: { urls?: { regular?: string } }[];
+      };
+      const photoUrl = unsplashData.results?.[0]?.urls?.regular;
+      if (!photoUrl) continue;
+
+      // 2. 이미지 다운로드
+      const imageRes = await fetch(photoUrl);
+      if (!imageRes.ok) continue;
+
+      const imageBuffer = Buffer.from(await imageRes.arrayBuffer());
+      const slug = slugifyAlt(alt);
+      const fileName = `posts/${contentId}/${slug}.jpg`;
+
+      // 3. Supabase Storage 업로드
+      const { error: uploadError } = await supabase.storage
+        .from("content-images")
+        .upload(fileName, imageBuffer, { contentType: "image/jpeg", upsert: true });
+
+      if (uploadError) {
+        console.warn(`resolveImagePlaceholders: 업로드 실패 (${alt}):`, uploadError.message);
+        continue;
+      }
+
+      // 4. Public URL 생성 후 body_md 치환
+      const { data: urlData } = supabase.storage
+        .from("content-images")
+        .getPublicUrl(fileName);
+
+      result = result.replace(fullMatch, `![${alt}](${urlData.publicUrl})`);
+    } catch (err) {
+      console.warn(`resolveImagePlaceholders: 처리 실패 (${alt}):`, err);
+      // 해당 패턴만 skip
+    }
+  }
+
+  return result;
 }
 
 /** 간단한 마크다운→HTML 변환 (TipTap 호환) */
@@ -182,6 +261,26 @@ export async function createContent(input: {
     return { data: null, error: error.message };
   }
 
+  // IMAGE_PLACEHOLDER 처리: 생성 후 body_md에 패턴이 있으면 Supabase Storage로 교체
+  if (data && /IMAGE\\?_PLACEHOLDER/.test(data.body_md || "")) {
+    try {
+      const resolvedBodyMd = await resolveImagePlaceholders(data.body_md, data.id);
+      if (resolvedBodyMd !== data.body_md) {
+        const { error: updateImgError } = await supabase
+          .from("contents")
+          .update({ body_md: resolvedBodyMd, updated_at: new Date().toISOString() })
+          .eq("id", data.id);
+        if (updateImgError) {
+          console.error("createContent image resolve update error:", updateImgError.message);
+        } else {
+          data.body_md = resolvedBodyMd;
+        }
+      }
+    } catch (err) {
+      console.error("createContent resolveImagePlaceholders error:", err);
+    }
+  }
+
   // 자동 임베딩: blueprint, lecture 타입은 생성 즉시 임베딩
   const autoEmbedTypes = ["blueprint", "lecture", "info_share", "webinar", "case_study"];
   if (data && input.source_type && autoEmbedTypes.includes(input.source_type)) {
@@ -225,9 +324,21 @@ export async function updateContent(
     input.category = input.type;
   }
 
+  // IMAGE_PLACEHOLDER가 있으면 먼저 Storage로 교체 후 저장
+  let resolvedBodyMd = input.body_md;
+  if (input.body_md && /IMAGE\\?_PLACEHOLDER/.test(input.body_md)) {
+    try {
+      resolvedBodyMd = await resolveImagePlaceholders(input.body_md, id);
+    } catch (err) {
+      console.error("updateContent resolveImagePlaceholders error:", err);
+      // 실패 시 원본 body_md 그대로 저장
+      resolvedBodyMd = input.body_md;
+    }
+  }
+
   const { data, error } = await supabase
     .from("contents")
-    .update({ ...input, updated_at: new Date().toISOString() })
+    .update({ ...input, body_md: resolvedBodyMd, updated_at: new Date().toISOString() })
     .eq("id", id)
     .select()
     .single();

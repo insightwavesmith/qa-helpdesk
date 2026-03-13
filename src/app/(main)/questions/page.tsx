@@ -28,18 +28,23 @@ export default async function QuestionsPage({
   // 역할 조회: student/member/admin만 질문 작성 가능
   let canCreateQuestion = false;
   let userRole: string | undefined;
+
+  // profile 조회와 categories 조회를 병렬로
+  const categoriesPromise = getCategories();
+
+  let categories: Awaited<ReturnType<typeof getCategories>>;
   if (user) {
     const svc = createServiceClient();
-    const { data: profile } = await svc
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    const [{ data: profile }, cats] = await Promise.all([
+      svc.from("profiles").select("role").eq("id", user.id).single(),
+      categoriesPromise,
+    ]);
     userRole = profile?.role || undefined;
     canCreateQuestion = ["student", "member", "admin"].includes(profile?.role || "");
+    categories = cats;
+  } else {
+    categories = await categoriesPromise;
   }
-
-  const categories = await getCategories();
 
   let categoryId: number | null = null;
   if (categorySlug && categorySlug !== "all") {

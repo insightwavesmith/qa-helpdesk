@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import type { CompetitorAd, BrandPage } from "@/types/competitor";
 import { DurationBar } from "./duration-bar";
 import { AdMediaModal } from "./ad-media-modal";
@@ -80,11 +81,12 @@ function MediaPreview({
         onClick={onClick}
         className="relative w-full h-48 bg-gray-50 border-b border-gray-100 cursor-pointer group overflow-hidden"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={(ad.videoPreviewUrl ?? effectiveImageUrl)!}
           alt={`${ad.pageName} 영상 프리뷰`}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          fill
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
+          unoptimized
           onError={() => setImgError(true)}
         />
         <div className="absolute inset-0 flex items-center justify-center">
@@ -104,11 +106,12 @@ function MediaPreview({
         onClick={onClick}
         className="relative w-full h-48 bg-gray-50 border-b border-gray-100 cursor-pointer group overflow-hidden"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={effectiveImageUrl}
           alt={`${ad.pageName} 광고 소재`}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          fill
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
+          unoptimized
           onError={() => setImgError(true)}
         />
         {/* 캐러셀/카탈로그 뱃지 */}

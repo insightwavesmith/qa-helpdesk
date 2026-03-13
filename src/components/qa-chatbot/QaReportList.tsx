@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import useSWR from "swr";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -121,10 +122,13 @@ export function QaReportList() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <img
+                  <Image
                     src={url}
                     alt={`스크린샷 ${i + 1}`}
-                    className="h-20 w-20 rounded-md border object-cover"
+                    width={80}
+                    height={80}
+                    className="rounded-md border object-cover"
+                    unoptimized
                   />
                 </a>
               ))}

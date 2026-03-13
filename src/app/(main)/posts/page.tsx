@@ -22,21 +22,33 @@ export default async function PostsPage({
   // 관리자 여부 확인
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  let isAdmin = false;
-  if (user) {
-    const svc = createServiceClient();
-    const { data: profile } = await svc.from("profiles").select("role").eq("id", user.id).single();
-    isAdmin = profile?.role === "admin";
-  }
 
   const isTypeFilter = category === "promo";
-  const { data: posts, count } = await getPosts({
+
+  // getPosts는 userId 불필요 → auth 결과와 병렬 실행
+  const postsPromise = getPosts({
     page,
     pageSize: PAGE_SIZE,
     category: !isTypeFilter && category !== "all" ? category : undefined,
     type: isTypeFilter ? "promo" : undefined,
     search: search || undefined,
   });
+
+  let isAdmin = false;
+  let postsResult: Awaited<ReturnType<typeof getPosts>>;
+  if (user) {
+    const svc = createServiceClient();
+    const [{ data: profile }, result] = await Promise.all([
+      svc.from("profiles").select("role").eq("id", user.id).single(),
+      postsPromise,
+    ]);
+    isAdmin = profile?.role === "admin";
+    postsResult = result;
+  } else {
+    postsResult = await postsPromise;
+  }
+
+  const { data: posts, count } = postsResult;
 
   const totalPages = Math.ceil((count || 0) / PAGE_SIZE);
 

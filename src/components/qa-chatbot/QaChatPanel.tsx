@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import Image from "next/image";
 import {
   X,
   Send,
@@ -379,11 +380,14 @@ export function QaChatPanel({ isOpen, onClose }: QaChatPanelProps) {
                   {msg.imageUrls && msg.imageUrls.length > 0 && (
                     <div className="mt-2 flex gap-1">
                       {msg.imageUrls.map((url, i) => (
-                        <img
+                        <Image
                           key={i}
                           src={url}
                           alt={`첨부 ${i + 1}`}
-                          className="h-16 w-16 rounded-md object-cover"
+                          width={64}
+                          height={64}
+                          className="rounded-md object-cover"
+                          unoptimized
                         />
                       ))}
                     </div>

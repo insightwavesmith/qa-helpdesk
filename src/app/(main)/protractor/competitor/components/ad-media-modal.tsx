@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import type { CompetitorAd } from "@/types/competitor";
 import { downloadFile } from "@/lib/competitor/client-download";
 import {
@@ -144,12 +145,15 @@ export function AdMediaModal({ ad, isOpen, onClose }: AdMediaModalProps) {
             <div className="flex flex-col items-center justify-center text-gray-400">
               {ad.videoPreviewUrl ? (
                 <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={ad.videoPreviewUrl}
-                    alt={`${ad.pageName} 영상 프리뷰`}
-                    className="max-h-[60vh] object-contain mx-auto"
-                  />
+                  <div className="relative w-full h-[60vh]">
+                    <Image
+                      src={ad.videoPreviewUrl}
+                      alt={`${ad.pageName} 영상 프리뷰`}
+                      fill
+                      className="object-contain mx-auto"
+                      unoptimized
+                    />
+                  </div>
                   <div className="py-3 flex flex-col items-center">
                     <p className="text-sm text-gray-500">
                       {videoError
@@ -187,13 +191,16 @@ export function AdMediaModal({ ad, isOpen, onClose }: AdMediaModalProps) {
             /* 캐러셀 */
             <div className="relative">
               {ad.carouselCards[carouselIndex]?.imageUrl && !imageError ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={ad.carouselCards[carouselIndex].imageUrl!}
-                  alt={`${ad.pageName} 캐러셀 ${carouselIndex + 1}`}
-                  className="max-h-[70vh] object-contain mx-auto"
-                  onError={() => setImageError(true)}
-                />
+                <div className="relative w-full h-[70vh]">
+                  <Image
+                    src={ad.carouselCards[carouselIndex].imageUrl!}
+                    alt={`${ad.pageName} 캐러셀 ${carouselIndex + 1}`}
+                    fill
+                    className="object-contain mx-auto"
+                    unoptimized
+                    onError={() => setImageError(true)}
+                  />
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-64 text-gray-400">
                   <ImageOff className="h-12 w-12 mb-2" />
@@ -256,13 +263,16 @@ export function AdMediaModal({ ad, isOpen, onClose }: AdMediaModalProps) {
             </div>
           ) : ad.imageUrl && !imageError ? (
             /* 이미지 */
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={ad.imageUrl}
-              alt={`${ad.pageName} 광고 소재`}
-              className="max-h-[70vh] object-contain mx-auto"
-              onError={() => setImageError(true)}
-            />
+            <div className="relative w-full h-[70vh]">
+              <Image
+                src={ad.imageUrl}
+                alt={`${ad.pageName} 광고 소재`}
+                fill
+                className="object-contain mx-auto"
+                unoptimized
+                onError={() => setImageError(true)}
+              />
+            </div>
           ) : (
             /* fallback */
             <div className="flex flex-col items-center justify-center h-64 text-gray-400">

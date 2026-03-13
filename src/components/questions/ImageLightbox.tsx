@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useCallback } from "react";
+import Image from "next/image";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ImageLightboxProps {
@@ -73,14 +74,17 @@ export function ImageLightbox({
       )}
 
       {/* Image */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={imageUrls[currentIndex]}
-        alt={`첨부 이미지 ${currentIndex + 1}`}
-        className="max-h-[90vh] max-w-[90vw] object-contain"
-        loading="eager"
-        onClick={(e) => e.stopPropagation()}
-      />
+      <div className="relative max-h-[90vh] max-w-[90vw] h-[90vh] w-[90vw]">
+        <Image
+          src={imageUrls[currentIndex]}
+          alt={`첨부 이미지 ${currentIndex + 1}`}
+          fill
+          className="object-contain"
+          unoptimized
+          sizes="90vw"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
 
       {/* Next button */}
       {hasNext && (
