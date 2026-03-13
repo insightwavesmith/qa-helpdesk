@@ -200,12 +200,17 @@ export async function deleteAnswer(answerId: string) {
   return { error: null };
 }
 
-export async function updateAnswer(answerId: string, content: string) {
+export async function updateAnswer(answerId: string, content: string, imageUrls?: string[]) {
   const supabase = await requireStaff();
+
+  const updateData: Record<string, unknown> = { content };
+  if (imageUrls !== undefined) {
+    updateData.image_urls = imageUrls;
+  }
 
   const { error } = await supabase
     .from("answers")
-    .update({ content })
+    .update(updateData)
     .eq("id", answerId);
 
   if (error) {

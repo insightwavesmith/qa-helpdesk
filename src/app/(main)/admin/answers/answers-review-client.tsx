@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Pagination } from "@/components/shared/Pagination";
 import { approveAnswer, deleteAnswer, updateAnswer } from "@/actions/answers";
+import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { mp } from "@/lib/mixpanel";
 import {
@@ -23,6 +24,8 @@ import {
   ChevronDown,
   ChevronUp,
   MessageSquareText,
+  ImagePlus,
+  X,
 } from "lucide-react";
 import { SourceReferences } from "@/components/questions/SourceReferences";
 
@@ -32,6 +35,7 @@ interface Answer {
   is_ai: boolean | null;
   is_approved: boolean | null;
   created_at: string | null;
+  image_urls?: unknown;
   source_refs?: unknown;
   author?: { id: string; name: string } | null;
   question?: { id: string; title: string; content?: string | null; image_urls?: unknown } | null;
@@ -60,6 +64,9 @@ export function AnswersReviewClient({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
+  const [editImageUrls, setEditImageUrls] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
 
   const handleApprove = async (answerId: string) => {
@@ -102,12 +109,49 @@ export function AnswersReviewClient({
   const handleEdit = (answer: Answer) => {
     setEditingId(answer.id);
     setEditContent(answer.content);
+    setEditImageUrls(Array.isArray(answer.image_urls) ? (answer.image_urls as string[]) : []);
+  };
+
+  const handleImageUpload = async (files: FileList) => {
+    setUploading(true);
+    try {
+      const supabase = createClient();
+      for (const file of Array.from(files)) {
+        const ext = file.name.split(".").pop() || "jpg";
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const filePath = `answer-images/${fileName}`;
+
+        const { error } = await supabase.storage
+          .from("question-images")
+          .upload(filePath, file, { cacheControl: "3600", upsert: false });
+
+        if (error) {
+          toast.error(`업로드 실패: ${file.name}`);
+          continue;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("question-images")
+          .getPublicUrl(filePath);
+
+        setEditImageUrls((prev) => [...prev, publicUrl]);
+      }
+    } catch {
+      toast.error("이미지 업로드 중 오류가 발생했습니다.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setEditImageUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSaveEdit = async (answerId: string) => {
     setLoadingId(answerId);
     try {
-      const { error } = await updateAnswer(answerId, editContent);
+      const { error } = await updateAnswer(answerId, editContent, editImageUrls);
       if (error) {
         toast.error(`수정 실패: ${error}`);
       } else {
@@ -233,17 +277,67 @@ export function AnswersReviewClient({
                         onChange={(e) => setEditContent(e.target.value)}
                         rows={6}
                       />
+                      {/* 이미지 미리보기 */}
+                      {editImageUrls.length > 0 && (
+                        <div className="flex gap-2 flex-wrap">
+                          {editImageUrls.map((url, idx) => (
+                            <div key={idx} className="relative group">
+                              <Image
+                                src={url}
+                                alt={`이미지 ${idx + 1}`}
+                                width={80}
+                                height={80}
+                                className="h-20 w-20 object-cover rounded-lg border border-gray-200"
+                              />
+                              <button
+                                type="button"
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleRemoveImage(idx)}
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {/* 이미지 업로드 */}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            handleImageUpload(e.target.files);
+                          }
+                        }}
+                      />
                       <div className="flex gap-2">
                         <Button
                           size="sm"
                           className="bg-[#F75D5D] hover:bg-[#E54949] text-white rounded-lg"
                           onClick={() => handleSaveEdit(answer.id)}
-                          disabled={isLoading}
+                          disabled={isLoading || uploading}
                         >
                           {isLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin mr-1" />
                           ) : null}
                           저장
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="rounded-lg"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploading}
+                        >
+                          {uploading ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                          ) : (
+                            <ImagePlus className="h-4 w-4 mr-1" />
+                          )}
+                          이미지 추가
                         </Button>
                         <Button
                           size="sm"
@@ -260,6 +354,20 @@ export function AnswersReviewClient({
                       <div className="prose prose-sm max-w-none whitespace-pre-wrap mb-4 text-gray-700">
                         {answer.content}
                       </div>
+                      {Array.isArray(answer.image_urls) && answer.image_urls.length > 0 && (
+                        <div className="flex gap-2 mb-4 flex-wrap">
+                          {(answer.image_urls as string[]).map((url, idx) => (
+                            <Image
+                              key={idx}
+                              src={url}
+                              alt={`답변 이미지 ${idx + 1}`}
+                              width={120}
+                              height={120}
+                              className="h-24 w-24 object-cover rounded-lg border border-gray-200"
+                            />
+                          ))}
+                        </div>
+                      )}
                       {answer.is_ai && !!answer.source_refs && (
                         <div className="mb-4">
                           <SourceReferences rawSourceRefs={answer.source_refs} />
