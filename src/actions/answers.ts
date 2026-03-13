@@ -129,7 +129,7 @@ export async function getPendingAnswers({
   const { data, count, error } = await supabase
     .from("answers")
     .select(
-      "*, author:profiles!answers_author_id_fkey(id, name), question:questions!answers_question_id_fkey(id, title)",
+      "*, author:profiles!answers_author_id_fkey(id, name), question:questions!answers_question_id_fkey(id, title, content, image_urls)",
       { count: "exact" }
     )
     .eq("is_approved", false)

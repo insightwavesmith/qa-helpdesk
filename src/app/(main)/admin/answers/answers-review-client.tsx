@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,9 @@ import {
   Pencil,
   Loader2,
   ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  MessageSquareText,
 } from "lucide-react";
 import { SourceReferences } from "@/components/questions/SourceReferences";
 
@@ -30,7 +34,7 @@ interface Answer {
   created_at: string | null;
   source_refs?: unknown;
   author?: { id: string; name: string } | null;
-  question?: { id: string; title: string } | null;
+  question?: { id: string; title: string; content?: string | null; image_urls?: unknown } | null;
 }
 
 interface AnswersReviewClientProps {
@@ -56,6 +60,7 @@ export function AnswersReviewClient({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
+  const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
 
   const handleApprove = async (answerId: string) => {
     setLoadingId(answerId);
@@ -161,13 +166,63 @@ export function AnswersReviewClient({
                     </span>
                   </div>
                   {answer.question && (
-                    <Link
-                      href={`/questions/${answer.question.id}`}
-                      className="flex items-center gap-1 text-sm text-[#F75D5D] hover:underline mt-1"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      {answer.question.title}
-                    </Link>
+                    <div className="mt-1 space-y-1">
+                      <Link
+                        href={`/questions/${answer.question.id}`}
+                        className="flex items-center gap-1 text-sm text-[#F75D5D] hover:underline"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        {answer.question.title}
+                      </Link>
+                      {answer.question.content && (
+                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                          <button
+                            type="button"
+                            className="flex items-center gap-1 text-xs text-gray-500 mb-1 hover:text-gray-700"
+                            onClick={() => {
+                              setExpandedQuestions((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(answer.id)) {
+                                  next.delete(answer.id);
+                                } else {
+                                  next.add(answer.id);
+                                }
+                                return next;
+                              });
+                            }}
+                          >
+                            <MessageSquareText className="h-3 w-3" />
+                            질문 본문
+                            {expandedQuestions.has(answer.id) ? (
+                              <ChevronUp className="h-3 w-3" />
+                            ) : (
+                              <ChevronDown className="h-3 w-3" />
+                            )}
+                          </button>
+                          <div
+                            className={`text-sm text-gray-600 whitespace-pre-wrap ${
+                              expandedQuestions.has(answer.id) ? "" : "line-clamp-3"
+                            }`}
+                          >
+                            {answer.question.content}
+                          </div>
+                          {Array.isArray(answer.question.image_urls) && answer.question.image_urls.length > 0 && (
+                            <div className="flex gap-2 mt-2 flex-wrap">
+                              {(answer.question.image_urls as string[]).map((url, idx) => (
+                                <Image
+                                  key={idx}
+                                  src={url}
+                                  alt={`질문 이미지 ${idx + 1}`}
+                                  width={80}
+                                  height={80}
+                                  className="h-20 w-20 object-cover rounded-lg border border-gray-200"
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </CardHeader>
                 <CardContent>
