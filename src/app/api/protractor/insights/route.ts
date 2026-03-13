@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
         }));
 
         return NextResponse.json({ data: rows, aggregated: true }, {
-          headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" },
+          headers: { "Cache-Control": "private, no-store" },
         });
       }
       // 집계 데이터 없으면 raw 쿼리 폴백
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ data }, {
-      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+      headers: { "Cache-Control": "private, no-store" },
     });
   } catch {
     return NextResponse.json(
