@@ -1,62 +1,46 @@
-# TASK: 답변 승인 시 솔라피 카카오 알림톡 자동 발송
+# TASK: 전화번호 필수화 + 관리자 전화번호 입력
 
 ## What
-관리자가 답변을 승인하면, 질문 작성자에게 카카오 알림톡으로 "답변 완료" 알림을 자동 발송한다.
+1. 수강생 가입 시 전화번호를 필수 입력으로 변경
+2. 관리자가 고객데이터(accounts) 탭에서 기존 수강생 전화번호를 직접 입력/수정할 수 있게
 
 ## Why
-- 수강생이 답변이 달렸는지 매번 확인하러 들어올 필요 없음
-- 카톡으로 바로 알려주면 답변 확인율 올라감
+- 답변 완료 시 카카오 알림톡을 보내려면 전화번호가 필요
+- 현재 수강생 대부분 전화번호 미입력 상태
+- 기존 가입자는 관리자가 직접 넣어줘야 함
 
-## 솔라피 API 정보
-- API Key: `NCSOKHV1AEESY3NS`
-- API Secret: `4IXME1RIGEOR0OZRCEDGSDQEZ7VIYEIB`
-- PFID (채널ID): `_xdqCxin` (channelId는 `KA01PF260224053759051mFP88hSPjQv`)
-- 템플릿 코드: `KA01TP2603110817364241yYm61nGS6W`
-- 템플릿 내용 (고정, 치환문구 없음):
-  ```
-  안녕하세요, 자사몰 사관학교입니다.
-  
-  질문 게시판에 업로드 하신 질문에 답변이 완료되었습니다.
-  
-  아래 버튼을 통해 확인 부탁드립니다.
-  ```
-- 버튼: "Q&A 게시판" → https://bscamp.vercel.app/questions
-- 인증: HMAC-SHA256 (apiKey + date + salt + signature)
+## 1. 가입 폼 전화번호 필수화
 
-## 솔라피 API 발송 예시
-```
-POST https://api.solapi.com/messages/v4/send
-{
-  "message": {
-    "to": "01012345678",
-    "from": "발신번호",
-    "kakaoOptions": {
-      "pfId": "_xdqCxin",
-      "templateId": "KA01TP2603110817364241yYm61nGS6W",
-      "disableSms": true
-    }
-  }
-}
-```
+### Files
+- `src/app/(auth)/signup/page.tsx`
 
-## 구현
-1. `src/lib/solapi.ts` 신규 — 솔라피 HMAC 인증 + 알림톡 발송 함수
-2. `src/actions/answers.ts`의 `approveAnswer()` — 승인 후 질문 작성자 phone 조회 → 알림톡 발송 (fire-and-forget)
-3. 환경변수: `.env.local`에 `SOLAPI_API_KEY`, `SOLAPI_API_SECRET` 추가
+### 변경
+- `isStudentMode`일 때 validation에 phone 필수 추가
+- 현재: `if (isStudentMode) return base && privacyAgreed;`
+- 변경: `if (isStudentMode) return base && privacyAgreed && formData.phone.trim() !== "" && PHONE_REGEX.test(formData.phone);`
+- `fieldsToValidate`에도 수강생 모드일 때 "phone" 포함
+- 전화번호 입력 필드가 수강생 모드에서도 보이는지 확인 (현재 숨겨져 있으면 표시)
 
-## 수강생 전화번호
-- profiles 테이블에 phone 컬럼이 있는지 확인 필요
-- 없으면 auth.users의 phone 확인
-- 전화번호가 없는 수강생은 스킵 (에러 아님)
+## 2. 관리자 고객데이터 전화번호 편집
+
+### Files
+- 관리자 accounts/고객데이터 페이지 (경로 확인 필요)
+- 해당 페이지의 수강생 목록에서 전화번호 컬럼 표시 + 인라인 편집 또는 편집 모달
+
+### 구현
+- 수강생 목록에 phone 컬럼 표시
+- 클릭하면 인라인 편집 가능 (input + 저장 버튼)
+- 저장 시 profiles 테이블 phone 업데이트
+- 전화번호 포맷 검증 (010-xxxx-xxxx)
 
 ## Validation
-- [ ] 답변 승인 시 질문 작성자에게 알림톡 발송
-- [ ] 전화번호 없는 수강생은 조용히 스킵
-- [ ] 발송 실패해도 승인 자체는 정상 처리 (fire-and-forget)
+- [ ] 수강생 모드 가입 시 전화번호 미입력하면 가입 불가
+- [ ] 전화번호 형식 틀리면 에러 메시지
+- [ ] 관리자 고객데이터에서 전화번호 표시됨
+- [ ] 관리자가 전화번호 입력/수정 가능
 - [ ] `tsc --noEmit` 통과
-- [ ] 기존 승인 기능 영향 없음
 
 ## 하지 말 것
-- 솔라피 SDK(npm 패키지) 설치하지 말 것 — fetch + HMAC 직접 구현 (의존성 최소화)
-- 발신번호(from) 필드: 알림톡은 from 없어도 됨 (카카오 채널이 발신자)
-- 대체 SMS 발송 안 함 — `disableSms: true`
+- profiles 테이블 스키마 변경 금지 — phone 컬럼 이미 존재
+- 기존 가입자 데이터 자동 마이그레이션 하지 말 것
+- 수강생 본인이 마이페이지에서 수정하는 기능은 지금 안 만들어도 됨

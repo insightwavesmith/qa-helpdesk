@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CategoryFilter } from "@/components/shared/CategoryFilter";
 import { Pagination } from "@/components/shared/Pagination";
-import { approveMember, getMemberDetail } from "@/actions/admin";
+import { approveMember, getMemberDetail, updateMember } from "@/actions/admin";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle, ExternalLink, Loader2, Mail, Users } from "lucide-react";
+import { Check, CheckCircle, ExternalLink, Loader2, Mail, Users, X } from "lucide-react";
 import { MemberDetailModal } from "./member-detail-modal";
 import { SubscriberTab } from "@/components/admin/SubscriberTab";
 
@@ -78,6 +78,15 @@ const roleFilters = [
   { value: "admin", label: "관리자" },
 ];
 
+const PHONE_REGEX = /^01[016789]-?\d{3,4}-?\d{4}$/;
+
+function formatPhone(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
+
 function formatDate(dateStr: string | null) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
@@ -100,6 +109,9 @@ export function MembersClient({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [detailModal, setDetailModal] = useState<{ profile: Member; accounts: Array<{ id: string; account_id: string; account_name: string | null; mixpanel_project_id: string | null; mixpanel_board_id: string | null; active: boolean | null }> } | null>(null);
   const [detailLoading, setDetailLoading] = useState<string | null>(null);
+  const [editingPhoneId, setEditingPhoneId] = useState<string | null>(null);
+  const [editingPhoneValue, setEditingPhoneValue] = useState("");
+  const [phoneSaving, setPhoneSaving] = useState(false);
 
   useEffect(() => {
     mp.track("admin_member_list_viewed");
@@ -119,6 +131,28 @@ export function MembersClient({
       toast.error("상세 정보를 불러오는데 실패했습니다.");
     } finally {
       setDetailLoading(null);
+    }
+  };
+
+  const handleSavePhone = async (memberId: string) => {
+    if (editingPhoneValue && !PHONE_REGEX.test(editingPhoneValue)) {
+      toast.error("올바른 전화번호 형식이 아닙니다 (예: 010-1234-5678)");
+      return;
+    }
+    setPhoneSaving(true);
+    try {
+      const { error } = await updateMember(memberId, { phone: editingPhoneValue || null });
+      if (error) {
+        toast.error(`저장 실패: ${error}`);
+      } else {
+        toast.success("전화번호가 저장되었습니다.");
+        setEditingPhoneId(null);
+        router.refresh();
+      }
+    } catch {
+      toast.error("처리 중 오류가 발생했습니다.");
+    } finally {
+      setPhoneSaving(false);
     }
   };
 
@@ -258,6 +292,7 @@ export function MembersClient({
                 <TableRow className="bg-gray-50/80 hover:bg-gray-50/80">
                   <TableHead className="text-xs font-medium text-gray-500 uppercase">이름</TableHead>
                   <TableHead className="text-xs font-medium text-gray-500 uppercase">이메일</TableHead>
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase">전화번호</TableHead>
                   <TableHead className="text-xs font-medium text-gray-500 uppercase">쇼핑몰</TableHead>
                   <TableHead className="text-xs font-medium text-gray-500 uppercase">기수</TableHead>
                   <TableHead className="text-xs font-medium text-gray-500 uppercase">상태</TableHead>
@@ -284,6 +319,47 @@ export function MembersClient({
                         </span>
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">{member.email}</TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        {editingPhoneId === member.id ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="text"
+                              value={editingPhoneValue}
+                              onChange={(e) => setEditingPhoneValue(formatPhone(e.target.value))}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleSavePhone(member.id);
+                                if (e.key === "Escape") setEditingPhoneId(null);
+                              }}
+                              placeholder="010-1234-5678"
+                              autoFocus
+                              className="w-[130px] rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                            />
+                            <button
+                              onClick={() => handleSavePhone(member.id)}
+                              disabled={phoneSaving}
+                              className="p-1 text-green-600 hover:text-green-800 disabled:opacity-50"
+                            >
+                              {phoneSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                            </button>
+                            <button
+                              onClick={() => setEditingPhoneId(null)}
+                              className="p-1 text-gray-400 hover:text-gray-600"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            className="text-sm text-gray-600 hover:text-[#F75D5D] hover:underline transition-colors"
+                            onClick={() => {
+                              setEditingPhoneId(member.id);
+                              setEditingPhoneValue(member.phone || "");
+                            }}
+                          >
+                            {member.phone || <span className="text-gray-400">-</span>}
+                          </button>
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm text-gray-600">{member.shop_name}</TableCell>
                       <TableCell className="text-sm text-gray-600">
                         {member.cohort || "-"}

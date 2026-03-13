@@ -179,7 +179,7 @@ export default function SignupPage() {
       formData.passwordConfirm === formData.password &&
       formData.name.trim() !== "";
 
-    if (isStudentMode) return base && privacyAgreed;
+    if (isStudentMode) return base && privacyAgreed && formData.phone.trim() !== "" && PHONE_REGEX.test(formData.phone);
 
     return (
       base &&
@@ -244,7 +244,7 @@ export default function SignupPage() {
 
     // T1: 모든 필드 검증
     const fieldsToValidate = isStudentMode
-      ? ["email", "password", "passwordConfirm", "name"]
+      ? ["email", "password", "passwordConfirm", "name", "phone"]
       : [
           "email",
           "password",
@@ -287,7 +287,8 @@ export default function SignupPage() {
       };
 
       if (isStudentMode) {
-        // student 모드: 이름 + 기수 + 초대코드만
+        // student 모드: 이름 + 전화번호 + 기수 + 초대코드
+        metadata.phone = formData.phone;
         metadata.cohort = formData.cohort || null;
         metadata.invite_code = inviteCode.trim();
       } else {
@@ -594,9 +595,7 @@ export default function SignupPage() {
                 개인 정보
               </h3>
               <div className="space-y-3">
-                <div
-                  className={!isStudentMode ? "grid grid-cols-2 gap-3" : ""}
-                >
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <label
                       htmlFor="name"
@@ -623,34 +622,32 @@ export default function SignupPage() {
                       </p>
                     )}
                   </div>
-                  {!isStudentMode && (
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="phone"
-                        className="block text-sm font-medium text-[#111827]"
-                      >
-                        전화번호 *
-                      </label>
-                      <input
-                        id="phone"
-                        placeholder="010-1234-5678"
-                        value={formData.phone}
-                        onChange={(e) => updateField("phone", e.target.value)}
-                        onBlur={() => handleBlur("phone")}
-                        required
-                        className={`w-full px-4 h-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400 ${
-                          fieldErrors.phone
-                            ? "border-red-300"
-                            : "border-gray-200"
-                        }`}
-                      />
-                      {fieldErrors.phone && (
-                        <p className="text-xs text-red-500 mt-1">
-                          {fieldErrors.phone}
-                        </p>
-                      )}
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="phone"
+                      className="block text-sm font-medium text-[#111827]"
+                    >
+                      전화번호 *
+                    </label>
+                    <input
+                      id="phone"
+                      placeholder="010-1234-5678"
+                      value={formData.phone}
+                      onChange={(e) => updateField("phone", e.target.value)}
+                      onBlur={() => handleBlur("phone")}
+                      required
+                      className={`w-full px-4 h-11 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent transition-colors bg-white text-[#111827] placeholder:text-gray-400 ${
+                        fieldErrors.phone
+                          ? "border-red-300"
+                          : "border-gray-200"
+                      }`}
+                    />
+                    {fieldErrors.phone && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {fieldErrors.phone}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
