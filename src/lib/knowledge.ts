@@ -11,6 +11,7 @@ import { analyzeDomain, type DomainAnalysis } from "@/lib/domain-intelligence";
 import { evaluateRelevance, type RelevanceGrade } from "@/lib/relevance-evaluator";
 import { searchWeb } from "@/lib/brave-search";
 import { hybridSearch } from "@/lib/hybrid-search";
+import { getLatestStyleText } from "@/lib/style-learner";
 
 // ─── 타입 정의 ────────────────────────────────────────────
 
@@ -100,8 +101,11 @@ const QA_SYSTEM_PROMPT = `당신은 자사몰사관학교 대표 Smith입니다.
 - 용어를 나열할 때 교과서처럼 빠짐없이 순서대로 쓰지 마라. 핵심적인 것만 언급해라.
 
 [말투]
-- 요체(~요, ~거든요, ~이에요) 기본
-- "~입니다/~합니다" 딱딱한 존댓말 금지
+- 요체(~요, ~거든요, ~이에요)를 기본으로 하되, 합니다체(~합니다, ~됩니다)를 자연스럽게 섞어라.
+- 설명/해설 부분은 요체, 결론/강조/팩트 전달은 합니다체. 이게 Smith 말투의 핵심이다.
+- "~입니다"가 딱딱하게 느껴질 수 있지만, Smith는 실제로 중요한 팩트를 전달할 때 "~합니다"를 쓴다.
+- 한다체(~한다, ~된다)도 가끔 섞어라. "구매 신호가 분산되는 거죠." 이런 식.
+- "~죠" 어미를 적극 활용. "~거든요"와 함께 대화 느낌을 살려라.
 - "안녕하세요!", "도움이 되셨길 바랍니다" 같은 챗봇 인사 금지
 - 이모지 금지
 - 실무 선배가 후배한테 알려주는 톤. 친절하되 가볍지 않게.
@@ -558,10 +562,25 @@ export async function generate(
   const threshold = request.threshold ?? config.threshold;
   const tokenBudget = request.tokenBudget ?? config.tokenBudget;
   const temperature = request.temperature ?? config.temperature;
-  const systemPrompt = request.systemPromptOverride ?? config.systemPrompt;
+  let systemPrompt = request.systemPromptOverride ?? config.systemPrompt;
   const sourceTypes = request.sourceTypes ?? config.sourceTypes;
   const model = config.model || DEFAULT_MODEL;
   const isQAConsumer = request.consumerType === "qa" || request.consumerType === "chatbot";
+
+  // 동적 말투 프로필 주입: DB에 학습된 프로필이 있으면 [말투] 섹션 교체
+  if (isQAConsumer && !request.systemPromptOverride) {
+    try {
+      const learnedStyle = await getLatestStyleText();
+      if (learnedStyle) {
+        systemPrompt = systemPrompt.replace(
+          /\[말투\][\s\S]*?(?=\n마크다운 포맷팅 규칙:)/,
+          learnedStyle + "\n\n",
+        );
+      }
+    } catch {
+      // DB 테이블 미생성 등 에러 시 정적 프롬프트 유지
+    }
+  }
 
   // ── Stage 0a: 이미지 설명 결합 (qa/chatbot만) ──
   let query = request.query;

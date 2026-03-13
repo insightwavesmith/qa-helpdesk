@@ -1,38 +1,74 @@
-# TASK: AI 답변 수정 시 이미지 추가 기능
+# TASK: AI 답변 말투 순환학습 파이프라인 + 프롬프트 즉시 교정
 
-## What
-관리자가 `/admin/answers` 페이지에서 AI 답변을 수정할 때, 텍스트 수정만 가능하다. 이미지도 추가/삭제할 수 있어야 한다.
+## 1단계: 프롬프트 즉시 교정 (knowledge.ts)
 
-## Why
-- AI가 생성한 답변에 참고 이미지(스크린샷, 예시 등)를 직접 붙여서 품질을 높일 수 있어야 함
-- 수강생 질문에 시각적 답변이 필요한 경우가 있음
+### What
+`src/lib/knowledge.ts`의 `QA_SYSTEM_PROMPT` [말투] 섹션을 Smith님 실제 답변 스타일에 맞게 교정.
 
-## 기존 이미지 업로드 패턴 (참고)
-- `src/components/qa-chatbot/QaChatPanel.tsx` (81~95행): Supabase Storage `question-images` 버킷에 직접 업로드
-- 업로드 경로: `question-images/{userId}/{timestamp}_{fileName}`
-- `getPublicUrl()`로 URL 획득 후 `image_urls` 배열에 저장
-- answers 테이블에도 `image_urls` 컬럼 존재 (jsonb)
+### 현재 문제
+프롬프트에 "요체 기본"이라고 돼있지만, Smith님 실제 답변은 요체+합니다체 혼합이다.
 
-## Files
-- `src/app/(main)/admin/answers/answers-review-client.tsx` — 수정 모드에 이미지 업로드 UI 추가
-- `src/actions/answers.ts` — `updateAnswer()` 함수에 `imageUrls` 파라미터 추가 (image_urls 컬럼 업데이트)
-- 새 컴포넌트 불필요 — 기존 Textarea 아래에 이미지 업로드 영역 추가
+### Smith님 실제 말투 패턴 (DB에서 확인한 실제 답변)
+```
+- "결론부터 말하면, 자사몰 내에서 상품 URL이 분리되어 있다면 같은 상황이에요."  ← 요체
+- "픽셀은 URL 단위로 전환 데이터를 쌓아요."  ← 요체
+- "구매 신호가 분산되는 거죠."  ← 죠체
+- "메타는 제품이 여러개로 봅니다."  ← 합니다체
+- "매우 유효합니다."  ← 합니다체
+- "매우예민하게 반응하시는 케이스가 많아서 지금 대표님의 히스토리를 들어보면 좋겠습니다."  ← 합니다체
+- "인스타 공동구매는 메타 광고 성과와 직접 연결되진 않아요."  ← 요체
+- "공구캠페인을 하나 따서 [파트너광고] 로 시너지를 부여한다."  ← 평서체/한다체
+```
 
-## 구현 방향
-1. 수정 모드 진입 시 기존 답변의 image_urls를 불러옴
-2. 파일 선택 → Supabase Storage 직접 업로드 → URL 획득
-3. 이미지 미리보기 + 삭제(X) 버튼
-4. 저장 시 updateAnswer에 imageUrls 배열 전달
+### 교정 방향
+[말투] 섹션을 아래로 교체:
+```
+[말투]
+- 요체(~요, ~거든요, ~이에요)를 기본으로 하되, 합니다체(~합니다, ~됩니다)를 자연스럽게 섞어라.
+- 설명/해설 부분은 요체, 결론/강조/팩트 전달은 합니다체. 이게 Smith 말투의 핵심이다.
+- "~입니다"가 딱딱하게 느껴질 수 있지만, Smith는 실제로 중요한 팩트를 전달할 때 "~합니다"를 쓴다.
+- 한다체(~한다, ~된다)도 가끔 섞어라. "구매 신호가 분산되는 거죠." 이런 식.
+- "~죠" 어미를 적극 활용. "~거든요"와 함께 대화 느낌을 살려라.
+- "안녕하세요!", "도움이 되셨길 바랍니다" 같은 챗봇 인사 금지
+- 이모지 금지
+```
 
-## Validation
-- [ ] 답변 수정 모드에서 이미지를 추가할 수 있다
-- [ ] 추가한 이미지 미리보기가 보인다
-- [ ] 이미지 삭제(X) 버튼이 동작한다
-- [ ] 저장 후 답변에 이미지가 표시된다
-- [ ] 기존 텍스트 수정 기능 정상 동작
-- [ ] `tsc --noEmit` 통과
+### Files
+- `src/lib/knowledge.ts` — QA_SYSTEM_PROMPT의 [말투] 섹션 교체
 
-## 하지 말 것
-- 새 API 라우트 만들지 말 것 — Supabase Storage 클라이언트 직접 업로드
-- answers 테이블 스키마 변경 금지 — image_urls 컬럼 이미 존재
-- 이미지 리사이징/압축 불필요 — 원본 그대로 업로드
+---
+
+## 2단계: 말투 순환학습 파이프라인
+
+### What
+승인된 답변(특히 Smith님 작성/수정분)에서 말투 패턴을 자동 분석하고, 주기적으로 QA_SYSTEM_PROMPT를 갱신하는 파이프라인.
+
+### 구조
+1. `src/lib/style-learner.ts` 신규 파일
+   - `analyzeApprovedAnswers()`: 최근 승인 답변 N개에서 어미 패턴 추출
+   - `generateStyleProfile()`: Claude에게 패턴 분석 요청 → 말투 프로필 JSON 생성
+   - `updateSystemPrompt()`: 프로필 기반으로 [말투] 섹션 텍스트 생성
+
+2. `src/app/api/admin/style-learn/route.ts` — 수동 트리거 API
+   - POST /api/admin/style-learn → 즉시 말투 분석 실행
+   - 결과를 DB에 저장 (style_profiles 테이블 또는 기존 테이블에 저장)
+
+3. 시스템 프롬프트에 동적 말투 삽입
+   - knowledge.ts에서 DB의 최신 style_profile을 읽어서 프롬프트에 주입
+
+### 데이터 우선순위
+- 가중치 최고: Smith님(author_id = '9e81230e-...') 직접 작성 답변
+- 가중치 높음: Smith님이 수정 후 승인한 답변 (수정 전/후 diff)
+- 가중치 보통: 그냥 승인만 된 답변
+
+### Validation
+- [ ] 프롬프트 [말투] 섹션 교정 완료
+- [ ] /api/admin/style-learn POST 호출 시 분석 실행
+- [ ] 분석 결과가 다음 AI 답변에 반영
+- [ ] tsc --noEmit 통과
+- [ ] 기존 QA 답변 생성 기능 정상 동작
+
+### 하지 말 것
+- 임베딩 파이프라인 건드리지 말 것 — 완전 별개 레이어
+- 기존 QA_SYSTEM_PROMPT의 [답변 구조], [AI 상투어 금지] 등 다른 섹션 변경 금지
+- 자동 cron은 아직 만들지 말 것 — 수동 트리거만 먼저
