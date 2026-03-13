@@ -2,6 +2,30 @@
   "version": "3.0",
   "lastUpdated": "2026-03-13T00:00:00.000Z",
   "features": {
+    "seo-infrastructure": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/seo-infrastructure.plan.md",
+        "design": "02-design/features/seo-infrastructure.design.md",
+        "analysis": "03-analysis/seo-infrastructure.analysis.md"
+      },
+      "startedAt": "2026-03-13",
+      "completedAt": "2026-03-13",
+      "notes": "SEO 기초 인프라 6개 Task 완료. sitemap.xml, robots.txt, OG메타, JSON-LD, GSC API, 서치어드바이저 API. 신규 6파일 + layout.tsx 수정. tsc+lint+build 통과."
+    },
+    "page-loading-perf": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/page-loading-perf.plan.md",
+        "design": "02-design/features/page-loading-perf.design.md",
+        "analysis": "03-analysis/page-loading-perf.analysis.md"
+      },
+      "startedAt": "2026-03-13",
+      "completedAt": "2026-03-13",
+      "notes": "P0 성능 개선 완료. T1(이미지formats) T2(next/image 7곳) T5(/api/posts 캐시) T6(쿼리병렬화) T7(Unsplash→Storage). T3/T4 기존 완료. 총가치각도기 public 캐시는 데이터유출 이력으로 미적용(5% 불일치). 14파일 +304/-116줄. tsc+build 통과."
+    },
     "organic-channel": {
       "phase": "completed",
       "matchRate": 95,

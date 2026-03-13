@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import ClientToaster from "@/components/layout/client-toaster";
 import ThemeProvider from "@/components/layout/theme-provider";
 import MixpanelProvider from "@/components/mixpanel-provider";
+import { JsonLd } from "@/components/seo/json-ld";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
 
@@ -22,6 +23,21 @@ export const metadata: Metadata = {
     apple: [
       { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
+  },
+  openGraph: {
+    title: "자사몰사관학교",
+    description:
+      "메타 광고 전문 교육 플랫폼. 자사몰 운영자를 위한 실전 광고 전략과 Q&A 헬프데스크.",
+    url: "https://bscamp.vercel.app",
+    siteName: "자사몰사관학교",
+    locale: "ko_KR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "자사몰사관학교",
+    description:
+      "메타 광고 전문 교육 플랫폼. 자사몰 운영자를 위한 실전 광고 전략과 Q&A 헬프데스크.",
   },
 };
 
@@ -44,6 +60,7 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-background overscroll-none font-sans antialiased">
+        <JsonLd />
         <NuqsAdapter>
           <ThemeProvider
             attribute="class"
