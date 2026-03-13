@@ -1,7 +1,7 @@
 import { createHmac, randomUUID } from "crypto";
 
 const SOLAPI_API_URL = "https://api.solapi.com/messages/v4/send";
-const KAKAO_PF_ID = "_xdqCxin";
+const KAKAO_PF_ID = "KA01PF260224053759051mFP88hSPjQv";
 const KAKAO_TEMPLATE_ID = "KA01TP2603110817364241yYm61nGS6W";
 
 function generateAuthHeader(): string {
@@ -50,7 +50,7 @@ export async function sendKakaoNotification(phone: string): Promise<void> {
       body: JSON.stringify({
         message: {
           to: normalizedPhone,
-          from: "",
+          from: "01095948905",
           kakaoOptions: {
             pfId: KAKAO_PF_ID,
             templateId: KAKAO_TEMPLATE_ID,

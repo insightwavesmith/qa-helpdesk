@@ -1,46 +1,60 @@
-# TASK: 전화번호 필수화 + 관리자 전화번호 입력
+# TASK: 콘텐츠 관리 구조 분석 + 오가닉 채널 독립 메뉴 설계 준비
 
-## What
-1. 수강생 가입 시 전화번호를 필수 입력으로 변경
-2. 관리자가 고객데이터(accounts) 탭에서 기존 수강생 전화번호를 직접 입력/수정할 수 있게
+## 목적
+bscamp에 "오가닉 채널" 독립 메뉴를 추가하려고 한다.
+그 전에 기존 콘텐츠 관리 탭의 전체 구조를 분석해서, 어떤 API/컴포넌트가 연결되어 있는지 파악해야 한다.
+또한 학습 파이프라인(curriculum-view, pipeline-sidebar 등)도 포함해서 분석한다.
 
-## Why
-- 답변 완료 시 카카오 알림톡을 보내려면 전화번호가 필요
-- 현재 수강생 대부분 전화번호 미입력 상태
-- 기존 가입자는 관리자가 직접 넣어줘야 함
+## 분석 대상
 
-## 1. 가입 폼 전화번호 필수화
+### 1. 콘텐츠 관리 탭 전체 구조
+- **진입점**: `src/app/(main)/admin/content/page.tsx`
+- **서브탭 4개**: 큐레이션 / 콘텐츠 / 정보공유 / 이메일
+- 각 탭별로 사용하는 컴포넌트, 액션, API 엔드포인트를 전부 매핑
 
-### Files
-- `src/app/(auth)/signup/page.tsx`
+### 2. 큐레이션 파이프라인 컴포넌트
+- `src/components/curation/` 전체 (9개 파일)
+  - curation-card.tsx, curation-tab.tsx, curation-view.tsx
+  - curriculum-view.tsx (학습 커리큘럼 뷰)
+  - deleted-section.tsx, generate-preview-modal.tsx
+  - info-share-tab.tsx (정보공유)
+  - pipeline-sidebar.tsx (학습 파이프라인 사이드바)
+  - topic-map-view.tsx
 
-### 변경
-- `isStudentMode`일 때 validation에 phone 필수 추가
-- 현재: `if (isStudentMode) return base && privacyAgreed;`
-- 변경: `if (isStudentMode) return base && privacyAgreed && formData.phone.trim() !== "" && PHONE_REGEX.test(formData.phone);`
-- `fieldsToValidate`에도 수강생 모드일 때 "phone" 포함
-- 전화번호 입력 필드가 수강생 모드에서도 보이는지 확인 (현재 숨겨져 있으면 표시)
+### 3. 관련 Server Actions
+- `src/actions/curation.ts` — 큐레이션 CRUD
+- `src/actions/contents.ts` — 콘텐츠 CRUD
+- `src/actions/embed-pipeline.ts` — 임베딩 파이프라인
 
-## 2. 관리자 고객데이터 전화번호 편집
+### 4. 관련 API 엔드포인트
+- `/api/admin/content/[id]/newsletter` — 뉴스레터
+- `/api/admin/content/summarize` — 요약
+- `/api/admin/curation/backfill` — 백필
+- `/api/admin/curation/generate` — AI 생성
+- `/api/admin/embed` — 임베딩
+- `/api/admin/style-learn` — 말투 학습
+- `/api/admin/email/*` — 이메일 관련
 
-### Files
-- 관리자 accounts/고객데이터 페이지 (경로 확인 필요)
-- 해당 페이지의 수강생 목록에서 전화번호 컬럼 표시 + 인라인 편집 또는 편집 모달
+### 5. 학습 관련 모듈
+- `src/lib/style-learner.ts` — 말투 학습
+- `src/lib/domain-intelligence.ts` — 도메인 지능
+- `src/lib/knowledge.ts` — 지식 베이스
 
-### 구현
-- 수강생 목록에 phone 컬럼 표시
-- 클릭하면 인라인 편집 가능 (input + 저장 버튼)
-- 저장 시 profiles 테이블 phone 업데이트
-- 전화번호 포맷 검증 (010-xxxx-xxxx)
+## 산출물
 
-## Validation
-- [ ] 수강생 모드 가입 시 전화번호 미입력하면 가입 불가
-- [ ] 전화번호 형식 틀리면 에러 메시지
-- [ ] 관리자 고객데이터에서 전화번호 표시됨
-- [ ] 관리자가 전화번호 입력/수정 가능
-- [ ] `tsc --noEmit` 통과
+### A. 구조 분석 문서 (`docs/content-hub-analysis.md`)
+1. **의존성 맵**: 탭 → 컴포넌트 → 액션 → API → DB 테이블 (트리 구조)
+2. **API 엔드포인트 목록**: 경로, HTTP 메서드, 입력/출력, 사용처
+3. **DB 테이블 의존성**: 어떤 테이블이 어떤 기능에 연결되는지
+4. **학습 파이프라인 흐름**: curriculum-view + pipeline-sidebar + style-learner + domain-intelligence 전체 데이터 흐름
 
-## 하지 말 것
-- profiles 테이블 스키마 변경 금지 — phone 컬럼 이미 존재
-- 기존 가입자 데이터 자동 마이그레이션 하지 말 것
-- 수강생 본인이 마이페이지에서 수정하는 기능은 지금 안 만들어도 됨
+### B. 오가닉 채널 메뉴 영향도 분석 (`docs/organic-impact-analysis.md`)
+1. **재사용 가능한 컴포넌트**: 오가닉 채널에서도 쓸 수 있는 기존 컴포넌트 목록
+2. **분리 필요 항목**: 정보공유(내부 발행) vs 오가닉(외부 발행) 경계선
+3. **공유 API**: 두 메뉴가 공유할 수 있는 API vs 신규 필요 API
+4. **사이드바 수정사항**: `src/components/layout/app-sidebar.tsx`에 메뉴 추가 방법
+
+## 규칙
+- 코드 수정 없음. **분석만**. 읽기 전용.
+- 산출물은 마크다운으로 `docs/` 폴더에 저장
+- 모든 파일 경로는 프로젝트 루트 기준 상대경로로 표기
