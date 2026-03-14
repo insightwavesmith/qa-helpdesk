@@ -39,40 +39,60 @@ function extractTitle(): string {
 /**
  * SmartEditor ONE 본문 영역 찾기
  *
- * 실제 DOM 구조:
- *   .se-component.se-documentTitle > ... > .se-title-text (contenteditable) ← 제목
- *   div[contenteditable="true"] (클래스 없음) ← 본문
+ * 전략: 여러 후보를 수집 → innerText가 가장 긴 것을 본문으로 선택
+ * (본문은 항상 제목보다 길다. 제목 17자 vs 본문 800자+)
  *
- * fallback: .se-main-container → .se-component.se-text → contenteditable(제목 제외) → 구형
+ * 후보 수집 순서:
+ *   1. .se-main-container
+ *   2. .se-component.se-text
+ *   3. 모든 contenteditable="true" 요소
+ *   4. .se-editor, .se-content, #post-body, .se_doc_viewer
+ *   5. document.body (최종 fallback)
  */
-function findBodyElement(): HTMLElement | null {
-  // 1차: .se-main-container (구버전 호환)
-  const seMain = document.querySelector<HTMLElement>(".se-main-container");
-  if (seMain) return seMain;
+function findBodyElement(): HTMLElement {
+  const titleText = extractTitle();
+  const candidates: HTMLElement[] = [];
 
-  // 2차: .se-component.se-text (SmartEditor ONE 텍스트 컴포넌트)
-  const seText = document.querySelector<HTMLElement>(".se-component.se-text");
-  if (seText) return seText;
-
-  // 3차: contenteditable DIV 중 텍스트가 가장 긴 것을 본문으로 판단
-  // (본문은 항상 제목보다 길다)
-  const editables = document.querySelectorAll<HTMLElement>("[contenteditable='true']");
-  if (editables.length === 1) return editables[0];
-  if (editables.length > 1) {
-    let longest: HTMLElement | null = null;
-    let maxLen = 0;
-    for (const el of editables) {
-      const len = (el.innerText ?? el.textContent ?? "").length;
-      if (len > maxLen) {
-        maxLen = len;
-        longest = el;
-      }
-    }
-    if (longest) return longest;
+  // 후보 수집
+  const selectors = [
+    ".se-main-container",
+    ".se-component.se-text",
+    ".se-editor",
+    ".se-content",
+    "#post-body",
+    ".se_doc_viewer",
+  ];
+  for (const sel of selectors) {
+    const el = document.querySelector<HTMLElement>(sel);
+    if (el) candidates.push(el);
   }
 
-  // 4차: 구형 에디터
-  return document.querySelector<HTMLElement>("#post-body, .se_doc_viewer");
+  // 모든 contenteditable 요소도 후보에 추가
+  const editables = document.querySelectorAll<HTMLElement>("[contenteditable='true']");
+  for (const el of editables) {
+    candidates.push(el);
+  }
+
+  // innerText가 가장 긴 후보 선택 (제목 텍스트와 동일한 것은 제외)
+  let best: HTMLElement | null = null;
+  let bestLen = 0;
+  for (const el of candidates) {
+    const text = (el.innerText ?? el.textContent ?? "").trim();
+    // 제목 텍스트와 완전 일치하면 스킵 (제목 요소일 가능성)
+    if (text === titleText && text.length < 100) continue;
+    if (text.length > bestLen) {
+      bestLen = text.length;
+      best = el;
+    }
+  }
+
+  if (best) {
+    console.debug(`[bscamp-ext] findBodyElement: ${bestLen}자, tag=${best.tagName}, class="${best.className}"`);
+    return best;
+  }
+
+  console.debug("[bscamp-ext] findBodyElement: fallback to document.body");
+  return document.body;
 }
 
 function extractBody(): {
@@ -82,17 +102,21 @@ function extractBody(): {
 } {
   const bodyEl = findBodyElement();
 
-  const content = bodyEl?.innerText?.trim() ?? bodyEl?.textContent?.trim() ?? "";
+  // 본문 텍스트 — 제목 텍스트가 포함될 수 있으므로 제거
+  let content = bodyEl.innerText?.trim() ?? bodyEl.textContent?.trim() ?? "";
+  const title = extractTitle();
+  if (title && content.startsWith(title)) {
+    content = content.slice(title.length).trim();
+  }
 
-  // 이미지 카운트 — bodyEl 내부 우선, 없으면 전체 에디터 영역
-  const imgScope = bodyEl ?? document;
-  const images = imgScope.querySelectorAll(
+  // 이미지 카운트
+  const images = bodyEl.querySelectorAll(
     ".se-image, img[data-lazy-src], .se-module-image img, img",
   );
   const imageCount = images.length;
 
   // 외부 링크 추출 (naver 도메인 제외)
-  const anchors = imgScope.querySelectorAll<HTMLAnchorElement>("a[href]");
+  const anchors = bodyEl.querySelectorAll<HTMLAnchorElement>("a[href]");
   const externalLinks: string[] = [];
   anchors.forEach((a) => {
     const href = a.href;
@@ -105,22 +129,32 @@ function extractBody(): {
 }
 
 /**
- * 에디터 변경사항을 1초 디바운스로 감지하는 MutationObserver 설정
+ * 에디터 변경사항 감지: MutationObserver + 3초 폴링 병행
+ * (MutationObserver가 paste/주입을 놓치는 경우 대비)
  */
 export function observeEditorChanges(
   callback: (content: EditorContent) => void,
 ): () => void {
-  const targetNode = findBodyElement() ??
-    document.querySelector("#post-body") ??
-    document.body;
-
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let lastContentHash = "";
+
+  function emitIfChanged() {
+    const data = getEditorContent();
+    const hash = `${data.title}|${data.content.length}|${data.imageCount}`;
+    if (hash !== lastContentHash) {
+      lastContentHash = hash;
+      callback(data);
+    }
+  }
+
+  // MutationObserver — 가능한 넓은 범위 감시
+  const targetNode = document.querySelector(".se-editor")
+    ?? document.querySelector("#post-body")
+    ?? document.body;
 
   const observer = new MutationObserver(() => {
     if (debounceTimer !== null) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      callback(getEditorContent());
-    }, 1000);
+    debounceTimer = setTimeout(emitIfChanged, 1000);
   });
 
   observer.observe(targetNode, {
@@ -129,8 +163,12 @@ export function observeEditorChanges(
     characterData: true,
   });
 
+  // 3초 폴링 — MutationObserver가 놓치는 변경 커버
+  const pollInterval = setInterval(emitIfChanged, 3000);
+
   return () => {
     observer.disconnect();
+    clearInterval(pollInterval);
     if (debounceTimer !== null) clearTimeout(debounceTimer);
   };
 }
