@@ -4,8 +4,11 @@
   "description": "자사몰사관학교 블로그 도우미 크롬 확장",
   "private": true,
   "scripts": {
-    "dev": "vite build --watch",
-    "build": "vite build && npm run copy-assets",
+    "dev": "npm run build",
+    "build": "npm run build:popup && npm run build:content && npm run build:worker && npm run copy-assets",
+    "build:popup": "VITE_BUILD_TARGET=popup vite build",
+    "build:content": "VITE_BUILD_TARGET=content vite build",
+    "build:worker": "VITE_BUILD_TARGET=worker vite build",
     "copy-assets": "cp manifest.json dist/ && mkdir -p dist/assets/icons && cp src/assets/icons/*.png dist/assets/icons/",
     "preview": "vite preview"
   },
