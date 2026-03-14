@@ -21,9 +21,8 @@ const PUBLIC_PATHS = [
   "/privacy",
 ];
 
-// 정확히 "/" 만 매칭 (startsWith("/")는 모든 경로 매칭하므로 별도 처리)
+// 정적 파일 및 공개 경로 매칭 ("/"는 middleware에서 직접 처리)
 function isPublicPath(pathname: string): boolean {
-  if (pathname === "/") return true;
   // 정적 파일 (public/ 내 .html 등) 허용
   if (pathname.endsWith(".html")) return true;
   return PUBLIC_PATHS.some((path) => pathname.startsWith(path));
@@ -84,8 +83,8 @@ export async function updateSession(request: NextRequest) {
 
   // --- 이하 인증된 사용자 ---
 
-  // 4. 인증된 사용자의 /login, /signup 접근 → /dashboard 리다이렉트
-  if (pathname === "/login" || pathname === "/signup") {
+  // 4. 인증된 사용자의 /login, /signup, / 접근 → /dashboard 리다이렉트
+  if (pathname === "/login" || pathname === "/signup" || pathname === "/") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
