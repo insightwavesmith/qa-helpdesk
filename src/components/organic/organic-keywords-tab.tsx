@@ -20,9 +20,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { getKeywordStats } from "@/actions/organic";
 import type { KeywordStat } from "@/types/organic";
+import KeywordAnalysisPanel from "./keyword-analysis-panel";
 
 const COMPETITION_BADGE: Record<string, { label: string; className: string }> = {
   low: { label: "낮음", className: "bg-green-50 text-green-700 border-green-200" },
@@ -170,6 +174,270 @@ export default function OrganicKeywordsTab() {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
+      )}
+
+      {/* 분석 도구 */}
+      <div className="mt-8 pt-6 border-t">
+        <h3 className="text-[15px] font-semibold mb-4">분석 도구</h3>
+        <Tabs defaultValue="keyword-analysis">
+          <TabsList>
+            <TabsTrigger value="keyword-analysis">키워드 분석</TabsTrigger>
+            <TabsTrigger value="forbidden-check">금칙어 체크</TabsTrigger>
+            <TabsTrigger value="benchmark">벤치마킹</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="keyword-analysis" className="mt-4">
+            <KeywordAnalysisPanel />
+          </TabsContent>
+
+          <TabsContent value="forbidden-check" className="mt-4">
+            <ForbiddenCheckSection />
+          </TabsContent>
+
+          <TabsContent value="benchmark" className="mt-4">
+            <BlogBenchmarkSection />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────── 금칙어 체크 ───────────────────────
+
+interface ForbiddenCheckResult {
+  keyword: string;
+  isForbidden: boolean;
+  isSuicideWord: boolean;
+}
+
+function ForbiddenCheckSection() {
+  const [keywords, setKeywords] = useState("");
+  const [results, setResults] = useState<ForbiddenCheckResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleCheck = async () => {
+    const list = keywords
+      .split("\n")
+      .map((k) => k.trim())
+      .filter(Boolean);
+    if (list.length === 0) return;
+
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/admin/forbidden-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keywords: list }),
+      });
+      const data = await res.json();
+      setResults(data.results ?? []);
+    } catch {
+      // 에러 시 무시
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <p className="text-[13px] text-gray-500">
+          키워드를 한 줄에 하나씩 입력하세요.
+        </p>
+        <Textarea
+          placeholder={"자살\n도박\n무료체험"}
+          value={keywords}
+          onChange={(e) => setKeywords(e.target.value)}
+          rows={5}
+          className="text-[13px]"
+        />
+        <Button
+          onClick={handleCheck}
+          disabled={isLoading || !keywords.trim()}
+          style={{ backgroundColor: "#F75D5D" }}
+          className="text-white hover:opacity-90"
+        >
+          {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          체크하기
+        </Button>
+      </div>
+
+      {results.length > 0 && (
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>키워드</TableHead>
+                  <TableHead>결과</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {results.map((r) => (
+                  <TableRow key={r.keyword}>
+                    <TableCell className="font-medium text-[13px]">
+                      {r.keyword}
+                    </TableCell>
+                    <TableCell className="text-[13px]">
+                      {r.isSuicideWord ? (
+                        <span className="text-red-600">⚠️ 자살관련 금칙어</span>
+                      ) : r.isForbidden ? (
+                        <span className="text-red-500">❌ 금칙어</span>
+                      ) : (
+                        <span className="text-green-600">✅ 정상</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────── 블로그 벤치마킹 ───────────────────────
+
+interface BlogBenchmark {
+  url: string;
+  title: string;
+  charCount: number;
+  imageCount: number;
+  externalLinkCount: number;
+  quoteCount: number;
+  dividerCount: number;
+  hashtagCount: number;
+}
+
+interface BlogBenchmarkAverage {
+  charCount: number;
+  imageCount: number;
+  externalLinkCount: number;
+  quoteCount: number;
+  dividerCount: number;
+  hashtagCount: number;
+}
+
+function BlogBenchmarkSection() {
+  const [keyword, setKeyword] = useState("");
+  const [blogs, setBlogs] = useState<BlogBenchmark[]>([]);
+  const [average, setAverage] = useState<BlogBenchmarkAverage | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleAnalyze = async () => {
+    if (!keyword.trim()) return;
+
+    setIsLoading(true);
+    try {
+      const res = await fetch(
+        `/api/admin/blog-benchmark?keyword=${encodeURIComponent(keyword)}&count=3`
+      );
+      const data = await res.json();
+      setBlogs(data.blogs ?? []);
+      setAverage(data.average ?? null);
+    } catch {
+      // 에러 시 무시
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <Input
+          placeholder="키워드 입력"
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
+          className="text-[13px] max-w-[280px]"
+        />
+        <Button
+          onClick={handleAnalyze}
+          disabled={isLoading || !keyword.trim()}
+          style={{ backgroundColor: "#F75D5D" }}
+          className="text-white hover:opacity-90"
+        >
+          {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          분석하기
+        </Button>
+      </div>
+
+      {average && (
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+          {[
+            { label: "글자수", value: average.charCount.toLocaleString() },
+            { label: "이미지", value: average.imageCount },
+            { label: "외부링크", value: average.externalLinkCount },
+            { label: "인용구", value: average.quoteCount },
+            { label: "구분선", value: average.dividerCount },
+            { label: "해시태그", value: average.hashtagCount },
+          ].map(({ label, value }) => (
+            <Card key={label}>
+              <CardContent className="py-3 px-4 text-center">
+                <p className="text-[11px] text-gray-500 mb-1">{label} (평균)</p>
+                <p className="text-[15px] font-semibold">{value}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {blogs.length > 0 && (
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>제목</TableHead>
+                  <TableHead className="text-right">글자수</TableHead>
+                  <TableHead className="text-right">이미지</TableHead>
+                  <TableHead className="text-right">외부링크</TableHead>
+                  <TableHead className="text-right">인용구</TableHead>
+                  <TableHead className="text-right">구분선</TableHead>
+                  <TableHead className="text-right">해시태그</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {blogs.map((b, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="text-[13px]">
+                      <a
+                        href={b.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline line-clamp-1"
+                      >
+                        {b.title || b.url}
+                      </a>
+                    </TableCell>
+                    <TableCell className="text-right text-[13px] tabular-nums">
+                      {b.charCount.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right text-[13px] tabular-nums">
+                      {b.imageCount}
+                    </TableCell>
+                    <TableCell className="text-right text-[13px] tabular-nums">
+                      {b.externalLinkCount}
+                    </TableCell>
+                    <TableCell className="text-right text-[13px] tabular-nums">
+                      {b.quoteCount}
+                    </TableCell>
+                    <TableCell className="text-right text-[13px] tabular-nums">
+                      {b.dividerCount}
+                    </TableCell>
+                    <TableCell className="text-right text-[13px] tabular-nums">
+                      {b.hashtagCount}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
