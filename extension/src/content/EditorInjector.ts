@@ -221,25 +221,39 @@ async function injectContent(htmlContent: string): Promise<void> {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
-      // 텍스트 삽입
-      await chrome.runtime.sendMessage({
-        type: "DEBUGGER_INSERT_TEXT",
-        payload: { text: line },
-      });
-      await delay(100);
+      // 이모지/서로게이트 페어 포함 줄은 한 글자씩 입력
+      if (hasSurrogatePair(line)) {
+        const chars = [...line]; // 서로게이트 페어를 올바르게 분리
+        for (const ch of chars) {
+          await chrome.runtime.sendMessage({
+            type: "DEBUGGER_INSERT_TEXT",
+            payload: { text: ch },
+          });
+          await delay(5);
+        }
+      } else {
+        await chrome.runtime.sendMessage({
+          type: "DEBUGGER_INSERT_TEXT",
+          payload: { text: line },
+        });
+      }
+      await delay(200);
 
       // 마지막 줄이 아니면 Enter
       if (i < lines.length - 1) {
         await chrome.runtime.sendMessage({ type: "DEBUGGER_ENTER" });
-        await delay(100);
+        await delay(200);
 
         // 문장 끝이면 Enter 한번 더 (문단 구분)
         if (/[.!?。]$/.test(line.trim())) {
           await chrome.runtime.sendMessage({ type: "DEBUGGER_ENTER" });
-          await delay(50);
+          await delay(100);
         }
       }
     }
+
+    // 에디터가 마지막 입력을 처리할 시간 확보
+    await delay(500);
 
     // 디버거 분리
     await chrome.runtime.sendMessage({ type: "DEBUGGER_DETACH" });
@@ -257,6 +271,12 @@ async function injectContent(htmlContent: string): Promise<void> {
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** 서로게이트 페어(이모지 등) 포함 여부 */
+function hasSurrogatePair(str: string): boolean {
+  // eslint-disable-next-line no-control-regex
+  return /[\uD800-\uDBFF]/.test(str);
 }
 
 /**
