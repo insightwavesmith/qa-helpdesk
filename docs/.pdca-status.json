@@ -1098,6 +1098,17 @@
         "newsletter-template-upgrade",
         "content-pipeline-qa"
       ]
+    },
+    "organic-content-analysis": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {
+        "plan": "01-plan/features/organic-content-analysis.plan.md",
+        "design": "02-design/features/organic-content-analysis.design.md"
+      },
+      "startedAt": "2026-03-14",
+      "completedAt": null,
+      "notes": "오가닉 Phase 2 콘텐츠 분석 엔진. T1 금칙어, T2 키워드 분석, T3 비속어 DB, T4 포스팅 진단, T5 벤치마킹, T6 탭 통합."
     }
   }
 }
