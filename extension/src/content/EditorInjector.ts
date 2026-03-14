@@ -135,29 +135,74 @@ function pasteHtmlIntoElement(element: HTMLElement, html: string): void {
   element.dispatchEvent(pasteEvent);
 }
 
-async function injectContent(htmlContent: string): Promise<void> {
-  // SmartEditor ONE 본문 컨테이너
-  const seContainer = document.querySelector<HTMLElement>(".se-main-container");
-  if (seContainer) {
-    // contenteditable 영역 찾기
-    const editableArea = seContainer.querySelector<HTMLElement>("[contenteditable='true']")
-      ?? seContainer;
+/**
+ * SmartEditor ONE 본문 contenteditable 영역 찾기
+ *
+ * 실제 DOM 구조:
+ * - .se-component.se-documentTitle (제목 컴포넌트) 안에 .se-title-text
+ * - 본문은 별도의 contenteditable DIV (클래스 없음)
+ *
+ * 전략: 모든 contenteditable="true" 요소 중
+ *   1) .se-title-text 자체 또는 그 부모 내부에 있는 것은 제목 → 제외
+ *   2) 나머지가 본문 편집 영역
+ */
+function findSmartEditorBodyArea(): HTMLElement | null {
+  const titleEl = document.querySelector<HTMLElement>(".se-title-text");
+  const titleContainer = titleEl?.closest(".se-component, .se-documentTitle");
 
+  const editables = document.querySelectorAll<HTMLElement>("[contenteditable='true']");
+  for (const el of editables) {
+    // 제목 영역이면 스킵
+    if (titleEl && (el === titleEl || el.contains(titleEl))) continue;
+    if (titleContainer && titleContainer.contains(el)) continue;
+
+    // SmartEditor 관련 영역인지 확인 (se- 접두어 클래스가 있거나 documentTitle이 아닌 것)
+    // 최소한 에디터 페이지의 contenteditable이면 본문으로 간주
+    return el;
+  }
+  return null;
+}
+
+async function injectContent(htmlContent: string): Promise<void> {
+  // 1차: SmartEditor ONE 본문 영역 (contenteditable 기반 탐색)
+  const bodyArea = findSmartEditorBodyArea();
+  if (bodyArea) {
     // 기존 내용 초기화
-    editableArea.focus();
+    bodyArea.focus();
     document.execCommand("selectAll", false);
     document.execCommand("delete", false);
 
     // clipboard paste 시뮬레이션으로 HTML 주입
-    pasteHtmlIntoElement(editableArea, htmlContent);
+    pasteHtmlIntoElement(bodyArea, htmlContent);
 
     // paste 후 에디터가 처리할 시간 확보
     await delay(300);
 
-    // paste가 실패한 경우 (에디터가 preventDefault하지 않은 경우) fallback
-    const textAfterPaste = editableArea.textContent?.trim() ?? "";
+    // paste가 실패한 경우 fallback
+    const textAfterPaste = bodyArea.textContent?.trim() ?? "";
     if (textAfterPaste.length === 0) {
       console.warn("[bscamp-ext] paste 시뮬레이션 실패, innerHTML fallback 시도");
+      bodyArea.innerHTML = htmlContent;
+      bodyArea.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    return;
+  }
+
+  // 2차: .se-main-container (구버전 SmartEditor ONE 호환)
+  const seContainer = document.querySelector<HTMLElement>(".se-main-container");
+  if (seContainer) {
+    const editableArea = seContainer.querySelector<HTMLElement>("[contenteditable='true']")
+      ?? seContainer;
+
+    editableArea.focus();
+    document.execCommand("selectAll", false);
+    document.execCommand("delete", false);
+
+    pasteHtmlIntoElement(editableArea, htmlContent);
+    await delay(300);
+
+    if ((editableArea.textContent?.trim() ?? "").length === 0) {
       editableArea.innerHTML = htmlContent;
       editableArea.dispatchEvent(new Event("input", { bubbles: true }));
     }
@@ -165,7 +210,7 @@ async function injectContent(htmlContent: string): Promise<void> {
     return;
   }
 
-  // iframe 기반 에디터 (구형 SmartEditor 2)
+  // 3차: iframe 기반 에디터 (구형 SmartEditor 2)
   const editorIframe = document.querySelector<HTMLIFrameElement>(
     "#mainFrame, iframe[id*='SmartEditor'], .se2_iframe"
   );
@@ -179,14 +224,12 @@ async function injectContent(htmlContent: string): Promise<void> {
 
         await delay(300);
 
-        // fallback
         if ((body.textContent?.trim() ?? "").length === 0) {
           body.innerHTML = htmlContent;
         }
         return;
       }
     } catch {
-      // cross-origin iframe — chrome.debugger 필요
       console.warn("[bscamp-ext] iframe 접근 불가 — chrome.debugger API가 필요합니다.");
       await injectViaDebugger(editorIframe, htmlContent);
     }
