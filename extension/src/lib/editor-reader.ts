@@ -54,17 +54,21 @@ function findBodyElement(): HTMLElement | null {
   const seText = document.querySelector<HTMLElement>(".se-component.se-text");
   if (seText) return seText;
 
-  // 3차: contenteditable DIV 중 제목이 아닌 것
-  // 제목 판별: .se-documentTitle 내부이거나, .se-title-text 자체이거나, 그 안에 있는 것
+  // 3차: contenteditable DIV 중 텍스트가 가장 긴 것을 본문으로 판단
+  // (본문은 항상 제목보다 길다)
   const editables = document.querySelectorAll<HTMLElement>("[contenteditable='true']");
-  for (const el of editables) {
-    // .se-documentTitle 안에 있으면 제목 → 스킵
-    if (el.closest(".se-documentTitle")) continue;
-    // .se-title-text 자체이면 제목 → 스킵
-    if (el.classList.contains("se-title-text")) continue;
-    // .se-title-text를 포함하고 있으면 제목 래퍼 → 스킵
-    if (el.querySelector(".se-title-text")) continue;
-    return el;
+  if (editables.length === 1) return editables[0];
+  if (editables.length > 1) {
+    let longest: HTMLElement | null = null;
+    let maxLen = 0;
+    for (const el of editables) {
+      const len = (el.innerText ?? el.textContent ?? "").length;
+      if (len > maxLen) {
+        maxLen = len;
+        longest = el;
+      }
+    }
+    if (longest) return longest;
   }
 
   // 4차: 구형 에디터
