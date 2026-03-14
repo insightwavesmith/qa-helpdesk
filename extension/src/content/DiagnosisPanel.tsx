@@ -99,6 +99,18 @@ export function DiagnosisPanel() {
   const [overallScore, setOverallScore] = useState<number | null>(null);
   const [loggedIn, setLoggedIn] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [imageSlotCount, setImageSlotCount] = useState(0);
+
+  // 이미지 슬롯 메시지 수신 (EditorInjector에서 전달)
+  useEffect(() => {
+    function handleSlotMessage(event: MessageEvent) {
+      if (event.source !== window) return;
+      if (event.data?.type !== "BSCAMP_IMAGE_SLOTS") return;
+      setImageSlotCount(event.data.slotCount ?? 0);
+    }
+    window.addEventListener("message", handleSlotMessage);
+    return () => window.removeEventListener("message", handleSlotMessage);
+  }, []);
 
   // 인증 확인
   useEffect(() => {
@@ -272,6 +284,14 @@ export function DiagnosisPanel() {
                   status={localDiag.imageCount.status}
                   message={localDiag.imageCount.message}
                 />
+                {imageSlotCount > 0 && (
+                  <DiagItem
+                    icon="📷"
+                    label="이미지 슬롯"
+                    status="warn"
+                    message={`슬롯: ${imageSlotCount}개 / 삽입됨: ${localDiag.imageCount.value}개`}
+                  />
+                )}
                 <DiagItem
                   icon={getStatusIcon(localDiag.keywordCount.status)}
                   label="키워드 반복"

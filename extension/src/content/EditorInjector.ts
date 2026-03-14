@@ -4,6 +4,10 @@
  * bscamp 큐레이션에서 "블로그 발행" 버튼 클릭 시
  * window.postMessage로 전달된 데이터를 받아 SmartEditor에 주입합니다.
  *
+ * 주입 방식: clipboard paste 이벤트 시뮬레이션
+ * - SmartEditor ONE은 execCommand("insertHTML")를 무시함
+ * - ClipboardEvent + DataTransfer로 붙여넣기를 시뮬레이션하면 에디터가 인식
+ *
  * 데이터 포맷:
  * { type: 'BSCAMP_INJECT', payload: { title, content, images? } }
  */
@@ -12,6 +16,22 @@ export interface InjectPayload {
   title: string;
   content: string;    // HTML 본문
   images?: string[];  // 이미지 URL 배열
+}
+
+/** 이미지 플레이스홀더 패턴 */
+const IMAGE_PLACEHOLDER_RE = /\[이미지\]|\[IMAGE\]/gi;
+
+/**
+ * 본문 HTML에서 [이미지]/[IMAGE] 텍스트를 플레이스홀더 블록으로 변환
+ * 변환 결과와 슬롯 수를 반환
+ */
+export function processImagePlaceholders(html: string): { html: string; slotCount: number } {
+  let index = 0;
+  const processed = html.replace(IMAGE_PLACEHOLDER_RE, () => {
+    index++;
+    return `<div style="text-align:center;padding:18px 0;margin:12px 0;border:2px dashed #ccc;border-radius:8px;color:#888;font-size:14px;background:#fafafa;">━━━ 📷 이미지 삽입 위치 (${index}) ━━━</div>`;
+  });
+  return { html: processed, slotCount: index };
 }
 
 /**
@@ -42,9 +62,18 @@ async function injectToSmartEditor(payload: InjectPayload): Promise<void> {
       injectTitle(payload.title);
     }
 
-    // 본문 주입
+    // 본문 주입 (이미지 플레이스홀더 처리 포함)
     if (payload.content) {
-      await injectContent(payload.content);
+      const { html, slotCount } = processImagePlaceholders(payload.content);
+      await injectContent(html);
+
+      // 이미지 슬롯 정보를 DiagnosisPanel에 전달
+      if (slotCount > 0) {
+        window.postMessage(
+          { type: "BSCAMP_IMAGE_SLOTS", slotCount },
+          "*"
+        );
+      }
     }
   } catch (err) {
     console.error("[bscamp-ext] 글 주입 실패:", err);
@@ -84,6 +113,28 @@ function injectTitle(title: string): void {
   }
 }
 
+/**
+ * clipboard paste 이벤트를 시뮬레이션하여 SmartEditor에 HTML 삽입
+ * SmartEditor ONE은 paste 이벤트를 통해서만 외부 HTML을 수용함
+ */
+function pasteHtmlIntoElement(element: HTMLElement, html: string): void {
+  element.focus();
+
+  // DataTransfer 객체 생성 후 HTML 데이터 설정
+  const dataTransfer = new DataTransfer();
+  dataTransfer.setData("text/html", html);
+  dataTransfer.setData("text/plain", html.replace(/<[^>]*>/g, ""));
+
+  // paste 이벤트 시뮬레이션
+  const pasteEvent = new ClipboardEvent("paste", {
+    bubbles: true,
+    cancelable: true,
+    clipboardData: dataTransfer,
+  });
+
+  element.dispatchEvent(pasteEvent);
+}
+
 async function injectContent(htmlContent: string): Promise<void> {
   // SmartEditor ONE 본문 컨테이너
   const seContainer = document.querySelector<HTMLElement>(".se-main-container");
@@ -92,15 +143,25 @@ async function injectContent(htmlContent: string): Promise<void> {
     const editableArea = seContainer.querySelector<HTMLElement>("[contenteditable='true']")
       ?? seContainer;
 
+    // 기존 내용 초기화
     editableArea.focus();
+    document.execCommand("selectAll", false);
+    document.execCommand("delete", false);
 
-    // execCommand로 HTML 삽입 (Undo 지원)
-    if (document.execCommand) {
-      document.execCommand("insertHTML", false, htmlContent);
-    } else {
+    // clipboard paste 시뮬레이션으로 HTML 주입
+    pasteHtmlIntoElement(editableArea, htmlContent);
+
+    // paste 후 에디터가 처리할 시간 확보
+    await delay(300);
+
+    // paste가 실패한 경우 (에디터가 preventDefault하지 않은 경우) fallback
+    const textAfterPaste = editableArea.textContent?.trim() ?? "";
+    if (textAfterPaste.length === 0) {
+      console.warn("[bscamp-ext] paste 시뮬레이션 실패, innerHTML fallback 시도");
       editableArea.innerHTML = htmlContent;
+      editableArea.dispatchEvent(new Event("input", { bubbles: true }));
     }
-    editableArea.dispatchEvent(new Event("input", { bubbles: true }));
+
     return;
   }
 
@@ -111,12 +172,15 @@ async function injectContent(htmlContent: string): Promise<void> {
   if (editorIframe) {
     try {
       const iframeDoc = editorIframe.contentDocument ?? editorIframe.contentWindow?.document;
-      if (iframeDoc) {
+      if (iframeDoc?.body) {
         const body = iframeDoc.body;
         body.focus();
-        if (iframeDoc.execCommand) {
-          iframeDoc.execCommand("insertHTML", false, htmlContent);
-        } else {
+        pasteHtmlIntoElement(body, htmlContent);
+
+        await delay(300);
+
+        // fallback
+        if ((body.textContent?.trim() ?? "").length === 0) {
           body.innerHTML = htmlContent;
         }
         return;
@@ -127,6 +191,10 @@ async function injectContent(htmlContent: string): Promise<void> {
       await injectViaDebugger(editorIframe, htmlContent);
     }
   }
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -146,7 +214,7 @@ async function injectViaDebugger(
     // 디버거 연결
     await chrome.debugger.attach({ tabId }, "1.3");
 
-    // JavaScript 실행으로 본문 주입
+    // clipboard paste 시뮬레이션을 iframe 내부에서 실행
     const escapedHtml = JSON.stringify(htmlContent);
     const expression = `
       (function() {
@@ -155,7 +223,13 @@ async function injectViaDebugger(
           try {
             var doc = frames[i].contentDocument || frames[i].contentWindow.document;
             if (doc && doc.body) {
-              doc.body.innerHTML = ${escapedHtml};
+              doc.body.focus();
+              var dt = new DataTransfer();
+              dt.setData('text/html', ${escapedHtml});
+              var evt = new ClipboardEvent('paste', {
+                bubbles: true, cancelable: true, clipboardData: dt
+              });
+              doc.body.dispatchEvent(evt);
               return true;
             }
           } catch(e) { continue; }
