@@ -38,7 +38,12 @@ function extractTitle(): string {
 
 /**
  * SmartEditor ONE 본문 영역 찾기
- * fallback 순서: .se-main-container → .se-component.se-text → contenteditable DIV (제목 제외)
+ *
+ * 실제 DOM 구조:
+ *   .se-component.se-documentTitle > ... > .se-title-text (contenteditable) ← 제목
+ *   div[contenteditable="true"] (클래스 없음) ← 본문
+ *
+ * fallback: .se-main-container → .se-component.se-text → contenteditable(제목 제외) → 구형
  */
 function findBodyElement(): HTMLElement | null {
   // 1차: .se-main-container (구버전 호환)
@@ -50,12 +55,15 @@ function findBodyElement(): HTMLElement | null {
   if (seText) return seText;
 
   // 3차: contenteditable DIV 중 제목이 아닌 것
-  const titleEl = document.querySelector<HTMLElement>(".se-title-text");
-  const titleContainer = titleEl?.closest(".se-component, .se-documentTitle");
+  // 제목 판별: .se-documentTitle 내부이거나, .se-title-text 자체이거나, 그 안에 있는 것
   const editables = document.querySelectorAll<HTMLElement>("[contenteditable='true']");
   for (const el of editables) {
-    if (titleEl && (el === titleEl || el.contains(titleEl))) continue;
-    if (titleContainer && titleContainer.contains(el)) continue;
+    // .se-documentTitle 안에 있으면 제목 → 스킵
+    if (el.closest(".se-documentTitle")) continue;
+    // .se-title-text 자체이면 제목 → 스킵
+    if (el.classList.contains("se-title-text")) continue;
+    // .se-title-text를 포함하고 있으면 제목 래퍼 → 스킵
+    if (el.querySelector(".se-title-text")) continue;
     return el;
   }
 
