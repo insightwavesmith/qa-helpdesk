@@ -1,8 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { MessageSquarePlus } from "lucide-react";
-import { QaChatPanel } from "./QaChatPanel";
+
+const QaChatPanel = dynamic(
+  () => import("./QaChatPanel").then((m) => m.QaChatPanel),
+  { ssr: false }
+);
 
 export function QaChatButton() {
   const [isOpen, setIsOpen] = useState(false);

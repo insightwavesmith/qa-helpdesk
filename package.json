@@ -19,7 +19,6 @@
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.94.0",
     "@tailwindcss/typography": "^0.5.19",
-    "@tanstack/react-table": "^8.21.3",
     "@tiptap/extension-color": "^3.19.0",
     "@tiptap/extension-image": "^3.19.0",
     "@tiptap/extension-link": "^3.19.0",

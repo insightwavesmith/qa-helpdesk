@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { mp } from "@/lib/mixpanel";
 import { useSearchParams } from "next/navigation";
 import { Pencil } from "lucide-react";
@@ -11,8 +12,12 @@ import { PostBody } from "@/components/posts/post-body";
 import { PostRelated } from "@/components/posts/post-related";
 import { NewsletterCta } from "@/components/posts/newsletter-cta";
 import { AuthorProfileCard } from "@/components/posts/author-profile-card";
-import { InlineEditor } from "@/components/post/InlineEditor";
 import { PublishBar } from "@/components/post/PublishBar";
+
+const InlineEditor = dynamic(
+  () => import("@/components/post/InlineEditor").then((m) => m.InlineEditor),
+  { ssr: false, loading: () => <div className="h-96 animate-pulse bg-gray-100 rounded-lg" /> }
+);
 import { updatePostInline } from "@/actions/posts";
 
 interface PostData {
