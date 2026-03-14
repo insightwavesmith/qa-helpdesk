@@ -139,48 +139,68 @@ function injectTitle(title: string): void {
 
 /**
  * 본문 영역의 화면 좌표 계산
- * SmartEditor ONE에서 본문 편집 영역의 중심 좌표를 반환
+ *
+ * SmartEditor ONE 구조:
+ *   .se-component.se-text > .se-text-paragraph (p 태그)
+ * 이 p 태그의 정중앙을 클릭해야 SmartEditor가 포커스를 잡고 React state와 동기화됨
  */
 function getBodyAreaCoords(): { x: number; y: number } | null {
-  // SmartEditor ONE 본문 영역 후보
-  const selectors = [
-    ".se-component.se-text",
-    ".se-main-container [contenteditable='true']",
-    ".se-main-container",
-  ];
-
-  for (const sel of selectors) {
-    const el = document.querySelector<HTMLElement>(sel);
-    if (el) {
-      const rect = el.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        return {
-          x: Math.round(rect.left + rect.width / 2),
-          y: Math.round(rect.top + Math.min(rect.height / 2, 100)),
-        };
-      }
-    }
-  }
-
-  // contenteditable 중 제목이 아닌 것
-  const editables = document.querySelectorAll<HTMLElement>("[contenteditable='true']");
-  const titleText = document.querySelector<HTMLElement>(".se-title-text")?.textContent ?? "";
-
-  for (const el of editables) {
-    const text = (el.innerText ?? el.textContent ?? "").trim();
-    // 제목과 같은 짧은 텍스트면 스킵
-    if (text === titleText && text.length < 100) continue;
-    const rect = el.getBoundingClientRect();
-    if (rect.width > 100 && rect.height > 50) {
-      return {
+  // 1차: p.se-text-paragraph — SmartEditor ONE 본문의 정확한 텍스트 영역
+  const paragraph = document.querySelector<HTMLElement>("p.se-text-paragraph");
+  if (paragraph) {
+    const rect = paragraph.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      const coords = {
         x: Math.round(rect.left + rect.width / 2),
-        y: Math.round(rect.top + Math.min(rect.height / 2, 100)),
+        y: Math.round(rect.top + rect.height / 2),
       };
+      console.log(`[bscamp-ext] getBodyAreaCoords: p.se-text-paragraph (${coords.x}, ${coords.y}), rect=`, rect);
+      return coords;
     }
   }
 
-  // 최종 fallback: 페이지 중앙 영역 (본문이 보통 있는 위치)
-  return { x: Math.round(window.innerWidth / 2), y: 400 };
+  // 2차: .se-component.se-text 내부의 아무 요소
+  const seText = document.querySelector<HTMLElement>(".se-component.se-text");
+  if (seText) {
+    const rect = seText.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      const coords = {
+        x: Math.round(rect.left + rect.width / 2),
+        y: Math.round(rect.top + rect.height / 2),
+      };
+      console.log(`[bscamp-ext] getBodyAreaCoords: .se-component.se-text (${coords.x}, ${coords.y}), rect=`, rect);
+      return coords;
+    }
+  }
+
+  // 3차: contenteditable 중 면적이 가장 큰 것 (제목 제외)
+  const editables = document.querySelectorAll<HTMLElement>("[contenteditable='true']");
+  let best: HTMLElement | null = null;
+  let bestArea = 0;
+  for (const el of editables) {
+    if (el.closest(".se-documentTitle")) continue;
+    if (el.classList.contains("se-title-text")) continue;
+    const rect = el.getBoundingClientRect();
+    const area = rect.width * rect.height;
+    if (area > bestArea) {
+      bestArea = area;
+      best = el;
+    }
+  }
+  if (best) {
+    const rect = best.getBoundingClientRect();
+    const coords = {
+      x: Math.round(rect.left + rect.width / 2),
+      y: Math.round(rect.top + rect.height / 2),
+    };
+    console.log(`[bscamp-ext] getBodyAreaCoords: contenteditable (${coords.x}, ${coords.y}), rect=`, rect);
+    return coords;
+  }
+
+  // 최종 fallback
+  const coords = { x: Math.round(window.innerWidth / 2), y: 400 };
+  console.log(`[bscamp-ext] getBodyAreaCoords: fallback (${coords.x}, ${coords.y})`);
+  return coords;
 }
 
 /**
