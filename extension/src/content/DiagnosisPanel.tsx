@@ -123,9 +123,15 @@ export function DiagnosisPanel() {
     setLocalDiag(analyzeLocally(editorContent, targetKeyword));
   }, [editorContent, targetKeyword]);
 
-  // 서버 API 호출 (디바운스)
+  // 분석 실행 (로컬 + 서버)
   const runServerAnalysis = useCallback(async () => {
-    if (!editorContent || !loggedIn) return;
+    if (!editorContent) return;
+
+    // 로컬 진단은 항상 갱신
+    setLocalDiag(analyzeLocally(editorContent, targetKeyword));
+
+    // 서버 API는 로그인 시에만
+    if (!loggedIn) return;
     setAnalyzing(true);
 
     try {
@@ -332,7 +338,7 @@ export function DiagnosisPanel() {
             {/* 로그인 안내 */}
             {!loggedIn && (
               <div className="bscamp-login-notice">
-                <p>확장 팝업에서 로그인하면 금칙어, 비속어, 서버 진단을 사용할 수 있습니다.</p>
+                <p>확장 아이콘 클릭 → 로그인하면 금칙어, 비속어, TOP3 비교 기능이 활성화됩니다.</p>
               </div>
             )}
           </>
