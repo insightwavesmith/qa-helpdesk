@@ -5,6 +5,7 @@
     { "path": "/api/cron/collect-benchmarks", "schedule": "0 17 * * 1" },
     { "path": "/api/cron/collect-mixpanel", "schedule": "30 18 * * *" },
     { "path": "/api/cron/sync-notion", "schedule": "0 19 * * *" },
-    { "path": "/api/cron/cleanup-deleted", "schedule": "0 19 * * *" }
+    { "path": "/api/cron/cleanup-deleted", "schedule": "0 19 * * *" },
+    { "path": "/api/cron/organic-benchmark", "schedule": "0 18 * * 1" }
   ]
 }
