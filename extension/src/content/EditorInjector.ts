@@ -183,6 +183,14 @@ function getBodyAreaCoords(): { x: number; y: number } | null {
   return { x: Math.round(window.innerWidth / 2), y: 400 };
 }
 
+/**
+ * chrome.debugger 기반 줄별 텍스트 주입
+ *
+ * 1) DEBUGGER_INJECT (클릭 → 포커스)
+ * 2) 줄별로 DEBUGGER_INSERT_TEXT + DEBUGGER_ENTER
+ * 3) 문장 끝(.!?)이면 Enter 한번 더 (문단 구분)
+ * 4) DEBUGGER_DETACH
+ */
 async function injectContent(htmlContent: string): Promise<void> {
   const plainText = htmlToPlainText(htmlContent);
   const coords = getBodyAreaCoords();
@@ -192,39 +200,69 @@ async function injectContent(htmlContent: string): Promise<void> {
     return;
   }
 
-  console.log(`[bscamp-ext] debugger 주입 시도: coords=(${coords.x}, ${coords.y}), text=${plainText.length}자`);
+  const lines = plainText.split("\n").filter((l) => l.trim().length > 0);
+  console.log(`[bscamp-ext] debugger 주입 시도: coords=(${coords.x}, ${coords.y}), ${lines.length}줄, ${plainText.length}자`);
 
-  // 1차: chrome.debugger API (Input.insertText)
+  // 1차: chrome.debugger API (줄별 입력)
   try {
-    const response = await chrome.runtime.sendMessage({
+    // 클릭으로 포커스
+    const clickRes = await chrome.runtime.sendMessage({
       type: "DEBUGGER_INJECT",
-      payload: {
-        text: plainText,
-        x: coords.x,
-        y: coords.y,
-      },
+      payload: { x: coords.x, y: coords.y },
     });
 
-    if (response?.success) {
-      console.log("[bscamp-ext] debugger 주입 성공");
-      return;
+    if (!clickRes?.success) {
+      throw new Error(clickRes?.error ?? "클릭 실패");
     }
 
-    console.warn("[bscamp-ext] debugger 주입 실패:", response?.error);
+    await delay(200);
+
+    // 줄별로 텍스트 입력
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      // 텍스트 삽입
+      await chrome.runtime.sendMessage({
+        type: "DEBUGGER_INSERT_TEXT",
+        payload: { text: line },
+      });
+      await delay(100);
+
+      // 마지막 줄이 아니면 Enter
+      if (i < lines.length - 1) {
+        await chrome.runtime.sendMessage({ type: "DEBUGGER_ENTER" });
+        await delay(100);
+
+        // 문장 끝이면 Enter 한번 더 (문단 구분)
+        if (/[.!?。]$/.test(line.trim())) {
+          await chrome.runtime.sendMessage({ type: "DEBUGGER_ENTER" });
+          await delay(50);
+        }
+      }
+    }
+
+    // 디버거 분리
+    await chrome.runtime.sendMessage({ type: "DEBUGGER_DETACH" });
+    console.log("[bscamp-ext] debugger 주입 성공");
+    return;
   } catch (err) {
-    console.warn("[bscamp-ext] debugger 통신 실패:", err);
+    console.warn("[bscamp-ext] debugger 주입 실패, DOM fallback:", err);
+    // 에러 시 디버거 분리 시도
+    try { await chrome.runtime.sendMessage({ type: "DEBUGGER_DETACH" }); } catch { /* ignore */ }
   }
 
   // 2차 fallback: DOM 직접 수정
-  console.log("[bscamp-ext] DOM fallback 시도");
   await injectContentFallback(htmlContent);
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
  * DOM 직접 수정 fallback (debugger 사용 불가 시)
  */
 async function injectContentFallback(htmlContent: string): Promise<void> {
-  // contenteditable 영역 중 가장 큰 것
   const editables = document.querySelectorAll<HTMLElement>("[contenteditable='true']");
   let target: HTMLElement | null = null;
   let maxArea = 0;
@@ -239,7 +277,8 @@ async function injectContentFallback(htmlContent: string): Promise<void> {
   }
 
   if (!target) {
-    target = document.querySelector<HTMLElement>(".se-main-container") ?? document.querySelector<HTMLElement>("#post-body");
+    target = document.querySelector<HTMLElement>(".se-main-container")
+      ?? document.querySelector<HTMLElement>("#post-body");
   }
 
   if (!target) {

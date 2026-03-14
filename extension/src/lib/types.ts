@@ -73,7 +73,10 @@ export type MessageType =
   | { type: "SET_AUTH"; payload: StoredSession }
   | { type: "LOGOUT" }
   | { type: "CHECK_EDITOR" }
-  | { type: "DEBUGGER_INJECT"; payload: { title?: string; text: string; x: number; y: number } };
+  | { type: "DEBUGGER_INJECT"; payload: { x: number; y: number } }
+  | { type: "DEBUGGER_INSERT_TEXT"; payload: { text: string } }
+  | { type: "DEBUGGER_ENTER" }
+  | { type: "DEBUGGER_DETACH" };
 
 export interface MessageResponse<T = unknown> {
   success: boolean;
