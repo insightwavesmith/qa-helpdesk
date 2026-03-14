@@ -18,18 +18,22 @@ export interface InjectPayload {
   images?: string[];  // 이미지 URL 배열
 }
 
-/** 이미지 플레이스홀더 패턴 */
-const IMAGE_PLACEHOLDER_RE = /\[이미지\]|\[IMAGE\]/gi;
+/** 이미지 플레이스홀더 패턴: [이미지], [IMAGE], [이미지: 설명텍스트] */
+const IMAGE_PLACEHOLDER_RE = /\[이미지(?::?\s*([^\]]*))?\]|\[IMAGE(?::?\s*([^\]]*))?\]/gi;
 
 /**
- * 본문 HTML에서 [이미지]/[IMAGE] 텍스트를 플레이스홀더 블록으로 변환
- * 변환 결과와 슬롯 수를 반환
+ * 본문 HTML에서 이미지 플레이스홀더를 시각적 블록으로 변환
+ * [이미지], [IMAGE], [이미지: 설명텍스트], [IMAGE: description] 지원
  */
 export function processImagePlaceholders(html: string): { html: string; slotCount: number } {
   let index = 0;
-  const processed = html.replace(IMAGE_PLACEHOLDER_RE, () => {
+  const processed = html.replace(IMAGE_PLACEHOLDER_RE, (_match, descKo?: string, descEn?: string) => {
     index++;
-    return `<div style="text-align:center;padding:18px 0;margin:12px 0;border:2px dashed #ccc;border-radius:8px;color:#888;font-size:14px;background:#fafafa;">━━━ 📷 이미지 삽입 위치 (${index}) ━━━</div>`;
+    const desc = (descKo ?? descEn ?? "").trim();
+    const label = desc
+      ? `📷 이미지 ${index}: ${desc}`
+      : `📷 이미지 삽입 위치 (${index})`;
+    return `<div style="background:#f0f4f8;border:2px dashed #94a3b8;border-radius:8px;padding:16px;text-align:center;margin:16px 0;color:#64748b;font-size:14px;">${label}</div>`;
   });
   return { html: processed, slotCount: index };
 }

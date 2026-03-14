@@ -36,33 +36,51 @@ function extractTitle(): string {
   return "";
 }
 
+/**
+ * SmartEditor ONE 본문 영역 찾기
+ * fallback 순서: .se-main-container → .se-component.se-text → contenteditable DIV (제목 제외)
+ */
+function findBodyElement(): HTMLElement | null {
+  // 1차: .se-main-container (구버전 호환)
+  const seMain = document.querySelector<HTMLElement>(".se-main-container");
+  if (seMain) return seMain;
+
+  // 2차: .se-component.se-text (SmartEditor ONE 텍스트 컴포넌트)
+  const seText = document.querySelector<HTMLElement>(".se-component.se-text");
+  if (seText) return seText;
+
+  // 3차: contenteditable DIV 중 제목이 아닌 것
+  const titleEl = document.querySelector<HTMLElement>(".se-title-text");
+  const titleContainer = titleEl?.closest(".se-component, .se-documentTitle");
+  const editables = document.querySelectorAll<HTMLElement>("[contenteditable='true']");
+  for (const el of editables) {
+    if (titleEl && (el === titleEl || el.contains(titleEl))) continue;
+    if (titleContainer && titleContainer.contains(el)) continue;
+    return el;
+  }
+
+  // 4차: 구형 에디터
+  return document.querySelector<HTMLElement>("#post-body, .se_doc_viewer");
+}
+
 function extractBody(): {
   content: string;
   imageCount: number;
   externalLinks: string[];
 } {
-  // SmartEditor ONE 메인 컨테이너
-  const seContainer = document.querySelector<HTMLElement>(
-    ".se-main-container",
-  );
-  const bodyEl =
-    seContainer ??
-    document.querySelector<HTMLElement>(
-      "#post-body, .se-component, .se_doc_viewer",
-    );
+  const bodyEl = findBodyElement();
 
   const content = bodyEl?.innerText?.trim() ?? bodyEl?.textContent?.trim() ?? "";
 
-  // 이미지 카운트
-  const images = document.querySelectorAll(
-    ".se-image, img[data-lazy-src], .se-module-image img, .se-main-container img",
+  // 이미지 카운트 — bodyEl 내부 우선, 없으면 전체 에디터 영역
+  const imgScope = bodyEl ?? document;
+  const images = imgScope.querySelectorAll(
+    ".se-image, img[data-lazy-src], .se-module-image img, img",
   );
   const imageCount = images.length;
 
   // 외부 링크 추출 (naver 도메인 제외)
-  const anchors = document.querySelectorAll<HTMLAnchorElement>(
-    ".se-main-container a[href], #post-body a[href]",
-  );
+  const anchors = imgScope.querySelectorAll<HTMLAnchorElement>("a[href]");
   const externalLinks: string[] = [];
   anchors.forEach((a) => {
     const href = a.href;
@@ -80,8 +98,7 @@ function extractBody(): {
 export function observeEditorChanges(
   callback: (content: EditorContent) => void,
 ): () => void {
-  const targetNode =
-    document.querySelector(".se-main-container") ??
+  const targetNode = findBodyElement() ??
     document.querySelector("#post-body") ??
     document.body;
 
