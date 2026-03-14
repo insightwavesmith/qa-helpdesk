@@ -1,10 +1,18 @@
 import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import ClientToaster from "@/components/layout/client-toaster";
 import ThemeProvider from "@/components/layout/theme-provider";
 import MixpanelProvider from "@/components/mixpanel-provider";
 import { JsonLd } from "@/components/seo/json-ld";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
+
+const pretendard = localFont({
+  src: "../fonts/PretendardVariable.woff2",
+  display: "swap",
+  weight: "45 920",
+  variable: "--font-pretendard",
+});
 
 const META_THEME_COLOR = "#f8f9fc";
 
@@ -54,14 +62,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" suppressHydrationWarning>
-      <head>
-        <link
-          rel="stylesheet"
-          crossOrigin="anonymous"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
-        />
-      </head>
+    <html lang="ko" className={pretendard.variable} suppressHydrationWarning>
       <body className="bg-background overscroll-none font-sans antialiased">
         <JsonLd />
         <NuqsAdapter>
