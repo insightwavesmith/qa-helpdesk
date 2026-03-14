@@ -145,16 +145,35 @@ function injectTitle(title: string): void {
  * 이 p 태그의 정중앙을 클릭해야 SmartEditor가 포커스를 잡고 React state와 동기화됨
  */
 function getBodyAreaCoords(): { x: number; y: number } | null {
-  // 1차: p.se-text-paragraph — SmartEditor ONE 본문의 정확한 텍스트 영역
-  const paragraph = document.querySelector<HTMLElement>("p.se-text-paragraph");
-  if (paragraph) {
-    const rect = paragraph.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
+  // 1차: .se-component.se-text 안의 p.se-text-paragraph (본문 영역)
+  // 첫 번째 se-text-paragraph는 제목일 수 있으므로 .se-text 컨테이너 안의 것을 사용
+  const textComponent = document.querySelector<HTMLElement>(".se-component.se-text");
+  if (textComponent) {
+    const paragraph = textComponent.querySelector<HTMLElement>("p.se-text-paragraph");
+    if (paragraph) {
+      const rect = paragraph.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        const coords = {
+          x: Math.round(rect.left + rect.width / 2),
+          y: Math.round(rect.top + rect.height / 2),
+        };
+        console.log(`[bscamp-ext] getBodyAreaCoords: .se-text > p.se-text-paragraph (${coords.x}, ${coords.y}), rect=`, rect);
+        return coords;
+      }
+    }
+  }
+
+  // 1-2차: 전체 p.se-text-paragraph 중 두 번째 (첫 번째가 제목인 경우)
+  const paragraphs = document.querySelectorAll<HTMLElement>("p.se-text-paragraph");
+  const bodyParagraph = paragraphs.length > 1 ? paragraphs[1] : paragraphs[0];
+  if (bodyParagraph) {
+    const rect = bodyParagraph.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0 && rect.left >= 0) {
       const coords = {
         x: Math.round(rect.left + rect.width / 2),
         y: Math.round(rect.top + rect.height / 2),
       };
-      console.log(`[bscamp-ext] getBodyAreaCoords: p.se-text-paragraph (${coords.x}, ${coords.y}), rect=`, rect);
+      console.log(`[bscamp-ext] getBodyAreaCoords: p.se-text-paragraph[${paragraphs.length > 1 ? 1 : 0}] (${coords.x}, ${coords.y}), rect=`, rect);
       return coords;
     }
   }
@@ -241,22 +260,11 @@ async function injectContent(htmlContent: string): Promise<void> {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
-      // 이모지/서로게이트 페어 포함 줄은 한 글자씩 입력
-      if (hasSurrogatePair(line)) {
-        const chars = [...line]; // 서로게이트 페어를 올바르게 분리
-        for (const ch of chars) {
-          await chrome.runtime.sendMessage({
-            type: "DEBUGGER_INSERT_TEXT",
-            payload: { text: ch },
-          });
-          await delay(5);
-        }
-      } else {
-        await chrome.runtime.sendMessage({
-          type: "DEBUGGER_INSERT_TEXT",
-          payload: { text: line },
-        });
-      }
+      // service-worker가 한 글자씩 dispatchKeyEvent type:"char"로 입력
+      await chrome.runtime.sendMessage({
+        type: "DEBUGGER_INSERT_TEXT",
+        payload: { text: line },
+      });
       await delay(200);
 
       // 마지막 줄이 아니면 Enter
@@ -291,12 +299,6 @@ async function injectContent(htmlContent: string): Promise<void> {
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/** 서로게이트 페어(이모지 등) 포함 여부 */
-function hasSurrogatePair(str: string): boolean {
-  // eslint-disable-next-line no-control-regex
-  return /[\uD800-\uDBFF]/.test(str);
 }
 
 /**

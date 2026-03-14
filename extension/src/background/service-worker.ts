@@ -112,18 +112,40 @@ async function handleDebuggerInject(
 }
 
 /**
- * DEBUGGER_INSERT_TEXT: 한 줄 텍스트 삽입
+ * DEBUGGER_INSERT_TEXT: 한 글자씩 dispatchKeyEvent type:"char" 로 입력
+ *
+ * Input.insertText는 숨겨진 contenteditable에만 삽입되어 화면에 안 보임.
+ * dispatchKeyEvent type:"char"는 Playwright keyboard.type()과 동일한 방식으로
+ * SmartEditor ONE의 실제 본문 영역에 표시됨.
  */
 async function handleDebuggerInsertText(
   payload: { text: string },
 ): Promise<MessageResponse> {
   try {
     const tabId = await ensureDebuggerAttached();
-    await chrome.debugger.sendCommand(
-      { tabId },
-      "Input.insertText",
-      { text: payload.text },
-    );
+    const chars = [...payload.text]; // 서로게이트 페어 안전 분리
+
+    for (const ch of chars) {
+      await chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
+        type: "keyDown",
+        key: ch,
+        text: ch,
+        unmodifiedText: ch,
+      });
+      await chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
+        type: "char",
+        key: ch,
+        text: ch,
+        unmodifiedText: ch,
+      });
+      await chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
+        type: "keyUp",
+        key: ch,
+        text: ch,
+        unmodifiedText: ch,
+      });
+    }
+
     return { success: true };
   } catch (err: unknown) {
     const error = err instanceof Error ? err.message : String(err);
