@@ -1,12 +1,10 @@
 /**
- * SmartEditor 글 주입 모듈 (T2)
+ * SmartEditor 글 주입 모듈
  *
- * bscamp 큐레이션에서 "블로그 발행" 버튼 클릭 시
- * window.postMessage로 전달된 데이터를 받아 SmartEditor에 주입합니다.
- *
- * 주입 방식: clipboard paste 이벤트 시뮬레이션
- * - SmartEditor ONE은 execCommand("insertHTML")를 무시함
- * - ClipboardEvent + DataTransfer로 붙여넣기를 시뮬레이션하면 에디터가 인식
+ * 주입 방식: chrome.debugger API (Input.insertText)
+ * - SmartEditor ONE은 DOM 직접 수정, execCommand, ClipboardEvent를 모두 무시
+ * - chrome.debugger로 CDP Input.insertText를 사용하면 실제 키보드 입력과 동일하게 동작
+ * - service-worker.ts의 DEBUGGER_INJECT 핸들러와 연동
  *
  * 데이터 포맷:
  * { type: 'BSCAMP_INJECT', payload: { title, content, images? } }
@@ -39,6 +37,28 @@ export function processImagePlaceholders(html: string): { html: string; slotCoun
 }
 
 /**
+ * HTML을 플레인텍스트로 변환 (줄바꿈 보존)
+ */
+function htmlToPlainText(html: string): string {
+  const div = document.createElement("div");
+  div.innerHTML = html;
+
+  // <br>, <p>, <div> 를 줄바꿈으로 변환
+  const blocks = div.querySelectorAll("p, div, br, h1, h2, h3, h4, h5, h6, li");
+  blocks.forEach((el) => {
+    if (el.tagName === "BR") {
+      el.replaceWith("\n");
+    } else {
+      el.insertAdjacentText("afterend", "\n");
+    }
+  });
+
+  return (div.textContent ?? "")
+    .replace(/\n{3,}/g, "\n\n")  // 3+ 연속 줄바꿈 → 2개로
+    .trim();
+}
+
+/**
  * 메시지 수신 리스너 설정
  */
 export function setupInjectionListener(): () => void {
@@ -61,7 +81,7 @@ export function setupInjectionListener(): () => void {
  */
 async function injectToSmartEditor(payload: InjectPayload): Promise<void> {
   try {
-    // 제목 주입
+    // 제목 주입 (DOM 직접 수정 — 제목은 잘 동작)
     if (payload.title) {
       injectTitle(payload.title);
     }
@@ -118,182 +138,116 @@ function injectTitle(title: string): void {
 }
 
 /**
- * clipboard paste 이벤트를 시뮬레이션하여 SmartEditor에 HTML 삽입
- * SmartEditor ONE은 paste 이벤트를 통해서만 외부 HTML을 수용함
+ * 본문 영역의 화면 좌표 계산
+ * SmartEditor ONE에서 본문 편집 영역의 중심 좌표를 반환
  */
-function pasteHtmlIntoElement(element: HTMLElement, html: string): void {
-  element.focus();
+function getBodyAreaCoords(): { x: number; y: number } | null {
+  // SmartEditor ONE 본문 영역 후보
+  const selectors = [
+    ".se-component.se-text",
+    ".se-main-container [contenteditable='true']",
+    ".se-main-container",
+  ];
 
-  // DataTransfer 객체 생성 후 HTML 데이터 설정
-  const dataTransfer = new DataTransfer();
-  dataTransfer.setData("text/html", html);
-  dataTransfer.setData("text/plain", html.replace(/<[^>]*>/g, ""));
-
-  // paste 이벤트 시뮬레이션
-  const pasteEvent = new ClipboardEvent("paste", {
-    bubbles: true,
-    cancelable: true,
-    clipboardData: dataTransfer,
-  });
-
-  element.dispatchEvent(pasteEvent);
-}
-
-/**
- * SmartEditor ONE 본문 contenteditable 영역 찾기
- *
- * 실제 DOM 구조:
- * - .se-component.se-documentTitle (제목 컴포넌트) 안에 .se-title-text
- * - 본문은 별도의 contenteditable DIV (클래스 없음)
- *
- * 전략: 모든 contenteditable="true" 요소 중
- *   1) .se-title-text 자체 또는 그 부모 내부에 있는 것은 제목 → 제외
- *   2) 나머지가 본문 편집 영역
- */
-function findSmartEditorBodyArea(): HTMLElement | null {
-  const titleEl = document.querySelector<HTMLElement>(".se-title-text");
-  const titleContainer = titleEl?.closest(".se-component, .se-documentTitle");
-
-  const editables = document.querySelectorAll<HTMLElement>("[contenteditable='true']");
-  for (const el of editables) {
-    // 제목 영역이면 스킵
-    if (titleEl && (el === titleEl || el.contains(titleEl))) continue;
-    if (titleContainer && titleContainer.contains(el)) continue;
-
-    // SmartEditor 관련 영역인지 확인 (se- 접두어 클래스가 있거나 documentTitle이 아닌 것)
-    // 최소한 에디터 페이지의 contenteditable이면 본문으로 간주
-    return el;
+  for (const sel of selectors) {
+    const el = document.querySelector<HTMLElement>(sel);
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        return {
+          x: Math.round(rect.left + rect.width / 2),
+          y: Math.round(rect.top + Math.min(rect.height / 2, 100)),
+        };
+      }
+    }
   }
-  return null;
+
+  // contenteditable 중 제목이 아닌 것
+  const editables = document.querySelectorAll<HTMLElement>("[contenteditable='true']");
+  const titleText = document.querySelector<HTMLElement>(".se-title-text")?.textContent ?? "";
+
+  for (const el of editables) {
+    const text = (el.innerText ?? el.textContent ?? "").trim();
+    // 제목과 같은 짧은 텍스트면 스킵
+    if (text === titleText && text.length < 100) continue;
+    const rect = el.getBoundingClientRect();
+    if (rect.width > 100 && rect.height > 50) {
+      return {
+        x: Math.round(rect.left + rect.width / 2),
+        y: Math.round(rect.top + Math.min(rect.height / 2, 100)),
+      };
+    }
+  }
+
+  // 최종 fallback: 페이지 중앙 영역 (본문이 보통 있는 위치)
+  return { x: Math.round(window.innerWidth / 2), y: 400 };
 }
 
 async function injectContent(htmlContent: string): Promise<void> {
-  // 1차: SmartEditor ONE 본문 영역 (contenteditable 기반 탐색)
-  const bodyArea = findSmartEditorBodyArea();
-  if (bodyArea) {
-    // 기존 내용 초기화
-    bodyArea.focus();
-    document.execCommand("selectAll", false);
-    document.execCommand("delete", false);
+  const plainText = htmlToPlainText(htmlContent);
+  const coords = getBodyAreaCoords();
 
-    // clipboard paste 시뮬레이션으로 HTML 주입
-    pasteHtmlIntoElement(bodyArea, htmlContent);
-
-    // paste 후 에디터가 처리할 시간 확보
-    await delay(300);
-
-    // paste가 실패한 경우 fallback
-    const textAfterPaste = bodyArea.textContent?.trim() ?? "";
-    if (textAfterPaste.length === 0) {
-      console.warn("[bscamp-ext] paste 시뮬레이션 실패, innerHTML fallback 시도");
-      bodyArea.innerHTML = htmlContent;
-      bodyArea.dispatchEvent(new Event("input", { bubbles: true }));
-    }
-
+  if (!coords) {
+    console.error("[bscamp-ext] 본문 영역 좌표를 찾을 수 없습니다.");
     return;
   }
 
-  // 2차: .se-main-container (구버전 SmartEditor ONE 호환)
-  const seContainer = document.querySelector<HTMLElement>(".se-main-container");
-  if (seContainer) {
-    const editableArea = seContainer.querySelector<HTMLElement>("[contenteditable='true']")
-      ?? seContainer;
+  console.log(`[bscamp-ext] debugger 주입 시도: coords=(${coords.x}, ${coords.y}), text=${plainText.length}자`);
 
-    editableArea.focus();
-    document.execCommand("selectAll", false);
-    document.execCommand("delete", false);
+  // 1차: chrome.debugger API (Input.insertText)
+  try {
+    const response = await chrome.runtime.sendMessage({
+      type: "DEBUGGER_INJECT",
+      payload: {
+        text: plainText,
+        x: coords.x,
+        y: coords.y,
+      },
+    });
 
-    pasteHtmlIntoElement(editableArea, htmlContent);
-    await delay(300);
-
-    if ((editableArea.textContent?.trim() ?? "").length === 0) {
-      editableArea.innerHTML = htmlContent;
-      editableArea.dispatchEvent(new Event("input", { bubbles: true }));
+    if (response?.success) {
+      console.log("[bscamp-ext] debugger 주입 성공");
+      return;
     }
 
-    return;
+    console.warn("[bscamp-ext] debugger 주입 실패:", response?.error);
+  } catch (err) {
+    console.warn("[bscamp-ext] debugger 통신 실패:", err);
   }
 
-  // 3차: iframe 기반 에디터 (구형 SmartEditor 2)
-  const editorIframe = document.querySelector<HTMLIFrameElement>(
-    "#mainFrame, iframe[id*='SmartEditor'], .se2_iframe"
-  );
-  if (editorIframe) {
-    try {
-      const iframeDoc = editorIframe.contentDocument ?? editorIframe.contentWindow?.document;
-      if (iframeDoc?.body) {
-        const body = iframeDoc.body;
-        body.focus();
-        pasteHtmlIntoElement(body, htmlContent);
-
-        await delay(300);
-
-        if ((body.textContent?.trim() ?? "").length === 0) {
-          body.innerHTML = htmlContent;
-        }
-        return;
-      }
-    } catch {
-      console.warn("[bscamp-ext] iframe 접근 불가 — chrome.debugger API가 필요합니다.");
-      await injectViaDebugger(editorIframe, htmlContent);
-    }
-  }
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  // 2차 fallback: DOM 직접 수정
+  console.log("[bscamp-ext] DOM fallback 시도");
+  await injectContentFallback(htmlContent);
 }
 
 /**
- * chrome.debugger API를 사용한 iframe 본문 주입
- * cross-origin iframe 접근 시 사용
+ * DOM 직접 수정 fallback (debugger 사용 불가 시)
  */
-async function injectViaDebugger(
-  _iframe: HTMLIFrameElement,
-  htmlContent: string
-): Promise<void> {
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.id) return;
+async function injectContentFallback(htmlContent: string): Promise<void> {
+  // contenteditable 영역 중 가장 큰 것
+  const editables = document.querySelectorAll<HTMLElement>("[contenteditable='true']");
+  let target: HTMLElement | null = null;
+  let maxArea = 0;
 
-    const tabId = tab.id;
-
-    // 디버거 연결
-    await chrome.debugger.attach({ tabId }, "1.3");
-
-    // clipboard paste 시뮬레이션을 iframe 내부에서 실행
-    const escapedHtml = JSON.stringify(htmlContent);
-    const expression = `
-      (function() {
-        var frames = document.querySelectorAll('iframe');
-        for (var i = 0; i < frames.length; i++) {
-          try {
-            var doc = frames[i].contentDocument || frames[i].contentWindow.document;
-            if (doc && doc.body) {
-              doc.body.focus();
-              var dt = new DataTransfer();
-              dt.setData('text/html', ${escapedHtml});
-              var evt = new ClipboardEvent('paste', {
-                bubbles: true, cancelable: true, clipboardData: dt
-              });
-              doc.body.dispatchEvent(evt);
-              return true;
-            }
-          } catch(e) { continue; }
-        }
-        return false;
-      })()
-    `;
-
-    await chrome.debugger.sendCommand(
-      { tabId },
-      "Runtime.evaluate",
-      { expression }
-    );
-
-    // 디버거 분리
-    await chrome.debugger.detach({ tabId });
-  } catch (err) {
-    console.error("[bscamp-ext] debugger 주입 실패:", err);
+  for (const el of editables) {
+    const rect = el.getBoundingClientRect();
+    const area = rect.width * rect.height;
+    if (area > maxArea) {
+      maxArea = area;
+      target = el;
+    }
   }
+
+  if (!target) {
+    target = document.querySelector<HTMLElement>(".se-main-container") ?? document.querySelector<HTMLElement>("#post-body");
+  }
+
+  if (!target) {
+    console.error("[bscamp-ext] 본문 주입 대상을 찾을 수 없습니다.");
+    return;
+  }
+
+  target.focus();
+  target.innerHTML = htmlContent;
+  target.dispatchEvent(new Event("input", { bubbles: true }));
 }
