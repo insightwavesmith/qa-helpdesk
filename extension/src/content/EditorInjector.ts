@@ -223,12 +223,13 @@ function getBodyAreaCoords(): { x: number; y: number } | null {
 }
 
 /**
- * chrome.debugger 기반 줄별 텍스트 주입
+ * chrome.debugger 기반 줄별 텍스트 주입 (늑대플 방식)
  *
- * 1) DEBUGGER_INJECT (클릭 → 포커스)
- * 2) 줄별로 DEBUGGER_INSERT_TEXT + DEBUGGER_ENTER
- * 3) 문장 끝(.!?)이면 Enter 한번 더 (문단 구분)
- * 4) DEBUGGER_DETACH
+ * 각 단계를 content script에서 순차 호출 (단계 사이 딜레이):
+ * 1) DEBUGGER_ATTACH (디버거 연결)
+ * 2) DEBUGGER_CLICK (본문 영역 클릭 → 포커스)
+ * 3) 줄별로 DEBUGGER_INSERT_TEXT + DEBUGGER_ENTER
+ * 4) DEBUGGER_DETACH (디버거 분리)
  */
 async function injectContent(htmlContent: string): Promise<void> {
   const plainText = htmlToPlainText(htmlContent);
@@ -242,54 +243,54 @@ async function injectContent(htmlContent: string): Promise<void> {
   const lines = plainText.split("\n").filter((l) => l.trim().length > 0);
   console.log(`[bscamp-ext] debugger 주입 시도: coords=(${coords.x}, ${coords.y}), ${lines.length}줄, ${plainText.length}자`);
 
-  // 1차: chrome.debugger API (줄별 입력)
   try {
-    // 클릭으로 포커스
+    // 1. attach
+    const attachRes = await chrome.runtime.sendMessage({ type: "DEBUGGER_ATTACH" });
+    if (!attachRes?.success) {
+      throw new Error(attachRes?.error ?? "attach 실패");
+    }
+    await delay(200);
+
+    // 2. 본문 클릭 (포커스)
     const clickRes = await chrome.runtime.sendMessage({
-      type: "DEBUGGER_INJECT",
+      type: "DEBUGGER_CLICK",
       payload: { x: coords.x, y: coords.y },
     });
-
     if (!clickRes?.success) {
       throw new Error(clickRes?.error ?? "클릭 실패");
     }
+    await delay(300);
 
-    await delay(200);
-
-    // 줄별로 텍스트 입력
+    // 3. 줄별 입력
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
-      // service-worker가 한 글자씩 dispatchKeyEvent type:"char"로 입력
       await chrome.runtime.sendMessage({
         type: "DEBUGGER_INSERT_TEXT",
         payload: { text: line },
       });
-      await delay(200);
+      await delay(100);
 
       // 마지막 줄이 아니면 Enter
       if (i < lines.length - 1) {
         await chrome.runtime.sendMessage({ type: "DEBUGGER_ENTER" });
-        await delay(200);
+        await delay(100);
 
         // 문장 끝이면 Enter 한번 더 (문단 구분)
-        if (/[.!?。]$/.test(line.trim())) {
+        if (/[.!?。]$/.test(line.trimEnd())) {
           await chrome.runtime.sendMessage({ type: "DEBUGGER_ENTER" });
           await delay(100);
         }
       }
     }
 
-    // 에디터가 마지막 입력을 처리할 시간 확보
+    // 4. detach
     await delay(500);
-
-    // 디버거 분리
     await chrome.runtime.sendMessage({ type: "DEBUGGER_DETACH" });
     console.log("[bscamp-ext] debugger 주입 성공");
     return;
   } catch (err) {
     console.warn("[bscamp-ext] debugger 주입 실패, DOM fallback:", err);
-    // 에러 시 디버거 분리 시도
     try { await chrome.runtime.sendMessage({ type: "DEBUGGER_DETACH" }); } catch { /* ignore */ }
   }
 

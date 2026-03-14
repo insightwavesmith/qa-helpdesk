@@ -56,8 +56,12 @@ async function handleMessage(
       };
     }
 
-    case "DEBUGGER_INJECT": {
-      return await handleDebuggerInject(message.payload);
+    case "DEBUGGER_ATTACH": {
+      return await handleDebuggerAttach();
+    }
+
+    case "DEBUGGER_CLICK": {
+      return await handleDebuggerClick(message.payload);
     }
 
     case "DEBUGGER_INSERT_TEXT": {
@@ -93,59 +97,51 @@ async function ensureDebuggerAttached(): Promise<number> {
 }
 
 /**
- * DEBUGGER_INJECT: 본문 영역 클릭만 (포커스 확보)
- * 텍스트 입력은 content script가 줄별로 INSERT_TEXT/ENTER 호출
+ * DEBUGGER_ATTACH: 디버거 연결만 (content script에서 단계별 호출)
  */
-async function handleDebuggerInject(
-  payload: { x: number; y: number },
-): Promise<MessageResponse> {
+async function handleDebuggerAttach(): Promise<MessageResponse> {
   try {
-    const tabId = await ensureDebuggerAttached();
-    await debuggerClick(tabId, payload.x, payload.y);
-    await sleep(200);
+    await ensureDebuggerAttached();
     return { success: true };
   } catch (err: unknown) {
     const error = err instanceof Error ? err.message : String(err);
-    console.error("[bscamp-ext] debugger inject 실패:", error);
+    console.error("[bscamp-ext] debugger attach 실패:", error);
     return { success: false, error };
   }
 }
 
 /**
- * DEBUGGER_INSERT_TEXT: 한 글자씩 dispatchKeyEvent type:"char" 로 입력
+ * DEBUGGER_CLICK: 좌표 클릭 (포커스 확보)
+ */
+async function handleDebuggerClick(
+  payload: { x: number; y: number },
+): Promise<MessageResponse> {
+  try {
+    const tabId = await ensureDebuggerAttached();
+    await debuggerClick(tabId, payload.x, payload.y);
+    return { success: true };
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : String(err);
+    console.error("[bscamp-ext] debugger click 실패:", error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * DEBUGGER_INSERT_TEXT: Input.insertText로 텍스트 삽입
  *
- * Input.insertText는 숨겨진 contenteditable에만 삽입되어 화면에 안 보임.
- * dispatchKeyEvent type:"char"는 Playwright keyboard.type()과 동일한 방식으로
- * SmartEditor ONE의 실제 본문 영역에 표시됨.
+ * 늑대플 방식: DEBUGGER_CLICK으로 포커스 확보 후 Input.insertText 호출.
+ * 클릭으로 SmartEditor 본문에 포커스가 잡힌 상태에서 insertText를 쓰면
+ * 실제 본문 영역에 정상 삽입됨.
  */
 async function handleDebuggerInsertText(
   payload: { text: string },
 ): Promise<MessageResponse> {
   try {
     const tabId = await ensureDebuggerAttached();
-    const chars = [...payload.text]; // 서로게이트 페어 안전 분리
-
-    for (const ch of chars) {
-      await chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
-        type: "keyDown",
-        key: ch,
-        text: ch,
-        unmodifiedText: ch,
-      });
-      await chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
-        type: "char",
-        key: ch,
-        text: ch,
-        unmodifiedText: ch,
-      });
-      await chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
-        type: "keyUp",
-        key: ch,
-        text: ch,
-        unmodifiedText: ch,
-      });
-    }
-
+    await chrome.debugger.sendCommand({ tabId }, "Input.insertText", {
+      text: payload.text,
+    });
     return { success: true };
   } catch (err: unknown) {
     const error = err instanceof Error ? err.message : String(err);

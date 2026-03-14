@@ -73,7 +73,8 @@ export type MessageType =
   | { type: "SET_AUTH"; payload: StoredSession }
   | { type: "LOGOUT" }
   | { type: "CHECK_EDITOR" }
-  | { type: "DEBUGGER_INJECT"; payload: { x: number; y: number } }
+  | { type: "DEBUGGER_ATTACH" }
+  | { type: "DEBUGGER_CLICK"; payload: { x: number; y: number } }
   | { type: "DEBUGGER_INSERT_TEXT"; payload: { text: string } }
   | { type: "DEBUGGER_ENTER" }
   | { type: "DEBUGGER_DETACH" };
