@@ -1,7 +1,19 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-13T00:00:00.000Z",
+  "lastUpdated": "2026-03-14T00:00:00.000Z",
   "features": {
+    "chrome-extension": {
+      "phase": "completed",
+      "matchRate": 92,
+      "documents": {
+        "plan": "01-plan/features/chrome-extension.plan.md",
+        "design": "02-design/features/chrome-extension.design.md",
+        "analysis": "03-analysis/chrome-extension.analysis.md"
+      },
+      "startedAt": "2026-03-14",
+      "completedAt": "2026-03-14",
+      "notes": "크롬 확장 6개 Task 완료 (Match Rate 92%). T5 게시판 선택(카페 자체 UI 사용), T6 DB 저장(Phase 2 예정) 미구현. 서버 9파일 + 확장 20+파일 신규. tsc+build 통과."
+    },
     "seo-infrastructure": {
       "phase": "completed",
       "matchRate": 100,
