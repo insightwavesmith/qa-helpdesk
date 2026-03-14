@@ -1,0 +1,553 @@
+#bscamp-ext-root {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 340px;
+  height: 100vh;
+  z-index: 999999;
+  overflow-y: auto;
+  background: #ffffff;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
+  font-family:
+    "Pretendard Variable",
+    Pretendard,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-size: 13px;
+  color: #333;
+  line-height: 1.5;
+}
+
+#bscamp-ext-root * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* 패널 레이아웃 */
+.bscamp-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.bscamp-panel-collapsed {
+  width: 32px;
+  min-height: auto;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* 헤더 */
+.bscamp-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #f75d5d;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.bscamp-panel-logo {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.bscamp-panel-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.bscamp-panel-subtitle {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 1px;
+}
+
+.bscamp-toggle-btn,
+.bscamp-toggle-btn-white {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.bscamp-toggle-btn {
+  color: #f75d5d;
+  position: fixed;
+  right: 4px;
+  top: 8px;
+}
+
+.bscamp-toggle-btn-white {
+  color: #fff;
+}
+
+.bscamp-toggle-btn-white:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 키워드 입력바 */
+.bscamp-keyword-bar {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  background: #fafafa;
+  border-bottom: 1px solid #eee;
+}
+
+.bscamp-keyword-input {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 12px;
+  outline: none;
+  font-family: inherit;
+}
+
+.bscamp-keyword-input:focus {
+  border-color: #f75d5d;
+}
+
+.bscamp-analyze-btn {
+  padding: 7px 12px;
+  background: #f75d5d;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.bscamp-analyze-btn:hover {
+  background: #e54949;
+}
+
+.bscamp-analyze-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* 탭 */
+.bscamp-tabs {
+  display: flex;
+  border-bottom: 1px solid #eee;
+}
+
+.bscamp-tab {
+  flex: 1;
+  padding: 10px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #999;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.bscamp-tab:hover {
+  color: #666;
+}
+
+.bscamp-tab-active {
+  color: #f75d5d;
+  border-bottom-color: #f75d5d;
+}
+
+/* 본문 영역 */
+.bscamp-panel-body {
+  flex: 1;
+  padding: 14px;
+}
+
+/* 종합 점수 */
+.bscamp-score-section {
+  text-align: center;
+  padding: 16px 0;
+  margin-bottom: 14px;
+}
+
+.bscamp-score-circle {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 4px solid;
+}
+
+.bscamp-score-good {
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.bscamp-score-warning {
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+.bscamp-score-danger {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.bscamp-score-value {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.bscamp-score-label {
+  font-size: 11px;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.bscamp-score-text {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #666;
+}
+
+/* 진단 항목 리스트 */
+.bscamp-diagnosis-list {
+  margin-bottom: 14px;
+}
+
+.bscamp-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #444;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.bscamp-diag-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  border-left: 3px solid;
+}
+
+.bscamp-item-pass {
+  background: #f0fdf4;
+  border-left-color: #22c55e;
+}
+
+.bscamp-item-warn {
+  background: #fffbeb;
+  border-left-color: #f59e0b;
+}
+
+.bscamp-item-fail {
+  background: #fef2f2;
+  border-left-color: #ef4444;
+}
+
+.bscamp-diag-item-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.bscamp-diag-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.bscamp-diag-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #333;
+}
+
+.bscamp-diag-message {
+  font-size: 11px;
+  color: #666;
+  line-height: 1.5;
+}
+
+/* 로그인 안내 */
+.bscamp-login-notice {
+  text-align: center;
+  padding: 20px 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+.bscamp-login-notice p {
+  font-size: 12px;
+  color: #888;
+  line-height: 1.6;
+}
+
+/* 푸터 */
+.bscamp-panel-footer {
+  padding: 10px 14px;
+  border-top: 1px solid #eee;
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+}
+
+.bscamp-refresh-btn {
+  width: 100%;
+  padding: 8px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #555;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.bscamp-refresh-btn:hover {
+  background: #eee;
+}
+
+.bscamp-refresh-btn:disabled {
+  color: #aaa;
+  cursor: not-allowed;
+}
+
+/* ===== 벤치마크 패널 (T4) ===== */
+.bscamp-benchmark-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.bscamp-error-text {
+  font-size: 12px;
+  color: #ef4444;
+  margin-bottom: 10px;
+}
+
+.bscamp-hint-text {
+  font-size: 12px;
+  color: #999;
+  text-align: center;
+  padding: 24px 8px;
+  line-height: 1.7;
+}
+
+/* 비교 바 차트 */
+.bscamp-comparison-list {
+  margin-bottom: 16px;
+}
+
+.bscamp-comparison-item {
+  margin-bottom: 12px;
+}
+
+.bscamp-comparison-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #444;
+  margin-bottom: 4px;
+}
+
+.bscamp-comparison-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bscamp-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bscamp-bar-label {
+  font-size: 10px;
+  color: #888;
+  width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.bscamp-bar-track {
+  flex: 1;
+  height: 14px;
+  background: #f0f0f0;
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.bscamp-bar-fill {
+  height: 100%;
+  border-radius: 7px;
+  transition: width 0.3s ease;
+  min-width: 2px;
+}
+
+.bscamp-bar-good {
+  background: #22c55e;
+}
+
+.bscamp-bar-behind {
+  background: #f59e0b;
+}
+
+.bscamp-bar-avg {
+  background: #94a3b8;
+}
+
+.bscamp-bar-value {
+  font-size: 10px;
+  color: #666;
+  width: 40px;
+  text-align: left;
+  flex-shrink: 0;
+}
+
+/* Gap 분석 */
+.bscamp-gap-analysis {
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+
+.bscamp-gap-good {
+  background: #f0fdf4;
+}
+
+.bscamp-gap-good p {
+  font-size: 13px;
+  text-align: center;
+  color: #16a34a;
+}
+
+.bscamp-gap-needs-work {
+  background: #fffbeb;
+}
+
+.bscamp-subsection-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #444;
+  margin-bottom: 8px;
+}
+
+.bscamp-gap-list {
+  list-style: none;
+}
+
+.bscamp-gap-item {
+  font-size: 11px;
+  color: #666;
+  padding: 4px 0;
+  border-bottom: 1px solid #f0f0f0;
+  line-height: 1.5;
+}
+
+.bscamp-gap-item:last-child {
+  border-bottom: none;
+}
+
+.bscamp-gap-item strong {
+  color: #b45309;
+}
+
+/* TOP3 블로그 목록 */
+.bscamp-top3-list {
+  margin-top: 14px;
+}
+
+.bscamp-top-blog-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.bscamp-top-blog-item:last-child {
+  border-bottom: none;
+}
+
+.bscamp-top-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: #f75d5d;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.bscamp-top-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.bscamp-top-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  text-decoration: none;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bscamp-top-title:hover {
+  color: #f75d5d;
+  text-decoration: underline;
+}
+
+.bscamp-top-stats {
+  display: flex;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.bscamp-top-stats span {
+  font-size: 10px;
+  color: #999;
+}
+
+/* 스크롤바 */
+#bscamp-ext-root::-webkit-scrollbar {
+  width: 4px;
+}
+
+#bscamp-ext-root::-webkit-scrollbar-track {
+  background: #f0f0f0;
+}
+
+#bscamp-ext-root::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 2px;
+}

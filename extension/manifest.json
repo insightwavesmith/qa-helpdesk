@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "자사몰사관학교 블로그 도우미",
+  "version": "1.0.0",
+  "description": "네이버 블로그/카페 발행 + 실시간 SEO 진단",
+  "permissions": ["storage", "activeTab", "debugger"],
+  "host_permissions": [
+    "https://blog.naver.com/*",
+    "https://m.blog.naver.com/*",
+    "https://section.blog.naver.com/*",
+    "https://cafe.naver.com/*"
+  ],
+  "action": {
+    "default_popup": "popup/index.html",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://blog.naver.com/*",
+        "https://m.blog.naver.com/*",
+        "https://cafe.naver.com/*"
+      ],
+      "js": ["content/index.js"],
+      "css": ["content/content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  }
+}
