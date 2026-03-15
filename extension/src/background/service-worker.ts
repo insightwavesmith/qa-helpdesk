@@ -7,10 +7,11 @@ const STORAGE_KEY = "bscamp_session";
 chrome.runtime.onMessage.addListener(
   (
     message: MessageType,
-    _sender,
+    sender: chrome.runtime.MessageSender,
     sendResponse: (response: MessageResponse) => void,
   ) => {
-    handleMessage(message)
+    const senderTabId = sender.tab?.id ?? null;
+    handleMessage(message, senderTabId)
       .then(sendResponse)
       .catch((err: unknown) => {
         const error = err instanceof Error ? err.message : String(err);
@@ -23,6 +24,7 @@ chrome.runtime.onMessage.addListener(
 
 async function handleMessage(
   message: MessageType,
+  senderTabId: number | null,
 ): Promise<MessageResponse> {
   switch (message.type) {
     case "GET_AUTH": {
@@ -57,7 +59,7 @@ async function handleMessage(
     }
 
     case "DEBUGGER_ATTACH": {
-      return await handleDebuggerAttach();
+      return await handleDebuggerAttach(senderTabId);
     }
 
     case "DEBUGGER_CLICK": {
@@ -84,24 +86,28 @@ async function handleMessage(
 /** 현재 디버거가 연결된 tabId (세션 유지) */
 let attachedTabId: number | null = null;
 
-async function ensureDebuggerAttached(): Promise<number> {
-  if (attachedTabId !== null) return attachedTabId;
-
-  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-  const tab = tabs[0];
-  if (!tab?.id) throw new Error("탭을 찾을 수 없습니다.");
-
-  await chrome.debugger.attach({ tabId: tab.id }, "1.3");
-  attachedTabId = tab.id;
-  return tab.id;
-}
-
 /**
- * DEBUGGER_ATTACH: 디버거 연결만 (content script에서 단계별 호출)
+ * DEBUGGER_ATTACH: 늑대플 방식 — sender.tab.id 사용 + 항상 detach→attach
+ *
+ * 핵심 차이: chrome.tabs.query 대신 sender.tab.id로 정확한 탭 지정
+ * 이전 세션 잔존 방지를 위해 항상 detach 후 fresh attach
  */
-async function handleDebuggerAttach(): Promise<MessageResponse> {
+async function handleDebuggerAttach(senderTabId: number | null): Promise<MessageResponse> {
   try {
-    await ensureDebuggerAttached();
+    if (!senderTabId) throw new Error("sender.tab.id를 가져올 수 없습니다.");
+
+    // 기존 연결이 있으면 먼저 detach (늑대플: 항상 fresh session)
+    if (attachedTabId !== null) {
+      try {
+        await chrome.debugger.detach({ tabId: attachedTabId });
+      } catch {
+        // 이미 detach 되었거나 탭이 닫힌 경우 무시
+      }
+      attachedTabId = null;
+    }
+
+    await chrome.debugger.attach({ tabId: senderTabId }, "1.3");
+    attachedTabId = senderTabId;
     return { success: true };
   } catch (err: unknown) {
     const error = err instanceof Error ? err.message : String(err);
@@ -117,8 +123,8 @@ async function handleDebuggerClick(
   payload: { x: number; y: number },
 ): Promise<MessageResponse> {
   try {
-    const tabId = await ensureDebuggerAttached();
-    await debuggerClick(tabId, payload.x, payload.y);
+    if (attachedTabId === null) throw new Error("디버거가 연결되지 않았습니다. DEBUGGER_ATTACH를 먼저 호출하세요.");
+    await debuggerClick(attachedTabId, payload.x, payload.y);
     return { success: true };
   } catch (err: unknown) {
     const error = err instanceof Error ? err.message : String(err);
@@ -138,8 +144,8 @@ async function handleDebuggerInsertText(
   payload: { text: string },
 ): Promise<MessageResponse> {
   try {
-    const tabId = await ensureDebuggerAttached();
-    await chrome.debugger.sendCommand({ tabId }, "Input.insertText", {
+    if (attachedTabId === null) throw new Error("디버거가 연결되지 않았습니다.");
+    await chrome.debugger.sendCommand({ tabId: attachedTabId }, "Input.insertText", {
       text: payload.text,
     });
     return { success: true };
@@ -154,15 +160,15 @@ async function handleDebuggerInsertText(
  */
 async function handleDebuggerEnter(): Promise<MessageResponse> {
   try {
-    const tabId = await ensureDebuggerAttached();
-    await chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
+    if (attachedTabId === null) throw new Error("디버거가 연결되지 않았습니다.");
+    await chrome.debugger.sendCommand({ tabId: attachedTabId }, "Input.dispatchKeyEvent", {
       type: "rawKeyDown",
       key: "Enter",
       code: "Enter",
       windowsVirtualKeyCode: 13,
       nativeVirtualKeyCode: 13,
     });
-    await chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
+    await chrome.debugger.sendCommand({ tabId: attachedTabId }, "Input.dispatchKeyEvent", {
       type: "keyUp",
       key: "Enter",
       code: "Enter",
@@ -191,10 +197,6 @@ async function handleDebuggerDetach(): Promise<MessageResponse> {
     const error = err instanceof Error ? err.message : String(err);
     return { success: false, error };
   }
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
 }
 
 async function debuggerClick(tabId: number, x: number, y: number): Promise<void> {
