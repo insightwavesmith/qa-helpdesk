@@ -77,6 +77,7 @@ export type MessageType =
   | { type: "DEBUGGER_CLICK"; payload: { x: number; y: number } }
   | { type: "DEBUGGER_INSERT_TEXT"; payload: { text: string } }
   | { type: "DEBUGGER_ENTER" }
+  | { type: "DEBUGGER_ESCAPE" }
   | { type: "DEBUGGER_DETACH" };
 
 export interface MessageResponse<T = unknown> {

@@ -74,6 +74,10 @@ async function handleMessage(
       return await handleDebuggerEnter();
     }
 
+    case "DEBUGGER_ESCAPE": {
+      return await handleDebuggerEscape();
+    }
+
     case "DEBUGGER_DETACH": {
       return await handleDebuggerDetach();
     }
@@ -96,15 +100,14 @@ async function handleDebuggerAttach(senderTabId: number | null): Promise<Message
   try {
     if (!senderTabId) throw new Error("sender.tab.id를 가져올 수 없습니다.");
 
-    // 기존 연결이 있으면 먼저 detach (늑대플: 항상 fresh session)
-    if (attachedTabId !== null) {
-      try {
-        await chrome.debugger.detach({ tabId: attachedTabId });
-      } catch {
-        // 이미 detach 되었거나 탭이 닫힌 경우 무시
-      }
-      attachedTabId = null;
+    // 늑대플 방식: 항상 senderTabId로 detach 시도 후 fresh attach
+    // 이전 캐시(attachedTabId)와 무관하게 같은 탭의 이전 세션 정리
+    try {
+      await chrome.debugger.detach({ tabId: senderTabId });
+    } catch {
+      // 이미 detach 되었거나 연결이 없는 경우 무시
     }
+    attachedTabId = null;
 
     await chrome.debugger.attach({ tabId: senderTabId }, "1.3");
     attachedTabId = senderTabId;
@@ -174,6 +177,33 @@ async function handleDebuggerEnter(): Promise<MessageResponse> {
       code: "Enter",
       windowsVirtualKeyCode: 13,
       nativeVirtualKeyCode: 13,
+    });
+    return { success: true };
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : String(err);
+    return { success: false, error };
+  }
+}
+
+/**
+ * DEBUGGER_ESCAPE: Escape 키 입력 (UI 초기화 — 팝업/선택 해제)
+ */
+async function handleDebuggerEscape(): Promise<MessageResponse> {
+  try {
+    if (attachedTabId === null) throw new Error("디버거가 연결되지 않았습니다.");
+    await chrome.debugger.sendCommand({ tabId: attachedTabId }, "Input.dispatchKeyEvent", {
+      type: "rawKeyDown",
+      key: "Escape",
+      code: "Escape",
+      windowsVirtualKeyCode: 27,
+      nativeVirtualKeyCode: 27,
+    });
+    await chrome.debugger.sendCommand({ tabId: attachedTabId }, "Input.dispatchKeyEvent", {
+      type: "keyUp",
+      key: "Escape",
+      code: "Escape",
+      windowsVirtualKeyCode: 27,
+      nativeVirtualKeyCode: 27,
     });
     return { success: true };
   } catch (err: unknown) {
