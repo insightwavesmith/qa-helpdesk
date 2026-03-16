@@ -32,6 +32,7 @@ export async function getQuestions({
       "*, author:profiles!questions_author_id_fkey(id, name, shop_name), category:qa_categories!questions_category_id_fkey(id, name, slug), answers(count)",
       { count: "exact" }
     )
+    .is("parent_question_id", null) // 꼬리질문은 목록에서 제외
     .order("created_at", { ascending: false })
     .range(from, to);
 
@@ -102,6 +103,7 @@ export async function createQuestion(formData: {
   content: string;
   categoryId: number | null;
   imageUrls?: string[];
+  parentQuestionId?: string;
 }) {
   const supabase = await createClient();
   const {
@@ -125,8 +127,8 @@ export async function createQuestion(formData: {
     return { data: null, error: "질문 작성 권한이 없습니다. 수강생만 질문할 수 있습니다." };
   }
 
-  const { data, error } = await svc
-    .from("questions")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (svc.from("questions") as any)
     .insert({
       title: formData.title,
       content: formData.content,
@@ -135,6 +137,9 @@ export async function createQuestion(formData: {
       image_urls: formData.imageUrls && formData.imageUrls.length > 0
         ? formData.imageUrls
         : [],
+      ...(formData.parentQuestionId
+        ? { parent_question_id: formData.parentQuestionId }
+        : {}),
     })
     .select()
     .single();
@@ -162,6 +167,10 @@ export async function createQuestion(formData: {
 
   revalidatePath("/questions");
   revalidatePath("/dashboard");
+  // 꼬리질문인 경우 부모 질문 페이지도 갱신
+  if (formData.parentQuestionId) {
+    revalidatePath(`/questions/${formData.parentQuestionId}`);
+  }
   return { data, error: null };
 }
 
@@ -264,6 +273,25 @@ export async function updateQuestion(formData: {
   revalidatePath(`/questions/${formData.id}`);
   revalidatePath("/questions");
   return { data, error: null };
+}
+
+export async function getFollowUpQuestions(parentQuestionId: string) {
+  const supabase = createServiceClient();
+
+  const { data, error } = await supabase
+    .from("questions")
+    .select(
+      "*, author:profiles!questions_author_id_fkey(id, name, shop_name)"
+    )
+    .eq("parent_question_id", parentQuestionId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("getFollowUpQuestions error:", error);
+    return { data: [], error: error.message };
+  }
+
+  return { data: data || [], error: null };
 }
 
 export async function getCategories() {
