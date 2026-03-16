@@ -163,6 +163,44 @@ export async function createQuestion(formData: {
   return { data, error: null };
 }
 
+/**
+ * 꼬리질문 삭제 — 답변 cascade 삭제 + 부모 스레드 임베딩 재생성
+ */
+export async function deleteFollowUpQuestion(id: string, parentQuestionId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "인증되지 않은 사용자입니다." };
+
+  const svc = createServiceClient();
+
+  const { data: profile } = await svc.from("profiles").select("role").eq("id", user.id).single();
+  const isAdmin = profile?.role === "admin";
+
+  const { data: question } = await svc.from("questions").select("author_id").eq("id", id).single();
+  if (!question) return { error: "질문을 찾을 수 없습니다." };
+
+  const isOwner = question.author_id === user.id;
+  if (!isAdmin && !isOwner) return { error: "권한이 없습니다." };
+
+  // 답변 먼저 삭제
+  await svc.from("answers").delete().eq("question_id", id);
+
+  const { error } = await svc.from("questions").delete().eq("id", id);
+  if (error) {
+    console.error("deleteFollowUpQuestion error:", error);
+    return { error: error.message };
+  }
+
+  // 스레드 임베딩 재생성 (fire-and-forget)
+  const { embedQAThread } = await import("@/lib/qa-embedder");
+  Promise.resolve(embedQAThread(parentQuestionId))
+    .catch(err => console.error("[QAThread] Re-embed after delete failed:", err));
+
+  revalidatePath(`/questions/${parentQuestionId}`);
+  revalidatePath("/questions");
+  return { error: null };
+}
+
 export async function deleteQuestion(id: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

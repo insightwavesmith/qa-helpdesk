@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { DeleteQuestionButton } from "@/components/questions/DeleteQuestionButton";
 import { AnswerEditButton } from "./answer-edit-button";
 import { FollowUpForm } from "./follow-up-form";
+import { FollowUpActions } from "./follow-up-actions";
 import { PageViewTracker } from "@/components/tracking/page-view-tracker";
 import { mdToHtml } from "@/lib/markdown";
 
@@ -328,7 +329,10 @@ export default async function QuestionDetailPage({
                       {fu.question.author?.name?.charAt(0) || "?"}
                     </span>
                     <span className="text-sm font-medium">{fu.question.author?.name || "익명"}</span>
-                    <span className="text-xs text-muted-foreground">{timeAgo(fu.question.created_at)}</span>
+                    <span className="text-xs text-muted-foreground flex-1">{timeAgo(fu.question.created_at)}</span>
+                    {(isAdmin || (currentUserId && fu.question.author?.id === currentUserId)) && (
+                      <FollowUpActions questionId={fu.question.id} parentQuestionId={id} />
+                    )}
                   </div>
                   <div className="text-[15px] leading-relaxed text-foreground/90 pl-9 whitespace-pre-wrap">
                     {fu.question.content}
