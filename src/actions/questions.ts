@@ -77,11 +77,13 @@ export async function getQuestionById(id: string) {
     return { data: null, error: error.message };
   }
 
-  // Increment view count
-  await supabase
-    .from("questions")
-    .update({ view_count: (data.view_count || 0) + 1 })
-    .eq("id", id);
+  // view_count 비동기 (응답 반환 후 실행)
+  after(async () => {
+    await supabase
+      .from("questions")
+      .update({ view_count: (data.view_count || 0) + 1 })
+      .eq("id", id);
+  });
 
   return { data, error: null };
 }

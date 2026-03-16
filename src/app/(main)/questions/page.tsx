@@ -29,38 +29,58 @@ export default async function QuestionsPage({
   let canCreateQuestion = false;
   let userRole: string | undefined;
 
-  // profile 조회와 categories 조회를 병렬로
+  // 카테고리 필터 없는 경우 (가장 빈번) → auth + categories + getQuestions 3개 병렬
+  const needsCategoryLookup = categorySlug && categorySlug !== "all" && tab === "all";
+
+  // categories + profile + (가능하면 questions) 병렬 실행
   const categoriesPromise = getCategories();
+  const profilePromise = user
+    ? createServiceClient().from("profiles").select("role").eq("id", user.id).single()
+    : Promise.resolve({ data: null });
 
-  let categories: Awaited<ReturnType<typeof getCategories>>;
-  if (user) {
-    const svc = createServiceClient();
-    const [{ data: profile }, cats] = await Promise.all([
-      svc.from("profiles").select("role").eq("id", user.id).single(),
-      categoriesPromise,
-    ]);
-    userRole = profile?.role || undefined;
-    canCreateQuestion = ["student", "member", "admin"].includes(profile?.role || "");
-    categories = cats;
+  // 카테고리 필터 불필요 시 getQuestions도 즉시 시작
+  const earlyQuestionsPromise = !needsCategoryLookup
+    ? getQuestions({
+        page,
+        pageSize: 12,
+        categoryId: undefined,
+        search: search || undefined,
+        status: status !== "all" ? status : undefined,
+        tab,
+        authorId: tab === "mine" ? currentUserId : undefined,
+      })
+    : null;
+
+  const [categories, { data: profile }] = await Promise.all([
+    categoriesPromise,
+    profilePromise,
+  ]);
+
+  userRole = profile?.role || undefined;
+  canCreateQuestion = ["student", "member", "admin"].includes(profile?.role || "");
+
+  let questionsResult: Awaited<ReturnType<typeof getQuestions>>;
+
+  if (earlyQuestionsPromise) {
+    questionsResult = await earlyQuestionsPromise;
   } else {
-    categories = await categoriesPromise;
-  }
-
-  let categoryId: number | null = null;
-  if (categorySlug && categorySlug !== "all") {
+    // 카테고리 slug → id 변환 필요
+    let categoryId: number | null = null;
     const found = categories.find((c) => c.slug === categorySlug);
     if (found) categoryId = found.id;
+
+    questionsResult = await getQuestions({
+      page,
+      pageSize: 12,
+      categoryId,
+      search: search || undefined,
+      status: status !== "all" ? status : undefined,
+      tab,
+      authorId: tab === "mine" ? currentUserId : undefined,
+    });
   }
 
-  const { data: questions, count } = await getQuestions({
-    page,
-    pageSize: 12,
-    categoryId: tab === "all" ? categoryId : undefined,
-    search: search || undefined,
-    status: status !== "all" ? status : undefined,
-    tab,
-    authorId: tab === "mine" ? currentUserId : undefined,
-  });
+  const { data: questions, count } = questionsResult;
 
   const totalPages = Math.ceil((count || 0) / 12);
 

@@ -12,6 +12,7 @@ import { ChevronRight } from "lucide-react";
 interface PostData {
   id: string;
   title: string;
+  excerpt?: string;
   content: string;
   body_md?: string;
   category: string;
