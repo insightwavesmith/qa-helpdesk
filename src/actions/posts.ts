@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 // contents 행을 기존 Post 인터페이스 형태로 변환
@@ -33,7 +34,7 @@ export async function getPosts({
   let query = supabase
     .from("contents")
     .select(
-      "*, author:profiles(id, name, shop_name)",
+      "id, title, body_md, category, thumbnail_url, type, is_pinned, view_count, like_count, created_at, published_at, status, author:profiles(id, name, shop_name)",
       { count: "exact" }
     )
     .eq("status", "published")
@@ -84,11 +85,13 @@ export async function getPostById(id: string) {
     return { data: null, error: error.message };
   }
 
-  // Increment view count
-  await supabase
-    .from("contents")
-    .update({ view_count: (data.view_count || 0) + 1 })
-    .eq("id", id);
+  // view_count 비동기 (응답 반환 후 실행)
+  after(async () => {
+    await supabase
+      .from("contents")
+      .update({ view_count: (data.view_count || 0) + 1 })
+      .eq("id", id);
+  });
 
   return { data: mapContentToPost(data), error: null };
 }
@@ -131,11 +134,13 @@ export async function getNoticeById(id: string) {
     return { data: null, error: error.message };
   }
 
-  // 조회수 증가
-  await supabase
-    .from("contents")
-    .update({ view_count: (data.view_count || 0) + 1 })
-    .eq("id", id);
+  // view_count 비동기 (응답 반환 후 실행)
+  after(async () => {
+    await supabase
+      .from("contents")
+      .update({ view_count: (data.view_count || 0) + 1 })
+      .eq("id", id);
+  });
 
   return { data, error: null };
 }

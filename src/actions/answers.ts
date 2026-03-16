@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/auth-utils";
 import { embedImage } from "@/lib/image-embedder";
-import { embedQAPair } from "@/lib/qa-embedder";
+import { embedQAPair, embedQAThread } from "@/lib/qa-embedder";
+import { getParentQuestionId } from "@/actions/questions";
 import { runStyleLearning } from "@/lib/style-learner";
 import { sendKakaoNotification } from "@/lib/solapi";
 
@@ -175,6 +176,17 @@ export async function approveAnswer(answerId: string) {
     // fire-and-forget: QA 분리 임베딩 (실패해도 승인은 정상)
     Promise.resolve(embedQAPair(answer.question_id, answerId))
       .catch(err => console.error("[QAEmbed] Failed:", err));
+
+    // 꼬리질문인 경우: 원본 스레드 전체를 하나의 맥락으로 임베딩
+    Promise.resolve(
+      (async () => {
+        const parentId = await getParentQuestionId(answer.question_id);
+        if (parentId) {
+          // 꼬리질문의 답변 → 원본 질문 스레드 전체 재임베딩
+          await embedQAThread(parentId);
+        }
+      })()
+    ).catch(err => console.error("[QAThread] Failed:", err));
 
     // fire-and-forget: 질문 작성자에게 카카오 알림톡 발송
     const svcForPhone = createServiceClient();

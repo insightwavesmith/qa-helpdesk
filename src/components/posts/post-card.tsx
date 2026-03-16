@@ -4,6 +4,7 @@ import Image from "next/image";
 interface PostData {
   id: string;
   title: string;
+  excerpt?: string;
   content: string;
   body_md?: string;
   category: string;
@@ -60,19 +61,37 @@ function CategoryBadge({ category }: { category: string }) {
   );
 }
 
+const gradientMap: Record<string, string> = {
+  education: "from-[#F75D5D] to-[#E54949]",
+  notice: "from-[#3B82F6] to-[#2563EB]",
+  case_study: "from-[#F97316] to-[#EA580C]",
+  webinar: "from-[#16A34A] to-[#15803D]",
+  promo: "from-[#A855F7] to-[#9333EA]",
+};
+const defaultGradient = "from-[#1a1a2e] to-[#2d2d4e]";
+
 function Thumbnail({ title, category, thumbnailUrl, priority = false }: { title: string; category: string; thumbnailUrl?: string | null; priority?: boolean }) {
-  const isOgFallback = !thumbnailUrl;
+  if (thumbnailUrl) {
+    return (
+      <Image
+        src={thumbnailUrl}
+        alt={title}
+        width={640}
+        height={360}
+        sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+        className="w-full aspect-video object-cover"
+        priority={priority}
+      />
+    );
+  }
+
+  const gradient = gradientMap[category] || defaultGradient;
   return (
-    <Image
-      src={thumbnailUrl || `/api/og?title=${encodeURIComponent(title)}&category=${encodeURIComponent(category)}`}
-      alt={title}
-      width={640}
-      height={360}
-      sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
-      className="w-full aspect-video object-cover"
-      unoptimized={isOgFallback}
-      priority={priority}
-    />
+    <div className={`w-full aspect-video bg-gradient-to-br ${gradient} flex items-center justify-center p-6`}>
+      <p className="text-white font-bold text-center leading-snug line-clamp-3 text-sm sm:text-base">
+        {title}
+      </p>
+    </div>
   );
 }
 
@@ -90,7 +109,7 @@ export function PostCard({ post, featured = false }: PostCardProps) {
               {post.title}
             </h2>
             <p className="mt-2 text-sm text-gray-500 line-clamp-3 leading-relaxed">
-              {getExcerpt(post.body_md || post.content, 150)}
+              {post.excerpt || getExcerpt(post.body_md || post.content, 150)}
             </p>
             <span className="mt-4 text-xs text-gray-400">
               {formatDate(post.created_at)} · 조회 {post.view_count}
@@ -111,7 +130,7 @@ export function PostCard({ post, featured = false }: PostCardProps) {
             {post.title}
           </h3>
           <p className="mt-1.5 text-sm text-gray-500 line-clamp-2 leading-relaxed flex-1">
-            {getExcerpt(post.body_md || post.content)}
+            {post.excerpt || getExcerpt(post.body_md || post.content)}
           </p>
           <span className="mt-3 text-xs text-gray-400">
             {formatDate(post.created_at)} · 조회 {post.view_count}

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus } from "lucide-react";
 import { getPosts } from "@/actions/posts";
+import { getExcerpt } from "@/components/posts/post-card";
 import { PostsRedesignClient } from "./posts-redesign-client";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
@@ -52,12 +53,12 @@ export default async function PostsPage({
 
   const totalPages = Math.ceil((count || 0) / PAGE_SIZE);
 
-  // nullable → non-null 변환 (Supabase 타입 갱신 대응)
+  // nullable → non-null 변환 + 서버사이드 excerpt (body_md 클라이언트 전달 제거)
   const safePosts = posts.map((p) => ({
     id: p.id,
     title: p.title,
-    content: p.content,
-    body_md: p.body_md,
+    excerpt: getExcerpt(p.body_md || p.content || "", 150),
+    content: "",
     category: p.category,
     thumbnail_url: p.thumbnail_url,
     type: p.type ?? undefined,

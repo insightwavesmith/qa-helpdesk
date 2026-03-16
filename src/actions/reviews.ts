@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 // 수강후기 목록 조회
@@ -71,11 +72,13 @@ export async function getReviewById(id: string) {
     return { data: null, error: error.message };
   }
 
-  // 조회수 증가
-  await svc
-    .from("reviews")
-    .update({ view_count: (data.view_count || 0) + 1 })
-    .eq("id", id);
+  // view_count 비동기 (응답 반환 후 실행)
+  after(async () => {
+    await svc
+      .from("reviews")
+      .update({ view_count: (data.view_count || 0) + 1 })
+      .eq("id", id);
+  });
 
   return { data, error: null };
 }

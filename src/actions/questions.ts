@@ -26,32 +26,21 @@ export async function getQuestions({
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  let query = supabase
-    .from("questions")
-    .select(
-      "*, author:profiles!questions_author_id_fkey(id, name, shop_name), category:qa_categories!questions_category_id_fkey(id, name, slug), answers(count)",
-      { count: "exact" }
-    )
+  const selectStr =
+    "*, author:profiles!questions_author_id_fkey(id, name, shop_name), category:qa_categories!questions_category_id_fkey(id, name, slug), answers(count)";
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (supabase.from("questions") as any)
+    .select(selectStr, { count: "exact" })
+    .is("parent_question_id", null)
     .order("created_at", { ascending: false })
     .range(from, to);
 
-  if (categoryId) {
-    query = query.eq("category_id", categoryId);
-  }
-
-  if (search) {
-    query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
-  }
-
-  // Handle tab-specific filtering
-  if (tab === "mine" && authorId) {
-    query = query.eq("author_id", authorId);
-  } else if (tab === "answered") {
-    query = query.in("status", ["answered", "closed"]);
-  } else if (tab === "pending") {
-    query = query.eq("status", "open");
-  }
-  // tab === "all" → 필터 없음 (전체 표시)
+  if (categoryId) query = query.eq("category_id", categoryId);
+  if (search) query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
+  if (tab === "mine" && authorId) query = query.eq("author_id", authorId);
+  else if (tab === "answered") query = query.in("status", ["answered", "closed"]);
+  else if (tab === "pending") query = query.eq("status", "open");
 
   const { data, count, error } = await query;
 
@@ -61,10 +50,10 @@ export async function getQuestions({
   }
 
   // answers(count) 결과를 answers_count 필드로 정규화
-  const enriched = (data || []).map((q) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const enriched: Record<string, any>[] = (data || []).map((q: any) => {
     const answersArray = q.answers as { count: number }[] | null;
     const answers_count = answersArray?.[0]?.count ?? 0;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { answers: _answers, ...rest } = q;
     return { ...rest, answers_count };
   });
@@ -88,11 +77,13 @@ export async function getQuestionById(id: string) {
     return { data: null, error: error.message };
   }
 
-  // Increment view count
-  await supabase
-    .from("questions")
-    .update({ view_count: (data.view_count || 0) + 1 })
-    .eq("id", id);
+  // view_count 비동기 (응답 반환 후 실행)
+  after(async () => {
+    await supabase
+      .from("questions")
+      .update({ view_count: (data.view_count || 0) + 1 })
+      .eq("id", id);
+  });
 
   return { data, error: null };
 }
@@ -102,6 +93,7 @@ export async function createQuestion(formData: {
   content: string;
   categoryId: number | null;
   imageUrls?: string[];
+  parentQuestionId?: string;
 }) {
   const supabase = await createClient();
   const {
@@ -125,8 +117,9 @@ export async function createQuestion(formData: {
     return { data: null, error: "질문 작성 권한이 없습니다. 수강생만 질문할 수 있습니다." };
   }
 
-  const { data, error } = await svc
-    .from("questions")
+  // parent_question_id가 database.ts 타입에 미반영 → as any 필요 (DB 타입 재생성 후 제거 예정)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (svc.from("questions") as any)
     .insert({
       title: formData.title,
       content: formData.content,
@@ -135,6 +128,9 @@ export async function createQuestion(formData: {
       image_urls: formData.imageUrls && formData.imageUrls.length > 0
         ? formData.imageUrls
         : [],
+      ...(formData.parentQuestionId
+        ? { parent_question_id: formData.parentQuestionId }
+        : {}),
     })
     .select()
     .single();
@@ -162,7 +158,49 @@ export async function createQuestion(formData: {
 
   revalidatePath("/questions");
   revalidatePath("/dashboard");
+  // 꼬리질문인 경우 부모 질문 페이지도 갱신
+  if (formData.parentQuestionId) {
+    revalidatePath(`/questions/${formData.parentQuestionId}`);
+  }
   return { data, error: null };
+}
+
+/**
+ * 꼬리질문 삭제 — 답변 cascade 삭제 + 부모 스레드 임베딩 재생성
+ */
+export async function deleteFollowUpQuestion(id: string, parentQuestionId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "인증되지 않은 사용자입니다." };
+
+  const svc = createServiceClient();
+
+  const { data: profile } = await svc.from("profiles").select("role").eq("id", user.id).single();
+  const isAdmin = profile?.role === "admin";
+
+  const { data: question } = await svc.from("questions").select("author_id").eq("id", id).single();
+  if (!question) return { error: "질문을 찾을 수 없습니다." };
+
+  const isOwner = question.author_id === user.id;
+  if (!isAdmin && !isOwner) return { error: "권한이 없습니다." };
+
+  // 답변 먼저 삭제
+  await svc.from("answers").delete().eq("question_id", id);
+
+  const { error } = await svc.from("questions").delete().eq("id", id);
+  if (error) {
+    console.error("deleteFollowUpQuestion error:", error);
+    return { error: error.message };
+  }
+
+  // 스레드 임베딩 재생성 (fire-and-forget)
+  const { embedQAThread } = await import("@/lib/qa-embedder");
+  Promise.resolve(embedQAThread(parentQuestionId))
+    .catch(err => console.error("[QAThread] Re-embed after delete failed:", err));
+
+  revalidatePath(`/questions/${parentQuestionId}`);
+  revalidatePath("/questions");
+  return { error: null };
 }
 
 export async function deleteQuestion(id: string) {
@@ -264,6 +302,41 @@ export async function updateQuestion(formData: {
   revalidatePath(`/questions/${formData.id}`);
   revalidatePath("/questions");
   return { data, error: null };
+}
+
+/**
+ * 꼬리질문 조회 — parent_question_id로 연결된 꼬리질문 목록 반환
+ */
+export async function getFollowUpQuestions(parentQuestionId: string) {
+  const supabase = createServiceClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("questions") as any)
+    .select("*, author:profiles!questions_author_id_fkey(id, name, shop_name)")
+    .eq("parent_question_id", parentQuestionId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("getFollowUpQuestions error:", error.message);
+    return { data: [], error: null };
+  }
+
+  return { data: data || [], error: null };
+}
+
+/**
+ * 질문의 parent_question_id 조회 (스레드 임베딩용)
+ */
+export async function getParentQuestionId(questionId: string): Promise<string | null> {
+  const supabase = createServiceClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase.from("questions") as any)
+    .select("parent_question_id")
+    .eq("id", questionId)
+    .single();
+
+  return data?.parent_question_id || null;
 }
 
 export async function getCategories() {
