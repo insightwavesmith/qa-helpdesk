@@ -3,14 +3,54 @@
     "status": "implementing",
     "plan": "docs/01-plan/features/protractor-refactoring.plan.md",
     "design": "docs/02-design/features/protractor-refactoring.design.md",
-    "tasks": ["T1","T2","T3","T4","T5","T6","T7","T8","T9","T10"],
+    "tasks": [
+      "T1",
+      "T2",
+      "T3",
+      "T4",
+      "T5",
+      "T6",
+      "T7",
+      "T8",
+      "T9",
+      "T10"
+    ],
     "updatedAt": "2026-02-25"
   },
   "invite-expiry": {
     "status": "completed",
     "plan": "docs/01-plan/features/invite-expiry.plan.md",
     "design": "docs/02-design/features/invite-expiry.design.md",
-    "tasks": ["T1"],
+    "tasks": [
+      "T1"
+    ],
     "updatedAt": "2026-03-08"
+  },
+  "embedding-v2-migration": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/embedding-v2-migration.plan.md",
+    "design": "docs/02-design/features/embedding-v2-migration.design.md",
+    "tasks": [
+      "T1-이중컬럼",
+      "T2-RPC교체",
+      "T3-gemini.ts",
+      "T4-재임베딩"
+    ],
+    "updatedAt": "2026-03-17"
+  },
+  "phase2-creative-embedding": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/phase2-creative-embedding.plan.md",
+    "design": "docs/02-design/features/phase2-creative-embedding.design.md",
+    "tasks": [
+      "T1-migration",
+      "T2-fetcher",
+      "T3-embedder",
+      "T4-cron",
+      "T5-competitor",
+      "T6-RPC",
+      "T7-lp-crawler"
+    ],
+    "updatedAt": "2026-03-17"
   }
 }

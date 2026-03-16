@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-14T00:00:00.000Z",
+  "lastUpdated": "2026-03-17T08:45:00.000Z",
   "features": {
     "chrome-extension": {
       "phase": "completed",
@@ -1074,6 +1074,28 @@
       "startedAt": "2026-03-11",
       "completedAt": "2026-03-11",
       "notes": "benchmark-admin.tsx 카테고리별(기반/참여/전환) 리팩토링 + 계산방식 툴팁 + IMAGE/CATALOG 영상지표 숨김. content-ranking.tsx creative_type별 foundation 그룹 숨김. tsc+lint+build 통과."
+    },
+    "embedding-v2-migration": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/embedding-v2-migration.plan.md",
+        "design": "02-design/features/embedding-v2-migration.design.md"
+      },
+      "startedAt": "2026-03-16",
+      "completedAt": "2026-03-17",
+      "notes": "Phase 1 임베딩 엔진 교체 완료. gemini-embedding-2-preview 3072차원. 이중 컬럼 전략. 재임베딩 3,488건. search_knowledge RPC v2. 11파일 +582/-39. tsc+build 통과."
+    },
+    "phase2-creative-embedding": {
+      "phase": "completed",
+      "matchRate": 90,
+      "documents": {
+        "plan": "01-plan/features/phase2-creative-embedding.plan.md",
+        "design": "02-design/features/phase2-creative-embedding.design.md"
+      },
+      "startedAt": "2026-03-16",
+      "completedAt": "2026-03-17",
+      "notes": "Phase 2-3 소재·LP 분석 + Railway 연동 + 소재 검색 UI. railway-crawler.ts, ad-creative-embedder.ts 수정, /creatives 페이지, seed/search/crawl-lps API. 19파일 +2029. tsc+build 통과. ad_creative_embeddings 테이블 비어있음(seed 미실행)."
     }
   },
   "phaseMapping": {
@@ -1122,6 +1144,25 @@
       "startedAt": "2026-03-14",
       "completedAt": "2026-03-14",
       "notes": "오가닉 Phase 2 콘텐츠 분석 엔진 완료. T1 금칙어 API, T2 키워드 분석 API+UI, T3 비속어 DB 397개, T4 포스팅 진단 6항목+UI, T5 벤치마킹 API, T6 탭 통합. 신규 12파일 + 수정 1파일. tsc+lint+build 통과."
+    },
+    "embedding-v2-migration": {
+      "phase": "completed",
+      "documents": {
+        "plan": "01-plan/features/embedding-v2-migration.plan.md",
+        "design": "02-design/features/embedding-v2-migration.design.md"
+      },
+      "startedAt": "2026-03-16",
+      "completedAt": "2026-03-16",
+      "notes": "Phase 1 임베딩 엔진 교체 완료. gemini-embedding-2-preview 3072차원, 이중 컬럼 전략(knowledge_chunks + ad_creative_embeddings), 재임베딩 3,488건. 커밋 3edccf9. 11파일 +582/-39줄."
+    },
+    "phase2-creative-embedding": {
+      "phase": "implementing",
+      "documents": {
+        "plan": "01-plan/features/phase2-creative-embedding.plan.md",
+        "design": "02-design/features/phase2-creative-embedding.design.md"
+      },
+      "startedAt": "2026-03-16",
+      "notes": "Phase 2 소재·LP 분석 시스템. 커밋 d65a571에서 기초 구현(ad-creative-embedder, creative-image-fetcher, lp-crawler, search_similar_creatives RPC, embed-creatives 크론). Phase 2-4 Railway 연동 + 소재 검색 UI + LP 풀 크롤링 구현 중. railway-crawler.ts 신규, 검색 API/UI, crawl-lps 크론 추가. tsc+lint+build 통과."
     }
   }
 }
