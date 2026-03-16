@@ -329,7 +329,7 @@ export async function searchChunks(
   threshold: number,
   sourceTypes?: string[] | null
 ): Promise<ChunkResult[]> {
-  const embedding = await generateEmbedding(queryText);
+  const embedding = await generateEmbedding(queryText, { taskType: "RETRIEVAL_QUERY" });
   return searchChunksByEmbedding(embedding, queryText, limit, threshold, sourceTypes);
 }
 
@@ -345,7 +345,8 @@ export async function searchChunksByEmbedding(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase.rpc as any)("search_knowledge", {
-    query_embedding: embedding,
+    query_embedding_v2: embedding,
+    query_embedding_v1: null,
     match_threshold: threshold,
     match_count: limit,
     filter_source_types: sourceTypes || null,
@@ -443,7 +444,7 @@ async function buildSearchResults(
   // 2. 각 쿼리의 임베딩 순차 생성
   const embeddings: number[][] = [];
   for (const q of queries) {
-    embeddings.push(await generateEmbedding(q));
+    embeddings.push(await generateEmbedding(q, { taskType: "RETRIEVAL_QUERY" }));
   }
 
   // 3. RPC 병렬 호출 (Reranking 활성화 시 top-20, 아니면 limit)
@@ -637,7 +638,7 @@ export async function generate(
   if (isQAConsumer) {
     pipelineStages.push("stage1a_similar_qa");
     // Stage 1과 Stage 2에서 임베딩 재사용을 위해 먼저 생성
-    stage1Embedding = await generateEmbedding(query);
+    stage1Embedding = await generateEmbedding(query, { taskType: "RETRIEVAL_QUERY" });
     similarQAs = await searchSimilarQuestions(query, stage1Embedding);
   }
 

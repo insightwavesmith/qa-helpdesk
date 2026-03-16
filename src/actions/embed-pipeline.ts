@@ -170,7 +170,7 @@ export async function embedContentToChunks(
       const chunkContent = batch[j];
 
       try {
-        const embedding = await generateEmbedding(chunkContent);
+        const embedding = await generateEmbedding(chunkContent, { taskType: "RETRIEVAL_DOCUMENT" });
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: insertErr } = await (supabase as any)
@@ -180,13 +180,13 @@ export async function embedContentToChunks(
           week: sourceType,
           chunk_index: chunkIndex,
           content: chunkContent,
-          embedding,
+          embedding_v2: embedding,
           source_type: sourceType,
           priority,
           content_id: contentId,
           chunk_total: chunks.length,
           source_ref: content.source_ref || null,
-          embedding_model: "gemini-embedding-001",
+          embedding_model_v2: process.env.EMBEDDING_MODEL || "gemini-embedding-2-preview",
         });
 
         if (insertErr) {

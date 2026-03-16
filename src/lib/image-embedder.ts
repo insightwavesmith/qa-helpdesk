@@ -1,5 +1,5 @@
-// T4: Image Vision Pipeline — 이미지 → Gemini Vision → 텍스트 → 임베딩
-// 실패 시 이미지만 저장, 임베딩 보류
+// T4: Image Vision Pipeline — 이미지 → 직접 임베딩 + Vision 텍스트
+// gemini-embedding-2-preview의 멀티모달 기능 활용
 
 import { generateVisionText, generateEmbedding } from "@/lib/gemini";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -23,14 +23,14 @@ interface EmbedImageResult {
 }
 
 /**
- * 이미지 URL → Vision 텍스트 → 임베딩 → knowledge_chunks INSERT
- * 실패 시 이미지만 저장 (임베딩 보류)
+ * 이미지 URL → 직접 임베딩 + Vision 텍스트 → knowledge_chunks INSERT
+ * gemini-embedding-2-preview 멀티모달 임베딩 사용
  */
 export async function embedImage(
   imageUrl: string,
   context: { sourceType: string; lectureName: string; contentId?: string }
 ): Promise<EmbedImageResult> {
-  // 1. Vision으로 텍스트 설명 생성
+  // 1. Vision으로 텍스트 설명 생성 (DB content 필드용)
   const description = await generateVisionText(imageUrl, VISION_PROMPT);
 
   if (!description || description.trim().length < 10) {
@@ -38,17 +38,25 @@ export async function embedImage(
     return { chunkId: null, description: "", status: "failed", error: "Vision 텍스트 생성 실패" };
   }
 
-  // 2. 텍스트 임베딩 생성
+  // 2. 이미지 직접 임베딩 (gemini-embedding-2-preview 멀티모달)
   let embedding: number[];
   try {
-    embedding = await generateEmbedding(description);
+    embedding = await generateEmbedding(
+      { imageUrl },
+      { taskType: "RETRIEVAL_DOCUMENT" }
+    );
   } catch (err) {
-    console.error("[ImageEmbed] Embedding failed:", err);
-    // 임베딩 실패해도 설명은 반환 (나중에 재시도 가능)
-    return { chunkId: null, description, status: "vision_only", error: "임베딩 생성 실패" };
+    console.error("[ImageEmbed] Direct image embedding failed, fallback to text:", err);
+    // 폴백: 텍스트 임베딩
+    try {
+      embedding = await generateEmbedding(description, { taskType: "RETRIEVAL_DOCUMENT" });
+    } catch (err2) {
+      console.error("[ImageEmbed] Text embedding also failed:", err2);
+      return { chunkId: null, description, status: "vision_only", error: "임베딩 생성 실패" };
+    }
   }
 
-  // 3. knowledge_chunks INSERT
+  // 3. knowledge_chunks INSERT (embedding_v2 컬럼에 저장)
   const supabase = createServiceClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -59,13 +67,13 @@ export async function embedImage(
       week: context.sourceType,
       chunk_index: 0,
       content: description,
-      embedding,
+      embedding_v2: embedding,
       source_type: context.sourceType,
       priority: getPriorityForImage(context.sourceType),
       content_id: context.contentId || null,
       chunk_total: 1,
       image_url: imageUrl,
-      embedding_model: "gemini-embedding-001",
+      embedding_model_v2: process.env.EMBEDDING_MODEL || "gemini-embedding-2-preview",
       metadata: { type: "image", vision_model: "gemini-2.0-flash" },
     })
     .select("id")

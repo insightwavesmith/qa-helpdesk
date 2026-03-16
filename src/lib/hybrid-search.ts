@@ -167,7 +167,7 @@ export async function hybridSearch(
   for (let i = 1; i < queries.length; i++) {
     vectorPromises.push(
       (async () => {
-        const emb = await generateEmbedding(queries[i]);
+        const emb = await generateEmbedding(queries[i], { taskType: "RETRIEVAL_QUERY" });
         return searchChunksByEmbedding(
           emb,
           queries[i],

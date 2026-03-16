@@ -71,19 +71,19 @@ export async function embedQAPair(
     let qCount = 0;
     for (let i = 0; i < qChunks.length; i++) {
       try {
-        const embedding = await generateEmbedding(qChunks[i]);
+        const embedding = await generateEmbedding(qChunks[i], { taskType: "RETRIEVAL_DOCUMENT" });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase as any).from("knowledge_chunks").insert({
           lecture_name: lectureName,
           week: "qa_question",
           chunk_index: i,
           content: qChunks[i],
-          embedding,
+          embedding_v2: embedding,
           source_type: "qa_question",
           priority: 2,
           chunk_total: qChunks.length,
           image_url: qImageUrls[0] || null,
-          embedding_model: "gemini-embedding-001",
+          embedding_model_v2: process.env.EMBEDDING_MODEL || "gemini-embedding-2-preview",
           metadata: { question_id: questionId, answer_id: answerId, category: categorySlug },
         });
         qCount++;
@@ -97,19 +97,19 @@ export async function embedQAPair(
     let aCount = 0;
     for (let i = 0; i < aChunks.length; i++) {
       try {
-        const embedding = await generateEmbedding(aChunks[i]);
+        const embedding = await generateEmbedding(aChunks[i], { taskType: "RETRIEVAL_DOCUMENT" });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase as any).from("knowledge_chunks").insert({
           lecture_name: lectureName,
           week: "qa_answer",
           chunk_index: i,
           content: aChunks[i],
-          embedding,
+          embedding_v2: embedding,
           source_type: "qa_answer",
           priority: 2,
           chunk_total: aChunks.length,
           image_url: aImageUrls[0] || null,
-          embedding_model: "gemini-embedding-001",
+          embedding_model_v2: process.env.EMBEDDING_MODEL || "gemini-embedding-2-preview",
           metadata: { question_id: questionId, answer_id: answerId, is_ai: answer.is_ai },
         });
         aCount++;
@@ -214,18 +214,18 @@ export async function embedQAThread(rootQuestionId: string): Promise<void> {
 
     for (let i = 0; i < chunks.length; i++) {
       try {
-        const embedding = await generateEmbedding(chunks[i]);
+        const embedding = await generateEmbedding(chunks[i], { taskType: "RETRIEVAL_DOCUMENT" });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase as any).from("knowledge_chunks").insert({
           lecture_name: lectureName,
           week: "qa_thread",
           chunk_index: i,
           content: chunks[i],
-          embedding,
+          embedding_v2: embedding,
           source_type: "qa_thread",
           priority: 3, // 스레드는 개별 QA보다 높은 우선순위
           chunk_total: chunks.length,
-          embedding_model: "gemini-embedding-001",
+          embedding_model_v2: process.env.EMBEDDING_MODEL || "gemini-embedding-2-preview",
           metadata: {
             question_id: rootQuestionId,
             category: categorySlug,
