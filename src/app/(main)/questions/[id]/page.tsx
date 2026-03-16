@@ -333,6 +333,12 @@ export default async function QuestionDetailPage({
                   <div className="text-[15px] leading-relaxed text-foreground/90 pl-9 whitespace-pre-wrap">
                     {fu.question.content}
                   </div>
+                  {/* 꼬리질문 이미지 */}
+                  {Array.isArray(fu.question.image_urls) && fu.question.image_urls.length > 0 && (
+                    <div className="pl-9 mt-2">
+                      <ImageGallery imageUrls={fu.question.image_urls as string[]} />
+                    </div>
+                  )}
                 </article>
 
                 {/* 꼬리질문의 답변 */}

@@ -29,55 +29,20 @@ export async function getQuestions({
   const selectStr =
     "*, author:profiles!questions_author_id_fkey(id, name, shop_name), category:qa_categories!questions_category_id_fkey(id, name, slug), answers(count)";
 
-  // 꼬리질문 제외 필터: parent_question_id IS NULL
-  // migration 미실행 시 컬럼이 없어 에러 → 필터 없는 쿼리로 폴백
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let data: any[] | null = null;
-  let count: number | null = null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let error: any = null;
+  let query = (supabase.from("questions") as any)
+    .select(selectStr, { count: "exact" })
+    .is("parent_question_id", null)
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
-  // 1차 시도: parent_question_id IS NULL 필터 포함
-  {
-    let query = supabase
-      .from("questions")
-      .select(selectStr, { count: "exact" })
-      .is("parent_question_id", null)
-      .order("created_at", { ascending: false })
-      .range(from, to);
+  if (categoryId) query = query.eq("category_id", categoryId);
+  if (search) query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
+  if (tab === "mine" && authorId) query = query.eq("author_id", authorId);
+  else if (tab === "answered") query = query.in("status", ["answered", "closed"]);
+  else if (tab === "pending") query = query.eq("status", "open");
 
-    if (categoryId) query = query.eq("category_id", categoryId);
-    if (search) query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
-    if (tab === "mine" && authorId) query = query.eq("author_id", authorId);
-    else if (tab === "answered") query = query.in("status", ["answered", "closed"]);
-    else if (tab === "pending") query = query.eq("status", "open");
-
-    const result = await query;
-    data = result.data;
-    count = result.count;
-    error = result.error;
-  }
-
-  // 2차 폴백: 컬럼 미존재 에러 시 필터 없이 재시도
-  if (error) {
-    console.warn("getQuestions: parent_question_id filter failed, falling back:", error.message);
-    let query = supabase
-      .from("questions")
-      .select(selectStr, { count: "exact" })
-      .order("created_at", { ascending: false })
-      .range(from, to);
-
-    if (categoryId) query = query.eq("category_id", categoryId);
-    if (search) query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
-    if (tab === "mine" && authorId) query = query.eq("author_id", authorId);
-    else if (tab === "answered") query = query.in("status", ["answered", "closed"]);
-    else if (tab === "pending") query = query.eq("status", "open");
-
-    const fallback = await query;
-    data = fallback.data;
-    count = fallback.count;
-    error = fallback.error;
-  }
+  const { data, count, error } = await query;
 
   if (error) {
     console.error("getQuestions error:", error);
@@ -85,10 +50,10 @@ export async function getQuestions({
   }
 
   // answers(count) 결과를 answers_count 필드로 정규화
-  const enriched = (data || []).map((q) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const enriched: Record<string, any>[] = (data || []).map((q: any) => {
     const answersArray = q.answers as { count: number }[] | null;
     const answers_count = answersArray?.[0]?.count ?? 0;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { answers: _answers, ...rest } = q;
     return { ...rest, answers_count };
   });
@@ -150,6 +115,7 @@ export async function createQuestion(formData: {
     return { data: null, error: "질문 작성 권한이 없습니다. 수강생만 질문할 수 있습니다." };
   }
 
+  // parent_question_id가 database.ts 타입에 미반영 → as any 필요 (DB 타입 재생성 후 제거 예정)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (svc.from("questions") as any)
     .insert({
@@ -299,52 +265,38 @@ export async function updateQuestion(formData: {
 }
 
 /**
- * 꼬리질문 조회 — parent_question_id 컬럼이 없어도 안전하게 빈 배열 반환
+ * 꼬리질문 조회 — parent_question_id로 연결된 꼬리질문 목록 반환
  */
 export async function getFollowUpQuestions(parentQuestionId: string) {
   const supabase = createServiceClient();
 
-  try {
-    const { data, error } = await supabase
-      .from("questions")
-      .select(
-        "*, author:profiles!questions_author_id_fkey(id, name, shop_name)"
-      )
-      .eq("parent_question_id", parentQuestionId)
-      .order("created_at", { ascending: true });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from("questions") as any)
+    .select("*, author:profiles!questions_author_id_fkey(id, name, shop_name)")
+    .eq("parent_question_id", parentQuestionId)
+    .order("created_at", { ascending: true });
 
-    if (error) {
-      // parent_question_id 컬럼 미존재 시 에러 → 빈 배열 (기존 기능 영향 없음)
-      console.error("getFollowUpQuestions error:", error.message);
-      return { data: [], error: null };
-    }
-
-    return { data: data || [], error: null };
-  } catch (e) {
-    console.error("getFollowUpQuestions exception:", e);
+  if (error) {
+    console.error("getFollowUpQuestions error:", error.message);
     return { data: [], error: null };
   }
+
+  return { data: data || [], error: null };
 }
 
 /**
  * 질문의 parent_question_id 조회 (스레드 임베딩용)
- * 컬럼 없으면 null 반환
  */
 export async function getParentQuestionId(questionId: string): Promise<string | null> {
   const supabase = createServiceClient();
 
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
-      .from("questions")
-      .select("parent_question_id")
-      .eq("id", questionId)
-      .single();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase.from("questions") as any)
+    .select("parent_question_id")
+    .eq("id", questionId)
+    .single();
 
-    return data?.parent_question_id || null;
-  } catch {
-    return null;
-  }
+  return data?.parent_question_id || null;
 }
 
 export async function getCategories() {
