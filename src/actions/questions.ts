@@ -26,34 +26,58 @@ export async function getQuestions({
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  let query = supabase
-    .from("questions")
-    .select(
-      "*, author:profiles!questions_author_id_fkey(id, name, shop_name), category:qa_categories!questions_category_id_fkey(id, name, slug), answers(count)",
-      { count: "exact" }
-    )
-    .order("created_at", { ascending: false })
-    .range(from, to);
+  const selectStr =
+    "*, author:profiles!questions_author_id_fkey(id, name, shop_name), category:qa_categories!questions_category_id_fkey(id, name, slug), answers(count)";
 
-  if (categoryId) {
-    query = query.eq("category_id", categoryId);
+  // 꼬리질문 제외 필터: parent_question_id IS NULL
+  // migration 미실행 시 컬럼이 없어 에러 → 필터 없는 쿼리로 폴백
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let data: any[] | null = null;
+  let count: number | null = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let error: any = null;
+
+  // 1차 시도: parent_question_id IS NULL 필터 포함
+  {
+    let query = supabase
+      .from("questions")
+      .select(selectStr, { count: "exact" })
+      .is("parent_question_id", null)
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (categoryId) query = query.eq("category_id", categoryId);
+    if (search) query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
+    if (tab === "mine" && authorId) query = query.eq("author_id", authorId);
+    else if (tab === "answered") query = query.in("status", ["answered", "closed"]);
+    else if (tab === "pending") query = query.eq("status", "open");
+
+    const result = await query;
+    data = result.data;
+    count = result.count;
+    error = result.error;
   }
 
-  if (search) {
-    query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
-  }
+  // 2차 폴백: 컬럼 미존재 에러 시 필터 없이 재시도
+  if (error) {
+    console.warn("getQuestions: parent_question_id filter failed, falling back:", error.message);
+    let query = supabase
+      .from("questions")
+      .select(selectStr, { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(from, to);
 
-  // Handle tab-specific filtering
-  if (tab === "mine" && authorId) {
-    query = query.eq("author_id", authorId);
-  } else if (tab === "answered") {
-    query = query.in("status", ["answered", "closed"]);
-  } else if (tab === "pending") {
-    query = query.eq("status", "open");
-  }
-  // tab === "all" → 필터 없음 (전체 표시)
+    if (categoryId) query = query.eq("category_id", categoryId);
+    if (search) query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
+    if (tab === "mine" && authorId) query = query.eq("author_id", authorId);
+    else if (tab === "answered") query = query.in("status", ["answered", "closed"]);
+    else if (tab === "pending") query = query.eq("status", "open");
 
-  const { data, count, error } = await query;
+    const fallback = await query;
+    data = fallback.data;
+    count = fallback.count;
+    error = fallback.error;
+  }
 
   if (error) {
     console.error("getQuestions error:", error);
