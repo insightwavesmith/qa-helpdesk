@@ -124,6 +124,126 @@ export async function embedQAPair(
   }
 }
 
+/**
+ * 꼬리질문 답변 승인 시: 원본 질문 전체 스레드를 하나의 맥락으로 임베딩
+ * 스레드: 원본 질문 + 원본 답변 + 꼬리질문1 + 답변1 + 꼬리질문2 + 답변2 ...
+ * source_type: "qa_thread"로 저장
+ */
+export async function embedQAThread(rootQuestionId: string): Promise<void> {
+  try {
+    const supabase = createServiceClient();
+
+    // 1. 원본 질문 조회
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: rootQuestion } = await (supabase as any)
+      .from("questions")
+      .select("id, title, content, image_urls, category:qa_categories(slug)")
+      .eq("id", rootQuestionId)
+      .single();
+
+    if (!rootQuestion) {
+      console.error(`[QAThread] Root question not found: ${rootQuestionId}`);
+      return;
+    }
+
+    // 2. 원본 질문의 승인된 답변
+    const { data: rootAnswers } = await supabase
+      .from("answers")
+      .select("id, content, is_ai")
+      .eq("question_id", rootQuestionId)
+      .eq("is_approved", true)
+      .order("created_at", { ascending: true });
+
+    // 3. 꼬리질문들 조회 (parent_question_id 컬럼 없으면 빈 배열)
+    let followUps: { id: string; content: string; title: string }[] = [];
+    try {
+      const { data: fqs } = await supabase
+        .from("questions")
+        .select("id, title, content")
+        .eq("parent_question_id", rootQuestionId)
+        .order("created_at", { ascending: true });
+      followUps = fqs || [];
+    } catch {
+      followUps = [];
+    }
+
+    // 4. 스레드 텍스트 구성
+    const threadParts: string[] = [];
+
+    // 원본 질문
+    threadParts.push(`[질문] ${rootQuestion.title}\n${rootQuestion.content || ""}`);
+
+    // 원본 답변들
+    for (const ans of rootAnswers || []) {
+      const label = ans.is_ai ? "[AI 답변]" : "[답변]";
+      threadParts.push(`${label}\n${ans.content || ""}`);
+    }
+
+    // 꼬리질문 + 답변
+    for (const fq of followUps) {
+      threadParts.push(`[추가 질문] ${fq.content || ""}`);
+
+      const { data: fqAnswers } = await supabase
+        .from("answers")
+        .select("id, content, is_ai")
+        .eq("question_id", fq.id)
+        .eq("is_approved", true)
+        .order("created_at", { ascending: true });
+
+      for (const fqAns of fqAnswers || []) {
+        const label = fqAns.is_ai ? "[AI 답변]" : "[답변]";
+        threadParts.push(`${label}\n${fqAns.content || ""}`);
+      }
+    }
+
+    const threadText = threadParts.join("\n\n---\n\n");
+
+    // 5. 기존 qa_thread chunks 삭제 (이 rootQuestion에 대한 것만)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
+      .from("knowledge_chunks")
+      .delete()
+      .eq("source_type", "qa_thread")
+      .eq("metadata->>question_id", rootQuestionId);
+
+    // 6. 청킹 + 임베딩
+    const lectureName = (rootQuestion.title || "").slice(0, 50);
+    const categorySlug = rootQuestion.category?.slug || null;
+    const chunks = chunkText(threadText);
+    let count = 0;
+
+    for (let i = 0; i < chunks.length; i++) {
+      try {
+        const embedding = await generateEmbedding(chunks[i]);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from("knowledge_chunks").insert({
+          lecture_name: lectureName,
+          week: "qa_thread",
+          chunk_index: i,
+          content: chunks[i],
+          embedding,
+          source_type: "qa_thread",
+          priority: 3, // 스레드는 개별 QA보다 높은 우선순위
+          chunk_total: chunks.length,
+          embedding_model: "gemini-embedding-001",
+          metadata: {
+            question_id: rootQuestionId,
+            category: categorySlug,
+            followup_count: followUps.length,
+          },
+        });
+        count++;
+      } catch (err) {
+        console.error(`[QAThread] Chunk ${i} failed:`, err);
+      }
+    }
+
+    console.log(`[QAThread] rootId=${rootQuestionId}, followups=${followUps.length}, chunks=${count}`);
+  } catch (err) {
+    console.error("[QAThread] Unexpected error:", err);
+  }
+}
+
 function parseImageUrls(value: unknown): string[] {
   if (Array.isArray(value)) return value.filter((v) => typeof v === "string");
   return [];

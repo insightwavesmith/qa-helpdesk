@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight, MessageSquare, Sparkles, User, Shield, Pencil } from "lucide-react";
-import { getQuestionById } from "@/actions/questions";
+import { getQuestionById, getFollowUpQuestions } from "@/actions/questions";
 import { getAnswersByQuestionId } from "@/actions/answers";
 import { AnswerForm } from "./answer-form";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
@@ -10,6 +10,7 @@ import { SourceReferences } from "@/components/questions/SourceReferences";
 import { Badge } from "@/components/ui/badge";
 import { DeleteQuestionButton } from "@/components/questions/DeleteQuestionButton";
 import { AnswerEditButton } from "./answer-edit-button";
+import { FollowUpForm } from "./follow-up-form";
 import { PageViewTracker } from "@/components/tracking/page-view-tracker";
 import { mdToHtml } from "@/lib/markdown";
 
@@ -89,6 +90,24 @@ export default async function QuestionDetailPage({
       includeUnapproved: isAdmin,
     });
     approvedAnswers = (answers ?? []).filter((a) => a.is_approved);
+  } catch (e) {
+    void e;
+  }
+
+  // 꼬리질문 조회 — parent_question_id 컬럼 없으면 빈 배열 (기존 기능 영향 없음)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const followUps: { question: any; answers: typeof approvedAnswers }[] = [];
+  try {
+    const { data: followUpQuestions = [] } = await getFollowUpQuestions(id);
+    for (const fq of followUpQuestions) {
+      const { data: fqAnswers = [] } = await getAnswersByQuestionId(fq.id, {
+        includeUnapproved: isAdmin,
+      });
+      followUps.push({
+        question: fq,
+        answers: (fqAnswers ?? []).filter((a) => a.is_approved),
+      });
+    }
   } catch (e) {
     void e;
   }
@@ -295,6 +314,78 @@ export default async function QuestionDetailPage({
           </div>
         )}
       </section>
+
+      {/* Follow-up Thread */}
+      {followUps.length > 0 && (
+        <section className="mb-6">
+          <div className="border-l-2 border-muted pl-4 space-y-4">
+            {followUps.map((fu) => (
+              <div key={fu.question.id}>
+                {/* 꼬리질문 */}
+                <article className="rounded-lg border bg-amber-50/50 border-amber-200 p-4 mb-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-100 text-xs font-medium text-amber-700">
+                      {fu.question.author?.name?.charAt(0) || "?"}
+                    </span>
+                    <span className="text-sm font-medium">{fu.question.author?.name || "익명"}</span>
+                    <span className="text-xs text-muted-foreground">{timeAgo(fu.question.created_at)}</span>
+                  </div>
+                  <div className="text-[15px] leading-relaxed text-foreground/90 pl-9 whitespace-pre-wrap">
+                    {fu.question.content}
+                  </div>
+                </article>
+
+                {/* 꼬리질문의 답변 */}
+                {fu.answers.map((answer) => {
+                  const isAI = answer.is_ai;
+                  const isOfficial = !isAI && isOfficialAnswer(answer.author);
+                  return (
+                    <article
+                      key={answer.id}
+                      className={`rounded-lg border bg-card p-4 mb-2 ml-4 ${
+                        isAI ? "border-l-4 border-l-primary" : ""
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className={`flex items-center justify-center h-7 w-7 rounded-full ${
+                          isAI ? "bg-primary/10" : isOfficial ? "bg-emerald-50" : "bg-muted"
+                        }`}>
+                          {isAI ? (
+                            <Sparkles className="h-3.5 w-3.5 text-primary" />
+                          ) : isOfficial ? (
+                            <Shield className="h-3.5 w-3.5 text-emerald-600" />
+                          ) : (
+                            <User className="h-3.5 w-3.5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <span className="text-sm font-semibold">
+                          {isAI ? "Smith" : answer.author?.name || "익명"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{timeAgo(answer.created_at)}</span>
+                      </div>
+                      <div
+                        className="text-[15px] leading-relaxed text-foreground/90 pl-9 [&_h1]:text-lg [&_h1]:font-bold [&_h2]:text-base [&_h2]:font-bold [&_h3]:text-sm [&_h3]:font-bold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-1.5 [&_code]:bg-gray-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-[13px]"
+                        dangerouslySetInnerHTML={{ __html: mdToHtml(answer.content) }}
+                      />
+                    </article>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Follow-up Form (수강생/관리자 모두 사용 가능) */}
+      {currentUserId && approvedAnswers.length > 0 && (
+        <section className="mb-6">
+          <FollowUpForm
+            parentQuestionId={id}
+            parentTitle={question.title}
+            categoryId={question.category?.id ?? null}
+          />
+        </section>
+      )}
 
       {/* Answer Form (admin only) */}
       {isAdmin && (
