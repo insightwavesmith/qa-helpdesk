@@ -128,7 +128,7 @@ export function FollowUpForm({
       if (error) {
         toast.error(`추가 질문 등록 실패: ${error}`);
       } else {
-        toast.success("추가 질문이 등록되었습니다. AI가 답변을 생성 중입니다.");
+        toast.success("추가 질문이 등록되었습니다.");
         setContent("");
         setImages([]);
         setIsOpen(false);
