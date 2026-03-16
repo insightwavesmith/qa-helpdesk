@@ -6,6 +6,7 @@
 
 import { generateEmbedding } from "@/lib/gemini";
 import { createServiceClient } from "@/lib/supabase/server";
+import { crawlSingle } from "@/lib/railway-crawler";
 import { crawlLandingPage } from "@/lib/lp-crawler";
 
 const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "gemini-embedding-2-preview";
@@ -104,40 +105,100 @@ export async function embedCreative(input: CreativeEmbedInput): Promise<EmbedRes
     }
   }
 
-  // 3. LP 크롤링 + 임베딩 (LP URL이 있고, 아직 크롤링 안 된 경우)
+  // 3. LP 크롤링 + 임베딩 (Railway → cheerio 폴백)
   if (input.lpUrl) {
     try {
-      const lpData = await crawlLandingPage(input.lpUrl);
-      if (lpData) {
-        row.lp_headline = lpData.headline || null;
-        row.lp_price = lpData.price || null;
-        row.lp_hash = lpData.ogImageUrl || null;
+      // Railway Playwright 크롤링 시도
+      const railwayResult = await crawlSingle(input.lpUrl);
+
+      if (railwayResult) {
+        row.lp_headline = railwayResult.text.headline || null;
+        row.lp_price = railwayResult.text.price || null;
+        row.screenshot_hash = railwayResult.screenshotHash || null;
         row.lp_crawled_at = new Date().toISOString();
 
-        // LP OG 이미지 임베딩
-        if (lpData.ogImageUrl) {
+        // 스크린샷 base64 → Supabase Storage 저장
+        if (railwayResult.screenshot) {
+          const screenshotUrl = await uploadScreenshot(
+            supabase,
+            input.adId,
+            "main",
+            railwayResult.screenshot,
+          );
+          if (screenshotUrl) row.lp_screenshot_url = screenshotUrl;
+        }
+        if (railwayResult.ctaScreenshot) {
+          const ctaUrl = await uploadScreenshot(
+            supabase,
+            input.adId,
+            "cta",
+            railwayResult.ctaScreenshot,
+          );
+          if (ctaUrl) row.lp_cta_screenshot_url = ctaUrl;
+        }
+
+        // 스크린샷 이미지 임베딩 (base64 → inline data)
+        if (railwayResult.screenshot) {
           try {
             const lpEmbedding = await generateEmbedding(
-              { imageUrl: lpData.ogImageUrl },
+              {
+                imageUrl: `data:image/png;base64,${railwayResult.screenshot}`,
+              },
               { taskType: "RETRIEVAL_DOCUMENT" },
             );
             row.lp_embedding = lpEmbedding;
             result.lpEmbeddingDone = true;
           } catch (err) {
-            console.error(`[creative-embedder] LP image embedding failed for ${input.adId}:`, err);
+            console.error(`[creative-embedder] LP screenshot embedding failed for ${input.adId}:`, err);
           }
         }
 
-        // LP 텍스트 임베딩
-        if (lpData.text && lpData.text.trim().length > 10) {
+        // LP 텍스트 임베딩 (headline + description)
+        const lpText = [
+          railwayResult.text.headline,
+          railwayResult.text.description,
+        ]
+          .filter(Boolean)
+          .join("\n");
+        if (lpText.trim().length > 10) {
           try {
-            const lpTextEmbedding = await generateEmbedding(
-              lpData.text,
-              { taskType: "RETRIEVAL_DOCUMENT" },
-            );
-            row.lp_text_embedding = lpTextEmbedding;
+            row.lp_text_embedding = await generateEmbedding(lpText, {
+              taskType: "RETRIEVAL_DOCUMENT",
+            });
           } catch (err) {
             console.error(`[creative-embedder] LP text embedding failed for ${input.adId}:`, err);
+          }
+        }
+      } else {
+        // Railway 실패 → cheerio 폴백
+        console.warn(`[creative-embedder] Railway failed, falling back to cheerio for ${input.lpUrl}`);
+        const lpData = await crawlLandingPage(input.lpUrl);
+        if (lpData) {
+          row.lp_headline = lpData.headline || null;
+          row.lp_price = lpData.price || null;
+          row.lp_hash = lpData.ogImageUrl || null;
+          row.lp_crawled_at = new Date().toISOString();
+
+          if (lpData.ogImageUrl) {
+            try {
+              row.lp_embedding = await generateEmbedding(
+                { imageUrl: lpData.ogImageUrl },
+                { taskType: "RETRIEVAL_DOCUMENT" },
+              );
+              result.lpEmbeddingDone = true;
+            } catch (err) {
+              console.error(`[creative-embedder] LP OG image embedding failed for ${input.adId}:`, err);
+            }
+          }
+
+          if (lpData.text && lpData.text.trim().length > 10) {
+            try {
+              row.lp_text_embedding = await generateEmbedding(lpData.text, {
+                taskType: "RETRIEVAL_DOCUMENT",
+              });
+            } catch (err) {
+              console.error(`[creative-embedder] LP text embedding failed for ${input.adId}:`, err);
+            }
           }
         }
       }
@@ -163,6 +224,44 @@ export async function embedCreative(input: CreativeEmbedInput): Promise<EmbedRes
   }
 
   return result;
+}
+
+/**
+ * base64 스크린샷을 Supabase Storage에 업로드
+ * 반환: public URL (또는 null)
+ */
+async function uploadScreenshot(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  adId: string,
+  type: "main" | "cta",
+  base64Data: string,
+): Promise<string | null> {
+  try {
+    const buffer = Buffer.from(base64Data, "base64");
+    const path = `lp-screenshots/${adId}/${type}.png`;
+
+    const { error } = await supabase.storage
+      .from("creatives")
+      .upload(path, buffer, {
+        contentType: "image/png",
+        upsert: true,
+      });
+
+    if (error) {
+      console.error(`[creative-embedder] Storage upload failed:`, error.message);
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("creatives")
+      .getPublicUrl(path);
+
+    return urlData?.publicUrl || null;
+  } catch (err) {
+    console.error(`[creative-embedder] Screenshot upload error:`, err);
+    return null;
+  }
 }
 
 /**
@@ -221,24 +320,46 @@ export async function embedMissingCreatives(
       }
     }
 
-    // LP 임베딩 (아직 크롤링 안 된 경우)
+    // LP 임베딩 (아직 크롤링 안 된 경우) — Railway → cheerio 폴백
     if (!row.lp_embedding && row.lp_url && !row.lp_crawled_at) {
       try {
-        const lpData = await crawlLandingPage(row.lp_url);
-        if (lpData?.ogImageUrl) {
+        const railwayResult = await crawlSingle(row.lp_url);
+        if (railwayResult?.screenshot) {
           updates.lp_embedding = await generateEmbedding(
-            { imageUrl: lpData.ogImageUrl },
+            { imageUrl: `data:image/png;base64,${railwayResult.screenshot}` },
             { taskType: "RETRIEVAL_DOCUMENT" },
           );
-          updates.lp_headline = lpData.headline || null;
-          updates.lp_price = lpData.price || null;
+          updates.lp_headline = railwayResult.text.headline || null;
+          updates.lp_price = railwayResult.text.price || null;
+          updates.screenshot_hash = railwayResult.screenshotHash || null;
           updates.lp_crawled_at = new Date().toISOString();
 
-          if (lpData.text && lpData.text.trim().length > 10) {
-            updates.lp_text_embedding = await generateEmbedding(
-              lpData.text,
+          const screenshotUrl = await uploadScreenshot(supabase, row.ad_id, "main", railwayResult.screenshot);
+          if (screenshotUrl) updates.lp_screenshot_url = screenshotUrl;
+          if (railwayResult.ctaScreenshot) {
+            const ctaUrl = await uploadScreenshot(supabase, row.ad_id, "cta", railwayResult.ctaScreenshot);
+            if (ctaUrl) updates.lp_cta_screenshot_url = ctaUrl;
+          }
+
+          const lpText = [railwayResult.text.headline, railwayResult.text.description].filter(Boolean).join("\n");
+          if (lpText.trim().length > 10) {
+            updates.lp_text_embedding = await generateEmbedding(lpText, { taskType: "RETRIEVAL_DOCUMENT" });
+          }
+        } else {
+          // Railway 실패 → cheerio 폴백
+          const lpData = await crawlLandingPage(row.lp_url);
+          if (lpData?.ogImageUrl) {
+            updates.lp_embedding = await generateEmbedding(
+              { imageUrl: lpData.ogImageUrl },
               { taskType: "RETRIEVAL_DOCUMENT" },
             );
+            updates.lp_headline = lpData.headline || null;
+            updates.lp_price = lpData.price || null;
+            updates.lp_crawled_at = new Date().toISOString();
+
+            if (lpData.text && lpData.text.trim().length > 10) {
+              updates.lp_text_embedding = await generateEmbedding(lpData.text, { taskType: "RETRIEVAL_DOCUMENT" });
+            }
           }
         }
       } catch {

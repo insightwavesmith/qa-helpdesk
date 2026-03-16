@@ -22,6 +22,7 @@ import {
   Star,
   Megaphone,
   Share2,
+  Palette,
 } from "lucide-react";
 import {
   Sidebar,
@@ -75,6 +76,7 @@ const adminNavItems: NavItem[] = [
   { label: "광고계정 관리", href: "/admin/accounts", icon: Monitor },
   { label: "내 광고계정", href: "/admin/owner-accounts", icon: BarChart3 },
   { label: "수강후기 관리", href: "/admin/reviews", icon: Star },
+  { label: "소재 분석", href: "/creatives", icon: Palette },
 ];
 
 interface AppSidebarProps {

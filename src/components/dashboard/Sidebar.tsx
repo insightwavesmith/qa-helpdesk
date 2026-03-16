@@ -22,6 +22,7 @@ import {
   Ticket,
   TrendingUp,
   Star,
+  Palette,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -52,6 +53,7 @@ const adminNavItems: NavItem[] = [
   { label: "광고계정 관리", href: "/admin/accounts", icon: Monitor },
   { label: "초대코드", href: "/admin/invites", icon: Ticket },
   { label: "수강후기 관리", href: "/admin/reviews", icon: Star },
+  { label: "소재 분석", href: "/creatives", icon: Palette },
 ];
 
 interface SidebarProps {
