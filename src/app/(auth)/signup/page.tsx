@@ -69,7 +69,6 @@ export default function SignupPage() {
   const [businessFile, setBusinessFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [signupSuccess, setSignupSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -325,15 +324,6 @@ export default function SignupPage() {
         return;
       }
 
-      // 이미 가입된 이메일: identities가 빈 배열이면 기존 유저
-      if (
-        authData.user.identities &&
-        authData.user.identities.length === 0
-      ) {
-        setError("이미 가입된 이메일입니다. 로그인해 주세요.");
-        return;
-      }
-
       // 사업자등록증 파일 업로드 (lead 모드에서만)
       if (!isStudentMode && businessFile) {
         const fileExt = businessFile.name.split(".").pop();
@@ -384,12 +374,6 @@ export default function SignupPage() {
       });
 
       // 가입 후 리다이렉트 분기
-      // 세션이 없으면 이메일 인증 필요 → 성공 메시지 표시
-      if (!authData.session) {
-        setSignupSuccess(true);
-        return;
-      }
-
       if (isStudentMode) {
         router.push("/onboarding");
       } else {
@@ -414,54 +398,6 @@ export default function SignupPage() {
       setLoading(false);
     }
   };
-
-  // 이메일 인증 필요 시 성공 메시지 화면
-  if (signupSuccess) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-3">
-              <Image
-                src="/logo.png"
-                alt="자사몰사관학교"
-                width={40}
-                height={40}
-                className="rounded-lg object-cover"
-              />
-              <span className="ml-2 text-xl font-bold text-[#111827]">
-                자사몰사관학교
-              </span>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50">
-              <CheckCircle2 className="h-8 w-8 text-emerald-500" />
-            </div>
-            <h1 className="text-xl font-bold text-[#111827] mb-2">
-              가입 신청 완료
-            </h1>
-            <p className="text-[#6B7280] mb-6">
-              입력하신 이메일로 인증 링크를 보내드렸습니다.
-              <br />
-              이메일을 확인하고 인증을 완료해 주세요.
-            </p>
-            <p className="text-sm text-[#9CA3AF] mb-6">
-              {isStudentMode
-                ? "이메일 인증 후 온보딩을 진행하실 수 있습니다."
-                : "이메일 인증 후 관리자 승인을 기다려주세요."}
-            </p>
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center h-11 px-6 bg-[#F75D5D] hover:bg-[#E54949] text-white rounded-lg font-medium transition-colors"
-            >
-              로그인 페이지로 이동
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center p-4 py-8">
