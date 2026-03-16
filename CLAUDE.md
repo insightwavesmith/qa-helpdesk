@@ -43,7 +43,12 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 3. **코딩 중 설계서 참조**: 설계에 없는 기능 임의 추가 금지
 4. **Check 필수**: 구현 완료 → Gap 분석 (설계 vs 코드 비교)
 5. **Match Rate**: 90% 이상이어야 완료. 미만이면 Act(수정) 후 재검증
-6. **상태 업데이트**: 각 단계 완료 시 `.pdca-status.json` 업데이트
+6. **상태 업데이트 (절대 규칙)**: 각 단계 완료 시 반드시 아래 2개 파일 업데이트. 누락 시 작업 미완료 처리.
+   - `.pdca-status.json` (루트) — status, tasks, updatedAt
+   - `docs/.pdca-status.json` — features 객체에 phase, matchRate, documents, notes 추가/갱신
+   - **코딩 시작 전**: 두 파일에 해당 기능 항목 추가 (status: "implementing")
+   - **코딩 완료 후**: 두 파일 status를 "completed"로, matchRate, notes 갱신
+   - **커밋 전 최종 체크**: `.pdca-status.json` 업데이트 안 됐으면 커밋 금지
 7. **기존 문서 확인**: 같은 기능의 이전 plan/design/analysis가 있으면 반드시 읽고 시작
 
 ### 역할별 담당
@@ -371,12 +376,27 @@ embed-pipeline.ts → gemini.ts → chunk-utils.ts
 - style: UI/스타일
 - chore: 설정/빌드
 
-## 커밋/푸시 규칙
+## 배포 프로세스 (절대 규칙 — main push 전 QA 필수)
 
-- 갭분석 + 빌드 검증(tsc + lint + build) 후 커밋+푸시까지 자유롭게 진행
-- 배포 전 리뷰는 관리자(Smith님/모찌)가 별도로 수행
-- REVIEW_DONE / QA_DONE 등 stage 마커 불필요 — 커밋/푸시 차단 없음
-- report-stage.sh 실행 불필요
+**main 브랜치 직접 push 금지. 반드시 아래 순서를 따른다.**
+
+```
+1. feature 브랜치 생성 (feat/xxx)
+2. 구현 + tsc + lint + build 통과
+3. feature 브랜치 push → PR 생성 → Vercel preview URL 자동 생성
+4. preview URL에서 브라우저 QA (qa-engineer가 직접 실행)
+   - 질문 목록/상세 페이지 정상 로드
+   - 변경 기능 동작 확인
+   - 기존 기능 깨짐 없는지 확인
+   - 콘솔 에러 없는지 확인
+   - QA 결과를 docs/03-analysis/{기능}.analysis.md에 기록
+5. QA 통과 → touch /tmp/agent-qa-passed
+6. main merge + push (validate-qa.sh hook이 마커 확인)
+```
+
+- **QA 안 하고 main push 시도 → validate-qa.sh가 차단 (exit 2) + 슬랙 노티**
+- 긴급 핫픽스(장애 대응)만 예외: `git push --force` 직접 사용 가능
+- feature 브랜치 push는 자유 (차단 없음)
 
 ## 개발 완료 상태 업데이트 (절대 규칙)
 
@@ -385,3 +405,17 @@ TASK 완료 후 반드시 `project-status.md`를 업데이트해라.
 - 커밋 해시 기록
 - 미완료 항목은 "개발 대기" 섹션에 유지
 - 이 파일이 현재 프로젝트의 진행 상태 정본(source of truth)
+
+## Vercel Preview QA 접근
+- Preview URL에 `?x-vercel-protection-bypass=iMVr0xO0L5zsZczb6nrg2Ipei47Lzia1` 붙이면 인증 없이 접근 가능
+- 예: `https://bscamp-git-feat-xxx-smith-kims-projects.vercel.app/?x-vercel-protection-bypass=iMVr0xO0L5zsZczb6nrg2Ipei47Lzia1`
+- QA 테스트 계정: smith.kim@inwv.co / test1234!
+
+## 에이전트팀 작업 완료 조건 (절대 규칙)
+1. tsc + build 통과
+2. feature 브랜치 push
+3. **Vercel preview URL 브라우저 QA 필수** — bypass 시크릿으로 접근하여 주요 페이지 동작 확인
+4. QA 통과 후 `/tmp/agent-qa-passed` 마커 생성
+5. main merge 시 validate-qa.sh가 마커 확인 → 없으면 차단
+
+preview QA 없이는 작업 완료로 인정하지 않는다.
