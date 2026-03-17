@@ -185,7 +185,7 @@ export function AnswersReviewClient({
             return (
               <Card key={answer.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
                 <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
                       {answer.is_ai ? (
                         <div className="bg-blue-50 p-1.5 rounded-lg">
@@ -259,7 +259,7 @@ export function AnswersReviewClient({
                                   alt={`질문 이미지 ${idx + 1}`}
                                   width={80}
                                   height={80}
-                                  className="h-20 w-20 object-cover rounded-lg border border-gray-200"
+                                  className="h-16 w-16 md:h-20 md:w-20 object-cover rounded-lg border border-gray-200"
                                 />
                               ))}
                             </div>
@@ -287,7 +287,7 @@ export function AnswersReviewClient({
                                 alt={`이미지 ${idx + 1}`}
                                 width={80}
                                 height={80}
-                                className="h-20 w-20 object-cover rounded-lg border border-gray-200"
+                                className="h-16 w-16 md:h-20 md:w-20 object-cover rounded-lg border border-gray-200"
                               />
                               <button
                                 type="button"
@@ -313,7 +313,7 @@ export function AnswersReviewClient({
                           }
                         }}
                       />
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           size="sm"
                           className="bg-[#F75D5D] hover:bg-[#E54949] text-white rounded-lg"
@@ -363,7 +363,7 @@ export function AnswersReviewClient({
                               alt={`답변 이미지 ${idx + 1}`}
                               width={120}
                               height={120}
-                              className="h-24 w-24 object-cover rounded-lg border border-gray-200"
+                              className="h-20 w-20 md:h-24 md:w-24 object-cover rounded-lg border border-gray-200"
                             />
                           ))}
                         </div>
@@ -373,7 +373,7 @@ export function AnswersReviewClient({
                           <SourceReferences rawSourceRefs={answer.source_refs} />
                         </div>
                       )}
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           size="sm"
                           className="bg-[#F75D5D] hover:bg-[#E54949] text-white rounded-lg"

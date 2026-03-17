@@ -20,7 +20,7 @@ export default async function AdminPerformancePage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">수강생 성과</h1>
+        <h1 className="text-lg md:text-2xl font-bold text-gray-900">수강생 성과</h1>
         <p className="text-sm text-gray-500 mt-1">
           수강생별 광고 성과를 기수별로 확인하세요.
         </p>

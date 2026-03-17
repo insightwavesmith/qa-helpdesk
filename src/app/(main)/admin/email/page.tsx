@@ -334,7 +334,7 @@ function AdminEmailPageInner() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-lg md:text-2xl font-bold text-gray-900">
           이메일 관리
         </h1>
         <p className="text-[14px] text-gray-500 mt-1">
@@ -345,7 +345,7 @@ function AdminEmailPageInner() {
       <div className="space-y-6">
 
       {/* 수신자 현황 */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
         <Card>
           <CardContent className="pt-5 pb-4 px-5">
             <div className="flex items-center gap-3">
@@ -554,7 +554,7 @@ function AdminEmailPageInner() {
                   placeholder="사례로 배우는 메타 광고"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-[13px] font-medium">날짜</label>
                   <Input
@@ -586,7 +586,7 @@ function AdminEmailPageInner() {
           {/* 성과 공유 필드 */}
           {templateType === "performance" && (
             <div className="space-y-3">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-[13px] font-medium">ROAS</label>
                   <Input
@@ -633,7 +633,7 @@ function AdminEmailPageInner() {
           </div>
 
           {/* 버튼 */}
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
             <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
               {templateType !== "newsletter" && (
                 <DialogTrigger asChild>
@@ -696,53 +696,90 @@ function AdminEmailPageInner() {
               아직 발송 이력이 없습니다.
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>제목</TableHead>
-                  <TableHead>대상</TableHead>
-                  <TableHead className="text-right">발송</TableHead>
-                  <TableHead className="text-right">열람</TableHead>
-                  <TableHead className="text-right">클릭</TableHead>
-                  <TableHead className="text-right">실패</TableHead>
-                  <TableHead className="text-right">발송일</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* 데스크탑: 테이블 */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>제목</TableHead>
+                      <TableHead>대상</TableHead>
+                      <TableHead className="text-right">발송</TableHead>
+                      <TableHead className="text-right">열람</TableHead>
+                      <TableHead className="text-right">클릭</TableHead>
+                      <TableHead className="text-right">실패</TableHead>
+                      <TableHead className="text-right">발송일</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {historyGroups.map((group, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="font-medium max-w-[250px] truncate">
+                          {group.subject}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-[11px]">
+                            {group.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right text-green-600 tabular-nums">
+                          {group.sent}
+                        </TableCell>
+                        <TableCell className="text-right text-blue-600 tabular-nums">
+                          {group.opens}
+                        </TableCell>
+                        <TableCell className="text-right text-purple-600 tabular-nums">
+                          {group.clicks}
+                        </TableCell>
+                        <TableCell className="text-right text-red-500 tabular-nums">
+                          {group.failed}
+                        </TableCell>
+                        <TableCell className="text-right text-[13px] text-gray-500">
+                          {new Date(group.created_at).toLocaleDateString("ko-KR", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              {/* 모바일: 카드 리스트 */}
+              <div className="md:hidden space-y-3">
                 {historyGroups.map((group, idx) => (
-                  <TableRow key={idx}>
-                    <TableCell className="font-medium max-w-[250px] truncate">
-                      {group.subject}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="text-[11px]">
-                        {group.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right text-green-600 tabular-nums">
-                      {group.sent}
-                    </TableCell>
-                    <TableCell className="text-right text-blue-600 tabular-nums">
-                      {group.opens}
-                    </TableCell>
-                    <TableCell className="text-right text-purple-600 tabular-nums">
-                      {group.clicks}
-                    </TableCell>
-                    <TableCell className="text-right text-red-500 tabular-nums">
-                      {group.failed}
-                    </TableCell>
-                    <TableCell className="text-right text-[13px] text-gray-500">
-                      {new Date(group.created_at).toLocaleDateString("ko-KR", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </TableCell>
-                  </TableRow>
+                  <div key={idx} className="rounded-lg border border-gray-200 p-3 space-y-1.5">
+                    <div className="font-medium text-gray-900 text-sm truncate">{group.subject}</div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-[11px]">{group.type}</Badge>
+                      <span className="text-xs text-gray-500">
+                        {new Date(group.created_at).toLocaleDateString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 text-xs text-center">
+                      <div>
+                        <div className="text-green-600 font-medium">{group.sent}</div>
+                        <div className="text-gray-400">발송</div>
+                      </div>
+                      <div>
+                        <div className="text-blue-600 font-medium">{group.opens}</div>
+                        <div className="text-gray-400">열람</div>
+                      </div>
+                      <div>
+                        <div className="text-purple-600 font-medium">{group.clicks}</div>
+                        <div className="text-gray-400">클릭</div>
+                      </div>
+                      <div>
+                        <div className="text-red-500 font-medium">{group.failed}</div>
+                        <div className="text-gray-400">실패</div>
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -112,9 +112,9 @@ export default function AdminReviewsPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-[#1a1a2e]">수강후기 관리</h1>
+    <div className="max-w-6xl mx-auto px-3 md:px-6 py-4 md:py-8 space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-lg md:text-2xl font-bold text-[#1a1a2e]">수강후기 관리</h1>
         <Button
           size="sm"
           className="bg-[#F75D5D] hover:bg-[#E54949] text-white"
@@ -126,7 +126,7 @@ export default function AdminReviewsPage() {
       </div>
 
       {/* T9: 필터 바 */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 md:gap-3">
         <select
           value={filterCohort}
           onChange={(e) => setFilterCohort(e.target.value)}
@@ -160,7 +160,7 @@ export default function AdminReviewsPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -283,6 +283,86 @@ export default function AdminReviewsPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* 모바일 카드 뷰 */}
+      <div className="md:hidden space-y-3">
+        {filteredReviews.map((review) => (
+          <div key={review.id} className="bg-white rounded-lg border border-gray-200 p-3 space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                {!!review.youtube_url && <Film className="h-3.5 w-3.5 text-red-500 shrink-0" />}
+                <span className="font-medium text-gray-900 truncate">{review.title}</span>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleToggleFeatured(review.id)}
+                  disabled={actionId === review.id}
+                  className={`h-7 w-7 p-0 ${review.is_featured ? "text-yellow-600" : "text-gray-400"}`}
+                >
+                  {actionId === review.id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Award className={`h-3.5 w-3.5 ${review.is_featured ? "fill-yellow-400 text-yellow-600" : ""}`} />
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleTogglePin(review.id)}
+                  disabled={actionId === review.id}
+                  className={`h-7 w-7 p-0 ${review.is_pinned ? "text-[#F75D5D]" : "text-gray-400"}`}
+                >
+                  {actionId === review.id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Pin className={`h-3.5 w-3.5 ${review.is_pinned ? "fill-current" : ""}`} />
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDelete(review.id)}
+                  disabled={actionId === review.id}
+                  className="h-7 w-7 p-0 text-red-500 hover:text-red-700"
+                >
+                  {actionId === review.id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+              <span>{review.author?.name || "알 수 없음"}</span>
+              {review.cohort && (
+                <span className="rounded bg-blue-50 px-1.5 py-0.5 text-blue-600">{review.cohort}</span>
+              )}
+              <span>{CATEGORY_LABELS[review.category] || review.category}</span>
+              <span>{formatDate(review.created_at)}</span>
+            </div>
+            {review.rating && (
+              <div className="flex items-center gap-0.5">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Star
+                    key={s}
+                    className={`h-3 w-3 ${s <= review.rating! ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+        {filteredReviews.length === 0 && (
+          <div className="text-center py-12 text-gray-400">
+            {filterCohort || filterCategory
+              ? "필터 조건에 맞는 후기가 없습니다."
+              : "등록된 후기가 없습니다."}
+          </div>
+        )}
       </div>
 
       {showModal && (

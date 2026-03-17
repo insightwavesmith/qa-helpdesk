@@ -29,7 +29,7 @@ export default async function AdminMembersPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">회원 관리</h1>
+        <h1 className="text-lg md:text-2xl font-bold text-gray-900">회원 관리</h1>
         <p className="text-sm text-gray-500 mt-1">
           가입 신청을 검토하고 승인/거절하세요.
         </p>

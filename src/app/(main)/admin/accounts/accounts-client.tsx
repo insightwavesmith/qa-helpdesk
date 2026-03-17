@@ -177,7 +177,7 @@ export function AccountsClient() {
 
   return (
     <>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
           총 {accounts.length}개 계정 · 배정됨{" "}
           {accounts.filter((a) => a.user_id).length}개
@@ -197,7 +197,8 @@ export function AccountsClient() {
           등록된 광고계정이 없습니다.
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <>
+        <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50/80 hover:bg-gray-50/80">
@@ -312,6 +313,78 @@ export function AccountsClient() {
             </TableBody>
           </Table>
         </div>
+
+        {/* 모바일 카드 */}
+        <div className="md:hidden space-y-3">
+          {accounts.map((account) => {
+            const isLoading = actionLoading === account.id;
+            return (
+              <div key={account.id} className="bg-white rounded-lg border border-gray-200 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <button
+                    className="font-medium text-gray-900 hover:text-[#F75D5D] text-left"
+                    onClick={() => {
+                      setEditAccount(account);
+                      setEditName(account.account_name || "");
+                      setEditMixpanelProjectId(account.mixpanel_project_id || "");
+                      setEditMixpanelBoardId(account.mixpanel_board_id || "");
+                    }}
+                  >
+                    {account.account_name || "-"}
+                  </button>
+                  <button
+                    onClick={() => handleToggleActive(account)}
+                    disabled={toggleLoading === account.id}
+                    className="cursor-pointer"
+                  >
+                    {toggleLoading === account.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                    ) : account.active ? (
+                      <span className="inline-flex items-center bg-green-100 text-green-800 rounded-full px-2.5 py-0.5 text-xs">활성</span>
+                    ) : (
+                      <span className="inline-flex items-center bg-gray-100 text-gray-500 rounded-full px-2.5 py-0.5 text-xs">비활성</span>
+                    )}
+                  </button>
+                </div>
+                <div className="text-sm text-gray-500 font-mono">{account.account_id}</div>
+                <div className="flex items-center justify-between pt-1">
+                  <div>
+                    {account.assigned_user ? (
+                      <span className="inline-flex items-center bg-green-100 text-green-800 rounded-full px-2.5 py-0.5 text-xs">{account.assigned_user.name}</span>
+                    ) : (
+                      <span className="inline-flex items-center bg-gray-100 text-gray-500 rounded-full px-2.5 py-0.5 text-xs">미배정</span>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    {account.user_id && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg text-xs"
+                        onClick={() => handleUnassign(account)}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "해제"}
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      className="bg-[#F75D5D] hover:bg-[#E54949] text-white rounded-lg text-xs"
+                      onClick={() => {
+                        setModalAccount(account);
+                        setSelectedUserId(account.user_id || "");
+                      }}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "배정"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        </>
       )}
 
       {/* 계정 추가 모달 */}

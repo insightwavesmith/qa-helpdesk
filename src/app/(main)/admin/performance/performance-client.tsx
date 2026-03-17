@@ -221,9 +221,9 @@ export function PerformanceClient({
   return (
     <div className="space-y-6">
       {/* 기수 + 기간 필터 */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 md:gap-3">
         <Select value={cohortFilter} onValueChange={handleCohortChange}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder="기수 선택" />
           </SelectTrigger>
           <SelectContent>
@@ -237,7 +237,7 @@ export function PerformanceClient({
           </SelectContent>
         </Select>
         <Select value={periodFilter} onValueChange={handlePeriodChange}>
-          <SelectTrigger className="w-[120px]">
+          <SelectTrigger className="w-full sm:w-[120px]">
             <SelectValue placeholder="기간 선택" />
           </SelectTrigger>
           <SelectContent>
@@ -254,7 +254,7 @@ export function PerformanceClient({
       </div>
 
       {/* 요약 카드 */}
-      <div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-${Math.min(statCards.length, 6)}`}>
+      <div className="grid grid-cols-2 gap-3 md:gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
@@ -273,7 +273,7 @@ export function PerformanceClient({
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <p className="text-[32px] font-bold text-gray-900">{stat.value}</p>
+                <p className="text-2xl md:text-[32px] font-bold text-gray-900">{stat.value}</p>
               </CardContent>
             </Card>
           );
@@ -286,170 +286,230 @@ export function PerformanceClient({
           해당 기수에 수강생 데이터가 없습니다.
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50/80 hover:bg-gray-50/80">
-                <TableHead className="text-xs font-medium text-gray-500 uppercase">
-                  이름
-                </TableHead>
-                <TableHead className="text-xs font-medium text-gray-500 uppercase">
-                  기수
-                </TableHead>
-                <TableHead className="text-xs font-medium text-gray-500 uppercase">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto p-0 text-xs font-medium text-gray-500 uppercase hover:text-gray-700"
-                    onClick={() => handleSort("spend")}
-                  >
-                    광고비
-                    <ArrowUpDown className="ml-1 h-3 w-3" />
-                  </Button>
-                </TableHead>
-                <TableHead className="text-xs font-medium text-gray-500 uppercase">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto p-0 text-xs font-medium text-gray-500 uppercase hover:text-gray-700"
-                    onClick={() => handleSort("revenue")}
-                  >
-                    광고매출
-                    <ArrowUpDown className="ml-1 h-3 w-3" />
-                  </Button>
-                </TableHead>
-                <TableHead className="text-xs font-medium text-gray-500 uppercase">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto p-0 text-xs font-medium text-gray-500 uppercase hover:text-gray-700"
-                    onClick={() => handleSort("roas")}
-                  >
-                    ROAS
-                    <ArrowUpDown className="ml-1 h-3 w-3" />
-                  </Button>
-                </TableHead>
-                <TableHead className="text-xs font-medium text-gray-500 uppercase">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto p-0 text-xs font-medium text-gray-500 uppercase hover:text-gray-700"
-                    onClick={() => handleSort("purchases")}
-                  >
-                    구매수
-                    <ArrowUpDown className="ml-1 h-3 w-3" />
-                  </Button>
-                </TableHead>
-                <TableHead className="text-xs font-medium text-gray-500 uppercase">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto p-0 text-xs font-medium text-gray-500 uppercase hover:text-gray-700"
-                    onClick={() => handleSort("mixpanelRevenue")}
-                  >
-                    자사몰매출
-                    <ArrowUpDown className="ml-1 h-3 w-3" />
-                  </Button>
-                </TableHead>
-                <TableHead className="text-xs font-medium text-gray-500 uppercase">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto p-0 text-xs font-medium text-gray-500 uppercase hover:text-gray-700"
-                    onClick={() => handleSort("t3Score")}
-                  >
-                    T3 점수
-                    <ArrowUpDown className="ml-1 h-3 w-3" />
-                  </Button>
-                </TableHead>
-                <TableHead className="text-xs font-medium text-gray-500 uppercase">
-                  등급
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedRows.map((row) => {
-                const roasPercent = row.roas * 100;
-                const roasColor =
-                  roasPercent >= 300
-                    ? "text-emerald-700 bg-emerald-50"
-                    : roasPercent < 100 && roasPercent > 0
-                      ? "text-red-700 bg-red-50"
-                      : "";
-                // T3: 성과 등급 (B2: roas 비율 기준 사용)
-                const grade = getPerformanceGrade(row.roas, row.spend);
-                return (
-                  <TableRow
-                    key={row.userId}
-                    className="hover:bg-gray-50/50 transition-colors"
-                  >
-                    <TableCell className="font-medium text-gray-900">
-                      {row.name}
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-600">
-                      {row.cohort ?? "-"}
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-900 font-mono">
-                      {row.spend > 0 ? `₩${Math.round(row.spend).toLocaleString()}` : "-"}
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-900 font-mono">
-                      {row.revenue > 0 ? `₩${Math.round(row.revenue).toLocaleString()}` : "-"}
-                    </TableCell>
-                    <TableCell>
-                      {row.roas > 0 ? (
+        <>
+          {/* 데스크탑 테이블 */}
+          <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50/80 hover:bg-gray-50/80">
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase">
+                    이름
+                  </TableHead>
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase">
+                    기수
+                  </TableHead>
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto p-0 text-xs font-medium text-gray-500 uppercase hover:text-gray-700"
+                      onClick={() => handleSort("spend")}
+                    >
+                      광고비
+                      <ArrowUpDown className="ml-1 h-3 w-3" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto p-0 text-xs font-medium text-gray-500 uppercase hover:text-gray-700"
+                      onClick={() => handleSort("revenue")}
+                    >
+                      광고매출
+                      <ArrowUpDown className="ml-1 h-3 w-3" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto p-0 text-xs font-medium text-gray-500 uppercase hover:text-gray-700"
+                      onClick={() => handleSort("roas")}
+                    >
+                      ROAS
+                      <ArrowUpDown className="ml-1 h-3 w-3" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto p-0 text-xs font-medium text-gray-500 uppercase hover:text-gray-700"
+                      onClick={() => handleSort("purchases")}
+                    >
+                      구매수
+                      <ArrowUpDown className="ml-1 h-3 w-3" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto p-0 text-xs font-medium text-gray-500 uppercase hover:text-gray-700"
+                      onClick={() => handleSort("mixpanelRevenue")}
+                    >
+                      자사몰매출
+                      <ArrowUpDown className="ml-1 h-3 w-3" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto p-0 text-xs font-medium text-gray-500 uppercase hover:text-gray-700"
+                      onClick={() => handleSort("t3Score")}
+                    >
+                      T3 점수
+                      <ArrowUpDown className="ml-1 h-3 w-3" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-xs font-medium text-gray-500 uppercase">
+                    등급
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedRows.map((row) => {
+                  const roasPercent = row.roas * 100;
+                  const roasColor =
+                    roasPercent >= 300
+                      ? "text-emerald-700 bg-emerald-50"
+                      : roasPercent < 100 && roasPercent > 0
+                        ? "text-red-700 bg-red-50"
+                        : "";
+                  // T3: 성과 등급 (B2: roas 비율 기준 사용)
+                  const grade = getPerformanceGrade(row.roas, row.spend);
+                  return (
+                    <TableRow
+                      key={row.userId}
+                      className="hover:bg-gray-50/50 transition-colors"
+                    >
+                      <TableCell className="font-medium text-gray-900">
+                        {row.name}
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-600">
+                        {row.cohort ?? "-"}
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-900 font-mono">
+                        {row.spend > 0 ? `₩${Math.round(row.spend).toLocaleString()}` : "-"}
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-900 font-mono">
+                        {row.revenue > 0 ? `₩${Math.round(row.revenue).toLocaleString()}` : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {row.roas > 0 ? (
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${roasColor}`}
+                          >
+                            {roasPercent.toFixed(0)}%
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-400">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-900 font-mono">
+                        {row.purchases > 0 ? row.purchases.toLocaleString() : "-"}
+                      </TableCell>
+                      {/* E9: 자사몰매출 */}
+                      <TableCell className="text-sm text-gray-900 font-mono">
+                        {row.mixpanelRevenue != null && row.mixpanelRevenue > 0
+                          ? `₩${Math.round(row.mixpanelRevenue).toLocaleString()}`
+                          : "-"}
+                      </TableCell>
+                      {/* T4: T3 점수 */}
+                      <TableCell className="text-sm font-mono">
+                        {row.t3Score != null ? (
+                          <span className="flex items-center gap-1">
+                            <span className="font-medium text-gray-900">{row.t3Score}</span>
+                            {row.t3Grade && (
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                row.t3Grade === "A" ? "bg-emerald-50 text-emerald-700" :
+                                row.t3Grade === "B" ? "bg-blue-50 text-blue-700" :
+                                row.t3Grade === "C" ? "bg-amber-50 text-amber-700" :
+                                row.t3Grade === "D" ? "bg-orange-50 text-orange-700" :
+                                "bg-red-50 text-red-700"
+                              }`}>
+                                {row.t3Grade}
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </TableCell>
+                      {/* T3: 성과 등급 배지 */}
+                      <TableCell>
                         <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${roasColor}`}
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${grade.className}`}
                         >
-                          {roasPercent.toFixed(0)}%
+                          {grade.emoji} {grade.label}
                         </span>
-                      ) : (
-                        <span className="text-sm text-gray-400">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-900 font-mono">
-                      {row.purchases > 0 ? row.purchases.toLocaleString() : "-"}
-                    </TableCell>
-                    {/* E9: 자사몰매출 */}
-                    <TableCell className="text-sm text-gray-900 font-mono">
-                      {row.mixpanelRevenue != null && row.mixpanelRevenue > 0
-                        ? `₩${Math.round(row.mixpanelRevenue).toLocaleString()}`
-                        : "-"}
-                    </TableCell>
-                    {/* T4: T3 점수 */}
-                    <TableCell className="text-sm font-mono">
-                      {row.t3Score != null ? (
-                        <span className="flex items-center gap-1">
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* 모바일 카드 */}
+          <div className="md:hidden space-y-3">
+            {sortedRows.map((row) => {
+              const roasPercent = row.roas * 100;
+              const grade = getPerformanceGrade(row.roas, row.spend);
+              return (
+                <div key={row.userId} className="bg-white rounded-lg border border-gray-200 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-900">{row.name}</span>
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${grade.className}`}>
+                      {grade.emoji} {grade.label}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    {row.cohort && <span>{row.cohort}</span>}
+                    {row.roas > 0 && (
+                      <span className={`rounded-full px-2 py-0.5 font-medium ${roasPercent >= 300 ? "text-emerald-700 bg-emerald-50" : roasPercent < 100 && roasPercent > 0 ? "text-red-700 bg-red-50" : ""}`}>
+                        ROAS {roasPercent.toFixed(0)}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    <div className="text-gray-500">광고비</div>
+                    <div className="text-right font-mono text-gray-900">{row.spend > 0 ? `₩${Math.round(row.spend).toLocaleString()}` : "-"}</div>
+                    <div className="text-gray-500">광고매출</div>
+                    <div className="text-right font-mono text-gray-900">{row.revenue > 0 ? `₩${Math.round(row.revenue).toLocaleString()}` : "-"}</div>
+                    <div className="text-gray-500">구매수</div>
+                    <div className="text-right font-mono text-gray-900">{row.purchases > 0 ? row.purchases.toLocaleString() : "-"}</div>
+                    {row.mixpanelRevenue != null && row.mixpanelRevenue > 0 && (
+                      <>
+                        <div className="text-gray-500">자사몰매출</div>
+                        <div className="text-right font-mono text-gray-900">₩{Math.round(row.mixpanelRevenue).toLocaleString()}</div>
+                      </>
+                    )}
+                    {row.t3Score != null && (
+                      <>
+                        <div className="text-gray-500">T3 점수</div>
+                        <div className="text-right font-mono">
                           <span className="font-medium text-gray-900">{row.t3Score}</span>
                           {row.t3Grade && (
-                            <span className={`text-xs px-1.5 py-0.5 rounded ${
+                            <span className={`ml-1 text-xs px-1 py-0.5 rounded ${
                               row.t3Grade === "A" ? "bg-emerald-50 text-emerald-700" :
                               row.t3Grade === "B" ? "bg-blue-50 text-blue-700" :
                               row.t3Grade === "C" ? "bg-amber-50 text-amber-700" :
                               row.t3Grade === "D" ? "bg-orange-50 text-orange-700" :
                               "bg-red-50 text-red-700"
-                            }`}>
-                              {row.t3Grade}
-                            </span>
+                            }`}>{row.t3Grade}</span>
                           )}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </TableCell>
-                    {/* T3: 성과 등급 배지 */}
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${grade.className}`}
-                      >
-                        {grade.emoji} {grade.label}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );

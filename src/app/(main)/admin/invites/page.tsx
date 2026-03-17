@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Fragment } from "react";
 import { mp } from "@/lib/mixpanel";
 import {
   Table,
@@ -176,14 +176,14 @@ export default function AdminInvitesPage() {
     <div className="space-y-6">
       {/* 헤더 */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">초대코드 관리</h1>
+        <h1 className="text-lg md:text-2xl font-bold text-gray-900">초대코드 관리</h1>
         <p className="text-sm text-gray-500 mt-1">
           수강생 가입용 초대코드를 생성하고 관리합니다.
         </p>
       </div>
 
       {/* 생성 폼 */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
           새 초대코드 생성
         </h2>
@@ -262,7 +262,8 @@ export default function AdminInvitesPage() {
           생성된 초대코드가 없습니다.
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <Fragment>
+        <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50/80 hover:bg-gray-50/80">
@@ -416,6 +417,127 @@ export default function AdminInvitesPage() {
             </TableBody>
           </Table>
         </div>
+        <div className="md:hidden space-y-3">
+          {codes.map((invite) => {
+            const expired = isExpired(invite.expires_at);
+            const maxReached =
+              invite.max_uses != null &&
+              invite.used_count != null &&
+              invite.used_count >= invite.max_uses;
+            const isDeleting = deleteLoading === invite.code;
+            return (
+              <div
+                key={invite.code}
+                className="bg-white rounded-lg border border-gray-200 p-3 space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-mono font-medium text-gray-900">
+                    {invite.code}
+                  </span>
+                  {expired ? (
+                    <span className="inline-flex items-center bg-gray-100 text-gray-500 rounded-full px-2.5 py-0.5 text-xs">
+                      만료
+                    </span>
+                  ) : maxReached ? (
+                    <span className="inline-flex items-center bg-yellow-100 text-yellow-700 rounded-full px-2.5 py-0.5 text-xs">
+                      소진됨
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center bg-green-100 text-green-800 rounded-full px-2.5 py-0.5 text-xs">
+                      활성
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
+                  <span>{invite.cohort || "-"}</span>
+                  <span>
+                    사용{" "}
+                    <span className="font-medium">
+                      {invite.used_count ?? 0}
+                    </span>{" "}
+                    / {invite.max_uses ?? "무제한"}
+                  </span>
+                  <span>만료 {formatDate(invite.expires_at)}</span>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  {expired && editingExpiry === invite.code ? (
+                    <div className="flex items-center gap-1 flex-1">
+                      <input
+                        type="date"
+                        value={newExpiryDate}
+                        min={new Date().toISOString().slice(0, 10)}
+                        onChange={(e) => setNewExpiryDate(e.target.value)}
+                        className="flex-1 rounded-lg border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs px-2"
+                        onClick={() => handleExtendExpiry(invite.code)}
+                        disabled={expiryLoading || !newExpiryDate}
+                      >
+                        {expiryLoading ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          "확인"
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs px-2"
+                        onClick={() => {
+                          setEditingExpiry(null);
+                          setNewExpiryDate("");
+                        }}
+                      >
+                        취소
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      {expired && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs"
+                          onClick={() => {
+                            setEditingExpiry(invite.code);
+                            setNewExpiryDate(getDefaultExpiresAt());
+                          }}
+                        >
+                          <CalendarPlus className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs"
+                        onClick={() => handleCopy(invite.code)}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs border-red-200 text-red-600"
+                        onClick={() => handleDelete(invite.code)}
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        </Fragment>
       )}
     </div>
   );

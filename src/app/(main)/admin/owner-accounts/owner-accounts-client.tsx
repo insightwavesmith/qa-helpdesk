@@ -133,8 +133,8 @@ export function OwnerAccountsClient({ rows, totalAccounts, totalSpend, avgRoas }
         })}
       </div>
 
-      {/* 테이블 */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      {/* 테이블 — md 이상에서만 표시 */}
+      <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50/80 hover:bg-gray-50/80">
@@ -204,6 +204,59 @@ export function OwnerAccountsClient({ rows, totalAccounts, totalSpend, avgRoas }
             })}
           </TableBody>
         </Table>
+      </div>
+
+      {/* 모바일 카드 목록 — md 미만에서만 표시 */}
+      <div className="flex flex-col gap-3 md:hidden">
+        {rows.map((row) => {
+          const badge = ownerTypeMap[row.ownerType] ?? ownerTypeMap.client;
+          const roasPercent = row.avgRoas * 100;
+          return (
+            <div
+              key={row.id}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-4"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-medium text-gray-900 text-sm">
+                  {row.accountName || row.accountId}
+                </span>
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badge.className}`}
+                >
+                  {badge.label}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <p className="text-[11px] text-gray-500 mb-0.5">광고비</p>
+                  <p className="text-[13px] font-mono text-gray-900">
+                    {formatKRW(row.totalSpend)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-gray-500 mb-0.5">ROAS</p>
+                  <p
+                    className={`text-[13px] font-medium ${
+                      roasPercent >= 300
+                        ? "text-emerald-700"
+                        : roasPercent < 100 && roasPercent > 0
+                          ? "text-red-700"
+                          : "text-gray-900"
+                    }`}
+                  >
+                    {roasPercent.toFixed(0)}%
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-gray-500 mb-0.5">구매수</p>
+                  <p className="text-[13px] font-mono text-gray-900">
+                    {row.totalPurchases.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

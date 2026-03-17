@@ -21,7 +21,7 @@ export default function AdminOrganicPage() {
     <div className="space-y-6">
       {/* 헤더 */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">오가닉 채널</h1>
+        <h1 className="text-lg md:text-2xl font-bold text-gray-900">오가닉 채널</h1>
         <p className="text-[13px] text-gray-500 mt-1">
           네이버 블로그 · 카페 발행 관리
         </p>

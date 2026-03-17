@@ -247,7 +247,7 @@ export function MembersClient({
       </TabsList>
 
       <TabsContent value="members" className="mt-4 space-y-4">
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
           <CategoryFilter
             categories={roleFilters}
             currentValue={currentRole}
@@ -286,157 +286,209 @@ export function MembersClient({
             해당 조건의 회원이 없습니다.
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50/80 hover:bg-gray-50/80">
-                  <TableHead className="text-xs font-medium text-gray-500 uppercase">이름</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-500 uppercase">이메일</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-500 uppercase">전화번호</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-500 uppercase">쇼핑몰</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-500 uppercase">기수</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-500 uppercase">상태</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-500 uppercase">광고관리자</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-500 uppercase">가입일</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-500 uppercase text-right">관리</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {members.map((member) => {
-                  const role = roleLabels[member.role] || roleLabels.lead;
-                  const isLoading = loadingId === member.id;
+          <>
+            {/* 데스크탑 테이블 */}
+            <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50/80 hover:bg-gray-50/80">
+                    <TableHead className="text-xs font-medium text-gray-500 uppercase">이름</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-500 uppercase">이메일</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-500 uppercase">전화번호</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-500 uppercase">쇼핑몰</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-500 uppercase">기수</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-500 uppercase">상태</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-500 uppercase">광고관리자</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-500 uppercase">가입일</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-500 uppercase text-right">관리</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {members.map((member) => {
+                    const role = roleLabels[member.role] || roleLabels.lead;
+                    const isLoading = loadingId === member.id;
 
-                  return (
-                    <TableRow
-                      key={member.id}
-                      className="hover:bg-gray-50/50 transition-colors cursor-pointer"
-                      onClick={() => handleOpenDetail(member.id)}
-                    >
-                      <TableCell className="font-medium text-gray-900">
-                        <span className="flex items-center gap-1">
-                          {detailLoading === member.id && <Loader2 className="h-3 w-3 animate-spin text-gray-400" />}
-                          {member.name}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-600">{member.email}</TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        {editingPhoneId === member.id ? (
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="text"
-                              value={editingPhoneValue}
-                              onChange={(e) => setEditingPhoneValue(formatPhone(e.target.value))}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSavePhone(member.id);
-                                if (e.key === "Escape") setEditingPhoneId(null);
+                    return (
+                      <TableRow
+                        key={member.id}
+                        className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                        onClick={() => handleOpenDetail(member.id)}
+                      >
+                        <TableCell className="font-medium text-gray-900">
+                          <span className="flex items-center gap-1">
+                            {detailLoading === member.id && <Loader2 className="h-3 w-3 animate-spin text-gray-400" />}
+                            {member.name}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600">{member.email}</TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          {editingPhoneId === member.id ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="text"
+                                value={editingPhoneValue}
+                                onChange={(e) => setEditingPhoneValue(formatPhone(e.target.value))}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") handleSavePhone(member.id);
+                                  if (e.key === "Escape") setEditingPhoneId(null);
+                                }}
+                                placeholder="010-1234-5678"
+                                autoFocus
+                                className="w-[130px] rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                              />
+                              <button
+                                onClick={() => handleSavePhone(member.id)}
+                                disabled={phoneSaving}
+                                className="p-1 text-green-600 hover:text-green-800 disabled:opacity-50"
+                              >
+                                {phoneSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                              </button>
+                              <button
+                                onClick={() => setEditingPhoneId(null)}
+                                className="p-1 text-gray-400 hover:text-gray-600"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              className="text-sm text-gray-600 hover:text-[#F75D5D] hover:underline transition-colors"
+                              onClick={() => {
+                                setEditingPhoneId(member.id);
+                                setEditingPhoneValue(member.phone || "");
                               }}
-                              placeholder="010-1234-5678"
-                              autoFocus
-                              className="w-[130px] rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
-                            />
-                            <button
-                              onClick={() => handleSavePhone(member.id)}
-                              disabled={phoneSaving}
-                              className="p-1 text-green-600 hover:text-green-800 disabled:opacity-50"
                             >
-                              {phoneSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                              {member.phone || <span className="text-gray-400">-</span>}
                             </button>
-                            <button
-                              onClick={() => setEditingPhoneId(null)}
-                              className="p-1 text-gray-400 hover:text-gray-600"
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600">{member.shop_name}</TableCell>
+                        <TableCell className="text-sm text-gray-600">
+                          {member.cohort || "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={role.variant} className={role.className}>{role.label}</Badge>
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          {member.ad_account_id ? (
+                            <a
+                              href={`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${member.ad_account_id.replace("act_", "")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline"
                             >
-                              <X className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            className="text-sm text-gray-600 hover:text-[#F75D5D] hover:underline transition-colors"
-                            onClick={() => {
-                              setEditingPhoneId(member.id);
-                              setEditingPhoneValue(member.phone || "");
-                            }}
-                          >
-                            {member.phone || <span className="text-gray-400">-</span>}
-                          </button>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-600">{member.shop_name}</TableCell>
-                      <TableCell className="text-sm text-gray-600">
-                        {member.cohort || "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={role.variant} className={role.className}>{role.label}</Badge>
-                      </TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        {member.ad_account_id ? (
-                          <a
-                            href={`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${member.ad_account_id.replace("act_", "")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            광고관리자
-                          </a>
-                        ) : (
-                          <span className="text-xs text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-500">
-                        {formatDate(member.created_at)}
-                      </TableCell>
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        {/* lead: 멤버 승인 또는 수강생 승인 */}
-                        {member.role === "lead" && (
-                          <div className="flex justify-end gap-1">
+                              <ExternalLink className="h-3 w-3" />
+                              광고관리자
+                            </a>
+                          ) : (
+                            <span className="text-xs text-gray-400">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-500">
+                          {formatDate(member.created_at)}
+                        </TableCell>
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                          {/* lead: 멤버 승인 또는 수강생 승인 */}
+                          {member.role === "lead" && (
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                size="sm"
+                                className="bg-[#F75D5D] hover:bg-[#E54949] text-white rounded-lg"
+                                onClick={() => handleApprove(member.id)}
+                                disabled={isLoading}
+                              >
+                                {isLoading ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <CheckCircle className="h-4 w-4" />
+                                )}
+                                <span className="ml-1">멤버 승인</span>
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="rounded-lg"
+                                onClick={() => handleOpenStudentModal(member.id, member.name)}
+                                disabled={isLoading}
+                              >
+                                {isLoading ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <CheckCircle className="h-4 w-4" />
+                                )}
+                                <span className="ml-1">수강생 승인</span>
+                              </Button>
+                            </div>
+                          )}
+                          {/* member → student 승격 */}
+                          {member.role === "member" && (
                             <Button
                               size="sm"
-                              className="bg-[#F75D5D] hover:bg-[#E54949] text-white rounded-lg"
-                              onClick={() => handleApprove(member.id)}
-                              disabled={isLoading}
-                            >
-                              {isLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <CheckCircle className="h-4 w-4" />
-                              )}
-                              <span className="ml-1">멤버 승인</span>
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
+                              variant="outline"
                               className="rounded-lg"
                               onClick={() => handleOpenStudentModal(member.id, member.name)}
                               disabled={isLoading}
                             >
-                              {isLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <CheckCircle className="h-4 w-4" />
-                              )}
-                              <span className="ml-1">수강생 승인</span>
+                              수강생 전환
                             </Button>
-                          </div>
-                        )}
-                        {/* member → student 승격 */}
-                        {member.role === "member" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="rounded-lg"
-                            onClick={() => handleOpenStudentModal(member.id, member.name)}
-                            disabled={isLoading}
-                          >
-                            수강생 전환
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* 모바일 카드 리스트 */}
+            <div className="md:hidden space-y-3">
+              {members.map((member) => {
+                const role = roleLabels[member.role] || roleLabels.lead;
+                const isLoading = loadingId === member.id;
+                return (
+                  <div
+                    key={member.id}
+                    className="bg-white rounded-lg border border-gray-200 p-3 space-y-2"
+                    onClick={() => handleOpenDetail(member.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {detailLoading === member.id && <Loader2 className="h-3 w-3 animate-spin text-gray-400" />}
+                        <span className="font-medium text-gray-900">{member.name}</span>
+                      </div>
+                      <Badge variant={role.variant} className={role.className}>{role.label}</Badge>
+                    </div>
+                    <div className="text-sm text-gray-500 space-y-0.5">
+                      <div>{member.email}</div>
+                      {member.shop_name && <div>{member.shop_name}</div>}
+                      <div className="flex items-center gap-3">
+                        {member.cohort && <span>{member.cohort}</span>}
+                        <span>{formatDate(member.created_at)}</span>
+                      </div>
+                    </div>
+                    {member.role === "lead" && (
+                      <div className="flex gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                        <Button size="sm" className="bg-[#F75D5D] hover:bg-[#E54949] text-white rounded-lg text-xs flex-1" onClick={() => handleApprove(member.id)} disabled={isLoading}>
+                          {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
+                          <span className="ml-1">멤버 승인</span>
+                        </Button>
+                        <Button size="sm" variant="secondary" className="rounded-lg text-xs flex-1" onClick={() => handleOpenStudentModal(member.id, member.name)} disabled={isLoading}>
+                          수강생 승인
+                        </Button>
+                      </div>
+                    )}
+                    {member.role === "member" && (
+                      <div className="pt-1" onClick={(e) => e.stopPropagation()}>
+                        <Button size="sm" variant="outline" className="rounded-lg text-xs" onClick={() => handleOpenStudentModal(member.id, member.name)} disabled={isLoading}>
+                          수강생 전환
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
 
         <Pagination

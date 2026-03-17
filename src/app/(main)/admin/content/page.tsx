@@ -155,9 +155,9 @@ export default function AdminContentPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">콘텐츠 관리</h1>
+          <h1 className="text-lg md:text-2xl font-bold text-gray-900">콘텐츠 관리</h1>
           <p className="text-[14px] text-gray-500 mt-1">
             콘텐츠를 관리하고 편집합니다.
           </p>
@@ -260,7 +260,7 @@ export default function AdminContentPage() {
         {/* 콘텐츠 탭 */}
         <TabsContent value="contents" forceMount className="space-y-6 mt-4">
           {/* Stat Cards */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {statCards.map((card) => (
               <Card key={card.label}>
                 <CardContent className="pt-5 pb-4 px-5">
@@ -279,9 +279,9 @@ export default function AdminContentPage() {
           </div>
 
           {/* Filters */}
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 md:gap-3">
             <Select value={sourceFilter} onValueChange={setSourceFilter}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="w-full sm:w-[160px]">
                 <SelectValue placeholder="소스" />
               </SelectTrigger>
               <SelectContent>
@@ -292,7 +292,7 @@ export default function AdminContentPage() {
             </Select>
 
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="w-full sm:w-[160px]">
                 <SelectValue placeholder="유형" />
               </SelectTrigger>
               <SelectContent>
@@ -306,7 +306,7 @@ export default function AdminContentPage() {
             </Select>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-full sm:w-[140px]">
                 <SelectValue placeholder="상태" />
               </SelectTrigger>
               <SelectContent>
@@ -334,90 +334,125 @@ export default function AdminContentPage() {
                   콘텐츠가 없습니다.
                 </p>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[35%]">제목</TableHead>
-                      <TableHead>유형</TableHead>
-                      <TableHead>정보공유</TableHead>
-                      <TableHead>뉴스레터</TableHead>
-                      <TableHead>임베딩</TableHead>
-                      <TableHead className="text-right">조회수</TableHead>
-                      <TableHead className="text-right">작성일</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* 데스크탑 테이블 */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[35%]">제목</TableHead>
+                          <TableHead>유형</TableHead>
+                          <TableHead>정보공유</TableHead>
+                          <TableHead>뉴스레터</TableHead>
+                          <TableHead>임베딩</TableHead>
+                          <TableHead className="text-right">조회수</TableHead>
+                          <TableHead className="text-right">작성일</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {contents.map((item) => {
+                          const statusInfo = STATUS_BADGE[item.status] ?? {
+                            label: item.status,
+                            className: "",
+                          };
+                          return (
+                            <TableRow
+                              key={item.id}
+                              className="cursor-pointer hover:bg-gray-50"
+                              onClick={() => handleRowClick(item.id)}
+                            >
+                              <TableCell className="font-medium max-w-[400px] truncate">
+                                {item.title}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="secondary" className="text-[11px]">
+                                  {TYPE_LABEL[item.type] ?? item.type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className={`text-[11px] ${statusInfo.className}`}
+                                >
+                                  {statusInfo.label}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {item.email_sent_at ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[11px] bg-purple-50 text-purple-700 border-purple-200"
+                                  >
+                                    발송완료
+                                  </Badge>
+                                ) : (
+                                  <span className="text-[12px] text-gray-400">미발송</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {item.embedding_status === "completed" ? (
+                                  <Badge variant="outline" className="text-[11px] bg-green-50 text-green-700 border-green-200">
+                                    완료 ({item.chunks_count ?? 0})
+                                  </Badge>
+                                ) : item.embedding_status === "processing" ? (
+                                  <Badge variant="outline" className="text-[11px] bg-yellow-50 text-yellow-700 border-yellow-200">
+                                    처리중
+                                  </Badge>
+                                ) : item.embedding_status === "failed" ? (
+                                  <Badge variant="outline" className="text-[11px] bg-red-50 text-red-700 border-red-200">
+                                    실패
+                                  </Badge>
+                                ) : (
+                                  <span className="text-[12px] text-gray-400">대기</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right text-[13px] text-gray-500 tabular-nums">
+                                {(item.view_count ?? 0).toLocaleString()}
+                              </TableCell>
+                              <TableCell className="text-right text-[13px] text-gray-500">
+                                {new Date(item.created_at).toLocaleDateString("ko-KR", {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* 모바일 카드 */}
+                  <div className="md:hidden space-y-3 p-3">
                     {contents.map((item) => {
-                      const statusInfo = STATUS_BADGE[item.status] ?? {
-                        label: item.status,
-                        className: "",
-                      };
+                      const statusInfo = STATUS_BADGE[item.status] ?? { label: item.status, className: "" };
                       return (
-                        <TableRow
+                        <div
                           key={item.id}
-                          className="cursor-pointer hover:bg-gray-50"
+                          className="bg-white rounded-lg border border-gray-200 p-3 space-y-2 cursor-pointer hover:bg-gray-50"
                           onClick={() => handleRowClick(item.id)}
                         >
-                          <TableCell className="font-medium max-w-[400px] truncate">
-                            {item.title}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" className="text-[11px]">
-                              {TYPE_LABEL[item.type] ?? item.type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={`text-[11px] ${statusInfo.className}`}
-                            >
-                              {statusInfo.label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {item.email_sent_at ? (
-                              <Badge
-                                variant="outline"
-                                className="text-[11px] bg-purple-50 text-purple-700 border-purple-200"
-                              >
-                                발송완료
-                              </Badge>
-                            ) : (
-                              <span className="text-[12px] text-gray-400">미발송</span>
+                          <div className="font-medium text-gray-900 truncate">{item.title}</div>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <Badge variant="secondary" className="text-[11px]">{TYPE_LABEL[item.type] ?? item.type}</Badge>
+                            <Badge variant="outline" className={`text-[11px] ${statusInfo.className}`}>{statusInfo.label}</Badge>
+                            {item.email_sent_at && (
+                              <Badge variant="outline" className="text-[11px] bg-purple-50 text-purple-700 border-purple-200">발송완료</Badge>
                             )}
-                          </TableCell>
-                          <TableCell>
-                            {item.embedding_status === "completed" ? (
-                              <Badge variant="outline" className="text-[11px] bg-green-50 text-green-700 border-green-200">
-                                완료 ({item.chunks_count ?? 0})
-                              </Badge>
-                            ) : item.embedding_status === "processing" ? (
-                              <Badge variant="outline" className="text-[11px] bg-yellow-50 text-yellow-700 border-yellow-200">
-                                처리중
-                              </Badge>
-                            ) : item.embedding_status === "failed" ? (
-                              <Badge variant="outline" className="text-[11px] bg-red-50 text-red-700 border-red-200">
-                                실패
-                              </Badge>
-                            ) : (
-                              <span className="text-[12px] text-gray-400">대기</span>
+                            {item.embedding_status === "completed" && (
+                              <Badge variant="outline" className="text-[11px] bg-green-50 text-green-700 border-green-200">임베딩 ({item.chunks_count ?? 0})</Badge>
                             )}
-                          </TableCell>
-                          <TableCell className="text-right text-[13px] text-gray-500 tabular-nums">
-                            {(item.view_count ?? 0).toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right text-[13px] text-gray-500">
-                            {new Date(item.created_at).toLocaleDateString("ko-KR", {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            })}
-                          </TableCell>
-                        </TableRow>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-gray-500">
+                            <span>조회 {(item.view_count ?? 0).toLocaleString()}</span>
+                            <span>{new Date(item.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "short", day: "numeric" })}</span>
+                          </div>
+                        </div>
                       );
                     })}
-                  </TableBody>
-                </Table>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>

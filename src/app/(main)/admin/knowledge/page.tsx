@@ -123,14 +123,14 @@ export default function AdminKnowledgePage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">지식 베이스</h1>
+        <h1 className="text-lg md:text-2xl font-bold text-gray-900">지식 베이스</h1>
         <p className="text-[14px] text-gray-500 mt-1">
           AI 검색 모니터링, 임베딩 현황, 슬라이드 관리
         </p>
       </div>
 
       {/* 요약 카드 */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <Card>
           <CardContent className="pt-5 pb-4 px-5">
             <div className="flex items-center gap-3">
@@ -139,7 +139,7 @@ export default function AdminKnowledgePage() {
               </div>
               <div>
                 <p className="text-[12px] text-gray-500">전체 Chunks</p>
-                <p className="text-[20px] font-semibold">{totalChunks.toLocaleString()}</p>
+                <p className="text-lg md:text-[20px] font-semibold">{totalChunks.toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
@@ -152,7 +152,7 @@ export default function AdminKnowledgePage() {
               </div>
               <div>
                 <p className="text-[12px] text-gray-500">소스 타입</p>
-                <p className="text-[20px] font-semibold">{chunkStats.length}종</p>
+                <p className="text-lg md:text-[20px] font-semibold">{chunkStats.length}종</p>
               </div>
             </div>
           </CardContent>
@@ -165,7 +165,7 @@ export default function AdminKnowledgePage() {
               </div>
               <div>
                 <p className="text-[12px] text-gray-500">AI 호출 (최근 30일)</p>
-                <p className="text-[20px] font-semibold">{usageData.length}</p>
+                <p className="text-lg md:text-[20px] font-semibold">{usageData.length}</p>
               </div>
             </div>
           </CardContent>
@@ -178,7 +178,7 @@ export default function AdminKnowledgePage() {
               </div>
               <div>
                 <p className="text-[12px] text-gray-500">예상 월 비용</p>
-                <p className="text-[20px] font-semibold">
+                <p className="text-lg md:text-[20px] font-semibold">
                   ${Object.values(dailyCosts).reduce((a, b) => a + b, 0) > 0
                     ? (Object.values(dailyCosts).reduce((a, b) => a + b, 0) / Object.keys(dailyCosts).length * 30).toFixed(0)
                     : "0"}

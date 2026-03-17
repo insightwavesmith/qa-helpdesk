@@ -113,7 +113,7 @@ export default async function AdminStatsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">통계</h1>
+        <h1 className="text-lg md:text-2xl font-bold text-gray-900">통계</h1>
         <p className="text-sm text-gray-500 mt-1">
           서비스 이용 현황을 확인하세요.
         </p>
@@ -138,7 +138,7 @@ export default async function AdminStatsPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <CardTitle className="text-[32px] font-bold text-gray-900">
+                <CardTitle className="text-2xl md:text-[32px] font-bold text-gray-900">
                   {stat.value}
                 </CardTitle>
               </CardContent>
