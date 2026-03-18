@@ -1123,7 +1123,7 @@
       "notes": "Phase 1.5 진행중. OFF광고 전체 수집 + VIDEO thumbnail 임베딩 + spend>0 필터. reseed-creatives.mjs 작성. Plan/Design 업데이트."
     },
     "lp-mobile-crawl": {
-      "phase": "checked",
+      "phase": "completed",
       "matchRate": 95,
       "documents": {
         "plan": "01-plan/features/lp-mobile-crawl.plan.md",
@@ -1131,7 +1131,8 @@
         "analysis": "03-analysis/lp-mobile-crawl.analysis.md"
       },
       "startedAt": "2026-03-18",
-      "notes": "Gap 분석 완료 (95%). 배치 완료: 크롤링 33/33 LP, Vision 88건, 임베딩 92건. vector 문자열 파싱 버그 수정."
+      "completedAt": "2026-03-19",
+      "notes": "완료. 크롤링 33/33 LP(에러 0), Vision 88건, LP임베딩 92건, 일관성점수 80건(평균 56%). tsc+build 통과. Match Rate 95%."
     }
   },
   "phaseMapping": {
