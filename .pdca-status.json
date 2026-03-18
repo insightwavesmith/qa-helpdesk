@@ -140,6 +140,19 @@
     ],
     "updatedAt": "2026-03-18"
   },
+  "creative-saliency": {
+    "status": "implementing",
+    "plan": "docs/01-plan/features/creative-saliency.plan.md",
+    "design": "docs/02-design/features/creative-saliency.design.md",
+    "tasks": [
+      "T1-SQL마이그레이션",
+      "T2-requirements",
+      "T3-saliency-predict.py",
+      "T4-조회API",
+      "T5-배치실행검증"
+    ],
+    "updatedAt": "2026-03-18"
+  },
   "admin-mobile-responsive": {
     "status": "completed",
     "plan": "docs/01-plan/features/admin-mobile-responsive.plan.md",

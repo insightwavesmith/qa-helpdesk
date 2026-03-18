@@ -1150,6 +1150,15 @@
       },
       "startedAt": "2026-03-18",
       "notes": "Layer 1(요소 태깅)+Layer 3(벤치마크)+Layer 4(점수+제안) 구현 완료. Layer 2(시선 예측) 구현중."
+    },
+    "creative-saliency": {
+      "phase": "implementing",
+      "documents": {
+        "plan": "01-plan/features/creative-saliency.plan.md",
+        "design": "02-design/features/creative-saliency.design.md"
+      },
+      "startedAt": "2026-03-18",
+      "notes": "Layer 2 시선 예측. DeepGaze IIE 기반 saliency prediction. Python 스크립트 + SQL 마이그레이션 + API 작성."
     }
   },
   "phaseMapping": {
