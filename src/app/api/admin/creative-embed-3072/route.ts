@@ -1,6 +1,6 @@
 /**
  * POST /api/admin/creative-embed-3072
- * 768차원 임베딩 배치 실행 (이미지 + 텍스트)
+ * 3072차원 임베딩 배치 실행 (이미지 + 텍스트)
  * embedding_3072 IS NULL인 row를 배치로 처리
  */
 

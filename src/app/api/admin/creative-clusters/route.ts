@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
       .from("creative_clusters")
       .select("*")
       .eq("account_id", accountId)
-      .order("size", { ascending: false });
+      .order("member_count", { ascending: false });
 
     if (error) {
       console.error("[creative-clusters] 조회 실패:", error);

@@ -1112,13 +1112,15 @@
       "notes": "배포 완료. ad_creative_embeddings 352건 seed. search_similar_creatives RPC 동작 확인. screenshot_hash 컬럼 추가. Railway 연동 + 소재 검색 UI. 19파일 +2029. tsc+build 통과. [3단계] LP 크롤링 77건 중 74건 성공(100%), 스크린샷 75건(97%), LP이미지임베딩 66건(85%), LP텍스트임베딩 72건(94%). creatives Storage 버킷+RLS 생성. scripts/crawl-lps.mjs 단독 크롤러 작성. /creatives QA 통과."
     },
     "meta-embedding-arch": {
-      "phase": "implementing",
+      "phase": "checked",
+      "matchRate": 92,
       "documents": {
         "plan": "01-plan/features/meta-embedding-arch.plan.md",
-        "design": "02-design/features/meta-embedding-arch.design.md"
+        "design": "02-design/features/meta-embedding-arch.design.md",
+        "analysis": "03-analysis/meta-embedding-arch.analysis.md"
       },
       "startedAt": "2026-03-18",
-      "notes": "Phase 1 소재 임베딩 아키텍처. 3072차원 통일 (knowledge_chunks.embedding_v2와 동일). embedding_3072+text_embedding_3072 컬럼. creative_clusters 테이블. 유사도/클러스터/피로도 API 5개. SQL 마이그레이션 실행. 임베딩 배치 진행 중."
+      "notes": "Gap분석 92%. API 5개+핵심로직+에러처리+DB스키마 설계대로 구현. 임베딩 193/352건(Meta URL 만료 142건). tsc+build 통과."
     }
   },
   "phaseMapping": {

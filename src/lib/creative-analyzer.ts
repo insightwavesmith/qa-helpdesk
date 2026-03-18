@@ -1,6 +1,6 @@
 /**
  * 소재 유사도 분석 + 클러스터링 + 피로도 감지
- * 768차원 임베딩(embedding_3072) 기반
+ * 3072차원 임베딩(embedding_3072) 기반
  */
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
