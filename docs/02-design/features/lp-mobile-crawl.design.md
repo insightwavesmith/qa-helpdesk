@@ -92,8 +92,9 @@ Claude Vision + 임베딩 + 일관성 점수 통합 스크립트.
 
 **동작:**
 1. ad_creative_embeddings에서 lp_screenshot_url IS NOT NULL AND lp_embedding IS NULL 조회
-2. Claude Vision (claude-haiku-4):
-   - 입력: main.jpg + option.jpg (있으면)
+2. Claude Vision (claude-haiku-4-5-20251001):
+   - 입력: viewport.jpg (390×844, 8000px 제한 대응) + option.jpg (있으면)
+   - URL 소스 방식 (type: "url")
    - 출력: LP 구조 JSON
    - lp_structure_analysis INSERT
 3. Gemini Embedding 3072차원:

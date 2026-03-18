@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-19T00:30:00.000Z",
+  "lastUpdated": "2026-03-19T00:45:00.000Z",
   "features": {
     "admin-mobile-responsive": {
       "phase": "completed",
@@ -1123,13 +1123,15 @@
       "notes": "Phase 1.5 진행중. OFF광고 전체 수집 + VIDEO thumbnail 임베딩 + spend>0 필터. reseed-creatives.mjs 작성. Plan/Design 업데이트."
     },
     "lp-mobile-crawl": {
-      "phase": "implementing",
+      "phase": "checked",
+      "matchRate": 95,
       "documents": {
         "plan": "01-plan/features/lp-mobile-crawl.plan.md",
-        "design": "02-design/features/lp-mobile-crawl.design.md"
+        "design": "02-design/features/lp-mobile-crawl.design.md",
+        "analysis": "03-analysis/lp-mobile-crawl.analysis.md"
       },
       "startedAt": "2026-03-18",
-      "notes": "LP 모바일 크롤링 + Claude Vision 분석 + 일관성 점수. T1-SQL(완료) T2-크롤러(완료) T3-Vision(완료) T4-임베딩+일관성(완료) T5-API(완료) T6-검증(완료). viewport.jpg 추가(8000px 제한 대응)."
+      "notes": "Gap 분석 완료 (95%). T1-T6 전체 완료. Vision 입력 viewport.jpg 변경(8000px 제한). 배치 크롤링 실행중."
     }
   },
   "phaseMapping": {
