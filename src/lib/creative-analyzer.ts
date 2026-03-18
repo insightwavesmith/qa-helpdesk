@@ -205,12 +205,11 @@ export async function generateClusters(accountId: string): Promise<{
     const avgSim = simCount > 0 ? Math.round((totalSim / simCount) * 10000) / 10000 : 0;
 
     return {
-      cluster_id: `${accountId}_cluster_${idx + 1}`,
+      cluster_label: `cluster_${idx + 1}`,
       account_id: accountId,
-      ad_ids: adIds,
-      centroid_ad_id: adIds[0],
-      size: adIds.length,
-      avg_similarity: avgSim,
+      member_ad_ids: adIds,
+      member_count: adIds.length,
+      avg_roas: avgSim, // 유사도를 avg_roas에 임시 저장 (향후 실제 ROAS로 교체)
       updated_at: now,
     };
   });
@@ -230,12 +229,12 @@ export async function generateClusters(accountId: string): Promise<{
   }
 
   const result: CreativeCluster[] = clusterRows.map((r) => ({
-    cluster_id: r.cluster_id,
+    cluster_id: r.cluster_label,
     account_id: r.account_id,
-    ad_ids: r.ad_ids,
-    centroid_ad_id: r.centroid_ad_id,
-    size: r.size,
-    avg_similarity: r.avg_similarity,
+    ad_ids: r.member_ad_ids,
+    centroid_ad_id: r.member_ad_ids[0],
+    size: r.member_count,
+    avg_similarity: r.avg_roas ?? 0,
   }));
 
   return { clusters_created: result.length, clusters: result };
