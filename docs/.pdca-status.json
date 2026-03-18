@@ -1120,7 +1120,7 @@
         "analysis": "03-analysis/meta-embedding-arch.analysis.md"
       },
       "startedAt": "2026-03-18",
-      "notes": "Phase 1.5 진행중. OFF광고 전체 수집 + VIDEO thumbnail 임베딩 + spend>0 필터. reseed-creatives.mjs 작성. Plan/Design 업데이트."
+      "notes": "Phase 2 진행중. embedder→embedding_3072 통합, collect-daily 파이프라인, LP분석 Gemini Flash 전환, 영상 VLM 분석(Gemini 2.0 Pro)."
     },
     "lp-mobile-crawl": {
       "phase": "completed",
