@@ -93,6 +93,20 @@
     "updatedAt": "2026-03-18",
     "notes": "Phase 1.5 진행중. OFF광고 전체 수집 + VIDEO thumbnail 임베딩 + spend>0 필터. reseed-creatives.mjs 작성."
   },
+  "lp-mobile-crawl": {
+    "status": "implementing",
+    "plan": "docs/01-plan/features/lp-mobile-crawl.plan.md",
+    "design": "docs/02-design/features/lp-mobile-crawl.design.md",
+    "tasks": [
+      "T1-SQL마이그레이션",
+      "T2-모바일크롤러",
+      "T3-VisionAnalyzer",
+      "T4-LP임베딩+일관성점수",
+      "T5-API",
+      "T6-검증"
+    ],
+    "updatedAt": "2026-03-18"
+  },
   "admin-mobile-responsive": {
     "status": "completed",
     "plan": "docs/01-plan/features/admin-mobile-responsive.plan.md",
