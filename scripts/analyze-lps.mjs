@@ -152,7 +152,7 @@ async function analyzeWithVision(screenshotUrl, ctaUrl) {
     parts.push({ text: VISION_PROMPT });
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro:generateContent?key=${GEMINI_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -296,7 +296,7 @@ async function main() {
           urgency_timedeal: analysis.option_modal?.urgency?.time_deal || false,
           touches_to_checkout: analysis.option_modal?.touches_to_checkout || null,
           raw_analysis: analysis,
-          model_version: "gemini-2.0-flash",
+          model_version: "gemini-2.0-pro",
         };
 
         const result = await sbPost("lp_structure_analysis", lpRow);
