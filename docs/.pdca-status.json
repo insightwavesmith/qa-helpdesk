@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-19T00:45:00.000Z",
+  "lastUpdated": "2026-03-19T01:00:00.000Z",
   "features": {
     "admin-mobile-responsive": {
       "phase": "completed",
@@ -1121,6 +1121,14 @@
       },
       "startedAt": "2026-03-18",
       "notes": "Phase 1.5 진행중. OFF광고 전체 수집 + VIDEO thumbnail 임베딩 + spend>0 필터. reseed-creatives.mjs 작성. Plan/Design 업데이트."
+    },
+    "creative-analysis-tab": {
+      "phase": "planning",
+      "documents": {
+        "plan": "01-plan/features/creative-analysis-tab.plan.md"
+      },
+      "startedAt": "2026-03-19",
+      "notes": "목업 설계 제안서 작성. Smith님 확인 대기. 4개 뷰: 건강도/일관성/클러스터/고성과패턴. Phase 3 영상 VLM(Gemini 2.0 Pro) 예정."
     },
     "lp-mobile-crawl": {
       "phase": "completed",

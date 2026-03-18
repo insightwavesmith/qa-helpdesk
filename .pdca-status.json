@@ -111,6 +111,18 @@
     "updatedAt": "2026-03-19",
     "notes": "완료. 크롤링 33/33 LP(에러 0), Vision 88건, LP임베딩 92건, 일관성점수 80건(평균 56%). tsc+build 통과. Match Rate 95%."
   },
+  "creative-analysis-tab": {
+    "status": "planning",
+    "plan": "docs/01-plan/features/creative-analysis-tab.plan.md",
+    "tasks": [
+      "목업-건강도",
+      "목업-일관성",
+      "목업-클러스터",
+      "목업-고성과패턴"
+    ],
+    "updatedAt": "2026-03-19",
+    "notes": "목업 설계 제안서 작성. Smith님 확인 대기. src/ 수정 없음."
+  },
   "admin-mobile-responsive": {
     "status": "completed",
     "plan": "docs/01-plan/features/admin-mobile-responsive.plan.md",
