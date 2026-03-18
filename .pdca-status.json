@@ -27,19 +27,22 @@
     "updatedAt": "2026-03-08"
   },
   "embedding-v2-migration": {
-    "status": "completed",
+    "status": "deployed",
     "plan": "docs/01-plan/features/embedding-v2-migration.plan.md",
     "design": "docs/02-design/features/embedding-v2-migration.design.md",
     "tasks": [
       "T1-이중컬럼",
       "T2-RPC교체",
       "T3-gemini.ts",
-      "T4-재임베딩"
+      "T4-재임베딩",
+      "T5-DB마이그레이션",
+      "T6-배포검증"
     ],
-    "updatedAt": "2026-03-17"
+    "updatedAt": "2026-03-18",
+    "notes": "Supabase SQL 4개 실행 완료. embedding_v2 3,488/3,488건(100%). Vercel 배포 정상. HNSW 인덱스 미생성(pgvector 3072차원 제한)."
   },
   "phase2-creative-embedding": {
-    "status": "completed",
+    "status": "deployed",
     "plan": "docs/01-plan/features/phase2-creative-embedding.plan.md",
     "design": "docs/02-design/features/phase2-creative-embedding.design.md",
     "tasks": [
@@ -49,8 +52,64 @@
       "T4-cron",
       "T5-competitor",
       "T6-RPC",
-      "T7-lp-crawler"
+      "T7-lp-crawler",
+      "T8-seed"
     ],
-    "updatedAt": "2026-03-17"
+    "updatedAt": "2026-03-18",
+    "notes": "ad_creative_embeddings 352건 seed 완료. search_similar_creatives RPC 동작 확인. screenshot_hash 컬럼 추가."
+  },
+  "lp-crawling-qa": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/phase2-creative-embedding.plan.md",
+    "design": "docs/02-design/features/phase2-creative-embedding.design.md",
+    "tasks": [
+      "T1-LP크롤링실행",
+      "T2-소재검색QA",
+      "T3-사이드바확인"
+    ],
+    "completedAt": "2026-03-18",
+    "updatedAt": "2026-03-18",
+    "notes": "3단계 LP 크롤링 + 소재 검색 QA 완료. LP 77건 중 74건 크롤링 성공(100%). 스크린샷 75건(97%), LP이미지임베딩 66건(85%), LP텍스트임베딩 72건(94%). creatives Storage 버킷 생성+RLS. scripts/crawl-lps.mjs 단독 크롤러 작성. search_similar_creatives RPC 정상. /creatives 페이지 검색/필터/모달 QA 통과. 사이드바 메뉴 확인. npm run build 통과."
+  },
+  "meta-embedding-arch": {
+    "status": "implementing",
+    "plan": "docs/01-plan/features/meta-embedding-arch.plan.md",
+    "design": "docs/02-design/features/meta-embedding-arch.design.md",
+    "tasks": [
+      "T1-SQL마이그레이션",
+      "T2-creative-analyzer",
+      "T3-embed-768-API",
+      "T4-similarity-API",
+      "T5-clusters-API",
+      "T6-fatigue-API",
+      "T7-임베딩배치실행",
+      "T8-검증"
+    ],
+    "updatedAt": "2026-03-18"
+  },
+  "admin-mobile-responsive": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/admin-mobile-responsive.plan.md",
+    "design": "docs/02-design/features/admin-mobile-responsive.design.md",
+    "analysis": "docs/03-analysis/admin-mobile-responsive.analysis.md",
+    "matchRate": 100,
+    "tasks": [
+      "P1-members",
+      "P1-accounts",
+      "P1-performance",
+      "P1-answers",
+      "P2-content",
+      "P2-email",
+      "P2-invites",
+      "P2-reviews",
+      "P3-protractor",
+      "P3-knowledge",
+      "P3-owner-accounts",
+      "P3-stats",
+      "P3-organic"
+    ],
+    "completedAt": "2026-03-18",
+    "updatedAt": "2026-03-18",
+    "notes": "관리자 13개 페이지 모바일 반응형 완료. P1(members/accounts/performance/answers) 테이블→카드, P2(content/email/invites/reviews) 테이블→카드+폼 반응형, P3(protractor/knowledge/owner-accounts/stats/organic) 제목/그리드 조정. Tailwind CSS만 변경, 기능 변경 없음. 16파일 +1314/-569줄. tsc+build 통과. Match Rate 100%."
   }
 }
