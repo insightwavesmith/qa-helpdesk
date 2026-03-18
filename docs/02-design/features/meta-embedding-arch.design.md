@@ -113,12 +113,56 @@ Phase 1은 API만 구현. UI는 Phase 4.
 | account_id 누락 | 400 | account_id 파라미터가 필요합니다 |
 | 임베딩 실패 | 부분 성공 | 에러 건은 skip, 로그 기록 |
 
-## 5. 구현 순서
+## 5. 구현 순서 (Phase 1)
 1. [x] SQL 마이그레이션 작성 + 실행
 2. [x] creative-analyzer.ts 핵심 로직 (유사도, 클러스터링, 피로도)
 3. [x] creative-embed-3072 API
 4. [x] creative-similarity API
 5. [x] creative-clusters API (조회 + 생성)
 6. [x] creative-fatigue API
-7. [ ] 3072차원 임베딩 배치 실행 (352건)
-8. [ ] tsc + build 검증
+7. [x] 3072차원 임베딩 배치 실행 (193/352건)
+8. [x] tsc + build 검증 + Gap 분석 (92%)
+
+## 6. Phase 1.5 — 소재 재수집 + 동영상 + spend 필터
+
+### 6.1 스크립트: scripts/reseed-creatives.mjs
+전체 소재 재수집 + 임베딩 통합 스크립트.
+
+**플로우:**
+1. daily_ad_insights에서 고유 account_id 목록 추출
+2. 각 account_id로 Meta API `act_{id}/ads` 호출 (effective_status 전체, 페이지네이션)
+3. 신규 ad_id → ad_creative_embeddings INSERT (media_type, media_url/thumbnail_url, ad_copy, lp_url)
+4. 기존 ad_id 중 media_url이 403인 건 → Meta API로 최신 URL 재수집, UPDATE
+5. daily_ad_insights에서 ad_id별 SUM(spend) 조회 → spend > 0 set 구성
+6. spend > 0이고 embedding_3072 IS NULL인 건만 임베딩 실행:
+   - VIDEO → thumbnail_url을 이미지로 임베딩
+   - IMAGE → media_url을 이미지로 임베딩
+   - ad_copy → 텍스트 임베딩
+7. embedding_3072, text_embedding_3072, embedded_at UPDATE
+
+### 6.2 Meta API 호출
+```
+GET /act_{account_id}/ads
+  ?fields=id,name,effective_status,creative{id,thumbnail_url,image_url,image_hash,body,object_story_spec}
+  &limit=500
+  &access_token={META_ACCESS_TOKEN}
+```
+- effective_status 필터 없음 → ON+OFF 전부 수집
+- paging.next로 전체 페이지네이션
+
+### 6.3 VIDEO 임베딩 전략
+- Gemini embedContent API는 텍스트+이미지만 지원 (영상 직접 불가)
+- VIDEO 소재 → Meta creative.thumbnail_url (정적 이미지) 사용
+- thumbnail_url을 이미지로 fetch → base64 → embedContent
+- 결과를 embedding_3072에 저장 (IMAGE와 동일 컬럼)
+
+### 6.4 spend > 0 필터 로직
+```sql
+SELECT ad_id, SUM(spend) as total_spend
+FROM daily_ad_insights
+WHERE ad_id IS NOT NULL
+GROUP BY ad_id
+HAVING SUM(spend) > 0
+```
+- total_spend > 0 → 임베딩 대상
+- total_spend = 0 또는 daily_ad_insights에 없음 → 데이터만 저장, 임베딩 스킵

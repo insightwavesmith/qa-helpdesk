@@ -72,7 +72,7 @@
     "notes": "3단계 LP 크롤링 + 소재 검색 QA 완료. LP 77건 중 74건 크롤링 성공(100%). 스크린샷 75건(97%), LP이미지임베딩 66건(85%), LP텍스트임베딩 72건(94%). creatives Storage 버킷 생성+RLS. scripts/crawl-lps.mjs 단독 크롤러 작성. search_similar_creatives RPC 정상. /creatives 페이지 검색/필터/모달 QA 통과. 사이드바 메뉴 확인. npm run build 통과."
   },
   "meta-embedding-arch": {
-    "status": "checked",
+    "status": "implementing",
     "plan": "docs/01-plan/features/meta-embedding-arch.plan.md",
     "design": "docs/02-design/features/meta-embedding-arch.design.md",
     "analysis": "docs/03-analysis/meta-embedding-arch.analysis.md",
@@ -85,10 +85,13 @@
       "T5-clusters-API",
       "T6-fatigue-API",
       "T7-임베딩배치실행",
-      "T8-검증"
+      "T8-검증",
+      "T9-OFF광고재수집",
+      "T10-VIDEO썸네일임베딩",
+      "T11-spend필터임베딩"
     ],
     "updatedAt": "2026-03-18",
-    "notes": "Gap분석 92%. API 5개+핵심로직+에러처리+DB스키마 설계대로 구현. 임베딩 193/352건(Meta URL 만료 142건). tsc+build 통과."
+    "notes": "Phase 1.5 진행중. OFF광고 전체 수집 + VIDEO thumbnail 임베딩 + spend>0 필터. reseed-creatives.mjs 작성."
   },
   "admin-mobile-responsive": {
     "status": "completed",
