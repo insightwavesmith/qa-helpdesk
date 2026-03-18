@@ -88,10 +88,15 @@
       "T8-검증",
       "T9-OFF광고재수집",
       "T10-VIDEO썸네일임베딩",
-      "T11-spend필터임베딩"
+      "T11-spend필터임베딩",
+      "T12-embedder컬럼통합",
+      "T13-collect-daily파이프라인",
+      "T14-LP분석GeminiFlash",
+      "T15-영상VLM분석",
+      "T16-영상분석API"
     ],
     "updatedAt": "2026-03-18",
-    "notes": "Phase 1.5 진행중. OFF광고 전체 수집 + VIDEO thumbnail 임베딩 + spend>0 필터. reseed-creatives.mjs 작성."
+    "notes": "Phase 2 진행중. embedder→embedding_3072 통합, collect-daily 파이프라인, LP분석 Gemini Flash 전환, 영상 VLM 분석(Gemini 2.0 Pro)."
   },
   "lp-mobile-crawl": {
     "status": "completed",

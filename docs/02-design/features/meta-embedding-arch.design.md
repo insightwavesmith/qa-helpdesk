@@ -166,3 +166,80 @@ HAVING SUM(spend) > 0
 ```
 - total_spend > 0 → 임베딩 대상
 - total_spend = 0 또는 daily_ad_insights에 없음 → 데이터만 저장, 임베딩 스킵
+
+## 7. Phase 2 — 파이프라인 통합 + VLM 분석
+
+### 7.1 ad-creative-embedder.ts 컬럼 통합
+기존 `embedding`/`text_embedding` (RETRIEVAL_DOCUMENT) → `embedding_3072`/`text_embedding_3072` (SEMANTIC_SIMILARITY) 단일화.
+
+**변경:**
+- `embedCreative()`: taskType → SEMANTIC_SIMILARITY, row.embedding → row.embedding_3072, row.text_embedding → row.text_embedding_3072
+- `embedMissingCreatives()`: select/or 쿼리 컬럼명 변경, updates 컬럼명 변경
+- LP 임베딩 관련 taskType도 전부 SEMANTIC_SIMILARITY로 통일
+
+### 7.2 collect-daily 파이프라인 연결
+`/api/cron/collect-daily`에서 daily_ad_insights 저장 후:
+1. ads에서 creative.image_hash → fetchImageUrlsByHash → media_url 해석
+2. ad_creative_embeddings upsert (ad_id, account_id, media_url, media_type, media_hash)
+3. embedMissingCreatives() 호출로 임베딩 자동 실행
+
+### 7.3 LP 구조 분석 모델 전환: Claude Vision → Gemini 2.0 Flash
+`scripts/analyze-lps.mjs`의 Vision 분석 모델 변경.
+
+**이유:** Gemini Flash가 비용 대비 성능 우수, API 키 통합 (GEMINI_API_KEY 하나로 임베딩+분석)
+**변경:** Anthropic API 호출 → Gemini generateContent API, 동일 JSON 스키마 유지
+**모델:** gemini-2.0-flash
+
+### 7.4 영상 구조 분석: Gemini 2.0 Pro VLM
+`scripts/analyze-videos.mjs` + `/api/admin/creative-video-analysis`
+
+**동작:**
+1. ad_creative_embeddings에서 media_type='VIDEO' 조회
+2. media_url → Gemini Files API 업로드
+3. Gemini 2.0 Pro generateContent (video + prompt)
+4. 분석 JSON → video_analysis JSONB 컬럼 저장
+
+**분석 JSON 스키마:**
+```json
+{
+  "duration_sec": 15,
+  "scene_count": 3,
+  "scenes": [{ "start_sec": 0, "end_sec": 5, "type": "hook", "description": "..." }],
+  "hook_type": "problem|benefit|curiosity|testimonial|visual_impact",
+  "hook_duration_sec": 3,
+  "tone": "energetic|calm|urgent|emotional|humorous|professional",
+  "bgm": { "present": true, "type": "upbeat|emotional|none" },
+  "narration": { "present": true, "type": "voiceover|text_overlay|both|none" },
+  "cta": { "position": "end|middle|throughout", "type": "button|text|voice|none" },
+  "text_overlays": { "count": 5, "languages": ["ko"] },
+  "product_shown": true,
+  "faces_shown": true,
+  "before_after": false,
+  "aspect_ratio": "9:16"
+}
+```
+
+**모델:** gemini-2.0-pro-exp-02-05
+
+### 7.5 DB 스키마 변경
+```sql
+ALTER TABLE ad_creative_embeddings
+  ADD COLUMN IF NOT EXISTS video_analysis JSONB;
+```
+
+### 7.6 신규/수정 파일
+| 파일 | 변경 | 역할 |
+|------|------|------|
+| `src/lib/ad-creative-embedder.ts` | 수정 | embedding→embedding_3072, taskType 변경 |
+| `src/app/api/cron/collect-daily/route.ts` | 수정 | 소재 파이프라인 연결 |
+| `scripts/analyze-lps.mjs` | 수정 | Claude Vision → Gemini 2.0 Flash |
+| `scripts/analyze-videos.mjs` | 신규 | 영상 VLM 분석 |
+| `src/app/api/admin/creative-video-analysis/route.ts` | 신규 | 영상 분석 결과 API |
+
+### 7.7 구현 순서
+1. [ ] ad-creative-embedder.ts 컬럼/taskType 통합
+2. [ ] collect-daily 파이프라인 연결
+3. [ ] analyze-lps.mjs Gemini Flash 전환
+4. [ ] analyze-videos.mjs + API 생성
+5. [ ] video_analysis 컬럼 ALTER TABLE 실행
+6. [ ] tsc + build 검증

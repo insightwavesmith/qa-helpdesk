@@ -82,9 +82,9 @@ export async function embedCreative(input: CreativeEmbedInput): Promise<EmbedRes
     try {
       const embedding = await generateEmbedding(
         { imageUrl: input.mediaUrl },
-        { taskType: "RETRIEVAL_DOCUMENT" },
+        { taskType: "SEMANTIC_SIMILARITY" },
       );
-      row.embedding = embedding;
+      row.embedding_3072 = embedding;
       result.embeddingDone = true;
     } catch (err) {
       console.error(`[creative-embedder] Image embedding failed for ${input.adId}:`, err);
@@ -96,9 +96,9 @@ export async function embedCreative(input: CreativeEmbedInput): Promise<EmbedRes
     try {
       const textEmbedding = await generateEmbedding(
         input.adCopy,
-        { taskType: "RETRIEVAL_DOCUMENT" },
+        { taskType: "SEMANTIC_SIMILARITY" },
       );
-      row.text_embedding = textEmbedding;
+      row.text_embedding_3072 = textEmbedding;
       result.textEmbeddingDone = true;
     } catch (err) {
       console.error(`[creative-embedder] Text embedding failed for ${input.adId}:`, err);
@@ -144,7 +144,7 @@ export async function embedCreative(input: CreativeEmbedInput): Promise<EmbedRes
               {
                 imageUrl: `data:image/png;base64,${railwayResult.screenshot}`,
               },
-              { taskType: "RETRIEVAL_DOCUMENT" },
+              { taskType: "SEMANTIC_SIMILARITY" },
             );
             row.lp_embedding = lpEmbedding;
             result.lpEmbeddingDone = true;
@@ -163,7 +163,7 @@ export async function embedCreative(input: CreativeEmbedInput): Promise<EmbedRes
         if (lpText.trim().length > 10) {
           try {
             row.lp_text_embedding = await generateEmbedding(lpText, {
-              taskType: "RETRIEVAL_DOCUMENT",
+              taskType: "SEMANTIC_SIMILARITY",
             });
           } catch (err) {
             console.error(`[creative-embedder] LP text embedding failed for ${input.adId}:`, err);
@@ -183,7 +183,7 @@ export async function embedCreative(input: CreativeEmbedInput): Promise<EmbedRes
             try {
               row.lp_embedding = await generateEmbedding(
                 { imageUrl: lpData.ogImageUrl },
-                { taskType: "RETRIEVAL_DOCUMENT" },
+                { taskType: "SEMANTIC_SIMILARITY" },
               );
               result.lpEmbeddingDone = true;
             } catch (err) {
@@ -194,7 +194,7 @@ export async function embedCreative(input: CreativeEmbedInput): Promise<EmbedRes
           if (lpData.text && lpData.text.trim().length > 10) {
             try {
               row.lp_text_embedding = await generateEmbedding(lpData.text, {
-                taskType: "RETRIEVAL_DOCUMENT",
+                taskType: "SEMANTIC_SIMILARITY",
               });
             } catch (err) {
               console.error(`[creative-embedder] LP text embedding failed for ${input.adId}:`, err);
@@ -277,8 +277,8 @@ export async function embedMissingCreatives(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rows, error } = await (supabase as any)
     .from("ad_creative_embeddings")
-    .select("id, ad_id, media_url, ad_copy, lp_url, lp_crawled_at, embedding, text_embedding, lp_embedding")
-    .or("embedding.is.null,text_embedding.is.null")
+    .select("id, ad_id, media_url, ad_copy, lp_url, lp_crawled_at, embedding_3072, text_embedding_3072, lp_embedding")
+    .or("embedding_3072.is.null,text_embedding_3072.is.null")
     .eq("is_active", true)
     .limit(batchSize);
 
@@ -295,11 +295,11 @@ export async function embedMissingCreatives(
     const updates: Record<string, any> = {};
 
     // 이미지 임베딩이 없으면 생성
-    if (!row.embedding && row.media_url) {
+    if (!row.embedding_3072 && row.media_url) {
       try {
-        updates.embedding = await generateEmbedding(
+        updates.embedding_3072 = await generateEmbedding(
           { imageUrl: row.media_url },
-          { taskType: "RETRIEVAL_DOCUMENT" },
+          { taskType: "SEMANTIC_SIMILARITY" },
         );
       } catch (err) {
         console.error(`[creative-embedder] Missing embed failed ${row.ad_id}:`, err);
@@ -308,11 +308,11 @@ export async function embedMissingCreatives(
     }
 
     // 텍스트 임베딩이 없으면 생성
-    if (!row.text_embedding && row.ad_copy) {
+    if (!row.text_embedding_3072 && row.ad_copy) {
       try {
-        updates.text_embedding = await generateEmbedding(
+        updates.text_embedding_3072 = await generateEmbedding(
           row.ad_copy,
-          { taskType: "RETRIEVAL_DOCUMENT" },
+          { taskType: "SEMANTIC_SIMILARITY" },
         );
       } catch (err) {
         console.error(`[creative-embedder] Missing text embed failed ${row.ad_id}:`, err);
@@ -327,7 +327,7 @@ export async function embedMissingCreatives(
         if (railwayResult?.screenshot) {
           updates.lp_embedding = await generateEmbedding(
             { imageUrl: `data:image/png;base64,${railwayResult.screenshot}` },
-            { taskType: "RETRIEVAL_DOCUMENT" },
+            { taskType: "SEMANTIC_SIMILARITY" },
           );
           updates.lp_headline = railwayResult.text.headline || null;
           updates.lp_price = railwayResult.text.price || null;
@@ -343,7 +343,7 @@ export async function embedMissingCreatives(
 
           const lpText = [railwayResult.text.headline, railwayResult.text.description].filter(Boolean).join("\n");
           if (lpText.trim().length > 10) {
-            updates.lp_text_embedding = await generateEmbedding(lpText, { taskType: "RETRIEVAL_DOCUMENT" });
+            updates.lp_text_embedding = await generateEmbedding(lpText, { taskType: "SEMANTIC_SIMILARITY" });
           }
         } else {
           // Railway 실패 → cheerio 폴백
@@ -351,14 +351,14 @@ export async function embedMissingCreatives(
           if (lpData?.ogImageUrl) {
             updates.lp_embedding = await generateEmbedding(
               { imageUrl: lpData.ogImageUrl },
-              { taskType: "RETRIEVAL_DOCUMENT" },
+              { taskType: "SEMANTIC_SIMILARITY" },
             );
             updates.lp_headline = lpData.headline || null;
             updates.lp_price = lpData.price || null;
             updates.lp_crawled_at = new Date().toISOString();
 
             if (lpData.text && lpData.text.trim().length > 10) {
-              updates.lp_text_embedding = await generateEmbedding(lpData.text, { taskType: "RETRIEVAL_DOCUMENT" });
+              updates.lp_text_embedding = await generateEmbedding(lpData.text, { taskType: "SEMANTIC_SIMILARITY" });
             }
           }
         }

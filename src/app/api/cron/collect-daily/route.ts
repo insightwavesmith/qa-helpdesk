@@ -80,6 +80,11 @@ function normalizeRanking(raw: string | null | undefined): string {
 
 // creative 필드 기반 분류 — 공용 모듈에서 import
 import { getCreativeType } from "@/lib/protractor/creative-type";
+import {
+  fetchImageUrlsByHash,
+  extractImageHashes,
+} from "@/lib/protractor/creative-image-fetcher";
+import { embedMissingCreatives } from "@/lib/ad-creative-embedder";
 
 // ── 지표 계산 (GCP 스펙 기준) ──────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -318,6 +323,47 @@ export async function runCollectDaily(dateParam?: string): Promise<CollectDailyR
           } else {
             accountResult.meta_ads = rows.length;
           }
+
+          // ── 소재 데이터 → ad_creative_embeddings upsert ──
+          const imageHashes = extractImageHashes(ads);
+          const hashToUrl = imageHashes.length > 0
+            ? await fetchImageUrlsByHash(account.account_id, imageHashes)
+            : new Map<string, string>();
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const creativeRows = ads.map((ad: any) => {
+            const adId = (ad.ad_id ?? ad.id) as string;
+            if (!adId) return null;
+            const creative = ad.creative;
+            const imageHash = creative?.image_hash;
+            const videoId = creative?.video_id;
+            const mediaUrl = imageHash ? (hashToUrl.get(imageHash) || null) : null;
+
+            return {
+              ad_id: adId,
+              account_id: account.account_id,
+              source: "own" as const,
+              brand_name: account.account_name || null,
+              media_url: mediaUrl,
+              media_type: videoId ? "VIDEO" : "IMAGE",
+              media_hash: imageHash || null,
+              is_active: true,
+              updated_at: new Date().toISOString(),
+            };
+          }).filter(Boolean);
+
+          if (creativeRows.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error: creativeErr } = await (svc as any)
+              .from("ad_creative_embeddings")
+              .upsert(creativeRows as never[], { onConflict: "ad_id" });
+
+            if (creativeErr) {
+              console.error(`[collect-daily] ad_creative_embeddings upsert error [${account.account_id}]:`, creativeErr);
+            } else {
+              console.log(`[collect-daily] ad_creative_embeddings upserted: ${creativeRows.length}건`);
+            }
+          }
         }
       } catch (e) {
         accountResult.meta_error = e instanceof Error ? e.message : String(e);
@@ -326,6 +372,14 @@ export async function runCollectDaily(dateParam?: string): Promise<CollectDailyR
       }
 
       results.push(accountResult);
+    }
+
+    // ── 임베딩 없는 소재 보충 (배치 50개, 500ms 딜레이) ──
+    try {
+      const embedResult = await embedMissingCreatives(50, 500);
+      console.log(`[collect-daily] embedMissingCreatives: processed=${embedResult.processed}, embedded=${embedResult.embedded}, errors=${embedResult.errors}`);
+    } catch (err) {
+      console.error("[collect-daily] embedMissingCreatives failed:", err);
     }
 
     // 기존 SHARE → VIDEO 일괄 수정 (이전 버전 코드로 수집된 데이터 보정)
