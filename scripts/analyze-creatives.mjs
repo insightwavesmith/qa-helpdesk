@@ -160,7 +160,7 @@ async function analyzeCreative(imageUrl, adCopy, mediaType) {
         body: JSON.stringify({
           contents: [{ parts }],
           generationConfig: {
-            maxOutputTokens: 2048,
+            maxOutputTokens: 8192,
             responseMimeType: "application/json",
           },
         }),
