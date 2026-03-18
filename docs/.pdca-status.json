@@ -1,7 +1,19 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-19T01:00:00.000Z",
+  "lastUpdated": "2026-03-18T15:00:00.000Z",
   "features": {
+    "creative-pipeline-railway": {
+      "phase": "completed",
+      "matchRate": 97,
+      "documents": {
+        "plan": "01-plan/features/creative-pipeline-railway.plan.md",
+        "design": "02-design/features/creative-pipeline-railway.design.md",
+        "analysis": "03-analysis/creative-pipeline-railway.analysis.md"
+      },
+      "startedAt": "2026-03-18",
+      "completedAt": "2026-03-18",
+      "notes": "services/creative-pipeline/ Express 서비스 7파일 + collect-daily 연동 + eslint 설정. tsc+build 통과. Match Rate 97%."
+    },
     "admin-mobile-responsive": {
       "phase": "completed",
       "matchRate": 100,

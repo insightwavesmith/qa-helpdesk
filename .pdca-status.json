@@ -153,6 +153,23 @@
     ],
     "updatedAt": "2026-03-18"
   },
+  "creative-pipeline-railway": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/creative-pipeline-railway.plan.md",
+    "design": "docs/02-design/features/creative-pipeline-railway.design.md",
+    "analysis": "docs/03-analysis/creative-pipeline-railway.analysis.md",
+    "matchRate": 97,
+    "tasks": [
+      "서비스코드",
+      "Dockerfile",
+      "collect-daily연동",
+      "빌드검증",
+      "Gap분석"
+    ],
+    "completedAt": "2026-03-18",
+    "updatedAt": "2026-03-18",
+    "notes": "services/creative-pipeline/ Express 서비스 7파일 + collect-daily 연동 + eslint 설정. tsc+build 통과. Match Rate 97%."
+  },
   "admin-mobile-responsive": {
     "status": "completed",
     "plan": "docs/01-plan/features/admin-mobile-responsive.plan.md",

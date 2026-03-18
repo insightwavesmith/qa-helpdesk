@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Node.js 서비스 디렉토리 (Next.js 룰 적용 제외)
+    "services/**",
   ]),
 ]);
 
