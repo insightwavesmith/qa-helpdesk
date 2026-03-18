@@ -43,7 +43,7 @@ for (const line of envContent.split("\n")) {
 const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL;
 const SB_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
 const GEMINI_KEY = env.GEMINI_API_KEY;
-const MODEL = "gemini-2.0-pro-exp-02-05";
+const MODEL = "gemini-2.5-pro";
 
 if (!SB_URL || !SB_KEY) {
   console.error("SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 필요");

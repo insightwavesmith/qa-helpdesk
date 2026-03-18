@@ -5,7 +5,7 @@ import { requireAdmin } from "@/app/api/admin/_shared";
 export const maxDuration = 300;
 
 // Gemini 2.0 Pro 모델
-const MODEL = "gemini-2.0-pro-exp-02-05";
+const MODEL = "gemini-2.5-pro";
 
 // 소재 요소 분석 프롬프트 (이미지/GIF/카루셀 등 정적 소재용)
 const ELEMENT_PROMPT = `이 광고 소재 이미지를 분석해서 다음 JSON 구조로 출력해줘. 정확한 JSON만 출력하고 다른 텍스트는 넣지 마.

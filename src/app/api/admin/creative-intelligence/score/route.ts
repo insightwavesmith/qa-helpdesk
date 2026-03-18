@@ -4,7 +4,7 @@ import { requireAdmin } from "@/app/api/admin/_shared";
 export const maxDuration = 300;
 
 // Gemini 모델명
-const MODEL = "gemini-2.0-pro-exp-02-05";
+const MODEL = "gemini-2.5-pro";
 
 // ━━━ 벤치마크 요약 + 스코링 프롬프트 생성 ━━━
 function buildScoringPrompt(
