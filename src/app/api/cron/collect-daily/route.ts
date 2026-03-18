@@ -231,6 +231,7 @@ export interface CollectDailyResult {
   share_to_video_fixed: number;
   results: Record<string, unknown>[];
   precompute?: Record<string, unknown> | null;
+  pipeline?: Record<string, unknown> | null;
 }
 
 // ── 핵심 수집 로직 (크론 + 수동수집 공용) ───────────────────
@@ -356,6 +357,28 @@ export async function runCollectDaily(dateParam?: string): Promise<CollectDailyR
       console.error("[collect-daily] 사전계산 실패 (크론 결과 영향 없음):", e);
     }
 
+    // ── Creative Pipeline 호출 (실패해도 크론 결과에 영향 없음) ──
+    let pipelineResult: Record<string, unknown> | null = null;
+    try {
+      const pipelineUrl = process.env.CREATIVE_PIPELINE_URL;
+      const pipelineSecret = process.env.CREATIVE_PIPELINE_SECRET;
+      if (pipelineUrl) {
+        const pipelineRes = await fetch(`${pipelineUrl}/pipeline`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-SECRET': pipelineSecret || '',
+          },
+          body: JSON.stringify({}),
+          signal: AbortSignal.timeout(300_000),
+        });
+        pipelineResult = await pipelineRes.json();
+        console.log('[collect-daily] creative pipeline 완료:', JSON.stringify(pipelineResult).slice(0, 200));
+      }
+    } catch (e) {
+      console.error('[collect-daily] creative pipeline 호출 실패 (크론 결과 영향 없음):', e);
+    }
+
     return {
       message: "collect-daily completed",
       date: yesterday,
@@ -363,6 +386,7 @@ export async function runCollectDaily(dateParam?: string): Promise<CollectDailyR
       share_to_video_fixed: shareFixed?.length ?? 0,
       results,
       precompute: precomputeResult,
+      pipeline: pipelineResult,
     };
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? (e as { message: string }).message : "Unknown error";
