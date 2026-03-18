@@ -78,14 +78,15 @@
     "tasks": [
       "T1-SQL마이그레이션",
       "T2-creative-analyzer",
-      "T3-embed-768-API",
+      "T3-embed-3072-API",
       "T4-similarity-API",
       "T5-clusters-API",
       "T6-fatigue-API",
       "T7-임베딩배치실행",
       "T8-검증"
     ],
-    "updatedAt": "2026-03-18"
+    "updatedAt": "2026-03-19",
+    "notes": "3072차원 통일. SQL 마이그레이션+코드 6파일+배치 스크립트 완료. 임베딩 193/352건 (Meta URL 만료 142건). tsc+build 통과."
   },
   "admin-mobile-responsive": {
     "status": "completed",
