@@ -123,6 +123,23 @@
     "updatedAt": "2026-03-19",
     "notes": "목업 설계 제안서 작성. Smith님 확인 대기. src/ 수정 없음."
   },
+  "creative-intelligence": {
+    "status": "implementing",
+    "plan": "docs/01-plan/features/creative-intelligence.plan.md",
+    "design": "docs/02-design/features/creative-intelligence.design.md",
+    "tasks": [
+      "T1-SQL마이그레이션",
+      "T2-소재태깅스크립트",
+      "T3-소재분석API",
+      "T4-벤치마크스크립트",
+      "T5-벤치마크API",
+      "T6-점수생성스크립트",
+      "T7-점수생성API",
+      "T8-점수조회API",
+      "T9-검증"
+    ],
+    "updatedAt": "2026-03-18"
+  },
   "admin-mobile-responsive": {
     "status": "completed",
     "plan": "docs/01-plan/features/admin-mobile-responsive.plan.md",
