@@ -342,8 +342,11 @@ async function main() {
       }
 
       // ── 일관성 점수 ──
-      const creativeImg = row.embedding_3072;
-      const creativeTxt = row.text_embedding_3072;
+      // Supabase REST는 vector를 문자열로 반환 → JSON.parse 필요
+      const creativeImg = typeof row.embedding_3072 === "string"
+        ? JSON.parse(row.embedding_3072) : row.embedding_3072;
+      const creativeTxt = typeof row.text_embedding_3072 === "string"
+        ? JSON.parse(row.text_embedding_3072) : row.text_embedding_3072;
       const lpImg = imgVec;
       const lpTxt = updates.lp_text_embedding
         ? JSON.parse(updates.lp_text_embedding)

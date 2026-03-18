@@ -1131,7 +1131,7 @@
         "analysis": "03-analysis/lp-mobile-crawl.analysis.md"
       },
       "startedAt": "2026-03-18",
-      "notes": "Gap 분석 완료 (95%). T1-T6 전체 완료. Vision 입력 viewport.jpg 변경(8000px 제한). 배치 크롤링 실행중."
+      "notes": "Gap 분석 완료 (95%). 배치 완료: 크롤링 33/33 LP, Vision 88건, 임베딩 92건. vector 문자열 파싱 버그 수정."
     }
   },
   "phaseMapping": {
