@@ -40,6 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# python venv
+.venv-saliency/
+
 # chrome extension
 /extension/node_modules
 /extension/dist

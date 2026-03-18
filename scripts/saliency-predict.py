@@ -157,7 +157,7 @@ def predict_saliency(image: Image.Image) -> np.ndarray:
     # centerbias 리사이즈
     from scipy.ndimage import zoom
     cb = zoom(centerbias, (new_h / 1024, new_w / 1024), order=1)
-    cb_tensor = torch.tensor(cb).unsqueeze(0).unsqueeze(0).float().to(DEVICE)
+    cb_tensor = torch.tensor(cb).unsqueeze(0).float().to(DEVICE)  # [1, H, W]
 
     with torch.no_grad():
         log_density = model(img_tensor, cb_tensor)

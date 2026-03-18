@@ -1,6 +1,8 @@
 torch>=2.0.0
 torchvision>=0.15.0
-deepgaze-pytorch>=1.0.2
+deepgaze_pytorch @ git+https://github.com/matthias-k/DeepGaze.git
+clip @ git+https://github.com/openai/CLIP.git
+einops>=0.7.0
 Pillow>=10.0.0
 numpy>=1.24.0
 matplotlib>=3.7.0
