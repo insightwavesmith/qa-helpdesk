@@ -105,7 +105,8 @@
       "T5-API",
       "T6-검증"
     ],
-    "updatedAt": "2026-03-18"
+    "updatedAt": "2026-03-19",
+    "notes": "T1-T6 코드 완료. viewport.jpg Vision 호환성 수정. 배치 실행 대기."
   },
   "admin-mobile-responsive": {
     "status": "completed",

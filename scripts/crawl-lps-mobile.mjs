@@ -98,6 +98,7 @@ async function extractPageData(page) {
 async function crawlLP(page, url, adId) {
   const result = {
     mainScreenshot: null,
+    viewportScreenshot: null, // Vision용 뷰포트 크기 (390×844)
     optionScreenshot: null,
     text: null,
     error: null,
@@ -137,6 +138,13 @@ async function crawlLP(page, url, adId) {
 
     result.mainScreenshot = await page.screenshot({
       fullPage: true,
+      type: "jpeg",
+      quality: 80,
+    });
+
+    // Vision용 뷰포트 크기 스크린샷 (390×844, Claude 8000px 제한 대응)
+    result.viewportScreenshot = await page.screenshot({
+      fullPage: false,
       type: "jpeg",
       quality: 80,
     });
@@ -239,6 +247,7 @@ async function main() {
     }
 
     let mainUrl = null;
+    let viewportUrl = null;
     let optionUrl = null;
 
     // Storage 업로드
@@ -250,9 +259,23 @@ async function main() {
           result.mainScreenshot,
           "image/jpeg"
         );
-        console.log(`  📸 메인 스크린샷 업로드`);
+        console.log(`  📸 메인 스크린샷 업로드 (풀페이지)`);
       } catch (e) {
         console.log(`  ⚠️ 메인 업로드 실패: ${e.message}`);
+      }
+    }
+
+    if (result.viewportScreenshot) {
+      try {
+        viewportUrl = await uploadToStorage(
+          "creatives",
+          `lp-mobile/${primaryAdId}/viewport.jpg`,
+          result.viewportScreenshot,
+          "image/jpeg"
+        );
+        console.log(`  📸 뷰포트 스크린샷 업로드 (Vision용 390×844)`);
+      } catch (e) {
+        console.log(`  ⚠️ 뷰포트 업로드 실패: ${e.message}`);
       }
     }
 

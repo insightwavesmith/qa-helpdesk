@@ -120,39 +120,19 @@ async function analyzeWithVision(screenshotUrl, ctaUrl) {
 
   const content = [];
 
-  // 메인 스크린샷
-  try {
-    const imgRes = await fetch(screenshotUrl, { signal: AbortSignal.timeout(15_000) });
-    if (imgRes.ok) {
-      const buf = await imgRes.arrayBuffer();
-      const base64 = Buffer.from(buf).toString("base64");
-      const mimeType = (imgRes.headers.get("content-type") || "image/jpeg").split(";")[0];
-      content.push({
-        type: "image",
-        source: { type: "base64", media_type: mimeType, data: base64 },
-      });
-    }
-  } catch (e) {
-    console.log(`    ⚠️ 메인 이미지 fetch 실패: ${e.message}`);
-    return null;
-  }
+  // Vision용: viewport 스크린샷 사용 (390×844, Claude 8000px 제한 대응)
+  // main.jpg → viewport.jpg 경로 변환
+  const visionUrl = screenshotUrl.replace("/main.jpg", "/viewport.jpg");
+  content.push({
+    type: "image",
+    source: { type: "url", url: visionUrl },
+  });
 
-  // CTA 스크린샷 (있으면)
   if (ctaUrl) {
-    try {
-      const imgRes = await fetch(ctaUrl, { signal: AbortSignal.timeout(15_000) });
-      if (imgRes.ok) {
-        const buf = await imgRes.arrayBuffer();
-        const base64 = Buffer.from(buf).toString("base64");
-        const mimeType = (imgRes.headers.get("content-type") || "image/jpeg").split(";")[0];
-        content.push({
-          type: "image",
-          source: { type: "base64", media_type: mimeType, data: base64 },
-        });
-      }
-    } catch {
-      // CTA 없어도 진행
-    }
+    content.push({
+      type: "image",
+      source: { type: "url", url: ctaUrl },
+    });
   }
 
   content.push({ type: "text", text: VISION_PROMPT });
@@ -166,7 +146,7 @@ async function analyzeWithVision(screenshotUrl, ctaUrl) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-20250414",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 1024,
         messages: [{ role: "user", content }],
       }),
