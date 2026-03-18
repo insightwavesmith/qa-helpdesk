@@ -59,8 +59,11 @@ async function sbGet(path) {
   return res.json();
 }
 
-async function sbPost(table, row) {
-  const res = await fetch(`${SB_URL}/rest/v1/${table}`, {
+async function sbPost(table, row, onConflict = null) {
+  const url = onConflict
+    ? `${SB_URL}/rest/v1/${table}?on_conflict=${onConflict}`
+    : `${SB_URL}/rest/v1/${table}`;
+  const res = await fetch(url, {
     method: "POST",
     headers: {
       apikey: SB_KEY,
@@ -317,7 +320,7 @@ async function main() {
 
     // DB UPSERT
     const row = buildRow(creative.ad_id, creative.account_id, analysis);
-    const result = await sbPost("creative_element_analysis", row);
+    const result = await sbPost("creative_element_analysis", row, "ad_id");
 
     if (result.ok) {
       analyzed++;

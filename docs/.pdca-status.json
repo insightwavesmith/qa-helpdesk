@@ -1141,6 +1141,15 @@
       "startedAt": "2026-03-18",
       "completedAt": "2026-03-19",
       "notes": "완료. 크롤링 33/33 LP(에러 0), Vision 88건, LP임베딩 92건, 일관성점수 80건(평균 56%). tsc+build 통과. Match Rate 95%."
+    },
+    "creative-intelligence": {
+      "phase": "implementing",
+      "documents": {
+        "plan": "01-plan/features/creative-intelligence.plan.md",
+        "design": "02-design/features/creative-intelligence.design.md"
+      },
+      "startedAt": "2026-03-18",
+      "notes": "Layer 1(요소 태깅)+Layer 3(벤치마크)+Layer 4(점수+제안) 구현 완료. Layer 2(시선 예측) 구현중."
     }
   },
   "phaseMapping": {
