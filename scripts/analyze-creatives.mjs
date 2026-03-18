@@ -174,9 +174,10 @@ async function analyzeCreative(imageUrl, adCopy, mediaType) {
   }
 
   const data = await genRes.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-  // JSON 추출
+  // 마크다운 코드블록 제거 + JSON 추출
+  const text = rawText.replace(/```json\n?/g, "").replace(/```/g, "").trim();
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
     console.log(`    JSON 파싱 실패: ${text.slice(0, 200)}`);
@@ -186,8 +187,17 @@ async function analyzeCreative(imageUrl, adCopy, mediaType) {
   try {
     return JSON.parse(jsonMatch[0]);
   } catch (e) {
-    console.log(`    JSON 파싱 에러: ${e.message}`);
-    return null;
+    console.log(`    JSON 파싱 에러 (retry): ${e.message}`);
+    // retry 1회: 줄바꿈/특수문자 정리 후 재시도
+    try {
+      const cleaned = jsonMatch[0]
+        .replace(/,\s*}/g, "}")
+        .replace(/,\s*]/g, "]");
+      return JSON.parse(cleaned);
+    } catch {
+      console.log(`    JSON 파싱 최종 실패`);
+      return null;
+    }
   }
 }
 
@@ -230,7 +240,7 @@ async function main() {
   console.log(`  limit: ${LIMIT}, account-id: ${ACCOUNT_ID || "전체"}`);
 
   // 대상 소재 조회
-  let query = `/ad_creative_embeddings?select=ad_id,account_id,media_url,media_type,ad_copy&is_active=eq.true&media_url=not.is.null&limit=${LIMIT}`;
+  let query = `/ad_creative_embeddings?select=ad_id,account_id,media_url,media_type,ad_copy&is_active=eq.true&media_url=not.is.null&embedding_3072=not.is.null&limit=${LIMIT}`;
   if (ACCOUNT_ID) {
     query += `&account_id=eq.${encodeURIComponent(ACCOUNT_ID)}`;
   }
