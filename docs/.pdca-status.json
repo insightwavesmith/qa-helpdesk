@@ -2,6 +2,18 @@
   "version": "3.0",
   "lastUpdated": "2026-03-18T15:00:00.000Z",
   "features": {
+    "railway-l2-batch": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/railway-l2-batch.plan.md",
+        "design": "02-design/features/railway-l2-batch.design.md",
+        "analysis": "03-analysis/railway-l2-batch.analysis.md"
+      },
+      "startedAt": "2026-03-18",
+      "completedAt": "2026-03-18",
+      "notes": "services/creative-pipeline/에 L2 시선 예측 추가. saliency/predict.py(DeepGaze IIE), saliency/requirements.txt(CPU PyTorch), Dockerfile 멀티스테이지, server.js /saliency + /pipeline L2. tsc+build 통과. Match Rate 100%."
+    },
     "creative-pipeline-railway": {
       "phase": "completed",
       "matchRate": 97,

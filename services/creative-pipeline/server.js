@@ -5,6 +5,7 @@
  */
 
 const express = require('express');
+const { execFile } = require('child_process');
 const app = express();
 app.use(express.json());
 
@@ -37,6 +38,37 @@ app.post('/analyze', auth, async (req, res) => {
   }
 });
 
+// ━━━ runSaliency 헬퍼 (Python subprocess) ━━━
+function runSaliency({ limit, accountId }) {
+  return new Promise((resolve, reject) => {
+    const args = ['saliency/predict.py', '--limit', String(limit)];
+    if (accountId) args.push('--account-id', accountId);
+    execFile('python3', args, { cwd: '/app', timeout: 1800000 }, (err, stdout, stderr) => {
+      if (stderr) console.error('[saliency stderr]', stderr.slice(-500));
+      if (err) return reject(err);
+      try {
+        const lastLine = stdout.trim().split('\n').pop();
+        resolve(JSON.parse(lastLine));
+      } catch (parseErr) {
+        reject(new Error(`saliency stdout parse error: ${stdout.slice(-200)}`));
+      }
+    });
+  });
+}
+
+// ━━━ POST /saliency — L2 시선 예측 ━━━
+app.post('/saliency', auth, async (req, res) => {
+  try {
+    const { limit = 9999, accountId = null } = req.body || {};
+    console.log(`[/saliency] limit=${limit}, accountId=${accountId || '전체'}`);
+    const result = await runSaliency({ limit, accountId });
+    res.json({ ok: true, ...result });
+  } catch (e) {
+    console.error('[/saliency] 에러:', e);
+    res.status(500).json({ error: e.message || String(e) });
+  }
+});
+
 // ━━━ POST /benchmark — L3 벤치마크 계산 ━━━
 app.post('/benchmark', auth, async (req, res) => {
   try {
@@ -65,7 +97,7 @@ app.post('/score', auth, async (req, res) => {
   }
 });
 
-// ━━━ POST /pipeline — L1 → L3 → L4 순차 실행 ━━━
+// ━━━ POST /pipeline — L1 → L2 → L3 → L4 순차 실행 ━━━
 app.post('/pipeline', auth, async (req, res) => {
   try {
     const { runAnalyze } = await import('./analyze.mjs');
@@ -73,7 +105,7 @@ app.post('/pipeline', auth, async (req, res) => {
     const { runScore } = await import('./score.mjs');
 
     const { limit, accountId } = req.body || {};
-    console.log('[/pipeline] 시작 — L1 → L3 → L4');
+    console.log('[/pipeline] 시작 — L1 → L2 → L3 → L4');
 
     // L1: 소재 요소 태깅
     console.log('[/pipeline] L1 analyze 시작...');
@@ -82,6 +114,16 @@ app.post('/pipeline', auth, async (req, res) => {
       accountId: accountId ?? null,
     });
     console.log('[/pipeline] L1 완료:', analyzeResult);
+
+    // L2: 시선 예측 (IMAGE 소재만, optional)
+    console.log('[/pipeline] L2 saliency 시작...');
+    let saliencyResult = null;
+    try {
+      saliencyResult = await runSaliency({ limit: limit ?? 9999, accountId: accountId ?? null });
+      console.log('[/pipeline] L2 완료:', saliencyResult);
+    } catch (l2err) {
+      console.error('[/pipeline] L2 실패 (무시), L3 계속:', l2err.message);
+    }
 
     // L3: 벤치마크 계산
     console.log('[/pipeline] L3 benchmark 시작...');
@@ -100,6 +142,7 @@ app.post('/pipeline', auth, async (req, res) => {
     res.json({
       ok: true,
       analyze: analyzeResult,
+      saliency: saliencyResult,
       benchmark: benchmarkResult,
       score: scoreResult,
     });
