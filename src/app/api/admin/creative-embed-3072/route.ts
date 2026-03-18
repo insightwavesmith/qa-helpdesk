@@ -1,7 +1,7 @@
 /**
- * POST /api/admin/creative-embed-768
+ * POST /api/admin/creative-embed-3072
  * 768차원 임베딩 배치 실행 (이미지 + 텍스트)
- * embedding_768 IS NULL인 row를 배치로 처리
+ * embedding_3072 IS NULL인 row를 배치로 처리
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -21,17 +21,17 @@ export async function POST(req: NextRequest) {
 
   const supabase = createServiceClient();
 
-  // embedding_768 IS NULL인 row 조회
+  // embedding_3072 IS NULL인 row 조회
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rows, error: fetchError } = await (supabase as any)
     .from("ad_creative_embeddings")
     .select("id, ad_id, media_url, ad_copy")
-    .is("embedding_768", null)
+    .is("embedding_3072", null)
     .eq("is_active", true)
     .limit(batchSize);
 
   if (fetchError) {
-    console.error("[creative-embed-768] 조회 실패:", fetchError);
+    console.error("[creative-embed-3072] 조회 실패:", fetchError);
     return NextResponse.json(
       { error: "소재 목록 조회에 실패했습니다." },
       { status: 500 },
@@ -58,13 +58,13 @@ export async function POST(req: NextRequest) {
     // 이미지 임베딩 (media_url 있는 경우)
     if (row.media_url) {
       try {
-        updates.embedding_768 = await generateEmbedding(
+        updates.embedding_3072 = await generateEmbedding(
           { imageUrl: row.media_url as string },
-          { dimensions: 768, taskType: "SEMANTIC_SIMILARITY" },
+          { dimensions: 3072, taskType: "SEMANTIC_SIMILARITY" },
         );
       } catch (err) {
         console.error(
-          `[creative-embed-768] 이미지 임베딩 실패 ${row.ad_id}:`,
+          `[creative-embed-3072] 이미지 임베딩 실패 ${row.ad_id}:`,
           err,
         );
         errors++;
@@ -75,13 +75,13 @@ export async function POST(req: NextRequest) {
     const adCopy = row.ad_copy as string | null;
     if (adCopy && adCopy.trim().length > 3) {
       try {
-        updates.text_embedding_768 = await generateEmbedding(adCopy, {
-          dimensions: 768,
+        updates.text_embedding_3072 = await generateEmbedding(adCopy, {
+          dimensions: 3072,
           taskType: "SEMANTIC_SIMILARITY",
         });
       } catch (err) {
         console.error(
-          `[creative-embed-768] 텍스트 임베딩 실패 ${row.ad_id}:`,
+          `[creative-embed-3072] 텍스트 임베딩 실패 ${row.ad_id}:`,
           err,
         );
         errors++;
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
 
       if (updateError) {
         console.error(
-          `[creative-embed-768] UPDATE 실패 ${row.ad_id}:`,
+          `[creative-embed-3072] UPDATE 실패 ${row.ad_id}:`,
           updateError,
         );
         errors++;
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
   const { count: remaining } = await (supabase as any)
     .from("ad_creative_embeddings")
     .select("id", { count: "exact", head: true })
-    .is("embedding_768", null)
+    .is("embedding_3072", null)
     .eq("is_active", true);
 
   return NextResponse.json({

@@ -1,6 +1,6 @@
 /**
  * 소재 유사도 분석 + 클러스터링 + 피로도 감지
- * 768차원 임베딩(embedding_768) 기반
+ * 768차원 임베딩(embedding_3072) 기반
  */
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -64,7 +64,7 @@ function getRisk(similarity: number): SimilarityPair["risk"] {
 
 /**
  * 같은 계정 소재 간 코사인 유사도 계산
- * embedding_768 NOT NULL인 row만 처리
+ * embedding_3072 NOT NULL인 row만 처리
  * similarity >= 0.7인 쌍만 반환
  */
 export async function computeSimilarityPairs(
@@ -75,10 +75,10 @@ export async function computeSimilarityPairs(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rows, error } = await (supabase as any)
     .from("ad_creative_embeddings")
-    .select("ad_id, embedding_768")
+    .select("ad_id, embedding_3072")
     .eq("account_id", accountId)
     .eq("is_active", true)
-    .not("embedding_768", "is", null);
+    .not("embedding_3072", "is", null);
 
   if (error || !rows || rows.length < 2) {
     return [];
@@ -88,8 +88,8 @@ export async function computeSimilarityPairs(
 
   for (let i = 0; i < rows.length; i++) {
     for (let j = i + 1; j < rows.length; j++) {
-      const vecA = rows[i].embedding_768 as number[];
-      const vecB = rows[j].embedding_768 as number[];
+      const vecA = rows[i].embedding_3072 as number[];
+      const vecB = rows[j].embedding_3072 as number[];
 
       if (!vecA || !vecB || vecA.length !== vecB.length) continue;
 
@@ -121,14 +121,14 @@ export async function generateClusters(accountId: string): Promise<{
 }> {
   const supabase = createServiceClient();
 
-  // 1. embedding_768 가져오기
+  // 1. embedding_3072 가져오기
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rows, error } = await (supabase as any)
     .from("ad_creative_embeddings")
-    .select("ad_id, embedding_768")
+    .select("ad_id, embedding_3072")
     .eq("account_id", accountId)
     .eq("is_active", true)
-    .not("embedding_768", "is", null);
+    .not("embedding_3072", "is", null);
 
   if (error || !rows || rows.length < 2) {
     return { clusters_created: 0, clusters: [] };
@@ -140,8 +140,8 @@ export async function generateClusters(accountId: string): Promise<{
   const highPairs: Array<{ i: number; j: number; sim: number }> = [];
   for (let i = 0; i < rows.length; i++) {
     for (let j = i + 1; j < rows.length; j++) {
-      const vecA = rows[i].embedding_768 as number[];
-      const vecB = rows[j].embedding_768 as number[];
+      const vecA = rows[i].embedding_3072 as number[];
+      const vecB = rows[j].embedding_3072 as number[];
       if (!vecA || !vecB || vecA.length !== vecB.length) continue;
       const sim = cosineSimilarity(vecA, vecB);
       if (sim >= THRESHOLD) {
@@ -194,8 +194,8 @@ export async function generateClusters(accountId: string): Promise<{
     let simCount = 0;
     for (let a = 0; a < members.length; a++) {
       for (let b = a + 1; b < members.length; b++) {
-        const vecA = rows[members[a]].embedding_768 as number[];
-        const vecB = rows[members[b]].embedding_768 as number[];
+        const vecA = rows[members[a]].embedding_3072 as number[];
+        const vecB = rows[members[b]].embedding_3072 as number[];
         if (vecA && vecB && vecA.length === vecB.length) {
           totalSim += cosineSimilarity(vecA, vecB);
           simCount++;
