@@ -244,5 +244,15 @@
     ],
     "updatedAt": "2026-03-19",
     "notes": "STEP6 크론+UI+enqueue 완료, STEP7 크론+student-precompute 완료. LP크롤링 460/1522, saliency 1045/2660 배치 진행중. Storage 215건. 긴급수정3건(403/JOIN/가중평균)+UX계정셀렉터 커밋완료. mozzi-reports 크래시 수정."
+  },
+  "benchmark-color-fix": {
+    "status": "completed",
+    "tasks": [
+      "T1-API-normalizeParts",
+      "T2-precompute-snake_case"
+    ],
+    "completedAt": "2026-03-19",
+    "updatedAt": "2026-03-19",
+    "notes": "벤치마크 색상 회색 수정. 원인: precompute-scores.mjs가 camelCase로 캐시 저장 → 클라이언트 key 매칭 실패. API normalizeParts() + MJS snake_case 변환 추가."
   }
 }

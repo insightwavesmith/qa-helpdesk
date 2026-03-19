@@ -843,6 +843,14 @@ const PART_METRICS = {
   },
 };
 
+// label → DB column key 역매핑 (캐시 저장 시 key 포함용)
+const labelToKeyMap = new Map();
+for (const partConfig of Object.values(PART_METRICS)) {
+  for (const metricDef of partConfig.metrics) {
+    labelToKeyMap.set(metricDef.label, metricDef.key);
+  }
+}
+
 function judgeMetric(myValue, aboveAvg, isReverse = false) {
   if (myValue == null || aboveAvg == null || aboveAvg === 0) return VERDICT.UNKNOWN;
   const threshold = aboveAvg * 0.75;
@@ -1091,14 +1099,34 @@ async function computeAdDiagnosis() {
         const adCreativeType = ((ad.creative_type ?? "VIDEO")).toUpperCase();
         const diagnosis = diagnoseAd(ad, gcpBenchmarks, adCreativeType);
 
-        diagRows.push({
+        // camelCase → snake_case 변환 (클라이언트 기대 형식)
+          const partsJson = diagnosis.parts.map((p) => ({
+            part_num: p.partNum,
+            part_name: p.partName,
+            verdict: p.verdict,
+            metrics: p.metrics
+              .filter((m) => m.verdict !== "UNKNOWN")
+              .map((m) => ({
+                name: m.metricName,
+                key: labelToKeyMap.get(m.metricName) ?? null,
+                my_value: m.myValue,
+                pct_of_benchmark:
+                  m.myValue != null && m.aboveAvg != null && m.aboveAvg > 0
+                    ? Math.round((m.myValue / m.aboveAvg) * 100)
+                    : null,
+                abs_benchmark: m.aboveAvg ?? null,
+                verdict: m.verdict,
+              })),
+          }));
+
+          diagRows.push({
           account_id: accountId,
           ad_id: diagnosis.adId,
           ad_name: diagnosis.adName,
           creative_type: adCreativeType,
           overall_verdict: diagnosis.overallVerdict,
           one_liner: diagnosis.oneLineDiagnosis,
-          parts_json: diagnosis.parts,
+          parts_json: partsJson,
           spend: ad.spend ?? 0,
           computed_at: computedAt,
         });

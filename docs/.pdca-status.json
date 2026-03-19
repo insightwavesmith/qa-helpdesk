@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-19T08:55:00.000Z",
+  "lastUpdated": "2026-03-19T09:50:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1276,6 +1276,13 @@
       },
       "startedAt": "2026-03-19",
       "notes": "TASK.md STEP 2 구현 완료. fetchVideoThumbnails 신규, extractImageHashes 카탈로그 확장, media_url 3단계 fallback. 2파일 수정. tsc+lint+build 통과. Gap분석 대기."
+    },
+    "benchmark-color-fix": {
+      "phase": "completed",
+      "documents": {},
+      "startedAt": "2026-03-19",
+      "completedAt": "2026-03-19",
+      "notes": "벤치마크 색상 회색 수정. API normalizeParts() + precompute-scores.mjs snake_case 변환. 2파일 +64줄."
     }
   }
 }

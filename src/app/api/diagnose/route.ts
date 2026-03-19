@@ -54,12 +54,43 @@ export async function POST(request: NextRequest) {
       .limit(limit);
 
     if (cachedDiag && cachedDiag.length > 0) {
+      // parts_json 형식 정규화: camelCase(raw diagnoseAd) → snake_case(클라이언트 기대 형식)
+      function normalizeParts(parts: unknown): unknown {
+        if (!Array.isArray(parts)) return parts;
+        return parts.map((p: Record<string, unknown>) => {
+          // 이미 snake_case면 그대로 반환
+          if ("part_name" in p) return p;
+          const metrics = Array.isArray(p.metrics)
+            ? (p.metrics as Record<string, unknown>[])
+                .filter((m) => m.verdict !== "UNKNOWN")
+                .map((m) => ({
+                  name: m.metricName ?? m.name,
+                  key: (m.key as string) ?? labelToKeyMap.get(m.metricName as string) ?? null,
+                  my_value: m.myValue ?? m.my_value ?? null,
+                  pct_of_benchmark:
+                    m.pct_of_benchmark ??
+                    (m.myValue != null && m.aboveAvg != null && (m.aboveAvg as number) > 0
+                      ? Math.round(((m.myValue as number) / (m.aboveAvg as number)) * 100)
+                      : null),
+                  abs_benchmark: m.abs_benchmark ?? m.aboveAvg ?? null,
+                  verdict: m.verdict,
+                }))
+            : [];
+          return {
+            part_num: p.partNum ?? p.part_num,
+            part_name: p.partName ?? p.part_name,
+            verdict: p.verdict,
+            metrics,
+          };
+        });
+      }
+
       const diagnoses = cachedDiag.map((r: Record<string, unknown>) => ({
         ad_id: r.ad_id,
         ad_name: r.ad_name,
         overall_verdict: r.overall_verdict,
         one_line_diagnosis: r.one_liner,
-        parts: r.parts_json,
+        parts: normalizeParts(r.parts_json),
       }));
       return NextResponse.json({
         account_id: accountId,
