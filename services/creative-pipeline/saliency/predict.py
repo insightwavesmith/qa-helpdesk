@@ -282,37 +282,66 @@ def main():
     print("시선 예측 시작 (DeepGaze IIE)", file=sys.stderr)
     print(f"  limit: {args.limit}, account-id: {args.account_id or '전체'}", file=sys.stderr)
 
-    # 대상 소재 조회 (IMAGE만, media_url 있는 것)
-    query = (
-        "/ad_creative_embeddings?"
-        "select=ad_id,account_id,media_url,media_type"
-        "&media_url=not.is.null"
-        "&media_type=eq.IMAGE"
-        "&order=ad_id"
-        f"&limit={args.limit}"
-    )
-    if args.account_id:
-        query += f"&account_id=eq.{args.account_id}"
+    # 이미 분석된 ad_id 조회 (페이지네이션으로 전체 수집)
+    existing_set = set()
+    try:
+        offset = 0
+        PAGE = 1000
+        while True:
+            batch = sb_get(f"/creative_saliency?select=ad_id&limit={PAGE}&offset={offset}")
+            if not batch:
+                break
+            existing_set.update(r["ad_id"] for r in batch)
+            if len(batch) < PAGE:
+                break
+            offset += PAGE
+    except Exception as e:
+        print(f"  기존 분석 조회 실패 (무시): {e}", file=sys.stderr)
 
-    creatives = sb_get(query)
-    print(f"  대상 소재: {len(creatives)}건", file=sys.stderr)
+    skipped = len(existing_set)
+    print(f"  기존 분석: {skipped}건 (스킵 예정)", file=sys.stderr)
 
-    if not creatives:
+    # 대상 소재 조회 (IMAGE만, media_url 있는 것) — 페이지네이션으로 전체 수집
+    # Supabase REST API 기본 1000건 제한 → offset으로 순회
+    all_creatives = []
+    PAGE_SIZE = 1000
+    offset = 0
+    while True:
+        q = (
+            "/ad_creative_embeddings?"
+            "select=ad_id,account_id,media_url,media_type"
+            "&media_url=not.is.null"
+            "&media_type=eq.IMAGE"
+            "&order=ad_id"
+            f"&limit={PAGE_SIZE}"
+            f"&offset={offset}"
+        )
+        if args.account_id:
+            q += f"&account_id=eq.{args.account_id}"
+        batch = sb_get(q)
+        if not batch:
+            break
+        all_creatives.extend(batch)
+        if len(batch) < PAGE_SIZE:
+            break
+        offset += PAGE_SIZE
+        # 요청한 limit 이상이면 중단
+        if args.limit != 9999 and len(all_creatives) >= args.limit:
+            all_creatives = all_creatives[:args.limit]
+            break
+
+    print(f"  전체 IMAGE 소재: {len(all_creatives)}건", file=sys.stderr)
+
+    if not all_creatives:
         print("처리할 소재 없음", file=sys.stderr)
         print(json.dumps({"ok": True, "analyzed": 0, "errors": 0, "skipped": 0}))
         return
 
-    # 이미 분석된 ad_id 조회 (전체 조회 — in 필터는 URL 길이 제한에 걸림)
-    existing = []
-    try:
-        existing = sb_get("/creative_saliency?select=ad_id&limit=9999")
-    except Exception as e:
-        print(f"  기존 분석 조회 실패 (무시): {e}", file=sys.stderr)
+    to_analyze = [c for c in all_creatives if c["ad_id"] not in existing_set]
+    print(f"  신규 처리 대상: {len(to_analyze)}건", file=sys.stderr)
 
-    existing_set = set(r["ad_id"] for r in existing)
-    to_analyze = [c for c in creatives if c["ad_id"] not in existing_set]
-    skipped = len(existing_set)
-    print(f"  기존 분석: {skipped}건 스킵, 신규: {len(to_analyze)}건 처리", file=sys.stderr)
+    # 편의상 creatives 변수는 all_creatives로 대체
+    creatives = all_creatives
 
     if not to_analyze:
         print("모든 소재 이미 분석 완료", file=sys.stderr)
