@@ -17,6 +17,11 @@ import os
 import sys
 import time
 
+# OpenBLAS/MKL 스레드 제한 — Railway 컨테이너 리소스 초과 방지
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+
 import numpy as np
 import requests
 import torch

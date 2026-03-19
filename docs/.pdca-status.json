@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-19T18:00:00.000Z",
+  "lastUpdated": "2026-03-19T07:15:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1182,12 +1182,12 @@
         "design": "02-design/features/creative-saliency.design.md"
       },
       "startedAt": "2026-03-18",
-      "notes": "쿼리 필터 수정(is_active/embedding_3072 제거→IMAGE+media_url만). Railway 배치 실행중. 124/2660건 완료."
+      "notes": "URL길이제한+OpenBLAS스레드제한 수정. Railway 배치 127/2660. 미디어Storage 215건 완료."
     },
     "batch-scripts-step4-7": {
       "phase": "implementing",
       "startedAt": "2026-03-19",
-      "notes": "STEP4~7 배치 스크립트 4개. trigger-lp-crawl(큐+배치), persist-media-to-storage, analyze-competitor-creatives(큐 온디맨드), precompute-scores(T3+수강생+진단). SQL 마이그레이션 각 주석 포함."
+      "notes": "STEP4~7 실행중. LP크롤링 80/1522완료, 미디어Storage 215건 완료, T3 150/학생 96/진단 101 사전계산 완료."
     }
   },
   "phaseMapping": {

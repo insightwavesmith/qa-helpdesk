@@ -172,7 +172,7 @@
       "T5-배치실행검증"
     ],
     "updatedAt": "2026-03-19",
-    "notes": "쿼리 필터 수정(is_active/embedding_3072 제거). Railway 배치 실행중. 63/2660건 완료."
+    "notes": "URL 길이 제한 수정 + 100건/라운드 제한. Railway 배치 실행중. 127/2660건. 미디어 Storage 215건 저장 완료."
   },
   "railway-l2-batch": {
     "status": "completed",
