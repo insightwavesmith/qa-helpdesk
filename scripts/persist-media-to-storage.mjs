@@ -36,7 +36,24 @@
  *   competitor/{ad_archive_id}.jpg — 경쟁사 소재
  */
 
+import { readFileSync } from "fs";
 import { createClient } from "@supabase/supabase-js";
+
+// ── .env.local 파싱 ──────────────────────────────────────────────────
+try {
+  const raw = readFileSync(
+    new URL("../.env.local", import.meta.url).pathname, "utf-8"
+  );
+  for (const line of raw.split("\n")) {
+    const t = line.trim();
+    if (!t || t.startsWith("#")) continue;
+    const eq = t.indexOf("=");
+    if (eq === -1) continue;
+    const k = t.slice(0, eq).trim();
+    const v = t.slice(eq + 1).trim();
+    if (!process.env[k]) process.env[k] = v;
+  }
+} catch { /* .env.local 없으면 환경변수가 이미 설정된 것으로 가정 */ }
 
 // ── 환경변수 ──────────────────────────────────────────────────────────
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
