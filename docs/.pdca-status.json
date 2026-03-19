@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-19T14:00:00.000Z",
+  "lastUpdated": "2026-03-19T18:00:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1253,6 +1253,24 @@
       "completedAt": "2026-03-17",
       "deployedAt": "2026-03-18",
       "notes": "배포 완료. ad_creative_embeddings 352건 seed. search_similar_creatives RPC + screenshot_hash 컬럼. 커밋 56cb522. [3단계] LP 크롤링 74/74건, 스크린샷 75건, LP임베딩 66건, 텍스트임베딩 72건. /creatives QA 통과."
+    },
+    "creative-analysis-tab": {
+      "phase": "implementing",
+      "documents": {
+        "plan": "01-plan/features/creative-analysis-tab.plan.md",
+        "design": "02-design/features/creative-analysis-tab.design.md"
+      },
+      "startedAt": "2026-03-19",
+      "notes": "STEP 1 실제 구현. protractor-tab-nav 소재 분석 탭 추가. /protractor/creatives/ 서버+클라이언트 컴포넌트. 3개 서브탭(개별소재/포트폴리오/경쟁사비교). Recharts RadarChart, SWR, shadcn Tabs. tsc+lint+build 통과."
+    },
+    "collect-daily-media-url": {
+      "phase": "implementing",
+      "documents": {
+        "plan": "01-plan/features/collect-daily-media-url.plan.md",
+        "design": "02-design/features/collect-daily-media-url.design.md"
+      },
+      "startedAt": "2026-03-19",
+      "notes": "TASK.md STEP 2 구현 완료. fetchVideoThumbnails 신규, extractImageHashes 카탈로그 확장, media_url 3단계 fallback. 2파일 수정. tsc+lint+build 통과. Gap분석 대기."
     }
   }
 }

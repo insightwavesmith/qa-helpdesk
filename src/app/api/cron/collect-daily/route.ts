@@ -83,6 +83,7 @@ import { getCreativeType } from "@/lib/protractor/creative-type";
 import {
   fetchImageUrlsByHash,
   extractImageHashes,
+  fetchVideoThumbnails,
 } from "@/lib/protractor/creative-image-fetcher";
 import { embedMissingCreatives } from "@/lib/ad-creative-embedder";
 
@@ -330,6 +331,20 @@ export async function runCollectDaily(dateParam?: string): Promise<CollectDailyR
             ? await fetchImageUrlsByHash(account.account_id, imageHashes)
             : new Map<string, string>();
 
+          // 동영상 썸네일 수집
+          const videoIds = [...new Set(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ads.map((ad: any) => ad.creative?.video_id as string | undefined)
+              .filter((id): id is string => typeof id === "string")
+          )];
+          const videoThumbMap = videoIds.length > 0
+            ? await fetchVideoThumbnails(videoIds)
+            : new Map<string, string>();
+
+          if (videoThumbMap.size > 0) {
+            console.log(`[collect-daily] video thumbnails: ${videoThumbMap.size}/${videoIds.length}건`);
+          }
+
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const creativeRows = ads.map((ad: any) => {
             const adId = (ad.ad_id ?? ad.id) as string;
@@ -337,7 +352,22 @@ export async function runCollectDaily(dateParam?: string): Promise<CollectDailyR
             const creative = ad.creative;
             const imageHash = creative?.image_hash;
             const videoId = creative?.video_id;
-            const mediaUrl = imageHash ? (hashToUrl.get(imageHash) || null) : null;
+
+            // media_url 3단계 fallback: image_hash → video_id 썸네일 → asset_feed_spec
+            const mediaUrl = (() => {
+              // 1. 직접 image_hash
+              if (imageHash && hashToUrl.has(imageHash)) return hashToUrl.get(imageHash)!;
+              // 2. 동영상 썸네일
+              if (videoId && videoThumbMap.has(videoId)) return videoThumbMap.get(videoId)!;
+              // 3. 카탈로그: asset_feed_spec.images[0].hash
+              const afsImages = creative?.asset_feed_spec?.images;
+              if (afsImages && Array.isArray(afsImages)) {
+                for (const img of afsImages) {
+                  if (img.hash && hashToUrl.has(img.hash)) return hashToUrl.get(img.hash)!;
+                }
+              }
+              return null;
+            })();
 
             return {
               ad_id: adId,

@@ -117,16 +117,30 @@
     "notes": "완료. 크롤링 33/33 LP(에러 0), Vision 88건, LP임베딩 92건, 일관성점수 80건(평균 56%). tsc+build 통과. Match Rate 95%."
   },
   "creative-analysis-tab": {
-    "status": "planning",
+    "status": "implementing",
     "plan": "docs/01-plan/features/creative-analysis-tab.plan.md",
+    "design": "docs/02-design/features/creative-analysis-tab.design.md",
     "tasks": [
-      "목업-건강도",
-      "목업-일관성",
-      "목업-클러스터",
-      "목업-고성과패턴"
+      "탭추가",
+      "서버컴포넌트",
+      "개별소재뷰",
+      "포트폴리오뷰",
+      "경쟁사비교뷰"
     ],
     "updatedAt": "2026-03-19",
-    "notes": "목업 설계 제안서 작성. Smith님 확인 대기. src/ 수정 없음."
+    "notes": "STEP 1 실제 구현 완료. protractor-tab-nav에 소재 분석 탭 추가. /protractor/creatives/ 3개 서브탭: 개별소재(RadarChart+L1태그+벤치마크+LP일관성+개선제안), 포트폴리오(요약+히스토그램+요소분포), 경쟁사비교(검색통합). 3파일 신규/수정. tsc+lint+build 통과."
+  },
+  "collect-daily-media-url": {
+    "status": "implementing",
+    "plan": "docs/01-plan/features/collect-daily-media-url.plan.md",
+    "design": "docs/02-design/features/collect-daily-media-url.design.md",
+    "tasks": [
+      "T1-fetchVideoThumbnails",
+      "T2-extractImageHashes확장",
+      "T3-mediaUrl-3단계fallback"
+    ],
+    "updatedAt": "2026-03-19",
+    "notes": "TASK.md STEP 2 구현 완료. creative-image-fetcher.ts에 fetchVideoThumbnails 추가, extractImageHashes에 asset_feed_spec 포함, collect-daily media_url 3단계 fallback(image_hash→video_thumb→catalog). tsc+lint+build 통과. Gap분석 대기."
   },
   "creative-intelligence": {
     "status": "implementing",

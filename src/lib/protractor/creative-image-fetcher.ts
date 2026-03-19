@@ -182,17 +182,75 @@ export async function fetchCreativeDetails(
 
 /**
  * 광고 데이터(fetchAccountAds 결과)에서 image_hash 목록 추출
+ * asset_feed_spec.images[].hash (카탈로그 광고) 포함
  */
 export function extractImageHashes(
   ads: Record<string, unknown>[],
 ): string[] {
-  const hashes: string[] = [];
+  const hashes = new Set<string>();
   for (const ad of ads) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const creative = (ad as any).creative;
+    // 직접 image_hash
     if (creative?.image_hash) {
-      hashes.push(creative.image_hash);
+      hashes.add(creative.image_hash);
+    }
+    // asset_feed_spec.images[].hash (카탈로그 광고)
+    if (creative?.asset_feed_spec?.images && Array.isArray(creative.asset_feed_spec.images)) {
+      for (const img of creative.asset_feed_spec.images) {
+        if (img.hash) hashes.add(img.hash);
+      }
     }
   }
-  return [...new Set(hashes)];
+  return [...hashes];
+}
+
+/**
+ * video_id 배열 → 썸네일 URL 맵 반환
+ * Meta Graph API: GET /{video_id}?fields=thumbnails
+ */
+export async function fetchVideoThumbnails(
+  videoIds: string[],
+): Promise<Map<string, string>> {
+  const token = process.env.META_ACCESS_TOKEN;
+  if (!token) throw new Error("META_ACCESS_TOKEN not set");
+
+  const result = new Map<string, string>();
+  if (videoIds.length === 0) return result;
+
+  for (const videoId of videoIds) {
+    try {
+      const url = new URL(`${META_API_BASE}/${videoId}`);
+      url.searchParams.set("access_token", token);
+      url.searchParams.set("fields", "thumbnails");
+
+      const res = await fetchMetaWithRetry(url.toString());
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data: any = await res.json();
+
+      if (data.error) {
+        console.error(`[creative-fetcher] video ${videoId} error:`, data.error.message);
+        continue;
+      }
+
+      // thumbnails.data 배열에서 height 기준 가장 큰 썸네일 선택
+      const thumbs = data.thumbnails?.data;
+      if (thumbs && thumbs.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const best = thumbs.reduce((a: any, b: any) =>
+          (b.height || 0) > (a.height || 0) ? b : a
+        );
+        if (best.uri) {
+          result.set(videoId, best.uri);
+        }
+      }
+    } catch (e) {
+      console.error(`[creative-fetcher] video ${videoId} thumbnail failed:`, e);
+    }
+
+    // Rate limit 대기
+    await new Promise((r) => setTimeout(r, 100));
+  }
+
+  return result;
 }
