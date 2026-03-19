@@ -298,14 +298,13 @@ def main():
     print("시선 예측 시작 (DeepGaze IIE)")
     print(f"  limit: {args.limit}, account-id: {args.account_id or '전체'}")
 
-    # 대상 소재 조회 (IMAGE만, embedding 있는 것)
+    # 대상 소재 조회 (IMAGE만, media_url 있는 것)
     query = (
         "/ad_creative_embeddings?"
         "select=ad_id,account_id,media_url,media_type"
-        "&is_active=eq.true"
         "&media_url=not.is.null"
         "&media_type=eq.IMAGE"
-        "&embedding_3072=not.is.null"
+        "&order=ad_id"
         f"&limit={args.limit}"
     )
     if args.account_id:
