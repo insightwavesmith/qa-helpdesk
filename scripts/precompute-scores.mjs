@@ -1080,10 +1080,10 @@ async function computeAdDiagnosis() {
         }
       }
 
-      // spend 상위 5개 광고 추출
+      // spend 상위 10개 광고 추출 (캐시 커버리지 향상)
       const topAds = Array.from(adMap.values())
         .sort((a, b) => (b.spend || 0) - (a.spend || 0))
-        .slice(0, 5);
+        .slice(0, 10);
 
       // 기존 진단 캐시 삭제
       if (!DRY_RUN) {
@@ -1134,10 +1134,7 @@ async function computeAdDiagnosis() {
 
       await sbPost("ad_diagnosis_cache", diagRows, null);
 
-      console.log(
-        `    top ${topAds.length}개 진단 완료 ` +
-        `(총 ${adMap.size}개 광고)`
-      );
+      console.log(`    top ${topAds.length}개 진단 완료 (총 ${adMap.size}개 광고)`);
       okCount += topAds.length;
     } catch (e) {
       console.error(`    에러: ${e.message}`);

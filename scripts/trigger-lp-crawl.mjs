@@ -88,7 +88,7 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 // ── 인수 파싱 ─────────────────────────────────────────────────────
 const args = process.argv.slice(2);
 const batchSize = parseInt(
-  args.find((_, i, a) => a[i - 1] === "--batch-size") || "20",
+  args.find((_, i, a) => a[i - 1] === "--batch-size") || "5",
 );
 const repeat      = args.includes("--repeat");
 const dryRun      = args.includes("--dry-run");
@@ -539,13 +539,20 @@ async function runProcess() {
     let batchResult;
     try {
       batchResult = await callCrawlerBatch(urls);
+      // 크롤러 브라우저 안정화 대기
+      await new Promise((r) => setTimeout(r, 2_000));
     } catch (err) {
       console.error(`  크롤러 호출 실패: ${err.message.slice(0, 300)}`);
-      // 전부 failed 처리 (재실행 가능하도록 pending으로 돌려도 되지만 failed로 명시)
-      for (const qr of queueRows) await markQueueFailed(qr.id, err.message);
+      // 전부 failed → pending으로 리셋 (재시도 가능)
+      for (const qr of queueRows) {
+        await supabase
+          .from("lp_crawl_queue")
+          .update({ status: "pending", error_msg: String(err.message).slice(0, 500) })
+          .eq("id", qr.id);
+      }
       if (!repeat) process.exit(1);
-      console.log("10초 후 재시도...");
-      await new Promise((r) => setTimeout(r, 10_000));
+      console.log("15초 후 재시도...");
+      await new Promise((r) => setTimeout(r, 15_000));
       continue;
     }
 
@@ -615,8 +622,8 @@ async function runProcess() {
     if (!repeat) break;
 
     if (remaining - queueRows.length > 0) {
-      console.log("3초 대기 중...");
-      await new Promise((r) => setTimeout(r, 3_000));
+      console.log("5초 대기 중...");
+      await new Promise((r) => setTimeout(r, 5_000));
     }
   } while (repeat);
 

@@ -159,7 +159,7 @@ function BenchmarkCompareGrid({
     const emoji = diag ? (diag.verdict.match(/[🟢🟡🔴]/u)?.[0] ?? "⚪") : "⚪";
 
     // T3: 기준값 계산 — abs_benchmark 직접 사용 우선, 없으면 pct_of_benchmark에서 역산
-    const benchVal = diag?.abs_benchmark != null && diag.abs_benchmark > 0
+    const benchVal = diag?.abs_benchmark != null
       ? diag.abs_benchmark
       : (myVal != null && myVal > 0 && diag?.pct_of_benchmark != null && diag.pct_of_benchmark > 0
         ? (myVal / diag.pct_of_benchmark) * 100
@@ -356,6 +356,8 @@ export function ContentRanking({
       setLoadingDiagnosis(true);
       setDiagnosisError(null);
       try {
+        // 프론트의 top5 ad_id 전달 → 캐시 미스 시 실시간 진단 폴백
+        const topAdIds = getTop5Ads(insights).map((a) => a.ad_id);
         const res = await fetch("/api/diagnose", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -364,6 +366,7 @@ export function ContentRanking({
             accountId,
             startDate,
             endDate,
+            adIds: topAdIds,
           }),
         });
 

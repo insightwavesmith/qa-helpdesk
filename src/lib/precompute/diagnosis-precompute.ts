@@ -5,7 +5,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { diagnoseAd, Verdict, PART_METRICS, type GCPBenchmarks } from "@/lib/diagnosis";
 
-const TOP_ADS_LIMIT = 5;
+const TOP_ADS_LIMIT = 10;
 
 // diagnosis label → DB column key 역매핑
 const labelToKeyMap = new Map<string, string>();

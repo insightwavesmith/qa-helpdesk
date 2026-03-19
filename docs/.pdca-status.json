@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-19T10:05:00.000Z",
+  "lastUpdated": "2026-03-19T10:30:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1282,7 +1282,7 @@
       "documents": {},
       "startedAt": "2026-03-19",
       "completedAt": "2026-03-19",
-      "notes": "벤치마크 색상+기준값 수정. API normalizeParts()+MJS snake_case+프론트 기준값 분리표시+이모지확대. 3파일. 캐시삭제+재생성."
+      "notes": "벤치마크 캐시 전체 수정. API adIds캐시체크+실시간폴백, 프론트 adIds전달+benchVal완화, precompute top5→10 (MJS+TS), LP크롤 배치5+딜레이. 캐시 175건 재생성. 0% 123건 전부🔴 검증."
     }
   }
 }

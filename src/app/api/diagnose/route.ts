@@ -22,13 +22,13 @@ export async function POST(request: NextRequest) {
   const { svc, user, profile } = auth;
 
   // 2. 요청 파싱
-  let body: { accountId?: string; startDate?: string; endDate?: string; limit?: number };
+  let body: { accountId?: string; startDate?: string; endDate?: string; limit?: number; adIds?: string[] };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: '요청 본문 파싱 실패' }, { status: 400 });
   }
-  const { accountId, startDate, endDate, limit = 5 } = body;
+  const { accountId, startDate, endDate, limit = 5, adIds } = body;
 
   if (!accountId) {
     return NextResponse.json({ error: 'accountId required' }, { status: 400 });
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       .eq("account_id", accountId)
       .gte("computed_at", twentyFourHoursAgo)
       .order("spend", { ascending: false })
-      .limit(limit);
+      .limit(20);
 
     if (cachedDiag && cachedDiag.length > 0) {
       // parts_json 형식 정규화: camelCase(raw diagnoseAd) → snake_case(클라이언트 기대 형식)
@@ -85,20 +85,27 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      const diagnoses = cachedDiag.map((r: Record<string, unknown>) => ({
-        ad_id: r.ad_id,
-        ad_name: r.ad_name,
-        overall_verdict: r.overall_verdict,
-        one_line_diagnosis: r.one_liner,
-        parts: normalizeParts(r.parts_json),
-      }));
-      return NextResponse.json({
-        account_id: accountId,
-        diagnoses,
-        has_benchmark_data: true,
-        computed_at: cachedDiag[0].computed_at,
-        source: "precomputed",
-      });
+      // adIds가 전달되면 캐시에 모든 ad_id가 있는지 확인
+      const cachedIds = new Set(cachedDiag.map((r: Record<string, unknown>) => r.ad_id as string));
+      const allCovered = !adIds || adIds.length === 0 || adIds.every((id) => cachedIds.has(id));
+
+      if (allCovered) {
+        const diagnoses = cachedDiag.map((r: Record<string, unknown>) => ({
+          ad_id: r.ad_id,
+          ad_name: r.ad_name,
+          overall_verdict: r.overall_verdict,
+          one_line_diagnosis: r.one_liner,
+          parts: normalizeParts(r.parts_json),
+        }));
+        return NextResponse.json({
+          account_id: accountId,
+          diagnoses,
+          has_benchmark_data: true,
+          computed_at: cachedDiag[0].computed_at,
+          source: "precomputed",
+        });
+      }
+      // 캐시에 없는 ad_id가 있으면 → 실시간 진단으로 폴백
     }
   } catch {
     // 캐시 조회 실패 → 기존 실시간 진단으로 폴백

@@ -254,6 +254,6 @@
     ],
     "completedAt": "2026-03-19",
     "updatedAt": "2026-03-19",
-    "notes": "벤치마크 색상+기준값 수정. API normalizeParts()+MJS snake_case 변환. 프론트: 기준값 별도표시(/ 형식), 이모지 14px 확대, 캐시 삭제+precompute 재실행."
+    "notes": "벤치마크 색상+기준값 수정. API normalizeParts()+adIds캐시체크+실시간폴백. MJS snake_case+top10+배치5. 프론트: adIds전달+benchVal조건완화. diagnosis-precompute TOP_ADS_LIMIT 10. 캐시 175건 재생성. 0% 123건 전부🔴 검증."
   }
 }
