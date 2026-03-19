@@ -82,6 +82,15 @@ def get_model():
         return _model, _centerbias
 
     print("DeepGaze IIE 모델 로딩 중...", file=sys.stderr)
+
+    # torch hub 캐시 불완전 방지 (hubconf.py 누락 시 삭제 후 재다운로드)
+    import shutil
+    hub_cache = os.path.expanduser("~/.cache/torch/hub/pytorch_vision_v0.6.0")
+    hubconf = os.path.join(hub_cache, "hubconf.py")
+    if os.path.isdir(hub_cache) and not os.path.isfile(hubconf):
+        print(f"  불완전한 hub 캐시 삭제: {hub_cache}", file=sys.stderr)
+        shutil.rmtree(hub_cache, ignore_errors=True)
+
     import deepgaze_pytorch
 
     DEVICE = torch.device("cpu")
