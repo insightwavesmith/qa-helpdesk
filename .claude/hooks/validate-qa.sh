@@ -1,7 +1,11 @@
 #!/bin/bash
-# validate-qa.sh — main 브랜치 push 전 preview QA 검증 강제
-# PreToolUse hook (Bash): git push/git merge 시 QA 마커 확인
+# validate-qa.sh — commit/push 전 QA 검증 (백엔드/프론트 분리)
+# PreToolUse hook (Bash)
 # exit 2 = 차단 (게이트)
+#
+# 백엔드 (src/app/api/, src/lib/, services/) → 코드 리뷰 + tsc + build
+# 프론트 (src/app/(main)/, src/components/) → 코드 리뷰 + tsc + build + 브라우저 QA
+# docs/chore/style/fix(비코드) → 패스
 
 INPUT=$(cat)
 
@@ -14,52 +18,94 @@ except:
     print('')
 " 2>/dev/null)
 
+# git commit/push가 아니면 패스
+if ! echo "$COMMAND" | grep -qE 'git (commit|push)'; then
+    exit 0
+fi
+
+# docs/chore/style 커밋은 패스
+if echo "$COMMAND" | grep -qE '(docs:|chore:|style:|config:)'; then
+    exit 0
+fi
+
 PROJECT_DIR="/Users/smith/projects/qa-helpdesk"
-CURRENT_BRANCH=$(cd "$PROJECT_DIR" && git rev-parse --abbrev-ref HEAD 2>/dev/null)
 
-# git push origin main / git merge / git checkout main && git merge 감지
-IS_MAIN_PUSH=false
-IS_MERGE_TO_MAIN=false
+# staged 파일 목록
+STAGED=$(cd "$PROJECT_DIR" && git diff --cached --name-only 2>/dev/null)
 
-if echo "$COMMAND" | grep -qE 'git push.*(origin\s+)?main'; then
-    IS_MAIN_PUSH=true
-fi
-
-if echo "$COMMAND" | grep -qE 'git merge' && [ "$CURRENT_BRANCH" = "main" ]; then
-    IS_MERGE_TO_MAIN=true
-fi
-
-if echo "$COMMAND" | grep -qE 'git checkout main.*&&.*git merge'; then
-    IS_MERGE_TO_MAIN=true
-fi
-
-# main push 또는 main merge가 아니면 패스
-if [ "$IS_MAIN_PUSH" = false ] && [ "$IS_MERGE_TO_MAIN" = false ]; then
+if [ -z "$STAGED" ]; then
     exit 0
 fi
 
-# feature 브랜치에서 직접 main push도 패스 (revert 등 긴급 대응)
-# → 긴급 시 git push -f 또는 직접 push 가능
+# ── 변경 유형 판별 ──
+HAS_BACKEND=false
+HAS_FRONTEND=false
 
-# QA 마커 확인: /tmp/agent-qa-passed-{branch} 파일 존재 여부
-# 마커는 report-stage.sh QA_DONE으로 생성
-QA_MARKER="/tmp/agent-qa-passed"
+# 백엔드 패턴
+if echo "$STAGED" | grep -qE '^(src/app/api/|src/lib/|services/)'; then
+    HAS_BACKEND=true
+fi
 
-if [ -f "$QA_MARKER" ]; then
-    # 마커 있으면 통과 + 마커 삭제 (1회성)
-    rm -f "$QA_MARKER"
+# 프론트 패턴
+if echo "$STAGED" | grep -qE '^(src/app/\(main\)/|src/components/|src/app/\(auth\)/)'; then
+    HAS_FRONTEND=true
+fi
+
+# 코드 변경 없으면 (설정, 스크립트만) 패스
+if [ "$HAS_BACKEND" = false ] && [ "$HAS_FRONTEND" = false ]; then
     exit 0
 fi
 
-# QA 마커 없음 → 차단
-source /Users/smith/projects/qa-helpdesk/.claude/hooks/notify-hook.sh && \
-    notify_hook "⚠️ [게이트 차단] preview QA 미완료 — main merge/push 차단됨" "validate-qa"
+# ── 공통 검증: tsc + build 마커 ──
+BUILD_MARKER="/tmp/agent-build-passed"
+if [ ! -f "$BUILD_MARKER" ]; then
+    source "$PROJECT_DIR/.claude/hooks/notify-hook.sh" 2>/dev/null && \
+        notify_hook "⚠️ [게이트] tsc+build 미통과 — commit 차단" "validate-qa"
+    echo "❌ tsc + build 통과 후 커밋하세요." >&2
+    echo "  1. npx tsc --noEmit && npm run build" >&2
+    echo "  2. touch /tmp/agent-build-passed" >&2
+    exit 2
+fi
 
-echo "❌ main 브랜치에 merge/push하려면 preview URL QA가 필요합니다." >&2
-echo "" >&2
-echo "프로세스:" >&2
-echo "  1. feature 브랜치에서 PR push (git push origin feat/xxx)" >&2
-echo "  2. Vercel preview URL에서 브라우저 QA 실행" >&2
-echo "  3. QA 통과 후 마커 생성: touch /tmp/agent-qa-passed" >&2
-echo "  4. 그 후 main merge + push 가능" >&2
-exit 2
+# ── 백엔드: 코드 리뷰 마커 ──
+if [ "$HAS_BACKEND" = true ]; then
+    REVIEW_MARKER="/tmp/agent-review-passed"
+    if [ ! -f "$REVIEW_MARKER" ]; then
+        source "$PROJECT_DIR/.claude/hooks/notify-hook.sh" 2>/dev/null && \
+            notify_hook "⚠️ [게이트] 코드 리뷰 미완료 — 백엔드 commit 차단" "validate-qa"
+        echo "❌ 백엔드 코드 변경 시 코드 리뷰가 필요합니다." >&2
+        echo "  1. qa-engineer가 코드 리뷰 실행" >&2
+        echo "  2. touch /tmp/agent-review-passed" >&2
+        exit 2
+    fi
+fi
+
+# ── 프론트: 코드 리뷰 + 브라우저 QA 마커 ──
+if [ "$HAS_FRONTEND" = true ]; then
+    REVIEW_MARKER="/tmp/agent-review-passed"
+    BROWSER_MARKER="/tmp/agent-browser-qa-passed"
+    
+    if [ ! -f "$REVIEW_MARKER" ]; then
+        source "$PROJECT_DIR/.claude/hooks/notify-hook.sh" 2>/dev/null && \
+            notify_hook "⚠️ [게이트] 코드 리뷰 미완료 — 프론트 commit 차단" "validate-qa"
+        echo "❌ 프론트엔드 코드 변경 시 코드 리뷰가 필요합니다." >&2
+        echo "  1. qa-engineer가 코드 리뷰 실행" >&2
+        echo "  2. touch /tmp/agent-review-passed" >&2
+        exit 2
+    fi
+    
+    if [ ! -f "$BROWSER_MARKER" ]; then
+        source "$PROJECT_DIR/.claude/hooks/notify-hook.sh" 2>/dev/null && \
+            notify_hook "⚠️ [게이트] 브라우저 QA 미완료 — 프론트 commit 차단" "validate-qa"
+        echo "❌ 프론트엔드 코드 변경 시 브라우저 QA가 필요합니다." >&2
+        echo "  1. localhost:3000에서 변경된 화면 확인" >&2
+        echo "  2. 스크린샷 찍고 UI 검증" >&2
+        echo "  3. touch /tmp/agent-browser-qa-passed" >&2
+        exit 2
+    fi
+fi
+
+# ── 통과 → 마커 삭제 (1회성) ──
+rm -f /tmp/agent-build-passed /tmp/agent-review-passed /tmp/agent-browser-qa-passed
+
+exit 0

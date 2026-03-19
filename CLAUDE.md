@@ -233,12 +233,29 @@ npm run build
 ```
 3개 모두 에러 0이어야 커밋 가능. 하나라도 실패하면 수정 후 재실행.
 
-### QA 필수 (qa-engineer 역할)
+### QA 필수 (qa-engineer 역할) — 백엔드/프론트 분리
+
 구현 완료 후 반드시 qa-engineer에게 delegate:
-1. **Gap 분석**: 설계서(Design) vs 실제 구현 비교 → `docs/03-analysis/{기능}.analysis.md` 작성
-2. **Match Rate 90%+** 확인. 미만이면 수정 필요 항목 리포트
-3. **빌드 검증**: `npm run build` 성공 확인
+
+**공통 (백엔드+프론트 모두):**
+1. Gap 분석: 설계서(Design) vs 실제 구현 비교 → `docs/03-analysis/{기능}.analysis.md`
+2. Match Rate 90%+ 확인
+3. `npx tsc --noEmit && npm run build` 통과 → `touch /tmp/agent-build-passed`
 4. `.pdca-status.json` 상태를 `completed`로 업데이트
+
+**백엔드 (src/app/api/, src/lib/, services/):**
+5. 코드 리뷰 실행 → `touch /tmp/agent-review-passed`
+
+**프론트엔드 (src/app/(main)/, src/components/):**
+5. 코드 리뷰 실행 → `touch /tmp/agent-review-passed`
+6. 브라우저 QA: localhost:3000에서 변경 화면 확인 + 스크린샷 → `touch /tmp/agent-browser-qa-passed`
+
+**마커 3개:**
+- `/tmp/agent-build-passed` — tsc+build 통과 (공통)
+- `/tmp/agent-review-passed` — 코드 리뷰 완료 (공통)
+- `/tmp/agent-browser-qa-passed` — 브라우저 QA 완료 (프론트만)
+
+마커 없이 commit/push 시 hook이 차단함. 마커는 커밋 후 자동 삭제 (1회성).
 
 ### 커밋 메시지 규칙
 - 한글로 작성
