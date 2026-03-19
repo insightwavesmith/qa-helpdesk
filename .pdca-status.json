@@ -243,6 +243,6 @@
       "T7-사전계산"
     ],
     "updatedAt": "2026-03-19",
-    "notes": "STEP6 크론+UI+enqueue 완료, STEP7 크론+student-precompute 완료. LP크롤링 180/1522, saliency 295/2660 배치 진행중. Storage 215건."
+    "notes": "STEP6 크론+UI+enqueue 완료, STEP7 크론+student-precompute 완료. LP크롤링 460/1522, saliency 1045/2660 배치 진행중. Storage 215건. 긴급수정3건(403/JOIN/가중평균)+UX계정셀렉터 커밋완료. mozzi-reports 크래시 수정."
   }
 }
