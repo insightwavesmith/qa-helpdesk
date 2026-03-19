@@ -143,7 +143,8 @@
       "T8-점수조회API",
       "T9-검증"
     ],
-    "updatedAt": "2026-03-18"
+    "updatedAt": "2026-03-19",
+    "notes": "L3 benchmark upsert onConflict 버그 수정, L4 score Gemini 빈 응답 처리 버그 수정"
   },
   "creative-saliency": {
     "status": "implementing",
@@ -156,7 +157,7 @@
       "T4-조회API",
       "T5-배치실행검증"
     ],
-    "updatedAt": "2026-03-18"
+    "updatedAt": "2026-03-19"
   },
   "railway-l2-batch": {
     "status": "completed",

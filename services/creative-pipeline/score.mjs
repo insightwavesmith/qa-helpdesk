@@ -124,7 +124,7 @@ ${lpStr}
 }
 
 // ━━━ Gemini 호출 ━━━
-async function callGemini(prompt) {
+async function callGemini(prompt, retries = 1) {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_KEY}`,
     {
@@ -143,11 +143,29 @@ async function callGemini(prompt) {
   }
 
   const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+  // 빈 응답이면 1회 재시도
+  if (!text.trim() && retries > 0) {
+    console.log('  Gemini 빈 응답 → 2초 후 재시도...');
+    await new Promise((r) => setTimeout(r, 2000));
+    return callGemini(prompt, retries - 1);
+  }
+
+  if (!text.trim()) {
+    console.log('  Gemini 빈 응답 (재시도 후에도). 스킵.');
+    return null;
+  }
+
+  // 마크다운 코드블록 제거
+  text = text.replace(/```(?:json)?\s*/g, '').replace(/```/g, '');
 
   // JSON 블록 추출
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error(`JSON 추출 실패: ${text.slice(0, 200)}`);
+  if (!jsonMatch) {
+    console.log(`  JSON 추출 실패: ${text.slice(0, 200)}`);
+    return null;
+  }
 
   return JSON.parse(jsonMatch[0]);
 }
@@ -244,6 +262,11 @@ export async function runScore({ limit = 999, accountId = null } = {}) {
 
       // Gemini 호출
       const result = await callGemini(prompt);
+
+      if (!result) {
+        console.log('  Gemini 응답 없음, 스킵');
+        continue;
+      }
 
       // creative_intelligence_scores UPSERT
       const scoreRow = {

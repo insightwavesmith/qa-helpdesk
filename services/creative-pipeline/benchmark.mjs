@@ -241,7 +241,7 @@ export async function runBenchmark({ dryRun = false } = {}) {
 
     for (let i = 0; i < upsertRows.length; i += BATCH_SIZE) {
       const batch = upsertRows.slice(i, i + BATCH_SIZE);
-      const result = await sbPost('creative_element_performance', batch);
+      const result = await sbPost('creative_element_performance', batch, 'element_type,element_value');
       if (result.ok) {
         successCount += batch.length;
       } else {
