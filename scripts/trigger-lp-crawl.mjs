@@ -409,6 +409,81 @@ async function runEnqueue() {
   console.log(`\n\n등록 완료: ${inserted}건 성공, ${failed}건 실패`);
 }
 
+// ── URL 중복 제거: 이미 크롤링된 동일 URL 결과 복사 ────────────────
+async function copyFromExistingCrawl(queueRows, sourceMap) {
+  // 같은 lp_url로 이미 크롤링 완료된 row가 있으면 결과를 복사
+  const uniqueUrls = [...new Set(queueRows.map((r) => r.lp_url))];
+
+  // 이미 크롤링된 row 조회 (lp_screenshot_url이 있는 것)
+  const { data: crawledRows } = await supabase
+    .from("ad_creative_embeddings")
+    .select("lp_url, lp_screenshot_url, lp_cta_screenshot_url, lp_headline, lp_price, screenshot_hash, lp_crawled_at")
+    .in("lp_url", uniqueUrls)
+    .not("lp_screenshot_url", "is", null)
+    .limit(1000);
+
+  if (!crawledRows || crawledRows.length === 0) return { copied: [], remaining: queueRows };
+
+  // lp_url → 크롤링 결과 매핑 (첫 번째 결과 사용)
+  const crawledMap = new Map();
+  for (const row of crawledRows) {
+    if (!crawledMap.has(row.lp_url)) crawledMap.set(row.lp_url, row);
+  }
+
+  const copied = [];
+  const remaining = [];
+
+  for (const qr of queueRows) {
+    const existing = crawledMap.get(qr.lp_url);
+    const sourceRow = sourceMap.get(qr.ad_id);
+
+    if (existing && sourceRow) {
+      // 이미 크롤링된 URL → 결과 복사
+      const updates = {
+        lp_headline:           existing.lp_headline,
+        lp_price:              existing.lp_price,
+        screenshot_hash:       existing.screenshot_hash,
+        lp_screenshot_url:     existing.lp_screenshot_url,
+        lp_cta_screenshot_url: existing.lp_cta_screenshot_url,
+        lp_crawled_at:         new Date().toISOString(),
+        updated_at:            new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from("ad_creative_embeddings")
+        .update(updates)
+        .eq("id", sourceRow.id);
+
+      if (!error) {
+        copied.push(qr);
+      } else {
+        console.warn(`  복사 실패 ${qr.ad_id}: ${error.message}`);
+        remaining.push(qr);
+      }
+    } else {
+      remaining.push(qr);
+    }
+  }
+
+  return { copied, remaining };
+}
+
+// ── 배치 내 URL 중복 제거: 같은 URL은 1번만 크롤링 ─────────────────
+function deduplicateBatchUrls(queueRows) {
+  // lp_url 기준으로 그룹핑 — 각 URL의 첫 번째 항목만 크롤링 대상
+  const urlGroups = new Map(); // lp_url → [queueRow, ...]
+  for (const qr of queueRows) {
+    if (!urlGroups.has(qr.lp_url)) urlGroups.set(qr.lp_url, []);
+    urlGroups.get(qr.lp_url).push(qr);
+  }
+  // 크롤링 대상: 각 URL 그룹의 첫 번째
+  const crawlTargets = [];
+  for (const [, group] of urlGroups) {
+    crawlTargets.push(group[0]);
+  }
+  return { crawlTargets, urlGroups };
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // 큐 모드 — --process
 // ═══════════════════════════════════════════════════════════════════
@@ -489,6 +564,7 @@ async function runProcess() {
 
   let totalProcessed = 0;
   let totalSaved = 0;
+  let totalCopied = 0;
   let totalFailed = 0;
   let round = 0;
 
@@ -501,8 +577,10 @@ async function runProcess() {
       break;
     }
 
+    // 중복 URL 복사를 위해 더 많이 가져옴 (크롤링 대상은 batchSize개)
+    const fetchSize = batchSize * 4;
     console.log(`\n━━━ Round ${round} (큐 남은 건수: ${remaining}) ━━━`);
-    const queueRows = await fetchQueueBatch(batchSize);
+    const queueRows = await fetchQueueBatch(fetchSize);
 
     if (queueRows.length === 0) {
       console.log("조회된 큐 항목 없음 — 종료.");
@@ -513,7 +591,7 @@ async function runProcess() {
     const queueIds = queueRows.map((r) => r.id);
     await markQueueProcessing(queueIds);
 
-    // ad_creative_embeddings에서 실제 row id 조회 (saveResults에 필요)
+    // ad_creative_embeddings에서 실제 row id 조회
     const adIds = queueRows.map((r) => r.ad_id);
     const { data: sourceRows, error: srcErr } = await supabase
       .from("ad_creative_embeddings")
@@ -522,7 +600,6 @@ async function runProcess() {
 
     if (srcErr) {
       console.error(`  소스 row 조회 실패: ${srcErr.message}`);
-      // 전부 failed 처리
       for (const qr of queueRows) await markQueueFailed(qr.id, srcErr.message);
       if (!repeat) process.exit(1);
       continue;
@@ -530,25 +607,63 @@ async function runProcess() {
 
     const sourceMap = new Map((sourceRows ?? []).map((r) => [r.ad_id, r]));
 
-    const urls = queueRows.map((r) => r.lp_url);
-    console.log(`크롤링 중: ${urls.length}건...`);
+    // ── STEP A: 이미 크롤링된 URL 결과 복사 ──────────────────────
+    const { copied, remaining: needCrawl } = await copyFromExistingCrawl(queueRows, sourceMap);
+    if (copied.length > 0) {
+      const copiedIds = copied.map((r) => r.id);
+      await markQueueCompleted(copiedIds);
+      totalCopied += copied.length;
+      console.log(`  ♻️  중복 URL 복사: ${copied.length}건 (크롤링 스킵)`);
+    }
+
+    if (needCrawl.length === 0) {
+      console.log(`  이 배치 전부 복사 완료 — 다음 라운드`);
+      totalProcessed += queueRows.length;
+      if (!repeat) break;
+      continue;
+    }
+
+    // ── STEP B: 배치 내 URL 중복 제거 ────────────────────────────
+    const { crawlTargets, urlGroups } = deduplicateBatchUrls(needCrawl);
+    const dedupSkipped = needCrawl.length - crawlTargets.length;
+    if (dedupSkipped > 0) {
+      console.log(`  🔗 배치 내 중복 URL: ${dedupSkipped}건 (크롤링 1회로 공유)`);
+    }
+
+    // 실제 크롤링할 URL (batchSize 제한)
+    const crawlBatch = crawlTargets.slice(0, batchSize);
+    const urls = crawlBatch.map((r) => r.lp_url);
+    console.log(`크롤링 중: ${urls.length}건 (고유 URL)...`);
     urls.forEach((u, i) => console.log(`  [${i + 1}] ${u}`));
+
+    // 크롤링 대상 외 항목은 pending으로 되돌림 (다음 라운드에서 처리)
+    const crawlBatchAdIds = new Set(crawlBatch.map((r) => r.ad_id));
+    const deferredItems = needCrawl.filter((r) => !crawlBatchAdIds.has(r.ad_id));
+    if (deferredItems.length > 0) {
+      const deferIds = deferredItems.map((r) => r.id);
+      await supabase
+        .from("lp_crawl_queue")
+        .update({ status: "pending" })
+        .in("id", deferIds);
+    }
 
     const t0 = Date.now();
 
     let batchResult;
     try {
       batchResult = await callCrawlerBatch(urls);
-      // 크롤러 브라우저 안정화 대기
       await new Promise((r) => setTimeout(r, 2_000));
     } catch (err) {
       console.error(`  크롤러 호출 실패: ${err.message.slice(0, 300)}`);
-      // 전부 failed → pending으로 리셋 (재시도 가능)
-      for (const qr of queueRows) {
-        await supabase
-          .from("lp_crawl_queue")
-          .update({ status: "pending", error_msg: String(err.message).slice(0, 500) })
-          .eq("id", qr.id);
+      // 크롤링 배치 + 같은 URL 그룹 전부 pending 리셋
+      for (const qr of crawlBatch) {
+        const group = urlGroups.get(qr.lp_url) || [qr];
+        for (const item of group) {
+          await supabase
+            .from("lp_crawl_queue")
+            .update({ status: "pending", error_msg: String(err.message).slice(0, 500) })
+            .eq("id", item.id);
+        }
       }
       if (!repeat) process.exit(1);
       console.log("15초 후 재시도...");
@@ -559,23 +674,27 @@ async function runProcess() {
     const elapsed = Math.round((Date.now() - t0) / 1000);
     totalProcessed += queueRows.length;
 
-    // 결과 처리: 큐 row 기준으로 순회
+    // ── STEP C: 결과 저장 + 같은 URL 그룹에 전파 ─────────────────
     const completedIds = [];
     let saved = 0;
     let failed = 0;
 
-    for (let i = 0; i < queueRows.length; i++) {
-      const qr = queueRows[i];
+    for (let i = 0; i < crawlBatch.length; i++) {
+      const qr = crawlBatch[i];
       const result = batchResult.results?.[i];
       const sourceRow = sourceMap.get(qr.ad_id);
 
       if (!result || !sourceRow) {
-        await markQueueFailed(qr.id, result ? "소스 row 없음" : "크롤링 결과 없음");
-        failed++;
+        // 이 URL 그룹 전체 실패 처리
+        const group = urlGroups.get(qr.lp_url) || [qr];
+        for (const item of group) {
+          await markQueueFailed(item.id, result ? "소스 row 없음" : "크롤링 결과 없음");
+        }
+        failed += (urlGroups.get(qr.lp_url) || [qr]).length;
         continue;
       }
 
-      // ad_creative_embeddings 업데이트
+      // 첫 번째 소재에 스크린샷 업로드
       const updates = {
         lp_headline:     result.text?.headline || null,
         lp_price:        result.text?.price || null,
@@ -593,6 +712,7 @@ async function runProcess() {
         if (ctaUrl) updates.lp_cta_screenshot_url = ctaUrl;
       }
 
+      // 대표 소재 업데이트
       const { error: updateErr } = await supabase
         .from("ad_creative_embeddings")
         .update(updates)
@@ -602,13 +722,41 @@ async function runProcess() {
         await markQueueFailed(qr.id, updateErr.message);
         failed++;
         console.warn(`  오류: ${qr.ad_id} update: ${updateErr.message}`);
-      } else {
-        completedIds.push(qr.id);
-        saved++;
+        continue;
+      }
+
+      completedIds.push(qr.id);
+      saved++;
+
+      // 같은 URL 그룹의 나머지 소재에 결과 복사 (스크린샷 URL 공유)
+      const group = urlGroups.get(qr.lp_url) || [];
+      const siblings = group.filter((g) => g.ad_id !== qr.ad_id);
+
+      for (const sib of siblings) {
+        const sibSource = sourceMap.get(sib.ad_id);
+        if (!sibSource) {
+          await markQueueFailed(sib.id, "소스 row 없음 (siblings)");
+          failed++;
+          continue;
+        }
+
+        const sibUpdates = { ...updates };
+        // 스크린샷 URL은 대표 소재와 동일하게 공유
+        const { error: sibErr } = await supabase
+          .from("ad_creative_embeddings")
+          .update(sibUpdates)
+          .eq("id", sibSource.id);
+
+        if (sibErr) {
+          await markQueueFailed(sib.id, sibErr.message);
+          failed++;
+        } else {
+          completedIds.push(sib.id);
+          saved++;
+        }
       }
     }
 
-    // 성공 항목 일괄 completed
     if (completedIds.length > 0) await markQueueCompleted(completedIds);
 
     totalSaved += saved;
@@ -629,7 +777,7 @@ async function runProcess() {
 
   console.log(`\n━━━ 최종 결과 ━━━`);
   console.log(`총 처리: ${totalProcessed}건`);
-  console.log(`저장 성공: ${totalSaved}건`);
+  console.log(`저장 성공: ${totalSaved}건 (크롤링 ${totalSaved - totalCopied} + 복사 ${totalCopied})`);
   console.log(`저장 실패: ${totalFailed}건`);
   console.log(`라운드: ${round}회`);
 }

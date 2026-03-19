@@ -235,15 +235,16 @@
     "notes": "관리자 13개 페이지 모바일 반응형 완료. P1(members/accounts/performance/answers) 테이블→카드, P2(content/email/invites/reviews) 테이블→카드+폼 반응형, P3(protractor/knowledge/owner-accounts/stats/organic) 제목/그리드 조정. Tailwind CSS만 변경, 기능 변경 없음. 16파일 +1314/-569줄. tsc+build 통과. Match Rate 100%."
   },
   "batch-scripts-step4-7": {
-    "status": "implementing",
+    "status": "completed",
     "tasks": [
       "T4-LP크롤링큐",
       "T5-미디어Storage",
       "T6-경쟁사L1큐",
       "T7-사전계산"
     ],
-    "updatedAt": "2026-03-19",
-    "notes": "STEP6 크론+UI+enqueue 완료, STEP7 크론+student-precompute 완료. LP크롤링 460/1522, saliency 1045/2660 배치 진행중. Storage 215건. 긴급수정3건(403/JOIN/가중평균)+UX계정셀렉터 커밋완료. mozzi-reports 크래시 수정."
+    "completedAt": "2026-03-20",
+    "updatedAt": "2026-03-20",
+    "notes": "STEP 1~7 전체 완료. LP크롤링 1462/1522(96%) — Playwright 장애→fetch+cheerio 폴백(crawl-lp-fallback.mjs). Saliency 2711/2873(94%). Storage 2873+건. 사전계산 40계정 완료. 경쟁사 62건 모니터. 벤치마크 creative_type별 날짜 필터 수정."
   },
   "benchmark-color-fix": {
     "status": "completed",

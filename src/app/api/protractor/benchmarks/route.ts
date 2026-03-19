@@ -51,12 +51,11 @@ export async function GET() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const benchSvc = svc as any;
 
-    // 가장 최근 calculated_at 조회
-    const { data: latest, error: latestErr } = await benchSvc
+    // creative_type별 최신 calculated_at 조회 (VIDEO/IMAGE/CATALOG/ALL 각각 다를 수 있음)
+    const { data: allLatest, error: latestErr } = await benchSvc
       .from("benchmarks")
-      .select("calculated_at")
-      .order("calculated_at", { ascending: false })
-      .limit(1);
+      .select("creative_type, calculated_at")
+      .order("calculated_at", { ascending: false });
 
     if (latestErr) {
       console.error("benchmarks 조회 오류:", latestErr);
@@ -66,17 +65,36 @@ export async function GET() {
       );
     }
 
-    if (!latest || latest.length === 0) {
+    if (!allLatest || allLatest.length === 0) {
       return NextResponse.json({ data: [] });
     }
 
-    const latestAt = (latest[0].calculated_at as string).slice(0, 10);
+    // creative_type별 최신 날짜 추출
+    const latestByType = new Map<string, string>();
+    for (const row of allLatest as { creative_type: string; calculated_at: string }[]) {
+      const ct = row.creative_type;
+      const dateStr = row.calculated_at.slice(0, 10);
+      if (!latestByType.has(ct) || dateStr > latestByType.get(ct)!) {
+        latestByType.set(ct, dateStr);
+      }
+    }
 
-    // 최근 수집분 전체 조회 (모든 ranking_group 포함)
-    const { data, error } = await benchSvc
+    // 각 creative_type의 최신 데이터를 모두 조회
+    const allDates = [...new Set(latestByType.values())];
+    const earliestDate = allDates.sort()[0]; // 가장 이른 날짜부터 조회
+
+    const { data: rawData, error } = await benchSvc
       .from("benchmarks")
       .select("*")
-      .gte("calculated_at", latestAt);
+      .gte("calculated_at", earliestDate);
+
+    // creative_type별 최신 날짜에 해당하는 행만 필터
+    const data = (rawData as Record<string, unknown>[] ?? []).filter((row) => {
+      const ct = row.creative_type as string;
+      const dateStr = (row.calculated_at as string).slice(0, 10);
+      const latestDate = latestByType.get(ct);
+      return latestDate && dateStr >= latestDate;
+    });
 
     if (error) {
       console.error("benchmarks 조회 오류:", error);
