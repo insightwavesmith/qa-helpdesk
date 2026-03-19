@@ -9,7 +9,7 @@ RUN pip install --no-cache-dir --target=/deps \
 
 # Stage 2: 런타임 (Node + Python)
 FROM node:20-slim
-RUN apt-get update && apt-get install -y python3 --no-install-recommends \
+RUN apt-get update && apt-get install -y python3 ca-certificates --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=python-deps /deps /usr/local/lib/python3.11/dist-packages
 ENV PYTHONPATH=/usr/local/lib/python3.11/dist-packages
