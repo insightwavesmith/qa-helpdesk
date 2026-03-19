@@ -134,6 +134,36 @@ export async function GET(req: NextRequest) {
         updateFields.new_ads_count =
           (monitor.new_ads_count ?? 0) + newCount;
         newAlerts++;
+
+        // 신규 광고 발견 시 해당 page_id의 새 광고를 분석 큐에 등록
+        if (monitor.page_id) {
+          try {
+            // competitor_ad_cache에서 이미지 있는 광고 조회
+            const { data: newAds } = await svc
+              .from("competitor_ad_cache")
+              .select("ad_archive_id")
+              .eq("page_id", monitor.page_id)
+              .not("image_url", "is", null)
+              .order("created_at", { ascending: false })
+              .limit(50);
+
+            if (newAds && (newAds as Array<{ ad_archive_id: string }>).length > 0) {
+              const queueRows = (newAds as Array<{ ad_archive_id: string }>).map((ad) => ({
+                brand_page_id: monitor.page_id as string,
+                ad_id: ad.ad_archive_id,
+                status: "pending",
+              }));
+              await svc
+                .from("competitor_analysis_queue")
+                .upsert(queueRows, { onConflict: "brand_page_id,ad_id", ignoreDuplicates: true });
+            }
+          } catch (enqueueErr) {
+            console.warn(
+              `[competitor-check] ${monitor.brand_name} 분석 큐 등록 실패:`,
+              enqueueErr,
+            );
+          }
+        }
       }
 
       await svc

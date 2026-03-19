@@ -43,7 +43,7 @@ for (const line of envContent.split("\n")) {
 const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL;
 const SB_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
 const GEMINI_KEY = env.GEMINI_API_KEY;
-const MODEL = "gemini-2.5-pro";
+const MODEL = "gemini-2.0-flash";
 
 if (!SB_URL || !SB_KEY) {
   console.error("SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 필요");
@@ -64,8 +64,8 @@ async function sbGet(path) {
   return res.json();
 }
 
-async function sbPost(table, row) {
-  const res = await fetch(`${SB_URL}/rest/v1/${table}`, {
+async function sbPost(table, row, onConflict = "ad_id") {
+  const res = await fetch(`${SB_URL}/rest/v1/${table}?on_conflict=${onConflict}`, {
     method: "POST",
     headers: {
       apikey: SB_KEY,
@@ -192,7 +192,7 @@ async function callGemini(prompt) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 2048 },
+        generationConfig: { maxOutputTokens: 8192, responseMimeType: "application/json" },
       }),
     }
   );
@@ -205,11 +205,14 @@ async function callGemini(prompt) {
   const data = await res.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-  // JSON 블록 추출
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error(`JSON 추출 실패: ${text.slice(0, 200)}`);
-
-  return JSON.parse(jsonMatch[0]);
+  // JSON 파싱 (responseMimeType=application/json이면 text 자체가 JSON)
+  try {
+    return JSON.parse(text);
+  } catch {
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error(`JSON 추출 실패: ${text.slice(0, 200)}`);
+    return JSON.parse(jsonMatch[0]);
+  }
 }
 
 // ━━━ 메인 ━━━

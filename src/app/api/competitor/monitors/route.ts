@@ -202,6 +202,38 @@ export async function POST(req: NextRequest) {
     total_ads_count: number | null;
   };
 
+  // 브랜드 등록 후 기존 광고를 분석 큐에 자동 등록
+  if (pageId) {
+    try {
+      const { data: existingAds } = await svc
+        .from("competitor_ad_cache")
+        .select("ad_archive_id")
+        .eq("page_id", pageId)
+        .not("image_url", "is", null);
+
+      if (existingAds && (existingAds as Array<{ ad_archive_id: string }>).length > 0) {
+        const BATCH_SIZE = 100;
+        const adList = existingAds as Array<{ ad_archive_id: string }>;
+        for (let i = 0; i < adList.length; i += BATCH_SIZE) {
+          const batch = adList.slice(i, i + BATCH_SIZE).map((ad) => ({
+            brand_page_id: pageId,
+            ad_id: ad.ad_archive_id,
+            status: "pending",
+          }));
+          await svc
+            .from("competitor_analysis_queue")
+            .upsert(batch, { onConflict: "brand_page_id,ad_id", ignoreDuplicates: true });
+        }
+        console.log(
+          `[monitors POST] ${pageId} 브랜드 등록 — ${adList.length}건 분석 큐 등록`,
+        );
+      }
+    } catch (err) {
+      // 큐 등록 실패는 모니터 등록 자체를 실패시키지 않음
+      console.warn("[monitors POST] 분석 큐 등록 실패:", err);
+    }
+  }
+
   return NextResponse.json(
     {
       monitor: {

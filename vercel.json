@@ -10,6 +10,8 @@
     { "path": "/api/cron/collect-content", "schedule": "0 20 * * *" },
     { "path": "/api/cron/collect-youtube", "schedule": "0 21 * * *" },
     { "path": "/api/cron/embed-creatives", "schedule": "0 22 * * *" },
-    { "path": "/api/cron/crawl-lps", "schedule": "0 */1 * * *" }
+    { "path": "/api/cron/crawl-lps", "schedule": "0 */1 * * *" },
+    { "path": "/api/cron/precompute", "schedule": "30 19 * * *" },
+    { "path": "/api/cron/analyze-competitors", "schedule": "0 14 * * *" }
   ]
 }

@@ -5,7 +5,7 @@ import useSWR from "swr";
 import type { CompetitorMonitor } from "@/types/competitor";
 import { jsonFetcher } from "@/lib/swr/config";
 import { SWR_KEYS } from "@/lib/swr/keys";
-import { MonitorBrandCard } from "./monitor-brand-card";
+import { MonitorBrandCard, type AnalysisStatus } from "./monitor-brand-card";
 import { AddMonitorDialog } from "./add-monitor-dialog";
 import { Eye, Plus, ChevronDown, ChevronUp } from "lucide-react";
 
@@ -98,6 +98,51 @@ export function MonitorPanel({
     [monitors, setMonitors, onBrandClick],
   );
 
+  // 분석 상태 캐시 (pageId → AnalysisStatus)
+  const [analysisStatusMap, setAnalysisStatusMap] = useState<
+    Record<string, AnalysisStatus>
+  >({});
+
+  // 모니터 목록 로드 후 분석 상태 일괄 조회
+  // pageIds 문자열로 비교 — 참조 변경에 의한 무한루프 방지
+  const pageIdsKey = monitors
+    .map((m) => m.pageId)
+    .filter(Boolean)
+    .join(",");
+
+  useEffect(() => {
+    const pageIds = pageIdsKey ? pageIdsKey.split(",") : [];
+    if (pageIds.length === 0) return;
+
+    const fetchStatuses = async () => {
+      const results: Record<string, AnalysisStatus> = {};
+      await Promise.allSettled(
+        pageIds.map(async (pageId) => {
+          try {
+            const res = await fetch(
+              `/api/competitor/analysis-status?brand_page_id=${encodeURIComponent(pageId)}`,
+            );
+            if (res.ok) {
+              const data = (await res.json()) as AnalysisStatus & {
+                brandPageId: string;
+              };
+              results[pageId] = data;
+            }
+          } catch {
+            // 무시
+          }
+        }),
+      );
+      setAnalysisStatusMap(results);
+    };
+
+    fetchStatuses();
+    // 30초마다 갱신 (분석 중인 경우 실시간 업데이트)
+    const interval = setInterval(fetchStatuses, 30_000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageIdsKey]);
+
   // NEW 배지 있는 모니터 수
   const newCount = monitors.filter((m) => (m.newAdsCount ?? 0) > 0).length;
 
@@ -157,6 +202,11 @@ export function MonitorPanel({
                 isSearching={searchQuery === monitor.brandName}
                 onClick={() => handleBrandClick(monitor)}
                 onDelete={() => handleDelete(monitor.id)}
+                analysisStatus={
+                  monitor.pageId
+                    ? (analysisStatusMap[monitor.pageId] ?? null)
+                    : null
+                }
               />
             ))
           )}

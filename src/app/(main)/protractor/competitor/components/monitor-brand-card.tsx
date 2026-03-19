@@ -4,11 +4,20 @@ import { useState } from "react";
 import type { CompetitorMonitor } from "@/types/competitor";
 import { Trash2 } from "lucide-react";
 
+export interface AnalysisStatus {
+  total: number;
+  pending: number;
+  processing: number;
+  completed: number;
+  failed: number;
+}
+
 interface MonitorBrandCardProps {
   monitor: CompetitorMonitor;
   isSearching: boolean;
   onClick: () => void;
   onDelete: () => void;
+  analysisStatus?: AnalysisStatus | null;
 }
 
 /** 첫 글자 아바타 */
@@ -77,11 +86,38 @@ function timeAgo(dateStr: string | null): string {
   return `${days}일 전`;
 }
 
+/** L1 분석 상태 배지 */
+function AnalysisBadge({ status }: { status: AnalysisStatus }) {
+  if (status.total === 0) return null;
+
+  const isComplete = status.pending === 0 && status.processing === 0 && status.completed > 0;
+  const isInProgress = status.pending > 0 || status.processing > 0;
+
+  if (isComplete) {
+    return (
+      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-green-700 bg-green-50 rounded-full whitespace-nowrap">
+        L1 완료 ({status.completed}/{status.total})
+      </span>
+    );
+  }
+
+  if (isInProgress) {
+    return (
+      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 bg-blue-50 rounded-full whitespace-nowrap">
+        L1 분석중 ({status.completed}/{status.total})
+      </span>
+    );
+  }
+
+  return null;
+}
+
 export function MonitorBrandCard({
   monitor,
   isSearching,
   onClick,
   onDelete,
+  analysisStatus,
 }: MonitorBrandCardProps) {
   const hasNew = (monitor.newAdsCount ?? 0) > 0;
 
@@ -107,7 +143,7 @@ export function MonitorBrandCard({
         />
         <div className="flex-1 min-w-0">
           {/* 브랜드명 + NEW 배지 */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-sm font-medium text-gray-900 truncate">
               {monitor.brandName}
             </span>
@@ -116,6 +152,7 @@ export function MonitorBrandCard({
                 NEW +{monitor.newAdsCount}
               </span>
             )}
+            {analysisStatus && <AnalysisBadge status={analysisStatus} />}
           </div>
           {/* 서브텍스트: @IG · 광고 N건 · 시간 전 */}
           <div className="flex items-center gap-1 text-xs text-gray-400 mt-0.5 truncate">

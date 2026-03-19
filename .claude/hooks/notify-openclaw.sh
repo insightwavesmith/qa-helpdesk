@@ -6,12 +6,25 @@ LAST_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 CHANGED_FILES=$(git diff HEAD~1 --name-only 2>/dev/null | wc -l | tr -d ' ')
 BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
 
-# 중복 방지: 이전 알림과 같은 커밋
+# 중복 방지 1: 이전 알림과 같은 커밋
 MARKER="/tmp/agent-team-last-notified-sha"
 if [ -f "$MARKER" ] && [ "$(cat "$MARKER")" = "$LAST_SHA" ]; then
   exit 0
 fi
+
+# 중복 방지 2: 5분 이내 재알림 방지
+TIME_MARKER="/tmp/agent-team-last-notified-time"
+if [ -f "$TIME_MARKER" ]; then
+  LAST_TIME=$(cat "$TIME_MARKER")
+  NOW=$(date +%s)
+  DIFF=$((NOW - LAST_TIME))
+  if [ "$DIFF" -lt 300 ]; then
+    exit 0
+  fi
+fi
+
 echo "$LAST_SHA" > "$MARKER"
+date +%s > "$TIME_MARKER"
 
 MSG="[에이전트팀 세션 종료] ${LAST_COMMIT} (변경 ${CHANGED_FILES}파일, ${BRANCH})"
 
