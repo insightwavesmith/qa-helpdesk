@@ -163,6 +163,8 @@ export async function runBenchmark({ dryRun = false } = {}) {
         ctrValues: [],
         convRateValues: [],
         adIds: new Set(),
+        totalSpend: 0,
+        totalRevenue: 0,
       });
     }
     const bucket = buckets.get(key);
@@ -170,6 +172,9 @@ export async function runBenchmark({ dryRun = false } = {}) {
     if (perf.avg_roas != null) bucket.roasValues.push(perf.avg_roas);
     if (perf.avg_ctr != null) bucket.ctrValues.push(perf.avg_ctr);
     if (perf.conversion_rate != null) bucket.convRateValues.push(perf.conversion_rate);
+    // 가중평균 ROAS 계산용 — SUM(revenue) / SUM(spend)
+    bucket.totalSpend += perf.spend || 0;
+    bucket.totalRevenue += (perf.spend || 0) * (perf.avg_roas || 0);
   }
 
   for (const el of joinedElements) {
@@ -199,11 +204,16 @@ export async function runBenchmark({ dryRun = false } = {}) {
     const sampleCount = bucket.adIds.size;
     if (sampleCount === 0) continue;
 
+    // 가중평균 ROAS = SUM(revenue) / SUM(spend) — 이상치 소재의 왜곡 방지
+    const weightedRoas = bucket.totalSpend > 0
+      ? bucket.totalRevenue / bucket.totalSpend
+      : null;
+
     upsertRows.push({
       element_type: bucket.element_type,
       element_value: bucket.element_value,
       sample_count: sampleCount,
-      avg_roas: avg(bucket.roasValues),
+      avg_roas: weightedRoas,
       avg_ctr: avg(bucket.ctrValues),
       avg_conversion_rate: avg(bucket.convRateValues),
       p75_roas: percentile75(bucket.roasValues),

@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
  *   limit: 최대 반환 건수 (기본 100)
  */
 export async function GET(req: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireAdmin(["admin", "student", "member"]);
   if ("response" in auth) return auth.response;
   const { svc } = auth;
 

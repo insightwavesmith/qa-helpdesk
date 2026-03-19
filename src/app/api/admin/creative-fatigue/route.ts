@@ -11,7 +11,7 @@ import { detectFatigue } from "@/lib/creative-analyzer";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireAdmin(["admin", "student", "member"]);
   if ("response" in auth) return auth.response;
 
   const { searchParams } = new URL(req.url);

@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: NextRequest) {
   // 관리자 권한 확인
-  const auth = await requireAdmin();
+  const auth = await requireAdmin(["admin", "student", "member"]);
   if ("response" in auth) return auth.response;
   const { svc } = auth;
 
