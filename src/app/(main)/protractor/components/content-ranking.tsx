@@ -171,14 +171,14 @@ function BenchmarkCompareGrid({
         className="flex items-center justify-between rounded-md bg-white/70 px-2 py-1.5"
       >
         <span className={`text-xs ${isSummary ? "font-semibold text-gray-700" : "text-gray-600"}`}>{m.label}</span>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <span className={`${isSummary ? "text-sm font-bold" : "text-xs font-medium"} ${m.key === "roas" ? "" : style.text}`}>
             {formatVal(myVal ?? null, m)}
-            {benchVal != null && m.key !== "roas" && (
-              <span className="text-gray-400 ml-1 text-[10px]">(기준 {formatVal(benchVal, m)})</span>
-            )}
           </span>
-          {m.key !== "roas" && <span className="text-[10px]">{emoji}</span>}
+          {benchVal != null && m.key !== "roas" && (
+            <span className="text-[11px] text-gray-500">/ {formatVal(benchVal, m)}</span>
+          )}
+          {m.key !== "roas" && <span className="text-sm">{emoji}</span>}
         </div>
       </div>
     );
