@@ -1182,7 +1182,7 @@
         "design": "02-design/features/creative-saliency.design.md"
       },
       "startedAt": "2026-03-18",
-      "notes": "Layer 2 시선 예측. DeepGaze IIE 기반 saliency prediction. Python 스크립트 + SQL 마이그레이션 + API 작성."
+      "notes": "쿼리 필터 수정(is_active/embedding_3072 제거→IMAGE+media_url만). Railway 배치 실행중. 63/2660건 완료. trigger-saliency-batch.mjs --repeat로 자동 반복."
     }
   },
   "phaseMapping": {
