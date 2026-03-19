@@ -18,7 +18,8 @@ export async function completeCronRun(
   id: string | null,
   status: "success" | "error" | "partial",
   recordsCount: number,
-  errorMessage?: string
+  errorMessage?: string,
+  details?: unknown
 ): Promise<void> {
   if (!id) return;
   try {
@@ -28,6 +29,7 @@ export async function completeCronRun(
       records_count: recordsCount,
       finished_at: new Date().toISOString(),
       error_message: errorMessage || null,
+      ...(details !== undefined && { details }),
     }).eq("id", id);
   } catch (e) { console.error("[cron-logger] complete exception:", e); }
 }

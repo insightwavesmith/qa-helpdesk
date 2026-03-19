@@ -93,7 +93,7 @@ export async function runBenchmark({ dryRun = false } = {}) {
     if (!perfMap.has(adId)) {
       perfMap.set(adId, {
         totalSpend: 0,
-        roasValues: [],
+        totalRevenue: 0,
         ctrValues: [],
         totalPurchases: 0,
         totalClicks: 0,
@@ -102,9 +102,10 @@ export async function runBenchmark({ dryRun = false } = {}) {
     }
 
     const entry = perfMap.get(adId);
-    entry.totalSpend += row.spend || 0;
-    // ROAS/CTR: 양수 값만 수집 (0이나 null은 제외)
-    if (row.roas != null && row.roas > 0) entry.roasValues.push(row.roas);
+    const spend = row.spend || 0;
+    entry.totalSpend += spend;
+    // revenue = spend × ROAS (가중평균 ROAS 계산용)
+    if (row.roas != null && row.roas > 0) entry.totalRevenue += spend * row.roas;
     if (row.ctr != null && row.ctr > 0) entry.ctrValues.push(row.ctr);
     entry.totalPurchases += row.purchases || 0;
     entry.totalClicks += row.clicks || 0;
@@ -116,7 +117,7 @@ export async function runBenchmark({ dryRun = false } = {}) {
   for (const [adId, entry] of perfMap) {
     adPerf.set(adId, {
       spend: entry.totalSpend,
-      avg_roas: avg(entry.roasValues),
+      avg_roas: safeDivide(entry.totalRevenue, entry.totalSpend),
       avg_ctr: avg(entry.ctrValues),
       // 전환율: 총 구매 / 총 클릭 * 100 (%)
       conversion_rate: safeDivide(entry.totalPurchases * 100, entry.totalClicks),
@@ -125,8 +126,16 @@ export async function runBenchmark({ dryRun = false } = {}) {
 
   console.log(`  성과 데이터 보유 광고: ${adPerf.size}개`);
 
-  // 성과 데이터와 JOIN되는 element 행 필터링
-  const joinedElements = elements.filter((el) => adPerf.has(el.ad_id));
+  // 성과 데이터와 JOIN되는 element 행 필터링 (최소 광고비 10,000원 미만 제외)
+  const MIN_SPEND = 10000; // 최소 광고비 10,000원 미만 제외
+  const joinedElements = elements.filter((el) => {
+    const perf = adPerf.get(el.ad_id);
+    return perf && perf.spend >= MIN_SPEND;
+  });
+  const filteredOut = elements.filter((el) => adPerf.has(el.ad_id)).length - joinedElements.length;
+  if (filteredOut > 0) {
+    console.log(`  광고비 ${MIN_SPEND.toLocaleString()}원 미만 제외: ${filteredOut}건`);
+  }
   console.log(`  JOIN 성공 (요소 보유 + 성과 보유): ${joinedElements.length}건`);
 
   if (joinedElements.length === 0) {
