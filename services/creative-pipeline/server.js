@@ -9,6 +9,7 @@ const { execFile } = require('child_process');
 const app = express();
 app.use(express.json());
 
+const GIT_SHA = process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_SHA || 'unknown';
 const API_SECRET = process.env.API_SECRET || '';
 
 // ━━━ 인증 미들웨어 ━━━
@@ -21,7 +22,7 @@ function auth(req, res, next) {
 
 // ━━━ 헬스 체크 (인증 없음) ━━━
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', version: GIT_SHA.slice(0, 7), timestamp: new Date().toISOString() });
 });
 
 // ━━━ POST /analyze — L1 소재 요소 태깅 ━━━
