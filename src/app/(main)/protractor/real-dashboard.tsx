@@ -94,7 +94,7 @@ interface RealDashboardProps {
 
 export default function RealDashboard({ initialAccounts }: RealDashboardProps) {
   const searchParams = useSearchParams();
-  const accountParam = searchParams.get("account");
+  const accountParam = searchParams.get("account_id");
 
   // UI 상태
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
@@ -189,7 +189,7 @@ export default function RealDashboard({ initialAccounts }: RealDashboardProps) {
   const handleAccountSelect = (accountId: string) => {
     setSelectedAccountId(accountId);
     const url = new URL(window.location.href);
-    url.searchParams.set("account", accountId);
+    url.searchParams.set("account_id", accountId);
     window.history.replaceState({}, "", url.toString());
   };
 

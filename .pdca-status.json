@@ -243,6 +243,6 @@
       "T7-사전계산"
     ],
     "updatedAt": "2026-03-19",
-    "notes": "STEP 4~7 배치 스크립트 4개 작성. trigger-lp-crawl(큐+배치), persist-media-to-storage(5병렬), analyze-competitor-creatives(큐기반 온디맨드), precompute-scores(T3+수강생+진단). SQL 마이그레이션 각 스크립트 주석에 포함."
+    "notes": "STEP6 크론+UI+enqueue 완료, STEP7 크론+student-precompute 완료. LP크롤링 180/1522, saliency 295/2660 배치 진행중. Storage 215건."
   }
 }

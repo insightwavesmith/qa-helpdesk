@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import useSWR from "swr";
 import {
   Select,
@@ -159,8 +160,28 @@ function pctToBarWidth(value: number | null): string {
 export default function CreativeAnalysis({
   initialAccounts,
 }: CreativeAnalysisProps) {
-  const [selectedAccountId, setSelectedAccountId] = useState(
-    initialAccounts[0]?.account_id || ""
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // URL searchParams에서 초기 계정 ID 읽기, 없으면 첫 번째 계정
+  const accountIdFromUrl = searchParams.get("account_id");
+  const initialAccountId =
+    accountIdFromUrl &&
+    initialAccounts.some((a) => a.account_id === accountIdFromUrl)
+      ? accountIdFromUrl
+      : initialAccounts[0]?.account_id || "";
+
+  const [selectedAccountId, setSelectedAccountId] = useState(initialAccountId);
+
+  const handleAccountSelect = useCallback(
+    (accountId: string) => {
+      setSelectedAccountId(accountId);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("account_id", accountId);
+      router.replace(`${pathname}?${params.toString()}`);
+    },
+    [searchParams, router, pathname]
   );
 
   // SWR 데이터
@@ -202,7 +223,7 @@ export default function CreativeAnalysis({
         {initialAccounts.length > 0 && (
           <Select
             value={selectedAccountId}
-            onValueChange={setSelectedAccountId}
+            onValueChange={handleAccountSelect}
           >
             <SelectTrigger className="w-[260px]">
               <SelectValue placeholder="광고계정을 선택하세요" />
