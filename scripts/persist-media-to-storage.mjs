@@ -171,13 +171,12 @@ async function processBatch(items, fn, concurrency = 5) {
 async function processOwnCreatives(limit) {
   console.log("\n── 자사 소재 (ad_creative_embeddings) ──────────────────────────");
 
-  // storage_url이 없고 media_url이 있는 row 조회
+  // storage_url이 없고 media_url이 있는 row 조회 (is_active 불문 — 비활성 소재도 저장)
   const { data: rows, error } = await supabase
     .from("ad_creative_embeddings")
     .select("id, ad_id, media_url, media_type")
     .not("media_url", "is", null)
-    .or("storage_url.is.null")
-    .eq("is_active", true)
+    .is("storage_url", null)
     .limit(limit);
 
   if (error) {

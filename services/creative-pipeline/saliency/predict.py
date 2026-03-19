@@ -303,6 +303,7 @@ def main():
 
     # 대상 소재 조회 (IMAGE만, media_url 있는 것) — 페이지네이션으로 전체 수집
     # Supabase REST API 기본 1000건 제한 → offset으로 순회
+    # args.limit = 이번 라운드에서 실제 분석할 신규 건수 상한 (DB 전체 조회 건수와 별개)
     all_creatives = []
     PAGE_SIZE = 1000
     offset = 0
@@ -325,10 +326,6 @@ def main():
         if len(batch) < PAGE_SIZE:
             break
         offset += PAGE_SIZE
-        # 요청한 limit 이상이면 중단
-        if args.limit != 9999 and len(all_creatives) >= args.limit:
-            all_creatives = all_creatives[:args.limit]
-            break
 
     print(f"  전체 IMAGE 소재: {len(all_creatives)}건", file=sys.stderr)
 
@@ -349,7 +346,8 @@ def main():
         return
 
     # 타임아웃 방지: 한 라운드에 최대 100건 (12s/건 × 100 = ~20분)
-    MAX_PER_ROUND = 100
+    # args.limit 이 명시적으로 작으면 그 값을 상한으로 사용
+    MAX_PER_ROUND = min(100, args.limit) if args.limit != 9999 else 100
     remaining = len(to_analyze)
     if remaining > MAX_PER_ROUND:
         print(f"  {remaining}건 중 {MAX_PER_ROUND}건만 이번 라운드에서 처리", file=sys.stderr)
