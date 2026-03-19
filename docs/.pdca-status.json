@@ -1182,7 +1182,12 @@
         "design": "02-design/features/creative-saliency.design.md"
       },
       "startedAt": "2026-03-18",
-      "notes": "쿼리 필터 수정(is_active/embedding_3072 제거→IMAGE+media_url만). Railway 배치 실행중. 63/2660건 완료. trigger-saliency-batch.mjs --repeat로 자동 반복."
+      "notes": "쿼리 필터 수정(is_active/embedding_3072 제거→IMAGE+media_url만). Railway 배치 실행중. 124/2660건 완료."
+    },
+    "batch-scripts-step4-7": {
+      "phase": "implementing",
+      "startedAt": "2026-03-19",
+      "notes": "STEP4~7 배치 스크립트 4개. trigger-lp-crawl(큐+배치), persist-media-to-storage, analyze-competitor-creatives(큐 온디맨드), precompute-scores(T3+수강생+진단). SQL 마이그레이션 각 주석 포함."
     }
   },
   "phaseMapping": {
