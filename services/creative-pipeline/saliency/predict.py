@@ -288,13 +288,10 @@ def main():
         print(json.dumps({"ok": True, "analyzed": 0, "errors": 0, "skipped": 0}))
         return
 
-    # 이미 분석된 ad_id 조회
-    ad_ids = [c["ad_id"] for c in creatives]
-    in_filter = ",".join(ad_ids)
-
+    # 이미 분석된 ad_id 조회 (전체 조회 — in 필터는 URL 길이 제한에 걸림)
     existing = []
     try:
-        existing = sb_get(f"/creative_saliency?select=ad_id&ad_id=in.({in_filter})")
+        existing = sb_get("/creative_saliency?select=ad_id&limit=9999")
     except Exception as e:
         print(f"  기존 분석 조회 실패 (무시): {e}", file=sys.stderr)
 
@@ -308,14 +305,24 @@ def main():
         print(json.dumps({"ok": True, "analyzed": 0, "errors": 0, "skipped": skipped}))
         return
 
-    # CTA 위치 정보 조회 (creative_element_analysis)
+    # 타임아웃 방지: 한 라운드에 최대 100건 (12s/건 × 100 = ~20분)
+    MAX_PER_ROUND = 100
+    remaining = len(to_analyze)
+    if remaining > MAX_PER_ROUND:
+        print(f"  {remaining}건 중 {MAX_PER_ROUND}건만 이번 라운드에서 처리", file=sys.stderr)
+        to_analyze = to_analyze[:MAX_PER_ROUND]
+
+    # CTA 위치 정보 조회 (배치 300개씩 — URL 길이 제한 방지)
     cta_map = {}
     try:
-        cea_ids = ",".join(c["ad_id"] for c in to_analyze)
-        cea_data = sb_get(
-            f"/creative_element_analysis?select=ad_id,cta_position&ad_id=in.({cea_ids})"
-        )
-        cta_map = {r["ad_id"]: r.get("cta_position") for r in cea_data}
+        batch_size = 300
+        for bi in range(0, len(to_analyze), batch_size):
+            batch_ids = ",".join(c["ad_id"] for c in to_analyze[bi:bi + batch_size])
+            cea_data = sb_get(
+                f"/creative_element_analysis?select=ad_id,cta_position&ad_id=in.({batch_ids})"
+            )
+            for r in cea_data:
+                cta_map[r["ad_id"]] = r.get("cta_position")
     except Exception as e:
         print(f"  CTA 위치 조회 실패 (무시): {e}", file=sys.stderr)
 
