@@ -10,7 +10,7 @@ const GEMINI_MODEL = "gemini-2.0-flash";
 const GEMINI_BASE =
   "https://generativelanguage.googleapis.com/v1beta/models";
 const COMPETITOR_PREFIX = "competitor:";
-const BATCH_LIMIT = 20;
+const BATCH_LIMIT = 100;
 
 const IMAGE_ANALYSIS_PROMPT = `이 광고 소재 이미지를 분석해서 아래 JSON 스키마에 맞춰 출력해라.
 규칙: 순수 JSON만 반환. 마크다운 코드블록(\`\`\`) 사용 금지. 주석 금지. 설명 텍스트 금지.

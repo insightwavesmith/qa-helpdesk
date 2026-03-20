@@ -256,5 +256,17 @@
     "completedAt": "2026-03-19",
     "updatedAt": "2026-03-19",
     "notes": "벤치마크 색상+기준값 수정. API normalizeParts()+adIds캐시체크+실시간폴백. MJS snake_case+top10+배치5. 프론트: adIds전달+benchVal조건완화. diagnosis-precompute TOP_ADS_LIMIT 10. 캐시 175건 재생성. 0% 123건 전부🔴 검증."
+  },
+  "cron-batch-split": {
+    "status": "completed",
+    "tasks": [
+      "T1-runCollectDaily-batch파라미터",
+      "T2-라우트4개생성",
+      "T3-vercel.json크론분할",
+      "T4-빌드검증"
+    ],
+    "completedAt": "2026-03-20",
+    "updatedAt": "2026-03-20",
+    "notes": "collect-daily 배치 4분할. 계정 10개씩 5분 간격(18:00~18:15 UTC). batch 4만 후처리. 수집 로직 변경 없음. tsc+build 통과."
   }
 }
