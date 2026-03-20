@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-19T10:30:00.000Z",
+  "lastUpdated": "2026-03-20T12:00:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1185,9 +1185,10 @@
       "notes": "URL길이제한+OpenBLAS스레드제한 수정. Railway 배치 127/2660. 미디어Storage 215건 완료."
     },
     "batch-scripts-step4-7": {
-      "phase": "implementing",
+      "phase": "completed",
       "startedAt": "2026-03-19",
-      "notes": "STEP4~7 실행중. LP크롤링 80/1522완료, 미디어Storage 215건 완료, T3 150/학생 96/진단 101 사전계산 완료."
+      "completedAt": "2026-03-20",
+      "notes": "STEP 1~7 전체 완료. LP크롤링 1462/1522(96%) — Playwright 장애→fetch+cheerio 폴백. Saliency 2711/2873(94%). Storage 2873+건. 사전계산 40계정. 경쟁사 62건."
     }
   },
   "phaseMapping": {

@@ -171,8 +171,8 @@
       "T4-조회API",
       "T5-배치실행검증"
     ],
-    "updatedAt": "2026-03-19",
-    "notes": "URL 길이 제한 수정 + 100건/라운드 제한. Railway 배치 실행중. 127/2660건. 미디어 Storage 215건 저장 완료."
+    "updatedAt": "2026-03-20",
+    "notes": "URL 길이 제한 수정 + 100건/라운드 제한. Railway 배치 실행중. 2711/2873건 완료(94%). bscamp-crawler EAGAIN 수정 — 공유 브라우저 인스턴스 패턴."
   },
   "railway-l2-batch": {
     "status": "completed",
@@ -244,7 +244,7 @@
     ],
     "completedAt": "2026-03-20",
     "updatedAt": "2026-03-20",
-    "notes": "STEP 1~7 전체 완료. LP크롤링 1462/1522(96%) — Playwright 장애→fetch+cheerio 폴백(crawl-lp-fallback.mjs). Saliency 2711/2873(94%). Storage 2873+건. 사전계산 40계정 완료. 경쟁사 62건 모니터. 벤치마크 creative_type별 날짜 필터 수정."
+    "notes": "STEP 1~7 전체 완료. LP크롤링 1736/1796(97%) — Railway EAGAIN 수정(공유 브라우저)+Playwright 재크롤링. 60건 실패(Meta Canvas 만료). Saliency 2711/2873(94%). Storage 2873+건. 사전계산 40계정 완료. 경쟁사 62건 모니터."
   },
   "benchmark-color-fix": {
     "status": "completed",

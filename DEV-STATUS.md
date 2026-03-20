@@ -1,4 +1,4 @@
-# DEV-STATUS — 2026-03-20 00:00 기준 (최종)
+# DEV-STATUS — 2026-03-20 07:36 기준 (최종)
 
 ## STEP 1~7 진행 상태
 
@@ -7,7 +7,7 @@
 | 1 | 소재 분석 탭 구현 | ✅ 완료 | 100% | /protractor/creatives/ 3개 서브탭 |
 | 2 | collect-daily media_url 수집 | ✅ 완료 | 100% | 3단계 fallback (image_hash→video_thumb→catalog) |
 | 3 | L2 시선 예측 (Saliency) | ✅ 완료 | 94% | 2,711/2,873건 완료, Railway 자동 처리 |
-| 4 | LP 크롤링 큐 | ✅ 완료 | **96%** | 1,462/1,522건 완료. Playwright 장애 → fetch+cheerio 폴백으로 해결 |
+| 4 | LP 크롤링 큐 | ✅ 완료 | **97%** | 1,736/1,796건 완료. Railway EAGAIN 수정(공유 브라우저) + Playwright 재크롤링 |
 | 5 | 미디어 Storage | ✅ 완료 | 93%+ | 2,873건+ 완료, 마지막 1건 Meta CDN 403 만료 |
 | 6 | 경쟁사 L1 온디맨드 | ✅ 완료 | 100% | 크론+UI+enqueue 구현, 62건 모니터 등록 |
 | 7 | 사전계산 (진단 캐시) | ✅ 완료 | 100% | 40개 계정 전체 재계산 완료 (T3+수강생+진단) |
@@ -20,7 +20,7 @@
 |------|-----:|-----:|-----:|
 | 총 소재 (ad_creative_embeddings) | — | 3,096 | — |
 | 임베딩 3072 | 358 | 3,096 | 12% |
-| LP 크롤링 | **1,462** | 1,522 | **96%** |
+| LP 크롤링 | **1,736** | 1,796 | **97%** |
 | Saliency 히트맵 | 2,711 | 2,873 | 94% |
 | 미디어 Storage | 2,873+ | 3,096 | 93%+ |
 | 진단 캐시 | 완료 | ~400 (top10×40계정) | 100% |
@@ -32,14 +32,17 @@
 ### LP 크롤링 큐 상세 (최종)
 
 ```
-전체 큐: 1,522건
-├── completed: 1,462건 (96%)
+전체 큐: 1,796건
+├── completed: 1,736건 (97%)
 ├── pending:       0건
 ├── processing:    0건
-└── failed:       60건 (HTTP 400 — 만료된 LP URL)
+└── failed:       60건 (HTTP 400 — Meta Canvas 만료 URL)
 ```
 
-**해결 방법**: Railway Playwright EAGAIN 장애 → `crawl-lp-fallback.mjs` (fetch+cheerio) 폴백 스크립트로 594건 추가 처리. OG 이미지를 스크린샷 대체로 Supabase Storage 업로드.
+**해결 과정**:
+1. Railway Playwright EAGAIN 장애 → `crawl-lp-fallback.mjs` (fetch+cheerio) 폴백으로 594건 처리
+2. bscamp-crawler `server.js` 공유 브라우저 인스턴스 패턴으로 EAGAIN 근본 수정 (커밋 `a8b5111`)
+3. Railway 재배포 → Playwright 정상화 → 나머지 274건 Playwright 풀 스크린샷 재크롤링 완료
 
 ---
 
@@ -97,7 +100,7 @@
 |--------|:----:|------|
 | creative-pipeline | ✅ 정상 | version 194c162, health OK |
 | saliency (predict.py) | ✅ 정상 | 2,711/2,873건 처리 완료 |
-| bscamp-crawler | ⚠️ 장애 | Playwright EAGAIN — 폴백 스크립트로 우회 완료 |
+| bscamp-crawler | ✅ 정상 | EAGAIN 수정 — 공유 브라우저 인스턴스 (`a8b5111`) |
 | mozzi-reports | ✅ 정상 | Express 정적 서버 |
 
 ---

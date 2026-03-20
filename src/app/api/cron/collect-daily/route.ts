@@ -241,9 +241,11 @@ export interface CollectDailyResult {
 }
 
 // ── 핵심 수집 로직 (크론 + 수동수집 공용) ───────────────────
-export async function runCollectDaily(dateParam?: string): Promise<CollectDailyResult> {
+export async function runCollectDaily(dateParam?: string, batch?: number): Promise<CollectDailyResult> {
   const svc = createServiceClient();
-  const cronRunId = await startCronRun("collect-daily");
+  // 배치 번호가 있으면 cron_runs에 배치 이름으로 기록
+  const cronName = batch ? `collect-daily-${batch}` : "collect-daily";
+  const cronRunId = await startCronRun(cronName);
 
   // KST(UTC+9) 기준 어제 날짜
   const yesterday = dateParam ?? (() => {
@@ -256,10 +258,12 @@ export async function runCollectDaily(dateParam?: string): Promise<CollectDailyR
 
   try {
     // 1. Supabase ad_accounts 테이블에서 등록된 활성 계정만 조회
+    // created_at 정렬로 배치 분할 시 일관된 순서 보장
     const { data: adAccountRows, error: adAccountsErr } = await svc
       .from("ad_accounts")
       .select("account_id, account_name")
-      .eq("active", true);
+      .eq("active", true)
+      .order("created_at");
 
     if (adAccountsErr) {
       throw new Error(`ad_accounts 조회 실패: ${adAccountsErr.message}`);
@@ -273,9 +277,26 @@ export async function runCollectDaily(dateParam?: string): Promise<CollectDailyR
       account_name: a.account_name ?? "",
     }));
 
+    // 배치 분할: batch가 주어지면 offset/limit으로 계정 분할
+    let filteredAccounts = accounts;
+    if (batch != null && batch >= 1 && batch <= 4) {
+      const BATCH_SIZE = 10;
+      const offset = (batch - 1) * BATCH_SIZE;
+      if (batch === 4) {
+        // batch 4는 나머지 전부
+        filteredAccounts = accounts.slice(offset);
+      } else {
+        filteredAccounts = accounts.slice(offset, offset + BATCH_SIZE);
+      }
+      console.log(`[collect-daily] batch ${batch}: ${filteredAccounts.length}건 (전체 ${accounts.length}건 중 offset=${offset})`);
+    }
+
+    // 후처리(임베딩, SHARE→VIDEO, 사전계산, pipeline)는 마지막 배치 또는 전체 실행 시에만
+    const isLastBatch = batch == null || batch === 4;
+
     const results: Record<string, unknown>[] = [];
 
-    for (const account of accounts) {
+    for (const account of filteredAccounts) {
       const accountResult: Record<string, unknown> = {
         account_id: account.account_id,
         meta_ads: 0,
@@ -404,28 +425,66 @@ export async function runCollectDaily(dateParam?: string): Promise<CollectDailyR
       results.push(accountResult);
     }
 
-    // ── 임베딩 없는 소재 보충 (배치 50개, 500ms 딜레이) ──
-    try {
-      const embedResult = await embedMissingCreatives(50, 500);
-      console.log(`[collect-daily] embedMissingCreatives: processed=${embedResult.processed}, embedded=${embedResult.embedded}, errors=${embedResult.errors}`);
-    } catch (err) {
-      console.error("[collect-daily] embedMissingCreatives failed:", err);
-    }
-
-    // 기존 SHARE → VIDEO 일괄 수정 (이전 버전 코드로 수집된 데이터 보정)
-    const { data: shareFixed, error: shareFixErr } = await svc
-      .from("daily_ad_insights")
-      .update({ creative_type: "VIDEO" })
-      .eq("creative_type", "SHARE")
-      .select("ad_id");
-
-    if (shareFixErr) {
-      console.error("[collect-daily] SHARE→VIDEO 일괄 수정 실패:", shareFixErr);
-    } else if (shareFixed && shareFixed.length > 0) {
-      console.log(`[collect-daily] SHARE→VIDEO 일괄 수정: ${shareFixed.length}건`);
-    }
-
     const totalRecords = results.reduce((sum, r) => sum + (typeof r.meta_ads === "number" ? r.meta_ads : 0), 0);
+
+    // 후처리는 마지막 배치(batch 4) 또는 배치 없이 전체 실행할 때만 수행
+    let shareFixed: { ad_id: string | null }[] | null = null;
+    let precomputeResult: Record<string, unknown> | null = null;
+    let pipelineResult: Record<string, unknown> | null = null;
+
+    if (isLastBatch) {
+      // ── 임베딩 없는 소재 보충 (배치 50개, 500ms 딜레이) ──
+      try {
+        const embedResult = await embedMissingCreatives(50, 500);
+        console.log(`[collect-daily] embedMissingCreatives: processed=${embedResult.processed}, embedded=${embedResult.embedded}, errors=${embedResult.errors}`);
+      } catch (err) {
+        console.error("[collect-daily] embedMissingCreatives failed:", err);
+      }
+
+      // 기존 SHARE → VIDEO 일괄 수정 (이전 버전 코드로 수집된 데이터 보정)
+      const { data: shareData, error: shareFixErr } = await svc
+        .from("daily_ad_insights")
+        .update({ creative_type: "VIDEO" })
+        .eq("creative_type", "SHARE")
+        .select("ad_id");
+
+      shareFixed = shareData;
+
+      if (shareFixErr) {
+        console.error("[collect-daily] SHARE→VIDEO 일괄 수정 실패:", shareFixErr);
+      } else if (shareFixed && shareFixed.length > 0) {
+        console.log(`[collect-daily] SHARE→VIDEO 일괄 수정: ${shareFixed.length}건`);
+      }
+
+      // ── 사전계산 실행 (실패해도 크론 결과에 영향 없음) ──
+      try {
+        precomputeResult = await runPrecomputeAll(svc) as unknown as Record<string, unknown>;
+      } catch (e) {
+        console.error("[collect-daily] 사전계산 실패 (크론 결과 영향 없음):", e);
+      }
+
+      // ── Creative Pipeline 호출 (실패해도 크론 결과에 영향 없음) ──
+      try {
+        const pipelineUrl = process.env.CREATIVE_PIPELINE_URL;
+        const pipelineSecret = process.env.CREATIVE_PIPELINE_SECRET;
+        if (pipelineUrl) {
+          const pipelineRes = await fetch(`${pipelineUrl}/pipeline`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-SECRET': pipelineSecret || '',
+            },
+            body: JSON.stringify({}),
+            signal: AbortSignal.timeout(300_000),
+          });
+          pipelineResult = await pipelineRes.json();
+          console.log('[collect-daily] creative pipeline 완료:', JSON.stringify(pipelineResult).slice(0, 200));
+        }
+      } catch (e) {
+        console.error('[collect-daily] creative pipeline 호출 실패 (크론 결과 영향 없음):', e);
+      }
+    }
+
     await completeCronRun(
       cronRunId,
       hasPartialError ? "partial" : "success",
@@ -433,40 +492,10 @@ export async function runCollectDaily(dateParam?: string): Promise<CollectDailyR
       hasPartialError ? "일부 계정 실패" : undefined
     );
 
-    // ── 사전계산 실행 (실패해도 크론 결과에 영향 없음) ──
-    let precomputeResult: Record<string, unknown> | null = null;
-    try {
-      precomputeResult = await runPrecomputeAll(svc) as unknown as Record<string, unknown>;
-    } catch (e) {
-      console.error("[collect-daily] 사전계산 실패 (크론 결과 영향 없음):", e);
-    }
-
-    // ── Creative Pipeline 호출 (실패해도 크론 결과에 영향 없음) ──
-    let pipelineResult: Record<string, unknown> | null = null;
-    try {
-      const pipelineUrl = process.env.CREATIVE_PIPELINE_URL;
-      const pipelineSecret = process.env.CREATIVE_PIPELINE_SECRET;
-      if (pipelineUrl) {
-        const pipelineRes = await fetch(`${pipelineUrl}/pipeline`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-API-SECRET': pipelineSecret || '',
-          },
-          body: JSON.stringify({}),
-          signal: AbortSignal.timeout(300_000),
-        });
-        pipelineResult = await pipelineRes.json();
-        console.log('[collect-daily] creative pipeline 완료:', JSON.stringify(pipelineResult).slice(0, 200));
-      }
-    } catch (e) {
-      console.error('[collect-daily] creative pipeline 호출 실패 (크론 결과 영향 없음):', e);
-    }
-
     return {
       message: "collect-daily completed",
       date: yesterday,
-      accounts: accounts.length,
+      accounts: filteredAccounts.length,
       share_to_video_fixed: shareFixed?.length ?? 0,
       results,
       precompute: precomputeResult,
@@ -489,9 +518,12 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const dateParam = searchParams.get("date") ?? undefined;
+  // 수동 호출 시 batch 파라미터로 특정 배치만 실행 가능 (예: ?batch=2)
+  const batchParam = searchParams.get("batch");
+  const batch = batchParam ? parseInt(batchParam, 10) : undefined;
 
   try {
-    const result = await runCollectDaily(dateParam);
+    const result = await runCollectDaily(dateParam, batch);
     return NextResponse.json(result);
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : "Unknown error";
