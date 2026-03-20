@@ -313,7 +313,7 @@
       "S10-Gap분석"
     ],
     "completedAt": "2026-03-20",
-    "updatedAt": "2026-03-21T00:21:36",
+    "updatedAt": "2026-03-21T00:58:55",
     "notes": "STEP 1 완료. collect-daily v2 정규화 테이블 UPSERT. lp-normalizer.ts 신규. LP URL effective_object_story_spec 추출. ad_creative_embeddings 호환 유지. tsc+build 통과."
   }
 }
