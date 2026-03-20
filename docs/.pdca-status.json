@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-20T22:30:00.000Z",
+  "lastUpdated": "2026-03-21T00:22:39.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1284,6 +1284,18 @@
       "startedAt": "2026-03-19",
       "completedAt": "2026-03-19",
       "notes": "벤치마크 캐시 전체 수정. API adIds캐시체크+실시간폴백, 프론트 adIds전달+benchVal완화, precompute top5→10 (MJS+TS), LP크롤 배치5+딜레이. 캐시 175건 재생성. 0% 123건 전부🔴 검증."
+    },
+    "collect-daily-v2": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/collect-daily-v2.plan.md",
+        "design": "02-design/features/collect-daily-v2.design.md",
+        "analysis": "03-analysis/collect-daily-v2.analysis.md"
+      },
+      "startedAt": "2026-03-20",
+      "completedAt": "2026-03-20",
+      "notes": "STEP 1 완료. collect-daily가 v2 정규화 테이블(creatives, creative_media, landing_pages)에 직접 UPSERT. ad_creative_embeddings 호환 유지. lp-normalizer.ts 신규 모듈. LP URL은 effective_object_story_spec에서 추출. tsc+build 통과. Match Rate 95%."
     }
   }
 }

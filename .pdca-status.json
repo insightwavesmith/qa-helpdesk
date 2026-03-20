@@ -268,5 +268,52 @@
     "completedAt": "2026-03-20",
     "updatedAt": "2026-03-20",
     "notes": "collect-daily 배치 4분할. 계정 10개씩 5분 간격(18:00~18:15 UTC). batch 4만 후처리. 수집 로직 변경 없음. tsc+build 통과."
+  },
+  "competitor-l1-analysis": {
+    "status": "implementing",
+    "tasks": [
+      "T1-큐등록스크립트",
+      "T2-전체큐등록3848건",
+      "T3-크론배치확대",
+      "T4-배치처리실행"
+    ],
+    "updatedAt": "2026-03-20",
+    "notes": "경쟁사 L1 분석 파이프라인. 3,848건 큐 등록. BATCH_LIMIT 20→100. 크론 6시간마다. 200건 배치 처리 중(~60% 성공, 40% CDN 만료)."
+  },
+  "db-restructure-phase1": {
+    "status": "implementing",
+    "plan": "docs/01-plan/features/db-restructure-phase1.plan.md",
+    "design": "docs/02-design/features/db-restructure-phase1.design.md",
+    "tasks": [
+      "T1-SQL마이그레이션",
+      "T2-normalize-lps.mjs",
+      "T3-크롤러viewport",
+      "T4-validate-lp-crawl.mjs",
+      "T5-crawl-all-lps.mjs"
+    ],
+    "updatedAt": "2026-03-20",
+    "notes": "Phase 1 코드 구현 완료. SQL 44줄, normalize 345줄, validate 293줄, crawl-all 298줄, 크롤러 309줄. tsc+build 통과. Supabase SQL 실행 + dry-run 검증 대기."
+  },
+  "collect-daily-v2": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/collect-daily-v2.plan.md",
+    "design": "docs/02-design/features/collect-daily-v2.design.md",
+    "analysis": "docs/03-analysis/collect-daily-v2.analysis.md",
+    "matchRate": 95,
+    "tasks": [
+      "S1-lp-normalizer.ts",
+      "S2-AD_FIELDS변경",
+      "S3-extractLpUrl",
+      "S4-landing_pages-UPSERT",
+      "S5-creatives-UPSERT",
+      "S6-lp_id-FK연결",
+      "S7-creative_media-UPSERT",
+      "S8-로깅",
+      "S9-빌드검증",
+      "S10-Gap분석"
+    ],
+    "completedAt": "2026-03-20",
+    "updatedAt": "2026-03-21T00:21:36",
+    "notes": "STEP 1 완료. collect-daily v2 정규화 테이블 UPSERT. lp-normalizer.ts 신규. LP URL effective_object_story_spec 추출. ad_creative_embeddings 호환 유지. tsc+build 통과."
   }
 }

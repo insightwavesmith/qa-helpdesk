@@ -20,7 +20,7 @@ const AD_FIELDS = [
   "campaign_name",
   "account_id",
   "account_name",
-  "creative.fields(object_type,product_set_id,video_id,image_hash,asset_feed_spec)",
+  "creative.fields(object_type,product_set_id,video_id,image_hash,asset_feed_spec,effective_object_story_spec)",
 ].join(",");
 
 const INSIGHT_FIELDS = [
@@ -78,6 +78,16 @@ function normalizeRanking(raw: string | null | undefined): string {
   return "UNKNOWN";
 }
 
+// LP URL 추출 헬퍼 (effective_object_story_spec 기반)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractLpUrl(ad: Record<string, any>): string | null {
+  const oss = ad.creative?.effective_object_story_spec;
+  if (!oss) return null;
+  if (oss.link_data?.link) return oss.link_data.link;
+  if (oss.video_data?.call_to_action?.value?.link) return oss.video_data.call_to_action.value.link;
+  return null;
+}
+
 // creative 필드 기반 분류 — 공용 모듈에서 import
 import { getCreativeType } from "@/lib/protractor/creative-type";
 import {
@@ -86,6 +96,7 @@ import {
   fetchVideoThumbnails,
 } from "@/lib/protractor/creative-image-fetcher";
 import { embedMissingCreatives } from "@/lib/ad-creative-embedder";
+import { normalizeUrl, classifyUrl } from "@/lib/lp-normalizer";
 
 // ── 지표 계산 (GCP 스펙 기준) ──────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -414,6 +425,156 @@ export async function runCollectDaily(dateParam?: string, batch?: number): Promi
             } else {
               console.log(`[collect-daily] ad_creative_embeddings upserted: ${creativeRows.length}건`);
             }
+          }
+
+          // ── [v2] 정규화 테이블 UPSERT (landing_pages → creatives → creative_media) ──
+          try {
+            // Step 1: LP URL 수집 + 정규화 + landing_pages UPSERT
+            const lpUrlMap = new Map<string, { canonical: string; hostname: string; account_id: string }>();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            for (const ad of ads as any[]) {
+              const rawLpUrl = extractLpUrl(ad);
+              if (!rawLpUrl) continue;
+              const norm = normalizeUrl(rawLpUrl);
+              if (!norm) continue;
+              lpUrlMap.set(norm.canonical, { ...norm, account_id: account.account_id });
+            }
+
+            let canonicalToLpId = new Map<string, string>();
+
+            if (lpUrlMap.size > 0) {
+              const lpRows = Array.from(lpUrlMap.values()).map((lp) => {
+                const { page_type, platform } = classifyUrl(lp.canonical, lp.hostname);
+                return {
+                  account_id: lp.account_id,
+                  canonical_url: lp.canonical,
+                  domain: lp.hostname,
+                  page_type,
+                  platform,
+                  is_active: true,
+                  updated_at: new Date().toISOString(),
+                };
+              });
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const { error: lpErr } = await (svc as any)
+                .from("landing_pages")
+                .upsert(lpRows, { onConflict: "canonical_url" });
+              if (lpErr) {
+                console.error(`[collect-daily] v2 landing_pages upsert error [${account.account_id}]:`, lpErr);
+              } else {
+                console.log(`[collect-daily] v2 landing_pages: ${lpRows.length}건 upserted`);
+              }
+
+              // canonical_url → lp_id 매핑 조회
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const { data: lpIdData } = await (svc as any)
+                .from("landing_pages")
+                .select("id, canonical_url")
+                .in("canonical_url", Array.from(lpUrlMap.keys()));
+
+              canonicalToLpId = new Map<string, string>(
+                (lpIdData ?? []).map((lp: { canonical_url: string; id: string }) => [lp.canonical_url, lp.id])
+              );
+            }
+
+            // Step 2: creatives UPSERT (lp_id FK 포함, LP 없으면 null)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const v2CreativeRows = (ads as any[]).map((ad: any) => {
+              const adId = (ad.ad_id ?? ad.id) as string;
+              if (!adId) return null;
+              const creativeType = getCreativeType(ad);
+              const rawLpUrl = extractLpUrl(ad);
+              let lpId: string | null = null;
+              if (rawLpUrl) {
+                const norm = normalizeUrl(rawLpUrl);
+                if (norm) lpId = canonicalToLpId.get(norm.canonical) ?? null;
+              }
+              return {
+                ad_id: adId,
+                account_id: account.account_id,
+                creative_type: creativeType,
+                source: "bscamp",
+                brand_name: account.account_name || null,
+                is_active: true,
+                lp_url: rawLpUrl || null,
+                lp_id: lpId,
+                updated_at: new Date().toISOString(),
+              };
+            }).filter(Boolean);
+
+            if (v2CreativeRows.length > 0) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const { error: v2CreativeErr } = await (svc as any)
+                .from("creatives")
+                .upsert(v2CreativeRows, { onConflict: "ad_id" });
+              if (v2CreativeErr) {
+                console.error(`[collect-daily] v2 creatives upsert error [${account.account_id}]:`, v2CreativeErr);
+              } else {
+                console.log(`[collect-daily] v2 creatives: ${v2CreativeRows.length}건 upserted`);
+              }
+            }
+
+            // Step 3: creative_media UPSERT (media_url 있는 건만)
+            if (v2CreativeRows.length > 0) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const adIds = v2CreativeRows.map((r: any) => r.ad_id as string);
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const { data: creativeIdData } = await (svc as any)
+                .from("creatives")
+                .select("id, ad_id")
+                .in("ad_id", adIds);
+
+              const adIdToCreativeId = new Map<string, string>(
+                (creativeIdData ?? []).map((c: { ad_id: string; id: string }) => [c.ad_id, c.id])
+              );
+
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const mediaRows = (ads as any[]).map((ad: any) => {
+                const adId = (ad.ad_id ?? ad.id) as string;
+                const creativeId = adIdToCreativeId.get(adId);
+                if (!creativeId) return null;
+
+                const creative = ad.creative;
+                const imageHash = creative?.image_hash;
+                const videoId = creative?.video_id;
+
+                // media_url 3단계 fallback (기존 로직과 동일)
+                const mediaUrl = (() => {
+                  if (imageHash && hashToUrl.has(imageHash)) return hashToUrl.get(imageHash)!;
+                  if (videoId && videoThumbMap.has(videoId)) return videoThumbMap.get(videoId)!;
+                  const afsImages = creative?.asset_feed_spec?.images;
+                  if (afsImages && Array.isArray(afsImages)) {
+                    for (const img of afsImages) {
+                      if (img.hash && hashToUrl.has(img.hash)) return hashToUrl.get(img.hash)!;
+                    }
+                  }
+                  return null;
+                })();
+
+                if (!mediaUrl) return null;
+
+                return {
+                  creative_id: creativeId,
+                  media_type: videoId ? "VIDEO" : "IMAGE",
+                  media_url: mediaUrl,
+                  media_hash: imageHash || null,
+                };
+              }).filter(Boolean);
+
+              if (mediaRows.length > 0) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const { error: mediaErr } = await (svc as any)
+                  .from("creative_media")
+                  .upsert(mediaRows, { onConflict: "creative_id" });
+                if (mediaErr) {
+                  console.error(`[collect-daily] v2 creative_media upsert error [${account.account_id}]:`, mediaErr);
+                } else {
+                  console.log(`[collect-daily] v2 creative_media: ${mediaRows.length}건 upserted`);
+                }
+              }
+            }
+          } catch (v2Err) {
+            console.error(`[collect-daily] v2 UPSERT 실패 (기존 로직 영향 없음) [${account.account_id}]:`, v2Err);
           }
         }
       } catch (e) {
