@@ -39,6 +39,8 @@ const MODE_IDX = process.argv.indexOf("--mode");
 const MODE = MODE_IDX !== -1 ? process.argv[MODE_IDX + 1].toLowerCase() : "final";
 const SOURCE_IDX = process.argv.indexOf("--source");
 const SOURCE = SOURCE_IDX !== -1 ? process.argv[SOURCE_IDX + 1].toLowerCase() : "creative";
+// B10: --include-inactive 플래그 — 비활성(벤치마크 등) 소재도 분석 대상에 포함
+const INCLUDE_INACTIVE = process.argv.includes("--include-inactive");
 
 if (!["free", "cluster", "final"].includes(MODE)) {
   console.error("--mode는 free|cluster|final 중 하나여야 합니다.");
@@ -50,25 +52,13 @@ if (!["creative", "competitor"].includes(SOURCE)) {
   process.exit(1);
 }
 
-// ── .env.local 파싱 ──
-const envPath = resolve(__dirname, "..", ".env.local");
-const envContent = readFileSync(envPath, "utf-8");
-const env = {};
-for (const line of envContent.split("\n")) {
-  const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
-}
-
-const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL;
-const SB_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
+// ── 환경변수 (B11: 공용 파서) ──
+import { getSupabaseConfig } from "./lib/env.mjs";
+const { SB_URL, SB_KEY, env } = getSupabaseConfig();
 const GEMINI_KEY = env.GEMINI_API_KEY;
 
-if (!SB_URL || !SB_KEY) {
-  console.error("NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 필요");
-  process.exit(1);
-}
 if (!GEMINI_KEY) {
-  console.error("GEMINI_API_KEY 필요");
+  console.error("GEMINI_API_KEY 필요 (.env.local)");
   process.exit(1);
 }
 
@@ -728,7 +718,9 @@ async function fetchStratifiedSample(targetCount) {
   while (true) {
     let q =
       `/creative_media?select=id,creative_id,storage_url,media_type,ad_copy,creatives!inner(ad_id,account_id,creative_performance(roas))` +
-      `&storage_url=not.is.null&is_active=eq.true&analysis_json=is.null&order=id.asc&offset=${offset}&limit=${PAGE_SIZE}`;
+      `&storage_url=not.is.null&analysis_json=is.null&order=id.asc&offset=${offset}&limit=${PAGE_SIZE}`;
+    // B10: --include-inactive가 없으면 활성 소재만 (벤치마크 제외)
+    if (!INCLUDE_INACTIVE) q += `&is_active=eq.true`;
     if (FILTER_TYPE) q += `&media_type=eq.${FILTER_TYPE}`;
     if (FILTER_ACCOUNT) q += `&creatives.account_id=eq.${FILTER_ACCOUNT}`;
     const batch = await sbGet(q);
@@ -737,7 +729,7 @@ async function fetchStratifiedSample(targetCount) {
     offset += PAGE_SIZE;
   }
 
-  console.log(`  전체 분석 대상 (미분석 + 활성): ${allRows.length}건`);
+  console.log(`  전체 분석 대상 (미분석${INCLUDE_INACTIVE ? "" : " + 활성"}): ${allRows.length}건`);
 
   // ROAS 기준 정렬
   const withRoas = allRows.map((r) => ({
@@ -1170,7 +1162,7 @@ async function main() {
     if (item.mediaType === "VIDEO") {
       // storage_url이 .mp4로 끝나면 Storage URL 직접 사용
       if (item.storageUrl?.endsWith(".mp4")) {
-        videoUrl = `${SB_URL}/storage/v1/object/public/creatives/${item.storageUrl}`;
+        videoUrl = item.storageUrl.startsWith("http") ? item.storageUrl : `${SB_URL}/storage/v1/object/public/creatives/${item.storageUrl}`;
       } else {
         // creatives 테이블에서 video_url 조회
         try {

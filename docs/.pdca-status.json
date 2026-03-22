@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-22T12:05:48.000Z",
+  "lastUpdated": "2026-03-23T10:00:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1221,6 +1221,14 @@
       "matchRate": null,
       "documents": {},
       "notes": "네온벨로 E2E: 소재40건+LP2건+5축40건+임베딩40건 완료. story_video_id 수정."
+    },
+    "pipeline-bugfix-b5-b11": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {},
+      "startedAt": "2026-03-23",
+      "completedAt": "2026-03-23",
+      "notes": "B5~B11 파이프라인 버그 7건 수정. tsc+build 통과."
     }
   },
   "phaseMapping": {

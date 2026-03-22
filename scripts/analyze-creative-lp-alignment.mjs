@@ -258,7 +258,7 @@ async function main() {
         offer_alignment: result.offer_alignment,
         overall_score: overall,
         issues: result.issues || [],
-        updated_at: new Date().toISOString(),
+        analyzed_at: new Date().toISOString(),
       });
 
       if (!patch.ok) {

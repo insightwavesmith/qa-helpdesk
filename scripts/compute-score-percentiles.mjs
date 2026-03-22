@@ -14,36 +14,23 @@
  * 전제 조건:
  *   - creative_media.analysis_json이 v3 스키마로 채워진 후 실행
  *   - creatives → ad_accounts → profiles.category 조인 가능
+ *
+ * B7 수정: profiles!inner → profiles (LEFT JOIN) — 카테고리 NULL 계정 누락 방지
+ * B8 수정: PATCH 동시 처리 (10건씩 병렬)
+ * B11 수정: scripts/lib/env.mjs 공용 파서 사용
  */
 
-import { readFileSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import { getSupabaseConfig } from "./lib/env.mjs";
 
 // ── CLI 옵션 ──
 const DRY_RUN = process.argv.includes("--dry-run");
 const CAT_IDX = process.argv.indexOf("--category");
 const FILTER_CATEGORY = CAT_IDX !== -1 ? process.argv[CAT_IDX + 1] : null;
 const MIN_SAMPLE = 50; // 카테고리별 최소 샘플 수
+const PATCH_CONCURRENCY = 10; // B8: 동시 PATCH 수
 
-// ── .env.local 파싱 ──
-const envPath = resolve(__dirname, "..", ".env.local");
-const envContent = readFileSync(envPath, "utf-8");
-const env = {};
-for (const line of envContent.split("\n")) {
-  const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
-}
-
-const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL;
-const SB_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!SB_URL || !SB_KEY) {
-  console.error("NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 필요");
-  process.exit(1);
-}
+// ── 환경변수 (B11: 공용 파서) ──
+const { SB_URL, SB_KEY } = getSupabaseConfig();
 
 // ── Supabase 헬퍼 ──
 async function sbGet(path) {
@@ -71,34 +58,21 @@ async function sbPatch(table, query, body) {
 
 // ── 점수 계산 함수 ──
 
-/**
- * production_quality 문자열 → 수치 변환
- */
 function qualityToScore(quality) {
   const map = { professional: 100, semi: 70, ugc: 50, low: 20 };
   return map[quality] ?? 50;
 }
 
-/**
- * contrast 문자열 → 수치 변환
- */
 function contrastToScore(contrast) {
   const map = { high: 100, medium: 60, low: 30 };
   return map[contrast] ?? 60;
 }
 
-/**
- * readability 문자열 → 수치 변환
- */
 function readabilityToScore(readability) {
   const map = { high: 100, medium: 60, low: 20 };
   return map[readability] ?? 60;
 }
 
-/**
- * visual_impact 점수 계산
- * = attention.cta_attention_score × 40 + quality.production_quality 점수 × 30 + visual.color.contrast 점수 × 30
- */
 function computeVisualImpact(analysis) {
   const ctaScore = (analysis?.attention?.cta_attention_score ?? 0.5) * 100;
   const prodScore = qualityToScore(analysis?.quality?.production_quality);
@@ -106,10 +80,6 @@ function computeVisualImpact(analysis) {
   return Math.round(ctaScore * 0.4 + prodScore * 0.3 + contScore * 0.3);
 }
 
-/**
- * message_clarity 점수 계산
- * text 축 충실도: key_message, cta_text, headline_type, readability
- */
 function computeMessageClarity(analysis) {
   let score = 0;
   const text = analysis?.text;
@@ -121,19 +91,10 @@ function computeMessageClarity(analysis) {
   return Math.min(100, score);
 }
 
-/**
- * cta_effectiveness 점수 계산
- * = attention.cta_attention_score × 100
- */
 function computeCtaEffectiveness(analysis) {
   return Math.round((analysis?.attention?.cta_attention_score ?? 0.5) * 100);
 }
 
-/**
- * social_proof_score 점수 계산
- * psychology.social_proof_type != "none" → 80, otherwise 20
- * 추가로 text.social_proof 필드 확인
- */
 function computeSocialProofScore(analysis) {
   const spType = analysis?.psychology?.social_proof_type;
   const hasSpType = spType && spType !== "none";
@@ -145,17 +106,10 @@ function computeSocialProofScore(analysis) {
   return 20;
 }
 
-/**
- * overall 가중 평균
- * visual_impact 30% + message_clarity 25% + cta_effectiveness 25% + social_proof_score 20%
- */
 function computeOverall(vi, mc, cta, sp) {
   return Math.round(vi * 0.3 + mc * 0.25 + cta * 0.25 + sp * 0.2);
 }
 
-/**
- * 배열에서 percentile 계산 (0-100)
- */
 function percentileOf(value, sortedValues) {
   if (sortedValues.length === 0) return 50;
   const rank = sortedValues.filter((v) => v <= value).length;
@@ -202,14 +156,15 @@ async function main() {
   }
 
   // 2. ad_accounts.account_id → category 매핑 로드
-  //    creatives.account_id(문자열) → ad_accounts.account_id(문자열) → profiles.category
+  //    B7: profiles!inner → profiles (LEFT JOIN) — category NULL이어도 누락 안 됨
   console.log("카테고리 매핑 로드 중...");
-  const accountCategoryMap = new Map(); // account_id(문자열) → category
+  const accountCategoryMap = new Map();
   let aaOffset = 0;
   while (true) {
-    const q = `/ad_accounts?select=account_id,profiles!inner(category)&order=id.asc&offset=${aaOffset}&limit=${PAGE_SIZE}`;
+    const q = `/ad_accounts?select=account_id,profiles(category)&order=id.asc&offset=${aaOffset}&limit=${PAGE_SIZE}`;
     const batch = await sbGet(q);
     for (const r of batch) {
+      // B7: profiles가 null이면 (LEFT JOIN), "기타"로 폴백
       const cat = r.profiles?.category || "기타";
       accountCategoryMap.set(String(r.account_id), cat);
     }
@@ -218,8 +173,18 @@ async function main() {
   }
   console.log(`카테고리 매핑: ${accountCategoryMap.size}개 계정`);
 
-  // 2. 카테고리별 분류
-  const byCategory = {}; // { "beauty": [...rows], "전체": [...allRows] }
+  // B7: 매핑 안 된 계정 진단
+  const unmappedAccounts = new Set();
+  for (const row of cmRows) {
+    const aid = String(row.creatives?.account_id || "");
+    if (aid && !accountCategoryMap.has(aid)) unmappedAccounts.add(aid);
+  }
+  if (unmappedAccounts.size > 0) {
+    console.log(`  ⚠ ad_accounts에 없는 계정 ${unmappedAccounts.size}개 → "기타" 처리`);
+  }
+
+  // 카테고리별 분류
+  const byCategory = {};
 
   for (const row of cmRows) {
     const accountId = String(row.creatives?.account_id || "");
@@ -239,7 +204,7 @@ async function main() {
   console.log();
 
   // 3. 카테고리별 점수 분포 사전 계산
-  const categoryScoreArrays = {}; // { "뷰티": { overall: [...], visual_impact: [...], ... } }
+  const categoryScoreArrays = {};
 
   for (const [cat, rows] of Object.entries(byCategory)) {
     const arrays = {
@@ -266,7 +231,6 @@ async function main() {
       );
     }
 
-    // 정렬 (percentile 계산용)
     for (const key of Object.keys(arrays)) {
       arrays[key] = arrays[key].slice().sort((a, b) => a - b);
     }
@@ -282,6 +246,9 @@ async function main() {
   const targetRows = FILTER_CATEGORY ? (byCategory[FILTER_CATEGORY] || []) : cmRows;
   console.log(`점수 계산 대상: ${targetRows.length}건\n`);
 
+  // B8: 동시 PATCH 처리를 위한 행별 점수 사전 계산
+  const rowUpdates = [];
+
   for (let i = 0; i < targetRows.length; i++) {
     const row = targetRows[i];
     const a = row.analysis_json;
@@ -294,7 +261,6 @@ async function main() {
     const sp = computeSocialProofScore(a);
     const overall = computeOverall(vi, mc, cta, sp);
 
-    // 카테고리 샘플 수 확인 → 부족하면 전체 대비
     const catRows = byCategory[category] || [];
     const useCat = catRows.length >= MIN_SAMPLE ? category : "전체";
     const refArrays = categoryScoreArrays[useCat] || categoryScoreArrays["전체"];
@@ -308,7 +274,6 @@ async function main() {
     const benchmarkCategory = catRows.length >= MIN_SAMPLE ? category : "전체";
     const benchmarkSampleSize = (byCategory[benchmarkCategory] || byCategory["전체"] || []).length;
 
-    // suggestions 생성
     const suggestions = [];
     if (cta < 50) suggestions.push("CTA 문구를 더 명확하게 강화하세요");
     if (vi < 50) suggestions.push("시각적 임팩트를 높이세요 (색상 대비, 제품 가시성)");
@@ -333,22 +298,35 @@ async function main() {
       );
     }
 
-    if (DRY_RUN) {
-      success++;
-      continue;
-    }
+    rowUpdates.push({ row, a, scores });
+  }
 
-    // analysis_json.scores 업데이트 (기존 analysis_json에 scores 병합)
-    const updatedJson = { ...a, scores };
-    const patch = await sbPatch("creative_media", `id=eq.${row.id}`, {
-      analysis_json: updatedJson,
-    });
+  // B8: 배치 병렬 PATCH
+  if (DRY_RUN) {
+    success = rowUpdates.length;
+  } else {
+    for (let i = 0; i < rowUpdates.length; i += PATCH_CONCURRENCY) {
+      const batch = rowUpdates.slice(i, i + PATCH_CONCURRENCY);
+      const results = await Promise.all(
+        batch.map(async ({ row, a, scores }) => {
+          const updatedJson = { ...a, scores };
+          return sbPatch("creative_media", `id=eq.${row.id}`, {
+            analysis_json: updatedJson,
+          });
+        })
+      );
 
-    if (!patch.ok) {
-      console.error(`  X DB 저장 실패 (id=${row.id}): ${patch.body}`);
-      errors++;
-    } else {
-      success++;
+      for (const patch of results) {
+        if (!patch.ok) {
+          errors++;
+        } else {
+          success++;
+        }
+      }
+
+      if ((i + PATCH_CONCURRENCY) % 200 === 0) {
+        console.log(`  PATCH 진행: ${Math.min(i + PATCH_CONCURRENCY, rowUpdates.length)}/${rowUpdates.length}`);
+      }
     }
   }
 

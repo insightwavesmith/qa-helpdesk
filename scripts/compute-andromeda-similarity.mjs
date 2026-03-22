@@ -9,11 +9,7 @@
  *   node scripts/compute-andromeda-similarity.mjs [--limit N] [--dry-run] [--account-id UUID]
  */
 
-import { readFileSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import { getSupabaseConfig } from "./lib/env.mjs";
 
 // ── CLI 옵션 ──
 const DRY_RUN = process.argv.includes("--dry-run");
@@ -21,23 +17,12 @@ const LIMIT_IDX = process.argv.indexOf("--limit");
 const LIMIT = LIMIT_IDX !== -1 ? parseInt(process.argv[LIMIT_IDX + 1], 10) : null;
 const ACCOUNT_IDX = process.argv.indexOf("--account-id");
 const FILTER_ACCOUNT = ACCOUNT_IDX !== -1 ? process.argv[ACCOUNT_IDX + 1] : null;
+// B9: --threshold CLI 옵션 (기본 0.40, 기존 0.60에서 하향)
+const THRESH_IDX = process.argv.indexOf("--threshold");
+const SIMILARITY_THRESHOLD = THRESH_IDX !== -1 ? parseFloat(process.argv[THRESH_IDX + 1]) : 0.40;
 
-// ── .env.local 파싱 ──
-const envPath = resolve(__dirname, "..", ".env.local");
-const envContent = readFileSync(envPath, "utf-8");
-const env = {};
-for (const line of envContent.split("\n")) {
-  const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
-}
-
-const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL;
-const SB_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!SB_URL || !SB_KEY) {
-  console.error("NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 필요");
-  process.exit(1);
-}
+// ── 환경변수 (B11: 공용 파서) ──
+const { SB_URL, SB_KEY } = getSupabaseConfig();
 
 // ── Supabase 헬퍼 ──
 async function sbGet(path) {
@@ -118,6 +103,7 @@ function overlapAxes(a, b) {
 // ── main ──
 async function main() {
   console.log(`Andromeda 유사도 계산${DRY_RUN ? " (dry-run)" : ""}`);
+  console.log(`유사도 임계값: ${SIMILARITY_THRESHOLD} (--threshold로 변경 가능)`);
   if (FILTER_ACCOUNT) console.log(`계정 필터: ${FILTER_ACCOUNT}`);
   if (LIMIT) console.log(`계정 수 제한: ${LIMIT}개`);
   console.log();
@@ -131,9 +117,9 @@ async function main() {
 
   while (true) {
     let q =
-      `/creative_media?select=id,creative_id,account_id,analysis_json,media_type` +
-      `&is_active=eq.true&order=id.asc&offset=${offset}&limit=${PAGE_SIZE}`;
-    if (FILTER_ACCOUNT) q += `&account_id=eq.${FILTER_ACCOUNT}`;
+      `/creative_media?select=id,creative_id,analysis_json,media_type,creatives!inner(account_id)` +
+      `&order=id.asc&offset=${offset}&limit=${PAGE_SIZE}`;
+    if (FILTER_ACCOUNT) q += `&creatives.account_id=eq.${FILTER_ACCOUNT}`;
     const batch = await sbGet(q);
 
     // andromeda_signals 있는 것만 필터 (PostgREST JSON 필터 문법 호환성 위해 클라이언트 필터)
@@ -156,7 +142,7 @@ async function main() {
   // 2. account_id별로 그룹핑
   const byAccount = {};
   for (const row of cmRows) {
-    const accountId = row.account_id;
+    const accountId = row.creatives?.account_id;
     if (!accountId) continue;
     if (!byAccount[accountId]) byAccount[accountId] = [];
     byAccount[accountId].push(row);
@@ -206,7 +192,8 @@ async function main() {
 
         const sim = andromedaSimilarity(sigA, sigB);
 
-        if (sim >= 0.6) {
+        // B9: 임계값을 CLI 옵션으로 변경 가능 (기본 0.40)
+        if (sim >= SIMILARITY_THRESHOLD) {
           pairs60++;
           if (sim >= 0.8) pairs80++;
 
@@ -231,7 +218,7 @@ async function main() {
     if (DRY_RUN) {
       const withSimilar = [...similarMap.values()].filter((v) => v.length > 0).length;
       console.log(
-        `  [dry-run] 유사도 ≥ 0.60 쌍 발견: ${[...similarMap.values()].reduce((s, v) => s + v.length, 0) / 2}쌍` +
+        `  [dry-run] 유사도 ≥ ${SIMILARITY_THRESHOLD} 쌍 발견: ${[...similarMap.values()].reduce((s, v) => s + v.length, 0) / 2}쌍` +
         `, 업데이트 대상: ${withSimilar}건`
       );
       updateCount += items.length;
@@ -273,7 +260,7 @@ async function main() {
   console.log("━━━ Andromeda 유사도 결과 ━━━");
   console.log(`처리 계정: ${accountList.length}개`);
   console.log(`비교 쌍: ${totalPairs.toLocaleString()}개`);
-  console.log(`유사도 ≥ 0.60: ${pairs60}쌍`);
+  console.log(`유사도 ≥ ${SIMILARITY_THRESHOLD}: ${pairs60}쌍`);
   console.log(`유사도 ≥ 0.80: ${pairs80}쌍`);
   if (DRY_RUN) {
     console.log(`업데이트: (dry-run — 실제 저장 안 함)`);

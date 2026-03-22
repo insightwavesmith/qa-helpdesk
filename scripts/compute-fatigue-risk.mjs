@@ -20,35 +20,21 @@
  * 전제 조건:
  *   - creative_media.analysis_json이 v3 스키마로 채워진 후 실행
  *   - ad_creative_embeddings.embedding_3072 또는 creative_media.embedding 벡터 필요
+ *
+ * B5 수정: ad_id String 강제 변환으로 타입 불일치 방지 + 디버그 로그
+ * B6 수정: 계정별 임베딩 로드 → 메모리 사용량 제어
+ * B11 수정: scripts/lib/env.mjs 공용 파서 사용
  */
 
-import { readFileSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import { getSupabaseConfig } from "./lib/env.mjs";
 
 // ── CLI 옵션 ──
 const DRY_RUN = process.argv.includes("--dry-run");
 const ACCOUNT_IDX = process.argv.indexOf("--account");
 const FILTER_ACCOUNT = ACCOUNT_IDX !== -1 ? process.argv[ACCOUNT_IDX + 1] : null;
 
-// ── .env.local 파싱 ──
-const envPath = resolve(__dirname, "..", ".env.local");
-const envContent = readFileSync(envPath, "utf-8");
-const env = {};
-for (const line of envContent.split("\n")) {
-  const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
-}
-
-const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL;
-const SB_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!SB_URL || !SB_KEY) {
-  console.error("NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 필요");
-  process.exit(1);
-}
+// ── 환경변수 (B11: 공용 파서) ──
+const { SB_URL, SB_KEY } = getSupabaseConfig();
 
 // ── Supabase 헬퍼 ──
 async function sbGet(path) {
@@ -117,6 +103,29 @@ function parseEmbedding(raw) {
   return null;
 }
 
+/**
+ * B6: 특정 계정의 임베딩만 로드 (메모리 절약)
+ * @returns {Map<string, number[]>} ad_id(String) → embedding vector
+ */
+async function loadAccountEmbeddings(accountId, PAGE_SIZE) {
+  const embeddingMap = new Map();
+  let offset = 0;
+  while (true) {
+    const q =
+      `/ad_creative_embeddings?select=ad_id,embedding_3072` +
+      `&account_id=eq.${accountId}&embedding_3072=not.is.null&order=ad_id.asc&offset=${offset}&limit=${PAGE_SIZE}`;
+    const batch = await sbGet(q);
+    for (const r of batch) {
+      const vec = parseEmbedding(r.embedding_3072);
+      // B5: String 강제 변환으로 타입 불일치 방지
+      if (vec) embeddingMap.set(String(r.ad_id), vec);
+    }
+    if (batch.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+  return embeddingMap;
+}
+
 // ── main ──
 async function main() {
   console.log(`소재 피로도 위험 계산${DRY_RUN ? " (dry-run)" : ""}`);
@@ -126,7 +135,6 @@ async function main() {
   const PAGE_SIZE = 1000;
 
   // 1. creative_media에서 analysis_json NOT NULL + is_active=true 소재 조회
-  //    (embedding 또는 ad_creative_embeddings.embedding_3072 필요)
   console.log("creative_media 조회 중...");
   let cmRows = [];
   let offset = 0;
@@ -145,7 +153,6 @@ async function main() {
     }
   } catch (e) {
     if (e.message.includes("analysis_json") || e.message.includes("is_active")) {
-      // 컬럼 미생성 시 analysis_json 없이 조회 (임베딩만 계산)
       console.log("  analysis_json/is_active 컬럼 미생성 — 기본 컬럼으로 재시도");
       hasAnalysisCol = false;
       cmRows = [];
@@ -177,33 +184,7 @@ async function main() {
     return;
   }
 
-  // 2. ad_creative_embeddings에서 embedding_3072 로드
-  //    (creative_media.embedding 컬럼이 없으면 이 테이블을 사용)
-  console.log("임베딩 벡터 로드 중...");
-  const embeddingMap = new Map(); // ad_id → embedding_3072
-
-  // account_id 목록 수집
-  const accountIds = [...new Set(cmRows.map((r) => r.creatives?.account_id).filter(Boolean))];
-
-  for (const accountId of accountIds) {
-    let aceOffset = 0;
-    while (true) {
-      let q =
-        `/ad_creative_embeddings?select=ad_id,embedding_3072` +
-        `&account_id=eq.${accountId}&embedding_3072=not.is.null&order=ad_id.asc&offset=${aceOffset}&limit=${PAGE_SIZE}`;
-      const batch = await sbGet(q);
-      for (const r of batch) {
-        const vec = parseEmbedding(r.embedding_3072);
-        if (vec) embeddingMap.set(r.ad_id, vec);
-      }
-      if (batch.length < PAGE_SIZE) break;
-      aceOffset += PAGE_SIZE;
-    }
-  }
-  console.log(`임베딩 로드 완료: ${embeddingMap.size}건`);
-  console.log();
-
-  // 3. account_id별로 그룹핑
+  // 2. account_id별로 그룹핑
   const byAccount = {};
   for (const row of cmRows) {
     const accountId = row.creatives?.account_id;
@@ -211,7 +192,8 @@ async function main() {
     if (!byAccount[accountId]) byAccount[accountId] = [];
     byAccount[accountId].push({
       id: row.id,
-      adId: row.creatives?.ad_id,
+      // B5: String 강제 변환
+      adId: String(row.creatives?.ad_id ?? ""),
       analysis_json: row.analysis_json,
     });
   }
@@ -224,18 +206,38 @@ async function main() {
   let skipped = 0;
   let noEmbedding = 0;
 
-  // 4. 계정별 pairwise 코사인 유사도 계산
+  // 3. 계정별 임베딩 로드 + pairwise 코사인 유사도 계산
+  //    B6: 계정별로 임베딩 로드/해제하여 메모리 절약
   for (const accountId of accountList) {
     const items = byAccount[accountId];
     console.log(`\n계정 ${accountId}: ${items.length}건 처리 중...`);
 
-    // 이 계정의 임베딩만 추출
-    const accountEmbeddings = items
-      .map((item) => ({
-        item,
-        vec: embeddingMap.get(item.adId) ?? null,
-      }))
-      .filter((e) => e.vec !== null);
+    // B6: 이 계정의 임베딩만 로드 (이전: 전체 계정 한 번에 로드)
+    const embeddingMap = await loadAccountEmbeddings(accountId, PAGE_SIZE);
+    console.log(`  임베딩 로드: ${embeddingMap.size}건`);
+
+    // B5: String 키로 매칭 + 디버그 로그
+    const accountEmbeddings = [];
+    let unmatchedCount = 0;
+    for (const item of items) {
+      const vec = embeddingMap.get(item.adId) ?? null;
+      if (vec) {
+        accountEmbeddings.push({ item, vec });
+      } else {
+        unmatchedCount++;
+      }
+    }
+
+    // B5: 매칭 실패 진단 로그
+    if (unmatchedCount > 0 && embeddingMap.size > 0) {
+      const sampleAdIds = items.slice(0, 3).map((i) => i.adId);
+      const sampleEmbKeys = [...embeddingMap.keys()].slice(0, 3);
+      console.log(
+        `  ⚠ ad_id 매칭 실패 ${unmatchedCount}건 ` +
+        `(creative_media ad_id 예: ${sampleAdIds.join(", ")} / ` +
+        `embeddings ad_id 예: ${sampleEmbKeys.join(", ")})`
+      );
+    }
 
     if (accountEmbeddings.length < 2) {
       console.log(`  임베딩 2건 미만, 스킵 (임베딩 있는 소재: ${accountEmbeddings.length}건)`);
@@ -281,7 +283,7 @@ async function main() {
         ...(currentJson.quality || {}),
         creative_fatigue_risk: fatigueRisk,
         most_similar_ad_id: mostSimilarAdId,
-        similarity_score: Math.round(maxSim * 1000) / 1000, // 소수점 3자리
+        similarity_score: Math.round(maxSim * 1000) / 1000,
       };
 
       const updatedJson = {
@@ -302,10 +304,9 @@ async function main() {
     }
 
     // 임베딩 없는 소재 카운트
-    const withoutEmbedding = items.length - accountEmbeddings.length;
-    if (withoutEmbedding > 0) {
-      console.log(`  임베딩 없음 (스킵): ${withoutEmbedding}건`);
-      noEmbedding += withoutEmbedding;
+    if (unmatchedCount > 0) {
+      console.log(`  임베딩 없음 (스킵): ${unmatchedCount}건`);
+      noEmbedding += unmatchedCount;
     }
 
     console.log(`  계정 ${accountId} 완료: ${accountEmbeddings.length}건 처리`);
@@ -314,7 +315,7 @@ async function main() {
   console.log(`\n━━━ 완료 ━━━`);
   console.log(`성공: ${success}건, 실패: ${errors}건, 스킵: ${skipped}건, 임베딩없음: ${noEmbedding}건`);
 
-  // 피로도 분포 통계 (dry-run 시에는 실제 업데이트 안됨)
+  // 피로도 분포 통계
   if (!DRY_RUN && success > 0) {
     console.log("\n피로도 분포 계산 중...");
     try {
@@ -339,11 +340,13 @@ async function main() {
       }
 
       const total = riskCounts.high + riskCounts.medium + riskCounts.low + riskCounts.null;
-      console.log(`전체 ${total}건 중:`);
-      console.log(`  high (≥0.85): ${riskCounts.high}건 (${Math.round(riskCounts.high / total * 100)}%)`);
-      console.log(`  medium (≥0.70): ${riskCounts.medium}건 (${Math.round(riskCounts.medium / total * 100)}%)`);
-      console.log(`  low (<0.70): ${riskCounts.low}건 (${Math.round(riskCounts.low / total * 100)}%)`);
-      if (riskCounts.null > 0) console.log(`  미계산: ${riskCounts.null}건`);
+      if (total > 0) {
+        console.log(`전체 ${total}건 중:`);
+        console.log(`  high (≥0.85): ${riskCounts.high}건 (${Math.round(riskCounts.high / total * 100)}%)`);
+        console.log(`  medium (≥0.70): ${riskCounts.medium}건 (${Math.round(riskCounts.medium / total * 100)}%)`);
+        console.log(`  low (<0.70): ${riskCounts.low}건 (${Math.round(riskCounts.low / total * 100)}%)`);
+        if (riskCounts.null > 0) console.log(`  미계산: ${riskCounts.null}건`);
+      }
     } catch (e) {
       console.warn(`통계 계산 실패: ${e.message}`);
     }

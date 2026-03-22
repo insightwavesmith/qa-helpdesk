@@ -71,8 +71,9 @@ async function sbGet(path) {
   return res.json();
 }
 
-async function sbPost(table, body) {
-  const res = await fetch(`${SB_URL}/rest/v1/${table}`, {
+async function sbPost(table, body, onConflict) {
+  const conflict = onConflict ? `?on_conflict=${onConflict}` : "";
+  const res = await fetch(`${SB_URL}/rest/v1/${table}${conflict}`, {
     method: "POST",
     headers: {
       apikey: SB_KEY,
@@ -597,7 +598,7 @@ async function main() {
       analyzed_at: new Date().toISOString(),
     };
 
-    const upsertResult = await sbPost("lp_analysis", upsertRecord);
+    const upsertResult = await sbPost("lp_analysis", upsertRecord, "lp_id,viewport");
     if (!upsertResult.ok) {
       console.error(`  [ERROR] UPSERT 실패: ${upsertResult.status} ${upsertResult.body}`);
       errorCount++;

@@ -296,15 +296,14 @@ def main():
     skipped = len(existing_set)
     print(f"  기존 영상 분석: {skipped}건 (스킵 예정)", file=sys.stderr)
 
-    # 대상 소재 조회 (VIDEO만, media_url 있는 것)
+    # 대상 소재 조회 (VIDEO만, storage_url 또는 media_url 있는 것)
     all_creatives = []
     PAGE_SIZE = 1000
     offset = 0
     while True:
         q = (
             "/ad_creative_embeddings?"
-            "select=ad_id,account_id,media_url,media_type"
-            "&media_url=not.is.null"
+            "select=ad_id,account_id,media_url,storage_url,media_type"
             "&media_type=eq.VIDEO"
             "&order=ad_id"
             f"&limit={PAGE_SIZE}"
@@ -315,7 +314,13 @@ def main():
         batch = sb_get(q)
         if not batch:
             break
-        all_creatives.extend(batch)
+        # storage_url(mp4) 또는 media_url 있는 것만 포함
+        filtered = [
+            r for r in batch
+            if (r.get("storage_url") and r["storage_url"].endswith(".mp4"))
+            or r.get("media_url")
+        ]
+        all_creatives.extend(filtered)
         if len(batch) < PAGE_SIZE:
             break
         offset += PAGE_SIZE
@@ -356,9 +361,20 @@ def main():
             frames_dir = os.path.join(tmpdir, "frames")
             os.makedirs(frames_dir, exist_ok=True)
 
-            # 1. 영상 다운로드
-            print(f"  다운로드 중...", file=sys.stderr)
-            if not download_video(creative["media_url"], video_path):
+            # 1. 영상 다운로드 (storage_url mp4 우선, 없으면 media_url)
+            video_url = None
+            if creative.get("storage_url") and creative["storage_url"].endswith(".mp4"):
+                video_url = creative["storage_url"]
+            elif creative.get("media_url"):
+                video_url = creative["media_url"]
+
+            if not video_url:
+                print(f"  다운로드 URL 없음 — 스킵", file=sys.stderr)
+                errors += 1
+                continue
+
+            print(f"  다운로드 중... ({video_url[:80]})", file=sys.stderr)
+            if not download_video(video_url, video_path):
                 errors += 1
                 continue
 

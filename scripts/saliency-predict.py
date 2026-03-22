@@ -46,7 +46,7 @@ def load_env():
             continue
         if "=" in line:
             k, v = line.split("=", 1)
-            env[k.strip()] = v.strip()
+            env[k.strip()] = v.strip().strip("'\"")
     return env
 
 env = load_env()

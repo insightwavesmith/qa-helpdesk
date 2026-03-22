@@ -575,5 +575,20 @@
     ],
     "updatedAt": "2026-03-22",
     "notes": "네온벨로 E2E 파이프라인 검증 중. 소재40건+LP2건+5축분석40건+임베딩40건 완료. 나머지 계정 수집 병렬 진행."
+  },
+  "pipeline-bugfix-b5-b11": {
+    "status": "completed",
+    "tasks": [
+      "B5-fatigue-ad_id-매칭",
+      "B6-fatigue-메모리절약",
+      "B7-percentiles-LEFT-JOIN",
+      "B8-percentiles-PATCH병렬",
+      "B9-andromeda-임계값0.40",
+      "B10-five-axis-include-inactive",
+      "B11-env-공용파서"
+    ],
+    "completedAt": "2026-03-23",
+    "updatedAt": "2026-03-23",
+    "notes": "파이프라인 헬스체크에서 발견된 버그 7건 수정. B5: ad_id String 강제변환+진단로그. B6: 계정별 임베딩 로드. B7: profiles LEFT JOIN. B8: 10건 병렬 PATCH. B9: 임계값 0.60→0.40+CLI옵션. B10: --include-inactive 플래그. B11: scripts/lib/env.mjs 공용파서. tsc+build 통과."
   }
 }
