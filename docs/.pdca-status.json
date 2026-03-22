@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-22T19:00:00.000Z",
+  "lastUpdated": "2026-03-22T21:00:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1342,6 +1342,90 @@
       "startedAt": "2026-03-22",
       "completedAt": "2026-03-22",
       "notes": "T4 완료. railway-crawler.ts crawlV2() 추가(+80줄). route.ts 전면 재작성(landing_pages 기준, ADR-001 경로, lp_snapshots UPSERT). migrate-lp-screenshots-v2.mjs 신규(265줄). tsc+build 통과."
+    },
+    "lp-analysis-v2": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/architecture-v3-execution-plan.md",
+        "design": "02-design/features/lp-analysis-v2.design.md",
+        "analysis": "03-analysis/lp-analysis-v2.analysis.md"
+      },
+      "startedAt": "2026-03-22",
+      "completedAt": "2026-03-22",
+      "notes": "T5 완료. analyze-lps-v2.mjs 신규(469줄). Gemini 2.5 Pro LP 8카테고리 reference_based 분석."
+    },
+    "video-audio-axis": {
+      "phase": "completed",
+      "matchRate": 96,
+      "documents": {
+        "plan": "01-plan/features/architecture-v3-execution-plan.md",
+        "design": "02-design/features/video-audio-axis.design.md",
+        "analysis": "03-analysis/video-audio-axis.analysis.md"
+      },
+      "startedAt": "2026-03-22",
+      "completedAt": "2026-03-22",
+      "notes": "T6 완료. analyzeWithGemini() mp4 다운로드 + 썸네일 폴백."
+    },
+    "video-eye-tracking": {
+      "phase": "completed",
+      "matchRate": 97,
+      "documents": {
+        "plan": "01-plan/features/architecture-v3-execution-plan.md",
+        "design": "02-design/features/video-eye-tracking.design.md",
+        "analysis": "03-analysis/video-eye-tracking.analysis.md"
+      },
+      "startedAt": "2026-03-22",
+      "completedAt": "2026-03-22",
+      "notes": "T7 완료. VIDEO_PROMPT_V3 eye_tracking frames + video-heatmap-overlay.tsx Canvas 오버레이."
+    },
+    "andromeda-signals": {
+      "phase": "completed",
+      "matchRate": 96,
+      "documents": {
+        "plan": "01-plan/features/architecture-v3-execution-plan.md",
+        "design": "02-design/features/andromeda-signals.design.md",
+        "analysis": "03-analysis/andromeda-signals.analysis.md"
+      },
+      "startedAt": "2026-03-22",
+      "completedAt": "2026-03-22",
+      "notes": "T8 완료. andromeda_signals 프롬프트 + compute-andromeda-similarity.mjs 4축 가중 Jaccard."
+    },
+    "creative-lp-alignment": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/architecture-v3-execution-plan.md",
+        "design": "02-design/features/creative-lp-alignment.design.md",
+        "analysis": "03-analysis/creative-lp-alignment.analysis.md"
+      },
+      "startedAt": "2026-03-22",
+      "completedAt": "2026-03-22",
+      "notes": "T9 완료. analyze-creative-lp-alignment.mjs Gemini 소재↔LP 일관성 4축 분석."
+    },
+    "lp-data-analysis": {
+      "phase": "completed",
+      "matchRate": 96,
+      "documents": {
+        "plan": "01-plan/features/architecture-v3-execution-plan.md",
+        "design": "02-design/features/lp-data-analysis.design.md",
+        "analysis": "03-analysis/lp-data-analysis.analysis.md"
+      },
+      "startedAt": "2026-03-22",
+      "completedAt": "2026-03-22",
+      "notes": "T10 완료. compute-lp-data-analysis.mjs LP→creatives→daily_ad_insights 교차분석."
+    },
+    "competitor-five-axis": {
+      "phase": "completed",
+      "matchRate": 97,
+      "documents": {
+        "plan": "01-plan/features/architecture-v3-execution-plan.md",
+        "design": "02-design/features/competitor-five-axis.design.md",
+        "analysis": "03-analysis/competitor-five-axis.analysis.md"
+      },
+      "startedAt": "2026-03-22",
+      "completedAt": "2026-03-22",
+      "notes": "T11 완료. analyze-five-axis.mjs --source competitor 모드. gemini-2.0-flash + CDN 403 스킵."
     }
   }
 }

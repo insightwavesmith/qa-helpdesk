@@ -378,5 +378,82 @@
     "completedAt": "2026-03-22",
     "updatedAt": "2026-03-22T19:00:00",
     "notes": "T4 완료. railway-crawler.ts crawlV2() 추가(+80줄). route.ts 전면 재작성(landing_pages 기준, ADR-001 경로, lp_snapshots UPSERT). migrate-lp-screenshots-v2.mjs 신규(265줄). tsc+build 통과. Match Rate 95%."
+  },
+  "lp-analysis-v2": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
+    "design": "docs/02-design/features/lp-analysis-v2.design.md",
+    "analysis": "docs/03-analysis/lp-analysis-v2.analysis.md",
+    "matchRate": 95,
+    "tasks": ["T5-LP분석2축구조"],
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22T21:00:00",
+    "notes": "T5 완료. analyze-lps-v2.mjs 신규(469줄). Gemini 2.5 Pro LP 8카테고리 reference_based 분석. Storage 이미지 base64→Gemini. lp_analysis UPSERT(reference_based+16 flat 컬럼 동기). tsc+build 통과."
+  },
+  "video-audio-axis": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
+    "design": "docs/02-design/features/video-audio-axis.design.md",
+    "analysis": "docs/03-analysis/video-audio-axis.analysis.md",
+    "matchRate": 96,
+    "tasks": ["T6-영상Audio축"],
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22T21:00:00",
+    "notes": "T6 완료. analyzeWithGemini() videoUrl 5번째 파라미터 추가. mp4 다운로드(30초 타임아웃, 20MB 제한) + 썸네일 폴백. tsc+build 통과."
+  },
+  "video-eye-tracking": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
+    "design": "docs/02-design/features/video-eye-tracking.design.md",
+    "analysis": "docs/03-analysis/video-eye-tracking.analysis.md",
+    "matchRate": 97,
+    "tasks": ["T7-EyeTracking+Canvas"],
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22T21:00:00",
+    "notes": "T7 완료. VIDEO_PROMPT_V3에 eye_tracking frames 추가. video-heatmap-overlay.tsx 신규(Canvas radialGradient 오버레이, 색상 존 분기). tsc+build 통과."
+  },
+  "andromeda-signals": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
+    "design": "docs/02-design/features/andromeda-signals.design.md",
+    "analysis": "docs/03-analysis/andromeda-signals.analysis.md",
+    "matchRate": 96,
+    "tasks": ["T8-Andromeda신호+유사도"],
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22T21:00:00",
+    "notes": "T8 완료. IMAGE/VIDEO 프롬프트에 andromeda_signals 추가. compute-andromeda-similarity.mjs 신규(4축 가중 Jaccard, 임계값 0.60). tsc+build 통과."
+  },
+  "creative-lp-alignment": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
+    "design": "docs/02-design/features/creative-lp-alignment.design.md",
+    "analysis": "docs/03-analysis/creative-lp-alignment.analysis.md",
+    "matchRate": 95,
+    "tasks": ["T9-creative_lp_map리뉴얼"],
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22T21:00:00",
+    "notes": "T9 완료. analyze-creative-lp-alignment.mjs 신규. Gemini 소재↔LP 일관성 4축 분석(message/visual/cta/offer). overall_score 가중 평균. issues JSONB. tsc+build 통과."
+  },
+  "lp-data-analysis": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
+    "design": "docs/02-design/features/lp-data-analysis.design.md",
+    "analysis": "docs/03-analysis/lp-data-analysis.analysis.md",
+    "matchRate": 96,
+    "tasks": ["T10-LP교차분석+전환율"],
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22T21:00:00",
+    "notes": "T10 완료. compute-lp-data-analysis.mjs 신규(423줄). LP→creatives→daily_ad_insights JOIN 체인. 8개 boolean 요소 교차분석. conversion_score 백분위. tsc+build 통과."
+  },
+  "competitor-five-axis": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
+    "design": "docs/02-design/features/competitor-five-axis.design.md",
+    "analysis": "docs/03-analysis/competitor-five-axis.analysis.md",
+    "matchRate": 97,
+    "tasks": ["T11-경쟁사5축분석"],
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22T21:00:00",
+    "notes": "T11 완료. analyze-five-axis.mjs에 --source competitor 모드 추가. gemini-2.0-flash 사용. competitor_ad_cache.analysis_json_v3 PATCH. CDN 403/404 스킵. tsc+build 통과."
   }
 }
