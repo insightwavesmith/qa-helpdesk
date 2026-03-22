@@ -346,11 +346,11 @@ async function main() {
 
     const lp = lpRows[0];
 
-    // lp_analysis에 reference_based 이미 있는지 체크
+    // lp_analysis에 reference_based 이미 있는지 + analyzed_at NULL(재분석 대상) 체크
     let analysisRows;
     try {
       analysisRows = await sbGet(
-        `/lp_analysis?select=id,reference_based&lp_id=eq.${lpId}&viewport=eq.mobile&limit=1`
+        `/lp_analysis?select=id,reference_based,analyzed_at&lp_id=eq.${lpId}&viewport=eq.mobile&limit=1`
       );
     } catch (e) {
       console.warn(`  [WARN] lp_analysis 조회 실패 (lp_id=${lpId}): ${e.message}`);
@@ -358,10 +358,15 @@ async function main() {
     }
 
     const existingAnalysis = analysisRows?.[0];
-    if (existingAnalysis?.reference_based != null) {
+    // analyzed_at가 NULL이면 재분석 대상 (content_hash 변경 → crawl-lps가 리셋)
+    const needsReanalysis = existingAnalysis && existingAnalysis.analyzed_at == null;
+    if (existingAnalysis?.reference_based != null && !needsReanalysis) {
       console.log(`  [SKIP] lp_id=${lpId} — 이미 분석됨`);
       skippedCount++;
       continue;
+    }
+    if (needsReanalysis) {
+      console.log(`  [RE-ANALYZE] lp_id=${lpId} — content_hash 변경 감지`);
     }
 
     targets.push({

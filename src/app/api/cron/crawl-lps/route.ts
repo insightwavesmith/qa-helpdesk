@@ -189,14 +189,34 @@ async function handleCrawl(req: NextRequest) {
         }
 
         // landing_pages UPDATE (hash + last_crawled_at)
+        const now = new Date().toISOString();
         await supabase
           .from("landing_pages")
           .update({
             content_hash: newHash,
-            last_crawled_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+            last_crawled_at: now,
+            updated_at: now,
           })
           .eq("id", lp.id);
+
+        // change_log에 LP 변경 기록 (순환 학습)
+        await supabase.from("change_log").insert({
+          entity_type: "lp",
+          entity_id: lp.id,
+          account_id: lp.account_id,
+          change_detected_at: now,
+          change_type: lp.content_hash ? "new_version" : "element_added",
+          element_diff: {
+            old_hash: lp.content_hash,
+            new_hash: newHash,
+          },
+        });
+
+        // lp_analysis 재분석 트리거: analyzed_at NULL로 리셋
+        await supabase
+          .from("lp_analysis")
+          .update({ analyzed_at: null })
+          .eq("lp_id", lp.id);
 
         stats.hashChanged++;
         stats.crawled++;
