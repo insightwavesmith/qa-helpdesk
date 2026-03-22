@@ -2,8 +2,8 @@
 
 > 기준일: 2026-03-22 (T2~T11 완료 반영)
 > 근거: architecture-v3-execution-plan.md (T1~T11) + master-architecture-review.md (83개 항목)
-> 총 83개 항목: ✅ 63 완료 / 🔄 2 진행 중·부분 구현 / ❌ 18 미구현
-> 전체 Match Rate: ~76% (+ mp4 즉시 다운 + 소재 요소 diff 체크리스트 반영)
+> 총 83개 항목: ✅ 64 완료 / 🔄 2 진행 중·부분 구현 / ❌ 17 미구현
+> 전체 Match Rate: ~77% (+ UNKNOWN 벤치마크 포함)
 
 ---
 
@@ -28,7 +28,7 @@
 
 ## 챕터 2: 수집 (18개 항목)
 
-> Match Rate: ~72% | 완료 12 / 부분 0 / 미구현 6
+> Match Rate: ~78% | 완료 13 / 부분 0 / 미구현 5
 
 ### 수집 — Daily
 - [x] 28개 지표 수집 — collect-daily + calculateMetrics
@@ -45,7 +45,7 @@
 ### 수집 — Benchmark
 - [x] Benchmark 성과 수집 — collect-benchmarks 주간
 - [ ] Benchmark 콘텐츠 수집 (이미지/영상/LP) — ❌ 숫자만 저장
-- [ ] UNKNOWN 포함 성과 기반 선별 — ❌ ABOVE_AVERAGE만 사용
+- [x] UNKNOWN 포함 성과 기반 선별 — ✅ rankingGroups에 UNKNOWN 추가
 
 ### 수집 — 경쟁사
 - [x] Ad Library 수집 — competitor-check 9,553건

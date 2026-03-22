@@ -557,7 +557,7 @@ export async function GET(req: NextRequest) {
     // STEP 2: 벤치마크 계산 — ALL + creative_type별 (Trimmed Weighted Mean)
     // ────────────────────────────────────────────────────────
     const rankingTypes = ["quality", "engagement", "conversion"] as const;
-    const rankingGroups = ["ABOVE_AVERAGE", "AVERAGE", "BELOW_AVERAGE"] as const;
+    const rankingGroups = ["ABOVE_AVERAGE", "AVERAGE", "BELOW_AVERAGE", "UNKNOWN"] as const;
     const creativeTypes = ["ALL", "VIDEO", "IMAGE", "CATALOG"] as const;
 
     const benchmarkRows: Record<string, unknown>[] = [];
