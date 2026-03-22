@@ -403,7 +403,9 @@
     "design": "docs/02-design/features/lp-analysis-v2.design.md",
     "analysis": "docs/03-analysis/lp-analysis-v2.analysis.md",
     "matchRate": 93,
-    "tasks": ["T5-LP분석2축구조"],
+    "tasks": [
+      "T5-LP분석2축구조"
+    ],
     "completedAt": "2026-03-22",
     "updatedAt": "2026-03-22T21:30:00",
     "notes": "T5 Gap 분석 완료. analyze-lps-v2.mjs 신규(473줄). Gemini 2.5 Pro LP 8카테고리 reference_based 분석. Storage이미지 base64→Gemini. lp_analysis UPSERT(reference_based+16 flat 컬럼 동기). 유일 Gap: JOIN→별도조회(기능동일). 이미지URL이중중첩버그수정완료. node --check OK. tsc+build 통과. Match Rate 93%."
@@ -414,7 +416,9 @@
     "design": "docs/02-design/features/video-audio-axis.design.md",
     "analysis": "docs/03-analysis/video-audio-axis.analysis.md",
     "matchRate": 96,
-    "tasks": ["T6-영상Audio축"],
+    "tasks": [
+      "T6-영상Audio축"
+    ],
     "completedAt": "2026-03-22",
     "updatedAt": "2026-03-22T21:00:00",
     "notes": "T6 완료. analyzeWithGemini() videoUrl 5번째 파라미터 추가. mp4 다운로드(30초 타임아웃, 20MB 제한) + 썸네일 폴백. tsc+build 통과."
@@ -425,7 +429,9 @@
     "design": "docs/02-design/features/video-eye-tracking.design.md",
     "analysis": "docs/03-analysis/video-eye-tracking.analysis.md",
     "matchRate": 97,
-    "tasks": ["T7-EyeTracking+Canvas"],
+    "tasks": [
+      "T7-EyeTracking+Canvas"
+    ],
     "completedAt": "2026-03-22",
     "updatedAt": "2026-03-22T21:00:00",
     "notes": "T7 완료. VIDEO_PROMPT_V3에 eye_tracking frames 추가. video-heatmap-overlay.tsx 신규(Canvas radialGradient 오버레이, 색상 존 분기). tsc+build 통과."
@@ -436,7 +442,9 @@
     "design": "docs/02-design/features/andromeda-signals.design.md",
     "analysis": "docs/03-analysis/andromeda-signals.analysis.md",
     "matchRate": 96,
-    "tasks": ["T8-Andromeda신호+유사도"],
+    "tasks": [
+      "T8-Andromeda신호+유사도"
+    ],
     "completedAt": "2026-03-22",
     "updatedAt": "2026-03-22T21:00:00",
     "notes": "T8 완료. IMAGE/VIDEO 프롬프트에 andromeda_signals 추가. compute-andromeda-similarity.mjs 신규(4축 가중 Jaccard, 임계값 0.60). tsc+build 통과."
@@ -447,7 +455,9 @@
     "design": "docs/02-design/features/creative-lp-alignment.design.md",
     "analysis": "docs/03-analysis/creative-lp-alignment.analysis.md",
     "matchRate": 95,
-    "tasks": ["T9-creative_lp_map리뉴얼"],
+    "tasks": [
+      "T9-creative_lp_map리뉴얼"
+    ],
     "completedAt": "2026-03-22",
     "updatedAt": "2026-03-22T21:00:00",
     "notes": "T9 완료. analyze-creative-lp-alignment.mjs 신규. Gemini 소재↔LP 일관성 4축 분석(message/visual/cta/offer). overall_score 가중 평균. issues JSONB. tsc+build 통과."
@@ -458,7 +468,9 @@
     "design": "docs/02-design/features/lp-data-analysis.design.md",
     "analysis": "docs/03-analysis/lp-data-analysis.analysis.md",
     "matchRate": 96,
-    "tasks": ["T10-LP교차분석+전환율"],
+    "tasks": [
+      "T10-LP교차분석+전환율"
+    ],
     "completedAt": "2026-03-22",
     "updatedAt": "2026-03-22T21:00:00",
     "notes": "T10 완료. compute-lp-data-analysis.mjs 신규(423줄). LP→creatives→daily_ad_insights JOIN 체인. 8개 boolean 요소 교차분석. conversion_score 백분위. tsc+build 통과."
@@ -469,7 +481,9 @@
     "design": "docs/02-design/features/competitor-five-axis.design.md",
     "analysis": "docs/03-analysis/competitor-five-axis.analysis.md",
     "matchRate": 97,
-    "tasks": ["T11-경쟁사5축분석"],
+    "tasks": [
+      "T11-경쟁사5축분석"
+    ],
     "completedAt": "2026-03-22",
     "updatedAt": "2026-03-22T21:00:00",
     "notes": "T11 완료. analyze-five-axis.mjs에 --source competitor 모드 추가. gemini-2.0-flash 사용. competitor_ad_cache.analysis_json_v3 PATCH. CDN 403/404 스킵. tsc+build 통과."
@@ -477,7 +491,9 @@
   "lp-change-detection": {
     "status": "completed",
     "matchRate": 95,
-    "tasks": ["LP변경감지-재분석트리거"],
+    "tasks": [
+      "LP변경감지-재분석트리거"
+    ],
     "completedAt": "2026-03-22",
     "updatedAt": "2026-03-22T23:00:00",
     "notes": "crawl-lps에서 content_hash diff → change_log INSERT + lp_analysis.analyzed_at 리셋. analyze-lps-v2.mjs에 재분석 필터 추가."
@@ -485,7 +501,9 @@
   "performance-tracking": {
     "status": "completed",
     "matchRate": 95,
-    "tasks": ["성과변화추적-크론"],
+    "tasks": [
+      "성과변화추적-크론"
+    ],
     "completedAt": "2026-03-22",
     "updatedAt": "2026-03-22T23:00:00",
     "notes": "track-performance 크론 신규. change_log의 미처리 항목에 before/after 7일 성과 평균 채움. vercel.json 매일 23:00 UTC."
@@ -493,7 +511,9 @@
   "protractor-3axis-mapping": {
     "status": "completed",
     "matchRate": 90,
-    "tasks": ["3축매핑-속성연결"],
+    "tasks": [
+      "3축매핑-속성연결"
+    ],
     "completedAt": "2026-03-22",
     "updatedAt": "2026-03-22T23:00:00",
     "notes": "metric-groups.ts에 ATTRIBUTE_AXIS_MAP 15속성 매핑 추가. Phase 2 가중치 보정 예정."
@@ -501,7 +521,9 @@
   "lp-saliency-eye-tracking": {
     "status": "completed",
     "matchRate": 93,
-    "tasks": ["LP시선분석-DeepGaze"],
+    "tasks": [
+      "LP시선분석-DeepGaze"
+    ],
     "completedAt": "2026-03-22",
     "updatedAt": "2026-03-22T23:30:00",
     "notes": "predict_lp.py 신규(Railway). /lp-saliency 엔드포인트 + server.js. analyze-lp-saliency Vercel cron (23:30 UTC). eye_tracking JSONB: 섹션별 weight, fixation, fold/CTA attention, cognitive load."
@@ -540,5 +562,18 @@
     "completedAt": "2026-03-22",
     "updatedAt": "2026-03-22T23:59:00",
     "notes": "Mixpanel 클릭 수집 구현. fetchMixpanelClicks (Export API + Segmentation fallback). collect-clicks 크론 (19:00 UTC). lp_click_data INSERT. 벤치마크 콘텐츠 풀 STEP 3.5 이미 구현 확인. 82/84 (98%)."
+  },
+  "e2e-pipeline-neonvelo": {
+    "status": "implementing",
+    "tasks": [
+      "P1-벤치마크소재수집",
+      "P2-미수집이미지",
+      "P3-LP크롤링에셋",
+      "story-video-fix",
+      "5축분석",
+      "임베딩"
+    ],
+    "updatedAt": "2026-03-22",
+    "notes": "네온벨로 E2E 파이프라인 검증 중. 소재40건+LP2건+5축분석40건+임베딩40건 완료. 나머지 계정 수집 병렬 진행."
   }
 }

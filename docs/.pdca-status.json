@@ -1215,6 +1215,12 @@
       "startedAt": "2026-03-22",
       "completedAt": "2026-03-22",
       "notes": "collect-clicks cron 신규. Mixpanel Export API + Segmentation fallback. lp_click_data INSERT. vercel.json 등록. 체크리스트 78→82/84 (98%)."
+    },
+    "e2e-pipeline-neonvelo": {
+      "phase": "do",
+      "matchRate": null,
+      "documents": {},
+      "notes": "네온벨로 E2E: 소재40건+LP2건+5축40건+임베딩40건 완료. story_video_id 수정."
     }
   },
   "phaseMapping": {
@@ -1484,5 +1490,6 @@
       "completedAt": "2026-03-22",
       "notes": "체크리스트 64→78/84 (93%). 14건 일괄: benchmark/competitor Storage, LP HTML+DOM, 3축 교차, 시선 행동 추론, 영상 DeepGaze, 데이터화+제안추적+제안뱅크. 남은 6건 외부 의존."
     }
-  }
+  },
+  "updatedAt": "2026-03-22T23:45:00+09:00"
 }

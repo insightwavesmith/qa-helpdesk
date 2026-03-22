@@ -94,7 +94,7 @@ async function uploadToStorage(bucket, storagePath, buffer, contentType) {
 }
 
 // ── Meta API 헬퍼 ─────────────────────────────────
-const META_BASE = "https://graph.facebook.com/v21.0";
+const META_BASE = "https://graph.facebook.com/v22.0";
 
 async function metaGet(path, params = {}) {
   const url = new URL(`${META_BASE}${path}`);
@@ -212,14 +212,14 @@ async function main() {
 
         // 이미지 URL 추출
         let mediaUrl = creative.image_url || creative.thumbnail_url || null;
-        let videoId = creative.video_id || null;
-        const creativeType = videoId ? "VIDEO" : "IMAGE";
+        // story_video_id: object_story_spec.video_data.video_id (권한 OK)
+        const oss = creative.object_story_spec;
+        const storyVideoId = oss?.video_data?.video_id || null;
+        const creativeType = storyVideoId ? "VIDEO" : "IMAGE";
 
         // LP URL 추출 (object_story_spec에서)
         let lpUrl = null;
-        const oss = creative.object_story_spec;
         if (oss) {
-          const linkData = oss.link_data || oss.video_data?.call_to_action?.value?.link;
           if (oss.link_data?.link) lpUrl = oss.link_data.link;
           else if (oss.video_data?.call_to_action?.value?.link) lpUrl = oss.video_data.call_to_action.value.link;
         }
@@ -241,16 +241,15 @@ async function main() {
         totalCreated++;
 
         // 6. 미디어 다운로드 + creative_media INSERT
-        if (mediaUrl || videoId) {
-          // 이미지 다운로드
+        if (mediaUrl || storyVideoId) {
+          // 이미지/썸네일 다운로드
           let storageUrl = null;
           if (mediaUrl) {
             try {
               const imgRes = await fetch(mediaUrl);
               if (imgRes.ok) {
                 const buffer = Buffer.from(await imgRes.arrayBuffer());
-                const ext = creativeType === "VIDEO" ? "jpg" : "jpg"; // 썸네일
-                const storagePath = `creatives/${accountId}/media/${adId}.${ext}`;
+                const storagePath = `creatives/${accountId}/media/${adId}.jpg`;
                 storageUrl = await uploadToStorage("creatives", storagePath, buffer, "image/jpeg");
                 console.log(`    → 이미지 Storage 저장`);
               }
@@ -259,17 +258,18 @@ async function main() {
             }
           }
 
-          // VIDEO인 경우 mp4도 다운로드
-          if (videoId) {
+          // VIDEO인 경우 story_video_id로 mp4 다운로드
+          if (storyVideoId) {
             try {
-              const videoData = await metaGet(`/${videoId}`, { fields: "source" });
+              const videoData = await metaGet(`/${storyVideoId}`, { fields: "source,length" });
               if (videoData.source) {
-                const mp4Res = await fetch(videoData.source);
+                const mp4Res = await fetch(videoData.source, { signal: AbortSignal.timeout(120000) });
                 if (mp4Res.ok) {
                   const mp4Buffer = Buffer.from(await mp4Res.arrayBuffer());
                   const mp4Path = `creatives/${accountId}/media/${adId}.mp4`;
                   storageUrl = await uploadToStorage("creatives", mp4Path, mp4Buffer, "video/mp4");
-                  console.log(`    → mp4 Storage 저장 (${(mp4Buffer.length / 1024 / 1024).toFixed(1)}MB)`);
+                  const duration = videoData.length ? ` ${Math.round(videoData.length)}s` : "";
+                  console.log(`    → mp4 Storage 저장 (${(mp4Buffer.length / 1024 / 1024).toFixed(1)}MB${duration})`);
                   totalMediaDownloaded++;
                 }
               }

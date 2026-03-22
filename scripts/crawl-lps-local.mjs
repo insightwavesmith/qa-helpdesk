@@ -40,6 +40,9 @@ const VIEWPORT_FILTER = viewportIdx >= 0 ? args[viewportIdx + 1] : null; // 'mob
 const lpIdIdx = args.indexOf("--lp-id");
 const LP_ID_FILTER = lpIdIdx >= 0 ? args[lpIdIdx + 1] : null;
 
+const accountIdx = args.indexOf("--account");
+const ACCOUNT_FILTER = accountIdx >= 0 ? args[accountIdx + 1] : null;
+
 // ── .env.local 파싱 ───────────────────────────────
 const envPath = resolve(__dirname, "..", ".env.local");
 const envContent = readFileSync(envPath, "utf-8");
@@ -445,7 +448,7 @@ async function uploadSection(accountId, lpId, vpType, sectionName, buffer) {
 // ── 메인 ─────────────────────────────────────────
 async function main() {
   console.log(
-    `LP 로컬 재크롤링 시작${DRY_RUN ? " (dry-run)" : ""}${VIEWPORT_FILTER ? ` viewport=${VIEWPORT_FILTER}` : ""}${LP_ID_FILTER ? ` lp-id=${LP_ID_FILTER}` : ""}`
+    `LP 로컬 재크롤링 시작${DRY_RUN ? " (dry-run)" : ""}${VIEWPORT_FILTER ? ` viewport=${VIEWPORT_FILTER}` : ""}${LP_ID_FILTER ? ` lp-id=${LP_ID_FILTER}` : ""}${ACCOUNT_FILTER ? ` account=${ACCOUNT_FILTER}` : ""}`
   );
 
   // 1. landing_pages 조회
@@ -453,6 +456,9 @@ async function main() {
     "/landing_pages?page_type=eq.product&is_active=eq.true&select=id,canonical_url,domain,account_id&order=id.asc";
   if (LP_ID_FILTER) {
     queryPath = `/landing_pages?id=eq.${LP_ID_FILTER}&select=id,canonical_url,domain,account_id`;
+  }
+  if (ACCOUNT_FILTER) {
+    queryPath += `&account_id=eq.${ACCOUNT_FILTER}`;
   }
 
   const lpList = await sbGet(queryPath);
