@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-21T00:58:55.000Z",
+  "lastUpdated": "2026-03-22T12:00:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -13,6 +13,16 @@
       "startedAt": "2026-03-18",
       "completedAt": "2026-03-18",
       "notes": "services/creative-pipeline/에 L2 시선 예측 추가. saliency/predict.py(DeepGaze IIE), saliency/requirements.txt(CPU PyTorch), Dockerfile 멀티스테이지, server.js /saliency + /pipeline L2. tsc+build 통과. Match Rate 100%."
+    },
+    "p0-db-schema-v3": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {
+        "plan": "01-plan/features/p0-db-schema-v3.plan.md"
+      },
+      "startedAt": "2026-03-22",
+      "completedAt": "2026-03-22",
+      "notes": "P0-1 완료. 마이그레이션 9개 섹션 Supabase 적용. 신규 컬럼 14개 + 테이블 2개 + CHECK 제약. source 3096건 bscamp→member 전환. RPC 재정의. collect-daily/migrate-to-v2 코드 변경. tsc+build 통과."
     },
     "creative-pipeline-railway": {
       "phase": "completed",

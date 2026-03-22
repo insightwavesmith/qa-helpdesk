@@ -2,5 +2,87 @@
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
-  "agentTeamDisplay": "tmux"
+  "agentTeamDisplay": "tmux",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-before-delegate.sh",
+            "timeout": 10000
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-qa.sh",
+            "timeout": 10000
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-delegate.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-plan.sh",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/notify-openclaw.sh",
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/task-completed.sh",
+            "timeout": 10000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/task-quality-gate.sh",
+            "timeout": 120000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/notify-openclaw.sh",
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/teammate-idle.sh",
+            "timeout": 10000
+          }
+        ]
+      }
+    ]
+  }
 }

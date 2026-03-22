@@ -1,120 +1,55 @@
-# TASK: 소재 분석 탭 목업 업데이트 + P0~P1 개발
+# TASK: P0-1 DB 스키마 v3 — SQL 적용 + 검증 완료까지
 
 CLAUDE.md 읽고 delegate 모드로 팀원 만들어서 진행해라.
 
-## 순서: 목업 → P0 → P1
+## 배경
+P0-1 코드는 이미 완성됨. SQL 파일 + 코드 변경 끝났지만 **DB에 적용 안 됨**.
+지금부터 SQL 실행 → 검증 → 커밋 → 완료까지 끝내라.
 
----
+## 참고 파일
+- Plan: `docs/01-plan/features/p0-db-schema-v3.plan.md`
+- SQL: `supabase/migrations/20260322_v3_schema_additions.sql`
+- 실행 플랜: `docs/01-plan/features/architecture-v3-execution-plan.md` (T1)
 
-## STEP 1: 소재 분석 탭 UI 목업 업데이트
+## 해야 할 것
 
-현재 `/creatives/page.tsx`는 텍스트 검색 + 카드 그리드 + 상세 모달만 있음.
-L1~L4 + LP 일관성 + 경쟁사 비교를 반영한 3개 뷰로 업데이트.
+### STEP 1: SQL 실행
+- [ ] `20260322_v3_schema_additions.sql`을 Supabase에 실행
+- [ ] Supabase Management API (`$SUPABASE_ACCESS_TOKEN`) 사용 가능
+- [ ] 또는 supabase CLI (`npx supabase db push`)
 
-### 뷰 2: 개별 소재 (1순위)
-- 소재 카드에 **L4 점수 배지** 표시 (점수순/ROAS순 정렬 가능)
-- 상세 패널:
-  - 소재 이미지 + 광고 카피
-  - **L4 5영역 레이더 차트** (visual_impact, message_clarity, cta_effectiveness, social_proof, lp_consistency)
-  - **L1 태그 칩** (훅 유형, 스타일, CTA, 색감, 인물 유무)
-  - **벤치마크 비교** ("당신의 hook=question ROAS X → 벤치마크 평균 Y, 상위 몇%")
-  - **LP 일관성** (visual/semantic/cross 점수 + LP 스크린샷 나란히)
-  - **개선 제안** (L4 suggestions — priority 색상, 현재→개선)
-  - 성과 지표: ROAS, CTR, 전환율
+### STEP 2: DB 적용 확인
+- [ ] creative_media에 saliency_url, is_active, updated_at 컬럼 존재 확인
+- [ ] landing_pages에 content_hash, last_crawled_at 컬럼 존재 확인
+- [ ] lp_analysis에 reference_based, data_based, eye_tracking 컬럼 존재 확인
+- [ ] creative_lp_map에 message_alignment, cta_alignment, offer_alignment, overall_score, issues 컬럼 존재 확인
+- [ ] competitor_ad_cache에 analysis_json 컬럼 존재 확인
+- [ ] lp_click_data 테이블 생성 확인
+- [ ] change_log 테이블 생성 확인
+- [ ] creatives.source = 'member'로 변경 + CHECK 제약 확인
 
-### 뷰 1: 포트폴리오 (전체 단위)
-- 상단 요약 카드: 평균 점수, 총 소재 수, 활성 광고 수
-- 요소 분포 차트: 훅 타입별/스타일별/CTA 유무 비율
-- 벤치마크 하이라이트: L3에서 "hook=problem이 ROAS 1위" 같은 인사이트
-- 점수 분포: L4 overall_score 히스토그램
+### STEP 3: 코드 동기화 확인
+- [ ] `grep -r "bscamp" src/` — 'bscamp' 하드코딩 0건 확인 (전부 'member'로 변경됨)
+- [ ] RPC 2개 (get_student_creative_summary 등) source='member' 확인
+- [ ] `tsc --noEmit` 에러 0건
+- [ ] `npm run build` 성공
 
-### 뷰 3: 경쟁사 비교
-- 3단계 비교: 광고↔광고 / 전체↔전체 / 〈광고+LP〉↔〈광고+LP〉
-- **경쟁사는 성과 데이터(ROAS/CTR) 없음** → 구조 비교만 가능
-- 간접 지표: 게재 기간(오래 돌리면 효과 있을 가능성)
+### STEP 4: 커밋 + 푸시
+- [ ] 변경사항 전부 커밋 (SQL + 코드 + 훅 + 스킬 + CLAUDE.md)
+- [ ] git push
 
-### 참고 DB 테이블
-- `creative_element_analysis` — L1 태그
-- `creative_intelligence_scores` — L4 점수 + suggestions (JSON)
-- `creative_element_performance` — L3 벤치마크 (30개 조합)
-- `creative_lp_consistency` — LP 일관성 (visual/semantic/cross/total)
-- `ad_creative_embeddings` — 소재 메타 + 임베딩 + media_url + lp_url
-- `daily_ad_insights` — 광고 성과 (spend, roas, ctr, purchases, revenue)
-- `competitor_ad_cache` — 경쟁사 광고
+### STEP 5: 미완료 작업 마무리
+- [ ] STEP 3(비디오 89건 다운로드) — 완료 or 스킵 판단
+- [ ] STEP 4(이미지 2,709건 Storage 이동) — 완료 or 스킵 판단
+- [ ] 완료 후 DEV-STATUS.md 업데이트
 
-### 필요한 API 엔드포인트 (없으면 만들어)
-- `GET /api/creative/portfolio` — 전체 요약 (점수 분포, 요소 분포, 벤치마크)
-- `GET /api/creative/[id]/analysis` — 소재별 L1+L4+LP+벤치마크 통합
-- `GET /api/creative/compare` — 자사 vs 경쟁사 요소 비교
+## 완료 조건
+- DB SQL 적용됨
+- 모든 신규 컬럼/테이블 존재
+- source='member' 전환 완료 + 기존 쿼리 안 깨짐
+- tsc + build 통과
+- git push 완료
+- DEV-STATUS.md 최신화
 
----
-
-## STEP 2: P0 — 동영상+카탈로그 media_url 수집 (223건)
-
-파일: `src/app/api/cron/collect-daily/route.ts` (line 340 부근)
-
-### 현재 문제
-```typescript
-const mediaUrl = imageHash ? (hashToUrl.get(imageHash) || null) : null;
-```
-- **동영상 (96건)**: `video_id`가 있지만 썸네일 URL 수집 안 함
-- **카탈로그 (127건)**: `image_hash` 없이 `asset_feed_spec`으로 이미지 제공 → 매핑 불가
-
-### 해결 방향
-1. **동영상**: video_id → Meta API `GET /{video_id}?fields=thumbnails` → 썸네일 URL
-2. **카탈로그**: creative의 `asset_feed_spec.images` 또는 `object_story_spec.link_data.image_hash` 활용
-3. 기존 `hashToUrl` 맵 외에 `videoIdToThumb`, `catalogToImage` 매핑 추가
-
----
-
-## STEP 3: P0 — L2 시선 예측 배치 처리
-
-Railway에 DeepGaze IIE 서비스 있음: `creative-pipeline-production.up.railway.app`
-59/370건만 완료. 나머지 소재 배치로 돌려야 함.
-
-엔드포인트: `POST /analyze/saliency` (Railway 서비스)
-
----
-
-## STEP 4: P1 — LP 크롤링 확대
-
-현재 37/689 LP만 스크린샷.
-크롤러: `bscamp-crawler-production.up.railway.app`
-크론: `/api/cron/crawl-lps` — 매시간 20건
-
-→ 1회성 배치 크롤링 스크립트 또는 크론 배치 사이즈 확대
-
----
-
-## STEP 5: P1 — 미디어 Supabase Storage 저장
-
-Meta CDN URL 만료 대비.
-- 이미지: 원본 → `creatives/media/{ad_id}.jpg`
-- 동영상: 썸네일 → `creatives/thumb/{ad_id}.jpg`
-- 경쟁사: 검색 시 캐싱 → `creatives/competitor/{ad_id}.jpg`
-
-Supabase Storage Pro 100GB, 현재 사용량 소량.
-
----
-
-## STEP 6: P1 — 경쟁사 소재 L1 분석
-
-competitor_ad_cache 8,613건에 Gemini 2.5 Pro Vision으로 L1 태깅.
-→ STEP 1의 뷰3(경쟁사 비교)의 전제 조건.
-
----
-
-## STEP 7: P1 — 사전계산 Phase 1
-
-참고: `docs/precompute-audit.md`
-- T3 점수 사전계산 (200ms→50ms)
-- 수강생 성과 사전계산 (1~3s→100ms)
-- 광고 진단 사전계산 (100ms→30ms)
-
----
-
-## 제약
-- 경쟁사는 성과 데이터 없음 → L3/L4 적용 불가
-- media_url 없는 소재는 placeholder
-- LP 스크린샷 없는 경우 "LP 미수집" 표시
-- 커밋 전에 tsc + lint + build 통과 필수
+## 완료되면
+슬랙으로 결과 보고 (notify-openclaw.sh가 자동 전송)

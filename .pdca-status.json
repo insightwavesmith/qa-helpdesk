@@ -315,5 +315,18 @@
     "completedAt": "2026-03-20",
     "updatedAt": "2026-03-21T00:58:55",
     "notes": "STEP 1 완료. collect-daily v2 정규화 테이블 UPSERT. lp-normalizer.ts 신규. LP URL effective_object_story_spec 추출. ad_creative_embeddings 호환 유지. tsc+build 통과."
+  },
+  "p0-db-schema-v3": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/p0-db-schema-v3.plan.md",
+    "tasks": [
+      "T1-SQL실행",
+      "T1-DB적용확인",
+      "T1-코드동기화",
+      "T1-커밋"
+    ],
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22",
+    "notes": "P0-1 완료. 마이그레이션 9개 섹션 전부 Supabase 적용. 신규 컬럼 14개 + 테이블 2개 + CHECK 제약. source 3096건 bscamp→member 전환. RPC 재정의. collect-daily/migrate-to-v2 코드 변경. tsc+build 통과."
   }
 }

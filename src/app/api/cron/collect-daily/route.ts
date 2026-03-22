@@ -493,7 +493,7 @@ export async function runCollectDaily(dateParam?: string, batch?: number): Promi
                 ad_id: adId,
                 account_id: account.account_id,
                 creative_type: creativeType,
-                source: "bscamp",
+                source: "member",
                 brand_name: account.account_name || null,
                 is_active: true,
                 lp_url: rawLpUrl || null,
@@ -528,6 +528,17 @@ export async function runCollectDaily(dateParam?: string, batch?: number): Promi
                 (creativeIdData ?? []).map((c: { ad_id: string; id: string }) => [c.ad_id, c.id])
               );
 
+              // ad_creative_embeddings에서 storage_url 조회 → creative_media에 반영
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const { data: aceStorageData } = await (svc as any)
+                .from("ad_creative_embeddings")
+                .select("ad_id, storage_url")
+                .in("ad_id", adIds)
+                .not("storage_url", "is", null);
+              const adIdToStorageUrl = new Map<string, string>(
+                (aceStorageData ?? []).map((r: { ad_id: string; storage_url: string }) => [r.ad_id, r.storage_url])
+              );
+
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const mediaRows = (ads as any[]).map((ad: any) => {
                 const adId = (ad.ad_id ?? ad.id) as string;
@@ -558,6 +569,7 @@ export async function runCollectDaily(dateParam?: string, batch?: number): Promi
                   media_type: videoId ? "VIDEO" : "IMAGE",
                   media_url: mediaUrl,
                   media_hash: imageHash || null,
+                  storage_url: adIdToStorageUrl.get(adId) || null,
                 };
               }).filter(Boolean);
 
