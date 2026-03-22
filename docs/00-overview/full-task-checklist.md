@@ -2,14 +2,14 @@
 
 > 기준일: 2026-03-22
 > 근거: architecture-v3-execution-plan.md (T1~T11) + master-architecture-review.md (83개 항목)
-> 총 83개 항목: ✅ 29 완료 / 🔄 16 진행 중·부분 구현 / ❌ 38 미구현
-> 전체 Match Rate: ~42%
+> 총 83개 항목: ✅ 34 완료 / 🔄 12 진행 중·부분 구현 / ❌ 37 미구현
+> 전체 Match Rate: ~46% (T1 DB 적용 완료 반영)
 
 ---
 
 ## 챕터 1: 전체 아키텍처 (12개 항목)
 
-> Match Rate: ~50% | 완료 5 / 부분 3 / 미구현 4
+> Match Rate: ~58% | 완료 7 / 부분 2 / 미구현 3
 
 - [x] 수집: Daily 40계정 — collect-daily 4배치 분할 (route.ts 705줄)
 - [x] 수집: Benchmark 51계정 — collect-benchmarks 주간 (664줄)
@@ -17,10 +17,10 @@
 - [ ] 수집: LP 119개 전체 다운로드 — ❌ 스크린샷만 (T4 전면 재설계 필요)
 - [ ] 수집: Mixpanel 클릭 — ❌ 스크롤/체류만 수집 중 (lp_click_data 테이블 미구현)
 - [x] 분석: DeepGaze 시선 — creative_saliency 2,711건, predict.py
-- [ ] 저장: 3계층 (member/benchmark/competitor) — 🔄 SQL 작성 완료, DB 미적용 (T1)
+- [x] 저장: 3계층 (member/benchmark/competitor) — ✅ T1 완료, DB 적용됨
 - [ ] 분석: 4축/5축 Gemini — 🔄 L1 analyze.mjs 존재하나 기획서 스키마와 다름 (T2)
 - [ ] 분석: 총가치각도기 3축 매핑 — 🔄 metric-groups.ts 3축 정의, 소재 속성 매핑 없음
-- [ ] 순환 학습: change_log — ❌ SQL 작성 완료, DB 미적용 (T1)
+- [x] 순환 학습: change_log — ✅ T1 완료, 테이블 생성됨
 - [x] Phase 로드맵 — architecture-v3-execution-plan.md 작성 완료
 - [ ] 실행 환경: M4 Max 로컬 — ❌ 현재 Railway + Vercel (전환 결정 완료, 미실행)
 
@@ -65,7 +65,7 @@
 
 ## 챕터 3: 저장 (14개 항목)
 
-> Match Rate: ~60% | 완료 7 / 부분 3 / 미구현 4
+> Match Rate: ~79% | 완료 10 / 부분 1 / 미구현 3
 
 ### DB 구조
 - [x] 계정 종속 (account_id) — creatives, creative_media, landing_pages 모두 FK
@@ -75,11 +75,11 @@
 - [x] t3_scores_precomputed — precompute 파이프라인 가동 중
 
 ### DB 컬럼/테이블 (T1 범위)
-- [ ] source 필드 (member/benchmark/competitor) — 🔄 SQL 작성 완료, DB 미적용
-- [ ] analysis_json 통합 — 🔄 컬럼 존재, 데이터 0건 (T2에서 채움)
-- [ ] LP 변경 감지 (content_hash) — 🔄 SQL에 포함, DB 미적용
-- [ ] lp_click_data 테이블 — ❌ SQL 작성 완료, DB 미적용
-- [ ] change_log 테이블 — ❌ SQL 작성 완료, DB 미적용
+- [x] source 필드 (member/benchmark/competitor) — ✅ T1 완료, CHECK 제약 적용
+- [x] analysis_json 통합 — ✅ 컬럼 존재, 데이터 0건 (T2에서 채움)
+- [x] LP 변경 감지 (content_hash) — ✅ T1 완료, 컬럼 적용됨
+- [x] lp_click_data 테이블 — ✅ T1 완료, 테이블 생성됨
+- [x] change_log 테이블 — ✅ T1 완료, 테이블 생성됨
 
 ### Storage 경로
 - [x] creatives/ Storage 경로 — 완료
@@ -161,13 +161,13 @@
 
 ## 챕터 6: 순환 학습 (8개 항목)
 
-> Match Rate: ~15% | 완료 1 / 부분 1 / 미구현 6
+> Match Rate: ~25% | 완료 2 / 부분 1 / 미구현 5
 
 - [x] 새 소재 자동 수집 — collect-daily에서 신규 소재 자동 수집
-- [ ] LP 변화 감지 (content_hash) — 🔄 컬럼 SQL 준비, DB 미적용 + 로직 미구현
+- [ ] LP 변화 감지 (content_hash) — 🔄 컬럼 DB 적용됨, 감지 로직 미구현
 - [ ] 소재 요소 diff (5축 속성 비교) — ❌ analysis_json 비교 로직 필요
 - [ ] 성과 변화 추적 (before/after 7일 평균) — ❌ daily_ad_insights 데이터 있으나 diff 안 함
-- [ ] change_log 테이블 — ❌ SQL 작성 완료, DB 미적용
+- [x] change_log 테이블 — ✅ T1 완료, 테이블 생성됨 (데이터 축적 필요)
 - [ ] 데이터화 ("리뷰 추가 = +44%") — ❌ change_log 축적 후
 - [ ] 제안→결과 추적 — ❌ Phase 3
 - [ ] "다음 수강생 제안에 활용" — ❌ 충분한 change_log 축적 후
@@ -178,7 +178,7 @@
 
 | TASK | 챕터 | 우선순위 | 상태 | 설명 |
 |------|------|---------|------|------|
-| **T1** | 1,3 | P0 | 🔄 SQL 작성 완료, DB 미적용 | DB 스키마 v3 보강 (9개 변경) |
+| **T1** | 1,3 | P0 | ✅ 완료 (2026-03-22) | DB 스키마 v3 보강 (9개 변경) — 커밋 6f70f83 |
 | **T2** | 5 | P0 | ❌ 미시작 | 5축 스키마 확정 + 프롬프트 재설계 |
 | **T2-A** | 5 | P0 | ❌ 미시작 | 속성값 3단계 (자유태깅→클러스터→확정) |
 | **T2-B** | 5 | P0 | ❌ 미시작 | creative_fatigue_risk 계산 |

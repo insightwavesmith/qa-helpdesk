@@ -326,7 +326,7 @@
       "T1-커밋"
     ],
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22",
-    "notes": "P0-1 완료. 마이그레이션 9개 섹션 전부 Supabase 적용. 신규 컬럼 14개 + 테이블 2개 + CHECK 제약. source 3096건 bscamp→member 전환. RPC 재정의. collect-daily/migrate-to-v2 코드 변경. tsc+build 통과."
+    "updatedAt": "2026-03-22T12:30:00",
+    "notes": "P0-1 완료. 마이그레이션 9개 섹션 전부 Supabase 적용. 신규 컬럼 14개 + 테이블 2개 + CHECK 제약. source 3096건 bscamp→member 전환. RPC 재정의. collect-daily/migrate-to-v2 코드 변경. TASK-*.md 64개 아카이브. DEV-STATUS.md 최신화. tsc+build 통과. 커밋 6f70f83."
   }
 }
