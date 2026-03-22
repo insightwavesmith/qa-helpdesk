@@ -12,16 +12,6 @@
  * - fallback: object_type 기반
  */
 export function getCreativeType(ad: Record<string, unknown>): string {
-  // 디버깅: creative 객체 구조 확인
-  const rawCreative = ad.creative;
-  if (rawCreative && typeof rawCreative === "object" && (rawCreative as Record<string, unknown>).object_type === "SHARE") {
-    console.log("[getCreativeType] SHARE detected!", JSON.stringify({
-      ad_id: ad.id ?? ad.ad_id,
-      creative_keys: Object.keys(rawCreative as object),
-      creative: rawCreative,
-    }).slice(0, 500));
-  }
-
   const creative = ad.creative as
     | {
         object_type?: string;
@@ -31,6 +21,9 @@ export function getCreativeType(ad: Record<string, unknown>): string {
         asset_feed_spec?: {
           videos?: { video_id?: string }[];
         };
+        object_story_spec?: {
+          video_data?: Record<string, unknown>;
+        };
       }
     | undefined;
 
@@ -39,11 +32,14 @@ export function getCreativeType(ad: Record<string, unknown>): string {
   const productSetId = creative?.product_set_id;
   const objectType = creative?.object_type ?? "UNKNOWN";
   const afsVideos = creative?.asset_feed_spec?.videos;
+  const hasVideoData = !!creative?.object_story_spec?.video_data;
 
-  // 최우선: object_type SHARE → VIDEO (카탈로그+수동업로드 영상)
+  // SHARE: 이미지/영상 모두 가능 → video_data 존재 여부로 판별
   if (objectType === "SHARE") {
-    console.log("[getCreativeType] SHARE→VIDEO 변환 실행!", ad.id ?? ad.ad_id);
-    return "VIDEO";
+    if (videoId || hasVideoData || (afsVideos && afsVideos.length > 0)) {
+      return "VIDEO";
+    }
+    // video_data 없으면 이미지 게시물 → 아래 일반 로직으로 폴스루
   }
 
   // 1순위: video_id 존재 → VIDEO (직접 업로드 영상)

@@ -51,7 +51,7 @@ export default function VideoHeatmapOverlay({
 
   // 시선 히트맵 색상 — 구간 무관 단색 빨강
   const getColorForTimestamp = (_timestamp: number): string => {
-    return "rgba(239, 68, 68, 0.6)";
+    return "rgba(255, 80, 40, 0.55)";
   };
 
   // 가우시안 히트맵 원형 그리기
