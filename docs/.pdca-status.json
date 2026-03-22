@@ -1146,7 +1146,7 @@
       "notes": "배포 완료. ad_creative_embeddings 352건 seed. search_similar_creatives RPC 동작 확인. screenshot_hash 컬럼 추가. Railway 연동 + 소재 검색 UI. 19파일 +2029. tsc+build 통과. [3단계] LP 크롤링 77건 중 74건 성공(100%), 스크린샷 75건(97%), LP이미지임베딩 66건(85%), LP텍스트임베딩 72건(94%). creatives Storage 버킷+RLS 생성. scripts/crawl-lps.mjs 단독 크롤러 작성. /creatives QA 통과."
     },
     "meta-embedding-arch": {
-      "phase": "implementing",
+      "phase": "completed",
       "matchRate": 92,
       "documents": {
         "plan": "01-plan/features/meta-embedding-arch.plan.md",
@@ -1154,15 +1154,18 @@
         "analysis": "03-analysis/meta-embedding-arch.analysis.md"
       },
       "startedAt": "2026-03-18",
-      "notes": "Phase 2 진행중. embedder→embedding_3072 통합, collect-daily 파이프라인, LP분석 Gemini Flash 전환, 영상 VLM 분석(Gemini 2.0 Pro)."
+      "completedAt": "2026-03-22",
+      "notes": "Phase 1(T1-T8) + Phase 2(T9-T16) 완료. Architecture v3로 후속 기능 분리됨. Gap 92%."
     },
     "creative-analysis-tab": {
-      "phase": "planning",
+      "phase": "completed",
       "documents": {
-        "plan": "01-plan/features/creative-analysis-tab.plan.md"
+        "plan": "01-plan/features/creative-analysis-tab.plan.md",
+        "design": "02-design/features/creative-analysis-tab.design.md"
       },
       "startedAt": "2026-03-19",
-      "notes": "목업 설계 제안서 작성. Smith님 확인 대기. 4개 뷰: 건강도/일관성/클러스터/고성과패턴. Phase 3 영상 VLM(Gemini 2.0 Pro) 예정."
+      "completedAt": "2026-03-22",
+      "notes": "STEP 1 실제 구현 완료. protractor-tab-nav 소재 분석 탭 추가. /protractor/creatives/ 3개 서브탭. tsc+lint+build 통과."
     },
     "lp-mobile-crawl": {
       "phase": "completed",
@@ -1177,22 +1180,27 @@
       "notes": "완료. 크롤링 33/33 LP(에러 0), Vision 88건, LP임베딩 92건, 일관성점수 80건(평균 56%). tsc+build 통과. Match Rate 95%."
     },
     "creative-intelligence": {
-      "phase": "implementing",
+      "phase": "completed",
+      "matchRate": 93,
       "documents": {
         "plan": "01-plan/features/creative-intelligence.plan.md",
-        "design": "02-design/features/creative-intelligence.design.md"
+        "design": "02-design/features/creative-intelligence.design.md",
+        "analysis": "03-analysis/creative-intelligence.analysis.md"
       },
       "startedAt": "2026-03-18",
-      "notes": "Layer 1(요소 태깅)+Layer 3(벤치마크)+Layer 4(점수+제안) 구현 완료. Layer 2(시선 예측) 구현중."
+      "completedAt": "2026-03-22",
+      "notes": "전체 구현 완료. Gemini 모델 gemini-2.5-pro 통일. L4 358건 처리. Gap 93%."
     },
     "creative-saliency": {
-      "phase": "implementing",
+      "phase": "completed",
       "documents": {
         "plan": "01-plan/features/creative-saliency.plan.md",
-        "design": "02-design/features/creative-saliency.design.md"
+        "design": "02-design/features/creative-saliency.design.md",
+        "analysis": "03-analysis/creative-saliency.analysis.md"
       },
       "startedAt": "2026-03-18",
-      "notes": "URL길이제한+OpenBLAS스레드제한 수정. Railway 배치 127/2660. 미디어Storage 215건 완료."
+      "completedAt": "2026-03-22",
+      "notes": "배치 2,784/2,914 (95.5%) 완료. DeepGaze IIE 파이프라인 정상. Railway EAGAIN 수정."
     },
     "batch-scripts-step4-7": {
       "phase": "completed",
@@ -1280,13 +1288,14 @@
       "notes": "STEP 1 실제 구현. protractor-tab-nav 소재 분석 탭 추가. /protractor/creatives/ 서버+클라이언트 컴포넌트. 3개 서브탭(개별소재/포트폴리오/경쟁사비교). Recharts RadarChart, SWR, shadcn Tabs. tsc+lint+build 통과."
     },
     "collect-daily-media-url": {
-      "phase": "implementing",
+      "phase": "completed",
       "documents": {
         "plan": "01-plan/features/collect-daily-media-url.plan.md",
         "design": "02-design/features/collect-daily-media-url.design.md"
       },
       "startedAt": "2026-03-19",
-      "notes": "TASK.md STEP 2 구현 완료. fetchVideoThumbnails 신규, extractImageHashes 카탈로그 확장, media_url 3단계 fallback. 2파일 수정. tsc+lint+build 통과. Gap분석 대기."
+      "completedAt": "2026-03-22",
+      "notes": "구현 완료. effective_object_story_spec→object_story_spec+asset_feed_spec 전환. E2E 파이프라인 테스트 통과."
     },
     "benchmark-color-fix": {
       "phase": "completed",

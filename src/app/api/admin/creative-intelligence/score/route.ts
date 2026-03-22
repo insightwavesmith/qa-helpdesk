@@ -221,7 +221,7 @@ export async function POST(req: NextRequest) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { maxOutputTokens: 2048 },
+            generationConfig: { maxOutputTokens: 8192, responseMimeType: "application/json" },
           }),
         }
       );

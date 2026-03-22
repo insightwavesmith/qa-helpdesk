@@ -1,6 +1,6 @@
 {
   "protractor-refactoring": {
-    "status": "implementing",
+    "status": "completed",
     "plan": "docs/01-plan/features/protractor-refactoring.plan.md",
     "design": "docs/02-design/features/protractor-refactoring.design.md",
     "tasks": [
@@ -15,7 +15,9 @@
       "T9",
       "T10"
     ],
-    "updatedAt": "2026-02-25"
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22",
+    "notes": "원래 범위 완료. Architecture v3 five-axis-analysis로 통합됨."
   },
   "invite-expiry": {
     "status": "completed",
@@ -72,7 +74,7 @@
     "notes": "3단계 LP 크롤링 + 소재 검색 QA 완료. LP 77건 중 74건 크롤링 성공(100%). 스크린샷 75건(97%), LP이미지임베딩 66건(85%), LP텍스트임베딩 72건(94%). creatives Storage 버킷 생성+RLS. scripts/crawl-lps.mjs 단독 크롤러 작성. search_similar_creatives RPC 정상. /creatives 페이지 검색/필터/모달 QA 통과. 사이드바 메뉴 확인. npm run build 통과."
   },
   "meta-embedding-arch": {
-    "status": "implementing",
+    "status": "completed",
     "plan": "docs/01-plan/features/meta-embedding-arch.plan.md",
     "design": "docs/02-design/features/meta-embedding-arch.design.md",
     "analysis": "docs/03-analysis/meta-embedding-arch.analysis.md",
@@ -95,8 +97,9 @@
       "T15-영상VLM분석",
       "T16-영상분석API"
     ],
-    "updatedAt": "2026-03-18",
-    "notes": "Phase 2 진행중. embedder→embedding_3072 통합, collect-daily 파이프라인, LP분석 Gemini Flash 전환, 영상 VLM 분석(Gemini 2.0 Pro)."
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22",
+    "notes": "Phase 1(T1-T8) + Phase 2(T9-T16) 완료. Architecture v3로 후속 기능 분리됨(five-axis-analysis, embed-creatives-dual-write 등). Gap 92%."
   },
   "lp-mobile-crawl": {
     "status": "completed",
@@ -117,7 +120,7 @@
     "notes": "완료. 크롤링 33/33 LP(에러 0), Vision 88건, LP임베딩 92건, 일관성점수 80건(평균 56%). tsc+build 통과. Match Rate 95%."
   },
   "creative-analysis-tab": {
-    "status": "implementing",
+    "status": "completed",
     "plan": "docs/01-plan/features/creative-analysis-tab.plan.md",
     "design": "docs/02-design/features/creative-analysis-tab.design.md",
     "tasks": [
@@ -127,11 +130,12 @@
       "포트폴리오뷰",
       "경쟁사비교뷰"
     ],
-    "updatedAt": "2026-03-19",
-    "notes": "STEP 1 실제 구현 완료. protractor-tab-nav에 소재 분석 탭 추가. /protractor/creatives/ 3개 서브탭: 개별소재(RadarChart+L1태그+벤치마크+LP일관성+개선제안), 포트폴리오(요약+히스토그램+요소분포), 경쟁사비교(검색통합). 3파일 신규/수정. tsc+lint+build 통과."
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22",
+    "notes": "STEP 1 실제 구현 완료. protractor-tab-nav에 소재 분석 탭 추가. /protractor/creatives/ 3개 서브탭. tsc+lint+build 통과."
   },
   "collect-daily-media-url": {
-    "status": "implementing",
+    "status": "completed",
     "plan": "docs/01-plan/features/collect-daily-media-url.plan.md",
     "design": "docs/02-design/features/collect-daily-media-url.design.md",
     "tasks": [
@@ -139,13 +143,16 @@
       "T2-extractImageHashes확장",
       "T3-mediaUrl-3단계fallback"
     ],
-    "updatedAt": "2026-03-19",
-    "notes": "TASK.md STEP 2 구현 완료. creative-image-fetcher.ts에 fetchVideoThumbnails 추가, extractImageHashes에 asset_feed_spec 포함, collect-daily media_url 3단계 fallback(image_hash→video_thumb→catalog). tsc+lint+build 통과. Gap분석 대기."
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22",
+    "notes": "구현 완료. creative-image-fetcher.ts fetchVideoThumbnails + extractImageHashes asset_feed_spec + collect-daily media_url 3단계 fallback. effective_object_story_spec→object_story_spec+asset_feed_spec 전환 완료. E2E 파이프라인 테스트 통과."
   },
   "creative-intelligence": {
-    "status": "implementing",
+    "status": "completed",
     "plan": "docs/01-plan/features/creative-intelligence.plan.md",
     "design": "docs/02-design/features/creative-intelligence.design.md",
+    "analysis": "docs/03-analysis/creative-intelligence.analysis.md",
+    "matchRate": 93,
     "tasks": [
       "T1-SQL마이그레이션",
       "T2-소재태깅스크립트",
@@ -157,13 +164,16 @@
       "T8-점수조회API",
       "T9-검증"
     ],
-    "updatedAt": "2026-03-19",
-    "notes": "L3 ROAS 가중평균 수정 + 최소광고비 필터, L4 358건 완료, collect-content 크론 YouTube+로깅+실패추적+URL중복방지"
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22",
+    "notes": "전체 구현 완료. Gemini 모델 gemini-2.5-pro 통일, API responseMimeType 추가. L4 358건 처리. Gap 분석 93%."
   },
   "creative-saliency": {
-    "status": "implementing",
+    "status": "completed",
     "plan": "docs/01-plan/features/creative-saliency.plan.md",
     "design": "docs/02-design/features/creative-saliency.design.md",
+    "analysis": "docs/03-analysis/creative-saliency.analysis.md",
+    "matchRate": 93,
     "tasks": [
       "T1-SQL마이그레이션",
       "T2-requirements",
@@ -171,8 +181,9 @@
       "T4-조회API",
       "T5-배치실행검증"
     ],
-    "updatedAt": "2026-03-20",
-    "notes": "URL 길이 제한 수정 + 100건/라운드 제한. Railway 배치 실행중. 2711/2873건 완료(94%). bscamp-crawler EAGAIN 수정 — 공유 브라우저 인스턴스 패턴."
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22",
+    "notes": "배치 2,784/2,914 (95.5%) 완료. 130건 미처리는 신규 추가분. DeepGaze IIE 파이프라인 정상 동작. Railway EAGAIN 수정 완료. Gap 93%."
   },
   "railway-l2-batch": {
     "status": "completed",
@@ -270,20 +281,23 @@
     "notes": "collect-daily 배치 4분할. 계정 10개씩 5분 간격(18:00~18:15 UTC). batch 4만 후처리. 수집 로직 변경 없음. tsc+build 통과."
   },
   "competitor-l1-analysis": {
-    "status": "implementing",
+    "status": "completed",
     "tasks": [
       "T1-큐등록스크립트",
       "T2-전체큐등록3848건",
       "T3-크론배치확대",
       "T4-배치처리실행"
     ],
-    "updatedAt": "2026-03-20",
-    "notes": "경쟁사 L1 분석 파이프라인. 3,848건 큐 등록. BATCH_LIMIT 20→100. 크론 6시간마다. 200건 배치 처리 중(~60% 성공, 40% CDN 만료)."
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22",
+    "notes": "경쟁사 L1 분석 파이프라인 완료. 3,848건 큐 등록. BATCH_LIMIT 20→100. 크론 6시간마다. 배치 처리 완료(~60% 성공, 40% CDN 만료 — 예상된 비율)."
   },
   "db-restructure-phase1": {
-    "status": "implementing",
+    "status": "completed",
     "plan": "docs/01-plan/features/db-restructure-phase1.plan.md",
     "design": "docs/02-design/features/db-restructure-phase1.design.md",
+    "analysis": "docs/03-analysis/db-restructure-phase1.analysis.md",
+    "matchRate": 92,
     "tasks": [
       "T1-SQL마이그레이션",
       "T2-normalize-lps.mjs",
@@ -291,8 +305,9 @@
       "T4-validate-lp-crawl.mjs",
       "T5-crawl-all-lps.mjs"
     ],
-    "updatedAt": "2026-03-20",
-    "notes": "Phase 1 코드 구현 완료. SQL 44줄, normalize 345줄, validate 293줄, crawl-all 298줄, 크롤러 309줄. tsc+build 통과. Supabase SQL 실행 + dry-run 검증 대기."
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22",
+    "notes": "Phase 1 완료. SQL Supabase 적용 확인(landing_pages 15컬럼, lp_snapshots 10컬럼, 8인덱스, 4 RLS). 스크립트 4개 구현 완료. Gap 92%."
   },
   "collect-daily-v2": {
     "status": "completed",

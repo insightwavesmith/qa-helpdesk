@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{ parts }],
-            generationConfig: { maxOutputTokens: 2048 },
+            generationConfig: { maxOutputTokens: 8192, responseMimeType: "application/json" },
           }),
           signal: AbortSignal.timeout(60_000),
         }
