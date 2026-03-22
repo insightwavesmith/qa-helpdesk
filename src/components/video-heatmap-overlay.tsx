@@ -49,11 +49,9 @@ export default function VideoHeatmapOverlay({
     [eyeTracking]
   );
 
-  // 구간별 색상: 0-3초 빨강(훅), 3-8초 파랑(제품), 8-15초 초록(CTA)
-  const getColorForTimestamp = (timestamp: number): string => {
-    if (timestamp < 3) return "rgba(239, 68, 68, 0.6)"; // 빨강
-    if (timestamp < 8) return "rgba(59, 130, 246, 0.6)"; // 파랑
-    return "rgba(34, 197, 94, 0.6)"; // 초록
+  // 시선 히트맵 색상 — 구간 무관 단색 빨강
+  const getColorForTimestamp = (_timestamp: number): string => {
+    return "rgba(239, 68, 68, 0.6)";
   };
 
   // 가우시안 히트맵 원형 그리기
