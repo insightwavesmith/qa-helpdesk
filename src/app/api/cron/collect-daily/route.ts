@@ -119,6 +119,7 @@ import {
   fetchImageUrlsByHash,
   extractImageHashes,
   fetchVideoThumbnails,
+  fetchVideoSourceUrls,
 } from "@/lib/protractor/creative-image-fetcher";
 import { embedMissingCreatives } from "@/lib/ad-creative-embedder";
 import { normalizeUrl, classifyUrl } from "@/lib/lp-normalizer";
@@ -608,6 +609,64 @@ export async function runCollectDaily(dateParam?: string, batch?: number): Promi
                 } else {
                   console.log(`[collect-daily] v2 creative_media: ${mediaRows.length}건 upserted`);
                 }
+              }
+
+              // ── mp4 즉시 다운로드 (VIDEO 타입, storage_url 없는 건만) ──
+              try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const videoMediaRows = (mediaRows as any[]).filter(
+                  (r) => r && r.media_type === "VIDEO" && !r.storage_url
+                );
+                if (videoMediaRows.length > 0 && videoIds.length > 0) {
+                  const videoSourceMap = await fetchVideoSourceUrls(videoIds);
+                  let mp4Downloaded = 0;
+                  for (const [videoId, sourceUrl] of videoSourceMap.entries()) {
+                    try {
+                      // video_id → ad_id 매핑
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      const matchingAd = (ads as any[]).find(
+                        (ad) => ad.creative?.video_id === videoId
+                      );
+                      if (!matchingAd) continue;
+                      const adId = (matchingAd.ad_id ?? matchingAd.id) as string;
+
+                      // mp4 다운로드
+                      const mp4Res = await fetch(sourceUrl);
+                      if (!mp4Res.ok) continue;
+                      const mp4Buffer = Buffer.from(await mp4Res.arrayBuffer());
+
+                      // Storage 업로드: creatives/{account_id}/media/{ad_id}.mp4
+                      const storagePath = `creatives/${account.account_id}/media/${adId}.mp4`;
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      const { error: uploadErr } = await (svc as any).storage
+                        .from("creatives")
+                        .upload(storagePath, mp4Buffer, {
+                          contentType: "video/mp4",
+                          upsert: true,
+                        });
+
+                      if (!uploadErr) {
+                        // creative_media.storage_url 업데이트 (mp4 영구 경로)
+                        const creativeId = adIdToCreativeId.get(adId);
+                        if (creativeId) {
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          await (svc as any)
+                            .from("creative_media")
+                            .update({ storage_url: storagePath })
+                            .eq("creative_id", creativeId);
+                        }
+                        mp4Downloaded++;
+                      }
+                    } catch {
+                      // mp4 개별 실패는 무시 (다음 크론에서 재시도)
+                    }
+                  }
+                  if (mp4Downloaded > 0) {
+                    console.log(`[collect-daily] mp4 다운로드: ${mp4Downloaded}건 [${account.account_id}]`);
+                  }
+                }
+              } catch (mp4Err) {
+                console.error(`[collect-daily] mp4 다운로드 실패 (비치명적) [${account.account_id}]:`, mp4Err);
               }
             }
           } catch (v2Err) {

@@ -110,8 +110,81 @@ async function sbPatch(table, query, body) {
   return { ok: true };
 }
 
+async function sbPost(table, body) {
+  const res = await fetch(`${SB_URL}/rest/v1/${table}`, {
+    method: "POST",
+    headers: {
+      apikey: SB_KEY,
+      Authorization: `Bearer ${SB_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) return { ok: false, status: res.status, body: await res.text() };
+  return { ok: true };
+}
+
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+/**
+ * 5축 analysis_json 요소 diff 계산
+ * 변경된 속성만 추출하여 change_log.element_diff에 기록
+ */
+function computeElementDiff(oldJson, newJson) {
+  if (!oldJson || !newJson) return null;
+
+  const AXES = ["visual", "text", "psychology", "quality", "hook"];
+  const diffs = {};
+  let changeCount = 0;
+
+  for (const axis of AXES) {
+    const oldAxis = oldJson[axis];
+    const newAxis = newJson[axis];
+    if (!oldAxis || !newAxis) continue;
+
+    for (const key of Object.keys(newAxis)) {
+      const oldVal = oldAxis[key];
+      const newVal = newAxis[key];
+      if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+        diffs[`${axis}.${key}`] = { old: oldVal, new: newVal };
+        changeCount++;
+      }
+    }
+  }
+
+  // scores diff
+  if (oldJson.scores && newJson.scores) {
+    for (const key of Object.keys(newJson.scores)) {
+      if (oldJson.scores[key] !== newJson.scores[key]) {
+        diffs[`scores.${key}`] = { old: oldJson.scores[key], new: newJson.scores[key] };
+        changeCount++;
+      }
+    }
+  }
+
+  return changeCount > 0 ? { changes: changeCount, diffs } : null;
+}
+
+/**
+ * 소재 요소 diff → change_log INSERT
+ */
+async function logElementDiff(item, oldJson, newJson) {
+  const diff = computeElementDiff(oldJson, newJson);
+  if (!diff) return; // 변경 없음
+
+  const changeType = oldJson ? "element_modified" : "element_added";
+  await sbPost("change_log", {
+    entity_type: "creative",
+    entity_id: item.id,
+    account_id: String(item.accountId),
+    change_detected_at: new Date().toISOString(),
+    change_type: changeType,
+    element_diff: diff,
+  });
+  console.log(`  [DIFF] ${diff.changes}개 속성 변경 → change_log 기록`);
 }
 
 // ── v3 분석 프롬프트 (기존 — 호환성 유지용 주석 처리) ──
@@ -1020,6 +1093,7 @@ async function main() {
       storageUrl: row.storage_url,
       mediaType: row.media_type,
       adCopy: row.ad_copy,
+      oldAnalysisJson: row.analysis_json || null,
     });
   }
 
@@ -1151,6 +1225,10 @@ async function main() {
       } else {
         console.log(`OK ${result.summary?.slice(0, 40) || "OK"}`);
         success++;
+        // 소재 요소 diff → change_log (재분석 시 변경 추적)
+        if (item.oldAnalysisJson) {
+          await logElementDiff(item, item.oldAnalysisJson, result);
+        }
       }
     } else if (item.source === "creative_media" && !cmHasAnalysisCol) {
       // analysis_json 컬럼 미생성 → ace 폴백

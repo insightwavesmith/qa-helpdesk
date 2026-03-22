@@ -270,3 +270,45 @@ export async function fetchVideoThumbnails(
 
   return result;
 }
+
+/**
+ * Meta Graph API에서 영상 소스 URL (mp4) 조회
+ * fields=source로 실제 mp4 다운로드 URL 획득
+ * URL은 시간 제한 있으므로 즉시 다운로드 필요
+ */
+export async function fetchVideoSourceUrls(
+  videoIds: string[],
+): Promise<Map<string, string>> {
+  const token = process.env.META_ACCESS_TOKEN;
+  if (!token) throw new Error("META_ACCESS_TOKEN not set");
+
+  const result = new Map<string, string>();
+  if (videoIds.length === 0) return result;
+
+  for (const videoId of videoIds) {
+    try {
+      const url = new URL(`${META_API_BASE}/${videoId}`);
+      url.searchParams.set("access_token", token);
+      url.searchParams.set("fields", "source");
+
+      const res = await fetchMetaWithRetry(url.toString());
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data: any = await res.json();
+
+      if (data.error) {
+        console.error(`[creative-fetcher] video source ${videoId} error:`, data.error.message);
+        continue;
+      }
+
+      if (data.source) {
+        result.set(videoId, data.source);
+      }
+    } catch (e) {
+      console.error(`[creative-fetcher] video source ${videoId} failed:`, e);
+    }
+
+    await new Promise((r) => setTimeout(r, 100));
+  }
+
+  return result;
+}
