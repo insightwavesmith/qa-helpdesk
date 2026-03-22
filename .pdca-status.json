@@ -497,5 +497,13 @@
     "completedAt": "2026-03-22",
     "updatedAt": "2026-03-22T23:00:00",
     "notes": "metric-groups.ts에 ATTRIBUTE_AXIS_MAP 15속성 매핑 추가. Phase 2 가중치 보정 예정."
+  },
+  "lp-saliency-eye-tracking": {
+    "status": "completed",
+    "matchRate": 93,
+    "tasks": ["LP시선분석-DeepGaze"],
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22T23:30:00",
+    "notes": "predict_lp.py 신규(Railway). /lp-saliency 엔드포인트 + server.js. analyze-lp-saliency Vercel cron (23:30 UTC). eye_tracking JSONB: 섹션별 weight, fixation, fold/CTA attention, cognitive load."
   }
 }

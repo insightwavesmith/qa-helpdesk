@@ -70,6 +70,37 @@ app.post('/saliency', auth, async (req, res) => {
   }
 });
 
+// ━━━ runLpSaliency 헬퍼 (Python subprocess) ━━━
+function runLpSaliency({ limit, accountId }) {
+  return new Promise((resolve, reject) => {
+    const args = ['saliency/predict_lp.py', '--limit', String(limit)];
+    if (accountId) args.push('--account-id', accountId);
+    execFile('python3', args, { cwd: '/app', timeout: 1800000 }, (err, stdout, stderr) => {
+      if (stderr) console.error('[lp-saliency stderr]', stderr.slice(-500));
+      if (err) return reject(err);
+      try {
+        const lastLine = stdout.trim().split('\n').pop();
+        resolve(JSON.parse(lastLine));
+      } catch (parseErr) {
+        reject(new Error(`lp-saliency stdout parse error: ${stdout.slice(-200)}`));
+      }
+    });
+  });
+}
+
+// ━━━ POST /lp-saliency — LP 스크린샷 시선 예측 ━━━
+app.post('/lp-saliency', auth, async (req, res) => {
+  try {
+    const { limit = 9999, accountId = null } = req.body || {};
+    console.log(`[/lp-saliency] limit=${limit}, accountId=${accountId || '전체'}`);
+    const result = await runLpSaliency({ limit, accountId });
+    res.json({ ok: true, ...result });
+  } catch (e) {
+    console.error('[/lp-saliency] 에러:', e);
+    res.status(500).json({ error: e.message || String(e) });
+  }
+});
+
 // ━━━ POST /benchmark — L3 벤치마크 계산 ━━━
 app.post('/benchmark', auth, async (req, res) => {
   try {

@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-22T23:00:00.000Z",
+  "lastUpdated": "2026-03-22T23:30:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1459,6 +1459,14 @@
       "startedAt": "2026-03-22",
       "completedAt": "2026-03-22",
       "notes": "metric-groups.ts ATTRIBUTE_AXIS_MAP 15속성 → 3축 매핑. Phase 2 가중치 보정 예정"
+    },
+    "lp-saliency-eye-tracking": {
+      "phase": "completed",
+      "matchRate": 93,
+      "documents": {},
+      "startedAt": "2026-03-22",
+      "completedAt": "2026-03-22",
+      "notes": "predict_lp.py 신규(Railway DeepGaze). /lp-saliency 엔드포인트. analyze-lp-saliency Vercel cron 23:30 UTC. eye_tracking JSONB: 섹션별 weight, fixation, fold/CTA attention, cognitive load"
     }
   }
 }

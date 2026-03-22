@@ -2,8 +2,8 @@
 
 > 기준일: 2026-03-22 (T2~T11 완료 반영)
 > 근거: architecture-v3-execution-plan.md (T1~T11) + master-architecture-review.md (83개 항목)
-> 총 83개 항목: ✅ 59 완료 / 🔄 4 진행 중·부분 구현 / ❌ 20 미구현
-> 전체 Match Rate: ~71% (T1~T11 + LP 변경 감지 + 성과 추적 + 3축 매핑 반영)
+> 총 83개 항목: ✅ 61 완료 / 🔄 4 진행 중·부분 구현 / ❌ 18 미구현
+> 전체 Match Rate: ~73% (+ DeepGaze LP 시선 + eye_tracking JSONB 반영)
 
 ---
 
@@ -91,7 +91,7 @@
 
 ## 챕터 4: LP 분석 (16개 항목)
 
-> Match Rate: ~69% | 완료 10 / 부분 1 / 미구현 5
+> Match Rate: ~81% | 완료 12 / 부분 1 / 미구현 3
 
 ### LP 수집
 - [x] LP v2 크롤링 (스크린샷) — ✅ T4 완료. mobile+desktop, lp_snapshots UPSERT
@@ -107,8 +107,8 @@
 - [x] data_based JSONB — ✅ T10 완료. conversion_score 백분위
 
 ### LP 분석 — 시선 (눈)
-- [ ] DeepGaze LP 시선 — ❌ 소재만 완료, LP 미적용
-- [ ] lp_analysis.eye_tracking JSONB — ❌ 컬럼 존재, 데이터 미채움
+- [x] DeepGaze LP 시선 — ✅ predict_lp.py + /lp-saliency 엔드포인트 + Vercel cron
+- [x] lp_analysis.eye_tracking JSONB — ✅ 섹션별 weight, fixation, CTA/fold attention, cognitive load
 
 ### LP 분석 — 탐색/결정
 - [x] Mixpanel 스크롤 수집 — collect-mixpanel에서 수집 중
@@ -198,15 +198,16 @@
 
 ## 남은 작업 (우선순위 순)
 
-### P1 — 즉시 가능
-1. LP 변경 감지 로직 구현 (content_hash diff → 재분석 트리거)
-2. 총가치각도기 3축 ↔ 소재 속성 매핑 (metric-groups.ts)
-3. 성과 변화 추적 (before/after 7일 ROAS diff → change_log 기록)
+### P1 — 완료 ✅
+1. ~~LP 변경 감지 로직 구현~~ → ✅ content_hash diff → analyzed_at NULL 리셋
+2. ~~총가치각도기 3축 ↔ 소재 속성 매핑~~ → ✅ ATTRIBUTE_AXIS_MAP 15속성
+3. ~~성과 변화 추적~~ → ✅ track-performance cron (7일 before/after)
+4. ~~DeepGaze LP 시선 분석~~ → ✅ predict_lp.py + /lp-saliency + cron
+5. ~~collect-daily mp4 즉시 다운~~ → ✅ fetchVideoSourceUrls → Storage 업로드
+6. ~~소재 요소 diff~~ → ✅ computeElementDiff → change_log
 
 ### P2 — 데이터 의존
-4. DeepGaze LP 시선 분석 (LP 스크린샷 → saliency predict)
-5. 영상 프레임별 DeepGaze (ffmpeg 1fps 추출 필요)
-6. collect-daily mp4 즉시 다운 (Meta URL 만료 전 잡기)
+1. 영상 프레임별 DeepGaze (ffmpeg 1fps 추출 필요)
 
 ### P3 — 외부 의존
 7. Mixpanel 클릭 수집 ($mp_click Autocapture 설정 필요)
