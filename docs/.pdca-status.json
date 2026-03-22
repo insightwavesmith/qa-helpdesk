@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-22T12:30:00.000Z",
+  "lastUpdated": "2026-03-22T19:00:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1306,6 +1306,42 @@
       "startedAt": "2026-03-20",
       "completedAt": "2026-03-20",
       "notes": "STEP 1 완료. collect-daily가 v2 정규화 테이블(creatives, creative_media, landing_pages)에 직접 UPSERT. ad_creative_embeddings 호환 유지. lp-normalizer.ts 신규 모듈. LP URL은 effective_object_story_spec에서 추출. tsc+build 통과. Match Rate 95%."
+    },
+    "five-axis-analysis": {
+      "phase": "completed",
+      "matchRate": 96,
+      "documents": {
+        "plan": "01-plan/features/architecture-v3-execution-plan.md",
+        "design": "02-design/features/five-axis-analysis.design.md",
+        "analysis": "03-analysis/five-axis-analysis.analysis.md"
+      },
+      "startedAt": "2026-03-22",
+      "completedAt": "2026-03-22",
+      "notes": "T2 완료. analyze-five-axis.mjs v3 재설계(3모드 free/cluster/final, psychology/quality 신규 축). compute-score-percentiles.mjs 신규(카테고리 백분위). compute-fatigue-risk.mjs 신규(임베딩 코사인 유사도). tsc+build 통과."
+    },
+    "embed-creatives-dual-write": {
+      "phase": "completed",
+      "matchRate": 97,
+      "documents": {
+        "plan": "01-plan/features/architecture-v3-execution-plan.md",
+        "design": "02-design/features/embed-creatives-dual-write.design.md",
+        "analysis": "03-analysis/embed-creatives-dual-write.analysis.md"
+      },
+      "startedAt": "2026-03-22",
+      "completedAt": "2026-03-22",
+      "notes": "T3 완료. ad-creative-embedder.ts creative_media 듀얼 라이트. embedCreative() 5단계(독립 try-catch). embedMissingCreatives() CM 보충. tsc+build 통과."
+    },
+    "crawl-lps-v2": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/architecture-v3-execution-plan.md",
+        "design": "02-design/features/crawl-lps-v2.design.md",
+        "analysis": "03-analysis/crawl-lps-v2.analysis.md"
+      },
+      "startedAt": "2026-03-22",
+      "completedAt": "2026-03-22",
+      "notes": "T4 완료. railway-crawler.ts crawlV2() 추가(+80줄). route.ts 전면 재작성(landing_pages 기준, ADR-001 경로, lp_snapshots UPSERT). migrate-lp-screenshots-v2.mjs 신규(265줄). tsc+build 통과."
     }
   }
 }

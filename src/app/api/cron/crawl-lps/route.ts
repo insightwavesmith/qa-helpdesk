@@ -1,23 +1,45 @@
 /**
- * POST /api/cron/crawl-lps
- * LP 크롤링 크론 — lp_url 있지만 스크린샷 없는 row를 Railway 배치 크롤링
+ * GET /api/cron/crawl-lps
+ * LP 크롤링 크론 v2 — landing_pages 기준, ADR-001 Storage 경로, lp_snapshots 저장
  * Vercel Cron: 1시간마다 또는 수동 호출
  */
 
+import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { crawlBatch } from "@/lib/railway-crawler";
-import { generateEmbedding } from "@/lib/gemini";
+import { crawlV2 } from "@/lib/railway-crawler";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
+
+// 크롤링 배제 URL 패턴 (자동 비활성화)
+const BLOCKED_URL_PATTERNS = [
+  "facebook.com/canvas_doc",
+  "mkt.shopping.naver.com",
+  "naver.com",
+  "google.com",
+];
+
+function isBlockedUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    const full = parsed.href;
+    return BLOCKED_URL_PATTERNS.some((pattern) => full.includes(pattern));
+  } catch {
+    return false;
+  }
+}
 
 function verifyCron(req: NextRequest): boolean {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) return true;
   const authHeader = req.headers.get("authorization");
   return authHeader === `Bearer ${cronSecret}`;
+}
+
+function computeHash(base64Data: string): string {
+  return createHash("sha256").update(base64Data).digest("hex");
 }
 
 // Vercel Cron은 GET 호출
@@ -34,258 +56,206 @@ async function handleCrawl(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = createServiceClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createServiceClient() as any;
+
   const stats = {
-    pending: 0,
     crawled: 0,
-    screenshotsUploaded: 0,
-    reembedded: 0,
-    errors: [] as string[],
+    skipped: 0,
+    errors: 0,
+    hashChanged: 0,
   };
+  const errorMessages: string[] = [];
 
   try {
-    // 1. lp_url 있지만 lp_screenshot_url 없는 row 조회
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rows, error } = await (supabase as any)
-      .from("ad_creative_embeddings")
-      .select("id, ad_id, lp_url, screenshot_hash, lp_crawled_at")
-      .not("lp_url", "is", null)
-      .is("lp_screenshot_url", null)
-      .eq("is_active", true)
-      .limit(20);
+    // 1. 크롤 대상 조회: is_active + (last_crawled_at NULL or 7일 이상 경과)
+    const sevenDaysAgo = new Date(
+      Date.now() - 7 * 24 * 60 * 60 * 1000,
+    ).toISOString();
 
-    if (error) {
+    const { data: rows, error: fetchError } = await supabase
+      .from("landing_pages")
+      .select("id, account_id, canonical_url, content_hash, last_crawled_at")
+      .eq("is_active", true)
+      .or(`last_crawled_at.is.null,last_crawled_at.lt.${sevenDaysAgo}`)
+      .order("last_crawled_at", { ascending: true, nullsFirst: true })
+      .limit(10);
+
+    if (fetchError) {
       return NextResponse.json(
-        { error: "DB 조회 실패", detail: error.message },
+        { error: "DB 조회 실패", detail: fetchError.message },
         { status: 500 },
       );
     }
 
     if (!rows || rows.length === 0) {
-      // 스크린샷 있는 row 중 해시 변경 감지 대상 체크
-      const changed = await checkAndRecrawlChanged(supabase, stats);
       return NextResponse.json({
-        message: "새 크롤링 대상 없음",
-        changedRecrawled: changed,
+        message: "크롤링 대상 없음 (모두 최신 상태)",
         ...stats,
       });
     }
 
-    stats.pending = rows.length;
-
-    // 2. Railway 배치 크롤링
-    const urls = rows.map((r: { lp_url: string }) => r.lp_url);
-    const batchResult = await crawlBatch(urls);
-
-    // 3. 결과 처리
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      const result = batchResult.results[i];
-
-      if (!result) {
-        stats.errors.push(`${row.ad_id}: 크롤링 실패`);
+    // 2. 각 LP 처리
+    for (const lp of rows as Array<{
+      id: string;
+      account_id: string;
+      canonical_url: string;
+      content_hash: string | null;
+      last_crawled_at: string | null;
+    }>) {
+      // 차단 URL 감지 → is_active = false
+      if (isBlockedUrl(lp.canonical_url)) {
+        await supabase
+          .from("landing_pages")
+          .update({ is_active: false, updated_at: new Date().toISOString() })
+          .eq("id", lp.id);
+        stats.skipped++;
         continue;
       }
 
-      stats.crawled++;
+      // Railway 크롤링 (mobile 뷰포트)
+      const crawlResult = await crawlV2(lp.canonical_url, {
+        viewport: "mobile",
+        sections: false,
+      });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const updates: Record<string, any> = {
-        lp_headline: result.text.headline || null,
-        lp_price: result.text.price || null,
-        screenshot_hash: result.screenshotHash || null,
-        lp_crawled_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+      if (!crawlResult || !crawlResult.screenshot) {
+        // 타임아웃 또는 크롤 실패 → last_crawled_at 미갱신 (다음 크론 재시도)
+        errorMessages.push(`${lp.id}: 크롤 실패 또는 스크린샷 없음`);
+        stats.errors++;
+        continue;
+      }
 
-      // 스크린샷 → Supabase Storage
-      if (result.screenshot) {
-        const mainUrl = await uploadToStorage(
+      // content_hash 계산
+      const newHash = computeHash(crawlResult.screenshot);
+      const hashChanged = lp.content_hash !== newHash;
+
+      if (hashChanged) {
+        // 스크린샷 → Storage 업로드
+        const storagePath = `lp/${lp.account_id}/${lp.id}/mobile_full.jpg`;
+        const uploadOk = await uploadToStorage(
           supabase,
-          row.ad_id,
-          "main",
-          result.screenshot,
+          storagePath,
+          crawlResult.screenshot,
         );
-        if (mainUrl) {
-          updates.lp_screenshot_url = mainUrl;
-          stats.screenshotsUploaded++;
-        }
-      }
-      if (result.ctaScreenshot) {
-        const ctaUrl = await uploadToStorage(
-          supabase,
-          row.ad_id,
-          "cta",
-          result.ctaScreenshot,
-        );
-        if (ctaUrl) {
-          updates.lp_cta_screenshot_url = ctaUrl;
-        }
-      }
 
-      // LP 스크린샷 임베딩
-      if (result.screenshot) {
-        try {
-          updates.lp_embedding = await generateEmbedding(
-            { imageUrl: `data:image/png;base64,${result.screenshot}` },
-            { taskType: "RETRIEVAL_DOCUMENT" },
+        if (!uploadOk) {
+          errorMessages.push(`${lp.id}: Storage 업로드 실패`);
+          stats.errors++;
+          // Storage 실패 → lp_snapshots 저장 스킵, last_crawled_at도 갱신 안 함
+          continue;
+        }
+
+        // CTA 스크린샷 업로드 (있는 경우)
+        let ctaStoragePath: string | null = null;
+        if (crawlResult.ctaScreenshot) {
+          const ctaPath = `lp/${lp.account_id}/${lp.id}/mobile_cta.jpg`;
+          const ctaOk = await uploadToStorage(
+            supabase,
+            ctaPath,
+            crawlResult.ctaScreenshot,
           );
-          stats.reembedded++;
-        } catch (err) {
-          stats.errors.push(
-            `${row.ad_id} lp_embedding: ${err instanceof Error ? err.message : String(err)}`,
+          if (ctaOk) {
+            ctaStoragePath = ctaPath;
+          }
+        }
+
+        // lp_snapshots UPSERT
+        const { error: upsertError } = await supabase
+          .from("lp_snapshots")
+          .upsert(
+            {
+              lp_id: lp.id,
+              viewport: "mobile",
+              screenshot_url: storagePath,
+              cta_screenshot_url: ctaStoragePath,
+              screenshot_hash: newHash,
+              cta_screenshot_hash: crawlResult.ctaScreenshot
+                ? computeHash(crawlResult.ctaScreenshot)
+                : null,
+              section_screenshots: {},
+              crawled_at: new Date().toISOString(),
+              crawler_version: "v2-cron",
+            },
+            { onConflict: "lp_id,viewport" },
           );
+
+        if (upsertError) {
+          errorMessages.push(
+            `${lp.id}: lp_snapshots upsert 실패: ${upsertError.message}`,
+          );
+          stats.errors++;
+          continue;
         }
-      }
 
-      // LP 텍스트 임베딩
-      const lpText = [result.text.headline, result.text.description]
-        .filter(Boolean)
-        .join("\n");
-      if (lpText.trim().length > 10) {
-        try {
-          updates.lp_text_embedding = await generateEmbedding(lpText, {
-            taskType: "RETRIEVAL_DOCUMENT",
-          });
-        } catch {
-          // 텍스트 임베딩 실패 무시
-        }
-      }
+        // landing_pages UPDATE (hash + last_crawled_at)
+        await supabase
+          .from("landing_pages")
+          .update({
+            content_hash: newHash,
+            last_crawled_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", lp.id);
 
-      // DB 업데이트
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: updateErr } = await (supabase as any)
-        .from("ad_creative_embeddings")
-        .update(updates)
-        .eq("id", row.id);
+        stats.hashChanged++;
+        stats.crawled++;
+      } else {
+        // 동일 hash → last_crawled_at만 갱신 (스크린샷 재업로드 안 함)
+        await supabase
+          .from("landing_pages")
+          .update({
+            last_crawled_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", lp.id);
 
-      if (updateErr) {
-        stats.errors.push(`${row.ad_id} update: ${updateErr.message}`);
+        stats.crawled++;
       }
     }
 
     return NextResponse.json({
-      message: "crawl-lps 완료",
+      message: "crawl-lps v2 완료",
       ...stats,
+      errorMessages: errorMessages.length > 0 ? errorMessages : undefined,
     });
   } catch (err) {
-    console.error("[crawl-lps] Fatal:", err);
+    console.error("[crawl-lps v2] Fatal:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : String(err), ...stats },
+      {
+        error: err instanceof Error ? err.message : String(err),
+        ...stats,
+      },
       { status: 500 },
     );
   }
 }
 
 /**
- * 이미 크롤링된 row 중 오래된 것 재크롤링 (해시 변경 감지)
- */
-async function checkAndRecrawlChanged(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
-  stats: { crawled: number; reembedded: number; screenshotsUploaded: number; errors: string[] },
-): Promise<number> {
-  // 7일 이상 된 크롤링 결과 재확인 (최대 10개)
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-
-  const { data: staleRows } = await supabase
-    .from("ad_creative_embeddings")
-    .select("id, ad_id, lp_url, screenshot_hash")
-    .not("lp_url", "is", null)
-    .not("lp_screenshot_url", "is", null)
-    .lt("lp_crawled_at", sevenDaysAgo)
-    .eq("is_active", true)
-    .limit(10);
-
-  if (!staleRows || staleRows.length === 0) return 0;
-
-  const urls = staleRows.map((r: { lp_url: string }) => r.lp_url);
-  const batchResult = await crawlBatch(urls);
-
-  let recrawled = 0;
-
-  for (let i = 0; i < staleRows.length; i++) {
-    const row = staleRows[i];
-    const result = batchResult.results[i];
-    if (!result) continue;
-
-    // 해시 비교 → 변경된 경우만 업데이트
-    if (result.screenshotHash && result.screenshotHash !== row.screenshot_hash) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const updates: Record<string, any> = {
-        screenshot_hash: result.screenshotHash,
-        lp_headline: result.text.headline || null,
-        lp_price: result.text.price || null,
-        lp_crawled_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-
-      if (result.screenshot) {
-        const url = await uploadToStorage(supabase, row.ad_id, "main", result.screenshot);
-        if (url) {
-          updates.lp_screenshot_url = url;
-          stats.screenshotsUploaded++;
-        }
-
-        try {
-          updates.lp_embedding = await generateEmbedding(
-            { imageUrl: `data:image/png;base64,${result.screenshot}` },
-            { taskType: "RETRIEVAL_DOCUMENT" },
-          );
-          stats.reembedded++;
-        } catch {
-          // 임베딩 실패 무시
-        }
-      }
-
-      await supabase
-        .from("ad_creative_embeddings")
-        .update(updates)
-        .eq("id", row.id);
-
-      recrawled++;
-    } else {
-      // 해시 미변경 → 타임스탬프만 갱신
-      await supabase
-        .from("ad_creative_embeddings")
-        .update({
-          lp_crawled_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", row.id);
-    }
-  }
-
-  return recrawled;
-}
-
-/**
- * base64 → Supabase Storage 업로드
+ * base64 → Supabase Storage 업로드 (creatives 버킷)
+ * ADR-001 경로: lp/{account_id}/{lp_id}/{viewport}_full.jpg
  */
 async function uploadToStorage(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
-  adId: string,
-  type: "main" | "cta",
+  path: string,
   base64Data: string,
-): Promise<string | null> {
+): Promise<boolean> {
   try {
     const buffer = Buffer.from(base64Data, "base64");
-    const path = `lp-screenshots/${adId}/${type}.png`;
 
     const { error } = await supabase.storage
       .from("creatives")
-      .upload(path, buffer, { contentType: "image/png", upsert: true });
+      .upload(path, buffer, { contentType: "image/jpeg", upsert: true });
 
     if (error) {
-      console.error(`[crawl-lps] Upload failed ${adId}/${type}:`, error.message);
-      return null;
+      console.error(`[crawl-lps v2] Storage upload failed (${path}):`, error.message);
+      return false;
     }
 
-    const { data } = supabase.storage.from("creatives").getPublicUrl(path);
-    return data?.publicUrl || null;
+    return true;
   } catch (err) {
-    console.error(`[crawl-lps] Upload error:`, err);
-    return null;
+    console.error(`[crawl-lps v2] Storage upload error:`, err);
+    return false;
   }
 }

@@ -223,6 +223,49 @@ export async function embedCreative(input: CreativeEmbedInput): Promise<EmbedRes
     console.error(`[creative-embedder] DB error for ${input.adId}:`, err);
   }
 
+  // 5. creative_media 듀얼 라이트 (best-effort)
+  try {
+    // ad_id → creatives.id 매핑
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: creative } = await (supabase as any)
+      .from("creatives")
+      .select("id")
+      .eq("ad_id", input.adId)
+      .maybeSingle();
+
+    if (creative?.id) {
+      // creative_media에서 해당 creative_id 행 조회
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: cmRow } = await (supabase as any)
+        .from("creative_media")
+        .select("id")
+        .eq("creative_id", creative.id)
+        .maybeSingle();
+
+      if (cmRow?.id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const cmUpdates: Record<string, any> = {
+          embedding_model: EMBEDDING_MODEL,
+          embedded_at: new Date().toISOString(),
+        };
+        if (row.embedding_3072) cmUpdates.embedding = row.embedding_3072;
+        if (row.text_embedding_3072) cmUpdates.text_embedding = row.text_embedding_3072;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from("creative_media")
+          .update(cmUpdates)
+          .eq("id", cmRow.id);
+      }
+    }
+  } catch (err) {
+    // creative_media 듀얼 라이트 실패는 무시 (ad_creative_embeddings는 이미 저장됨)
+    console.warn(
+      `[creative-embedder] creative_media 듀얼 라이트 스킵 (${input.adId}):`,
+      err instanceof Error ? err.message : err,
+    );
+  }
+
   return result;
 }
 
@@ -384,6 +427,74 @@ export async function embedMissingCreatives(
 
     // 딜레이
     await new Promise((r) => setTimeout(r, delayMs));
+  }
+
+  // creative_media 임베딩 보충 (ad_creative_embeddings에서 복사)
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: cmMissing } = await (supabase as any)
+      .from("creative_media")
+      .select("id, creative_id")
+      .is("embedding", null)
+      .eq("is_active", true)
+      .limit(batchSize);
+
+    if (cmMissing && cmMissing.length > 0) {
+      for (const cm of cmMissing) {
+        try {
+          // creative_id → creatives.ad_id 매핑
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: creative } = await (supabase as any)
+            .from("creatives")
+            .select("ad_id")
+            .eq("id", cm.creative_id)
+            .maybeSingle();
+
+          if (!creative?.ad_id) continue;
+
+          // ad_creative_embeddings에서 임베딩 가져오기
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: ace } = await (supabase as any)
+            .from("ad_creative_embeddings")
+            .select("embedding_3072, text_embedding_3072")
+            .eq("ad_id", creative.ad_id)
+            .maybeSingle();
+
+          if (ace?.embedding_3072) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const cmUpdates: Record<string, any> = {
+              embedding: ace.embedding_3072,
+              embedding_model: EMBEDDING_MODEL,
+              embedded_at: new Date().toISOString(),
+            };
+            if (ace.text_embedding_3072) {
+              cmUpdates.text_embedding = ace.text_embedding_3072;
+            }
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase as any)
+              .from("creative_media")
+              .update(cmUpdates)
+              .eq("id", cm.id);
+
+            embedded++;
+          }
+        } catch (err) {
+          console.warn(
+            `[creative-embedder] CM 보충 스킵 (creative_id: ${cm.creative_id}):`,
+            err instanceof Error ? err.message : err,
+          );
+          errors++;
+        }
+
+        if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
+      }
+    }
+  } catch (err) {
+    console.warn(
+      `[creative-embedder] CM 보충 조회 실패:`,
+      err instanceof Error ? err.message : err,
+    );
   }
 
   return { processed: rows.length, embedded, errors };

@@ -328,5 +328,55 @@
     "completedAt": "2026-03-22",
     "updatedAt": "2026-03-22T12:30:00",
     "notes": "P0-1 완료. 마이그레이션 9개 섹션 전부 Supabase 적용. 신규 컬럼 14개 + 테이블 2개 + CHECK 제약. source 3096건 bscamp→member 전환. RPC 재정의. collect-daily/migrate-to-v2 코드 변경. TASK-*.md 64개 아카이브. DEV-STATUS.md 최신화. tsc+build 통과. 커밋 6f70f83."
+  },
+  "five-axis-analysis": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
+    "design": "docs/02-design/features/five-axis-analysis.design.md",
+    "analysis": "docs/03-analysis/five-axis-analysis.analysis.md",
+    "matchRate": 96,
+    "tasks": [
+      "T2-프롬프트재설계",
+      "T2-A-자유태깅100건",
+      "T2-A-클러스터링",
+      "T2-A-확정반영",
+      "T2-전체배치",
+      "T2-B-fatigue_risk",
+      "T2-C-scores백분위"
+    ],
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22T16:00:00",
+    "notes": "T2 코드 구현 완료. analyze-five-axis.mjs v3 재설계(3모드 free/cluster/final, psychology/quality 신규 축). compute-score-percentiles.mjs 신규. compute-fatigue-risk.mjs 신규. tsc+lint+build 통과. Match Rate 96%."
+  },
+  "embed-creatives-dual-write": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
+    "design": "docs/02-design/features/embed-creatives-dual-write.design.md",
+    "analysis": "docs/03-analysis/embed-creatives-dual-write.analysis.md",
+    "matchRate": 97,
+    "tasks": [
+      "T3-embedCreative듀얼라이트",
+      "T3-embedMissingCreatives보충",
+      "T3-빌드검증"
+    ],
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22T17:00:00",
+    "notes": "T3 완료. ad-creative-embedder.ts에 creative_media 듀얼 라이트 추가. embedCreative() 5단계 추가(독립 try-catch). embedMissingCreatives() CM 보충 블록 추가. tsc+lint+build 통과. Match Rate 97%."
+  },
+  "crawl-lps-v2": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
+    "design": "docs/02-design/features/crawl-lps-v2.design.md",
+    "analysis": "docs/03-analysis/crawl-lps-v2.analysis.md",
+    "matchRate": 95,
+    "tasks": [
+      "T4-A-crawlV2함수",
+      "T4-B-route재작성",
+      "T4-C-마이그레이션스크립트",
+      "T4-D-빌드검증"
+    ],
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22T19:00:00",
+    "notes": "T4 완료. railway-crawler.ts crawlV2() 추가(+80줄). route.ts 전면 재작성(landing_pages 기준, ADR-001 경로, lp_snapshots UPSERT). migrate-lp-screenshots-v2.mjs 신규(265줄). tsc+build 통과. Match Rate 95%."
   }
 }
