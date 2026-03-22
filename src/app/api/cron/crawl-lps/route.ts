@@ -68,17 +68,25 @@ async function handleCrawl(req: NextRequest) {
   };
   const errorMessages: string[] = [];
 
+  const { searchParams } = new URL(req.url);
+  const accountFilter = searchParams.get("account_id");
+
   try {
     // 1. 크롤 대상 조회: is_active + (last_crawled_at NULL or 7일 이상 경과)
     const sevenDaysAgo = new Date(
       Date.now() - 7 * 24 * 60 * 60 * 1000,
     ).toISOString();
 
-    const { data: rows, error: fetchError } = await supabase
+    let lpQuery = supabase
       .from("landing_pages")
       .select("id, account_id, canonical_url, content_hash, last_crawled_at")
-      .eq("is_active", true)
-      .or(`last_crawled_at.is.null,last_crawled_at.lt.${sevenDaysAgo}`)
+      .eq("is_active", true);
+    if (accountFilter) {
+      lpQuery = lpQuery.eq("account_id", accountFilter);
+    } else {
+      lpQuery = lpQuery.or(`last_crawled_at.is.null,last_crawled_at.lt.${sevenDaysAgo}`);
+    }
+    const { data: rows, error: fetchError } = await lpQuery
       .order("last_crawled_at", { ascending: true, nullsFirst: true })
       .limit(10);
 

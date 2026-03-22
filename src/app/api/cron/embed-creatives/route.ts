@@ -70,12 +70,17 @@ export async function GET(req: NextRequest) {
     errors: [] as string[],
   };
 
+  const { searchParams } = new URL(req.url);
+  const accountFilter = searchParams.get("account_id");
+
   try {
     // 1. active 광고 계정 조회
-    const { data: adAccounts, error: accountErr } = await supabase
+    let accountQuery = supabase
       .from("ad_accounts")
       .select("account_id, account_name")
       .eq("active", true);
+    if (accountFilter) accountQuery = accountQuery.eq("account_id", accountFilter);
+    const { data: adAccounts, error: accountErr } = await accountQuery;
 
     if (accountErr || !adAccounts || adAccounts.length === 0) {
       return NextResponse.json({

@@ -14,9 +14,10 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const dateParam = searchParams.get("date") ?? undefined;
+  const accountId = searchParams.get("account_id") ?? undefined;
 
   try {
-    const result = await runCollectDaily(dateParam, 1);
+    const result = await runCollectDaily(dateParam, accountId ? undefined : 1, accountId);
     return NextResponse.json(result);
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : "Unknown error";

@@ -250,6 +250,8 @@ async function crawlLP(browser, lp, vpType) {
     detail: null,
     review: null,
     cta: null,
+    html: null,       // 전체 HTML
+    assets: [],       // { url, type, buffer } — 이미지/GIF/영상
   };
 
   let page = null;
@@ -362,6 +364,59 @@ async function crawlLP(browser, lp, vpType) {
     } catch (e) {
       console.log(`    cta 캡처 실패: ${e.message.slice(0, 60)}`);
     }
+
+    // ── f) HTML 콘텐츠 + 에셋 수집 ─────────────────
+    try {
+      // HTML 전체 저장
+      captures.html = await page.content();
+
+      // 페이지 내 이미지/GIF/영상 URL 수집
+      const assetUrls = await page.evaluate(() => {
+        const assets = [];
+        // 이미지 (img 태그)
+        document.querySelectorAll("img[src]").forEach((el) => {
+          const src = el.src;
+          if (src && src.startsWith("http") && !src.includes("data:")) {
+            assets.push({ url: src, type: "image" });
+          }
+        });
+        // 배경 이미지 (CSS background-image)
+        document.querySelectorAll("[style*='background-image']").forEach((el) => {
+          const m = el.style.backgroundImage.match(/url\(["']?(https?:\/\/[^"')]+)["']?\)/);
+          if (m) assets.push({ url: m[1], type: "image" });
+        });
+        // 비디오 (video 태그 source)
+        document.querySelectorAll("video source[src], video[src]").forEach((el) => {
+          const src = el.src || el.getAttribute("src");
+          if (src && src.startsWith("http")) assets.push({ url: src, type: "video" });
+        });
+        // GIF (img에서 .gif 확장자)
+        return assets.filter((a, i, arr) => arr.findIndex((b) => b.url === a.url) === i);
+      });
+
+      // 상위 50개만 다운로드 (과도한 에셋 방지)
+      const downloadable = assetUrls.slice(0, 50);
+      for (const asset of downloadable) {
+        try {
+          const res = await fetch(asset.url, { signal: AbortSignal.timeout(10000) });
+          if (res.ok) {
+            const buf = Buffer.from(await res.arrayBuffer());
+            if (buf.length > 0 && buf.length < 50 * 1024 * 1024) { // 50MB 제한
+              captures.assets.push({
+                url: asset.url,
+                type: asset.type,
+                buffer: buf,
+                contentType: res.headers.get("content-type") || "application/octet-stream",
+              });
+            }
+          }
+        } catch {
+          // 개별 에셋 실패는 무시
+        }
+      }
+    } catch (e) {
+      console.log(`    HTML/에셋 수집 실패: ${e.message.slice(0, 60)}`);
+    }
   } finally {
     await context.close();
   }
@@ -472,6 +527,73 @@ async function main() {
 
         const capturedCount = [fullUrl, heroUrl, detailUrl, reviewUrl, ctaUrl].filter(Boolean).length;
 
+        // HTML 업로드
+        let htmlUrl = null;
+        if (captures.html) {
+          try {
+            const htmlBuffer = Buffer.from(captures.html, "utf-8");
+            const htmlPath = `lp/${acctId}/${lp.id}/${vpType}_page.html`;
+            const htmlStorageUrl = `${SB_URL}/storage/v1/object/creatives/${htmlPath}`;
+            const hRes = await fetch(htmlStorageUrl, {
+              method: "PUT",
+              headers: {
+                Authorization: `Bearer ${SB_KEY}`,
+                "Content-Type": "text/html; charset=utf-8",
+                "x-upsert": "true",
+              },
+              body: htmlBuffer,
+            });
+            if (hRes.ok) {
+              htmlUrl = `${SB_URL}/storage/v1/object/public/creatives/${htmlPath}`;
+            }
+          } catch {
+            // HTML 업로드 실패 무시
+          }
+        }
+
+        // 에셋 업로드
+        let assetCount = 0;
+        const assetUrls = {};
+        if (captures.assets && captures.assets.length > 0) {
+          for (let ai = 0; ai < captures.assets.length; ai++) {
+            const asset = captures.assets[ai];
+            try {
+              // URL에서 파일명 추출
+              const urlObj = new URL(asset.url);
+              let filename = urlObj.pathname.split("/").pop() || `asset_${ai}`;
+              // 확장자가 없으면 content-type에서 추출
+              if (!filename.includes(".")) {
+                const ct = asset.contentType;
+                if (ct.includes("gif")) filename += ".gif";
+                else if (ct.includes("png")) filename += ".png";
+                else if (ct.includes("webp")) filename += ".webp";
+                else if (ct.includes("mp4")) filename += ".mp4";
+                else if (ct.includes("webm")) filename += ".webm";
+                else filename += ".jpg";
+              }
+              // 파일명 정리 (특수문자 제거)
+              filename = filename.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 100);
+              const assetPath = `lp/${acctId}/${lp.id}/${vpType}_assets/${filename}`;
+              const assetStorageUrl = `${SB_URL}/storage/v1/object/creatives/${assetPath}`;
+              const aRes = await fetch(assetStorageUrl, {
+                method: "PUT",
+                headers: {
+                  Authorization: `Bearer ${SB_KEY}`,
+                  "Content-Type": asset.contentType,
+                  "x-upsert": "true",
+                },
+                body: asset.buffer,
+              });
+              if (aRes.ok) {
+                assetCount++;
+                assetUrls[filename] = `${SB_URL}/storage/v1/object/public/creatives/${assetPath}`;
+              }
+            } catch {
+              // 개별 에셋 업로드 실패 무시
+            }
+          }
+        }
+
         // lp_snapshots upsert
         const snapshotRow = {
           lp_id: lp.id,
@@ -485,6 +607,8 @@ async function main() {
             detail: detailUrl,
             review: reviewUrl,
             cta: ctaUrl,
+            html: htmlUrl,
+            assets: assetUrls,
           },
           crawled_at: new Date().toISOString(),
           crawler_version: "local-v2",
@@ -497,8 +621,12 @@ async function main() {
         );
 
         if (result.ok) {
+          const extras = [
+            htmlUrl ? "HTML" : null,
+            assetCount > 0 ? `에셋${assetCount}` : null,
+          ].filter(Boolean).join("+");
           process.stdout.write(
-            ` (${capturedCount}섹션 캡처, CTA ${ctaUrl ? "있음" : "없음"})\n`
+            ` (${capturedCount}섹션, CTA ${ctaUrl ? "있음" : "없음"}${extras ? `, ${extras}` : ""})\n`
           );
           stats.ok++;
         } else {

@@ -302,7 +302,7 @@ export interface CollectDailyResult {
 }
 
 // ── 핵심 수집 로직 (크론 + 수동수집 공용) ───────────────────
-export async function runCollectDaily(dateParam?: string, batch?: number): Promise<CollectDailyResult> {
+export async function runCollectDaily(dateParam?: string, batch?: number, accountId?: string): Promise<CollectDailyResult> {
   const svc = createServiceClient();
   // 배치 번호가 있으면 cron_runs에 배치 이름으로 기록
   const cronName = batch ? `collect-daily-${batch}` : "collect-daily";
@@ -338,9 +338,12 @@ export async function runCollectDaily(dateParam?: string, batch?: number): Promi
       account_name: a.account_name ?? "",
     }));
 
-    // 배치 분할: batch가 주어지면 offset/limit으로 계정 분할
+    // 단일 계정 필터 (테스트/디버깅용)
     let filteredAccounts = accounts;
-    if (batch != null && batch >= 1 && batch <= 4) {
+    if (accountId) {
+      filteredAccounts = accounts.filter((a) => a.account_id === accountId);
+      console.log(`[collect-daily] account filter: ${accountId} → ${filteredAccounts.length}건`);
+    } else if (batch != null && batch >= 1 && batch <= 4) {
       const BATCH_SIZE = 10;
       const offset = (batch - 1) * BATCH_SIZE;
       if (batch === 4) {

@@ -32,11 +32,14 @@ export async function GET(req: NextRequest) {
 
   try {
     // 1. ad_accounts + profiles JOIN → mixpanel_project_id 있는 계정 목록
-    const { data: accounts, error: accErr } = await svc
+    const accountFilter = searchParams.get("account_id");
+    let accountQuery = svc
       .from("ad_accounts")
       .select("account_id, user_id, mixpanel_project_id")
       .eq("active", true)
       .not("mixpanel_project_id", "is", null);
+    if (accountFilter) accountQuery = accountQuery.eq("account_id", accountFilter);
+    const { data: accounts, error: accErr } = await accountQuery;
 
     if (accErr) {
       throw new Error(`ad_accounts 조회 오류: ${accErr.message}`);
