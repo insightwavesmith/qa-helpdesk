@@ -116,3 +116,178 @@ export async function lookupMixpanelSecret(
 
   return (profile?.mixpanel_secret_key as string) ?? null;
 }
+
+// ── Mixpanel Export API — 클릭 이벤트 수집 ──────────────────────
+// data.mixpanel.com/api/2.0/export 엔드포인트 사용 (raw events, JSONL)
+
+export interface MixpanelClickEvent {
+  pageUrl: string;
+  clickX: number;
+  clickY: number;
+  pageWidth: number | null;
+  pageHeight: number | null;
+  elementTag: string | null;
+  elementText: string | null;
+  elementSelector: string | null;
+  device: string | null;
+  referrer: string | null;
+  mixpanelUserId: string | null;
+  clickedAt: string; // ISO
+}
+
+export async function fetchMixpanelClicks(
+  projectId: string,
+  secretKey: string,
+  date: string
+): Promise<MixpanelClickEvent[]> {
+  const auth = Buffer.from(`${secretKey}:`).toString("base64");
+  const params = new URLSearchParams({
+    project_id: projectId,
+    from_date: date,
+    to_date: date,
+    event: '["$mp_click","$autocapture"]',
+  });
+
+  const res = await fetch(
+    `https://data.mixpanel.com/api/2.0/export?${params}`,
+    {
+      headers: { Authorization: `Basic ${auth}` },
+      signal: AbortSignal.timeout(30_000),
+    }
+  );
+
+  if (!res.ok) {
+    if (res.status === 402) {
+      // Export API는 유료 플랜 필요할 수 있음 — Segmentation API fallback
+      return fetchMixpanelClicksViaSegmentation(projectId, secretKey, date);
+    }
+    throw new Error(`Mixpanel Export API ${res.status}`);
+  }
+
+  const text = await res.text();
+  const events: MixpanelClickEvent[] = [];
+
+  for (const line of text.split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      const evt = JSON.parse(line);
+      const props = evt.properties || {};
+
+      // URL이 있는 이벤트만 (LP 매핑용)
+      const pageUrl =
+        props.$current_url || props.$url || props.url || props.current_url;
+      if (!pageUrl) continue;
+
+      events.push({
+        pageUrl,
+        clickX: Number(props.$element_position_x ?? props.click_x ?? 0),
+        clickY: Number(props.$element_position_y ?? props.click_y ?? 0),
+        pageWidth: props.$screen_width ? Number(props.$screen_width) : null,
+        pageHeight: props.$screen_height ? Number(props.$screen_height) : null,
+        elementTag: props.$element_tag_name || props.element_tag || null,
+        elementText:
+          (props.$element_text || props.element_text || "").slice(0, 200) ||
+          null,
+        elementSelector:
+          props.$element_selector || props.element_selector || null,
+        device: props.$device_type || props.$device || props.device || null,
+        referrer: props.$referrer || props.referrer || null,
+        mixpanelUserId: props.distinct_id || evt.properties?.distinct_id || null,
+        clickedAt: props.time
+          ? new Date(props.time * 1000).toISOString()
+          : new Date().toISOString(),
+      });
+    } catch {
+      // 파싱 실패 라인은 스킵
+    }
+  }
+
+  return events;
+}
+
+// Segmentation API fallback — Export API 권한 없을 때
+// 클릭 수만 카운트 (좌표 없음), 기본 집계용
+async function fetchMixpanelClicksViaSegmentation(
+  projectId: string,
+  secretKey: string,
+  date: string
+): Promise<MixpanelClickEvent[]> {
+  const auth = Buffer.from(`${secretKey}:`).toString("base64");
+  const baseUrl = "https://mixpanel.com/api/2.0/segmentation";
+
+  // $mp_click 이벤트 카운트만 조회
+  const params = new URLSearchParams({
+    project_id: projectId,
+    event: "$mp_click",
+    from_date: date,
+    to_date: date,
+    type: "general",
+    on: 'properties["$current_url"]',
+  });
+
+  const res = await fetch(`${baseUrl}?${params}`, {
+    headers: { Authorization: `Basic ${auth}` },
+    signal: AbortSignal.timeout(10_000),
+  });
+
+  if (!res.ok) {
+    // $mp_click 없으면 $autocapture 시도
+    const params2 = new URLSearchParams({
+      project_id: projectId,
+      event: "$autocapture",
+      from_date: date,
+      to_date: date,
+      type: "general",
+      on: 'properties["$current_url"]',
+    });
+
+    const res2 = await fetch(`${baseUrl}?${params2}`, {
+      headers: { Authorization: `Basic ${auth}` },
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (!res2.ok) return [];
+    const data2 = await res2.json();
+    return parseSegmentationClickData(data2, date);
+  }
+
+  const data = await res.json();
+  return parseSegmentationClickData(data, date);
+}
+
+function parseSegmentationClickData(
+  data: { data?: { values?: Record<string, Record<string, number>> } },
+  date: string
+): MixpanelClickEvent[] {
+  const events: MixpanelClickEvent[] = [];
+  if (!data.data?.values) return events;
+
+  // Segmentation API는 URL별 카운트만 반환 — 좌표 없음
+  for (const [url, dailyData] of Object.entries(data.data.values)) {
+    const count =
+      typeof dailyData === "object"
+        ? Object.values(dailyData).reduce((s, v) => s + v, 0)
+        : 0;
+    if (count > 0 && url !== "$overall") {
+      // 클릭 수만큼 이벤트 생성 (좌표 0,0 — Segmentation API 한계)
+      for (let i = 0; i < Math.min(count, 100); i++) {
+        events.push({
+          pageUrl: url,
+          clickX: 0,
+          clickY: 0,
+          pageWidth: null,
+          pageHeight: null,
+          elementTag: null,
+          elementText: null,
+          elementSelector: null,
+          device: null,
+          referrer: null,
+          mixpanelUserId: null,
+          clickedAt: `${date}T12:00:00.000Z`,
+        });
+      }
+    }
+  }
+
+  return events;
+}

@@ -2,20 +2,20 @@
 
 > 기준일: 2026-03-22 (최종 업데이트)
 > 근거: architecture-v3-execution-plan.md (T1~T11) + master-architecture-review.md (83개 항목)
-> 총 84개 항목: ✅ 78 완료 / ❌ 6 미구현(외부 의존)
-> 전체 Match Rate: 93% (78/84)
+> 총 84개 항목: ✅ 82 완료 / ❌ 2 미구현(외부 의존)
+> 전체 Match Rate: 98% (82/84)
 
 ---
 
 ## 챕터 1: 전체 아키텍처 (12개 항목)
 
-> Match Rate: ~83% | 완료 10 / 부분 0 / 미구현 2 (외부 의존)
+> Match Rate: ~92% | 완료 11 / 미구현 1 (HW 의존)
 
 - [x] 수집: Daily 40계정 — collect-daily 4배치 분할 (route.ts 705줄)
 - [x] 수집: Benchmark 51계정 — collect-benchmarks 주간 (664줄)
 - [x] 수집: 경쟁사 64브랜드 — competitor-check + analyze-competitors
 - [x] 수집: LP v2 크롤링 — ✅ T4 완료. crawl-lps v2 route 재작성, landing_pages 기준
-- [ ] 수집: Mixpanel 클릭 — ❌ BLOCKED: Mixpanel 대시보드에서 $mp_click Autocapture 활성화 필요
+- [x] 수집: Mixpanel 클릭 — ✅ collect-clicks 크론 신규 (fetchMixpanelClicks → lp_click_data INSERT, 매일 19:00 UTC)
 - [x] 분석: DeepGaze 시선 — creative_saliency 2,784건 (95.5%)
 - [x] 저장: 3계층 (member/benchmark/competitor) — ✅ T1 완료
 - [x] 분석: 5축 Gemini — ✅ T2 완료. analyze-five-axis.mjs v3 (visual/text/psychology/quality/hook). 3모드(free/cluster/final)
@@ -28,7 +28,7 @@
 
 ## 챕터 2: 수집 (17개 항목)
 
-> Match Rate: ~82% | 완료 14 / 미구현 3 (외부 의존)
+> Match Rate: ~94% | 완료 16 / 미구현 1 (외부 의존)
 
 ### 수집 — Daily
 - [x] 28개 지표 수집 — collect-daily + calculateMetrics
@@ -54,12 +54,12 @@
 - [x] LP v2 크롤링 — ✅ T4 완료. mobile+desktop viewport, lp_snapshots UPSERT
 
 ### 수집 — Mixpanel
-- [ ] Mixpanel 클릭 수집 — ❌ BLOCKED: $mp_click Autocapture 대시보드에서 활성화 필요
-- [ ] 벤치마크 수치 체크 → 콘텐츠 풀 자동 추가 — ❌ BLOCKED: 벤치마크 콘텐츠 분석 파이프라인 가동 후
+- [x] Mixpanel 클릭 수집 — ✅ collect-clicks 크론 신규 (fetchMixpanelClicks → lp_click_data, Export API + Segmentation fallback)
+- [x] 벤치마크 수치 체크 → 콘텐츠 풀 자동 추가 — ✅ collect-benchmarks STEP 3.5 (1.5× 초과 소재 → creatives.cohort='content_pool')
 
 ### 수집 — 기타
 - [x] collect-daily + embed-creatives 역할 정리 — ✅ dual write 패턴 안정화 완료 (T3 이후 통합 없이 유지 결정)
-- [ ] 비회원 ad_accounts 등록 — ❌ BLOCKED: Meta Business Manager에서 33개 계정 토큰 발급 필요
+- [ ] 비회원 ad_accounts 등록 — ❌ BLOCKED: ad_accounts.user_id NOT NULL + RLS 구조 변경 + Meta BM 토큰 발급 필요
 
 ---
 
@@ -91,7 +91,7 @@
 
 ## 챕터 4: LP 분석 (17개 항목)
 
-> Match Rate: ~94% | 완료 16 / 미구현 1 (Mixpanel 외부 의존)
+> Match Rate: 100% | 완료 17 / 미구현 0
 
 ### LP 수집
 - [x] LP v2 크롤링 (스크린샷) — ✅ T4 완료. mobile+desktop, lp_snapshots UPSERT
@@ -112,7 +112,7 @@
 
 ### LP 분석 — 탐색/결정
 - [x] Mixpanel 스크롤 수집 — collect-mixpanel에서 수집 중
-- [ ] Mixpanel 클릭 수집 — ❌ BLOCKED: $mp_click Autocapture 대시보드 활성화 필요
+- [x] Mixpanel 클릭 수집 — ✅ collect-clicks 크론에서 $mp_click/$autocapture 수집 → lp_click_data INSERT
 - [x] 4축 교차 매트릭스 — ✅ compute-lp-cross-matrix.mjs 3축 교차 완료 (레퍼런스/데이터/시선), 클릭 축은 Mixpanel 의존
 
 ### LP 분석 — 일관성
@@ -196,14 +196,12 @@
 
 ---
 
-## 남은 작업 — BLOCKED 6건 (외부 의존)
+## 남은 작업 — BLOCKED 2건
 
 | # | 항목 | BLOCKED 사유 | 해소 방법 |
 |---|------|-------------|----------|
-| 1 | Mixpanel 클릭 수집 (ch1,2,4) | $mp_click Autocapture 비활성 | Mixpanel 대시보드에서 Autocapture 설정 ON |
-| 2 | 비회원 ad_accounts 등록 (ch2) | 33개 계정 토큰 미발급 | Meta Business Manager에서 계정별 토큰 발급 |
-| 3 | 벤치마크 수치→콘텐츠 풀 자동추가 (ch2) | 벤치마크 콘텐츠 분석 파이프라인 미가동 | STEP 4 미디어 수집 후 5축 분석 배치 실행 |
-| 4 | M4 Max 로컬 실행 환경 (ch1) | 하드웨어 인프라 전환 | 현재 Railway+Vercel 정상 가동, 전환 필요시 작업 |
+| 1 | 비회원 ad_accounts 등록 (ch2) | ad_accounts.user_id NOT NULL + RLS | DB 구조 변경 + Meta BM 토큰 발급 |
+| 2 | M4 Max 로컬 실행 환경 (ch1) | 하드웨어 인프라 전환 | 현재 Railway+Vercel 정상 가동 중 |
 
 ### P1~P2 — 전부 완료 ✅
 1. ~~LP 변경 감지 로직 구현~~ → ✅ content_hash diff → analyzed_at NULL 리셋

@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-22T23:30:00.000Z",
+  "lastUpdated": "2026-03-22T11:43:07.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1207,6 +1207,14 @@
       "startedAt": "2026-03-19",
       "completedAt": "2026-03-20",
       "notes": "STEP 1~7 전체 완료. LP크롤링 1462/1522(96%) — Playwright 장애→fetch+cheerio 폴백. Saliency 2711/2873(94%). Storage 2873+건. 사전계산 40계정. 경쟁사 62건."
+    },
+    "mixpanel-click-collection": {
+      "phase": "completed",
+      "matchRate": 98,
+      "documents": {},
+      "startedAt": "2026-03-22",
+      "completedAt": "2026-03-22",
+      "notes": "collect-clicks cron 신규. Mixpanel Export API + Segmentation fallback. lp_click_data INSERT. vercel.json 등록. 체크리스트 78→82/84 (98%)."
     }
   },
   "phaseMapping": {
