@@ -64,6 +64,7 @@ async function handleCrawl(req: NextRequest) {
     skipped: 0,
     errors: 0,
     hashChanged: 0,
+    htmlSaved: 0,
   };
   const errorMessages: string[] = [];
 
@@ -160,7 +161,29 @@ async function handleCrawl(req: NextRequest) {
           }
         }
 
+        // HTML 원본 다운로드 → Storage 업로드 (best-effort)
+        let htmlStoragePath: string | null = null;
+        try {
+          const htmlContent = await fetchHtmlContent(lp.canonical_url);
+          if (htmlContent) {
+            const htmlPath = `lp/${lp.account_id}/${lp.id}/page.html`;
+            const htmlOk = await uploadHtmlToStorage(supabase, htmlPath, htmlContent);
+            if (htmlOk) {
+              htmlStoragePath = htmlPath;
+              stats.htmlSaved++;
+            }
+          }
+        } catch (htmlErr) {
+          // HTML 다운로드 실패는 크롤링 전체를 중단하지 않음
+          console.warn(`[crawl-lps v2] HTML 다운로드 실패 (${lp.id}):`, htmlErr);
+        }
+
         // lp_snapshots UPSERT
+        const sectionScreenshots: Record<string, string> = {};
+        if (htmlStoragePath) {
+          sectionScreenshots.html_path = htmlStoragePath;
+        }
+
         const { error: upsertError } = await supabase
           .from("lp_snapshots")
           .upsert(
@@ -173,7 +196,7 @@ async function handleCrawl(req: NextRequest) {
               cta_screenshot_hash: crawlResult.ctaScreenshot
                 ? computeHash(crawlResult.ctaScreenshot)
                 : null,
-              section_screenshots: {},
+              section_screenshots: sectionScreenshots,
               crawled_at: new Date().toISOString(),
               crawler_version: "v2-cron",
             },
@@ -276,6 +299,88 @@ async function uploadToStorage(
     return true;
   } catch (err) {
     console.error(`[crawl-lps v2] Storage upload error:`, err);
+    return false;
+  }
+}
+
+/**
+ * LP URL에서 HTML 원본을 가져옴 (best-effort)
+ * 타임아웃 15초, 최대 5MB
+ */
+async function fetchHtmlContent(url: string): Promise<string | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
+
+    try {
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
+          Accept: "text/html,application/xhtml+xml",
+        },
+        signal: controller.signal,
+        redirect: "follow",
+      });
+
+      if (!res.ok) {
+        console.warn(`[crawl-lps v2] HTML fetch HTTP ${res.status} for ${url}`);
+        return null;
+      }
+
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("text/html") && !contentType.includes("xhtml")) {
+        console.warn(`[crawl-lps v2] HTML fetch: 비-HTML 응답 (${contentType})`);
+        return null;
+      }
+
+      const html = await res.text();
+
+      // 5MB 초과 시 스킵
+      if (html.length > 5 * 1024 * 1024) {
+        console.warn(`[crawl-lps v2] HTML 크기 초과 (${(html.length / 1024 / 1024).toFixed(1)}MB)`);
+        return null;
+      }
+
+      return html;
+    } finally {
+      clearTimeout(timeout);
+    }
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      console.warn(`[crawl-lps v2] HTML fetch 타임아웃 (15s) for ${url}`);
+    } else {
+      console.warn(`[crawl-lps v2] HTML fetch 실패:`, err);
+    }
+    return null;
+  }
+}
+
+/**
+ * HTML 문자열 → Supabase Storage 업로드 (creatives 버킷)
+ * ADR-001 경로: lp/{account_id}/{lp_id}/page.html
+ */
+async function uploadHtmlToStorage(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  path: string,
+  htmlContent: string,
+): Promise<boolean> {
+  try {
+    const buffer = Buffer.from(htmlContent, "utf-8");
+
+    const { error } = await supabase.storage
+      .from("creatives")
+      .upload(path, buffer, { contentType: "text/html", upsert: true });
+
+    if (error) {
+      console.error(`[crawl-lps v2] HTML Storage upload failed (${path}):`, error.message);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error(`[crawl-lps v2] HTML Storage upload error:`, err);
     return false;
   }
 }

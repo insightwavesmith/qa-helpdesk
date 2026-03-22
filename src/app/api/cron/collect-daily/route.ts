@@ -1,3 +1,27 @@
+/**
+ * ═══════════════════════════════════════════════════════════════
+ * collect-daily — 원시 데이터 수집 (Meta API → DB + Storage)
+ * ═══════════════════════════════════════════════════════════════
+ *
+ * 역할: Meta 광고 API에서 일일 성과 데이터를 수집하여 DB에 저장하는
+ *       데이터 수집 파이프라인의 진입점.
+ *
+ * 소유 테이블 (이 크론이 UPSERT 하는 테이블):
+ *   - daily_ad_insights   : 일별 광고 성과 지표 (spend, impressions, clicks, ROAS 등)
+ *   - creatives           : 소재 마스터 (ad_id, creative_type, lp_id 등)
+ *   - creative_media      : 소재 미디어 파일 (이미지/영상 URL, Storage 경로)
+ *   - landing_pages       : LP 정규화 테이블 (canonical_url, domain, page_type)
+ *   - ad_creative_embeddings : 소재 임베딩 원시 데이터 (media_url, ad_copy)
+ *
+ * 하지 않는 것:
+ *   - 임베딩 벡터 생성 (→ embed-creatives가 담당)
+ *   - 5축 분석 실행 (→ embed-creatives가 트리거)
+ *   - 벤치마크 계산 (→ collect-benchmarks가 담당)
+ *
+ * Vercel Cron: 매일 4회 배치 실행 (batch 1~4)
+ * ═══════════════════════════════════════════════════════════════
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { startCronRun, completeCronRun } from "@/lib/cron-logger";

@@ -244,6 +244,136 @@ async function callGeminiVision(imageBase64, mimeType, canonicalUrl) {
   return { error: "재시도 초과" };
 }
 
+// ── DOM 구조 분석 프롬프트 ──
+function buildDomStructurePrompt(canonicalUrl) {
+  return `이 모바일 랜딩 페이지 스크린샷의 섹션 구조를 분석하세요.
+URL: ${canonicalUrl}
+
+페이지를 위에서 아래로 스캔하면서, 각 섹션의 경계와 유형을 식별하세요.
+
+아래 JSON 형식으로 반환하세요:
+
+{
+  "sections": [
+    {
+      "section_type": "navigation",
+      "y_start_pct": 0,
+      "y_end_pct": 3,
+      "description": "상단 네비게이션 바"
+    },
+    {
+      "section_type": "hero",
+      "y_start_pct": 3,
+      "y_end_pct": 25,
+      "description": "메인 히어로 이미지 + 제품명"
+    }
+  ],
+  "total_sections": 8,
+  "primary_cta_position_pct": 95,
+  "estimated_scroll_depth_px": 4500
+}
+
+section_type 분류:
+- navigation: 상단 네비게이션/헤더
+- hero: 히어로 배너/메인 비주얼
+- product_info: 제품 정보 (이름, 가격, 옵션)
+- benefits: 제품 효과/장점 설명
+- ingredients: 성분/원료 정보
+- how_to_use: 사용 방법
+- before_after: 비포/애프터 비교
+- reviews: 리뷰/후기 섹션
+- social_proof: 판매량, 수상, 미디어 노출
+- faq: 자주 묻는 질문
+- pricing: 가격/할인/번들 정보
+- cta: 구매 버튼/CTA 영역
+- trust: 인증/보증/환불 정책
+- brand_story: 브랜드 소개
+- cross_sell: 관련 상품 추천
+- footer: 하단 푸터
+- other: 위 분류에 해당하지 않는 섹션
+
+y_start_pct, y_end_pct: 페이지 전체 높이 대비 백분율 (0~100)
+반드시 위 구조의 JSON만 반환하세요.`;
+}
+
+// ── Gemini DOM 구조 분석 호출 ──
+async function callGeminiDomStructure(imageBase64, mimeType, canonicalUrl) {
+  const prompt = buildDomStructurePrompt(canonicalUrl);
+  const parts = [
+    { inline_data: { mime_type: mimeType, data: imageBase64 } },
+    { text: prompt },
+  ];
+
+  // Gemini Flash 사용 (DOM 구조 분석은 Flash로 충분)
+  const FLASH_MODEL = "gemini-2.0-flash";
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${FLASH_MODEL}:generateContent?key=${GEMINI_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts }],
+            generationConfig: {
+              maxOutputTokens: 4096,
+              responseMimeType: "application/json",
+            },
+          }),
+          signal: AbortSignal.timeout(60_000),
+        }
+      );
+
+      if (res.status === 429 || res.status >= 500) {
+        const waitMs = Math.pow(2, attempt + 1) * 1000;
+        console.warn(`  [DOM 구조] [${res.status}] ${waitMs}ms 후 재시도...`);
+        await sleep(waitMs);
+        continue;
+      }
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        return { error: `Gemini Flash ${res.status}: ${errText.slice(0, 200)}` };
+      }
+
+      const data = await res.json();
+      const candidate = data.candidates?.[0];
+      if (!candidate?.content?.parts?.[0]?.text) {
+        return { error: `DOM 구조 응답 없음 (${candidate?.finishReason || "UNKNOWN"})` };
+      }
+
+      const rawText = candidate.content.parts[0].text;
+      try {
+        return { result: JSON.parse(rawText) };
+      } catch {
+        // 폴백: JSON 추출
+        const cleaned = rawText
+          .replace(/```json\n?/g, "")
+          .replace(/```\n?/g, "")
+          .replace(/\/\/.*/g, "")
+          .trim();
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (match) {
+          try {
+            return { result: JSON.parse(match[0]) };
+          } catch (e) {
+            return { error: `DOM 구조 JSON 파싱 실패: ${e.message}` };
+          }
+        }
+        return { error: `DOM 구조 JSON 추출 실패` };
+      }
+    } catch (e) {
+      if (attempt < MAX_RETRIES - 1) {
+        await sleep(2000);
+        continue;
+      }
+      return { error: `DOM 구조 API 에러: ${e.message}` };
+    }
+  }
+  return { error: "DOM 구조 재시도 초과" };
+}
+
 // ── Storage 이미지 다운로드 → base64 ──
 async function downloadImageAsBase64(screenshotUrl) {
   // screenshotUrl이 이미 full URL이면 그대로 사용, 아니면 prefix 붙이기
@@ -432,14 +562,36 @@ async function main() {
 
     console.log(`  Gemini 응답 수신 완료`);
 
-    // c. flat 컬럼 추출
+    // c. DOM 구조 분석 (Gemini Flash, best-effort)
+    let domStructure = null;
+    console.log(`  DOM 구조 분석 중...`);
+    const domResult = await callGeminiDomStructure(base64, mimeType, t.canonical_url);
+    if (domResult.error) {
+      console.warn(`  [WARN] DOM 구조 분석 실패 (계속 진행): ${domResult.error}`);
+    } else {
+      domStructure = domResult.result;
+      const sectionCount = domStructure?.sections?.length || 0;
+      console.log(`  DOM 구조 분석 완료 (${sectionCount}개 섹션 감지)`);
+    }
+
+    // rate limit: DOM 구조 분석 후 대기
+    await sleep(RATE_LIMIT_MS);
+
+    // d. flat 컬럼 추출
     const flatColumns = extractFlatColumns(result);
 
-    // d. lp_analysis UPSERT
+    // e. raw_analysis 구성 (dom_structure 포함)
+    const rawAnalysis = {};
+    if (domStructure) {
+      rawAnalysis.dom_structure = domStructure;
+    }
+
+    // f. lp_analysis UPSERT
     const upsertRecord = {
       lp_id: t.lp_id,
       viewport: "mobile",
       reference_based: result,
+      raw_analysis: Object.keys(rawAnalysis).length > 0 ? rawAnalysis : null,
       ...flatColumns,
       model_version: "gemini-2.5-pro-lp-v2",
       analyzed_at: new Date().toISOString(),

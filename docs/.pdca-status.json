@@ -1467,6 +1467,14 @@
       "startedAt": "2026-03-22",
       "completedAt": "2026-03-22",
       "notes": "predict_lp.py 신규(Railway DeepGaze). /lp-saliency 엔드포인트. analyze-lp-saliency Vercel cron 23:30 UTC. eye_tracking JSONB: 섹션별 weight, fixation, fold/CTA attention, cognitive load"
+    },
+    "checklist-completion-batch": {
+      "phase": "completed",
+      "matchRate": 93,
+      "documents": {},
+      "startedAt": "2026-03-22",
+      "completedAt": "2026-03-22",
+      "notes": "체크리스트 64→78/84 (93%). 14건 일괄: benchmark/competitor Storage, LP HTML+DOM, 3축 교차, 시선 행동 추론, 영상 DeepGaze, 데이터화+제안추적+제안뱅크. 남은 6건 외부 의존."
     }
   }
 }

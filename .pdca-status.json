@@ -505,5 +505,28 @@
     "completedAt": "2026-03-22",
     "updatedAt": "2026-03-22T23:30:00",
     "notes": "predict_lp.py 신규(Railway). /lp-saliency 엔드포인트 + server.js. analyze-lp-saliency Vercel cron (23:30 UTC). eye_tracking JSONB: 섹션별 weight, fixation, fold/CTA attention, cognitive load."
+  },
+  "checklist-completion-batch": {
+    "status": "completed",
+    "matchRate": 93,
+    "tasks": [
+      "benchmark-storage-path",
+      "competitor-storage-path",
+      "lp-html-download",
+      "gemini-dom-structure",
+      "lp-cross-matrix-3axis",
+      "lp-behavior-inference",
+      "video-frame-deepgaze",
+      "benchmark-content-download",
+      "change-insights-dataization",
+      "suggestion-tracking",
+      "suggestion-bank",
+      "benchmark-content-comparison",
+      "role-documentation",
+      "lp-saliency-eye-tracking"
+    ],
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22T23:59:00",
+    "notes": "체크리스트 64→78/84 완료 (93%). 14건 일괄 구현: benchmark/competitor Storage, LP HTML 다운+DOM 구조화, 3축 교차 매트릭스, 시선 행동 추론, 영상 프레임별 DeepGaze, 데이터화+제안추적+제안뱅크, 역할 정리. 신규 파일 10개, 수정 5개. 남은 6건 전부 외부 의존(Mixpanel×3, Meta BM, HW, 배치파이프라인)."
   }
 }

@@ -1,14 +1,29 @@
 /**
- * T4: 크론 API — 소재 임베딩 수집
- * GET /api/cron/embed-creatives
+ * ═══════════════════════════════════════════════════════════════
+ * embed-creatives — 분석 강화 (Gemini 임베딩 + 5축 분석 트리거)
+ * ═══════════════════════════════════════════════════════════════
  *
- * 1. ad_accounts에서 active 계정 조회
- * 2. 각 계정의 ACTIVE 광고 조회 (Meta API)
- * 3. 소재 이미지 URL + 카피 + LP URL 수집
- * 4. ad_creative_embeddings에 upsert
- * 5. 임베딩 없는 row만 임베딩 실행
+ * 역할: collect-daily가 수집한 원시 소재 데이터에 AI 분석을 적용하는
+ *       분석/강화 파이프라인.
+ *
+ * 소유 테이블 (이 크론이 UPSERT/갱신하는 테이블):
+ *   - ad_creative_embeddings : 임베딩 벡터 생성 (embedding vector(768))
+ *   - (간접) creative_element_analysis : 5축 분석 트리거 시 갱신
+ *
+ * 동작 순서:
+ *   1. ad_accounts에서 active 계정 조회
+ *   2. 각 계정의 ACTIVE 광고 조회 (Meta API)
+ *   3. 소재 이미지 URL + 카피 + LP URL 수집
+ *   4. ad_creative_embeddings에 upsert
+ *   5. 임베딩 없는 row만 Gemini 임베딩 실행
+ *
+ * collect-daily와의 역할 분리:
+ *   - collect-daily : 원시 데이터 수집 (Meta API → DB). "무엇이 있는가?"
+ *   - embed-creatives : 분석 강화 (Gemini → 임베딩/분석). "이것이 어떤 소재인가?"
  *
  * 배치 처리: 50개씩, 500ms 딜레이
+ * Vercel Cron: 매일 1회
+ * ═══════════════════════════════════════════════════════════════
  */
 
 import { NextRequest, NextResponse } from "next/server";

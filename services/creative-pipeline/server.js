@@ -101,6 +101,38 @@ app.post('/lp-saliency', auth, async (req, res) => {
   }
 });
 
+// ━━━ runVideoSaliency 헬퍼 (Python subprocess) ━━━
+function runVideoSaliency({ limit, accountId, maxFrames }) {
+  return new Promise((resolve, reject) => {
+    const args = ['saliency/predict_video_frames.py', '--limit', String(limit)];
+    if (accountId) args.push('--account-id', accountId);
+    if (maxFrames) args.push('--max-frames', String(maxFrames));
+    execFile('python3', args, { cwd: '/app', timeout: 3600000 }, (err, stdout, stderr) => {
+      if (stderr) console.error('[video-saliency stderr]', stderr.slice(-500));
+      if (err) return reject(err);
+      try {
+        const lastLine = stdout.trim().split('\n').pop();
+        resolve(JSON.parse(lastLine));
+      } catch (parseErr) {
+        reject(new Error(`video-saliency stdout parse error: ${stdout.slice(-200)}`));
+      }
+    });
+  });
+}
+
+// ━━━ POST /video-saliency — 영상 프레임별 시선 예측 ━━━
+app.post('/video-saliency', auth, async (req, res) => {
+  try {
+    const { limit = 10, accountId = null, maxFrames = 30 } = req.body || {};
+    console.log(`[/video-saliency] limit=${limit}, accountId=${accountId || '전체'}, maxFrames=${maxFrames}`);
+    const result = await runVideoSaliency({ limit, accountId, maxFrames });
+    res.json({ ok: true, ...result });
+  } catch (e) {
+    console.error('[/video-saliency] 에러:', e);
+    res.status(500).json({ error: e.message || String(e) });
+  }
+});
+
 // ━━━ POST /benchmark — L3 벤치마크 계산 ━━━
 app.post('/benchmark', auth, async (req, res) => {
   try {

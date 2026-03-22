@@ -1,12 +1,12 @@
-# DEV-STATUS — 2026-03-22 기준
+# DEV-STATUS — 2026-03-22 최종
 
 ## 현재 상태 요약
 
 | 항목 | 값 |
 |------|-----|
-| 마지막 완료 TASK | T1~T11 전체 완료 (커밋 `710afb4`) |
-| 전체 Match Rate | ~76% (83항목 중 63 완료) |
-| 다음 TASK | 5축 전체 배치 실행 (진행 중) |
+| 마지막 완료 TASK | 체크리스트 78/84 완료 (93%) |
+| 전체 Match Rate | 93% (84항목 중 78 완료, 6 BLOCKED) |
+| 남은 항목 | 6건 — 전부 외부 의존 (Mixpanel/Meta/HW) |
 | 체크리스트 | `docs/00-overview/full-task-checklist.md` |
 | 실행 플랜 | `docs/01-plan/features/architecture-v3-execution-plan.md` |
 
@@ -33,17 +33,51 @@
 
 ---
 
-## 챕터별 진행률 (83항목)
+## 챕터별 진행률 (84항목)
 
-| 챕터 | Match Rate | 완료 | 부분 | 미구현 |
-|------|-----------|:----:|:----:|:-----:|
-| 1. 전체 아키텍처 | 83% | 10 | 0 | 2 |
-| 2. 수집 | 72% | 12 | 0 | 6 |
-| 3. 저장 | 86% | 12 | 0 | 2 |
-| 4. LP 분석 | 81% | 12 | 1 | 3 |
-| 5. 소재 분석 | 80% | 11 | 1 | 3 |
-| 6. 순환 학습 | 63% | 5 | 0 | 3 |
-| **합계** | **~76%** | **63** | **2** | **18** |
+| 챕터 | Match Rate | 완료 | 미구현 |
+|------|-----------|:----:|:-----:|
+| 1. 전체 아키텍처 (12) | 83% | 10 | 2 |
+| 2. 수집 (17) | 82% | 14 | 3 |
+| 3. 저장 (14) | 100% | 14 | 0 |
+| 4. LP 분석 (17) | 94% | 16 | 1 |
+| 5. 소재 분석 (16) | 100% | 16 | 0 |
+| 6. 순환 학습 (8) | 100% | 8 | 0 |
+| **합계** | **93%** | **78** | **6** |
+
+---
+
+## BLOCKED 항목 (6건 — 전부 외부 의존)
+
+| # | 항목 | 사유 | 해소 방법 |
+|---|------|------|----------|
+| 1 | Mixpanel 클릭 수집 (ch1) | $mp_click Autocapture 비활성 | Mixpanel 대시보드 설정 |
+| 2 | Mixpanel 클릭 수집 (ch2) | 동일 | 동일 |
+| 3 | 벤치마크→콘텐츠 풀 자동추가 (ch2) | 벤치마크 분석 배치 미가동 | STEP 4 이후 배치 실행 |
+| 4 | 비회원 ad_accounts (ch2) | 33개 계정 토큰 미발급 | Meta BM 토큰 발급 |
+| 5 | Mixpanel 클릭 수집 (ch4) | 동일 | 동일 |
+| 6 | M4 Max 로컬 (ch1) | HW 전환 | Railway+Vercel 정상 가동 중 |
+
+---
+
+## 이번 세션 신규 구현 (64→78, +14건)
+
+| 항목 | 구현물 | 유형 |
+|------|--------|------|
+| benchmark/ Storage 경로 | collect-benchmarks STEP 4 | route 확장 |
+| competitor/ Storage 경로 | competitor-storage.ts + analyze-competitors | 신규 + route 확장 |
+| LP HTML 다운로드 | crawl-lps fetchHtmlContent() | route 확장 |
+| Gemini DOM 구조화 | analyze-lps-v2.mjs buildDomStructurePrompt() | 스크립트 확장 |
+| 3축 교차 매트릭스 | compute-lp-cross-matrix.mjs (365줄) | 신규 스크립트 |
+| 시선 행동 추론 (3층) | compute-lp-behavior-inference.mjs (355줄) | 신규 스크립트 |
+| 영상 프레임별 DeepGaze | predict_video_frames.py (453줄) | 신규 스크립트 |
+| Benchmark 콘텐츠 수집 | collect-benchmarks 이미지 다운 | route 확장 |
+| 벤치마크 콘텐츠 비교 | 5축 파이프라인 연결 가능 | 구조 완성 |
+| 데이터화 | compute-change-insights.mjs (415줄) | 신규 스크립트 |
+| 제안→결과 추적 | compute-suggestion-tracking.mjs | 신규 스크립트 |
+| 수강생 제안 활용 | generate-suggestion-bank.mjs | 신규 스크립트 |
+| 역할 정리 | dual write 안정화 완료 | 결정 |
+| DeepGaze LP 시선 | predict_lp.py + cron | 신규 (이전 커밋) |
 
 ---
 
@@ -60,18 +94,6 @@
 | Creative Intelligence | 358 | 2,914 | 12% |
 | 경쟁사 모니터 | 62 | — | — |
 | 5축 분석 v3 | — | — | 배치 대기 |
-
----
-
-## P1 완료 작업
-
-1. ~~**LP 변경 감지 로직**~~ — ✅ crawl-lps에서 content_hash diff → change_log INSERT + lp_analysis.analyzed_at 리셋 + analyze-lps-v2.mjs 재분석 필터 추가
-2. ~~**성과 변화 추적**~~ — ✅ track-performance 크론 신규 (before/after 7일 평균 → change_log 업데이트, 매일 23:00 UTC)
-3. ~~**총가치각도기 3축 매핑**~~ — ✅ ATTRIBUTE_AXIS_MAP 15속성 매핑 (Phase 2 가중치 보정 예정)
-
-## 남은 P1 작업 (즉시 진행 가능)
-
-1. **5축 분석 전체 배치** — analyze-five-axis.mjs --mode final 전계정 실행 (2,933건, 진행 중)
 
 ---
 

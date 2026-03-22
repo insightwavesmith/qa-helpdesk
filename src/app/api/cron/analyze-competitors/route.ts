@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { uploadCompetitorMedia } from "@/lib/competitor/competitor-storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -303,6 +304,7 @@ export async function GET(req: NextRequest) {
   let completed = 0;
   let failed = 0;
   let skipped = 0;
+  let mediaStoredCount = 0;
 
   for (const qItem of items) {
     const ad = adMap.get(qItem.ad_id);
@@ -370,6 +372,18 @@ export async function GET(req: NextRequest) {
       continue;
     }
 
+    // ── 소재 이미지를 Supabase Storage에 업로드 (best-effort) ──
+    // 경로: competitor/{page_id}/media/{ad_archive_id}.jpg (ADR-001)
+    try {
+      await uploadCompetitorMedia(imageUrl, ad.page_id, ad.ad_archive_id);
+    } catch (e) {
+      // best-effort: 업로드 실패해도 분석 결과는 유지
+      console.warn(
+        `[analyze-competitors] Storage 업로드 실패 (무시): ${ad.ad_archive_id}`,
+        e instanceof Error ? e.message : e,
+      );
+    }
+
     // 큐 상태 completed로 업데이트
     await svc
       .from("competitor_analysis_queue")
@@ -377,13 +391,14 @@ export async function GET(req: NextRequest) {
       .eq("id", qItem.id);
 
     completed++;
+    mediaStoredCount++;
 
     // Gemini rate limit 완화: 항목 간 200ms 딜레이
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
   console.log(
-    `[analyze-competitors] 처리 완료 — total: ${items.length}, completed: ${completed}, failed: ${failed}, skipped: ${skipped}`,
+    `[analyze-competitors] 처리 완료 — total: ${items.length}, completed: ${completed}, failed: ${failed}, skipped: ${skipped}, media_stored: ${mediaStoredCount}`,
   );
 
   return NextResponse.json({
@@ -391,6 +406,7 @@ export async function GET(req: NextRequest) {
     completed,
     failed,
     skipped,
+    media_stored: mediaStoredCount,
     total: items.length,
   });
 }

@@ -12,6 +12,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 import { classifyAccount } from "@/lib/classify-account";
+import {
+  extractImageHashes,
+  fetchImageUrlsByHash,
+} from "@/lib/protractor/creative-image-fetcher";
 
 // ── Vercel Cron 인증 ─────────────────────────────────────────
 function verifyCron(req: NextRequest): boolean {
@@ -353,7 +357,6 @@ export async function GET(req: NextRequest) {
     // 계정별 통화 맵 (spend 변환용)
     const accountCurrencyMap: Record<string, string> = {};
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const activeAccounts: { cleanId: string; name: string }[] = accountsJson.data
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .filter((a: any) => {
@@ -631,6 +634,217 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // ────────────────────────────────────────────────────────
+    // STEP 3.5: 콘텐츠 풀 자동 태깅 (벤치마크 >1.5× 초과 소재)
+    //   ABOVE_AVERAGE 벤치마크의 1.5배를 초과하는 소재를 식별하여
+    //   creatives.cohort 필드에 'content_pool' 태깅
+    //   (creatives 테이블에 tags 컬럼이 없으므로 cohort 필드 활용)
+    // ────────────────────────────────────────────────────────
+    let contentPoolTagged = 0;
+    try {
+      // ABOVE_AVERAGE 벤치마크에서 engagement 기준 ROAS/CTR 임계값 추출
+      const aboveBenchmark = benchmarkRows.find(
+        (r) =>
+          r.creative_type === "ALL" &&
+          r.ranking_type === "engagement" &&
+          r.ranking_group === "ABOVE_AVERAGE"
+      ) as Record<string, unknown> | undefined;
+
+      if (aboveBenchmark) {
+        const thresholdRoas = ((aboveBenchmark.roas as number) ?? 0) * 1.5;
+        const thresholdCtr = ((aboveBenchmark.ctr as number) ?? 0) * 1.5;
+
+        // 임계값 초과 소재 필터링
+        const contentPoolAds = allClassified.filter((ad) => {
+          const meetsRoas = ad.roas != null && ad.roas > thresholdRoas && thresholdRoas > 0;
+          const meetsCtr = ad.ctr != null && ad.ctr > thresholdCtr && thresholdCtr > 0;
+          // ROAS 또는 CTR 중 하나라도 1.5배 초과
+          return meetsRoas || meetsCtr;
+        });
+
+        if (contentPoolAds.length > 0) {
+          // creatives 테이블에서 해당 ad_id의 cohort를 'content_pool'로 업데이트
+          // TODO: creatives 테이블에 tags text[] 컬럼 추가 후 tags 기반으로 전환
+          const adIdsToTag = contentPoolAds.map((ad) => ad.ad_id);
+
+          const { error: tagErr } = await anySvc
+            .from("creatives")
+            .update({ cohort: "content_pool" })
+            .in("ad_id", adIdsToTag);
+
+          if (tagErr) {
+            console.error("[STEP 3.5] 콘텐츠 풀 태깅 실패:", tagErr.message);
+          } else {
+            contentPoolTagged = adIdsToTag.length;
+            console.log(
+              `[STEP 3.5] 콘텐츠 풀 태깅: ${contentPoolTagged}건 (ROAS 임계값: ${round(thresholdRoas, 2)}, CTR 임계값: ${round(thresholdCtr, 4)})`
+            );
+          }
+        } else {
+          console.log("[STEP 3.5] 벤치마크 1.5× 초과 소재 없음");
+        }
+      } else {
+        console.log("[STEP 3.5] ABOVE_AVERAGE 벤치마크 없음 — 콘텐츠 풀 태깅 스킵");
+      }
+    } catch (e) {
+      console.error("[STEP 3.5] 콘텐츠 풀 태깅 에러:", e instanceof Error ? e.message : e);
+      // non-fatal: 계속 진행
+    }
+
+    // ────────────────────────────────────────────────────────
+    // STEP 4: 벤치마크 소재 미디어 다운로드 (best-effort)
+    //   ABOVE_AVERAGE 크리에이티브의 이미지를 Supabase Storage에 저장
+    //   경로: benchmark/{account_id}/media/{ad_id}.jpg (ADR-001)
+    //   계정당 최대 20건, 실패해도 전체 크론 실패 안 함
+    // ────────────────────────────────────────────────────────
+    let mediaUploaded = 0;
+    let mediaFailed = 0;
+    const MEDIA_LIMIT_PER_ACCOUNT = 20;
+
+    try {
+      // ABOVE_AVERAGE 크리에이티브 필터 (quality 또는 engagement 기준)
+      const aboveAvgAds = allClassified.filter(
+        (a) =>
+          a.quality_ranking === "ABOVE_AVERAGE" ||
+          a.engagement_ranking === "ABOVE_AVERAGE"
+      );
+
+      // 계정별로 그룹핑
+      const adsByAccount = new Map<string, ClassifiedAd[]>();
+      for (const ad of aboveAvgAds) {
+        const existing = adsByAccount.get(ad.account_id) ?? [];
+        if (existing.length < MEDIA_LIMIT_PER_ACCOUNT) {
+          existing.push(ad);
+          adsByAccount.set(ad.account_id, existing);
+        }
+      }
+
+      console.log(
+        `[STEP 4] 미디어 다운로드 대상: ${adsByAccount.size}개 계정, ${aboveAvgAds.length}개 ABOVE_AVERAGE 소재`
+      );
+
+      // rawAds (원본 광고 데이터)를 다시 수집할 수 없으므로
+      // allClassified에 있는 ad_id + account_id로 이미지 hash를 조회해야 함
+      // → 계정별로 image_hash 기반 URL 맵을 재사용 (STEP 1에서 이미 수집한 광고 데이터 기반)
+      // 대안: fetchCreativeDetails로 ad_id → image_url/thumbnail_url 직접 조회
+      for (const [accountId, ads] of adsByAccount) {
+        try {
+          // 이 계정의 ABOVE_AVERAGE 광고 ad_id 목록
+          const adIds = ads.map((a) => a.ad_id);
+
+          // Meta API에서 creative details 조회 (image_url, thumbnail_url)
+          const detailsUrl = new URL(
+            `https://graph.facebook.com/v21.0/act_${accountId}/ads`
+          );
+          detailsUrl.searchParams.set("access_token", token);
+          detailsUrl.searchParams.set(
+            "fields",
+            "id,creative{image_url,thumbnail_url,image_hash}"
+          );
+          detailsUrl.searchParams.set(
+            "filtering",
+            JSON.stringify([
+              { field: "id", operator: "IN", value: adIds },
+            ])
+          );
+          detailsUrl.searchParams.set("limit", String(MEDIA_LIMIT_PER_ACCOUNT));
+
+          const detailsRes = await fetchWithRetry(detailsUrl.toString());
+          const detailsJson = await detailsRes.json();
+
+          if (detailsJson.error || !detailsJson.data) {
+            console.warn(
+              `[STEP 4] ${accountId} creative details 조회 실패:`,
+              detailsJson.error?.message ?? "no data"
+            );
+            continue;
+          }
+
+          // image_hash 수집 → URL 맵 생성 (fallback용)
+          const hashes = extractImageHashes(detailsJson.data);
+          let hashToUrl = new Map<string, string>();
+          if (hashes.length > 0) {
+            try {
+              hashToUrl = await fetchImageUrlsByHash(accountId, hashes);
+            } catch {
+              console.warn(`[STEP 4] ${accountId} image hash URL 조회 실패`);
+            }
+          }
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          for (const adData of detailsJson.data as any[]) {
+            const adId = adData.id as string;
+            const creative = adData.creative;
+
+            // 이미지 URL: creative.image_url > creative.thumbnail_url > hash lookup
+            const imageUrl: string | null =
+              creative?.image_url ??
+              creative?.thumbnail_url ??
+              (creative?.image_hash
+                ? hashToUrl.get(creative.image_hash) ?? null
+                : null);
+
+            if (!imageUrl) continue;
+
+            try {
+              // 이미지 다운로드
+              const imgRes = await fetch(imageUrl, {
+                signal: AbortSignal.timeout(15_000),
+              });
+              if (!imgRes.ok) continue;
+
+              const contentType =
+                imgRes.headers.get("content-type") || "image/jpeg";
+              const ext = contentType.includes("png") ? "png" : "jpg";
+              const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+
+              // Storage 업로드: benchmark/{account_id}/media/{ad_id}.{ext}
+              const storagePath = `benchmark/${accountId}/media/${adId}.${ext}`;
+              const { error: uploadErr } = await anySvc.storage
+                .from("creatives")
+                .upload(storagePath, imgBuffer, {
+                  contentType,
+                  upsert: true,
+                });
+
+              if (!uploadErr) {
+                mediaUploaded++;
+              } else {
+                console.warn(
+                  `[STEP 4] ${adId} 업로드 실패:`,
+                  uploadErr.message
+                );
+                mediaFailed++;
+              }
+            } catch {
+              mediaFailed++;
+            }
+
+            // Rate limit 대기
+            await new Promise((r) => setTimeout(r, 100));
+          }
+        } catch (e) {
+          console.warn(
+            `[STEP 4] ${accountId} 미디어 처리 실패:`,
+            e instanceof Error ? e.message : e
+          );
+        }
+
+        // 계정 간 딜레이
+        await new Promise((r) => setTimeout(r, 200));
+      }
+
+      console.log(
+        `[STEP 4] 미디어 다운로드 완료: 업로드 ${mediaUploaded}건, 실패 ${mediaFailed}건`
+      );
+    } catch (e) {
+      // best-effort: 전체 STEP 4 실패해도 크론 성공 처리
+      console.error(
+        "[STEP 4] 미디어 다운로드 전체 실패 (무시):",
+        e instanceof Error ? e.message : e
+      );
+    }
+
     await completeCronRun(cronRunId, "success", allClassified.length);
 
     return NextResponse.json({
@@ -646,6 +860,9 @@ export async function GET(req: NextRequest) {
         IMAGE: allClassified.filter((r) => r.creative_type === "IMAGE").length,
         CATALOG: allClassified.filter((r) => r.creative_type === "CATALOG").length,
       },
+      content_pool_tagged: contentPoolTagged,
+      media_uploaded: mediaUploaded,
+      media_failed: mediaFailed,
       collected_at: collectedAt,
     });
   } catch (e) {
