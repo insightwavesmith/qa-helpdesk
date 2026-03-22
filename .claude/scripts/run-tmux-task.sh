@@ -25,4 +25,4 @@ echo ""
 # TASK 파일 내용을 프롬프트로 전달
 PROMPT="$(cat "$TASK_FILE")"
 
-node /Users/smith/projects/qa-helpdesk/.claude/scripts/agent-team-run.js "$MODE" "$PROMPT"
+node /Users/smith/projects/bscamp/.claude/scripts/agent-team-run.js "$MODE" "$PROMPT"

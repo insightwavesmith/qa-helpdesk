@@ -14,7 +14,7 @@ except:
     print('')
 " 2>/dev/null)
 
-PROJECT_DIR="/Users/smith/projects/qa-helpdesk"
+PROJECT_DIR="/Users/smith/projects/bscamp"
 MARKER="/tmp/.claude-context-read-$(date +%Y%m%d)"
 
 # 이미 이번 세션에서 읽었으면 패스

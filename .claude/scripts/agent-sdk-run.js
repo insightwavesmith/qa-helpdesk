@@ -14,7 +14,7 @@ process.stderr.on("error", (e) => { if (e.code !== "EPIPE") throw e; });
 const { query } = require("@anthropic-ai/claude-agent-sdk");
 const fs = require("fs");
 
-const PROJECT = "/Users/smith/projects/qa-helpdesk";
+const PROJECT = "/Users/smith/projects/bscamp";
 const SETTINGS = `${PROJECT}/.claude/settings.json`;
 const SETTINGS_ORIG = `${SETTINGS}.orig`;
 const SETTINGS_LOCAL = `${PROJECT}/.claude/settings.local.json`;

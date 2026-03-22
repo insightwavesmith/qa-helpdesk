@@ -19,7 +19,7 @@ const { spawn, execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
-const PROJECT = "/Users/smith/projects/qa-helpdesk";
+const PROJECT = "/Users/smith/projects/bscamp";
 const SETTINGS = `${PROJECT}/.claude/settings.json`;
 const SETTINGS_ORIG = `${SETTINGS}.orig`;
 const SETTINGS_LOCAL = `${PROJECT}/.claude/settings.local.json`;

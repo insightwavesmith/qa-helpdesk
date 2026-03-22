@@ -7,7 +7,7 @@ ERRORS=0
 echo "=== 기능 사용 검증 ==="
 
 # 1. Context7 MCP 설정 확인
-if [ -f /Users/smith/projects/qa-helpdesk/.mcp.json ]; then
+if [ -f /Users/smith/projects/bscamp/.mcp.json ]; then
   echo "✅ Context7 MCP 설정 있음"
 else
   echo "❌ FAIL: Context7 MCP 설정 없음 (.mcp.json)"
@@ -24,7 +24,7 @@ else
 fi
 
 # 3. Hooks 설정 확인
-HOOKS=$(grep -c '"hooks"' /Users/smith/projects/qa-helpdesk/.claude/settings.json 2>/dev/null)
+HOOKS=$(grep -c '"hooks"' /Users/smith/projects/bscamp/.claude/settings.json 2>/dev/null)
 if [ "$HOOKS" -ge 1 ]; then
   echo "✅ Hooks 설정됨"
 else
@@ -33,7 +33,7 @@ else
 fi
 
 # 4. Skills 존재 확인
-SKILLS=$(ls /Users/smith/projects/qa-helpdesk/.claude/skills/ 2>/dev/null | wc -l | tr -d ' ')
+SKILLS=$(ls /Users/smith/projects/bscamp/.claude/skills/ 2>/dev/null | wc -l | tr -d ' ')
 if [ "$SKILLS" -ge 1 ]; then
   echo "✅ Skills ${SKILLS}개 로드됨"
 else
@@ -42,7 +42,7 @@ else
 fi
 
 # 5. Agent Teams 환경변수 확인
-TEAMS=$(grep -c "AGENT_TEAMS" /Users/smith/projects/qa-helpdesk/.claude/settings.json 2>/dev/null)
+TEAMS=$(grep -c "AGENT_TEAMS" /Users/smith/projects/bscamp/.claude/settings.json 2>/dev/null)
 if [ "$TEAMS" -ge 1 ]; then
   echo "✅ Agent Teams 활성화됨"
 else

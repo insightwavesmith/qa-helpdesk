@@ -26,13 +26,13 @@ if [ "$IS_COMMIT" = false ]; then
     exit 0
 fi
 
-PROJECT_DIR="/Users/smith/projects/qa-helpdesk"
+PROJECT_DIR="/Users/smith/projects/bscamp"
 PDCA_ROOT="$PROJECT_DIR/.pdca-status.json"
 PDCA_DOCS="$PROJECT_DIR/docs/.pdca-status.json"
 
 # ── 1. 루트 .pdca-status.json 존재 확인 ──
 if [ ! -f "$PDCA_ROOT" ]; then
-    source /Users/smith/projects/qa-helpdesk/.claude/hooks/notify-hook.sh 2>/dev/null && \
+    source /Users/smith/projects/bscamp/.claude/hooks/notify-hook.sh 2>/dev/null && \
         notify_hook "🚫 [PDCA 게이트] .pdca-status.json 없이 커밋 시도" "pdca"
     echo "❌ .pdca-status.json이 없습니다." >&2
     echo "" >&2
@@ -47,7 +47,7 @@ fi
 
 # ── 2. docs/.pdca-status.json 존재 확인 ──
 if [ ! -f "$PDCA_DOCS" ]; then
-    source /Users/smith/projects/qa-helpdesk/.claude/hooks/notify-hook.sh 2>/dev/null && \
+    source /Users/smith/projects/bscamp/.claude/hooks/notify-hook.sh 2>/dev/null && \
         notify_hook "🚫 [PDCA 게이트] docs/.pdca-status.json 없이 커밋 시도" "pdca"
     echo "❌ docs/.pdca-status.json이 없습니다." >&2
     echo "PDCA 상태 파일을 생성하고 현재 작업을 기록하세요." >&2
@@ -57,7 +57,7 @@ fi
 # ── 3. 루트 .pdca-status.json이 최근 업데이트됐는지 (30분 이내) ──
 ROOT_AGE=$(( $(date +%s) - $(stat -f %m "$PDCA_ROOT" 2>/dev/null || echo 0) ))
 if [ "$ROOT_AGE" -gt 1800 ]; then
-    source /Users/smith/projects/qa-helpdesk/.claude/hooks/notify-hook.sh 2>/dev/null && \
+    source /Users/smith/projects/bscamp/.claude/hooks/notify-hook.sh 2>/dev/null && \
         notify_hook "🚫 [PDCA 게이트] .pdca-status.json 미갱신 (${ROOT_AGE}초 전). 커밋 차단." "pdca"
     echo "❌ .pdca-status.json이 오래됐습니다 (${ROOT_AGE}초 전 업데이트)." >&2
     echo "" >&2
@@ -71,7 +71,7 @@ fi
 # ── 4. docs/.pdca-status.json도 최근 업데이트됐는지 (30분 이내) ──
 DOCS_AGE=$(( $(date +%s) - $(stat -f %m "$PDCA_DOCS" 2>/dev/null || echo 0) ))
 if [ "$DOCS_AGE" -gt 1800 ]; then
-    source /Users/smith/projects/qa-helpdesk/.claude/hooks/notify-hook.sh 2>/dev/null && \
+    source /Users/smith/projects/bscamp/.claude/hooks/notify-hook.sh 2>/dev/null && \
         notify_hook "🚫 [PDCA 게이트] docs/.pdca-status.json 미갱신 (${DOCS_AGE}초 전). 커밋 차단." "pdca"
     echo "❌ docs/.pdca-status.json이 오래됐습니다 (${DOCS_AGE}초 전 업데이트)." >&2
     echo "커밋 전에 docs/.pdca-status.json도 업데이트하세요." >&2
@@ -86,7 +86,7 @@ if [ -n "$STAGED_SRC" ]; then
     DESIGN_COUNT=$(find "$PROJECT_DIR/docs/02-design/features" -name "*.design.md" -type f 2>/dev/null | wc -l | tr -d ' ')
     
     if [ "${PLAN_COUNT:-0}" -eq 0 ]; then
-        source /Users/smith/projects/qa-helpdesk/.claude/hooks/notify-hook.sh 2>/dev/null && \
+        source /Users/smith/projects/bscamp/.claude/hooks/notify-hook.sh 2>/dev/null && \
             notify_hook "🚫 [PDCA 게이트] Plan 문서 없이 src/ 커밋 시도" "pdca"
         echo "❌ src/ 파일이 변경됐지만 Plan 문서가 없습니다." >&2
         echo "docs/01-plan/features/{기능}.plan.md를 먼저 작성하세요." >&2
@@ -94,7 +94,7 @@ if [ -n "$STAGED_SRC" ]; then
     fi
     
     if [ "${DESIGN_COUNT:-0}" -eq 0 ]; then
-        source /Users/smith/projects/qa-helpdesk/.claude/hooks/notify-hook.sh 2>/dev/null && \
+        source /Users/smith/projects/bscamp/.claude/hooks/notify-hook.sh 2>/dev/null && \
             notify_hook "🚫 [PDCA 게이트] Design 문서 없이 src/ 커밋 시도" "pdca"
         echo "❌ src/ 파일이 변경됐지만 Design 문서가 없습니다." >&2
         echo "docs/02-design/features/{기능}.design.md를 먼저 작성하세요." >&2

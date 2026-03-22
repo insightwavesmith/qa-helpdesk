@@ -10,7 +10,7 @@
 MODE="${1:-full}"
 PROMPT="$2"
 SESSION="${3:-sdk-task}"
-PROJECT="/Users/smith/projects/qa-helpdesk"
+PROJECT="/Users/smith/projects/bscamp"
 
 if [ -z "$PROMPT" ]; then
   echo "사용법: tmux-sdk-run.sh [plan|dev|full] '지시문' [세션명]"

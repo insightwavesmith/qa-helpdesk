@@ -31,7 +31,7 @@ PANE_COUNT=${PANE_COUNT:-0}
 
 if [ "$PANE_COUNT" -le 1 ]; then
     # 노티
-    source /Users/smith/projects/qa-helpdesk/.claude/hooks/notify-hook.sh && \
+    source /Users/smith/projects/bscamp/.claude/hooks/notify-hook.sh && \
         notify_hook "⚠️ [게이트 차단] delegate 모드 없이 src/ 수정 시도. 팀원 만들어라" "delegate"
     
     echo "❌ delegate 모드(팀원)가 없습니다." >&2

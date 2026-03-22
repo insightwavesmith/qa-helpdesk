@@ -17,7 +17,7 @@ except:
 
 # agent-stage 마커 직접 생성 시도 차단
 if echo "$COMMAND" | grep -qE 'touch.*/tmp/agent-stage|echo.*>/tmp/agent-stage|cat.*>/tmp/agent-stage'; then
-    source /Users/smith/projects/qa-helpdesk/.claude/hooks/notify-hook.sh && \
+    source /Users/smith/projects/bscamp/.claude/hooks/notify-hook.sh && \
         notify_hook "⚠️ [게이트 차단] stage 마커 직접 생성 시도됨" "protect-stage"
     
     echo "❌ stage 마커를 직접 생성할 수 없습니다." >&2

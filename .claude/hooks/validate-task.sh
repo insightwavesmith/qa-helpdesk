@@ -21,7 +21,7 @@ if ! echo "$COMMAND" | grep -qE '(npm run (build|dev)|npx |next )'; then
     exit 0
 fi
 
-PROJECT_DIR="/Users/smith/projects/qa-helpdesk"
+PROJECT_DIR="/Users/smith/projects/bscamp"
 
 # TASK.md 존재 확인
 TASK_FILES=$(find "$PROJECT_DIR" -maxdepth 1 -name "TASK*.md" -type f 2>/dev/null)

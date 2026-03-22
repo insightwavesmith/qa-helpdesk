@@ -25,7 +25,7 @@ if echo "$COMMAND" | grep -qE '(docs:|chore:|style:)'; then
     exit 0
 fi
 
-PROJECT_DIR="/Users/smith/projects/qa-helpdesk"
+PROJECT_DIR="/Users/smith/projects/bscamp"
 
 # staged 파일 목록 (src/ 하위만)
 STAGED_SRC=$(cd "$PROJECT_DIR" && git diff --cached --name-only 2>/dev/null | grep '^src/' || true)
@@ -89,7 +89,7 @@ if [ -n "$MISSING_DOCS" ]; then
     echo ""
     echo "src/ 파일이 변경되었지만 관련 설계서가 업데이트되지 않았습니다."
     echo "설계서를 갱신한 후 다시 커밋하세요."
-    source /Users/smith/projects/qa-helpdesk/.claude/hooks/notify-hook.sh && notify_hook "⚠️ [게이트 차단] 설계서 미갱신으로 commit 차단됨. tmux 확인" "validate-design"
+    source /Users/smith/projects/bscamp/.claude/hooks/notify-hook.sh && notify_hook "⚠️ [게이트 차단] 설계서 미갱신으로 commit 차단됨. tmux 확인" "validate-design"
     exit 2
 fi
 

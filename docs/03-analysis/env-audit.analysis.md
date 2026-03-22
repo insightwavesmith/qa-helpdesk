@@ -32,10 +32,8 @@
 | `META_APP_SECRET` | Meta 앱 시크릿 | O | O (Prod) | 코드에서 직접 참조 없음 — 향후 확장용 |
 | `META_AD_LIBRARY_TOKEN` | Meta 광고 라이브러리 API 토큰 | O | O (Prod) | 코드에서 직접 참조 없음 — competitor/meta-ad-library.ts는 SEARCH_API_KEY 사용 |
 | **크롤링 서버 (Railway)** | | | | |
-| `CRAWLER_URL` | Railway Playwright 크롤러 URL | X | X | 코드에 하드코딩 폴백 있음. `.env.local`/Vercel 미등록. `RAILWAY_CRAWLER_URL`과 별개 |
-| `CRAWLER_SECRET` | Railway 크롤러 인증 시크릿 | X | X | **미등록 — 크롤러 인증 불가** |
-| `RAILWAY_CRAWLER_URL` | Railway 크롤러 URL (새 네이밍) | O | O (Dev/Preview) | 코드에서 참조 없음 — 현재 미사용 |
-| `RAILWAY_API_SECRET` | Railway API 시크릿 | O | O (Dev/Preview) | 코드에서 참조 없음 — 현재 미사용 |
+| `RAILWAY_CRAWLER_URL` | Railway Playwright 크롤러 URL | O | O (Prod/Preview) | 코드 수정 완료 (9dc3ac3) — railway-crawler.ts + trigger-lp-crawl.mjs |
+| `RAILWAY_API_SECRET` | Railway 크롤러 인증 시크릿 | O | O (Prod/Preview) | 코드 수정 완료 (9dc3ac3) — 키 이름 통일됨 |
 | `CREATIVE_PIPELINE_URL` | Creative Pipeline 서버 URL | O | O (Prod) | Preview/Dev 미등록 |
 | `CREATIVE_PIPELINE_SECRET` | Creative Pipeline 인증 시크릿 | O | O (Prod) | Preview/Dev 미등록 |
 | **크론 / 인증** | | | | |
@@ -98,8 +96,8 @@
 
 | 변수명 | 심각도 | 영향 기능 |
 |--------|--------|-----------|
-| `CRAWLER_URL` | 중간 | Railway 크롤러 연동 (하드코딩 폴백 있음) |
-| `CRAWLER_SECRET` | 높음 | **Railway 크롤러 인증 미작동** — 빈 문자열로 인증 없이 요청 중 |
+| ~~`CRAWLER_URL`~~ | ~~중간~~ | ~~수정 완료 (9dc3ac3) — `RAILWAY_CRAWLER_URL`로 통일~~ |
+| ~~`CRAWLER_SECRET`~~ | ~~높음~~ | ~~수정 완료 (9dc3ac3) — `RAILWAY_API_SECRET`으로 통일~~ |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | 낮음 | GSC(구글 서치 콘솔) — 현재 비활성 기능 |
 | `GOOGLE_PRIVATE_KEY` | 낮음 | GSC — 현재 비활성 기능 |
 | `NOTION_TOKEN` | 낮음 | Notion 동기화 크론 — 미사용 시 크론 자체 비활성 |
@@ -121,8 +119,8 @@
 | `META_APP_ID` | 미사용 | Vercel Prod에만 등록. 향후 Meta Webhooks 검증용으로 보임 |
 | `META_APP_SECRET` | 미사용 | 동일 |
 | `META_AD_LIBRARY_TOKEN` | 미사용 | Vercel Prod에만 등록. `competitor/meta-ad-library.ts`는 SEARCH_API_KEY 사용 |
-| `RAILWAY_CRAWLER_URL` | 미사용 | `railway-crawler.ts`는 `CRAWLER_URL`을 참조. 키 이름 불일치 |
-| `RAILWAY_API_SECRET` | 미사용 | 동일 패턴 — 코드에서 `CRAWLER_SECRET` 참조 |
+| ~~`RAILWAY_CRAWLER_URL`~~ | ~~미사용~~ | ~~수정 완료 — 코드가 `RAILWAY_CRAWLER_URL` 참조로 변경됨~~ |
+| ~~`RAILWAY_API_SECRET`~~ | ~~미사용~~ | ~~수정 완료 — 코드가 `RAILWAY_API_SECRET` 참조로 변경됨~~ |
 | `VERCEL_OIDC_TOKEN` | 자동 주입 | Vercel 플랫폼이 자동 주입. 로컬 테스트용 .env.local 등록 |
 
 ### 3-C. Vercel 환경별 등록 누락 (기능 이상 가능)
@@ -143,15 +141,10 @@
 
 ## 4. 조치 필요 사항
 
-### 즉시 조치 (높음)
+### 즉시 조치 (높음) — 완료
 
-1. **`CRAWLER_SECRET` 등록**: `.env.local`과 Vercel Prod에 추가
-   - Railway 크롤러와 협의하여 시크릿 값 설정
-   - `src/lib/railway-crawler.ts`가 `CRAWLER_SECRET`을 참조함
-
-2. **`CRAWLER_URL` / `CRAWLER_SECRET` 키 이름 통일**: 현재 코드는 `CRAWLER_URL`+`CRAWLER_SECRET` 사용, `.env.local`은 `RAILWAY_CRAWLER_URL`+`RAILWAY_API_SECRET` 등록
-   - 방법 A: 코드를 `RAILWAY_CRAWLER_URL` / `RAILWAY_API_SECRET`으로 변경
-   - 방법 B: `.env.local`에 `CRAWLER_URL` / `CRAWLER_SECRET` 추가 (즉시 해결)
+1. ~~**`CRAWLER_SECRET` 등록**~~ → 수정 완료 (커밋 9dc3ac3)
+2. ~~**`CRAWLER_URL` / `CRAWLER_SECRET` 키 이름 통일**~~ → 방법 A 적용: 코드를 `RAILWAY_CRAWLER_URL` / `RAILWAY_API_SECRET`으로 변경 (railway-crawler.ts, trigger-lp-crawl.mjs)
 
 ### 필요 시 등록 (낮음 — 기능 활성화 시)
 
@@ -187,7 +180,7 @@
 | **Claude AI (RAG/분류)** | ANTHROPIC_API_KEY, AI_PROXY_URL, AI_PROXY_KEY | 정상 |
 | **Meta 광고 수집** | META_ACCESS_TOKEN | Prod 정상 / Preview 불가 |
 | **경쟁사 광고 분석** | SEARCH_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY | Prod/Preview 정상 |
-| **LP 크롤링 (Railway)** | CRAWLER_URL, CRAWLER_SECRET | **키 이름 불일치 — 주의** |
+| **LP 크롤링 (Railway)** | RAILWAY_CRAWLER_URL, RAILWAY_API_SECRET | 정상 (9dc3ac3 수정) |
 | **Creative Pipeline** | CREATIVE_PIPELINE_URL, CREATIVE_PIPELINE_SECRET | Prod 정상 / Preview 불가 |
 | **이메일 발송 (SMTP)** | SMTP_USER, SMTP_PASS, NEXT_PUBLIC_SITE_URL | Prod 정상 / Preview 불가 |
 | **카카오/SMS 알림** | SOLAPI_API_KEY, SOLAPI_API_SECRET | Prod 정상 / Preview 불가 |

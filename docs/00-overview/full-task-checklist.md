@@ -2,8 +2,8 @@
 
 > 기준일: 2026-03-22 (T2~T11 완료 반영)
 > 근거: architecture-v3-execution-plan.md (T1~T11) + master-architecture-review.md (83개 항목)
-> 총 83개 항목: ✅ 61 완료 / 🔄 4 진행 중·부분 구현 / ❌ 18 미구현
-> 전체 Match Rate: ~73% (+ DeepGaze LP 시선 + eye_tracking JSONB 반영)
+> 총 83개 항목: ✅ 63 완료 / 🔄 2 진행 중·부분 구현 / ❌ 18 미구현
+> 전체 Match Rate: ~76% (+ mp4 즉시 다운 + 소재 요소 diff 체크리스트 반영)
 
 ---
 
@@ -28,7 +28,7 @@
 
 ## 챕터 2: 수집 (18개 항목)
 
-> Match Rate: ~67% | 완료 10 / 부분 2 / 미구현 6
+> Match Rate: ~72% | 완료 12 / 부분 0 / 미구현 6
 
 ### 수집 — Daily
 - [x] 28개 지표 수집 — collect-daily + calculateMetrics
@@ -39,8 +39,8 @@
 - [x] 이미지 Storage 다운로드 — 2,873+건 완료
 
 ### 수집 — 영상
-- [ ] 영상 mp4 다운로드 — 🔄 150/261건 (58%). URL 만료 문제
-- [ ] collect-daily에서 mp4 즉시 다운 — ❌ 미구현
+- [x] 영상 mp4 다운로드 — ✅ collect-daily에서 즉시 다운 구현 (기존 150건 + 신규 자동)
+- [x] collect-daily에서 mp4 즉시 다운 — ✅ fetchVideoSourceUrls → Storage 업로드
 
 ### 수집 — Benchmark
 - [x] Benchmark 성과 수집 — collect-benchmarks 주간
@@ -162,11 +162,11 @@
 
 ## 챕터 6: 순환 학습 (8개 항목)
 
-> Match Rate: ~50% | 완료 4 / 부분 0 / 미구현 4
+> Match Rate: ~63% | 완료 5 / 부분 0 / 미구현 3
 
 - [x] 새 소재 자동 수집 — collect-daily에서 신규 소재 자동 수집
 - [x] LP 변화 감지 (content_hash) — ✅ crawl-lps에서 hash diff → change_log + 재분석 트리거
-- [ ] 소재 요소 diff (5축 속성 비교) — ❌ analysis_json 비교 로직 필요
+- [x] 소재 요소 diff (5축 속성 비교) — ✅ computeElementDiff → change_log 기록
 - [x] 성과 변화 추적 (before/after 7일 평균) — ✅ track-performance 크론 (매일 23:00 UTC)
 - [x] change_log 테이블 — ✅ T1 완료 (데이터 축적 필요)
 - [ ] 데이터화 ("리뷰 추가 = +44%") — ❌ change_log 축적 후

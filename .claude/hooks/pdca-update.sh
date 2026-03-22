@@ -2,7 +2,7 @@
 # pdca-update.sh — 태스크 완료 시 PDCA 문서 자동 정리 강제
 # TaskCompleted hook: PDCA 상태 파일 + 리더 개발 정리 필수
 
-PROJECT_DIR="/Users/smith/projects/qa-helpdesk"
+PROJECT_DIR="/Users/smith/projects/bscamp"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
 # 1. PDCA 상태 파일 존재 확인

@@ -2,7 +2,7 @@
 # agent-sdk-run.sh — SDK 래퍼 (settings 임시 교체)
 # 사용: agent-sdk-run.sh "지시문" [--slack]
 
-PROJECT="/Users/smith/projects/qa-helpdesk"
+PROJECT="/Users/smith/projects/bscamp"
 SETTINGS="$PROJECT/.claude/settings.json"
 SETTINGS_BAK="$PROJECT/.claude/settings.json.sdk-bak"
 SDK_SETTINGS="$PROJECT/.claude/settings.sdk.json"

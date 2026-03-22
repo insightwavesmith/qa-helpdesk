@@ -25,7 +25,7 @@ if echo "$COMMAND" | grep -qE '(docs:|chore:|style:|ci:)'; then
     exit 0
 fi
 
-PROJECT_DIR="/Users/smith/projects/qa-helpdesk"
+PROJECT_DIR="/Users/smith/projects/bscamp"
 
 # TASK.md 존재 확인
 TASK_FILES=$(find "$PROJECT_DIR" -maxdepth 1 -name "TASK*.md" -type f 2>/dev/null)
@@ -101,9 +101,9 @@ if [ -n "$MISSING" ]; then
     echo ""
     echo "이 태스크들의 관련 파일이 커밋에 포함되지 않았습니다."
     echo "빠뜨린 게 맞다면 구현 후 다시 커밋하세요."
-    source /Users/smith/projects/qa-helpdesk/.claude/hooks/notify-hook.sh && notify_hook "⚠️ [게이트 차단] Gap 분석 미완료로 commit 차단됨. tmux 확인" "gap-analysis"
+    source /Users/smith/projects/bscamp/.claude/hooks/notify-hook.sh && notify_hook "⚠️ [게이트 차단] Gap 분석 미완료로 commit 차단됨. tmux 확인" "gap-analysis"
     # exit 2 = 차단 (사용자에게 경고 후 진행 여부 묻기)
-    source /Users/smith/projects/qa-helpdesk/.claude/hooks/notify-hook.sh && notify_hook "⚠️ [게이트 차단] Gap 분석 미완료로 commit 차단됨. tmux 확인" "gap-analysis"
+    source /Users/smith/projects/bscamp/.claude/hooks/notify-hook.sh && notify_hook "⚠️ [게이트 차단] Gap 분석 미완료로 commit 차단됨. tmux 확인" "gap-analysis"
     exit 2
 fi
 
