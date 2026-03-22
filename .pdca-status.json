@@ -473,5 +473,29 @@
     "completedAt": "2026-03-22",
     "updatedAt": "2026-03-22T21:00:00",
     "notes": "T11 완료. analyze-five-axis.mjs에 --source competitor 모드 추가. gemini-2.0-flash 사용. competitor_ad_cache.analysis_json_v3 PATCH. CDN 403/404 스킵. tsc+build 통과."
+  },
+  "lp-change-detection": {
+    "status": "completed",
+    "matchRate": 95,
+    "tasks": ["LP변경감지-재분석트리거"],
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22T23:00:00",
+    "notes": "crawl-lps에서 content_hash diff → change_log INSERT + lp_analysis.analyzed_at 리셋. analyze-lps-v2.mjs에 재분석 필터 추가."
+  },
+  "performance-tracking": {
+    "status": "completed",
+    "matchRate": 95,
+    "tasks": ["성과변화추적-크론"],
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22T23:00:00",
+    "notes": "track-performance 크론 신규. change_log의 미처리 항목에 before/after 7일 성과 평균 채움. vercel.json 매일 23:00 UTC."
+  },
+  "protractor-3axis-mapping": {
+    "status": "completed",
+    "matchRate": 90,
+    "tasks": ["3축매핑-속성연결"],
+    "completedAt": "2026-03-22",
+    "updatedAt": "2026-03-22T23:00:00",
+    "notes": "metric-groups.ts에 ATTRIBUTE_AXIS_MAP 15속성 매핑 추가. Phase 2 가중치 보정 예정."
   }
 }

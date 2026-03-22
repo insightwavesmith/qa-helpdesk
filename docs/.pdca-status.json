@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-22T21:00:00.000Z",
+  "lastUpdated": "2026-03-22T23:00:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1435,6 +1435,30 @@
       "startedAt": "2026-03-22",
       "completedAt": "2026-03-22",
       "notes": "T11 완료. analyze-five-axis.mjs --source competitor 모드. gemini-2.0-flash + CDN 403 스킵."
+    },
+    "lp-change-detection": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {},
+      "startedAt": "2026-03-22",
+      "completedAt": "2026-03-22",
+      "notes": "crawl-lps content_hash diff → change_log INSERT + lp_analysis.analyzed_at 리셋 + analyze-lps-v2 재분석 필터"
+    },
+    "performance-tracking": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {},
+      "startedAt": "2026-03-22",
+      "completedAt": "2026-03-22",
+      "notes": "track-performance 크론 신규. before/after 7일 성과 평균 → change_log 업데이트. vercel.json 23:00 UTC"
+    },
+    "protractor-3axis-mapping": {
+      "phase": "completed",
+      "matchRate": 90,
+      "documents": {},
+      "startedAt": "2026-03-22",
+      "completedAt": "2026-03-22",
+      "notes": "metric-groups.ts ATTRIBUTE_AXIS_MAP 15속성 → 3축 매핑. Phase 2 가중치 보정 예정"
     }
   }
 }

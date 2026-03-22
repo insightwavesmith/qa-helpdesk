@@ -2,14 +2,14 @@
 
 > 기준일: 2026-03-22 (T2~T11 완료 반영)
 > 근거: architecture-v3-execution-plan.md (T1~T11) + master-architecture-review.md (83개 항목)
-> 총 83개 항목: ✅ 58 완료 / 🔄 5 진행 중·부분 구현 / ❌ 20 미구현
-> 전체 Match Rate: ~70% (T1~T11 + LP 변경 감지 + 성과 추적 반영)
+> 총 83개 항목: ✅ 59 완료 / 🔄 4 진행 중·부분 구현 / ❌ 20 미구현
+> 전체 Match Rate: ~71% (T1~T11 + LP 변경 감지 + 성과 추적 + 3축 매핑 반영)
 
 ---
 
 ## 챕터 1: 전체 아키텍처 (12개 항목)
 
-> Match Rate: ~75% | 완료 9 / 부분 0 / 미구현 3
+> Match Rate: ~83% | 완료 10 / 부분 0 / 미구현 2
 
 - [x] 수집: Daily 40계정 — collect-daily 4배치 분할 (route.ts 705줄)
 - [x] 수집: Benchmark 51계정 — collect-benchmarks 주간 (664줄)
@@ -19,7 +19,7 @@
 - [x] 분석: DeepGaze 시선 — creative_saliency 2,784건 (95.5%)
 - [x] 저장: 3계층 (member/benchmark/competitor) — ✅ T1 완료
 - [x] 분석: 5축 Gemini — ✅ T2 완료. analyze-five-axis.mjs v3 (visual/text/psychology/quality/hook). 3모드(free/cluster/final)
-- [ ] 분석: 총가치각도기 3축 매핑 — 🔄 metric-groups.ts 3축 정의, 소재 속성 매핑 없음
+- [x] 분석: 총가치각도기 3축 매핑 — ✅ ATTRIBUTE_AXIS_MAP 15속성 매핑 + getAttributesForGroup() (Phase 2 가중치 보정 예정)
 - [x] 순환 학습: change_log — ✅ T1 완료
 - [x] Phase 로드맵 — architecture-v3-execution-plan.md + T1~T11 전부 완료
 - [ ] 실행 환경: M4 Max 로컬 — ❌ 현재 Railway + Vercel (전환 미실행)

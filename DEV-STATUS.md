@@ -5,8 +5,8 @@
 | 항목 | 값 |
 |------|-----|
 | 마지막 완료 TASK | T1~T11 전체 완료 (커밋 `710afb4`) |
-| 전체 Match Rate | ~70% (83항목 중 58 완료) |
-| 다음 TASK | 총가치각도기 3축 매핑 + 5축 전체 배치 |
+| 전체 Match Rate | ~71% (83항목 중 59 완료) |
+| 다음 TASK | 5축 전체 배치 실행 (진행 중) |
 | 체크리스트 | `docs/00-overview/full-task-checklist.md` |
 | 실행 플랜 | `docs/01-plan/features/architecture-v3-execution-plan.md` |
 
@@ -37,13 +37,13 @@
 
 | 챕터 | Match Rate | 완료 | 부분 | 미구현 |
 |------|-----------|:----:|:----:|:-----:|
-| 1. 전체 아키텍처 | 75% | 9 | 0 | 3 |
+| 1. 전체 아키텍처 | 83% | 10 | 0 | 2 |
 | 2. 수집 | 67% | 10 | 2 | 6 |
 | 3. 저장 | 86% | 12 | 0 | 2 |
 | 4. LP 분석 | 69% | 10 | 1 | 5 |
 | 5. 소재 분석 | 80% | 11 | 1 | 3 |
 | 6. 순환 학습 | 50% | 4 | 0 | 4 |
-| **합계** | **~70%** | **58** | **5** | **20** |
+| **합계** | **~71%** | **59** | **4** | **20** |
 
 ---
 
@@ -67,11 +67,11 @@
 
 1. ~~**LP 변경 감지 로직**~~ — ✅ crawl-lps에서 content_hash diff → change_log INSERT + lp_analysis.analyzed_at 리셋 + analyze-lps-v2.mjs 재분석 필터 추가
 2. ~~**성과 변화 추적**~~ — ✅ track-performance 크론 신규 (before/after 7일 평균 → change_log 업데이트, 매일 23:00 UTC)
+3. ~~**총가치각도기 3축 매핑**~~ — ✅ ATTRIBUTE_AXIS_MAP 15속성 매핑 (Phase 2 가중치 보정 예정)
 
 ## 남은 P1 작업 (즉시 진행 가능)
 
-1. **총가치각도기 3축 매핑** — metric-groups.ts ↔ 소재 속성 연결
-2. **5축 분석 전체 배치** — analyze-five-axis.mjs --mode final 전계정 실행
+1. **5축 분석 전체 배치** — analyze-five-axis.mjs --mode final 전계정 실행 (2,933건, 진행 중)
 
 ---
 

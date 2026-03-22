@@ -23,6 +23,60 @@ export interface MetricGroupDef {
   summaryMetric?: CommonMetricDef;
 }
 
+/**
+ * 소재 속성 → 성과 3축 매핑 정의
+ * analysis_json의 5축 속성이 성과 3축(기반/참여/전환) 중 어디에 영향을 주는지 정의.
+ * 가중치(weight)는 데이터 축적 후 회귀분석으로 확정 예정 (Phase 2).
+ * 현재는 도메인 지식 기반 초기값.
+ */
+export interface AttributeAxisMapping {
+  /** analysis_json 내 속성 경로 (dot notation) */
+  attribute: string;
+  /** 속성 한글명 */
+  label: string;
+  /** 5축 분류 */
+  axis: "visual" | "text" | "psychology" | "quality" | "hook";
+  /** 영향을 주는 성과 축 */
+  affectsGroups: ("foundation" | "engagement" | "conversion")[];
+  /** 초기 가중치 (0~1, Phase 2에서 데이터 기반 보정) */
+  weight: number;
+}
+
+export const ATTRIBUTE_AXIS_MAP: AttributeAxisMapping[] = [
+  // ── Hook 축 → 기반점수 (첫 인상, 3초 시청률에 직결) ──
+  { attribute: "hook.hook_type", label: "훅 유형", axis: "hook", affectsGroups: ["foundation"], weight: 0.8 },
+  { attribute: "hook.visual_style", label: "비주얼 스타일", axis: "hook", affectsGroups: ["foundation", "engagement"], weight: 0.6 },
+  { attribute: "hook.composition", label: "구도", axis: "hook", affectsGroups: ["foundation"], weight: 0.5 },
+
+  // ── Visual 축 → 기반점수 + 참여율 ──
+  { attribute: "visual.color_scheme", label: "색상 구성", axis: "visual", affectsGroups: ["foundation"], weight: 0.4 },
+  { attribute: "visual.product_visibility", label: "제품 노출", axis: "visual", affectsGroups: ["foundation", "conversion"], weight: 0.6 },
+
+  // ── Text 축 → 참여율 + 전환율 ──
+  { attribute: "text.headline", label: "헤드라인", axis: "text", affectsGroups: ["engagement"], weight: 0.5 },
+  { attribute: "text.cta_text", label: "CTA 문구", axis: "text", affectsGroups: ["conversion"], weight: 0.9 },
+  { attribute: "text.readability", label: "가독성", axis: "text", affectsGroups: ["foundation", "engagement"], weight: 0.5 },
+
+  // ── Psychology 축 → 참여율 + 전환율 ──
+  { attribute: "psychology.emotion", label: "감정 유발", axis: "psychology", affectsGroups: ["engagement"], weight: 0.7 },
+  { attribute: "psychology.social_proof", label: "사회적 증거", axis: "psychology", affectsGroups: ["conversion"], weight: 0.6 },
+  { attribute: "psychology.urgency", label: "긴급성", axis: "psychology", affectsGroups: ["conversion"], weight: 0.7 },
+  { attribute: "psychology.authority", label: "권위", axis: "psychology", affectsGroups: ["engagement", "conversion"], weight: 0.4 },
+
+  // ── Quality 축 → 기반점수 (전체 품질) ──
+  { attribute: "quality.production_quality", label: "제작 품질", axis: "quality", affectsGroups: ["foundation"], weight: 0.6 },
+  { attribute: "quality.brand_consistency", label: "브랜드 일관성", axis: "quality", affectsGroups: ["foundation", "conversion"], weight: 0.4 },
+];
+
+/**
+ * 특정 성과 그룹에 영향을 주는 소재 속성 목록 조회
+ */
+export function getAttributesForGroup(
+  groupKey: "foundation" | "engagement" | "conversion",
+): AttributeAxisMapping[] {
+  return ATTRIBUTE_AXIS_MAP.filter((m) => m.affectsGroups.includes(groupKey));
+}
+
 export const METRIC_GROUPS: MetricGroupDef[] = [
   {
     groupKey: "foundation",
