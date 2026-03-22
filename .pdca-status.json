@@ -590,5 +590,17 @@
     "completedAt": "2026-03-23",
     "updatedAt": "2026-03-23",
     "notes": "파이프라인 헬스체크에서 발견된 버그 7건 수정. B5: ad_id String 강제변환+진단로그. B6: 계정별 임베딩 로드. B7: profiles LEFT JOIN. B8: 10건 병렬 PATCH. B9: 임계값 0.60→0.40+CLI옵션. B10: --include-inactive 플래그. B11: scripts/lib/env.mjs 공용파서. tsc+build 통과."
+  },
+  "gcp-cloudrun-migration": {
+    "status": "implementing",
+    "tasks": [
+      "Phase1-Dockerfile",
+      "Phase1-ArtifactRegistry",
+      "Phase1-CloudRun배포",
+      "Phase1-CloudScheduler",
+      "Phase1-collect-daily테스트"
+    ],
+    "updatedAt": "2026-03-23",
+    "notes": "Phase 1 진행 중. Dockerfile 3-stage standalone 빌드. bscamp-cron Cloud Run 배포 완료(asia-northeast3, 1GB, 3600초). Cloud Scheduler 매일 18:00 UTC. Batch1 10계정 테스트 통과. 전체 38계정 테스트 진행 중."
   }
 }

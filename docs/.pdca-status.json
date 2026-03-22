@@ -1497,7 +1497,14 @@
       "startedAt": "2026-03-22",
       "completedAt": "2026-03-22",
       "notes": "체크리스트 64→78/84 (93%). 14건 일괄: benchmark/competitor Storage, LP HTML+DOM, 3축 교차, 시선 행동 추론, 영상 DeepGaze, 데이터화+제안추적+제안뱅크. 남은 6건 외부 의존."
+    },
+    "gcp-cloudrun-migration": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {},
+      "startedAt": "2026-03-23",
+      "notes": "Phase 1 진행 중. Dockerfile 3-stage standalone. bscamp-cron Cloud Run 배포(asia-northeast3, 1GB, 3600초). Cloud Scheduler 18:00 UTC. Batch1 10계정 테스트 통과. 전체 38계정 테스트 진행 중."
     }
   },
-  "updatedAt": "2026-03-22T23:45:00+09:00"
+  "updatedAt": "2026-03-23T19:00:00+09:00"
 }

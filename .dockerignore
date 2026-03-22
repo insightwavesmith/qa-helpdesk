@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.gitignore
+*.md
+docs/
+.claude/
+.pdca-status.json
+tests/
+playwright-report/
+.vercel/
+.env*.bak
+services/
+data/
