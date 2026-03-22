@@ -115,7 +115,7 @@ export async function fetchImageUrlsByHash(
 
 /**
  * 광고 ID 배열에서 크리에이티브 상세 정보 조회
- * GET /{ad_id}?fields=creative{image_url,thumbnail_url,object_story_spec,effective_object_story_spec}
+ * GET /{ad_id}?fields=creative{image_url,thumbnail_url,object_story_spec,asset_feed_spec}
  */
 export async function fetchCreativeDetails(
   adIds: string[],
@@ -134,7 +134,7 @@ export async function fetchCreativeDetails(
     for (const adId of batch) {
       try {
         const fields = [
-          "creative{image_url,thumbnail_url,image_hash,object_story_spec,effective_object_story_spec}",
+          "creative{image_url,thumbnail_url,image_hash,object_story_spec,asset_feed_spec}",
         ].join(",");
 
         const url = new URL(`${META_API_BASE}/${adId}`);
@@ -150,15 +150,31 @@ export async function fetchCreativeDetails(
         }
 
         const creative = data.creative || {};
-        const storySpec = creative.effective_object_story_spec || creative.object_story_spec || {};
+        const storySpec = creative.object_story_spec || {};
         const linkData = storySpec.link_data || {};
         const videoData = storySpec.video_data || {};
+
+        // LP URL 폴백 체인: object_story_spec → asset_feed_spec → call_to_action
+        let lpUrl = linkData.link || linkData.call_to_action?.value?.link || null;
+        if (!lpUrl && videoData.call_to_action?.value?.link) {
+          lpUrl = videoData.call_to_action.value.link;
+        }
+        if (!lpUrl && creative.asset_feed_spec) {
+          const afs = creative.asset_feed_spec;
+          if (afs.link_urls?.length > 0) {
+            const u = afs.link_urls[0]?.website_url || afs.link_urls[0];
+            if (typeof u === "string" && u.startsWith("http")) lpUrl = u;
+          }
+          if (!lpUrl && afs.call_to_actions?.length > 0) {
+            lpUrl = afs.call_to_actions[0]?.value?.link || null;
+          }
+        }
 
         const detail: CreativeDetail = {
           imageUrl: creative.image_url || creative.thumbnail_url || null,
           thumbnailUrl: creative.thumbnail_url || null,
           adCopy: linkData.message || videoData.message || linkData.name || null,
-          lpUrl: linkData.link || linkData.call_to_action?.value?.link || null,
+          lpUrl,
           imageHash: creative.image_hash || null,
         };
 

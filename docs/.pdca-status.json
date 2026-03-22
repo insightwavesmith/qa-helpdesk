@@ -1345,7 +1345,7 @@
     },
     "lp-analysis-v2": {
       "phase": "completed",
-      "matchRate": 95,
+      "matchRate": 93,
       "documents": {
         "plan": "01-plan/features/architecture-v3-execution-plan.md",
         "design": "02-design/features/lp-analysis-v2.design.md",
@@ -1353,7 +1353,7 @@
       },
       "startedAt": "2026-03-22",
       "completedAt": "2026-03-22",
-      "notes": "T5 완료. analyze-lps-v2.mjs 신규(469줄). Gemini 2.5 Pro LP 8카테고리 reference_based 분석."
+      "notes": "T5 Gap 분석 완료(backend-dev). analyze-lps-v2.mjs 473줄. 8카테고리 프롬프트 설계서 일치. 유일 Gap: lp_snapshots+landing_pages 단일 JOIN→별도 REST 조회 2회(기능 동일). node --check OK. tsc+build 통과. Match Rate 93%."
     },
     "video-audio-axis": {
       "phase": "completed",

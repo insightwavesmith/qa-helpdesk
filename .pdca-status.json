@@ -342,26 +342,29 @@
       "T2-A-확정반영",
       "T2-전체배치",
       "T2-B-fatigue_risk",
-      "T2-C-scores백분위"
+      "T2-C-scores백분위",
+      "T2-Gap분석최종"
     ],
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T16:00:00",
-    "notes": "T2 코드 구현 완료. analyze-five-axis.mjs v3 재설계(3모드 free/cluster/final, psychology/quality 신규 축). compute-score-percentiles.mjs 신규. compute-fatigue-risk.mjs 신규. tsc+lint+build 통과. Match Rate 96%."
+    "updatedAt": "2026-03-22T22:00:00",
+    "notes": "T2 Gap 분석 완료(backend-dev 최종 검토). analyze-five-axis.mjs v3 재설계(3모드 free/cluster/final, psychology/quality 신규 축). compute-score-percentiles.mjs 신규. compute-fatigue-risk.mjs 신규. --source competitor 모드(T11 추가) 포함 전체 체크포인트 충족 확인. tsc+lint+build 통과. Match Rate 96%."
   },
   "embed-creatives-dual-write": {
     "status": "completed",
     "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
     "design": "docs/02-design/features/embed-creatives-dual-write.design.md",
     "analysis": "docs/03-analysis/embed-creatives-dual-write.analysis.md",
+    "analysis2": "docs/03-analysis/embed-creatives.analysis.md",
     "matchRate": 97,
     "tasks": [
       "T3-embedCreative듀얼라이트",
       "T3-embedMissingCreatives보충",
-      "T3-빌드검증"
+      "T3-빌드검증",
+      "T3-Gap분석(embed-creatives.analysis.md)"
     ],
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T17:00:00",
-    "notes": "T3 완료. ad-creative-embedder.ts에 creative_media 듀얼 라이트 추가. embedCreative() 5단계 추가(독립 try-catch). embedMissingCreatives() CM 보충 블록 추가. tsc+lint+build 통과. Match Rate 97%."
+    "updatedAt": "2026-03-22T17:30:00",
+    "notes": "T3 완료. ad-creative-embedder.ts에 creative_media 듀얼 라이트 추가. embedCreative() 5단계 추가(독립 try-catch). embedMissingCreatives() CM 보충 블록 추가. tsc+lint+build 통과. Match Rate 97%. Gap 분석 embed-creatives.analysis.md 추가 작성."
   },
   "crawl-lps-v2": {
     "status": "completed",
@@ -384,11 +387,11 @@
     "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
     "design": "docs/02-design/features/lp-analysis-v2.design.md",
     "analysis": "docs/03-analysis/lp-analysis-v2.analysis.md",
-    "matchRate": 95,
+    "matchRate": 93,
     "tasks": ["T5-LP분석2축구조"],
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T21:00:00",
-    "notes": "T5 완료. analyze-lps-v2.mjs 신규(469줄). Gemini 2.5 Pro LP 8카테고리 reference_based 분석. Storage 이미지 base64→Gemini. lp_analysis UPSERT(reference_based+16 flat 컬럼 동기). tsc+build 통과."
+    "updatedAt": "2026-03-22T21:30:00",
+    "notes": "T5 Gap 분석 완료. analyze-lps-v2.mjs 신규(473줄). Gemini 2.5 Pro LP 8카테고리 reference_based 분석. Storage이미지 base64→Gemini. lp_analysis UPSERT(reference_based+16 flat 컬럼 동기). 유일 Gap: JOIN→별도조회(기능동일). 이미지URL이중중첩버그수정완료. node --check OK. tsc+build 통과. Match Rate 93%."
   },
   "video-audio-axis": {
     "status": "completed",

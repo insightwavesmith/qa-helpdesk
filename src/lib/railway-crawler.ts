@@ -1,13 +1,13 @@
 /**
  * Railway Playwright 크롤링 서버 클라이언트
  * POST /crawl (단건), POST /crawl/batch (배치)
- * 환경변수: CRAWLER_URL, CRAWLER_SECRET
+ * 환경변수: RAILWAY_CRAWLER_URL, RAILWAY_API_SECRET
  */
 
 const CRAWLER_URL =
-  process.env.CRAWLER_URL ||
+  process.env.RAILWAY_CRAWLER_URL ||
   "https://bscamp-crawler-production.up.railway.app";
-const CRAWLER_SECRET = process.env.CRAWLER_SECRET || "";
+const CRAWLER_SECRET = process.env.RAILWAY_API_SECRET || "";
 
 // ── 응답 타입 ──────────────────────────────────
 

@@ -20,7 +20,7 @@ const AD_FIELDS = [
   "campaign_name",
   "account_id",
   "account_name",
-  "creative.fields(object_type,product_set_id,video_id,image_hash,asset_feed_spec,effective_object_story_spec)",
+  "creative.fields(object_type,product_set_id,video_id,image_hash,asset_feed_spec,object_story_spec)",
 ].join(",");
 
 const INSIGHT_FIELDS = [
@@ -78,13 +78,38 @@ function normalizeRanking(raw: string | null | undefined): string {
   return "UNKNOWN";
 }
 
-// LP URL 추출 헬퍼 (effective_object_story_spec 기반)
+// LP URL 추출 헬퍼 — 3단계 폴백 체인
+// 1) object_story_spec.link_data.link
+// 2) asset_feed_spec.link_urls / bodies
+// 3) call_to_action.value.link
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function extractLpUrl(ad: Record<string, any>): string | null {
-  const oss = ad.creative?.effective_object_story_spec;
-  if (!oss) return null;
-  if (oss.link_data?.link) return oss.link_data.link;
-  if (oss.video_data?.call_to_action?.value?.link) return oss.video_data.call_to_action.value.link;
+  const creative = ad.creative;
+  if (!creative) return null;
+
+  // 1) object_story_spec.link_data.link
+  const oss = creative.object_story_spec;
+  if (oss?.link_data?.link) return oss.link_data.link;
+  if (oss?.video_data?.call_to_action?.value?.link) return oss.video_data.call_to_action.value.link;
+
+  // 2) asset_feed_spec
+  const afs = creative.asset_feed_spec;
+  if (afs) {
+    // link_urls 배열
+    if (afs.link_urls?.length > 0) {
+      const url = afs.link_urls[0]?.website_url || afs.link_urls[0];
+      if (typeof url === "string" && url.startsWith("http")) return url;
+    }
+    // call_to_action_types + call_to_actions
+    if (afs.call_to_actions?.length > 0) {
+      const cta = afs.call_to_actions[0];
+      if (cta?.value?.link) return cta.value.link;
+    }
+  }
+
+  // 3) call_to_action.value.link (top-level)
+  if (creative.call_to_action?.value?.link) return creative.call_to_action.value.link;
+
   return null;
 }
 

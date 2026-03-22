@@ -34,7 +34,7 @@ try {
   const envContent = readFileSync(envPath, "utf-8");
   for (const line of envContent.split("\n")) {
     const m = line.match(/^([^#=]+)=(.*)$/);
-    if (m) env[m[1].trim()] = m[2].trim();
+    if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
   }
 } catch {
   // .env.local 없으면 process.env 사용
@@ -246,7 +246,10 @@ async function callGeminiVision(imageBase64, mimeType, canonicalUrl) {
 
 // ── Storage 이미지 다운로드 → base64 ──
 async function downloadImageAsBase64(screenshotUrl) {
-  const publicUrl = `${SB_URL}/storage/v1/object/public/creatives/${screenshotUrl}`;
+  // screenshotUrl이 이미 full URL이면 그대로 사용, 아니면 prefix 붙이기
+  const publicUrl = screenshotUrl.startsWith("http")
+    ? screenshotUrl
+    : `${SB_URL}/storage/v1/object/public/creatives/${screenshotUrl}`;
   const res = await fetch(publicUrl, {
     signal: AbortSignal.timeout(30_000),
   });

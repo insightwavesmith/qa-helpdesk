@@ -1,7 +1,7 @@
 # 5축 분석 Gap 분석
 
 > 작성일: 2026-03-22
-> 리뷰어: qa-engineer (code-reviewer)
+> 리뷰어: qa-engineer (code-reviewer) — backend-dev 최종 검토 2026-03-22
 > 대상 TASK: T2 (5축 분석 스키마 확정 + 프롬프트 재설계)
 > 설계서: docs/02-design/features/five-axis-analysis.design.md
 
@@ -67,6 +67,10 @@
 
 ### 10. 기존 기능 유지 (DRY_RUN, LIMIT, ACCOUNT, TYPE)
 - 4개 옵션 모두 유지 및 정상 동작
+- `--dry-run`: DB 저장 없이 처리 흐름만 실행
+- `--limit N`: 처리 건수 상한 (free 모드: 층화 샘플 목표 수, final 모드: 전체 상한)
+- `--account ACCOUNT_ID`: 특정 광고 계정만 처리
+- `--type IMAGE|VIDEO`: 미디어 타입 필터
 
 ### 11. 기존 프롬프트 주석 처리 (삭제 아님)
 - `IMAGE_PROMPT`/`VIDEO_PROMPT` → `/* ... */` 블록 주석으로 보존 (lines 107-188)
@@ -74,6 +78,29 @@
 ### 12. output 디렉토리
 - `scripts/output/.gitkeep` 존재 확인 (빈 파일, 0 bytes)
 - `mkdirSync(OUTPUT_DIR, { recursive: true })` 코드로 런타임에도 자동 생성
+
+### 13. Rate limiting 구현
+- `RATE_LIMIT_MS = 4000`: 분당 15 요청 제한 준수 (gemini-2.5-pro)
+- `RATE_LIMIT_COMPETITOR_MS = 2000`: 경쟁사 모드 Flash 모델 (더 빠른 속도)
+- 각 항목 처리 후 `await sleep(RATE_LIMIT_MS)` 적용
+- 50건마다 중간 통계 출력
+
+### 14. 에러 처리 (429, 5xx, JSON 파싱)
+- Gemini 429/5xx: `Math.pow(2, attempt + 1) * 1000` exponential backoff (최대 3회)
+- 이미지 다운로드 실패: `AbortSignal.timeout(15_000)` + `catch` → `{ error: ... }` 반환 → 스킵 후 계속
+- JSON 파싱 실패: 마크다운 제거 → `{...}` regex 추출 → 그래도 실패 시 스킵
+- DB 저장 실패: 에러 로그 + `errors++`, 전체 중단 없음
+- VIDEO mp4 다운로드 실패: 썸네일 폴백 (thumbnail URL 재시도)
+
+### 15. --source competitor 모드 (T11 추가)
+- `SOURCE_IDX = process.argv.indexOf("--source")` + 유효성 검증 (`["creative", "competitor"]`)
+- 기본값 `"creative"` (소재 분석 모드)
+- `--source competitor` 시 `runCompetitorMode()` 실행
+- 대상: `competitor_ad_cache.analysis_json_v3 IS NULL AND image_url IS NOT NULL`
+- 모델: `gemini-2.0-flash` (Pro 대신 Flash — 속도 우선, CDN 만료 고려)
+- 저장: `competitor_ad_cache.analysis_json_v3 PATCH`
+- CDN 403/404: `cdnErrors` 카운트, 스킵 처리
+- `RATE_LIMIT_COMPETITOR_MS = 2000` 적용
 
 ---
 
@@ -128,20 +155,26 @@ const category = accountCategoryMap.get(accountId) || "기타";
 
 ## 검증 항목 체크리스트
 
-| 설계서 항목 | 구현 | 판정 |
-|------------|------|------|
+| 설계서/TASK 항목 | 구현 | 판정 |
+|----------------|------|------|
 | --mode free/cluster/final | O | PASS |
+| --account, --limit, --dry-run, --type CLI 옵션 | O | PASS |
+| Gemini 2.5 Pro 모델 (GEMINI_MODEL = "gemini-2.5-pro") | O | PASS |
+| creative_media.analysis_json 저장 + analyzed_at/analysis_model 컬럼 | O | PASS |
 | IMAGE_PROMPT_V3 (psychology, quality 포함) | O | PASS |
 | VIDEO_PROMPT_V3 (audio, structure + psychology, quality) | O | PASS |
 | FREE 프롬프트 (enum 없이 자유 기술) | O | PASS |
 | 층화 샘플링 (ROAS NTILE, 34/33/33) | O | PASS |
 | cluster 모드 (최신 free 결과 → Gemini 클러스터링) | O | PASS |
+| Rate limiting (4초 간격, 429 exponential backoff) | O | PASS |
+| 에러 처리 (429/5xx 재시도, JSON 파싱 폴백, DB 실패 계속) | O | PASS |
 | fatigue_risk (코사인 유사도, high≥0.85/medium≥0.70/low<0.70) | O | PASS |
 | scores 가중 평균 (30/25/25/20) | O | PASS |
 | 백분위 (카테고리 50건 미만 시 전체 대비) | O | PASS |
 | 기존 옵션 유지 (DRY_RUN, LIMIT, ACCOUNT, TYPE) | O | PASS |
 | 기존 프롬프트 주석 처리 (삭제 아님) | O | PASS |
 | output 디렉토리 (scripts/output/.gitkeep) | O | PASS |
+| --source competitor 모드 (T11) — Flash 모델, CDN 스킵 | O | PASS |
 | category 조회 버그 | X → 수정 완료 | FIXED |
 
 ---
@@ -159,6 +192,7 @@ const category = accountCategoryMap.get(accountId) || "기타";
 
 - **Critical 이슈**: 0개
 - **Warning 이슈**: 1개 (수정 완료)
-- **Info 이슈**: 1개
+- **Info 이슈**: 1개 (visual_impact 공식 — 구현이 더 정교, 기능 결함 아님)
 - **Match Rate**: 96% PASS (기준 90% 이상 충족)
 - **빌드 상태**: tsc PASS, lint PASS (warning만, 신규 에러 없음), build PASS
+- **TASK 체크포인트 전체 충족**: 3모드(free/cluster/final) + CLI 옵션 4개 + Gemini 2.5 Pro + analysis_json 저장 + Rate limiting + 에러 처리 + --source competitor 모드 전부 구현 확인

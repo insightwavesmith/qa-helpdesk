@@ -82,7 +82,7 @@ try {
 const env = {};
 for (const line of envContent.split("\n")) {
   const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) env[m[1].trim()] = m[2].trim();
+  if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
 }
 
 const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL;

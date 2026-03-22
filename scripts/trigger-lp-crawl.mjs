@@ -74,9 +74,9 @@ loadEnvLocal();
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const CRAWLER_URL =
-  process.env.CRAWLER_URL ||
+  process.env.RAILWAY_CRAWLER_URL ||
   "https://bscamp-crawler-production.up.railway.app";
-const CRAWLER_SECRET = process.env.CRAWLER_SECRET || "";
+const CRAWLER_SECRET = process.env.RAILWAY_API_SECRET || "";
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error(
