@@ -1231,18 +1231,20 @@
       "notes": "B5~B11 파이프라인 버그 7건 수정. tsc+build 통과."
     },
     "collect-and-embed": {
-      "phase": "implementing",
+      "phase": "completed",
       "matchRate": null,
       "documents": {},
       "startedAt": "2026-03-23",
-      "notes": "collect-daily 권한 체크, health sync-notion 제거, 82/83건 미디어 다운로드"
+      "completedAt": "2026-03-23",
+      "notes": "PR #2. collect-daily 권한 체크, health sync-notion 제거, 82/83건 미디어 다운로드. 커밋 a22028a."
     },
     "deepgaze-gemini-pipeline": {
-      "phase": "implementing",
+      "phase": "completed",
       "matchRate": null,
       "documents": {},
       "startedAt": "2026-03-23",
-      "notes": "creative-saliency 크론, analyze-five-axis DeepGaze 시선 데이터 주입"
+      "completedAt": "2026-03-23",
+      "notes": "PR #2. creative-saliency 크론 신규(93줄), analyze-five-axis DeepGaze 주입(+75줄). 커밋 a22028a."
     }
   },
   "phaseMapping": {
@@ -1532,11 +1534,12 @@
       "notes": "LP HTML 파싱 → img/gif/video URL 추출 → Storage 다운로드. GIF→WebP 애니메이션 변환(sharp, ~80% 용량 절감). lp-media-downloader.ts 신규. crawl-lps hashChanged 시 미디어 다운로드. landing_pages.media_assets jsonb. SHA-256 중복 방지."
     },
     "collect-and-embed": {
-      "phase": "implementing",
+      "phase": "completed",
       "documents": {},
       "startedAt": "2026-03-23",
-      "notes": "LP 수집(미디어 포함) + 광고 소재 수집 + 임베딩. 분석은 제외."
+      "completedAt": "2026-03-23",
+      "notes": "PR #2. collect-daily 권한 체크, health sync-notion 제거, 82/83건 다운로드, 임베딩 트리거."
     }
   },
-  "updatedAt": "2026-03-23T19:00:00+09:00"
+  "updatedAt": "2026-03-23T13:30:00+09:00"
 }
