@@ -464,6 +464,9 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
               conversion_ranking: normalizeRanking(insight.conversion_rate_ranking as string),
               ...metrics,
               collected_at: new Date().toISOString(),
+              // raw JSONB — Meta API 응답 원본 저장
+              raw_insight: insight,
+              raw_ad: { id: ad.id, name: ad.name, creative: ad.creative, campaign_id: ad.campaign_id, campaign_name: ad.campaign_name, adset_id: ad.adset_id, adset_name: ad.adset_name },
             };
           });
 
@@ -572,6 +575,7 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
                 lp_url: rawLpUrl || null,
                 lp_id: lpId,
                 updated_at: new Date().toISOString(),
+                raw_creative: ad.creative || null,
               };
             }).filter(Boolean);
 

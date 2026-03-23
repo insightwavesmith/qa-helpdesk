@@ -817,6 +817,8 @@ export type Database = {
           purchase_value: number | null
           purchases: number | null
           quality_ranking: string | null
+          raw_ad: Record<string, unknown> | null
+          raw_insight: Record<string, unknown> | null
           reach: number | null
           reach_to_purchase_rate: number | null
           reactions_per_10k: number | null
@@ -857,6 +859,8 @@ export type Database = {
           purchase_value?: number | null
           purchases?: number | null
           quality_ranking?: string | null
+          raw_ad?: Record<string, unknown> | null
+          raw_insight?: Record<string, unknown> | null
           reach?: number | null
           reach_to_purchase_rate?: number | null
           reactions_per_10k?: number | null
@@ -897,6 +901,8 @@ export type Database = {
           purchase_value?: number | null
           purchases?: number | null
           quality_ranking?: string | null
+          raw_ad?: Record<string, unknown> | null
+          raw_insight?: Record<string, unknown> | null
           reach?: number | null
           reach_to_purchase_rate?: number | null
           reactions_per_10k?: number | null

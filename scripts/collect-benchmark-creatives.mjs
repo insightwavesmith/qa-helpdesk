@@ -220,6 +220,7 @@ async function main() {
           brand_name: insight.ad_name || null,
           is_active: false, // 벤치마크는 비활성
           lp_url: lpUrl,
+          raw_creative: creative, // Meta API 원본 저장
         };
 
         await sbUpsert("creatives", [creativeRow], "ad_id");
