@@ -1539,7 +1539,13 @@
       "startedAt": "2026-03-23",
       "completedAt": "2026-03-23",
       "notes": "PR #2. collect-daily 권한 체크, health sync-notion 제거, 82/83건 다운로드, 임베딩 트리거."
+    },
+    "cloud-run-jobs-crawl-lps": {
+      "phase": "implementing",
+      "documents": {},
+      "startedAt": "2026-03-23",
+      "notes": "crawl-all-lps→Cloud Run Job 전환. LP 216건 초기화+재크롤링. VIDEO 100MB 제한."
     }
   },
-  "updatedAt": "2026-03-23T13:30:00+09:00"
+  "updatedAt": "2026-03-23T14:00:00+09:00"
 }

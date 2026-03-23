@@ -535,13 +535,13 @@ async function analyzeWithGemini(imageUrl, adCopy, mediaType, mode, videoUrl = n
       const vidRes = await fetch(videoUrl, { signal: AbortSignal.timeout(30_000) });
       if (vidRes.ok) {
         const vidBuf = await vidRes.arrayBuffer();
-        if (vidBuf.byteLength <= 20 * 1024 * 1024) {
+        if (vidBuf.byteLength <= 100 * 1024 * 1024) {
           const vidBase64 = Buffer.from(vidBuf).toString("base64");
           const vidMime = (vidRes.headers.get("content-type") || "video/mp4").split(";")[0];
           parts.push({ inline_data: { mime_type: vidMime, data: vidBase64 } });
           console.log(`  [VIDEO] mp4 전달 (${(vidBuf.byteLength / 1024 / 1024).toFixed(1)}MB)`);
         } else {
-          console.log(`  [VIDEO] mp4 크기 초과 (${(vidBuf.byteLength / 1024 / 1024).toFixed(1)}MB > 20MB) → 썸네일 폴백`);
+          console.log(`  [VIDEO] mp4 크기 초과 (${(vidBuf.byteLength / 1024 / 1024).toFixed(1)}MB > 100MB) → 썸네일 폴백`);
         }
       }
     } catch (e) {

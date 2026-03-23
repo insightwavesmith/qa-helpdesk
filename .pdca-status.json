@@ -673,8 +673,20 @@
       "creative-saliency 크론 생성 ✅",
       "analyze-five-axis DeepGaze 주입 ✅"
     ],
-    "updatedAt": "2026-03-23T13:30:00+09:00",
+    "updatedAt": "2026-03-23T14:00:00+09:00",
     "completedAt": "2026-03-23",
     "notes": "PR #2 생성. creative-saliency 크론 신규(93줄). analyze-five-axis.mjs DeepGaze 시선 데이터 주입(+75줄). 커밋 a22028a."
+  },
+  "cloud-run-jobs-crawl-lps": {
+    "status": "implementing",
+    "tasks": [
+      "crawl-all-lps.mjs 환경변수 fallback 추가 ✅",
+      "bscamp-scripts Docker 이미지 빌드+푸시 ✅",
+      "bscamp-crawl-lps Job 생성+실행 ✅",
+      "analyze-five-axis VIDEO 100MB 제한 ✅",
+      "LP 216건 초기화+재크롤링 실행중"
+    ],
+    "updatedAt": "2026-03-23T14:00:00+09:00",
+    "notes": "crawl-all-lps → Cloud Run Job 전환. lp_snapshots 277건+landing_pages 216건 NULL 초기화. VIDEO 20→100MB."
   }
 }

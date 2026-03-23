@@ -15,20 +15,24 @@ import { createClient } from "@supabase/supabase-js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// .env.local 읽기
-const envPath = resolve(__dirname, "..", ".env.local");
-const envContent = readFileSync(envPath, "utf-8");
-const env = {};
-for (const line of envContent.split("\n")) {
-  const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
+// 환경변수 우선, 없으면 .env.local fallback
+let env = {};
+try {
+  const envPath = resolve(__dirname, "..", ".env.local");
+  const envContent = readFileSync(envPath, "utf-8");
+  for (const line of envContent.split("\n")) {
+    const m = line.match(/^([^#=]+)=(.*)$/);
+    if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
+  }
+} catch {
+  // Cloud Run Job 등 .env.local 없는 환경 — process.env 사용
 }
 
-const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL;
-const SB_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
+const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL;
+const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
 const CRAWLER_URL =
-  env.CRAWLER_URL || "https://bscamp-crawler-production.up.railway.app";
-const CRAWLER_SECRET = env.CRAWLER_SECRET || "";
+  process.env.CRAWLER_URL || process.env.RAILWAY_CRAWLER_URL || env.CRAWLER_URL || env.RAILWAY_CRAWLER_URL || "https://bscamp-crawler-production.up.railway.app";
+const CRAWLER_SECRET = process.env.CRAWLER_SECRET || env.CRAWLER_SECRET || "";
 
 if (!SB_URL || !SB_KEY) {
   console.error(
