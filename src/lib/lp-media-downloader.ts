@@ -6,6 +6,7 @@
  */
 
 import { createHash } from "crypto";
+import sharp from "sharp";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 타입 정의
@@ -231,24 +232,49 @@ export async function downloadLpMedia(
         continue;
       }
 
+      // GIF → WebP 애니메이션 변환 (용량 ~80% 절감, 애니메이션 유지)
+      let uploadBuffer = buffer;
+      let uploadMimeType = mimeType;
+      let uploadExt = ext;
+      let uploadSize = sizeBytes;
+
+      if (mimeType === "image/gif") {
+        try {
+          const webpBuffer = await sharp(buffer, { animated: true })
+            .webp({ quality: 75 })
+            .toBuffer();
+          const savedPct = ((1 - webpBuffer.byteLength / sizeBytes) * 100).toFixed(0);
+          console.log(
+            `[lp-media] ${lp.id} GIF→WebP 변환: ${(sizeBytes / 1024).toFixed(0)}KB → ${(webpBuffer.byteLength / 1024).toFixed(0)}KB (-${savedPct}%)`,
+          );
+          uploadBuffer = webpBuffer;
+          uploadMimeType = "image/webp";
+          uploadExt = "webp";
+          uploadSize = webpBuffer.byteLength;
+        } catch (convErr) {
+          // 변환 실패 시 원본 GIF 그대로 업로드
+          console.warn(`[lp-media] ${lp.id} GIF→WebP 변환 실패, 원본 저장: ${mediaUrl.url}`, convErr);
+        }
+      }
+
       // Storage 경로: ADR-001 규칙
-      const storagePath = `lp/${lp.account_id}/${lp.id}/media/${hash}.${ext}`;
+      const storagePath = `lp/${lp.account_id}/${lp.id}/media/${hash}.${uploadExt}`;
 
       console.log(`[lp-media] ${lp.id} 다운로드: ${mediaUrl.url} → ${storagePath}`);
 
       // Storage 업로드
-      const uploadOk = await uploadBufferToStorage(supabase, storagePath, buffer, mimeType);
+      const uploadOk = await uploadBufferToStorage(supabase, storagePath, uploadBuffer, uploadMimeType);
       if (!uploadOk) continue;
 
-      totalBytes += sizeBytes;
+      totalBytes += uploadSize;
       existingHashes.add(hash); // 이번 배치 내 중복 방지
 
       assets.push({
         original_url: mediaUrl.url,
         storage_path: storagePath,
         type: resolveAssetType(mimeType),
-        mime_type: mimeType,
-        size_bytes: sizeBytes,
+        mime_type: uploadMimeType,
+        size_bytes: uploadSize,
         hash,
         extracted_from: mediaUrl.extracted_from,
       });

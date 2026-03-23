@@ -652,7 +652,21 @@
       "tsc+build통과"
     ],
     "completedAt": "2026-03-23",
-    "updatedAt": "2026-03-23T17:30:00",
-    "notes": "LP HTML 파싱 → img/gif/video URL 추출 → Storage 다운로드. lp-media-downloader.ts 379줄 신규. crawl-lps hashChanged 시 미디어 다운로드 단계 추가. landing_pages.media_assets jsonb 매핑. SHA-256 중복 방지. 개별 50MB/LP당 200MB 제한."
+    "updatedAt": "2026-03-23T19:00:00",
+    "notes": "LP HTML 파싱 → img/gif/video URL 추출 → Storage 다운로드. GIF→WebP 애니메이션 변환(sharp, ~80% 용량 절감). lp-media-downloader.ts 신규. crawl-lps hashChanged 시 미디어 다운로드. landing_pages.media_assets jsonb. SHA-256 중복 방지."
+  },
+  "collect-and-embed": {
+    "status": "implementing",
+    "tasks": [
+      "미push-커밋-push",
+      "DB-migration-media_assets",
+      "GIF-WebP-변환-추가",
+      "GCP-재배포",
+      "crawl-lps-수동트리거",
+      "미수집-19계정-원인파악",
+      "미임베딩-105건-배치"
+    ],
+    "updatedAt": "2026-03-23T19:00:00",
+    "notes": "LP 수집(미디어 포함) + 광고 소재 수집 + 임베딩. 분석은 제외."
   }
 }
