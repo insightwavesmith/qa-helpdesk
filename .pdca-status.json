@@ -690,13 +690,15 @@
     "notes": "crawl-all-lps → Cloud Run Job 전환. title→product_name 수정. lp_snapshots 277건+landing_pages 216건 NULL 초기화. VIDEO 20→100MB."
   },
   "batch-pipeline": {
-    "status": "implementing",
+    "status": "completed",
     "tasks": [
-      "collect-benchmark-creatives env fallback ✅",
-      "download-missing-media env fallback ✅",
-      "Cloud Run Job 생성+실행 진행중"
+      "collect-benchmark-creatives 벤치마크 기준 필터 추가 ✅",
+      "벤치마크 소재 24건 수집 완료 (IMAGE 16 + VIDEO 8) ✅",
+      "mp4 8건 다운로드 + LP 9건 저장 ✅",
+      "env fallback 추가 (Cloud Run Job 대응) ✅"
     ],
-    "updatedAt": "2026-03-23T14:20:00+09:00",
-    "notes": "TASK-BATCH: 벤치마크소재→VIDEO다운로드→5축배치 순서. 3개 스크립트 Cloud Run Job 전환."
+    "updatedAt": "2026-03-23T14:40:00+09:00",
+    "completedAt": "2026-03-23",
+    "notes": "벤치마크 기준: hook>25.81% OR ctr>3.48% OR engage>27.0, quality=ABOVE_AVERAGE/UNKNOWN. 62건 중 24건 신규, 올스타 2건."
   }
 }

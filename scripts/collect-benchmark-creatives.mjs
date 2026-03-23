@@ -144,14 +144,18 @@ async function main() {
   console.log(`  account_filter: ${ACCOUNT_FILTER || "전체"}`);
   console.log(`  limit: ${LIMIT}, dry_run: ${DRY_RUN}\n`);
 
-  // 1. ad_insights_classified에서 성과 상위 광고 조회
-  let queryPath = `/ad_insights_classified?select=ad_id,account_id,ad_name,creative_type,roas,ctr,quality_ranking,engagement_ranking&order=roas.desc&limit=${LIMIT}`;
+  // 1. ad_insights_classified에서 벤치마크 기준 초과 광고 조회
+  //    훅: video_p3s_rate > 25.81%
+  //    클릭: ctr > 3.48%
+  //    참여: engagement_per_10k > 27.0
+  //    quality_ranking: ABOVE_AVERAGE 또는 UNKNOWN
+  let queryPath = `/ad_insights_classified?select=ad_id,account_id,ad_name,creative_type,roas,ctr,video_p3s_rate,engagement_per_10k,quality_ranking,engagement_ranking&quality_ranking=in.(ABOVE_AVERAGE,UNKNOWN)&or=(video_p3s_rate.gt.25.81,ctr.gt.3.48,engagement_per_10k.gt.27.0)&order=ctr.desc&limit=${LIMIT}`;
   if (ACCOUNT_FILTER) {
     queryPath += `&account_id=eq.${ACCOUNT_FILTER}`;
   }
 
   const insights = await sbGet(queryPath);
-  console.log(`  ad_insights_classified: ${insights.length}건 조회됨`);
+  console.log(`  ad_insights_classified: ${insights.length}건 조회됨 (벤치마크 기준 초과)`);
 
   if (insights.length === 0) {
     console.log("  대상 없음. 종료.");
@@ -167,7 +171,19 @@ async function main() {
   console.log(`  이미 존재하는 ad_id: ${existingAdIds.size}건`);
 
   const newInsights = insights.filter((r) => !existingAdIds.has(r.ad_id));
-  console.log(`  신규 수집 대상: ${newInsights.length}건\n`);
+
+  // 벤치마크 분류 태그 부여
+  for (const r of newInsights) {
+    const tags = [];
+    if (r.video_p3s_rate > 25.81) tags.push("hook");
+    if (r.ctr > 3.48) tags.push("click");
+    if (r.engagement_per_10k > 27.0) tags.push("engage");
+    if (tags.length === 3) tags.push("allstar");
+    r._benchmarkTags = tags;
+  }
+
+  const allstarCount = newInsights.filter((r) => r._benchmarkTags.includes("allstar")).length;
+  console.log(`  신규 수집 대상: ${newInsights.length}건 (올스타: ${allstarCount}건)\n`);
 
   if (newInsights.length === 0) {
     console.log("  모든 벤치마크 소재가 이미 수집됨. 종료.");
@@ -239,7 +255,8 @@ async function main() {
 
         const [created] = await sbUpsert("creatives", [creativeRow], "ad_id");
         const creativeId = created.id;
-        console.log(`  ✓ ${adId}: creative 생성 (${creativeType}, id=${creativeId?.slice(0, 8)})`);
+        const tagStr = insight._benchmarkTags?.join(",") || "";
+        console.log(`  ✓ ${adId}: creative 생성 (${creativeType}, id=${creativeId?.slice(0, 8)}, tags=${tagStr})`);
         totalCreated++;
 
         // 6. 미디어 다운로드 + creative_media INSERT
