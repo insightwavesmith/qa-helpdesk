@@ -62,12 +62,12 @@ if (!GEMINI_KEY) {
   process.exit(1);
 }
 
-const GEMINI_MODEL = "gemini-2.5-pro";
-const ANALYSIS_MODEL_NAME = "gemini-2.5-pro";
+const GEMINI_MODEL = "gemini-3.1-pro-preview";
+const ANALYSIS_MODEL_NAME = "gemini-3.1-pro-preview";
 const RATE_LIMIT_MS = 4000; // 분당 15 요청 → 4초 간격
 const MAX_RETRIES = 3;
 // competitor 모드 전용 상수
-const GEMINI_MODEL_COMPETITOR = "gemini-2.0-flash";
+const GEMINI_MODEL_COMPETITOR = "gemini-3-flash-preview";
 const RATE_LIMIT_COMPETITOR_MS = 2000; // Flash는 빠르므로 2초
 
 // output 디렉토리 보장
@@ -267,7 +267,7 @@ const IMAGE_PROMPT_V3 = `이 광고 소재 이미지를 분석해서 아래 JSON
 "|"로 구분된 값 중 하나만 선택해서 채워라. 임의로 다른 값 사용 금지.
 
 {
-  "model": "gemini-2.5-pro",
+  "model": "gemini-3.1-pro-preview",
   "type": "IMAGE",
   "summary": "소재 한줄 요약 (한국어)",
   "visual": {
@@ -330,7 +330,7 @@ const VIDEO_PROMPT_V3 = `이 광고 소재를 분석해서 아래 JSON 스키마
 "|"로 구분된 값 중 하나만 선택해서 채워라. 임의로 다른 값 사용 금지.
 
 {
-  "model": "gemini-2.5-pro",
+  "model": "gemini-3.1-pro-preview",
   "type": "VIDEO",
   "summary": "소재 한줄 요약 (한국어)",
   "visual": {
