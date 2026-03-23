@@ -450,3 +450,9 @@ TASK 완료 후 반드시 `project-status.md`를 업데이트해라.
 5. main merge 시 validate-qa.sh가 마커 확인 → 없으면 차단
 
 preview QA 없이는 작업 완료로 인정하지 않는다.
+
+## 모찌리포트 카테고리 규칙
+- 리포트 생성 시 `/Users/smith/projects/mozzi-reports/REPORT-CATEGORIES.md` 읽고 카테고리 판단
+- 파일명: `{YYYY-MM-DD}-{영문-케밥-케이스}.html`
+- 디렉토리: `public/reports/{카테고리}/` (plan, architecture, mockup, research, marketing, review, release, task, qa, security, ops, analysis)
+- 커밋 메시지: `리포트: {카테고리} - {제목}`
