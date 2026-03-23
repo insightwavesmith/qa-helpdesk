@@ -52,9 +52,8 @@ if (!["creative", "competitor"].includes(SOURCE)) {
   process.exit(1);
 }
 
-// ── 환경변수 (B11: 공용 파서) ──
-import { getSupabaseConfig } from "./lib/env.mjs";
-const { SB_URL, SB_KEY, env } = getSupabaseConfig();
+// ── 환경변수 + DB 헬퍼 (이중 모드) ──
+import { sbGet, sbPatch, sbPost, env } from "./lib/db-helpers.mjs";
 const GEMINI_KEY = env.GEMINI_API_KEY;
 
 if (!GEMINI_KEY) {
@@ -75,45 +74,6 @@ const OUTPUT_DIR = resolve(__dirname, "output");
 try {
   mkdirSync(OUTPUT_DIR, { recursive: true });
 } catch {}
-
-// ── Supabase 헬퍼 ──
-async function sbGet(path) {
-  const res = await fetch(`${SB_URL}/rest/v1${path}`, {
-    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
-  });
-  if (!res.ok) throw new Error(`sbGet ${res.status}: ${await res.text()}`);
-  return res.json();
-}
-
-async function sbPatch(table, query, body) {
-  const res = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, {
-    method: "PATCH",
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "return=minimal",
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) return { ok: false, status: res.status, body: await res.text() };
-  return { ok: true };
-}
-
-async function sbPost(table, body) {
-  const res = await fetch(`${SB_URL}/rest/v1/${table}`, {
-    method: "POST",
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "return=minimal",
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) return { ok: false, status: res.status, body: await res.text() };
-  return { ok: true };
-}
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));

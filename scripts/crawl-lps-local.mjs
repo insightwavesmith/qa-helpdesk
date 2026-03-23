@@ -18,13 +18,9 @@
  *   .env.local에 NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 있어야 함
  */
 
-import { readFileSync } from "fs";
 import { createHash } from "crypto";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
 import { chromium } from "playwright";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import { sbGet, sbPost, SB_URL, SB_KEY } from "./lib/db-helpers.mjs";
 
 // ── CLI 인자 파싱 ─────────────────────────────────
 const args = process.argv.slice(2);
@@ -42,54 +38,6 @@ const LP_ID_FILTER = lpIdIdx >= 0 ? args[lpIdIdx + 1] : null;
 
 const accountIdx = args.indexOf("--account");
 const ACCOUNT_FILTER = accountIdx >= 0 ? args[accountIdx + 1] : null;
-
-// ── .env.local 파싱 ───────────────────────────────
-const envPath = resolve(__dirname, "..", ".env.local");
-const envContent = readFileSync(envPath, "utf-8");
-const env = {};
-for (const line of envContent.split("\n")) {
-  const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
-}
-
-const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL;
-const SB_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!SB_URL || !SB_KEY) {
-  console.error("NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 필요");
-  process.exit(1);
-}
-
-// ── REST 헬퍼 ─────────────────────────────────────
-async function sbGet(path) {
-  const res = await fetch(`${SB_URL}/rest/v1${path}`, {
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-    },
-  });
-  if (!res.ok) throw new Error(`sbGet ${res.status}: ${await res.text()}`);
-  return res.json();
-}
-
-async function sbPost(table, rows, onConflict) {
-  const url = `${SB_URL}/rest/v1/${table}?on_conflict=${onConflict}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "resolution=merge-duplicates,return=minimal",
-    },
-    body: JSON.stringify(rows),
-  });
-  if (!res.ok) {
-    const body = await res.text();
-    return { ok: false, status: res.status, body };
-  }
-  return { ok: true, status: res.status };
-}
 
 // ── Storage 업로드 (REST PUT) ─────────────────────
 async function uploadToStorage(storagePath, buffer) {

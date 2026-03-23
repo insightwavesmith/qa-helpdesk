@@ -26,39 +26,12 @@
  * B11 수정: scripts/lib/env.mjs 공용 파서 사용
  */
 
-import { getSupabaseConfig } from "./lib/env.mjs";
+import { sbGet, sbPatch } from "./lib/db-helpers.mjs";
 
 // ── CLI 옵션 ──
 const DRY_RUN = process.argv.includes("--dry-run");
 const ACCOUNT_IDX = process.argv.indexOf("--account");
 const FILTER_ACCOUNT = ACCOUNT_IDX !== -1 ? process.argv[ACCOUNT_IDX + 1] : null;
-
-// ── 환경변수 (B11: 공용 파서) ──
-const { SB_URL, SB_KEY } = getSupabaseConfig();
-
-// ── Supabase 헬퍼 ──
-async function sbGet(path) {
-  const res = await fetch(`${SB_URL}/rest/v1${path}`, {
-    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
-  });
-  if (!res.ok) throw new Error(`sbGet ${res.status}: ${await res.text()}`);
-  return res.json();
-}
-
-async function sbPatch(table, query, body) {
-  const res = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, {
-    method: "PATCH",
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "return=minimal",
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) return { ok: false, status: res.status, body: await res.text() };
-  return { ok: true };
-}
 
 // ── 코사인 유사도 계산 (creative-analyzer.ts 로직 이식) ──
 function cosineSimilarity(a, b) {

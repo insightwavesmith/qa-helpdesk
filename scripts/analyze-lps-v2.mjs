@@ -14,11 +14,7 @@
  *   node scripts/analyze-lps-v2.mjs --lp-id <UUID>
  */
 
-import { readFileSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import { sbGet, sbPost, sbPatch, env, SB_URL } from "./lib/db-helpers.mjs";
 
 // ── CLI 옵션 ──
 const DRY_RUN = process.argv.includes("--dry-run");
@@ -27,32 +23,9 @@ const LIMIT = LIMIT_IDX !== -1 ? parseInt(process.argv[LIMIT_IDX + 1], 10) : 50;
 const LP_ID_IDX = process.argv.indexOf("--lp-id");
 const FILTER_LP_ID = LP_ID_IDX !== -1 ? process.argv[LP_ID_IDX + 1] : null;
 
-// ── .env.local 파싱 ──
-const envPath = resolve(__dirname, "..", ".env.local");
-let env = {};
-try {
-  const envContent = readFileSync(envPath, "utf-8");
-  for (const line of envContent.split("\n")) {
-    const m = line.match(/^([^#=]+)=(.*)$/);
-    if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
-  }
-} catch {
-  // .env.local 없으면 process.env 사용
-}
+// ── 환경변수 ──
+const GEMINI_KEY = env.GEMINI_API_KEY;
 
-const SB_URL =
-  env.NEXT_PUBLIC_SUPABASE_URL ||
-  env.SUPABASE_URL ||
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  process.env.SUPABASE_URL;
-const SB_KEY =
-  env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-const GEMINI_KEY = env.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-
-if (!SB_URL || !SB_KEY) {
-  console.error("NEXT_PUBLIC_SUPABASE_URL(또는 SUPABASE_URL), SUPABASE_SERVICE_ROLE_KEY 필요");
-  process.exit(1);
-}
 if (!GEMINI_KEY) {
   console.error("GEMINI_API_KEY 필요");
   process.exit(1);
@@ -61,46 +34,6 @@ if (!GEMINI_KEY) {
 const GEMINI_MODEL = "gemini-3-pro-preview";
 const RATE_LIMIT_MS = 4000; // 분당 15 요청 → 4초 간격
 const MAX_RETRIES = 3;
-
-// ── Supabase REST 헬퍼 ──
-async function sbGet(path) {
-  const res = await fetch(`${SB_URL}/rest/v1${path}`, {
-    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
-  });
-  if (!res.ok) throw new Error(`sbGet ${path} → ${res.status}: ${await res.text()}`);
-  return res.json();
-}
-
-async function sbPost(table, body, onConflict) {
-  const conflict = onConflict ? `?on_conflict=${onConflict}` : "";
-  const res = await fetch(`${SB_URL}/rest/v1/${table}${conflict}`, {
-    method: "POST",
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "resolution=merge-duplicates,return=minimal",
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) return { ok: false, status: res.status, body: await res.text() };
-  return { ok: true };
-}
-
-async function sbPatch(table, query, body) {
-  const res = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, {
-    method: "PATCH",
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "return=minimal",
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) return { ok: false, status: res.status, body: await res.text() };
-  return { ok: true };
-}
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));

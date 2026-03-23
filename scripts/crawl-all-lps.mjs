@@ -8,38 +8,12 @@
  * --dry-run: 크롤링 없이 대상만 출력
  */
 
-import { readFileSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
+import { sbGet, sbUpsert, env, SB_URL, SB_KEY } from "./lib/db-helpers.mjs";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-// 환경변수 우선, 없으면 .env.local fallback
-let env = {};
-try {
-  const envPath = resolve(__dirname, "..", ".env.local");
-  const envContent = readFileSync(envPath, "utf-8");
-  for (const line of envContent.split("\n")) {
-    const m = line.match(/^([^#=]+)=(.*)$/);
-    if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
-  }
-} catch {
-  // Cloud Run Job 등 .env.local 없는 환경 — process.env 사용
-}
-
-const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL;
-const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
 const CRAWLER_URL =
-  process.env.CRAWLER_URL || process.env.RAILWAY_CRAWLER_URL || env.CRAWLER_URL || env.RAILWAY_CRAWLER_URL || "https://bscamp-crawler-906295665279.asia-northeast3.run.app";
-const CRAWLER_SECRET = process.env.CRAWLER_SECRET || env.CRAWLER_SECRET || "";
-
-if (!SB_URL || !SB_KEY) {
-  console.error(
-    "NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 환경변수가 필요합니다"
-  );
-  process.exit(1);
-}
+  env.CRAWLER_URL || env.RAILWAY_CRAWLER_URL || process.env.CRAWLER_URL || process.env.RAILWAY_CRAWLER_URL || "https://bscamp-crawler-906295665279.asia-northeast3.run.app";
+const CRAWLER_SECRET = env.CRAWLER_SECRET || process.env.CRAWLER_SECRET || "";
 
 // CLI 인자 파싱
 const args = process.argv.slice(2);
@@ -60,34 +34,6 @@ const VIEWPORTS =
 
 // Supabase client (Storage 업로드용)
 const supabase = createClient(SB_URL, SB_KEY);
-
-// ─── REST API 헬퍼 ───────────────────────────────────────────────────────────
-
-async function sbGet(path) {
-  const res = await fetch(`${SB_URL}/rest/v1${path}`, {
-    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
-  });
-  if (!res.ok) throw new Error(`sbGet ${res.status}: ${await res.text()}`);
-  return res.json();
-}
-
-async function sbUpsert(table, rows, onConflict) {
-  const url = `${SB_URL}/rest/v1/${table}?on_conflict=${onConflict}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "resolution=merge-duplicates,return=minimal",
-    },
-    body: JSON.stringify(rows),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`sbUpsert ${res.status}: ${text}`);
-  }
-}
 
 // ─── Railway 크롤러 ──────────────────────────────────────────────────────────
 

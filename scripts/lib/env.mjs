@@ -85,3 +85,11 @@ export function getSupabaseConfig() {
 
   return { SB_URL, SB_KEY, env };
 }
+
+/**
+ * Cloud SQL 사용 여부 (USE_CLOUD_SQL=true)
+ */
+export function useCloudSql() {
+  const env = loadEnv();
+  return (env.USE_CLOUD_SQL || process.env.USE_CLOUD_SQL) === "true";
+}

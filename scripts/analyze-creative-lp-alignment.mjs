@@ -9,49 +9,19 @@
  *   node scripts/analyze-creative-lp-alignment.mjs [--limit N] [--dry-run]
  */
 
-import { getSupabaseConfig } from "./lib/env.mjs";
+import { sbGet, sbPatch, env } from "./lib/db-helpers.mjs";
 
 // ── CLI 옵션 ──
 const DRY_RUN = process.argv.includes("--dry-run");
 const LIMIT_IDX = process.argv.indexOf("--limit");
 const LIMIT = LIMIT_IDX !== -1 ? parseInt(process.argv[LIMIT_IDX + 1], 10) : 50;
 
-// ── 환경변수 (.env.local 또는 process.env) ──
-const { SB_URL, SB_KEY, env } = getSupabaseConfig();
+// ── 환경변수 ──
 const GEMINI_KEY = env.GEMINI_API_KEY;
-
-if (!SB_URL || !SB_KEY) {
-  console.error("NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 필요");
-  process.exit(1);
-}
 
 if (!GEMINI_KEY) {
   console.error("GEMINI_API_KEY 필요");
   process.exit(1);
-}
-
-// ── Supabase 헬퍼 ──
-async function sbGet(path) {
-  const res = await fetch(`${SB_URL}/rest/v1${path}`, {
-    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
-  });
-  if (!res.ok) throw new Error(`sbGet ${res.status}: ${await res.text()}`);
-  return res.json();
-}
-
-async function sbPatch(table, query, body) {
-  const res = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, {
-    method: "PATCH",
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "return=minimal",
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) return { ok: false, status: res.status, body: await res.text() };
-  return { ok: true };
 }
 
 // ── Gemini 2.5 Pro 호출 (재시도 포함) ──

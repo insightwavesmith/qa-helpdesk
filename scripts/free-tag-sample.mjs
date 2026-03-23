@@ -5,38 +5,20 @@
  * 실제 우리 광고에 나오는 속성값 패턴을 도출
  */
 
-import { readFileSync, writeFileSync } from "fs";
+import { writeFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { sbGet, env } from "./lib/db-helpers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// .env.local 로딩
-const envPath = resolve(__dirname, "..", ".env.local");
-const envContent = readFileSync(envPath, "utf-8");
-const env = {};
-for (const line of envContent.split("\n")) {
-  const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
-}
-
-const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL;
-const SB_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
+// ── 환경변수 ──
 const GEMINI_KEY = env.GEMINI_API_KEY;
 const GEMINI_MODEL = "gemini-3-pro-preview";
 
-if (!SB_URL || !SB_KEY || !GEMINI_KEY) {
-  console.error("SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY 필요");
+if (!GEMINI_KEY) {
+  console.error("GEMINI_API_KEY 필요");
   process.exit(1);
-}
-
-// ━━━ Supabase REST ━━━
-async function sbGet(path) {
-  const res = await fetch(`${SB_URL}/rest/v1${path}`, {
-    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
-  });
-  if (!res.ok) throw new Error(`sbGet ${res.status}: ${await res.text()}`);
-  return res.json();
 }
 
 // ━━━ 자유 태깅 프롬프트 ━━━

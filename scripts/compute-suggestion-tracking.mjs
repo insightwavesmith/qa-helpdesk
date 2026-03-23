@@ -16,9 +16,10 @@
  *   --min-days N  before/after 각각 최소 N일 데이터 필요 (기본: 3)
  */
 
-import { readFileSync, writeFileSync } from "fs";
+import { writeFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { sbGet } from "./lib/db-helpers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -26,47 +27,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const DRY_RUN = process.argv.includes("--dry-run");
 const MIN_DAYS_IDX = process.argv.indexOf("--min-days");
 const MIN_DAYS = MIN_DAYS_IDX !== -1 ? parseInt(process.argv[MIN_DAYS_IDX + 1], 10) : 3;
-
-// ── .env.local 파싱 ──
-const envPath = resolve(__dirname, "..", ".env.local");
-const envContent = readFileSync(envPath, "utf-8");
-const env = {};
-for (const line of envContent.split("\n")) {
-  const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
-}
-
-const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL;
-const SB_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!SB_URL || !SB_KEY) {
-  console.error("NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 필요");
-  process.exit(1);
-}
-
-// ── Supabase REST 헬퍼 ──
-async function sbGet(path) {
-  const res = await fetch(`${SB_URL}/rest/v1${path}`, {
-    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
-  });
-  if (!res.ok) throw new Error(`sbGet ${res.status}: ${await res.text()}`);
-  return res.json();
-}
-
-async function sbPatch(table, query, body) {
-  const res = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, {
-    method: "PATCH",
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "return=minimal",
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) return { ok: false, status: res.status, body: await res.text() };
-  return { ok: true };
-}
 
 // ── 수학 헬퍼 ──
 function avg(arr) {

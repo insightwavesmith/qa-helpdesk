@@ -7,54 +7,10 @@
  * --fix:     실패 URL을 is_active=false로 업데이트
  */
 
-import { readFileSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
+import { sbGet, sbPatch } from "./lib/db-helpers.mjs";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const DRY_RUN = !process.argv.includes("--fix");
 const FIX = process.argv.includes("--fix");
-
-// .env.local 읽기
-const envPath = resolve(__dirname, "..", ".env.local");
-const envContent = readFileSync(envPath, "utf-8");
-const env = {};
-for (const line of envContent.split("\n")) {
-  const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
-}
-
-const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL;
-const SB_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!SB_URL || !SB_KEY) {
-  console.error("SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 필요");
-  process.exit(1);
-}
-
-// ─── Supabase REST 헬퍼 ───────────────────────────────────────────────────────
-
-async function sbGet(path) {
-  const res = await fetch(`${SB_URL}/rest/v1${path}`, {
-    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
-  });
-  if (!res.ok) throw new Error(`sbGet ${res.status}: ${await res.text()}`);
-  return res.json();
-}
-
-async function sbPatch(table, filter, body) {
-  const res = await fetch(`${SB_URL}/rest/v1/${table}?${filter}`, {
-    method: "PATCH",
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "return=minimal",
-    },
-    body: JSON.stringify(body),
-  });
-  return { ok: res.ok, status: res.status };
-}
 
 // ─── URL 정규화 ───────────────────────────────────────────────────────────────
 

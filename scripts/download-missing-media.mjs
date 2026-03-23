@@ -14,11 +14,7 @@
  *   node scripts/download-missing-media.mjs --image-only  # 이미지만
  */
 
-import { readFileSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import { sbGet, sbPatch, env, SB_URL, SB_KEY } from "./lib/db-helpers.mjs";
 
 // ── CLI 인자 ──────────────────────────────────────
 const args = process.argv.slice(2);
@@ -30,47 +26,12 @@ const LIMIT = limitIdx >= 0 ? parseInt(args[limitIdx + 1], 10) : 500;
 const accountIdx = args.indexOf("--account-id");
 const ACCOUNT_FILTER = accountIdx >= 0 ? args[accountIdx + 1] : null;
 
-// ── 환경변수 (process.env 우선, .env.local fallback) ──
-let env = {};
-try {
-  const envPath = resolve(__dirname, "..", ".env.local");
-  const envContent = readFileSync(envPath, "utf-8");
-  for (const line of envContent.split("\n")) {
-    const m = line.match(/^([^#=]+)=(.*)$/);
-    if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
-  }
-} catch { /* Cloud Run Job 등 .env.local 없는 환경 */ }
+// ── 환경변수 ──
+const META_TOKEN = env.META_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN;
 
-const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL;
-const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
-const META_TOKEN = process.env.META_ACCESS_TOKEN || env.META_ACCESS_TOKEN;
-
-if (!SB_URL || !SB_KEY) {
-  console.error("SUPABASE_URL, SERVICE_ROLE_KEY 필요");
-  process.exit(1);
-}
 if (!META_TOKEN) {
   console.error("META_ACCESS_TOKEN 필요");
   process.exit(1);
-}
-
-const AUTH = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
-
-// ── Supabase REST 헬퍼 ────────────────────────────
-async function sbGet(path) {
-  const res = await fetch(`${SB_URL}/rest/v1${path}`, { headers: AUTH });
-  if (!res.ok) throw new Error(`sbGet ${res.status}: ${await res.text()}`);
-  return res.json();
-}
-
-async function sbPatch(table, filters, data) {
-  const url = `${SB_URL}/rest/v1/${table}?${filters}`;
-  const res = await fetch(url, {
-    method: "PATCH",
-    headers: { ...AUTH, "Content-Type": "application/json", Prefer: "return=minimal" },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error(`sbPatch ${res.status}: ${await res.text()}`);
 }
 
 async function uploadToStorage(storagePath, buffer, contentType) {

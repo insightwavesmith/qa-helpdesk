@@ -22,10 +22,7 @@
 
 import { readFileSync } from "fs";
 import { mkdir, writeFile, unlink, stat } from "fs/promises";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import { sbGet, sbPatch, env, SB_URL, SB_KEY } from "./lib/db-helpers.mjs";
 
 // ──────────────────────────────────────────────
 // CLI 옵션 파싱
@@ -36,25 +33,9 @@ const LIMIT = LIMIT_IDX !== -1 ? parseInt(process.argv[LIMIT_IDX + 1], 10) : nul
 const ACCOUNT_IDX = process.argv.indexOf("--account");
 const FILTER_ACCOUNT = ACCOUNT_IDX !== -1 ? process.argv[ACCOUNT_IDX + 1] : null;
 
-// ──────────────────────────────────────────────
-// .env.local 파싱 (normalize-lps.mjs 패턴)
-// ──────────────────────────────────────────────
-const envPath = resolve(__dirname, "..", ".env.local");
-const envContent = readFileSync(envPath, "utf-8");
-const env = {};
-for (const line of envContent.split("\n")) {
-  const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
-}
-
-const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL;
-const SB_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
+// ── 환경변수 ──
 const META_TOKEN = env.META_ACCESS_TOKEN;
 
-if (!SB_URL || !SB_KEY) {
-  console.error("NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 필요");
-  process.exit(1);
-}
 if (!META_TOKEN) {
   console.error("META_ACCESS_TOKEN 필요");
   process.exit(1);
@@ -80,35 +61,6 @@ function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes}B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
-}
-
-// ──────────────────────────────────────────────
-// Supabase REST 헬퍼
-// ──────────────────────────────────────────────
-async function sbGet(path) {
-  const res = await fetch(`${SB_URL}/rest/v1${path}`, {
-    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
-  });
-  if (!res.ok) throw new Error(`sbGet ${res.status}: ${await res.text()}`);
-  return res.json();
-}
-
-async function sbPatch(table, query, body) {
-  const res = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, {
-    method: "PATCH",
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "return=minimal",
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    return { ok: false, status: res.status, body: text };
-  }
-  return { ok: true, status: res.status };
 }
 
 // ──────────────────────────────────────────────

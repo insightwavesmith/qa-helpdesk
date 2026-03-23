@@ -76,11 +76,7 @@
  * ─────────────────────────────────────────────────────
  */
 
-import { readFileSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import { sbGet, sbPost as _sbPost, sbDelete as _sbDelete } from "./lib/db-helpers.mjs";
 
 // ━━━ CLI 인수 파싱 ━━━
 const args = process.argv.slice(2);
@@ -92,65 +88,13 @@ const ONLY = onlyIdx >= 0 ? args[onlyIdx + 1] : null; // "t3" | "student" | "dia
 const accountIdx = args.indexOf("--account-id");
 const FILTER_ACCOUNT_ID = accountIdx >= 0 ? args[accountIdx + 1] : null;
 
-// ━━━ 환경변수 로드 ━━━
-const envPath = resolve(__dirname, "..", ".env.local");
-const envContent = readFileSync(envPath, "utf-8");
-const env = {};
-for (const line of envContent.split("\n")) {
-  const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
-}
-
-const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL;
-const SB_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!SB_URL || !SB_KEY) {
-  console.error("[ERROR] NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 필요");
-  process.exit(1);
-}
-
-// ━━━ Supabase REST 헬퍼 ━━━
-async function sbGet(path) {
-  const res = await fetch(`${SB_URL}/rest/v1${path}`, {
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json",
-    },
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`sbGet ${res.status} ${path}: ${text.slice(0, 300)}`);
-  }
-  return res.json();
-}
-
+// ━━━ DRY_RUN 래퍼 ━━━
 async function sbPost(table, rows, onConflict) {
   if (DRY_RUN) {
     console.log(`  [dry-run] UPSERT ${table} (${Array.isArray(rows) ? rows.length : 1}행)`);
     return { ok: true };
   }
-  const url = onConflict
-    ? `${SB_URL}/rest/v1/${table}?on_conflict=${onConflict}`
-    : `${SB_URL}/rest/v1/${table}`;
-  const body = Array.isArray(rows) ? rows : [rows];
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: onConflict
-        ? "resolution=merge-duplicates,return=minimal"
-        : "return=minimal",
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    console.error(`  [ERROR] UPSERT ${table} failed ${res.status}: ${text.slice(0, 300)}`);
-  }
-  return { ok: res.ok, status: res.status };
+  return _sbPost(table, rows, onConflict);
 }
 
 async function sbDelete(table, filter) {
@@ -158,16 +102,7 @@ async function sbDelete(table, filter) {
     console.log(`  [dry-run] DELETE ${table} WHERE ${filter}`);
     return { ok: true };
   }
-  const res = await fetch(`${SB_URL}/rest/v1/${table}?${filter}`, {
-    method: "DELETE",
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "return=minimal",
-    },
-  });
-  return { ok: res.ok, status: res.status };
+  return _sbDelete(table, filter);
 }
 
 // ━━━ 날짜 유틸 ━━━

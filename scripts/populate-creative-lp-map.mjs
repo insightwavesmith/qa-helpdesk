@@ -11,50 +11,12 @@
  *   node scripts/populate-creative-lp-map.mjs --dry-run
  */
 
-import { readFileSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
+import { sbGet, sbUpsert } from "./lib/db-helpers.mjs";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes("--dry-run");
 const ACCOUNT_IDX = args.indexOf("--account");
 const FILTER_ACCOUNT = ACCOUNT_IDX !== -1 ? args[ACCOUNT_IDX + 1] : null;
-
-const envPath = resolve(__dirname, "..", ".env.local");
-const envContent = readFileSync(envPath, "utf-8");
-const env = {};
-for (const line of envContent.split("\n")) {
-  const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
-}
-
-const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL;
-const SB_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
-if (!SB_URL || !SB_KEY) { console.error("ENV 필요"); process.exit(1); }
-
-async function sbGet(path) {
-  const res = await fetch(`${SB_URL}/rest/v1${path}`, {
-    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
-  });
-  if (!res.ok) throw new Error(`sbGet ${res.status}: ${await res.text()}`);
-  return res.json();
-}
-
-async function sbUpsert(table, rows, onConflict) {
-  const res = await fetch(`${SB_URL}/rest/v1/${table}?on_conflict=${onConflict}`, {
-    method: "POST",
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "resolution=merge-duplicates,return=representation",
-    },
-    body: JSON.stringify(rows),
-  });
-  if (!res.ok) throw new Error(`sbUpsert ${res.status}: ${await res.text()}`);
-  return res.json();
-}
 
 function normalizeUrl(url) {
   try {
