@@ -686,7 +686,7 @@
       "analyze-five-axis VIDEO 100MB 제한 ✅",
       "LP 216건 초기화+재크롤링 실행중"
     ],
-    "updatedAt": "2026-03-23T14:00:00+09:00",
-    "notes": "crawl-all-lps → Cloud Run Job 전환. lp_snapshots 277건+landing_pages 216건 NULL 초기화. VIDEO 20→100MB."
+    "updatedAt": "2026-03-23T14:10:00+09:00",
+    "notes": "crawl-all-lps → Cloud Run Job 전환. title→product_name 수정. lp_snapshots 277건+landing_pages 216건 NULL 초기화. VIDEO 20→100MB."
   }
 }

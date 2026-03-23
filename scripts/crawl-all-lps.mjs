@@ -170,7 +170,7 @@ async function main() {
 
   // 1. 활성 product LP 조회
   let lps = await sbGet(
-    `/landing_pages?select=id,canonical_url,title&page_type=eq.product&is_active=eq.true&order=id.asc`
+    `/landing_pages?select=id,canonical_url,product_name&page_type=eq.product&is_active=eq.true&order=id.asc`
   );
 
   console.log(`  조회된 LP: ${lps.length}건`);
@@ -188,7 +188,7 @@ async function main() {
   if (DRY_RUN) {
     console.log(`\n[dry-run] 크롤링 대상 목록:`);
     for (const lp of lps) {
-      console.log(`  - [${lp.id}] ${lp.canonical_url} (${lp.title || "제목없음"})`);
+      console.log(`  - [${lp.id}] ${lp.canonical_url} (${lp.product_name || "제목없음"})`);
     }
     console.log(
       `\n총 ${lps.length}건 × ${VIEWPORTS.length}뷰포트 = ${lps.length * VIEWPORTS.length}회 크롤링 예정`
