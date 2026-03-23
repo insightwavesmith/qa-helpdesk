@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/select";
 import { Bell, Save, Eye, EyeOff, Plus, Trash2, Star, Pencil, X, Check } from "lucide-react";
 import { toast } from "sonner";
-import { createClient } from "@/lib/supabase/client";
 import { syncAdAccount, addAdAccount, removeAdAccount, updateAdAccount } from "@/actions/onboarding";
+import { updateProfile } from "@/actions/auth";
 import { mp } from "@/lib/mixpanel";
 
 interface Profile {
@@ -96,11 +96,7 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
       annual_revenue: annualRevenue || null,
     };
 
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("profiles")
-      .update(updates)
-      .eq("id", userId);
+    const { error } = await updateProfile(userId, updates);
 
     setSaving(false);
 
@@ -240,11 +236,7 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
       toast.error("대표 계정 변경 실패");
     } else {
       // profiles.meta_account_id도 업데이트
-      const supabase = createClient();
-      await supabase
-        .from("profiles")
-        .update({ meta_account_id: accountId })
-        .eq("id", userId);
+      await updateProfile(userId, { meta_account_id: accountId });
       toast.success("대표 계정이 변경되었습니다.");
     }
   };

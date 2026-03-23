@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Clock, Mail, LogOut, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { getProfileRoleStatus } from "@/actions/auth";
 
 export default function PendingPage() {
   const router = useRouter();
@@ -26,11 +27,7 @@ export default function PendingPage() {
           return;
         }
 
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role, onboarding_status")
-          .eq("id", user.id)
-          .single();
+        const { data: profile } = await getProfileRoleStatus(user.id);
 
         if (!profile || profile.role === "lead") {
           // 아직 승인 대기 중 → 현재 페이지 유지

@@ -71,6 +71,48 @@ export async function updateBusinessCertUrl(userId: string, url: string) {
   return { error: null };
 }
 
+/**
+ * Phase 4: 클라이언트 사이드 프로필 조회 → 서버 액션 전환
+ * Cloud SQL Proxy 경유하여 프로필 조회
+ */
+export async function getProfileById(userId: string) {
+  const svc = createServiceClient();
+  const { data, error } = await svc
+    .from("profiles")
+    .select("name, role, cohort, shop_name, shop_url, annual_revenue, monthly_ad_budget, category, onboarding_status, meta_account_id, mixpanel_project_id, mixpanel_board_id, mixpanel_secret_key")
+    .eq("id", userId)
+    .single();
+  if (error) return { data: null, error: error.message };
+  return { data, error: null };
+}
+
+/**
+ * Phase 4: 클라이언트 사이드 프로필 role/onboarding 조회 → 서버 액션 전환
+ */
+export async function getProfileRoleStatus(userId: string) {
+  const svc = createServiceClient();
+  const { data, error } = await svc
+    .from("profiles")
+    .select("role, onboarding_status")
+    .eq("id", userId)
+    .single();
+  if (error) return { data: null, error: error.message };
+  return { data, error: null };
+}
+
+/**
+ * Phase 4: 클라이언트 사이드 프로필 업데이트 → 서버 액션 전환
+ */
+export async function updateProfile(userId: string, updates: Record<string, unknown>) {
+  const svc = createServiceClient();
+  const { error } = await svc
+    .from("profiles")
+    .update(updates)
+    .eq("id", userId);
+  if (error) return { error: error.message };
+  return { error: null };
+}
+
 export async function savePrivacyConsent(userId: string) {
   const supabase = createServiceClient();
 

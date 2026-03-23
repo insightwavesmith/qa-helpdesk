@@ -1393,3 +1393,17 @@ export async function generateContentWithAI(
     return { error: e instanceof Error ? e.message : "AI 콘텐츠 생성 실패" };
   }
 }
+
+/**
+ * Phase 4: 이메일 발송 이력 조회 (클라이언트 → 서버 액션 전환)
+ */
+export async function getEmailSendHistory(limit = 50) {
+  const svc = createServiceClient();
+  const { data, error } = await svc
+    .from("email_sends")
+    .select("id, subject, recipient_type, status, sent_at, created_at, recipient_email, opened_at, clicked_at")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) return { data: [], error: error.message };
+  return { data: data || [], error: null };
+}

@@ -39,10 +39,9 @@ import { Send, Eye, Loader2, Users, Mail, AlertCircle, FileText } from "lucide-r
 import { toast } from "sonner";
 import { mp } from "@/lib/mixpanel";
 import dynamic from "next/dynamic";
-import { createClient } from "@/lib/supabase/client";
 import AiWriteDialog from "@/components/email/ai-write-dialog";
 import ContentPickerDialog from "@/components/content/content-picker-dialog";
-import { getContentAsEmailHtml, updateContentEmailSentAt } from "@/actions/contents";
+import { getContentAsEmailHtml, updateContentEmailSentAt, getEmailSendHistory } from "@/actions/contents";
 
 const EmailSplitEditor = dynamic(
   () => import("@/components/email/email-split-editor"),
@@ -136,12 +135,7 @@ function AdminEmailPageInner() {
 
   const loadHistory = useCallback(async () => {
     setLoadingHistory(true);
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("email_sends")
-      .select("id, subject, recipient_type, status, sent_at, created_at, recipient_email, opened_at, clicked_at")
-      .order("created_at", { ascending: false })
-      .limit(50);
+    const { data } = await getEmailSendHistory(50);
     setHistory((data as EmailSendRecord[]) || []);
     setLoadingHistory(false);
   }, []);

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getProfileById } from "@/actions/auth";
 import { mp } from "@/lib/mixpanel";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
@@ -42,11 +43,7 @@ export default function LoginPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         mp.identify(user.id);
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("name, role, cohort, shop_name, shop_url, annual_revenue, monthly_ad_budget, category, onboarding_status")
-          .eq("id", user.id)
-          .single();
+        const { data: profile } = await getProfileById(user.id);
         if (profile) {
           mp.people.set({
             $name: profile.name,
