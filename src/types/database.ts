@@ -827,6 +827,7 @@ export type Database = {
           shares_per_10k: number | null
           spend: number | null
           thruplay_rate: number | null
+          video_p100: number | null
           video_p3s_rate: number | null
         }
         Insert: {
@@ -869,6 +870,7 @@ export type Database = {
           shares_per_10k?: number | null
           spend?: number | null
           thruplay_rate?: number | null
+          video_p100?: number | null
           video_p3s_rate?: number | null
         }
         Update: {
@@ -911,6 +913,7 @@ export type Database = {
           shares_per_10k?: number | null
           spend?: number | null
           thruplay_rate?: number | null
+          video_p100?: number | null
           video_p3s_rate?: number | null
         }
         Relationships: []
