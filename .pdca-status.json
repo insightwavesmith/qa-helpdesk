@@ -627,19 +627,15 @@
   "railway-to-gcp": {
     "status": "completed",
     "tasks": [
-      "Phase1-Playwright크롤러-Dockerize",
-      "Phase1-CloudRun배포-bscamp-crawler",
-      "Phase1-헬스체크+크롤링테스트",
-      "Phase2-DeepGaze-v1코드수정",
-      "Phase2-server.js레거시엔드포인트제거",
-      "Phase2-CloudRun배포-creative-pipeline",
-      "Phase2-헬스체크",
-      "Phase3-Vercel환경변수업데이트",
-      "Phase3-CloudRun환경변수업데이트"
+      "GCP 크롤러 health+crawl 동작 확인 ✅",
+      "GCP creative-pipeline health+saliency 동작 확인 ✅",
+      "crawl-all-lps.mjs Railway→GCP fallback URL ✅",
+      "trigger-saliency-batch.mjs Railway→GCP URL ✅",
+      ".env.local RAILWAY_CRAWLER_URL+CREATIVE_PIPELINE_URL GCP로 변경 ✅"
     ],
+    "updatedAt": "2026-03-23T15:20:00+09:00",
     "completedAt": "2026-03-23",
-    "updatedAt": "2026-03-23T16:15:00",
-    "notes": "Railway 2개 서비스 → GCP Cloud Run 이관 완료. Playwright 크롤러: bscamp-crawler-906295665279.asia-northeast3.run.app (2Gi). DeepGaze 파이프라인: creative-pipeline-906295665279.asia-northeast3.run.app (4Gi). predict.py/predict_video_frames.py v1→v2 테이블 마이그레이션. server.js에서 삭제된 analyze/benchmark/score 엔드포인트 제거. Railway 서비스는 1주일 관찰 후 삭제 예정."
+    "notes": "Railway URL 참조 전부 GCP Cloud Run으로 전환. Railway 서비스 중지는 1주일 모니터링 후."
   },
   "lp-media-download": {
     "status": "completed",
@@ -701,17 +697,22 @@
     "completedAt": "2026-03-23",
     "notes": "벤치마크 기준: hook>25.81% OR ctr>3.48% OR engage>27.0, quality=ABOVE_AVERAGE/UNKNOWN. 62건 중 24건 신규, 올스타 2건."
   },
-  "railway-to-gcp": {
+  "gcp-migration": {
+    "status": "implementing",
+    "tasks": [
+      "Phase 1: Cloud SQL 스키마 이관 완료",
+      "Phase 2: 데이터 마이그레이션 완료",
+      "Phase 3-6: 미진행"
+    ],
+    "updatedAt": "2026-03-23T16:43:55",
+    "notes": "60 테이블 37,983건 100% 이관. Phase 3(Storage) 대기."
+  },
+  "five-axis-prompt-v3": {
     "status": "completed",
     "tasks": [
-      "GCP 크롤러 health+crawl 동작 확인 ✅",
-      "GCP creative-pipeline health+saliency 동작 확인 ✅",
-      "crawl-all-lps.mjs Railway→GCP fallback URL ✅",
-      "trigger-saliency-batch.mjs Railway→GCP URL ✅",
-      ".env.local RAILWAY_CRAWLER_URL+CREATIVE_PIPELINE_URL GCP로 변경 ✅"
+      "VIDEO_PROMPT_V3 씬별 오디오+텍스트 분석 추가"
     ],
-    "updatedAt": "2026-03-23T15:20:00+09:00",
-    "completedAt": "2026-03-23",
-    "notes": "Railway URL 참조 전부 GCP Cloud Run으로 전환. Railway 서비스 중지는 1주일 모니터링 후."
+    "updatedAt": "2026-03-23T16:43:55",
+    "notes": "structure.scenes에 audio_tone/bgm_change/text_overlays, audio에 tone_changes 추가"
   }
 }

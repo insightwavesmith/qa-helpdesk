@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-23T12:45:00+09:00",
+  "lastUpdated": "2026-03-23T16:44:16+09:00",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1245,6 +1245,21 @@
       "startedAt": "2026-03-23",
       "completedAt": "2026-03-23",
       "notes": "PR #2. creative-saliency 크론 신규(93줄), analyze-five-axis DeepGaze 주입(+75줄). 커밋 a22028a."
+    },
+    "gcp-migration": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {},
+      "startedAt": "2026-03-23",
+      "notes": "Phase 1-2 완료: Cloud SQL 스키마+데이터 이관 (60테이블 37,983건). Phase 3-6 대기."
+    },
+    "five-axis-prompt-v3-audio": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {},
+      "startedAt": "2026-03-23",
+      "completedAt": "2026-03-23",
+      "notes": "VIDEO_PROMPT_V3에 씬별 audio_tone/bgm_change/text_overlays + audio.tone_changes 추가"
     }
   },
   "phaseMapping": {

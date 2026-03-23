@@ -382,11 +382,23 @@ const VIDEO_PROMPT_V3 = `이 광고 소재를 분석해서 아래 JSON 스키마
     "bgm_genre": "pop|calm|exciting|dramatic|none",
     "sound_effects": "효과음 설명 또는 none",
     "audio_emotion": "upbeat|calm|urgent|dramatic|neutral",
-    "audio_type": "narration|bgm|sfx|silent|mixed"
+    "audio_type": "narration|bgm|sfx|silent|mixed",
+    "tone_changes": [
+      { "sec": 0, "tone": "톤 전환 설명 (예: 밝은 인사→진지한 설득)", "trigger": "전환 계기 (예: 제품 소개 시작)" }
+    ]
   },
   "structure": {
     "scenes": [
-      { "sec": "0-3", "type": "hook|demo|result|cta|brand", "desc": "설명" }
+      {
+        "sec": "0-3",
+        "type": "hook|demo|result|cta|brand",
+        "desc": "설명",
+        "audio_tone": "이 구간 나레이션 톤 (예: 밝고 경쾌|진지하고 설득적|감성적|긴박한|없음)",
+        "bgm_change": { "changed": false, "genre": "이 구간 BGM 장르 (예: pop|calm|exciting|dramatic|none)" },
+        "text_overlays": [
+          { "text": "자막 내용", "color": "#hex", "position": "top|center|bottom", "size": "large|medium|small" }
+        ]
+      }
     ],
     "pacing": "fast|medium|slow",
     "hook_type": "question|shock|benefit|problem|curiosity",
