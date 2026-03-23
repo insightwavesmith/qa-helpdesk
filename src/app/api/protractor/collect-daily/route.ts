@@ -8,7 +8,7 @@ import { NextResponse } from "next/server";
 import { requireProtractorAccess } from "../_shared";
 
 const GCP_CRON_URL =
-  process.env.GCP_CRON_URL || "https://bscamp-cron-a4vkex7yiq-du.a.run.app";
+  process.env.GCP_CRON_URL || "https://bscamp-cron-906295665279.asia-northeast3.run.app";
 
 export async function POST() {
   const auth = await requireProtractorAccess();

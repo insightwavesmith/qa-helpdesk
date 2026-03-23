@@ -309,20 +309,27 @@ def main():
     offset = 0
     while True:
         q = (
-            "/ad_creative_embeddings?"
-            "select=ad_id,account_id,media_url,media_type"
+            "/creative_media?"
+            "select=id,media_url,media_type,creatives!inner(ad_id,account_id)"
             "&media_url=not.is.null"
             "&media_type=eq.IMAGE"
-            "&order=ad_id"
+            "&order=id"
             f"&limit={PAGE_SIZE}"
             f"&offset={offset}"
         )
         if args.account_id:
-            q += f"&account_id=eq.{args.account_id}"
+            q += f"&creatives.account_id=eq.{args.account_id}"
         batch = sb_get(q)
         if not batch:
             break
-        all_creatives.extend(batch)
+        # creative_media JOIN 결과를 기존 형식으로 정규화
+        for r in batch:
+            all_creatives.append({
+                "ad_id": r.get("creatives", {}).get("ad_id"),
+                "account_id": r.get("creatives", {}).get("account_id"),
+                "media_url": r.get("media_url"),
+                "media_type": r.get("media_type"),
+            })
         if len(batch) < PAGE_SIZE:
             break
         offset += PAGE_SIZE
@@ -359,11 +366,14 @@ def main():
         batch_size = 300
         for bi in range(0, len(to_analyze), batch_size):
             batch_ids = ",".join(c["ad_id"] for c in to_analyze[bi:bi + batch_size])
-            cea_data = sb_get(
-                f"/creative_element_analysis?select=ad_id,cta_position&ad_id=in.({batch_ids})"
+            cm_data = sb_get(
+                f"/creative_media?select=analysis_json,creatives!inner(ad_id)&creatives.ad_id=in.({batch_ids})&analysis_json=not.is.null"
             )
-            for r in cea_data:
-                cta_map[r["ad_id"]] = r.get("cta_position")
+            for r in cm_data:
+                ad_id = r.get("creatives", {}).get("ad_id")
+                cta_pos = (r.get("analysis_json") or {}).get("cta_position")
+                if ad_id and cta_pos:
+                    cta_map[ad_id] = cta_pos
     except Exception as e:
         print(f"  CTA 위치 조회 실패 (무시): {e}", file=sys.stderr)
 

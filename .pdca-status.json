@@ -623,5 +623,22 @@
     "completedAt": "2026-03-23",
     "updatedAt": "2026-03-23T15:00:00",
     "notes": "DB 73→60 테이블. v1 7개(ad_creative_embeddings, creative_element_analysis, creative_intelligence_scores, creative_element_performance, lp_crawl_queue, lp_structure_analysis, creative_lp_consistency) + 미사용 8개(keyword_rankings, likes, organic_conversions, seo_benchmarks, neuron_*4개) DROP. src/ 21파일 v2 마이그레이션. scripts/ 27개+services/ 4개+admin routes 5개 삭제. collect-daily/mixpanel GCP 프록시 전환."
+  },
+  "railway-to-gcp": {
+    "status": "completed",
+    "tasks": [
+      "Phase1-Playwright크롤러-Dockerize",
+      "Phase1-CloudRun배포-bscamp-crawler",
+      "Phase1-헬스체크+크롤링테스트",
+      "Phase2-DeepGaze-v1코드수정",
+      "Phase2-server.js레거시엔드포인트제거",
+      "Phase2-CloudRun배포-creative-pipeline",
+      "Phase2-헬스체크",
+      "Phase3-Vercel환경변수업데이트",
+      "Phase3-CloudRun환경변수업데이트"
+    ],
+    "completedAt": "2026-03-23",
+    "updatedAt": "2026-03-23T16:15:00",
+    "notes": "Railway 2개 서비스 → GCP Cloud Run 이관 완료. Playwright 크롤러: bscamp-crawler-906295665279.asia-northeast3.run.app (2Gi). DeepGaze 파이프라인: creative-pipeline-906295665279.asia-northeast3.run.app (4Gi). predict.py/predict_video_frames.py v1→v2 테이블 마이그레이션. server.js에서 삭제된 analyze/benchmark/score 엔드포인트 제거. Railway 서비스는 1주일 관찰 후 삭제 예정."
   }
 }

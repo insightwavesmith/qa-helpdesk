@@ -302,25 +302,30 @@ def main():
     offset = 0
     while True:
         q = (
-            "/ad_creative_embeddings?"
-            "select=ad_id,account_id,media_url,storage_url,media_type"
+            "/creative_media?"
+            "select=id,media_url,storage_url,media_type,creatives!inner(ad_id,account_id)"
             "&media_type=eq.VIDEO"
-            "&order=ad_id"
+            "&order=id"
             f"&limit={PAGE_SIZE}"
             f"&offset={offset}"
         )
         if args.account_id:
-            q += f"&account_id=eq.{args.account_id}"
+            q += f"&creatives.account_id=eq.{args.account_id}"
         batch = sb_get(q)
         if not batch:
             break
-        # storage_url(mp4) 또는 media_url 있는 것만 포함
-        filtered = [
-            r for r in batch
-            if (r.get("storage_url") and r["storage_url"].endswith(".mp4"))
-            or r.get("media_url")
-        ]
-        all_creatives.extend(filtered)
+        # storage_url(mp4) 또는 media_url 있는 것만 포함 + 정규화
+        for r in batch:
+            storage = r.get("storage_url")
+            media = r.get("media_url")
+            if (storage and storage.endswith(".mp4")) or media:
+                all_creatives.append({
+                    "ad_id": r.get("creatives", {}).get("ad_id"),
+                    "account_id": r.get("creatives", {}).get("account_id"),
+                    "media_url": media,
+                    "storage_url": storage,
+                    "media_type": r.get("media_type"),
+                })
         if len(batch) < PAGE_SIZE:
             break
         offset += PAGE_SIZE
