@@ -338,6 +338,59 @@ ALTER TABLE ad_creative_embeddings ADD COLUMN IF NOT EXISTS
 
 ## 6. 구현 우선순위
 
+---
+
+## 7. Motion 분류체계 흡수 (2026-03-23 추가)
+
+> Motion Bootcamp + $13억 벤치마크 분석에서 추출. Gemini 5축 프롬프트에 추가해서 흡수.
+> 리서치: mozzi-reports.vercel.app/reports/research/2026-03-23-bscamp-vs-motion-analysis
+
+### 7-1. 추가할 분류 태그 (analysis_json에 필드 추가)
+
+| 태그 | 값 (enum) | 설명 | 적용 |
+|------|-----------|------|------|
+| **visual_format** | Creator-led(UGC) / Product Demo / Testimonial / Before&After / Split Screen / Montage / Infographic / Listicle / How To / Skit / Street Interview / Pattern Interrupt / Unboxing / BTS / Static Product Shot / Lifestyle / Carousel / Motion Graphics / Whitetext / Mashup | 소재의 "형태" — 어떻게 만들었는가 | Gemini 프롬프트에 "Visual Format을 20개 중 하나로 분류해라" 추가 |
+| **hook_tactic** | Confession / Bold Claim / Relatability / Contrast / Curiosity / Other | 첫 3초 훅 전략 — $1M+/월 계정 Top 5 | 첫 프레임 + 카피 기반 분류 |
+| **messaging_angle** | Price / Quality / Social Proof / Emotional / Functional / Problem-Solution / Urgency-Scarcity / Other | 메시지 관점 — "같은 제품, 다른 말" | 카피 + 비주얼 톤 기반 분류 |
+| **intended_audience** | 자유 텍스트 (e.g. "20대 여성, 피부관리 관심") | 소재가 타겟하는 오디언스 추정 | Meta adset 실제 타겟과 비교 가능 |
+
+### 7-2. 분류 태그 활용 — Comparative Reports
+
+태깅되면 자동으로 가능한 질문:
+- "UGC vs Product Demo — 어느 쪽 ROAS 높아?" → `GROUP BY visual_format`
+- "Confession 훅 vs Bold Claim — CTR 차이?" → `GROUP BY hook_tactic`
+- "가격 앵글 vs 감성 앵글 — 전환율?" → `GROUP BY messaging_angle`
+- "수강생 A는 감성만 쓰고 있다 → 가격 테스트 처방" → 처방 엔진 연동
+
+### 7-3. Andromeda 피드 네이티브 점수 (향후)
+
+**Motion 주장**: "오가닉 피드에 자연스러운 광고 = Andromeda가 더 노출시킨다"
+**실제**: Andromeda는 오가닉 미학 + 유저 관심사 매칭 둘 다 봄
+
+**현재 우리**: Andromeda 유사도 계산 이미 있음 (496건, 임베딩 cosine)
+**추가할 것 (나중)**:
+- 타겟 유저 피드 레퍼런스 이미지 수집
+- 소재 첫 프레임과 임베딩 유사도 계산 → "피드 네이티브 점수"
+- DeepGaze 시선 패턴이 오가닉 콘텐츠와 유사한지 비교
+
+### 7-4. Launch Analysis (신규 소재 추적)
+
+- `creative_media.first_served_at` 기준 D+1/3/7/14 성과 집계
+- 벤치마크 대비 위너(상위 20%) / 루저(하위 30%) 자동 판정
+- 알림: "어제 올린 광고 D+1 CTR 2.3%, 벤치마크 상위 15% — 예산 올리세요"
+
+### 7-5. 구현 우선순위
+
+| 순위 | 항목 | 난이도 | 임팩트 |
+|:----:|------|:------:|:------:|
+| 🥇 | 4카테고리 태깅 (Gemini 프롬프트 확장) | 낮음 | 최고 |
+| 🥈 | 태그별 성과 비교 뷰 (Comparative) | 중간 | 최고 |
+| 🥉 | 신규 소재 D+7 추적 (Launch) | 낮음 | 높음 |
+| 4 | qa봇 소재 분석 컨텍스트 | 중간 | 높음 |
+| 5 | 피드 네이티브 점수 (Andromeda) | 중간 | 높음 |
+
+---
+
 | 순서 | 작업 | 의존성 | 비용 |
 |------|------|--------|------|
 | **P0** | 동영상 원본 다운로드 (261건) | Meta API | 0원 |
