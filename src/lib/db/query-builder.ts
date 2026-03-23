@@ -496,13 +496,16 @@ export class PostgresQueryBuilder<T = Record<string, unknown>> {
 
     const colList = columns.map((c) => this._quoteCol(c)).join(", ");
     const conflictCol = this._onConflict || "id";
+    const conflictCols = conflictCol.split(",").map((c) => c.trim());
+    const conflictSet = new Set(conflictCols);
     const updateCols = columns
-      .filter((c) => c !== conflictCol)
+      .filter((c) => !conflictSet.has(c))
       .map((c) => `${this._quoteCol(c)} = EXCLUDED.${this._quoteCol(c)}`)
       .join(", ");
 
     const returning = " RETURNING *";
-    const sql = `INSERT INTO "${this._table}" (${colList}) VALUES ${valueRows.join(", ")} ON CONFLICT (${this._quoteCol(conflictCol)}) DO UPDATE SET ${updateCols}${returning}`;
+    const conflictColSql = conflictCols.map((c) => this._quoteCol(c)).join(", ");
+    const sql = `INSERT INTO "${this._table}" (${colList}) VALUES ${valueRows.join(", ")} ON CONFLICT (${conflictColSql}) DO UPDATE SET ${updateCols}${returning}`;
 
     const result = await this.pool.query(sql, params);
 
