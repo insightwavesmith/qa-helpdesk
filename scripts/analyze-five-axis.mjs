@@ -53,7 +53,7 @@ if (!["creative", "competitor"].includes(SOURCE)) {
 }
 
 // ── 환경변수 + DB 헬퍼 (이중 모드) ──
-import { sbGet, sbPatch, sbPost, env } from "./lib/db-helpers.mjs";
+import { sbGet, sbPatch, sbPost, env, SB_URL, closePool } from "./lib/db-helpers.mjs";
 const GEMINI_KEY = env.GEMINI_API_KEY;
 
 if (!GEMINI_KEY) {
@@ -1154,7 +1154,7 @@ async function main() {
       } else {
         // creatives 테이블에서 video_url 조회
         try {
-          const creatives = await sbGet(`/creatives?select=video_url&id=eq.${item.id}&limit=1`);
+          const creatives = await sbGet(`/creatives?select=video_url&id=eq.${item.creative_id}&limit=1`);
           if (creatives?.[0]?.video_url) {
             videoUrl = creatives[0].video_url;
           }
@@ -1270,4 +1270,4 @@ async function main() {
 main().catch((err) => {
   console.error("Fatal:", err);
   process.exit(1);
-});
+}).finally(() => closePool());

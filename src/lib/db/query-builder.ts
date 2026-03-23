@@ -381,8 +381,13 @@ export class PostgresQueryBuilder<T = Record<string, unknown>> {
           valueParts.push(`$${paramIdx++}::jsonb`);
           params.push(JSON.stringify(val));
         } else if (Array.isArray(val)) {
-          valueParts.push(`$${paramIdx++}::jsonb`);
-          params.push(JSON.stringify(val));
+          if (col === "embedding" || col.endsWith("_embedding")) {
+            valueParts.push(`$${paramIdx++}::vector`);
+            params.push(`[${(val as number[]).join(",")}]`);
+          } else {
+            valueParts.push(`$${paramIdx++}::jsonb`);
+            params.push(JSON.stringify(val));
+          }
         } else {
           valueParts.push(`$${paramIdx++}`);
           params.push(val);
@@ -416,8 +421,13 @@ export class PostgresQueryBuilder<T = Record<string, unknown>> {
         setParts.push(`${this._quoteCol(col)} = $${paramIdx++}::jsonb`);
         params.push(JSON.stringify(val));
       } else if (Array.isArray(val)) {
-        setParts.push(`${this._quoteCol(col)} = $${paramIdx++}::jsonb`);
-        params.push(JSON.stringify(val));
+        if (col === "embedding" || col.endsWith("_embedding")) {
+          setParts.push(`${this._quoteCol(col)} = $${paramIdx++}::vector`);
+          params.push(`[${(val as number[]).join(",")}]`);
+        } else {
+          setParts.push(`${this._quoteCol(col)} = $${paramIdx++}::jsonb`);
+          params.push(JSON.stringify(val));
+        }
       } else {
         setParts.push(`${this._quoteCol(col)} = $${paramIdx++}`);
         params.push(val);
@@ -469,8 +479,13 @@ export class PostgresQueryBuilder<T = Record<string, unknown>> {
           valueParts.push(`$${paramIdx++}::jsonb`);
           params.push(JSON.stringify(val));
         } else if (Array.isArray(val)) {
-          valueParts.push(`$${paramIdx++}::jsonb`);
-          params.push(JSON.stringify(val));
+          if (col === "embedding" || col.endsWith("_embedding")) {
+            valueParts.push(`$${paramIdx++}::vector`);
+            params.push(`[${(val as number[]).join(",")}]`);
+          } else {
+            valueParts.push(`$${paramIdx++}::jsonb`);
+            params.push(JSON.stringify(val));
+          }
         } else {
           valueParts.push(`$${paramIdx++}`);
           params.push(val);
