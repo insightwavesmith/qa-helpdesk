@@ -13,7 +13,7 @@
  *   node scripts/collect-benchmark-creatives.mjs --limit 10
  */
 
-import { sbGet, sbUpsert, env, SB_URL, SB_KEY } from "./lib/db-helpers.mjs";
+import { sbGet, sbUpsert, env, SB_URL, SB_KEY, closePool } from "./lib/db-helpers.mjs";
 
 // ── CLI 인자 ──────────────────────────────────────
 const args = process.argv.slice(2);
@@ -121,9 +121,25 @@ async function main() {
     `/creatives?ad_id=in.(${adIds.join(",")})&select=ad_id`
   );
   const existingAdIds = new Set(existingCreatives.map((r) => r.ad_id));
-  console.log(`  이미 존재하는 ad_id: ${existingAdIds.size}건`);
+  console.log(`  이미 존재하는 creatives ad_id: ${existingAdIds.size}건`);
 
-  const newInsights = insights.filter((r) => !existingAdIds.has(r.ad_id));
+  // 2-1. creative_media에 이미 있는 ad_id도 스킵 (creatives → creative_media 조인)
+  const existingMedia = await sbGet(
+    `/creative_media?select=creatives!inner(ad_id)&creatives.ad_id=in.(${adIds.join(",")})`
+  );
+  const existingMediaAdIds = new Set(existingMedia.map((r) => r.creatives?.ad_id).filter(Boolean));
+  console.log(`  이미 존재하는 creative_media ad_id: ${existingMediaAdIds.size}건`);
+
+  // 2-2. landing_pages에 이미 있는 URL 조회 (LP 중복 수집 방지)
+  const existingLps = await sbGet(
+    `/landing_pages?select=canonical_url&account_id=in.(${[...new Set(insights.map((r) => r.account_id))].join(",")})`
+  );
+  const existingLpUrls = new Set(existingLps.map((r) => r.canonical_url));
+  console.log(`  이미 존재하는 LP URL: ${existingLpUrls.size}건`);
+
+  const newInsights = insights.filter(
+    (r) => !existingAdIds.has(r.ad_id) && !existingMediaAdIds.has(r.ad_id)
+  );
 
   // 벤치마크 분류 태그 부여
   for (const r of newInsights) {
@@ -266,27 +282,32 @@ async function main() {
           }
         }
 
-        // 7. LP URL → landing_pages에 저장
+        // 7. LP URL → landing_pages에 저장 (기존 URL 스킵)
         if (lpUrl) {
           const canonicalUrl = normalizeUrl(lpUrl);
-          const domain = extractDomain(lpUrl);
-          try {
-            await sbUpsert(
-              "landing_pages",
-              [{
-                account_id: accountId,
-                canonical_url: canonicalUrl,
-                original_urls: [lpUrl],
-                domain: domain,
-                page_type: "product",
-                is_active: true,
-              }],
-              "canonical_url"
-            );
-            console.log(`    → LP 저장: ${canonicalUrl.slice(0, 60)}`);
-            totalLpCreated++;
-          } catch (e) {
-            console.log(`    → LP 저장 실패: ${e.message.slice(0, 60)}`);
+          if (existingLpUrls.has(canonicalUrl)) {
+            console.log(`    → LP 이미 존재, 스킵: ${canonicalUrl.slice(0, 60)}`);
+          } else {
+            const domain = extractDomain(lpUrl);
+            try {
+              await sbUpsert(
+                "landing_pages",
+                [{
+                  account_id: accountId,
+                  canonical_url: canonicalUrl,
+                  original_urls: [lpUrl],
+                  domain: domain,
+                  page_type: "product",
+                  is_active: true,
+                }],
+                "canonical_url"
+              );
+              existingLpUrls.add(canonicalUrl); // 같은 배치 내 중복 방지
+              console.log(`    → LP 저장: ${canonicalUrl.slice(0, 60)}`);
+              totalLpCreated++;
+            } catch (e) {
+              console.log(`    → LP 저장 실패: ${e.message.slice(0, 60)}`);
+            }
           }
         }
 
@@ -309,4 +330,4 @@ async function main() {
 main().catch((e) => {
   console.error("Fatal:", e);
   process.exit(1);
-});
+}).finally(() => closePool());
