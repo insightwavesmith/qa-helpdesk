@@ -9,28 +9,15 @@
  *   node scripts/analyze-creative-lp-alignment.mjs [--limit N] [--dry-run]
  */
 
-import { readFileSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import { getSupabaseConfig } from "./lib/env.mjs";
 
 // ── CLI 옵션 ──
 const DRY_RUN = process.argv.includes("--dry-run");
 const LIMIT_IDX = process.argv.indexOf("--limit");
 const LIMIT = LIMIT_IDX !== -1 ? parseInt(process.argv[LIMIT_IDX + 1], 10) : 50;
 
-// ── .env.local 파싱 ──
-const envPath = resolve(__dirname, "..", ".env.local");
-const envContent = readFileSync(envPath, "utf-8");
-const env = {};
-for (const line of envContent.split("\n")) {
-  const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
-}
-
-const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL;
-const SB_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
+// ── 환경변수 (.env.local 또는 process.env) ──
+const { SB_URL, SB_KEY, env } = getSupabaseConfig();
 const GEMINI_KEY = env.GEMINI_API_KEY;
 
 if (!SB_URL || !SB_KEY) {

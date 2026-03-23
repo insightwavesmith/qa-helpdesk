@@ -9,7 +9,7 @@
  * 이 모듈은 dotenv 호환 파싱을 제공한다.
  */
 
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -18,11 +18,18 @@ const PROJECT_ROOT = resolve(__dirname, "..", "..");
 
 /**
  * .env.local 파일을 파싱하여 key-value 객체 반환
+ * Cloud Run 등 .env.local이 없는 환경에서는 process.env 사용
  * @param {string} [envFileName] - 환경 파일명 (기본: ".env.local")
  * @returns {Record<string, string>}
  */
 export function loadEnv(envFileName = ".env.local") {
   const envPath = resolve(PROJECT_ROOT, envFileName);
+
+  // Cloud Run: .env.local 없으면 process.env 사용
+  if (!existsSync(envPath)) {
+    return { ...process.env };
+  }
+
   const envContent = readFileSync(envPath, "utf-8");
   const env = {};
 
