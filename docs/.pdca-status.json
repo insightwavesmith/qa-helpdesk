@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-23T16:15:00.000Z",
+  "lastUpdated": "2026-03-23T17:30:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1505,7 +1505,18 @@
       "startedAt": "2026-03-23",
       "completedAt": "2026-03-23",
       "notes": "Phase 1-5 완료. Cloud Run Service(bscamp-cron, 1GB/3600s/concurrency10) + Cloud Run Jobs(bscamp-scripts 6개). Scheduler 21개. Vercel crons 제거. Railway(Playwright+DeepGaze) 유지. 39계정 collect-daily + 6개 분석잡 전부 테스트 통과."
+    },
+    "lp-media-download": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/lp-media-download.plan.md",
+        "design": "02-design/features/lp-media-download.design.md"
+      },
+      "startedAt": "2026-03-23",
+      "completedAt": "2026-03-23",
+      "notes": "LP HTML 파싱 → img/gif/video URL 추출 → Storage 다운로드. lp-media-downloader.ts 379줄 신규. crawl-lps hashChanged 시 미디어 다운로드 단계 추가. landing_pages.media_assets jsonb. SHA-256 중복 방지. 개별 50MB/LP당 200MB."
     }
   },
-  "updatedAt": "2026-03-23T09:30:00+09:00"
+  "updatedAt": "2026-03-23T17:30:00+09:00"
 }

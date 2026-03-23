@@ -8,6 +8,7 @@ import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { crawlV2 } from "@/lib/railway-crawler";
+import { downloadLpMedia, type MediaAsset } from "@/lib/lp-media-downloader";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -65,6 +66,7 @@ async function handleCrawl(req: NextRequest) {
     errors: 0,
     hashChanged: 0,
     htmlSaved: 0,
+    mediaSaved: 0,
   };
   const errorMessages: string[] = [];
 
@@ -79,7 +81,7 @@ async function handleCrawl(req: NextRequest) {
 
     let lpQuery = supabase
       .from("landing_pages")
-      .select("id, account_id, canonical_url, content_hash, last_crawled_at")
+      .select("id, account_id, canonical_url, content_hash, last_crawled_at, media_assets")
       .eq("is_active", true);
     if (accountFilter) {
       lpQuery = lpQuery.eq("account_id", accountFilter);
@@ -111,6 +113,7 @@ async function handleCrawl(req: NextRequest) {
       canonical_url: string;
       content_hash: string | null;
       last_crawled_at: string | null;
+      media_assets: MediaAsset[] | null;
     }>) {
       // 차단 URL 감지 → is_active = false
       if (isBlockedUrl(lp.canonical_url)) {
@@ -171,8 +174,9 @@ async function handleCrawl(req: NextRequest) {
 
         // HTML 원본 다운로드 → Storage 업로드 (best-effort)
         let htmlStoragePath: string | null = null;
+        let htmlContent: string | null = null;
         try {
-          const htmlContent = await fetchHtmlContent(lp.canonical_url);
+          htmlContent = await fetchHtmlContent(lp.canonical_url);
           if (htmlContent) {
             const htmlPath = `lp/${lp.account_id}/${lp.id}/page.html`;
             const htmlOk = await uploadHtmlToStorage(supabase, htmlPath, htmlContent);
@@ -184,6 +188,22 @@ async function handleCrawl(req: NextRequest) {
         } catch (htmlErr) {
           // HTML 다운로드 실패는 크롤링 전체를 중단하지 않음
           console.warn(`[crawl-lps v2] HTML 다운로드 실패 (${lp.id}):`, htmlErr);
+        }
+
+        // ── 미디어 리소스 다운로드 (HTML 파싱 → img/video/gif → Storage) ──
+        let newMediaAssets: MediaAsset[] = [];
+        if (htmlContent) {
+          try {
+            newMediaAssets = await downloadLpMedia(
+              supabase,
+              { id: lp.id, account_id: lp.account_id, canonical_url: lp.canonical_url },
+              htmlContent,
+              lp.media_assets || [],
+            );
+            stats.mediaSaved += newMediaAssets.length;
+          } catch (mediaErr) {
+            console.warn(`[crawl-lps v2] 미디어 다운로드 실패 (${lp.id}):`, mediaErr);
+          }
         }
 
         // lp_snapshots UPSERT
@@ -219,14 +239,23 @@ async function handleCrawl(req: NextRequest) {
           continue;
         }
 
-        // landing_pages UPDATE (hash + last_crawled_at)
+        // landing_pages UPDATE (hash + last_crawled_at + media_assets)
         const now = new Date().toISOString();
+        // 기존 media_assets에 신규 추가 (중복 hash 제거)
+        const existingAssets: MediaAsset[] = lp.media_assets || [];
+        const mergedAssets = [...existingAssets, ...newMediaAssets];
+        // hash 기준 중복 제거
+        const uniqueAssets = Array.from(
+          new Map(mergedAssets.map((a) => [a.hash, a])).values(),
+        );
+
         await supabase
           .from("landing_pages")
           .update({
             content_hash: newHash,
             last_crawled_at: now,
             updated_at: now,
+            media_assets: uniqueAssets,
           })
           .eq("id", lp.id);
 

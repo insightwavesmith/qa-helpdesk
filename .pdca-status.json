@@ -640,5 +640,19 @@
     "completedAt": "2026-03-23",
     "updatedAt": "2026-03-23T16:15:00",
     "notes": "Railway 2개 서비스 → GCP Cloud Run 이관 완료. Playwright 크롤러: bscamp-crawler-906295665279.asia-northeast3.run.app (2Gi). DeepGaze 파이프라인: creative-pipeline-906295665279.asia-northeast3.run.app (4Gi). predict.py/predict_video_frames.py v1→v2 테이블 마이그레이션. server.js에서 삭제된 analyze/benchmark/score 엔드포인트 제거. Railway 서비스는 1주일 관찰 후 삭제 예정."
+  },
+  "lp-media-download": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/lp-media-download.plan.md",
+    "design": "docs/02-design/features/lp-media-download.design.md",
+    "tasks": [
+      "DB-media_assets-컬럼추가",
+      "lp-media-downloader.ts-신규작성",
+      "crawl-lps-route-통합",
+      "tsc+build통과"
+    ],
+    "completedAt": "2026-03-23",
+    "updatedAt": "2026-03-23T17:30:00",
+    "notes": "LP HTML 파싱 → img/gif/video URL 추출 → Storage 다운로드. lp-media-downloader.ts 379줄 신규. crawl-lps hashChanged 시 미디어 다운로드 단계 추가. landing_pages.media_assets jsonb 매핑. SHA-256 중복 방지. 개별 50MB/LP당 200MB 제한."
   }
 }
