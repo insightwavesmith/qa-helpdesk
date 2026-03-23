@@ -335,7 +335,7 @@ export class PostgresQueryBuilder<T = Record<string, unknown>> {
     const limitClause = this._limitVal !== null ? ` LIMIT ${this._limitVal}` : "";
     const offsetClause = this._offsetVal !== null ? ` OFFSET ${this._offsetVal}` : "";
 
-    let sql = `SELECT ${selectClause} FROM "${this._table}"${whereClause}${orderClause}${limitClause}${offsetClause}`;
+    const sql = `SELECT ${selectClause} FROM "${this._table}"${whereClause}${orderClause}${limitClause}${offsetClause}`;
 
     // count 포함 시 별도 카운트 쿼리
     let count: number | null = null;

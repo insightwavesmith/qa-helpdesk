@@ -199,6 +199,7 @@ export async function GET(req: NextRequest) {
 
         // 성공: last_crawled_at + last_success_at 갱신, consecutive_failures 리셋
         // DB 타입 미등록 컬럼(last_success_at, consecutive_failures) → as any 캐스팅
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (svc.from("content_sources") as any)
           .update({
             last_crawled_at: new Date().toISOString(),
@@ -223,6 +224,7 @@ export async function GET(req: NextRequest) {
           console.warn(`[collect-content] ${source.name}: 3회 연속 실패 → 자동 비활성화`);
         }
         // DB 타입 미등록 컬럼(consecutive_failures, is_active) → as any 캐스팅
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (svc.from("content_sources") as any).update(updates).eq("id", source.id);
       }
 

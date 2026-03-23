@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import {
   Loader2,
@@ -677,7 +677,7 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [completed, setCompleted] = useState(false);
+  const completedRef = useRef(false);
 
   // Initial profile load
   useEffect(() => {
@@ -699,12 +699,12 @@ export default function OnboardingPage() {
 
   // Complete onboarding when step 3 is reached
   useEffect(() => {
-    if (step === 3 && !completed) {
-      setCompleted(true);
+    if (step === 3 && !completedRef.current) {
+      completedRef.current = true;
       completeOnboarding();
       mp.track("onboarding_completed");
     }
-  }, [step, completed]);
+  }, [step]);
 
   const handleWelcomeNext = useCallback(async () => {
     setSaving(true);

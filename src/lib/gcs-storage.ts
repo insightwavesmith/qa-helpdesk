@@ -5,10 +5,22 @@
  * 공개 URL: https://storage.googleapis.com/bscamp-storage/{bucket}/{path}
  *
  * USE_CLOUD_SQL=true 시 활성화
+ * ADC(Application Default Credentials) 기반 인증 — Cloud Run 서비스 계정 자동 적용
  */
+
+import { Storage } from "@google-cloud/storage";
 
 const GCS_BUCKET = "bscamp-storage";
 const GCS_PUBLIC_BASE = `https://storage.googleapis.com/${GCS_BUCKET}`;
+
+let storage: Storage | null = null;
+
+function getStorage(): Storage {
+  if (!storage) {
+    storage = new Storage();
+  }
+  return storage;
+}
 
 /**
  * GCS 공개 URL 생성
@@ -35,7 +47,7 @@ export function convertSupabaseUrlToGcs(supabaseUrl: string): string {
 /**
  * GCS에 파일 업로드 (서버 사이드)
  * Supabase: storage.from(bucket).upload(path, file, { contentType })
- * GCS: Google Cloud Storage JSON API 직접 호출
+ * GCS: @google-cloud/storage SDK (ADC 자동 인증)
  *
  * 반환: { publicUrl, error }
  */
@@ -47,34 +59,12 @@ export async function uploadToGcs(
 ): Promise<{ publicUrl: string | null; error: string | null }> {
   try {
     const gcsPath = `${bucket}/${path}`;
+    const file = getStorage().bucket(GCS_BUCKET).file(gcsPath);
 
-    // Google Cloud Storage JSON API를 사용한 업로드
-    // 서비스 계정 인증 필요 (GOOGLE_APPLICATION_CREDENTIALS 또는 gcloud auth)
-    const uploadUrl = `https://storage.googleapis.com/upload/storage/v1/b/${GCS_BUCKET}/o?uploadType=media&name=${encodeURIComponent(gcsPath)}`;
-
-    // gcloud CLI를 통한 액세스 토큰 획득
-    const { execSync } = await import("child_process");
-    let accessToken: string;
-    try {
-      accessToken = execSync("gcloud auth print-access-token", { encoding: "utf-8" }).trim();
-    } catch {
-      // gcloud 없는 환경 → 서비스 계정 키 사용 시도
-      return { publicUrl: null, error: "GCS auth not available. Set GOOGLE_APPLICATION_CREDENTIALS or run gcloud auth login." };
-    }
-
-    const res = await fetch(uploadUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "Content-Type": contentType,
-      },
-      body: fileBuffer as unknown as BodyInit,
+    await file.save(Buffer.from(fileBuffer), {
+      contentType,
+      resumable: false,
     });
-
-    if (!res.ok) {
-      const body = await res.text();
-      return { publicUrl: null, error: `GCS upload failed: ${res.status} ${body.slice(0, 200)}` };
-    }
 
     const publicUrl = `${GCS_PUBLIC_BASE}/${gcsPath}`;
     return { publicUrl, error: null };
@@ -93,19 +83,7 @@ export async function deleteFromGcs(
 ): Promise<{ error: string | null }> {
   try {
     const gcsPath = `${bucket}/${path}`;
-    const deleteUrl = `https://storage.googleapis.com/storage/v1/b/${GCS_BUCKET}/o/${encodeURIComponent(gcsPath)}`;
-
-    const { execSync } = await import("child_process");
-    const accessToken = execSync("gcloud auth print-access-token", { encoding: "utf-8" }).trim();
-
-    const res = await fetch(deleteUrl, {
-      method: "DELETE",
-      headers: { "Authorization": `Bearer ${accessToken}` },
-    });
-
-    if (!res.ok && res.status !== 404) {
-      return { error: `GCS delete failed: ${res.status}` };
-    }
+    await getStorage().bucket(GCS_BUCKET).file(gcsPath).delete({ ignoreNotFound: true });
     return { error: null };
   } catch (err: unknown) {
     return { error: err instanceof Error ? err.message : String(err) };

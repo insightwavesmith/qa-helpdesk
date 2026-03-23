@@ -52,7 +52,7 @@ function normalizeUrl(url: string): string {
     });
     for (const k of keysToRemove) u.searchParams.delete(k);
     // trailing slash 제거
-    let path = u.pathname.replace(/\/+$/, "") || "/";
+    const path = u.pathname.replace(/\/+$/, "") || "/";
     return `${u.protocol}//${u.host}${path}${u.search}`;
   } catch {
     return url;

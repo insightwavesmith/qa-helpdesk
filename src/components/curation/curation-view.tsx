@@ -89,11 +89,13 @@ export function CurationView({ sourceFilter, onGenerateInfoShare }: CurationView
   const contents = contentsResult?.contents ?? [];
   const statusCounts = contentsResult?.counts ?? null;
 
-  // 소스 필터 변경 시 상태 필터 리셋
+  // 소스 필터 변경 시 상태 필터 리셋 (prop 변경 → 의존 state 초기화)
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setStatusFilter("all");
     setSelectedIds(new Set());
   }, [sourceFilter]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {

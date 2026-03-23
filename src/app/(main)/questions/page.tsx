@@ -27,7 +27,6 @@ export default async function QuestionsPage({
 
   // 역할 조회: student/member/admin만 질문 작성 가능
   let canCreateQuestion = false;
-  let userRole: string | undefined;
 
   // 카테고리 필터 없는 경우 (가장 빈번) → auth + categories + getQuestions 3개 병렬
   const needsCategoryLookup = categorySlug && categorySlug !== "all" && tab === "all";
@@ -56,7 +55,7 @@ export default async function QuestionsPage({
     profilePromise,
   ]);
 
-  userRole = profile?.role || undefined;
+  const userRole = profile?.role || undefined;
   canCreateQuestion = ["student", "member", "admin"].includes(profile?.role || "");
 
   let questionsResult: Awaited<ReturnType<typeof getQuestions>>;

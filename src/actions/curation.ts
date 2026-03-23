@@ -29,9 +29,9 @@ export async function getCurationContents({
   const to = from + pageSize - 1;
 
   // deleted_at은 새 컬럼이라 Supabase 타입에 없음 — filter로 우회
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query = (supabase
     .from("contents")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .select("*", { count: "exact" }) as any)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -105,6 +105,7 @@ async function getLinkedInfoSharesMap(
   // content_relations는 새 테이블이라 아직 Supabase 타입에 없음
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: relations } = await (supabase as any)
+
     .from("content_relations")
     .select("source_id, generated_id")
     .in("source_id", contentIds) as { data: { source_id: string; generated_id: string }[] | null };
@@ -141,10 +142,10 @@ export async function getCurationCount() {
   const supabase = await requireStaff();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { count, error } = await (supabase
+  const { count, error } = await (supabase as any)
     .from("contents")
     .select("id", { count: "exact", head: true })
-    .in("curation_status", ["new", "selected"]) as any)
+    .in("curation_status", ["new", "selected"])
     .is("deleted_at", null)
     .neq("source_type", "info_share");
 
@@ -172,9 +173,9 @@ export async function getCurationStatusCounts(
   const supabase = await requireStaff();
 
   const buildQuery = (status?: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let q = (supabase
       .from("contents")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .select("id", { count: "exact", head: true }) as any)
       .is("deleted_at", null);
 
@@ -463,8 +464,8 @@ export async function softDeleteContents(
   const supabase = await requireStaff();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase
-    .from("contents") as any)
+  const { error } = await (supabase as any)
+    .from("contents")
     .update({ deleted_at: new Date().toISOString() })
     .in("id", ids);
 
@@ -483,8 +484,8 @@ export async function restoreContents(
   const supabase = await requireStaff();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase
-    .from("contents") as any)
+  const { error } = await (supabase as any)
+    .from("contents")
     .update({ deleted_at: null })
     .in("id", ids);
 
@@ -503,9 +504,9 @@ export async function getDeletedContents(
   const supabase = await requireStaff();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase
+  let query = (supabase as any)
     .from("contents")
-    .select("id, title, source_type, deleted_at, created_at", { count: "exact" }) as any)
+    .select("id, title, source_type, deleted_at, created_at", { count: "exact" })
     .not("deleted_at", "is", null)
     .order("deleted_at", { ascending: false });
 
