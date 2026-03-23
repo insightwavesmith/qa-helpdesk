@@ -570,6 +570,7 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
                 account_id: account.account_id,
                 creative_type: creativeType,
                 source: "member",
+                is_member: true,
                 brand_name: account.account_name || null,
                 is_active: true,
                 lp_url: rawLpUrl || null,
@@ -647,6 +648,7 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
                   media_url: mediaUrl,
                   media_hash: imageHash || null,
                   storage_url: (creativeId ? creativeIdToStorageUrl.get(creativeId) : null) || null,
+                  raw_creative: ad.creative || null,
                 };
               }).filter(Boolean);
 

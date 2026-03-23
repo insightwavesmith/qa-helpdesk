@@ -217,6 +217,7 @@ async function main() {
           account_id: accountId,
           creative_type: creativeType,
           source: "benchmark",
+          is_benchmark: true,
           brand_name: insight.ad_name || null,
           is_active: false, // 벤치마크는 비활성
           lp_url: lpUrl,
@@ -275,6 +276,7 @@ async function main() {
             media_url: mediaUrl,
             storage_url: storageUrl,
             ad_copy: insight.ad_name || null,
+            raw_creative: creative || null,
           };
           try {
             await sbUpsert("creative_media", [mediaRow], "creative_id");

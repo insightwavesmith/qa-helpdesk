@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-23T16:30:00.000Z",
+  "lastUpdated": "2026-03-24T02:00:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1560,7 +1560,17 @@
       "documents": {},
       "startedAt": "2026-03-23",
       "notes": "crawl-all-lps→Cloud Run Job 전환. LP 216건 초기화+재크롤링. VIDEO 100MB 제한."
+    },
+    "collection-refactor": {
+      "phase": "completed",
+      "documents": {
+        "plan": "01-plan/features/collection-refactor.plan.md",
+        "design": "02-design/features/collection-refactor.design.md"
+      },
+      "startedAt": "2026-03-24",
+      "completedAt": "2026-03-24",
+      "notes": "is_member/is_benchmark 플래그 + creative_media raw_creative. 기존 데이터 태깅 SQL 포함."
     }
   },
-  "updatedAt": "2026-03-23T15:20:00+09:00"
+  "updatedAt": "2026-03-24T02:00:00+09:00"
 }
