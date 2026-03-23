@@ -56,7 +56,7 @@ async function sbPatch(table, query, body) {
 
 // ── Gemini 2.5 Pro 호출 (재시도 포함) ──
 async function callGemini(prompt, retries = 3) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${GEMINI_KEY}`;
   const body = {
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: {

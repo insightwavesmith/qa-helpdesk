@@ -58,7 +58,7 @@ if (!GEMINI_KEY) {
   process.exit(1);
 }
 
-const GEMINI_MODEL = "gemini-2.5-pro";
+const GEMINI_MODEL = "gemini-3-pro-preview";
 const RATE_LIMIT_MS = 4000; // 분당 15 요청 → 4초 간격
 const MAX_RETRIES = 3;
 
@@ -305,8 +305,8 @@ async function callGeminiDomStructure(imageBase64, mimeType, canonicalUrl) {
     { text: prompt },
   ];
 
-  // Gemini Flash 사용 (DOM 구조 분석은 Flash로 충분)
-  const FLASH_MODEL = "gemini-2.0-flash";
+  // Gemini Pro 사용
+  const FLASH_MODEL = "gemini-3-pro-preview";
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
@@ -594,7 +594,7 @@ async function main() {
       reference_based: result,
       raw_analysis: Object.keys(rawAnalysis).length > 0 ? rawAnalysis : null,
       ...flatColumns,
-      model_version: "gemini-2.5-pro-lp-v2",
+      model_version: "gemini-3-pro-preview-lp-v2",
       analyzed_at: new Date().toISOString(),
     };
 

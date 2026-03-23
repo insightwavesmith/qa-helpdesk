@@ -5,7 +5,7 @@ import { requireAdmin } from "../../_shared";
 export const maxDuration = 300; // Vercel Pro
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GENERATION_MODEL = "gemini-2.0-flash";
+const GENERATION_MODEL = "gemini-3-pro-preview";
 
 export async function POST(request: NextRequest) {
   const rl = heavyLimiter.check(getClientIp(request));

@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5분
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_MODEL = "gemini-3-pro-preview";
 const GEMINI_BASE =
   "https://generativelanguage.googleapis.com/v1beta/models";
 const COMPETITOR_PREFIX = "competitor:";

@@ -3,7 +3,7 @@
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "gemini-embedding-2-preview";
 const EMBEDDING_DIMENSIONS = parseInt(process.env.EMBEDDING_DIMENSIONS || "3072", 10);
-const FLASH_MODEL = "gemini-2.0-flash";
+const FLASH_MODEL = "gemini-3-pro-preview";
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 if (!GEMINI_API_KEY) {

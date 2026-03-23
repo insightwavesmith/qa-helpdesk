@@ -74,7 +74,7 @@ export async function embedImage(
       chunk_total: 1,
       image_url: imageUrl,
       embedding_model_v2: process.env.EMBEDDING_MODEL || "gemini-embedding-2-preview",
-      metadata: { type: "image", vision_model: "gemini-2.0-flash" },
+      metadata: { type: "image", vision_model: "gemini-3-pro-preview" },
     })
     .select("id")
     .single();
