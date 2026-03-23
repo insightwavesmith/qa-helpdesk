@@ -30,18 +30,20 @@ const LIMIT = limitIdx >= 0 ? parseInt(args[limitIdx + 1], 10) : 500;
 const accountIdx = args.indexOf("--account-id");
 const ACCOUNT_FILTER = accountIdx >= 0 ? args[accountIdx + 1] : null;
 
-// ── .env.local ────────────────────────────────────
-const envPath = resolve(__dirname, "..", ".env.local");
-const envContent = readFileSync(envPath, "utf-8");
-const env = {};
-for (const line of envContent.split("\n")) {
-  const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
-}
+// ── 환경변수 (process.env 우선, .env.local fallback) ──
+let env = {};
+try {
+  const envPath = resolve(__dirname, "..", ".env.local");
+  const envContent = readFileSync(envPath, "utf-8");
+  for (const line of envContent.split("\n")) {
+    const m = line.match(/^([^#=]+)=(.*)$/);
+    if (m) env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
+  }
+} catch { /* Cloud Run Job 등 .env.local 없는 환경 */ }
 
-const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL;
-const SB_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
-const META_TOKEN = env.META_ACCESS_TOKEN;
+const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL;
+const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
+const META_TOKEN = process.env.META_ACCESS_TOKEN || env.META_ACCESS_TOKEN;
 
 if (!SB_URL || !SB_KEY) {
   console.error("SUPABASE_URL, SERVICE_ROLE_KEY 필요");

@@ -688,5 +688,15 @@
     ],
     "updatedAt": "2026-03-23T14:10:00+09:00",
     "notes": "crawl-all-lps → Cloud Run Job 전환. title→product_name 수정. lp_snapshots 277건+landing_pages 216건 NULL 초기화. VIDEO 20→100MB."
+  },
+  "batch-pipeline": {
+    "status": "implementing",
+    "tasks": [
+      "collect-benchmark-creatives env fallback ✅",
+      "download-missing-media env fallback ✅",
+      "Cloud Run Job 생성+실행 진행중"
+    ],
+    "updatedAt": "2026-03-23T14:20:00+09:00",
+    "notes": "TASK-BATCH: 벤치마크소재→VIDEO다운로드→5축배치 순서. 3개 스크립트 Cloud Run Job 전환."
   }
 }
