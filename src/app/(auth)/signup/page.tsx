@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/client";
 import { mp } from "@/lib/mixpanel";
-import { updateBusinessCertUrl, savePrivacyConsent } from "@/actions/auth";
+import { ensureProfile, updateBusinessCertUrl, savePrivacyConsent } from "@/actions/auth";
 import { useInviteCode as consumeInviteCode } from "@/actions/invites";
 import Image from "next/image";
 import { Loader2, Upload, FileCheck, CheckCircle2 } from "lucide-react";
@@ -322,6 +322,21 @@ export default function SignupPage() {
       if (!authData?.user) {
         setError("회원가입 중 오류가 발생했습니다.");
         return;
+      }
+
+      // Phase 5: Cloud SQL 환경에서 profile 생성 (trigger 대체)
+      try {
+        await ensureProfile(authData.user.id, formData.email, {
+          name: metadata.name || "",
+          phone: metadata.phone || undefined,
+          shop_url: metadata.shop_url || undefined,
+          shop_name: metadata.shop_name || undefined,
+          business_number: metadata.business_number || undefined,
+          cohort: metadata.cohort || undefined,
+          invite_code: metadata.invite_code || undefined,
+        });
+      } catch (profileErr) {
+        console.error("[signup] ensureProfile failed:", profileErr);
       }
 
       // 사업자등록증 파일 업로드 (lead 모드에서만)

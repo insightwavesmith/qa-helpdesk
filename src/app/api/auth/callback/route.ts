@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 
 export async function GET(request: Request) {
@@ -19,6 +19,26 @@ export async function GET(request: Request) {
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // Phase 5: Cloud SQL 환경에서 OAuth 사용자 profile 보장
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const svc = createServiceClient();
+          const { data: existing } = await svc.from("profiles").select("id").eq("id", user.id).maybeSingle();
+          if (!existing) {
+            await svc.from("profiles").insert({
+              id: user.id,
+              email: user.email || "",
+              name: user.user_metadata?.name || user.user_metadata?.full_name || "",
+              role: "lead",
+              onboarding_status: "not_started",
+              onboarding_step: 0,
+            } as never);
+          }
+        }
+      } catch (profileErr) {
+        console.error("[auth/callback] ensureProfile failed:", profileErr);
+      }
       return NextResponse.redirect(`${origin}${redirectPath}`);
     }
   }

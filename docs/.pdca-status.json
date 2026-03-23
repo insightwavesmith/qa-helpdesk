@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-23T16:44:16+09:00",
+  "lastUpdated": "2026-03-23T09:28:01.282Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1250,8 +1250,7 @@
       "phase": "implementing",
       "matchRate": null,
       "documents": {},
-      "startedAt": "2026-03-23",
-      "notes": "Phase 1-2 완료: Cloud SQL 스키마+데이터 이관 (60테이블 37,983건). Phase 3-6 대기."
+      "notes": "Phase 1-3 완료 (Schema+Data+Storage), Phase 4+5 코드 작성 완료 (DB전환+Auth이관), Vercel preview 테스트 대기"
     },
     "five-axis-prompt-v3-audio": {
       "phase": "completed",

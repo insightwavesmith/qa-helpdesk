@@ -1,4 +1,5 @@
 // 서버 전용 Supabase 클라이언트 (Server Components, Route Handlers)
+// Phase 4: USE_CLOUD_SQL=true 시 DB 쿼리를 Cloud SQL로 라우팅
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { Database } from "@/types/database";
@@ -6,7 +7,7 @@ import type { Database } from "@/types/database";
 export async function createClient() {
   const cookieStore = await cookies();
 
-  return createServerClient<Database>(
+  const supabaseClient = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -27,10 +28,53 @@ export async function createClient() {
       },
     }
   );
+
+  // USE_CLOUD_SQL=true → auth는 Supabase, DB(.from/.rpc)는 Cloud SQL
+  if (process.env.USE_CLOUD_SQL === "true") {
+    const { createDbClient } = require("@/lib/db");
+    const dbClient = createDbClient();
+    return new Proxy(supabaseClient, {
+      get(target, prop: string) {
+        if (prop === "from" || prop === "rpc") {
+          return dbClient[prop].bind(dbClient);
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (target as any)[prop];
+      },
+    }) as typeof supabaseClient;
+  }
+
+  return supabaseClient;
 }
 
-// 서비스 역할 클라이언트 (관리자 작업용 - RLS 우회)
+// 서비스 역할 클라이언트 (Server Actions, API Routes — RLS 우회)
+// USE_CLOUD_SQL=true 시 Cloud SQL 직접 연결
 export function createServiceClient() {
+  if (process.env.USE_CLOUD_SQL === "true") {
+    const { createDbClient } = require("@/lib/db");
+    const dbClient = createDbClient();
+
+    // storage 접근이 필요한 경우를 위해 Supabase storage만 유지
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { createClient: createSupabaseClient } = require("@supabase/supabase-js");
+    const supabaseForStorage = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    return new Proxy(dbClient, {
+      get(target, prop: string) {
+        if (prop === "storage") {
+          return supabaseForStorage.storage;
+        }
+        if (prop === "auth") {
+          return supabaseForStorage.auth;
+        }
+        return (target as Record<string, unknown>)[prop];
+      },
+    }) as ReturnType<typeof import("@supabase/supabase-js").createClient<Database>>;
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { createClient: createSupabaseClient } = require("@supabase/supabase-js");
   return createSupabaseClient(

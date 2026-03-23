@@ -1,4 +1,5 @@
 // Middleware용 Supabase 클라이언트 (세션 갱신 + 역할 기반 라우팅)
+// Phase 4: USE_CLOUD_SQL=true 시 profile 조회를 Cloud SQL로 라우팅
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
@@ -96,17 +97,30 @@ export async function updateSession(request: NextRequest) {
     request.cookies.get(ONBOARDING_COOKIE)?.value || null;
 
   if (!role) {
-    // cookie 없음 → service role로 profiles 조회
+    // cookie 없음 → profiles 조회 (Cloud SQL 또는 Supabase)
     try {
-      const svc = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-      );
-      const { data: profile } = await svc
-        .from("profiles")
-        .select("role, onboarding_status")
-        .eq("id", user.id)
-        .single();
+      let profile: { role: string; onboarding_status: string } | null = null;
+
+      if (process.env.USE_CLOUD_SQL === "true") {
+        // Cloud SQL 직접 쿼리 (middleware에서는 pg Pool 직접 사용)
+        const { query } = await import("@/lib/db/pool");
+        const result = await query(
+          'SELECT role, onboarding_status FROM profiles WHERE id = $1 LIMIT 1',
+          [user.id]
+        );
+        profile = result.rows[0] || null;
+      } else {
+        const svc = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+        const { data } = await svc
+          .from("profiles")
+          .select("role, onboarding_status")
+          .eq("id", user.id)
+          .single();
+        profile = data;
+      }
 
       if (profile) {
         const fetchedRole = profile.role as string;
