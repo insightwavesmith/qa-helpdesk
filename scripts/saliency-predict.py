@@ -7,7 +7,7 @@ Usage: python scripts/saliency-predict.py [--limit N] [--account-id xxx]
   --account-id xxx   : 특정 광고 계정만 처리
 
 플로우:
-1. ad_creative_embeddings에서 IMAGE 소재 조회
+1. creative_media에서 IMAGE 소재 조회
 2. creative_saliency에 이미 분석된 ad_id 제외
 3. DeepGaze IIE로 saliency map 예측
 4. 히트맵 이미지 생성 → Supabase Storage 업로드
@@ -300,17 +300,26 @@ def main():
 
     # 대상 소재 조회 (IMAGE만, media_url 있는 것)
     query = (
-        "/ad_creative_embeddings?"
-        "select=ad_id,account_id,media_url,media_type"
+        "/creative_media?"
+        "select=id,media_url,media_type,creatives!inner(ad_id,account_id)"
         "&media_url=not.is.null"
         "&media_type=eq.IMAGE"
-        "&order=ad_id"
+        "&order=id"
         f"&limit={args.limit}"
     )
     if args.account_id:
-        query += f"&account_id=eq.{args.account_id}"
+        query += f"&creatives.account_id=eq.{args.account_id}"
 
-    creatives = sb_get(query)
+    raw_creatives = sb_get(query)
+    # creative_media JOIN 결과를 기존 형식으로 정규화
+    creatives = []
+    for r in raw_creatives:
+        creatives.append({
+            "ad_id": r.get("creatives", {}).get("ad_id"),
+            "account_id": r.get("creatives", {}).get("account_id"),
+            "media_url": r.get("media_url"),
+            "media_type": r.get("media_type"),
+        })
     print(f"  대상 소재: {len(creatives)}건")
 
     if not creatives:
@@ -339,17 +348,20 @@ def main():
         print(f"  {remaining}건 중 {MAX_PER_ROUND}건만 이번 라운드에서 처리")
         to_analyze = to_analyze[:MAX_PER_ROUND]
 
-    # CTA 위치 정보 조회 (배치 300개씩 — URL 길이 제한 방지)
+    # CTA 위치 정보 조회 (creative_media.analysis_json에서 추출)
     cta_map = {}
     try:
         batch_size = 300
         for bi in range(0, len(to_analyze), batch_size):
             batch_ids = ",".join(c["ad_id"] for c in to_analyze[bi:bi + batch_size])
-            cea_data = sb_get(
-                f"/creative_element_analysis?select=ad_id,cta_position&ad_id=in.({batch_ids})"
+            cm_data = sb_get(
+                f"/creative_media?select=analysis_json,creatives!inner(ad_id)&creatives.ad_id=in.({batch_ids})&analysis_json=not.is.null"
             )
-            for r in cea_data:
-                cta_map[r["ad_id"]] = r.get("cta_position")
+            for r in cm_data:
+                ad_id = r.get("creatives", {}).get("ad_id")
+                cta_pos = (r.get("analysis_json") or {}).get("cta_position")
+                if ad_id and cta_pos:
+                    cta_map[ad_id] = cta_pos
     except Exception as e:
         print(f"  CTA 위치 조회 실패 (무시): {e}")
 

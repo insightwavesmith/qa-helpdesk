@@ -1,6 +1,6 @@
 /**
  * T5: 경쟁사 소재 임베딩
- * SearchAPI.io에서 수집한 경쟁사 광고 → ad_creative_embeddings 저장
+ * SearchAPI.io에서 수집한 경쟁사 광고 → creative_media 저장
  * 기존 competitor-check 크론에서 호출
  */
 
@@ -16,7 +16,7 @@ interface EmbedCompetitorResult {
 }
 
 /**
- * 경쟁사 광고 목록 → ad_creative_embeddings에 저장
+ * 경쟁사 광고 목록 → creative_media에 저장
  * source = 'competitor'
  */
 export async function embedCompetitorAds(

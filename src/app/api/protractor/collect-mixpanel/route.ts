@@ -1,10 +1,14 @@
 /**
  * POST /api/protractor/collect-mixpanel
  * 관리자 전용 매출데이터 수동 재수집 엔드포인트
+ * — GCP Cloud Run 크론 서비스에 프록시
  */
 
 import { NextResponse } from "next/server";
 import { requireProtractorAccess } from "../_shared";
+
+const GCP_CRON_URL =
+  process.env.GCP_CRON_URL || "https://bscamp-cron-a4vkex7yiq-du.a.run.app";
 
 export async function POST() {
   const auth = await requireProtractorAccess();
@@ -18,13 +22,7 @@ export async function POST() {
   }
 
   try {
-    const baseUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-
-    const cronUrl = new URL("/api/cron/collect-mixpanel", baseUrl);
-
-    const res = await fetch(cronUrl.toString(), {
+    const res = await fetch(`${GCP_CRON_URL}/api/cron/collect-mixpanel`, {
       method: "GET",
       headers: {
         authorization: `Bearer ${process.env.CRON_SECRET ?? ""}`,
@@ -43,11 +41,11 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      message: "매출데이터 재수집 완료",
+      message: "매출데이터 재수집 완료 (GCP)",
       ...data,
     });
   } catch (e) {
-    console.error("collect-mixpanel error:", e);
+    console.error("collect-mixpanel GCP proxy error:", e);
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Unknown error" },
       { status: 500 }

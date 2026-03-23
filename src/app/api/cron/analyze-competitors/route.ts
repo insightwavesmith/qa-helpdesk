@@ -181,7 +181,7 @@ async function analyzeCreative(
   }
 }
 
-/** 분석 결과 → creative_element_analysis DB 행 */
+/** 분석 결과 → creative_media.analysis_json용 중간 행 */
 function buildAnalysisRow(
   adArchiveId: string,
   pageId: string,
@@ -353,11 +353,20 @@ export async function GET(req: NextRequest) {
       continue;
     }
 
-    // creative_element_analysis에 upsert
+    // creative_media에 analysis_json upsert
     const row = buildAnalysisRow(ad.ad_archive_id, ad.page_id, analysis);
     const { error: upsertError } = await svc
-      .from("creative_element_analysis")
-      .upsert(row, { onConflict: "ad_id" });
+      .from("creative_media")
+      .upsert(
+        {
+          creative_id: row.ad_id,
+          analysis_json: row.raw_analysis,
+          media_url: imageUrl,
+          ad_copy: adCopy,
+          media_type: isVideo ? "VIDEO" : "IMAGE",
+        },
+        { onConflict: "creative_id" },
+      );
 
     if (upsertError) {
       console.error(

@@ -11,7 +11,6 @@
  *   - creatives           : 소재 마스터 (ad_id, creative_type, lp_id 등)
  *   - creative_media      : 소재 미디어 파일 (이미지/영상 URL, Storage 경로)
  *   - landing_pages       : LP 정규화 테이블 (canonical_url, domain, page_type)
- *   - ad_creative_embeddings : 소재 임베딩 원시 데이터 (media_url, ad_copy)
  *
  * 하지 않는 것:
  *   - 임베딩 벡터 생성 (→ embed-creatives가 담당)
@@ -410,7 +409,7 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
             accountResult.meta_ads = rows.length;
           }
 
-          // ── 소재 데이터 → ad_creative_embeddings upsert ──
+          // ── 소재 이미지/썸네일 URL 수집 ──
           const imageHashes = extractImageHashes(ads);
           const hashToUrl = imageHashes.length > 0
             ? await fetchImageUrlsByHash(account.account_id, imageHashes)
@@ -430,57 +429,7 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
             console.log(`[collect-daily] video thumbnails: ${videoThumbMap.size}/${videoIds.length}건`);
           }
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const creativeRows = ads.map((ad: any) => {
-            const adId = (ad.ad_id ?? ad.id) as string;
-            if (!adId) return null;
-            const creative = ad.creative;
-            const imageHash = creative?.image_hash;
-            const videoId = creative?.video_id;
-
-            // media_url 3단계 fallback: image_hash → video_id 썸네일 → asset_feed_spec
-            const mediaUrl = (() => {
-              // 1. 직접 image_hash
-              if (imageHash && hashToUrl.has(imageHash)) return hashToUrl.get(imageHash)!;
-              // 2. 동영상 썸네일
-              if (videoId && videoThumbMap.has(videoId)) return videoThumbMap.get(videoId)!;
-              // 3. 카탈로그: asset_feed_spec.images[0].hash
-              const afsImages = creative?.asset_feed_spec?.images;
-              if (afsImages && Array.isArray(afsImages)) {
-                for (const img of afsImages) {
-                  if (img.hash && hashToUrl.has(img.hash)) return hashToUrl.get(img.hash)!;
-                }
-              }
-              return null;
-            })();
-
-            return {
-              ad_id: adId,
-              account_id: account.account_id,
-              source: "own" as const,
-              brand_name: account.account_name || null,
-              media_url: mediaUrl,
-              media_type: videoId ? "VIDEO" : "IMAGE",
-              media_hash: imageHash || null,
-              is_active: true,
-              updated_at: new Date().toISOString(),
-            };
-          }).filter(Boolean);
-
-          if (creativeRows.length > 0) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { error: creativeErr } = await (svc as any)
-              .from("ad_creative_embeddings")
-              .upsert(creativeRows as never[], { onConflict: "ad_id" });
-
-            if (creativeErr) {
-              console.error(`[collect-daily] ad_creative_embeddings upsert error [${account.account_id}]:`, creativeErr);
-            } else {
-              console.log(`[collect-daily] ad_creative_embeddings upserted: ${creativeRows.length}건`);
-            }
-          }
-
-          // ── [v2] 정규화 테이블 UPSERT (landing_pages → creatives → creative_media) ──
+          // ── 정규화 테이블 UPSERT (landing_pages → creatives → creative_media) ──
           try {
             // Step 1: LP URL 수집 + 정규화 + landing_pages UPSERT
             const lpUrlMap = new Map<string, { canonical: string; hostname: string; account_id: string }>();
@@ -581,15 +530,15 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
                 (creativeIdData ?? []).map((c: { ad_id: string; id: string }) => [c.ad_id, c.id])
               );
 
-              // ad_creative_embeddings에서 storage_url 조회 → creative_media에 반영
+              // 기존 creative_media에서 storage_url 조회 (이미 다운로드된 미디어)
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const { data: aceStorageData } = await (svc as any)
-                .from("ad_creative_embeddings")
-                .select("ad_id, storage_url")
-                .in("ad_id", adIds)
+              const { data: existingMedia } = await (svc as any)
+                .from("creative_media")
+                .select("creative_id, storage_url")
+                .in("creative_id", Array.from(adIdToCreativeId.values()))
                 .not("storage_url", "is", null);
-              const adIdToStorageUrl = new Map<string, string>(
-                (aceStorageData ?? []).map((r: { ad_id: string; storage_url: string }) => [r.ad_id, r.storage_url])
+              const creativeIdToStorageUrl = new Map<string, string>(
+                (existingMedia ?? []).map((r: { creative_id: string; storage_url: string }) => [r.creative_id, r.storage_url])
               );
 
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -622,7 +571,7 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
                   media_type: videoId ? "VIDEO" : "IMAGE",
                   media_url: mediaUrl,
                   media_hash: imageHash || null,
-                  storage_url: adIdToStorageUrl.get(adId) || null,
+                  storage_url: (creativeId ? creativeIdToStorageUrl.get(creativeId) : null) || null,
                 };
               }).filter(Boolean);
 

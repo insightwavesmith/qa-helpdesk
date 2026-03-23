@@ -6,7 +6,7 @@
  *   visual, text, psychology, quality, attention (+audio/structure 영상 전용)
  *
  * 결과: creative_media.analysis_json (JSONB)
- * 폴백: ad_creative_embeddings에만 있는 경우 → video_analysis에 저장
+ * creative_media 테이블만 사용 (v2 구조)
  *
  * Usage:
  *   node scripts/analyze-five-axis.mjs --dry-run
@@ -1048,24 +1048,7 @@ async function main() {
   }
   console.log(`creative_media: ${cmRows.length}건${cmHasAnalysisCol ? "" : " (analysis_json 컬럼 미생성)"}`);
 
-  // 2. ad_creative_embeddings에서 추가 대상 (creative_media에 없는 것)
-  const cmAdIds = new Set(cmRows.map((r) => r.creatives?.ad_id));
-  let aceRows = [];
-  offset = 0;
-  while (true) {
-    let query =
-      `/ad_creative_embeddings?select=ad_id,account_id,storage_url,media_type,ad_copy,video_analysis` +
-      `&storage_url=not.is.null&order=ad_id.asc&offset=${offset}&limit=${PAGE_SIZE}`;
-    if (FILTER_TYPE) query += `&media_type=eq.${FILTER_TYPE}`;
-    if (FILTER_ACCOUNT) query += `&account_id=eq.${FILTER_ACCOUNT}`;
-    const batch = await sbGet(query);
-    aceRows.push(...batch);
-    if (batch.length < PAGE_SIZE) break;
-    offset += PAGE_SIZE;
-  }
-  // creative_media에 이미 있는 것은 제외
-  aceRows = aceRows.filter((r) => !cmAdIds.has(r.ad_id));
-  console.log(`ad_creative_embeddings (추가): ${aceRows.length}건`);
+  // ad_creative_embeddings 폴백 제거됨 (v2: creative_media만 사용)
 
   // 3. 통합 리스트 구성
   let allItems = [];
@@ -1089,19 +1072,7 @@ async function main() {
     });
   }
 
-  // ad_creative_embeddings 행
-  for (const row of aceRows) {
-    if (row.video_analysis?.visual && row.video_analysis?.text) continue;
-    allItems.push({
-      source: "ace",
-      id: null,
-      adId: row.ad_id,
-      accountId: row.account_id,
-      storageUrl: row.storage_url,
-      mediaType: row.media_type,
-      adCopy: row.ad_copy,
-    });
-  }
+  // v2: creative_media만 사용 (ad_creative_embeddings 폴백 제거됨)
 
   console.log(`\n분석 대상: ${allItems.length}건`);
 
@@ -1222,30 +1193,10 @@ async function main() {
           await logElementDiff(item, item.oldAnalysisJson, result);
         }
       }
-    } else if (item.source === "creative_media" && !cmHasAnalysisCol) {
-      // analysis_json 컬럼 미생성 → ace 폴백
-      const patch = await sbPatch("ad_creative_embeddings", `ad_id=eq.${item.adId}`, {
-        video_analysis: result,
-      });
-      if (!patch.ok) {
-        console.log(`X ace 폴백 저장 실패: ${patch.body}`);
-        errors++;
-      } else {
-        console.log(`OK (ace폴백) ${result.summary?.slice(0, 40) || "OK"}`);
-        success++;
-      }
     } else {
-      // ace 폴백: video_analysis에 저장
-      const patch = await sbPatch("ad_creative_embeddings", `ad_id=eq.${item.adId}`, {
-        video_analysis: result,
-      });
-      if (!patch.ok) {
-        console.log(`X ace 저장 실패: ${patch.body}`);
-        errors++;
-      } else {
-        console.log(`OK (ace) ${result.summary?.slice(0, 40) || "OK"}`);
-        success++;
-      }
+      // creative_media에 analysis_json 컬럼 미생성 시 스킵
+      console.log(`스킵 (analysis_json 컬럼 없음)`);
+      skipped++;
     }
 
     // Rate limit

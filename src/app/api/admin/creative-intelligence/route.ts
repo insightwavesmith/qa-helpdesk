@@ -22,37 +22,25 @@ export async function GET(req: NextRequest) {
 
   const period = parseInt(req.nextUrl.searchParams.get("period") || "30", 10);
 
-  // 1. 소재 점수 조회 (overall_score 내림차순)
+  // 1. creative_media + creatives JOIN으로 소재 정보 + 분석 결과 조회
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: scores, error: scoresErr } = await (svc as any)
-    .from("creative_intelligence_scores")
-    .select("*")
-    .eq("account_id", accountId)
-    .order("overall_score", { ascending: false });
+  const { data: mediaRows, error: mediaErr } = await (svc as any)
+    .from("creative_media")
+    .select("id, media_url, ad_copy, media_type, storage_url, analysis_json, creatives!inner(ad_id, account_id, lp_url, is_active)")
+    .eq("creatives.account_id", accountId)
+    .eq("creatives.is_active", true);
 
-  if (scoresErr) {
-    return NextResponse.json({ error: scoresErr.message }, { status: 500 });
+  if (mediaErr) {
+    return NextResponse.json({ error: mediaErr.message }, { status: 500 });
   }
 
-  if (!scores || scores.length === 0) {
+  if (!mediaRows || mediaRows.length === 0) {
     return NextResponse.json({ account_id: accountId, total: 0, results: [] });
   }
 
-  const adIds = scores.map((s: { ad_id: string }) => s.ad_id);
+  const adIds = mediaRows.map((r: Record<string, unknown>) => (r.creatives as Record<string, unknown>).ad_id as string);
 
-  // 2. ad_creative_embeddings에서 media_url, ad_copy 조회
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: embeddings } = await (svc as any)
-    .from("ad_creative_embeddings")
-    .select("ad_id, media_url, ad_copy, media_type, storage_url, lp_url")
-    .in("ad_id", adIds);
-
-  const embeddingMap = new Map<string, Record<string, unknown>>();
-  for (const e of embeddings || []) {
-    embeddingMap.set(e.ad_id, e);
-  }
-
-  // 3. daily_ad_insights에서 기간 평균 ROAS 조회
+  // 2. daily_ad_insights에서 기간 평균 ROAS 조회
   const sinceDate = new Date();
   sinceDate.setDate(sinceDate.getDate() - period);
   const sinceDateStr = sinceDate.toISOString().split("T")[0];
@@ -73,22 +61,25 @@ export async function GET(req: NextRequest) {
     roasMap.set(row.ad_id, existing);
   }
 
-  // 4. 결과 병합
-  const results = scores.map((score: Record<string, unknown>) => {
-    const adId = score.ad_id as string;
-    const emb = embeddingMap.get(adId) || {};
+  // 3. 결과 병합
+  const results = mediaRows.map((media: Record<string, unknown>) => {
+    const creative = media.creatives as Record<string, unknown>;
+    const adId = creative.ad_id as string;
+    const analysisJson = media.analysis_json as Record<string, unknown> | null;
     const perf = roasMap.get(adId);
     const roas = perf && perf.totalSpend > 0
       ? Math.round((perf.totalRevenue / perf.totalSpend) * 100) / 100
       : null;
 
     return {
-      ...score,
-      // ad_creative_embeddings 필드
-      media_url: (emb as Record<string, unknown>).storage_url || (emb as Record<string, unknown>).media_url || null,
-      ad_copy: (emb as Record<string, unknown>).ad_copy || null,
-      media_type: (emb as Record<string, unknown>).media_type || null,
-      lp_url: (emb as Record<string, unknown>).lp_url || null,
+      ad_id: adId,
+      // analysis_json 점수 (5축 분석 결과)
+      analysis_json: analysisJson,
+      // creative_media 필드
+      media_url: (media.storage_url as string) || (media.media_url as string) || null,
+      ad_copy: (media.ad_copy as string) || null,
+      media_type: (media.media_type as string) || null,
+      lp_url: (creative.lp_url as string) || null,
       // 성과 지표
       roas,
       spend: perf?.totalSpend ?? null,

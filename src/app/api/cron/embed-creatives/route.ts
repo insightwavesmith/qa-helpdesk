@@ -7,14 +7,13 @@
  *       분석/강화 파이프라인.
  *
  * 소유 테이블 (이 크론이 UPSERT/갱신하는 테이블):
- *   - ad_creative_embeddings : 임베딩 벡터 생성 (embedding vector(768))
- *   - (간접) creative_element_analysis : 5축 분석 트리거 시 갱신
+ *   - creative_media : 임베딩 벡터 생성 (embedding vector(3072))
  *
  * 동작 순서:
  *   1. ad_accounts에서 active 계정 조회
  *   2. 각 계정의 ACTIVE 광고 조회 (Meta API)
  *   3. 소재 이미지 URL + 카피 + LP URL 수집
- *   4. ad_creative_embeddings에 upsert
+ *   4. creative_media에 upsert (creatives FK 기반)
  *   5. 임베딩 없는 row만 Gemini 임베딩 실행
  *
  * collect-daily와의 역할 분리:
@@ -116,7 +115,7 @@ export async function GET(req: NextRequest) {
           ? await fetchCreativeDetails(adIds)
           : new Map();
 
-        // 3. ad_creative_embeddings에 upsert
+        // 3. creative_media에 upsert (via embedCreative)
         const BATCH_SIZE = 50;
         for (let i = 0; i < ads.length; i += BATCH_SIZE) {
           const batch = ads.slice(i, i + BATCH_SIZE);

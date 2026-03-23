@@ -608,5 +608,20 @@
     "completedAt": "2026-03-23",
     "updatedAt": "2026-03-23",
     "notes": "Phase 1-5 완료. Cloud Run Service(bscamp-cron) + Cloud Run Jobs(bscamp-scripts). Scheduler 21개(서비스15+잡6). Vercel crons 제거. Railway 2개(Playwright+DeepGaze) 유지. collect-daily 39계정/258광고 테스트 통과. 6개 분석잡 전부 성공."
+  },
+  "db-cleanup-v1-tables": {
+    "status": "completed",
+    "tasks": [
+      "전체테이블73개전수조사",
+      "v1코드참조grep체크",
+      "v1→v2코드마이그레이션21파일",
+      "레거시스크립트36파일삭제",
+      "tsc+build통과확인",
+      "DB테이블15개DROP",
+      "프론트수동수집GCP프록시"
+    ],
+    "completedAt": "2026-03-23",
+    "updatedAt": "2026-03-23T15:00:00",
+    "notes": "DB 73→60 테이블. v1 7개(ad_creative_embeddings, creative_element_analysis, creative_intelligence_scores, creative_element_performance, lp_crawl_queue, lp_structure_analysis, creative_lp_consistency) + 미사용 8개(keyword_rankings, likes, organic_conversions, seo_benchmarks, neuron_*4개) DROP. src/ 21파일 v2 마이그레이션. scripts/ 27개+services/ 4개+admin routes 5개 삭제. collect-daily/mixpanel GCP 프록시 전환."
   }
 }

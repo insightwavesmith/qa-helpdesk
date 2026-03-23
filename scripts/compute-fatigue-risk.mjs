@@ -19,7 +19,7 @@
  *
  * 전제 조건:
  *   - creative_media.analysis_json이 v3 스키마로 채워진 후 실행
- *   - ad_creative_embeddings.embedding_3072 또는 creative_media.embedding 벡터 필요
+ *   - creative_media.embedding 벡터 필요
  *
  * B5 수정: ad_id String 강제 변환으로 타입 불일치 방지 + 디버그 로그
  * B6 수정: 계정별 임베딩 로드 → 메모리 사용량 제어
@@ -112,13 +112,13 @@ async function loadAccountEmbeddings(accountId, PAGE_SIZE) {
   let offset = 0;
   while (true) {
     const q =
-      `/ad_creative_embeddings?select=ad_id,embedding_3072` +
-      `&account_id=eq.${accountId}&embedding_3072=not.is.null&order=ad_id.asc&offset=${offset}&limit=${PAGE_SIZE}`;
+      `/creative_media?select=creative_id,embedding,creatives!inner(ad_id,account_id)` +
+      `&creatives.account_id=eq.${accountId}&embedding=not.is.null&order=creative_id.asc&offset=${offset}&limit=${PAGE_SIZE}`;
     const batch = await sbGet(q);
     for (const r of batch) {
-      const vec = parseEmbedding(r.embedding_3072);
+      const vec = parseEmbedding(r.embedding);
       // B5: String 강제 변환으로 타입 불일치 방지
-      if (vec) embeddingMap.set(String(r.ad_id), vec);
+      if (vec && r.creatives?.ad_id) embeddingMap.set(String(r.creatives.ad_id), vec);
     }
     if (batch.length < PAGE_SIZE) break;
     offset += PAGE_SIZE;

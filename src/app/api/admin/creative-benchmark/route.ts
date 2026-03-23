@@ -27,35 +27,13 @@ export async function GET(req: NextRequest) {
 
   const elementType = req.nextUrl.searchParams.get("element");
 
-  // creative_element_performance 테이블 조회
-  // avg_roas 내림차순 정렬 (성과 좋은 요소가 상단)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (svc as any)
-    .from("creative_element_performance")
-    .select("*")
-    .order("avg_roas", { ascending: false });
-
-  // 특정 요소 타입 필터 적용
-  if (elementType) {
-    query = query.eq("element_type", elementType);
-  }
-
-  const { data: results, error } = await query;
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  // element_type별 그룹핑
-  const grouped: Record<string, typeof results> = {};
-  for (const row of results || []) {
-    if (!grouped[row.element_type]) grouped[row.element_type] = [];
-    grouped[row.element_type].push(row);
-  }
+  // v1 creative_element_performance 테이블은 삭제됨.
+  // 분석 데이터는 creative_media.analysis_json에 통합. 레거시 벤치마크 빈 결과 반환.
+  void svc; // suppress unused warning
 
   return NextResponse.json({
     element_type: elementType || "all",
-    total: results?.length ?? 0,
-    benchmarks: grouped,
+    total: 0,
+    benchmarks: {},
   });
 }

@@ -27,11 +27,12 @@ export async function GET(
   const svc = createServiceClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (svc as any)
-    .from("ad_creative_embeddings")
-    .select(
-      "id, ad_id, source, brand_name, category, media_url, media_type, ad_copy, creative_type, lp_url, lp_screenshot_url, lp_cta_screenshot_url, lp_headline, lp_price, roas, ctr, click_to_purchase_rate, quality_ranking, is_active, created_at, updated_at, lp_crawled_at",
-    )
-    .eq("id", id)
+    .from("creatives")
+    .select(`
+      id, ad_id, source, brand_name, category, creative_type, lp_url, is_active, created_at, updated_at,
+      creative_media!inner(media_url, media_type, ad_copy, storage_url)
+    `)
+    .eq("ad_id", id)
     .single();
 
   if (error || !data) {
@@ -41,5 +42,17 @@ export async function GET(
     );
   }
 
-  return NextResponse.json({ creative: data });
+  // 결과 평탄화 (creative_media 필드를 최상위로)
+  const media = data.creative_media as Record<string, unknown>;
+  const { creative_media: _cm, ...rest } = data;
+  void _cm;
+  const flattened = {
+    ...rest,
+    media_url: (media?.storage_url as string) || (media?.media_url as string) || null,
+    media_type: (media?.media_type as string) || null,
+    ad_copy: (media?.ad_copy as string) || null,
+    storage_url: (media?.storage_url as string) || null,
+  };
+
+  return NextResponse.json({ creative: flattened });
 }

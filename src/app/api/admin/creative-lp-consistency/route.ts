@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     const avgScore =
       results.length > 0
         ? Math.round(
-            (results.reduce((s, r) => s + (r.total_score ?? 0), 0) /
+            (results.reduce((s, r) => s + (r.consistency_score ?? 0), 0) /
               results.length) *
               10000,
           ) / 10000

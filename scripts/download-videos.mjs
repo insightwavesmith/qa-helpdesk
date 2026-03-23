@@ -3,7 +3,7 @@
  * 영상 mp4 다운로드 → Supabase Storage 업로드
  *
  * 흐름:
- *   1. creative_media(VIDEO) 조회 → 폴백: ad_creative_embeddings
+ *   1. creative_media(VIDEO) 조회
  *   2. account_id별 그룹화
  *   3. account별 GET /act_{account_id}/ads?fields=creative{object_story_spec}
  *      → object_story_spec.video_data.video_id (story_video_id) 추출
@@ -220,34 +220,8 @@ async function main() {
     rows = [];
   }
 
-  // ────────────────────────────────────────────
-  // 1b. 폴백: creative_media 비어있으면 ad_creative_embeddings 조회
-  // ────────────────────────────────────────────
   if (rows.length === 0) {
-    console.log("  creative_media 비어있음 — ad_creative_embeddings 폴백 조회...");
-    useCreativeMedia = false;
-    const PAGE_SIZE = 1000;
-    let offset = 0;
-    const fallbackRows = [];
-    while (true) {
-      const batch = await sbGet(
-        `/ad_creative_embeddings?select=ad_id,account_id,media_url&media_type=eq.VIDEO` +
-          `&order=ad_id.asc&offset=${offset}&limit=${PAGE_SIZE}`
-      );
-      fallbackRows.push(...batch);
-      if (batch.length < PAGE_SIZE) break;
-      offset += PAGE_SIZE;
-    }
-    // 폴백 행을 creative_media 형식으로 정규화
-    rows = fallbackRows.map((r) => ({
-      id: null,
-      creative_id: null,
-      media_url: r.media_url,
-      storage_url: null,
-      thumbnail_url: null,
-      creatives: { ad_id: r.ad_id, account_id: r.account_id },
-    }));
-    console.log(`  ad_creative_embeddings 폴백: ${rows.length}건`);
+    console.log("  creative_media에 VIDEO 소재 없음.");
   }
 
   // ────────────────────────────────────────────

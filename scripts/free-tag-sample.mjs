@@ -181,7 +181,7 @@ async function main() {
 
   // storage_url 있는 것 우선 (CDN 만료 걱정 없음), 다양한 계정에서 고루 샘플링
   const creatives = await sbGet(
-    `/ad_creative_embeddings?select=ad_id,account_id,media_url,storage_url,media_type,ad_copy,brand_name&is_active=eq.true&storage_url=not.is.null&limit=100&order=account_id`
+    `/creative_media?select=id,media_url,storage_url,media_type,ad_copy,creatives!inner(ad_id,account_id,brand_name)&is_active=eq.true&storage_url=not.is.null&limit=100&order=creatives.account_id`
   );
 
   console.log(`대상: ${creatives.length}건\n`);
@@ -193,14 +193,14 @@ async function main() {
   for (let i = 0; i < creatives.length; i++) {
     const c = creatives[i];
     const imageUrl = c.storage_url || c.media_url;
-    process.stdout.write(`[${i + 1}/${creatives.length}] ${c.brand_name || c.account_id} — `);
+    process.stdout.write(`[${i + 1}/${creatives.length}] ${c.creatives?.brand_name || c.creatives?.account_id} — `);
 
     const analysis = await analyzeCreative(imageUrl, c.ad_copy, c.media_type);
 
     if (analysis.error) {
       console.log(`❌ ${analysis.error}`);
       errors++;
-      results.push({ ad_id: c.ad_id, account_id: c.account_id, brand: c.brand_name, error: analysis.error });
+      results.push({ ad_id: c.creatives?.ad_id, account_id: c.creatives?.account_id, brand: c.creatives?.brand_name, error: analysis.error });
     } else {
       const hook = analysis.hook?.type || "?";
       const emotion = analysis.emotion?.primary || "?";
@@ -208,9 +208,9 @@ async function main() {
       console.log(`✅ hook: ${hook}, emotion: ${emotion}, style: ${style}`);
       success++;
       results.push({
-        ad_id: c.ad_id,
-        account_id: c.account_id,
-        brand: c.brand_name,
+        ad_id: c.creatives?.ad_id,
+        account_id: c.creatives?.account_id,
+        brand: c.creatives?.brand_name,
         media_type: c.media_type,
         analysis,
       });
