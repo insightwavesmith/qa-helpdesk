@@ -213,6 +213,30 @@ function calculateMetrics(insight: Record<string, any>) {
   };
 }
 
+// ── Meta API 권한 사전 체크 ────────────────────────────────────
+// 계정별로 API 접근 가능 여부를 확인하고, 권한 없는 계정은 마킹+스킵
+async function checkMetaPermission(
+  accountId: string,
+  token: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const cleanId = accountId.replace(/^act_/, "");
+    const res = await fetch(
+      `https://graph.facebook.com/v21.0/act_${cleanId}?access_token=${token}&fields=name,account_status`,
+      { signal: AbortSignal.timeout(10_000) },
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const msg = (body as any)?.error?.message ?? `HTTP ${res.status}`;
+      return { ok: false, error: msg };
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 // ── Meta API 재시도 래퍼 ──────────────────────────────────────
 async function fetchMetaWithRetry(
   url: string,
@@ -357,9 +381,56 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
     // 후처리(임베딩, SHARE→VIDEO, 사전계산, pipeline)는 마지막 배치 또는 전체 실행 시에만
     const isLastBatch = batch == null || batch === 4;
 
-    const results: Record<string, unknown>[] = [];
+    // ── Meta API 권한 사전 체크 ──
+    // 각 계정에 대해 API 접근 가능 여부를 미리 확인하고,
+    // 권한 없는 계정은 ad_accounts.meta_status='permission_denied'로 마킹 후 스킵
+    const token = process.env.META_ACCESS_TOKEN;
+    if (!token) throw new Error("META_ACCESS_TOKEN not set");
+
+    const permittedAccounts: typeof filteredAccounts = [];
+    const deniedIds: string[] = [];
 
     for (const account of filteredAccounts) {
+      // 숫자 ID가 아닌 더미 계정 스킵
+      if (!/^\d+$/.test(account.account_id)) {
+        console.log(`[collect-daily] 잘못된 account_id 스킵: ${account.account_id}`);
+        deniedIds.push(account.account_id);
+        continue;
+      }
+
+      const perm = await checkMetaPermission(account.account_id, token);
+      if (perm.ok) {
+        permittedAccounts.push(account);
+      } else {
+        console.log(`[collect-daily] 권한 없음 스킵: ${account.account_id} (${account.account_name}) — ${perm.error}`);
+        deniedIds.push(account.account_id);
+      }
+    }
+
+    // 권한 없는 계정 일괄 마킹
+    if (deniedIds.length > 0) {
+      await svc
+        .from("ad_accounts")
+        .update({ meta_status: "permission_denied", updated_at: new Date().toISOString() })
+        .in("account_id", deniedIds);
+      console.log(`[collect-daily] ${deniedIds.length}개 계정 permission_denied 마킹`);
+    }
+
+    // 권한 있는 계정 중 이전에 denied였던 것은 상태 복구
+    const permittedIds = permittedAccounts.map((a) => a.account_id);
+    if (permittedIds.length > 0) {
+      await svc
+        .from("ad_accounts")
+        .update({ meta_status: "ok", updated_at: new Date().toISOString() })
+        .in("account_id", permittedIds)
+        .eq("meta_status", "permission_denied");
+    }
+
+    console.log(`[collect-daily] 권한 체크 완료: ${permittedAccounts.length}개 허용, ${deniedIds.length}개 거부`);
+
+    const results: Record<string, unknown>[] = [];
+
+    for (const account of permittedAccounts) {
       const accountResult: Record<string, unknown> = {
         account_id: account.account_id,
         meta_ads: 0,

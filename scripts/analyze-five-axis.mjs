@@ -517,7 +517,7 @@ ${JSON.stringify(freeResults, null, 2)}
 }`;
 
 // ── Gemini Vision 분석 ──
-async function analyzeWithGemini(imageUrl, adCopy, mediaType, mode, videoUrl = null) {
+async function analyzeWithGemini(imageUrl, adCopy, mediaType, mode, videoUrl = null, saliencyData = null) {
   const isVideo = mediaType === "VIDEO";
   let prompt;
   if (mode === "free") {
@@ -570,6 +570,51 @@ async function analyzeWithGemini(imageUrl, adCopy, mediaType, mode, videoUrl = n
   }
 
   if (adCopy) parts.push({ text: `광고 카피: ${adCopy}` });
+
+  // ── DeepGaze 시선 데이터 주입 ──
+  if (saliencyData) {
+    let saliencyText = `\n[시선 분석 데이터 (DeepGaze III)]\n`;
+    if (saliencyData.top_fixations && saliencyData.top_fixations.length > 0) {
+      const fixStr = saliencyData.top_fixations
+        .map((f, i) => `  ${i + 1}위: (x=${f.x}, y=${f.y}) 주목도 ${(f.attention_pct * 100).toFixed(0)}%`)
+        .join('\n');
+      saliencyText += `주요 시선 고정점:\n${fixStr}\n`;
+    }
+    if (saliencyData.cognitive_load) {
+      saliencyText += `인지 부하: ${saliencyData.cognitive_load}\n`;
+    }
+    if (saliencyData.cta_attention_score != null) {
+      saliencyText += `CTA 주목도: ${(saliencyData.cta_attention_score * 100).toFixed(0)}%\n`;
+    }
+    // VIDEO: 프레임별 시선 데이터
+    if (saliencyData.frames && saliencyData.frames.length > 0) {
+      saliencyText += `\n[시간대별 시선 이동]\n`;
+      for (const frame of saliencyData.frames) {
+        const topFix = frame.fixations?.[0];
+        saliencyText += `  ${frame.timestamp_sec}초: 주목 영역 ${frame.attention_distribution?.top > frame.attention_distribution?.bottom ? '상단' : '하단'}, 인지부하 ${frame.cognitive_load}`;
+        if (topFix) saliencyText += `, 최고 주목점 (${topFix.x}, ${topFix.y})`;
+        saliencyText += `\n`;
+      }
+    }
+    saliencyText += `\n위 시선 데이터를 참고해서 이 소재의 시각적 요소를 분석해라.\n시선이 집중되는 곳과 핵심 메시지/CTA가 일치하는지도 판단해라.\n`;
+    parts.push({ text: saliencyText });
+
+    // 히트맵 이미지도 첨부 (attention_map_url이 있으면)
+    if (saliencyData.attention_map_url) {
+      try {
+        const hmRes = await fetch(saliencyData.attention_map_url, { signal: AbortSignal.timeout(10_000) });
+        if (hmRes.ok) {
+          const hmBuf = await hmRes.arrayBuffer();
+          const hmBase64 = Buffer.from(hmBuf).toString("base64");
+          parts.push({ inline_data: { mime_type: "image/png", data: hmBase64 } });
+          console.log(`  [DEEPGAZE] 히트맵 첨부 완료`);
+        }
+      } catch (e) {
+        console.warn(`  [DEEPGAZE] 히트맵 첨부 실패: ${e.message}`);
+      }
+    }
+  }
+
   parts.push({ text: prompt });
 
   // Gemini API 호출 (재시도)
@@ -1145,12 +1190,40 @@ async function main() {
       }
     }
 
+    // DeepGaze saliency 데이터 조회
+    let saliencyData = null;
+    try {
+      const saliencyRows = await sbGet(`/creative_saliency?ad_id=eq.${item.adId}&limit=1`);
+      if (saliencyRows && saliencyRows.length > 0) {
+        saliencyData = saliencyRows[0];
+        // VIDEO인 경우 프레임별 데이터도 조회
+        if (item.mediaType === "VIDEO") {
+          const frameRows = await sbGet(
+            `/creative_saliency?ad_id=like.${item.adId}__frame_*&target_type=eq.video_frame&order=ad_id&limit=30`
+          );
+          if (frameRows && frameRows.length > 0) {
+            saliencyData.frames = frameRows.map(fr => ({
+              timestamp_sec: parseInt(fr.ad_id.match(/__frame_(\d+)$/)?.[1] || "0"),
+              fixations: fr.top_fixations,
+              cognitive_load: fr.cognitive_load,
+              cta_attention: fr.cta_attention_score,
+              attention_distribution: { top: 0.33, middle: 0.34, bottom: 0.33 }, // DB에 없으므로 기본값
+            }));
+          }
+        }
+        console.log(`  [DEEPGAZE] 시선 데이터 있음 (cta=${saliencyData.cta_attention_score}, load=${saliencyData.cognitive_load})`);
+      }
+    } catch (e) {
+      console.warn(`  [DEEPGAZE] 조회 실패 (무시): ${e.message}`);
+    }
+
     const { result, error } = await analyzeWithGemini(
       item.storageUrl,
       item.adCopy,
       item.mediaType,
       MODE,
-      videoUrl
+      videoUrl,
+      saliencyData
     );
 
     if (error) {

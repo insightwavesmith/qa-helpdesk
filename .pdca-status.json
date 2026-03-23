@@ -658,15 +658,21 @@
   "collect-and-embed": {
     "status": "implementing",
     "tasks": [
-      "미push-커밋-push",
-      "DB-migration-media_assets",
-      "GIF-WebP-변환-추가",
-      "GCP-재배포",
-      "crawl-lps-수동트리거",
-      "미수집-19계정-원인파악",
-      "미임베딩-105건-배치"
+      "Meta API 권한 체크",
+      "health sync-notion 제거",
+      "storage 미다운로드 82건 완료",
+      "임베딩 배치 진행중"
     ],
-    "updatedAt": "2026-03-23T19:00:00",
-    "notes": "LP 수집(미디어 포함) + 광고 소재 수집 + 임베딩. 분석은 제외."
+    "updatedAt": "2026-03-23T12:45:00+09:00",
+    "notes": "collect-daily 권한 체크 구현 완료. health route sync-notion 제거. 82/83건 다운로드 완료."
+  },
+  "deepgaze-gemini-pipeline": {
+    "status": "implementing",
+    "tasks": [
+      "creative-saliency 크론 생성",
+      "analyze-five-axis DeepGaze 주입"
+    ],
+    "updatedAt": "2026-03-23T12:45:00+09:00",
+    "notes": "creative-saliency 크론 신규 생성. analyze-five-axis.mjs에 DeepGaze 시선 데이터 Gemini 프롬프트 주입."
   }
 }

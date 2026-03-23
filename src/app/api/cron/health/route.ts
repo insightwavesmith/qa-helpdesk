@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const supabase = createServiceClient();
   const now = new Date();
 
-  const cronNames = ["collect-daily", "collect-mixpanel", "collect-benchmarks", "sync-notion"];
+  const cronNames = ["collect-daily", "collect-mixpanel", "collect-benchmarks"];
   const checks: Record<string, { lastRun: string | null; status: string | null; ok: boolean }> = {};
   const missing: string[] = [];
 

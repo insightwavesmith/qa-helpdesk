@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-23T17:30:00.000Z",
+  "lastUpdated": "2026-03-23T12:45:00+09:00",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1229,6 +1229,20 @@
       "startedAt": "2026-03-23",
       "completedAt": "2026-03-23",
       "notes": "B5~B11 파이프라인 버그 7건 수정. tsc+build 통과."
+    },
+    "collect-and-embed": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {},
+      "startedAt": "2026-03-23",
+      "notes": "collect-daily 권한 체크, health sync-notion 제거, 82/83건 미디어 다운로드"
+    },
+    "deepgaze-gemini-pipeline": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {},
+      "startedAt": "2026-03-23",
+      "notes": "creative-saliency 크론, analyze-five-axis DeepGaze 시선 데이터 주입"
     }
   },
   "phaseMapping": {
