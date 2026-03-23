@@ -700,5 +700,18 @@
     "updatedAt": "2026-03-23T14:40:00+09:00",
     "completedAt": "2026-03-23",
     "notes": "벤치마크 기준: hook>25.81% OR ctr>3.48% OR engage>27.0, quality=ABOVE_AVERAGE/UNKNOWN. 62건 중 24건 신규, 올스타 2건."
+  },
+  "railway-to-gcp": {
+    "status": "completed",
+    "tasks": [
+      "GCP 크롤러 health+crawl 동작 확인 ✅",
+      "GCP creative-pipeline health+saliency 동작 확인 ✅",
+      "crawl-all-lps.mjs Railway→GCP fallback URL ✅",
+      "trigger-saliency-batch.mjs Railway→GCP URL ✅",
+      ".env.local RAILWAY_CRAWLER_URL+CREATIVE_PIPELINE_URL GCP로 변경 ✅"
+    ],
+    "updatedAt": "2026-03-23T15:20:00+09:00",
+    "completedAt": "2026-03-23",
+    "notes": "Railway URL 참조 전부 GCP Cloud Run으로 전환. Railway 서비스 중지는 1주일 모니터링 후."
   }
 }

@@ -31,7 +31,7 @@ try {
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
 const CRAWLER_URL =
-  process.env.CRAWLER_URL || process.env.RAILWAY_CRAWLER_URL || env.CRAWLER_URL || env.RAILWAY_CRAWLER_URL || "https://bscamp-crawler-production.up.railway.app";
+  process.env.CRAWLER_URL || process.env.RAILWAY_CRAWLER_URL || env.CRAWLER_URL || env.RAILWAY_CRAWLER_URL || "https://bscamp-crawler-906295665279.asia-northeast3.run.app";
 const CRAWLER_SECRET = process.env.CRAWLER_SECRET || env.CRAWLER_SECRET || "";
 
 if (!SB_URL || !SB_KEY) {

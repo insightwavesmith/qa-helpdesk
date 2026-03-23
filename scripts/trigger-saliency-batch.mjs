@@ -10,8 +10,8 @@
  * --repeat           : 타임아웃/에러 시 자동 재실행 (analyzed=0이 될 때까지 반복)
  */
 
-const RAILWAY_URL = "https://creative-pipeline-production.up.railway.app";
-const API_SECRET = "creative-pipeline-2026";
+const PIPELINE_URL = process.env.CREATIVE_PIPELINE_URL || "https://creative-pipeline-906295665279.asia-northeast3.run.app";
+const API_SECRET = process.env.CREATIVE_PIPELINE_SECRET || "creative-pipeline-2026";
 
 const args = process.argv.slice(2);
 const limit = parseInt(args.find((_, i, a) => a[i - 1] === "--limit") || "9999");
@@ -21,7 +21,7 @@ const repeat = args.includes("--repeat");
 
 async function checkHealth() {
   try {
-    const res = await fetch(`${RAILWAY_URL}/health`, { signal: AbortSignal.timeout(10000) });
+    const res = await fetch(`${PIPELINE_URL}/health`, { signal: AbortSignal.timeout(10000) });
     if (!res.ok) return null;
     return await res.json();
   } catch {
@@ -46,10 +46,10 @@ async function waitForNewDeploy(oldVersion, maxWaitMs = 600000) {
 
 async function triggerSaliency() {
   console.log(`\n🔬 L2 시선 예측 배치 시작 — limit: ${limit}, account: ${accountId || "전체"}`);
-  console.log(`📡 ${RAILWAY_URL}/saliency`);
+  console.log(`📡 ${PIPELINE_URL}/saliency`);
   console.log(`⏰ ${new Date().toLocaleTimeString("ko-KR")}`);
 
-  const res = await fetch(`${RAILWAY_URL}/saliency`, {
+  const res = await fetch(`${PIPELINE_URL}/saliency`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
