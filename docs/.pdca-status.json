@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-24T06:30:00.000Z",
+  "lastUpdated": "2026-03-24T07:00:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1308,6 +1308,11 @@
       "phase": "completed",
       "matchRate": 100,
       "notes": "Server Action middleware 리다이렉트 회피"
+    },
+    "gemini-migration": {
+      "phase": "completed",
+      "matchRate": 100,
+      "notes": "Anthropic → Gemini 3 Pro Preview 전환 완료"
     }
   },
   "phaseMapping": {

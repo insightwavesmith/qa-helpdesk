@@ -206,9 +206,9 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     systemPrompt: QA_SYSTEM_PROMPT,
     enableReranking: true,
     enableExpansion: true,
-    model: "claude-sonnet-4-6",
-    enableThinking: true,
-    thinkingBudget: 5000,
+    model: "gemini-3-pro-preview",
+    enableThinking: false,
+    thinkingBudget: 0,
     enableDomainAnalysis: true,
     enableHybridSearch: true,
     enableRelevanceEval: true,
@@ -223,7 +223,7 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     systemPrompt: "",
     enableReranking: false,
     enableExpansion: false,
-    model: "claude-opus-4-6",
+    model: "gemini-3-pro-preview",
     enableThinking: false,
     thinkingBudget: 0,
     enableDomainAnalysis: false,
@@ -240,7 +240,7 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     systemPrompt: "",
     enableReranking: false,
     enableExpansion: false,
-    model: "claude-opus-4-6",
+    model: "gemini-3-pro-preview",
     enableThinking: false,
     thinkingBudget: 0,
     enableDomainAnalysis: false,
@@ -257,7 +257,7 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     systemPrompt: "",
     enableReranking: false,
     enableExpansion: false,
-    model: "claude-opus-4-6",
+    model: "gemini-3-pro-preview",
     enableThinking: false,
     thinkingBudget: 0,
     enableDomainAnalysis: false,
@@ -274,7 +274,7 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     systemPrompt: QA_SYSTEM_PROMPT,
     enableReranking: true,
     enableExpansion: true,
-    model: "claude-sonnet-4-6",
+    model: "gemini-3-pro-preview",
     enableThinking: true,
     thinkingBudget: 5000,
     enableDomainAnalysis: true,
@@ -291,7 +291,7 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     systemPrompt: "",
     enableReranking: false,
     enableExpansion: false,
-    model: "claude-opus-4-6",
+    model: "gemini-3-pro-preview",
     enableThinking: false,
     thinkingBudget: 0,
     enableDomainAnalysis: false,
@@ -535,14 +535,14 @@ function buildDomainContext(analysis: DomainAnalysis): string {
 
 // ─── KnowledgeService ─────────────────────────────────────
 
-const DEFAULT_MODEL = "claude-opus-4-6";
-const API_URL = "https://api.anthropic.com/v1/messages";
-const TIMEOUT_MS = 280_000;
+const DEFAULT_MODEL = "gemini-3-pro-preview";
+const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+const TIMEOUT_MS = 120_000;
 
-function getApiKey(): string {
-  const key = process.env.ANTHROPIC_API_KEY;
+function getGeminiApiKey(): string {
+  const key = process.env.GEMINI_API_KEY;
   if (!key) {
-    throw new Error("ANTHROPIC_API_KEY가 설정되지 않았습니다.");
+    throw new Error("GEMINI_API_KEY가 설정되지 않았습니다.");
   }
   return key;
 }
@@ -556,7 +556,7 @@ export async function generate(
   request: KnowledgeRequest
 ): Promise<KnowledgeResponse> {
   const startTime = Date.now();
-  const apiKey = getApiKey();
+  const apiKey = getGeminiApiKey();
   const config = CONSUMER_CONFIGS[request.consumerType];
 
   const limit = request.limit ?? config.limit;
@@ -742,39 +742,32 @@ export async function generate(
   }
   userContent += `## 질문\n${query}`;
 
-  // Extended Thinking: temperature=1 고정 (Anthropic API 제약)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const bodyObj: Record<string, any> = {
-    model,
-    max_tokens: 8192,
-    system: systemPrompt,
-    messages: [{ role: "user", content: userContent }],
-    temperature: config.enableThinking ? 1 : temperature,
+  // Gemini API 호출 — system instruction + user content
+  const geminiBody = {
+    contents: [{ role: "user", parts: [{ text: userContent }] }],
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    generationConfig: {
+      temperature,
+      maxOutputTokens: 8192,
+    },
   };
-  if (config.enableThinking) {
-    bodyObj.thinking = { type: "enabled", budget_tokens: config.thinkingBudget };
-  }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify(bodyObj),
-      signal: controller.signal,
-    });
+    const response = await fetch(
+      `${GEMINI_BASE_URL}/${model}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(geminiBody),
+        signal: controller.signal,
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      if (response.status === 401 || response.status === 403) {
-        throw new Error("Opus 4.6 접근 권한 없음");
-      }
       throw new Error(
         `KnowledgeService API error: ${response.status} ${errorText}`
       );
@@ -782,21 +775,15 @@ export async function generate(
 
     const data = await response.json();
 
-    // T5: Extended Thinking 응답 파싱 — text block만 사용
-    let content: string;
-    if (config.enableThinking && Array.isArray(data.content)) {
-      const textBlock = data.content.find((b: { type: string }) => b.type === "text");
-      content = textBlock?.text || "";
-    } else {
-      content = data.content?.[0]?.text || "";
-    }
+    // Gemini 응답 파싱
+    let content: string = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     // B3: 물결표(~) → 하이픈(-) 치환 (마크다운 strikethrough 방지)
     // 숫자~숫자 패턴만 치환 (예: 30~40% → 30-40%)
     content = content.replace(/(\d)~(\d)/g, "$1-$2");
 
     const tokensUsed: number =
-      (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0);
+      (data.usageMetadata?.promptTokenCount || 0) + (data.usageMetadata?.candidatesTokenCount || 0);
 
     // 출처 참조 생성
     const sourceRefs: SourceRef[] = chunks.map((c) => ({
@@ -823,8 +810,8 @@ export async function generate(
       (svc as any).from("knowledge_usage").insert({
         consumer_type: request.consumerType,
         source_types: sourceTypes ? (sourceTypes as string[]) : [],
-        input_tokens: data.usage?.input_tokens || 0,
-        output_tokens: data.usage?.output_tokens || 0,
+        input_tokens: data.usageMetadata?.promptTokenCount || 0,
+        output_tokens: data.usageMetadata?.candidatesTokenCount || 0,
         total_tokens: tokensUsed,
         model,
         question_id: request.questionId || null,
@@ -850,7 +837,7 @@ export async function generate(
     return { content, sourceRefs, tokensUsed, model };
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
-      throw new Error("AI 응답 시간 초과 (55초)");
+      throw new Error("AI 응답 시간 초과 (120초)");
     }
     throw error;
   } finally {
