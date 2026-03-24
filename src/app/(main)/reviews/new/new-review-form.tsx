@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, ImagePlus, X, Loader2, Star } from "lucide-react";
 import { createReview } from "@/actions/reviews";
-import { createClient } from "@/lib/supabase/client";
+import { uploadFile } from "@/lib/upload-client";
 import { toast } from "sonner";
 import Link from "next/link";
 import Image from "next/image";
@@ -91,7 +91,6 @@ export function NewReviewForm({ defaultCohort }: NewReviewFormProps) {
   };
 
   const uploadImages = async (): Promise<string[]> => {
-    const supabase = createClient();
     const urls: string[] = [];
 
     for (const img of images) {
@@ -99,22 +98,7 @@ export function NewReviewForm({ defaultCohort }: NewReviewFormProps) {
       const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const filePath = `reviews/${fileName}`;
 
-      const { error } = await supabase.storage
-        .from("review-images")
-        .upload(filePath, img.file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (error) {
-        console.error("Image upload error:", error);
-        throw new Error(`이미지 업로드 실패: ${img.file.name}`);
-      }
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("review-images").getPublicUrl(filePath);
-
+      const publicUrl = await uploadFile(img.file, "review-images", filePath);
       urls.push(publicUrl);
     }
 

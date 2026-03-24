@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import NextImage from "next/image";
 import { Image as ImageIcon, Eye, Calendar, Mail, Upload, Loader2, Trash2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { uploadFile, deleteFile } from "@/lib/upload-client";
 import { updateContent } from "@/actions/contents";
 import { toast } from "sonner";
 import type { Content } from "@/types/content";
@@ -49,23 +49,17 @@ export default function DetailSidebar({
 
     setUploading(true);
     try {
-      const supabase = createClient();
       const ext = file.name.split(".").pop() || "jpg";
       const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const filePath = `thumbnails/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("content-images")
-        .upload(filePath, file, { cacheControl: "3600", upsert: false });
-
-      if (uploadError) {
-        toast.error(`스토리지 업로드 실패: ${uploadError.message}`);
-        throw uploadError;
+      let publicUrl: string;
+      try {
+        publicUrl = await uploadFile(file, "content-images", filePath);
+      } catch (uploadErr) {
+        toast.error(`스토리지 업로드 실패: ${uploadErr instanceof Error ? uploadErr.message : "업로드 실패"}`);
+        return;
       }
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("content-images").getPublicUrl(filePath);
 
       const { error } = await updateContent(content.id, { thumbnail_url: publicUrl });
       if (error) throw new Error(error);
@@ -74,9 +68,7 @@ export default function DetailSidebar({
       toast.success("썸네일이 변경되었습니다.");
       onContentUpdate();
     } catch (err) {
-      if (!(err instanceof Error && err.message.includes("스토리지"))) {
-        toast.error("썸네일 저장에 실패했습니다.");
-      }
+      toast.error("썸네일 저장에 실패했습니다.");
       console.error(err);
     } finally {
       setUploading(false);
@@ -88,15 +80,13 @@ export default function DetailSidebar({
     if (!content.thumbnail_url) return;
     setDeleting(true);
     try {
-      const supabase = createClient();
-
       // Storage 파일 경로 추출 (content-images 버킷 기준)
       const url = content.thumbnail_url;
       const bucketSegment = "/content-images/";
       const idx = url.indexOf(bucketSegment);
       if (idx !== -1) {
         const storagePath = url.slice(idx + bucketSegment.length);
-        await supabase.storage.from("content-images").remove([storagePath]);
+        await deleteFile("content-images", storagePath);
       }
 
       const { error } = await updateContent(content.id, { thumbnail_url: null });

@@ -26,7 +26,7 @@ import {
 import "@mdxeditor/editor/style.css";
 import "@/components/posts/post-body.css";
 import { useRef, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { uploadFile } from "@/lib/upload-client";
 import { toast } from "sonner";
 
 interface MDXEditorWrapperProps {
@@ -41,29 +41,19 @@ export default function MDXEditorWrapper({
   const editorRef = useRef<MDXEditorMethods>(null);
 
   const imageUploadHandler = useCallback(async (image: File): Promise<string> => {
-    const supabase = createClient();
     const ext = image.name.split(".").pop() || "jpg";
     const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const filePath = `contents/${fileName}`;
 
-    const { error } = await supabase.storage
-      .from("content-images")
-      .upload(filePath, image, {
-        cacheControl: "3600",
-        upsert: false,
-      });
-
-    if (error) {
-      toast.error(`이미지 업로드 실패: ${error.message}`);
+    try {
+      const publicUrl = await uploadFile(image, "content-images", filePath);
+      toast.success("이미지가 삽입되었습니다.");
+      return publicUrl;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "업로드 실패";
+      toast.error(`이미지 업로드 실패: ${message}`);
       throw new Error(`이미지 업로드 실패: ${image.name}`);
     }
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("content-images").getPublicUrl(filePath);
-
-    toast.success("이미지가 삽입되었습니다.");
-    return publicUrl;
   }, []);
 
   return (

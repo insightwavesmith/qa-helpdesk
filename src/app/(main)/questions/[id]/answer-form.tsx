@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, ImagePlus, X, Loader2 } from "lucide-react";
 import { createAnswer } from "@/actions/answers";
-import { createClient } from "@/lib/supabase/client";
+import { uploadFile } from "@/lib/upload-client";
 import { toast } from "sonner";
 
 const MAX_IMAGES = 5;
@@ -82,7 +82,6 @@ export function AnswerForm({ questionId }: AnswerFormProps) {
   const uploadImages = async (): Promise<string[]> => {
     if (images.length === 0) return [];
 
-    const supabase = createClient();
     const urls: string[] = [];
 
     for (const img of images) {
@@ -90,21 +89,13 @@ export function AnswerForm({ questionId }: AnswerFormProps) {
       const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const filePath = `answers/${fileName}`;
 
-      const { error } = await supabase.storage
-        .from("qa-images")
-        .upload(filePath, img.file);
-
-      if (error) {
-        console.error("Image upload error:", error);
+      try {
+        const publicUrl = await uploadFile(img.file, "qa-images", filePath);
+        urls.push(publicUrl);
+      } catch (err) {
+        console.error("Image upload error:", err);
         toast.error(`이미지 업로드 실패: ${img.file.name}`);
-        continue;
       }
-
-      const { data: urlData } = supabase.storage
-        .from("qa-images")
-        .getPublicUrl(filePath);
-
-      urls.push(urlData.publicUrl);
     }
 
     return urls;

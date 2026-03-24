@@ -3,6 +3,10 @@
 // 스티비/마켓핏랩 스타일 — 깔끔하고 읽기 쉬운 레이아웃
 // Last verified: 2026-02-14
 
+const BANNER_BASE = process.env.USE_CLOUD_SQL === "true"
+  ? "https://storage.googleapis.com/bscamp-storage/content-images/newsletter-banners"
+  : "https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners";
+
 // 스미스 코치 프로필 카드 (모든 템플릿 공통, CTA 위에 삽입)
 const SMITH_PROFILE_ROW = {
   id: "row-profile",
@@ -34,7 +38,7 @@ const SMITH_PROFILE_ROW = {
             duplicatable: true,
             deletable: true,
             hideable: true,
-            text: '<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td style="padding:24px 0;border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;"><table cellpadding="0" cellspacing="0"><tr><td width="100" style="vertical-align:top;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/profile-smith.png" alt="스미스" style="width:80px;height:80px;border-radius:50%;display:block;" /></td><td style="vertical-align:top;"><p style="margin:0;font-weight:800;font-size:16px;color:#1a1a1a;">스미스 <span style="font-weight:600;font-size:13px;color:#F75D5D;">자사몰사관학교 코치</span></p><p style="margin:6px 0 0;font-size:13px;color:#64748b;line-height:160%;">Meta Business Partner로서 광고 성과를 높입니다 / 수강생 자사몰매출 450억+</p><p style="margin:8px 0 0;"><img src="https://bscamp.vercel.app/images/meta-partner/inline-positive.png" alt="Meta Business Partners" style="height:36px;width:auto;display:inline-block;" /></p></td></tr></table></td></tr></table>',
+            text: '<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td style="padding:24px 0;border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;"><table cellpadding="0" cellspacing="0"><tr><td width="100" style="vertical-align:top;"><img src="${BANNER_BASE}/profile-smith.png" alt="스미스" style="width:80px;height:80px;border-radius:50%;display:block;" /></td><td style="vertical-align:top;"><p style="margin:0;font-weight:800;font-size:16px;color:#1a1a1a;">스미스 <span style="font-weight:600;font-size:13px;color:#F75D5D;">자사몰사관학교 코치</span></p><p style="margin:6px 0 0;font-size:13px;color:#64748b;line-height:160%;">Meta Business Partner로서 광고 성과를 높입니다 / 수강생 자사몰매출 450억+</p><p style="margin:8px 0 0;"><img src="https://bscamp.vercel.app/images/meta-partner/inline-positive.png" alt="Meta Business Partners" style="height:36px;width:auto;display:inline-block;" /></p></td></tr></table></td></tr></table>',
           },
         },
       ],
@@ -71,7 +75,15 @@ const SMITH_PROFILE_ROW = {
   },
 };
 
-export const BS_CAMP_DEFAULT_TEMPLATE = {
+// 템플릿 내 ${BANNER_BASE} 플레이스홀더를 실제 URL로 치환
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function resolveUrls<T>(obj: T): T {
+  const json = JSON.stringify(obj);
+  const resolved = json.replaceAll("${BANNER_BASE}", BANNER_BASE);
+  return JSON.parse(resolved);
+}
+
+export const BS_CAMP_DEFAULT_TEMPLATE = resolveUrls({
   body: {
     id: "bs-camp-default",
     rows: [
@@ -106,7 +118,7 @@ export const BS_CAMP_DEFAULT_TEMPLATE = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v4.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:48px;width:auto;" /></p>',
+                  text: '<p style="text-align:center;"><img src="${BANNER_BASE}/logo-email-v4.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:48px;width:auto;" /></p>',
                 },
               },
             ],
@@ -667,10 +679,10 @@ export const BS_CAMP_DEFAULT_TEMPLATE = {
       _meta: { htmlID: "u_body", htmlClassNames: "u_body" },
     },
   },
-};
+});
 
 // ─── 템플릿 A: education 타입용 (정보공유형 — 로고마크, 인사말, 훅인용구, 목차, 섹션배너, 인용블록, 불릿리스트) ───
-export const BS_CAMP_TEMPLATE_A = {
+export const BS_CAMP_TEMPLATE_A = resolveUrls({
   body: {
     ...BS_CAMP_DEFAULT_TEMPLATE.body,
     rows: [
@@ -705,7 +717,7 @@ export const BS_CAMP_TEMPLATE_A = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v4.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:48px;width:auto;" /></p>',
+                  text: '<p style="text-align:center;"><img src="${BANNER_BASE}/logo-email-v4.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:48px;width:auto;" /></p>',
                 },
               },
             ],
@@ -1263,10 +1275,10 @@ export const BS_CAMP_TEMPLATE_A = {
       BS_CAMP_DEFAULT_TEMPLATE.body.rows[7],
     ],
   },
-};
+});
 
 // ─── 템플릿 B: notice 타입용 (공지/홍보형 — 빨간 테마 #F75D5D, 히어로, 일정, 프로그램 리스트) ───
-export const BS_CAMP_TEMPLATE_B = {
+export const BS_CAMP_TEMPLATE_B = resolveUrls({
   body: {
     ...BS_CAMP_DEFAULT_TEMPLATE.body,
     rows: [
@@ -1301,7 +1313,7 @@ export const BS_CAMP_TEMPLATE_B = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v4.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:48px;width:auto;" /></p>',
+                  text: '<p style="text-align:center;"><img src="${BANNER_BASE}/logo-email-v4.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:48px;width:auto;" /></p>',
                 },
               },
             ],
@@ -1494,7 +1506,7 @@ export const BS_CAMP_TEMPLATE_B = {
                 values: {
                   containerPadding: "0px",
                   anchor: "",
-                  html: '<img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-preview.png" alt="강의 미리보기" style="display:block;width:100%;height:auto;border-radius:6px 6px 0 0;" />',
+                  html: '<img src="${BANNER_BASE}/banner-preview.png" alt="강의 미리보기" style="display:block;width:100%;height:auto;border-radius:6px 6px 0 0;" />',
                   hideDesktop: false,
                   displayCondition: null,
                   _meta: { htmlID: "u_content_html_section_banner_b", htmlClassNames: "u_content_html" },
@@ -1554,7 +1566,7 @@ export const BS_CAMP_TEMPLATE_B = {
                   containerPadding: "16px 24px",
                   anchor: "",
                   src: {
-                    url: "https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/webinar-placeholder.png",
+                    url: "${BANNER_BASE}/webinar-placeholder.png",
                     width: 536,
                     height: 200,
                   },
@@ -1691,7 +1703,7 @@ export const BS_CAMP_TEMPLATE_B = {
                 values: {
                   containerPadding: "0px",
                   anchor: "",
-                  html: '<img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-schedule.png" alt="웨비나 일정 안내" style="display:block;width:100%;height:auto;border-radius:6px 6px 0 0;" />',
+                  html: '<img src="${BANNER_BASE}/banner-schedule.png" alt="웨비나 일정 안내" style="display:block;width:100%;height:auto;border-radius:6px 6px 0 0;" />',
                   hideDesktop: false,
                   displayCondition: null,
                   _meta: { htmlID: "u_content_html_section_banner_2", htmlClassNames: "u_content_html" },
@@ -2117,10 +2129,10 @@ export const BS_CAMP_TEMPLATE_B = {
       BS_CAMP_DEFAULT_TEMPLATE.body.rows[7],
     ],
   },
-};
+});
 
 // ─── 템플릿 C: case_study 타입용 (고객사례형 — 빨간 테마 #F75D5D, 프로필, Before/After, 인용구, 불릿) ───
-export const BS_CAMP_TEMPLATE_C = {
+export const BS_CAMP_TEMPLATE_C = resolveUrls({
   body: {
     ...BS_CAMP_DEFAULT_TEMPLATE.body,
     rows: [
@@ -2155,7 +2167,7 @@ export const BS_CAMP_TEMPLATE_C = {
                   duplicatable: true,
                   deletable: true,
                   hideable: true,
-                  text: '<p style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v4.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:48px;width:auto;" /></p>',
+                  text: '<p style="text-align:center;"><img src="${BANNER_BASE}/logo-email-v4.png" alt="자사몰사관학교" style="display:block;margin:0 auto;height:48px;width:auto;" /></p>',
                 },
               },
             ],
@@ -2480,7 +2492,7 @@ export const BS_CAMP_TEMPLATE_C = {
                 values: {
                   containerPadding: "0px",
                   anchor: "",
-                  html: '<img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/banner-interview.png" alt="INTERVIEW" style="display:block;width:100%;height:auto;border-radius:6px 6px 0 0;" />',
+                  html: '<img src="${BANNER_BASE}/banner-interview.png" alt="INTERVIEW" style="display:block;width:100%;height:auto;border-radius:6px 6px 0 0;" />',
                   hideDesktop: false,
                   displayCondition: null,
                   _meta: { htmlID: "u_content_html_section_banner_c", htmlClassNames: "u_content_html" },
@@ -2981,4 +2993,4 @@ export const BS_CAMP_TEMPLATE_C = {
       BS_CAMP_DEFAULT_TEMPLATE.body.rows[7],
     ],
   },
-};
+});

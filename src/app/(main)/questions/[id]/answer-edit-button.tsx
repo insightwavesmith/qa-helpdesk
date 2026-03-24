@@ -6,7 +6,7 @@ import { Pencil, Check, X, Loader2, ImagePlus } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { updateAnswerByAuthor } from "@/actions/answers";
-import { createClient } from "@/lib/supabase/client";
+import { uploadFile } from "@/lib/upload-client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -106,7 +106,6 @@ export function AnswerEditButton({
   const uploadNewImages = async (): Promise<string[]> => {
     if (newImages.length === 0) return [];
 
-    const supabase = createClient();
     const urls: string[] = [];
 
     for (const img of newImages) {
@@ -114,21 +113,13 @@ export function AnswerEditButton({
       const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const filePath = `answers/${fileName}`;
 
-      const { error } = await supabase.storage
-        .from("qa-images")
-        .upload(filePath, img.file);
-
-      if (error) {
-        console.error("Image upload error:", error);
-        toast.error(`이미지 업로드 실패: ${img.file.name}. ${error.message}`);
-        continue;
+      try {
+        const publicUrl = await uploadFile(img.file, "qa-images", filePath);
+        urls.push(publicUrl);
+      } catch (err) {
+        console.error("Image upload error:", err);
+        toast.error(`이미지 업로드 실패: ${img.file.name}. ${err instanceof Error ? err.message : ""}`);
       }
-
-      const { data: urlData } = supabase.storage
-        .from("qa-images")
-        .getPublicUrl(filePath);
-
-      urls.push(urlData.publicUrl);
     }
 
     return urls;

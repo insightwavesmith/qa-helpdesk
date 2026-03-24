@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/client";
+import { uploadFile } from "@/lib/upload-client";
 import { mp } from "@/lib/mixpanel";
 import { ensureProfile, updateBusinessCertUrl, savePrivacyConsent } from "@/actions/auth";
 import { useInviteCode as consumeInviteCode } from "@/actions/invites";
@@ -343,16 +344,13 @@ export default function SignupPage() {
       if (!isStudentMode && businessFile) {
         const fileExt = businessFile.name.split(".").pop();
         const filePath = `business-docs/${authData.user.id}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from("documents")
-          .upload(filePath, businessFile);
-
-        if (!uploadError) {
-          const {
-            data: { publicUrl },
-          } = supabase.storage.from("documents").getPublicUrl(filePath);
+        try {
+          const publicUrl = await uploadFile(businessFile, "documents", filePath);
           // server action으로 프로필 업데이트 (service role = RLS 우회)
           await updateBusinessCertUrl(authData.user.id, publicUrl);
+        } catch (uploadErr) {
+          console.error("[signup] 사업자등록증 업로드 실패:", uploadErr);
+          // 업로드 실패해도 가입 자체는 완료 → 리다이렉트 진행
         }
       }
 

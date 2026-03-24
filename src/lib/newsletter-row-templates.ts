@@ -14,7 +14,9 @@ import type {
 
 // ─── 상수 ───
 
-const BANNER_BASE_URL = "https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners";
+const BANNER_BASE_URL = process.env.USE_CLOUD_SQL === "true"
+  ? "https://storage.googleapis.com/bscamp-storage/content-images/newsletter-banners"
+  : "https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners";
 
 /** 배너키 → 파일명 매핑 (기존 BANNER_MAP과 동일) */
 const BANNER_MAP: Record<string, string> = {
@@ -392,7 +394,7 @@ export function createCategoryBadgeRow(label: string): object {
 /** 로고 이미지 row (자사몰사관학교 로고, 중앙 정렬, width:220px) */
 export const ROW_LOGO: object = makeTextRow(
   "logo",
-  '<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="text-align:center;"><img src="https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-email-v5-wide.png" alt="자사몰사관학교" style="display:block;margin:0 auto;width:220px;height:auto;" /></td></tr></table>',
+  `<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="text-align:center;"><img src="${BANNER_BASE_URL}/logo-email-v5-wide.png" alt="자사몰사관학교" style="display:block;margin:0 auto;width:220px;height:auto;" /></td></tr></table>`,
   "24px 24px 16px",
 );
 
@@ -415,7 +417,7 @@ export function createHookQuestionRow(text: string): object {
 }
 
 export function createHeroRow(title: string, subtitle: string, badgeText = "LIVE 무료 웨비나"): object {
-  const logoMarkUrl = "https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners/logo-10plus-crop.png";
+  const logoMarkUrl = `${BANNER_BASE_URL}/logo-10plus-crop.png`;
   const subtitleHtml = subtitle
     ? `<p style="color:rgba(255,255,255,0.8);font-size:14px;text-align:center;margin-top:4px;">${escapeHtml(subtitle)}</p>`
     : "";

@@ -887,5 +887,20 @@
     ],
     "updatedAt": "2026-03-24T16:10:00+09:00",
     "notes": "Cloud SQL 라우팅 + 페이지네이션 + process-media 90일 필터. 백필 실행 중."
+  },
+  "storage-gcs-migration": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/storage-gcs-migration.plan.md",
+    "design": "docs/02-design/features/storage-gcs-migration.design.md",
+    "analysis": "docs/03-analysis/storage-gcs-migration.analysis.md",
+    "matchRate": 95,
+    "tasks": [
+      "Wave1-server",
+      "Wave2-client",
+      "Wave3-urls",
+      "Wave4-build"
+    ],
+    "updatedAt": "2026-03-24",
+    "notes": "Supabase Storage→GCS 듀얼라이트 패턴. 17파일 수정. Match Rate 95% (GCS 버킷 public 설정+배너 복사 미완)."
   }
 }

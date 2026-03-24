@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "../../_shared";
+import { uploadToGcs } from "@/lib/gcs-storage";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -48,9 +49,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Supabase Storage 업로드
+    // Storage 업로드 (GCS 또는 Supabase 듀얼 라이트)
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileName = `${Date.now()}-${file.name}`;
+
+    if (process.env.USE_CLOUD_SQL === "true") {
+      const { publicUrl, error: gcsError } = await uploadToGcs(
+        "email-attachments",
+        fileName,
+        buffer,
+        file.type,
+      );
+      if (gcsError || !publicUrl) {
+        console.error("GCS upload error:", gcsError);
+        return NextResponse.json({ error: "파일 업로드에 실패했습니다." }, { status: 500 });
+      }
+      return NextResponse.json({ url: publicUrl, filename: file.name, size: file.size });
+    }
 
     const { data, error } = await svc.storage
       .from("email-attachments")

@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/form";
 import { ArrowLeft, Send, ImagePlus, X } from "lucide-react";
 import { createQuestion, updateQuestion } from "@/actions/questions";
-import { createClient } from "@/lib/supabase/client";
+import { uploadFile } from "@/lib/upload-client";
 import { mp } from "@/lib/mixpanel";
 import { toast } from "sonner";
 
@@ -154,7 +154,6 @@ export function NewQuestionForm({ categories, mode = "create", initialData }: Ne
   const uploadImages = async (): Promise<string[]> => {
     if (images.length === 0) return [];
 
-    const supabase = createClient();
     const urls: string[] = [];
 
     for (const img of images) {
@@ -162,22 +161,7 @@ export function NewQuestionForm({ categories, mode = "create", initialData }: Ne
       const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const filePath = `questions/${fileName}`;
 
-      const { error } = await supabase.storage
-        .from("question-images")
-        .upload(filePath, img.file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (error) {
-        console.error("Image upload error:", error);
-        throw new Error(`이미지 업로드 실패: ${img.file.name}`);
-      }
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("question-images").getPublicUrl(filePath);
-
+      const publicUrl = await uploadFile(img.file, "question-images", filePath);
       urls.push(publicUrl);
     }
 

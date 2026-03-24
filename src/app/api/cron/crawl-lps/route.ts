@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { crawlV2 } from "@/lib/railway-crawler";
 import { downloadLpMedia, type MediaAsset } from "@/lib/lp-media-downloader";
+import { uploadToGcs } from "@/lib/gcs-storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -312,8 +313,9 @@ async function handleCrawl(req: NextRequest) {
 }
 
 /**
- * base64 → Supabase Storage 업로드 (creatives 버킷)
+ * base64 → Storage 업로드 (creatives 버킷)
  * ADR-001 경로: lp/{account_id}/{lp_id}/{viewport}_full.jpg
+ * GCS 또는 Supabase 듀얼 라이트 패턴.
  */
 async function uploadToStorage(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -323,6 +325,15 @@ async function uploadToStorage(
 ): Promise<boolean> {
   try {
     const buffer = Buffer.from(base64Data, "base64");
+
+    if (process.env.USE_CLOUD_SQL === "true") {
+      const { error } = await uploadToGcs("creatives", path, buffer, "image/jpeg");
+      if (error) {
+        console.error(`[crawl-lps v2] GCS upload failed (${path}):`, error);
+        return false;
+      }
+      return true;
+    }
 
     const { error } = await supabase.storage
       .from("creatives")
@@ -394,8 +405,9 @@ async function fetchHtmlContent(url: string): Promise<string | null> {
 }
 
 /**
- * HTML 문자열 → Supabase Storage 업로드 (creatives 버킷)
+ * HTML 문자열 → Storage 업로드 (creatives 버킷)
  * ADR-001 경로: lp/{account_id}/{lp_id}/page.html
+ * GCS 또는 Supabase 듀얼 라이트 패턴.
  */
 async function uploadHtmlToStorage(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -405,6 +417,15 @@ async function uploadHtmlToStorage(
 ): Promise<boolean> {
   try {
     const buffer = Buffer.from(htmlContent, "utf-8");
+
+    if (process.env.USE_CLOUD_SQL === "true") {
+      const { error } = await uploadToGcs("creatives", path, buffer, "text/html");
+      if (error) {
+        console.error(`[crawl-lps v2] GCS HTML upload failed (${path}):`, error);
+        return false;
+      }
+      return true;
+    }
 
     const { error } = await supabase.storage
       .from("creatives")

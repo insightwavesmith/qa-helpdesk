@@ -7,6 +7,7 @@
 
 import { createHash } from "crypto";
 import sharp from "sharp";
+import { uploadToGcs } from "@/lib/gcs-storage";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 타입 정의
@@ -342,7 +343,8 @@ async function fetchMediaFile(url: string): Promise<{
 }
 
 /**
- * Buffer를 Supabase Storage(creatives 버킷)에 업로드한다.
+ * Buffer를 Storage(creatives 버킷)에 업로드한다.
+ * GCS 또는 Supabase 듀얼 라이트 패턴.
  * upsert: true (같은 경로면 덮어씀)
  */
 async function uploadBufferToStorage(
@@ -353,6 +355,15 @@ async function uploadBufferToStorage(
   contentType: string,
 ): Promise<boolean> {
   try {
+    if (process.env.USE_CLOUD_SQL === "true") {
+      const { error } = await uploadToGcs("creatives", path, buffer, contentType);
+      if (error) {
+        console.error(`[lp-media] GCS 업로드 실패 (${path}):`, error);
+        return false;
+      }
+      return true;
+    }
+
     const { error } = await supabase.storage
       .from("creatives")
       .upload(path, buffer, { contentType, upsert: true });

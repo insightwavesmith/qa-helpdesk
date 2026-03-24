@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Pagination } from "@/components/shared/Pagination";
 import { approveAnswer, deleteAnswer, updateAnswer } from "@/actions/answers";
-import { createClient } from "@/lib/supabase/client";
+import { uploadFile } from "@/lib/upload-client";
 import { toast } from "sonner";
 import { mp } from "@/lib/mixpanel";
 import {
@@ -115,26 +115,17 @@ export function AnswersReviewClient({
   const handleImageUpload = async (files: FileList) => {
     setUploading(true);
     try {
-      const supabase = createClient();
       for (const file of Array.from(files)) {
         const ext = file.name.split(".").pop() || "jpg";
         const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
         const filePath = `answer-images/${fileName}`;
 
-        const { error } = await supabase.storage
-          .from("question-images")
-          .upload(filePath, file, { cacheControl: "3600", upsert: false });
-
-        if (error) {
+        try {
+          const publicUrl = await uploadFile(file, "question-images", filePath);
+          setEditImageUrls((prev) => [...prev, publicUrl]);
+        } catch {
           toast.error(`업로드 실패: ${file.name}`);
-          continue;
         }
-
-        const { data: { publicUrl } } = supabase.storage
-          .from("question-images")
-          .getPublicUrl(filePath);
-
-        setEditImageUrls((prev) => [...prev, publicUrl]);
       }
     } catch {
       toast.error("이미지 업로드 중 오류가 발생했습니다.");

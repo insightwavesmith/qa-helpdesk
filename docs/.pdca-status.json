@@ -1322,6 +1322,16 @@
         "design": "02-design/features/meta-full-fields.design.md"
       },
       "notes": "process-media Cloud SQL 호환 쿼리 수정"
+    },
+    "storage-gcs-migration": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "docs/01-plan/features/storage-gcs-migration.plan.md",
+        "design": "docs/02-design/features/storage-gcs-migration.design.md",
+        "analysis": "docs/03-analysis/storage-gcs-migration.analysis.md"
+      },
+      "notes": "Phase 1 Storage→GCS 완료. 듀얼라이트 패턴 적용. 17파일."
     }
   },
   "phaseMapping": {

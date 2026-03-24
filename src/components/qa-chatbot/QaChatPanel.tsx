@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { createClient } from "@/lib/supabase/client";
+import { uploadFile } from "@/lib/upload-client";
 import { createQaReport } from "@/actions/qa-reports";
 import { QaReportList } from "./QaReportList";
 
@@ -78,11 +78,10 @@ export function QaChatPanel({ isOpen, onClose }: QaChatPanelProps) {
     scrollToBottom();
   }, [messages, pendingReport, scrollToBottom]);
 
-  // 이미지 업로드 (Supabase Storage)
+  // 이미지 업로드
   const uploadImages = async (files: { file: File }[]): Promise<string[]> => {
     if (files.length === 0) return [];
 
-    const supabase = createClient();
     const urls: string[] = [];
 
     for (const img of files) {
@@ -90,22 +89,7 @@ export function QaChatPanel({ isOpen, onClose }: QaChatPanelProps) {
       const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const filePath = `qa-screenshots/${fileName}`;
 
-      const { error } = await supabase.storage
-        .from("question-images")
-        .upload(filePath, img.file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (error) {
-        console.error("이미지 업로드 실패:", error);
-        throw new Error(`이미지 업로드 실패: ${img.file.name}`);
-      }
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("question-images").getPublicUrl(filePath);
-
+      const publicUrl = await uploadFile(img.file, "question-images", filePath);
       urls.push(publicUrl);
     }
 
