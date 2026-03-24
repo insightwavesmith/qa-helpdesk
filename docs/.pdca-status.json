@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-24T03:38:17.000Z",
+  "lastUpdated": "2026-03-24T03:56:17.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1277,6 +1277,17 @@
       "startedAt": "2026-03-24",
       "completedAt": "2026-03-24",
       "notes": "처방 비용 테스트 스크립트. Gemini 3 Pro Preview 건당 토큰+비용 측정. scripts/test-prescription-cost.mjs"
+    },
+    "video-saliency": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/video-saliency.plan.md",
+        "design": "02-design/features/video-saliency.design.md"
+      },
+      "startedAt": "2026-03-24",
+      "completedAt": "2026-03-24",
+      "notes": "전용 video-saliency 크론, creative-saliency에서 VIDEO 분리, ADR-001 경로, creative_media.video_analysis 동기화"
     }
   },
   "phaseMapping": {

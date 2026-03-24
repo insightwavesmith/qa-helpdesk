@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from datetime import datetime, timezone
 
 # OpenBLAS/MKL 스레드 제한 — Railway 컨테이너 리소스 초과 방지
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
@@ -257,6 +258,50 @@ def save_video_summary(ad_id: str, account_id: str, summary: dict, frame_results
     return res.ok, res.status_code
 
 
+def update_creative_media_analysis(ad_id: str, summary: dict):
+    """creative_media.video_analysis JSONB에 시계열 요약 저장."""
+    payload = {
+        **summary,
+        "analyzed_at": datetime.now(timezone.utc).isoformat(),
+        "model_version": "deepgaze-iie",
+    }
+
+    # creatives 테이블에서 ad_id로 creative_id 조회 → creative_media 업데이트
+    try:
+        creatives = sb_get(f"/creatives?select=id&ad_id=eq.{ad_id}&limit=1")
+        if not creatives:
+            print(f"  creative_media 동기화 스킵: creatives에서 ad_id={ad_id} 없음", file=sys.stderr)
+            return
+
+        creative_id = creatives[0]["id"]
+        media_rows = sb_get(
+            f"/creative_media?select=id&creative_id=eq.{creative_id}&media_type=eq.VIDEO&limit=1"
+        )
+        if not media_rows:
+            print(f"  creative_media 동기화 스킵: VIDEO 미디어 없음 (creative_id={creative_id})", file=sys.stderr)
+            return
+
+        media_id = media_rows[0]["id"]
+        patch_url = f"{SB_URL}/rest/v1/creative_media?id=eq.{media_id}"
+        patch_headers = {
+            **HEADERS,
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal",
+        }
+        res = requests.patch(
+            patch_url,
+            headers=patch_headers,
+            json={"video_analysis": payload},
+            timeout=30,
+        )
+        if res.ok:
+            print(f"  creative_media.video_analysis 동기화 완료 (media_id={media_id})", file=sys.stderr)
+        else:
+            print(f"  creative_media.video_analysis 동기화 실패: {res.status_code}", file=sys.stderr)
+    except Exception as e:
+        print(f"  creative_media 동기화 에러 (무시): {e}", file=sys.stderr)
+
+
 # ━━━ 메인 ━━━
 def main():
     parser = argparse.ArgumentParser(description="영상 프레임별 DeepGaze 시선 예측")
@@ -418,7 +463,7 @@ def main():
                         img = Image.open(fp)
                         saliency = predict_saliency(img)
                         heatmap_bytes = create_heatmap(img, saliency)
-                        storage_path = f"video-saliency/{ad_id}/frame_{fi:04d}.png"
+                        storage_path = f"video-saliency/{account_id}/{ad_id}/frame_{fi:04d}.png"
                         heatmap_url = sb_storage_upload("creatives", storage_path, heatmap_bytes)
 
                     # 프레임 결과 DB 저장
@@ -455,6 +500,8 @@ def main():
             ok, status = save_video_summary(ad_id, account_id, summary, frame_results)
             if ok:
                 analyzed += 1
+                # 7. creative_media.video_analysis 시계열 동기화
+                update_creative_media_analysis(ad_id, summary)
             else:
                 print(f"  영상 요약 DB 저장 실패: {status}", file=sys.stderr)
                 errors += 1

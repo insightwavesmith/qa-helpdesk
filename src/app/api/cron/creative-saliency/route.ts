@@ -237,27 +237,7 @@ export async function GET() {
       console.error("[creative-saliency] 동기화 오류 (무시):", syncErr);
     }
 
-    // ━━━ 5. VIDEO saliency (별도 호출 — position 무관) ━━━
-    let videoResult: Record<string, unknown> = {};
-    try {
-      const videoRes = await fetch(`${pipelineUrl}/video-saliency`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-SECRET": pipelineSecret || "",
-        },
-        body: JSON.stringify({ limit: 20 }),
-        signal: AbortSignal.timeout(240_000),
-      });
-      videoResult = await videoRes.json();
-      console.log(
-        `[creative-saliency] VIDEO 완료: ${JSON.stringify(videoResult).slice(0, 200)}`,
-      );
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error(`[creative-saliency] VIDEO 오류: ${msg}`);
-      videoResult = { error: msg };
-    }
+    // VIDEO saliency는 전용 크론(/api/cron/video-saliency)으로 분리됨
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
 
@@ -268,7 +248,6 @@ export async function GET() {
       accounts: accountList.length,
       syncUpdated,
       image: accountResults,
-      video: videoResult,
     });
   } catch (e) {
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
