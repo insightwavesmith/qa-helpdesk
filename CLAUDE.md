@@ -10,6 +10,7 @@
 6. **bkit PDCA 강제**: 설계 문서 없이 코딩 시작 절대 금지. 아래 워크플로우 필수.
 7. **ADR 필독 (2026-03-20 추가)**: TASK 시작 전 `docs/adr/` 폴더의 ADR(Architecture Decision Record) 전부 읽어라. 설계 원칙(계정 종속 구조, Storage 경로 패턴 등)이 적혀있다. DB만 맞추고 Storage/API/프론트에서 원칙 빠뜨리면 리젝.
 8. **SERVICE-VISION.md 필독 (2026-03-20 추가)**: TASK 시작 전 `~/.openclaw/workspace/SERVICE-VISION.md` 읽어라. 서비스가 뭘 하는 건지, 사용자 흐름이 뭔지 모르고 개발하면 리젝. 스타일만 복사하는 목업은 실패.
+9. **Destructive Detector (2026-03-24 추가)**: rm -rf, force push, 전체 DELETE 등 위험 작업은 hook이 자동 차단. 우회 불가. 긴급 핫픽스만 Smith님 직접 실행.
 
 ## bkit PDCA 워크플로우 (필수)
 

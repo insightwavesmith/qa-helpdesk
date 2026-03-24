@@ -904,7 +904,7 @@
     "notes": "Supabase Storage→GCS 듀얼라이트 패턴. 17파일 수정. Match Rate 95% (GCS 버킷 public 설정+배너 복사 미완)."
   },
   "pipeline-event-chain": {
-    "status": "implementing",
+    "status": "completed",
     "plan": "docs/01-plan/features/pipeline-event-chain.plan.md",
     "design": "docs/02-design/features/pipeline-event-chain.design.md",
     "tasks": [
@@ -913,7 +913,24 @@
       "process-media-trigger",
       "cloud-scheduler"
     ],
-    "updatedAt": "2026-03-24",
-    "notes": "pipeline-chain.ts 생성, collect-daily + process-media 체인 트리거 추가 완료. Cloud Scheduler 등록 대기."
+    "updatedAt": "2026-03-24T19:55:00+09:00",
+    "notes": "이벤트 체인 완료. Cloud SQL 호환 fix + PIPELINE_URL 기본값 추가. 배치 실행 중."
+  },
+  "vercel-removal": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/vercel-removal.plan.md",
+    "design": "docs/02-design/features/vercel-removal.design.md",
+    "tasks": [
+      "maxDuration-removal",
+      "vercel-json-cleanup"
+    ],
+    "updatedAt": "2026-03-24T19:55:00+09:00",
+    "notes": "33파일 maxDuration 제거 + vercel.json 정리 완료."
+  },
+  "destructive-detector": {
+    "status": "completed",
+    "tasks": ["hook-script", "settings-json", "claude-md-rule"],
+    "updatedAt": "2026-03-24T19:55:00+09:00",
+    "notes": "PreToolUse hook 8패턴 차단. settings.json + CLAUDE.md 규칙 추가."
   }
 }
