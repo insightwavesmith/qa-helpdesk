@@ -67,10 +67,12 @@ export async function GET() {
     // - media_url 또는 storage_url 있음: 이미지 다운로드 가능한 카드만
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const svc = supabase as any;
-    const { data: rawRows, error: queryErr } = await svc
+
+    // 1단계: creative_media 조회 (임베딩 조인 없이)
+    const { data: rawMedia, error: queryErr } = await svc
       .from("creative_media")
       .select(
-        "id, creative_id, position, media_type, media_url, storage_url, saliency_url, content_hash, creatives!inner(ad_id, account_id, creative_type)",
+        "id, creative_id, position, media_type, media_url, storage_url, saliency_url, content_hash",
       )
       .eq("media_type", "IMAGE")
       .is("saliency_url", null)
@@ -87,7 +89,40 @@ export async function GET() {
       );
     }
 
-    const rows = (rawRows ?? []) as unknown as CreativeMediaRow[];
+    if (!rawMedia || rawMedia.length === 0) {
+      return NextResponse.json({
+        message: "creative-saliency 완료 — 처리 대상 없음",
+        elapsed: "0.0s",
+        totalCards: 0,
+        accounts: 0,
+        image: {},
+        video: {},
+      });
+    }
+
+    // 2단계: creative_id → creatives 테이블에서 ad_id, account_id, creative_type 조회
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const creativeIds = [...new Set(rawMedia.map((r: any) => r.creative_id as string))];
+    const { data: creativesData } = await svc
+      .from("creatives")
+      .select("id, ad_id, account_id, creative_type")
+      .in("id", creativeIds);
+
+    const creativeMap = new Map<string, { ad_id: string; account_id: string; creative_type: string | null }>(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (creativesData ?? []).map((c: any) => [c.id, { ad_id: c.ad_id, account_id: c.account_id, creative_type: c.creative_type }])
+    );
+
+    // JS에서 합치기 (creatives!inner 대체)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows: CreativeMediaRow[] = rawMedia
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((r: any) => {
+        const creative = creativeMap.get(r.creative_id);
+        if (!creative) return null;
+        return { ...r, creatives: creative } as CreativeMediaRow;
+      })
+      .filter(Boolean) as CreativeMediaRow[];
     const totalCards = rows.length;
     console.log(
       `[creative-saliency] 처리 대상 IMAGE 카드: ${totalCards}건`,

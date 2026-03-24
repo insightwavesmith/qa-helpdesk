@@ -53,13 +53,13 @@ export async function GET() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const svc = createServiceClient() as any;
 
-    // ━━━ 1. 미분석 VIDEO 조회 ━━━
+    // ━━━ 1. 미분석 VIDEO 조회 (2단계 쿼리 — Cloud SQL 호환) ━━━
     // video_analysis IS NULL = 아직 시선 분석 안 된 영상
     // storage_url LIKE '%.mp4' = mp4 다운로드 가능한 것만
-    const { data: rawRows, error: queryErr } = await svc
+    const { data: rawMedia, error: queryErr } = await svc
       .from("creative_media")
       .select(
-        "id, creative_id, media_type, storage_url, video_analysis, creatives!inner(ad_id, account_id)",
+        "id, creative_id, media_type, storage_url, video_analysis",
       )
       .eq("media_type", "VIDEO")
       .is("video_analysis", null)
@@ -76,7 +76,40 @@ export async function GET() {
       );
     }
 
-    const rows = (rawRows ?? []) as unknown as VideoMediaRow[];
+    if (!rawMedia || rawMedia.length === 0) {
+      return NextResponse.json({
+        message: "video-saliency 완료 — 처리 대상 없음",
+        elapsed: "0.0s",
+        totalVideos: 0,
+        accounts: 0,
+        results: [],
+        synced: 0,
+      });
+    }
+
+    // 2단계: creative_id → creatives 테이블에서 ad_id, account_id 조회
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const creativeIds = [...new Set(rawMedia.map((r: any) => r.creative_id as string))];
+    const { data: creativesData } = await svc
+      .from("creatives")
+      .select("id, ad_id, account_id")
+      .in("id", creativeIds);
+
+    const creativeMap = new Map<string, { ad_id: string; account_id: string }>(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (creativesData ?? []).map((c: any) => [c.id, { ad_id: c.ad_id, account_id: c.account_id }])
+    );
+
+    // JS에서 합치기 (creatives!inner 대체)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows: VideoMediaRow[] = rawMedia
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((r: any) => {
+        const creative = creativeMap.get(r.creative_id);
+        if (!creative) return null;
+        return { ...r, creatives: creative } as VideoMediaRow;
+      })
+      .filter(Boolean) as VideoMediaRow[];
     const totalVideos = rows.length;
     console.log(`[video-saliency] 미분석 VIDEO: ${totalVideos}건`);
 
