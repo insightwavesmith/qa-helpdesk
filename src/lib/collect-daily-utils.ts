@@ -309,19 +309,32 @@ export async function fetchAccountAds(
     "filtering",
     JSON.stringify([{ field: "effective_status", operator: "IN", value: statuses }])
   );
-  url.searchParams.set("limit", "100");
+  // 백필 시 필드가 많아 limit 줄임 + 페이지네이션
+  const pageLimit = includeInactive ? 25 : 100;
+  url.searchParams.set("limit", String(pageLimit));
 
-  const res = await fetchMetaWithRetry(url.toString(), { signal: AbortSignal.timeout(60_000) });
-  const data = await res.json();
+  const allAds: Record<string, unknown>[] = [];
+  let nextUrl: string | null = url.toString();
 
-  if (data.error) {
-    throw new Error(`Meta API: ${data.error.message ?? "Unknown error"}`);
+  while (nextUrl) {
+    const res = await fetchMetaWithRetry(nextUrl, { signal: AbortSignal.timeout(60_000) });
+    const data = await res.json();
+
+    if (data.error) {
+      throw new Error(`Meta API: ${data.error.message ?? "Unknown error"}`);
+    }
+
+    const ads: Record<string, unknown>[] = data.data ?? [];
+    for (const ad of ads) {
+      const insights = (ad.insights as { data?: unknown[] } | undefined)?.data;
+      if (insights && insights.length > 0) {
+        allAds.push(ad);
+      }
+    }
+
+    // 다음 페이지
+    nextUrl = data.paging?.next ?? null;
   }
 
-  // 인사이트가 있는 광고만 필터링
-  const ads: Record<string, unknown>[] = data.data ?? [];
-  return ads.filter((ad) => {
-    const insights = (ad.insights as { data?: unknown[] } | undefined)?.data;
-    return insights && insights.length > 0;
-  });
+  return allAds;
 }

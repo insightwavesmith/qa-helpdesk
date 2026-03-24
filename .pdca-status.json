@@ -876,8 +876,8 @@
     "status": "implementing",
     "plan": "docs/01-plan/features/meta-full-fields.plan.md",
     "design": "docs/02-design/features/meta-full-fields.design.md",
-    "tasks": ["INSIGHT_FIELDS 확장", "AD_FIELDS 확장", "DB 마이그레이션", "트리거 업데이트", "backfill 모드"],
-    "updatedAt": "2026-03-24",
-    "notes": "INSIGHT 12→30, AD 9→12, DB 8컬럼 추가, backfill includeInactive 모드 추가"
+    "tasks": ["INSIGHT_FIELDS 확장", "AD_FIELDS 확장", "DB 마이그레이션", "트리거 업데이트", "backfill 모드", "Cloud SQL 라우팅", "페이지네이션"],
+    "updatedAt": "2026-03-24T15:40:00+09:00",
+    "notes": "Cloud Run USE_CLOUD_SQL=true 설정 완료. 백필 limit 25 + 페이지네이션 추가. 90일 백필 실행 중."
   }
 }
