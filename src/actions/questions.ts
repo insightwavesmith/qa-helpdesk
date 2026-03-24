@@ -140,21 +140,19 @@ export async function createQuestion(formData: {
     return { data: null, error: error.message };
   }
 
-  // AI 답변 자동 생성 + 슬랙 알림 (after: 응답 반환 후 실행, Vercel serverless 종료 방지)
-  after(async () => {
-    try {
-      await Promise.all([
-        createAIAnswerForQuestion(data.id, formData.title, formData.content, formData.imageUrls),
-        notifyNewQuestion({
-          questionId: data.id,
-          title: formData.title,
-          authorName: profile.name || "알 수 없음",
-        }),
-      ]);
-    } catch (err) {
-      console.error("AI answer generation or Slack notification failed:", err);
-    }
-  });
+  // AI 답변 자동 생성 + 슬랙 알림 (동기 실행 — after()는 Vercel serverless 타임아웃 시 silent fail)
+  try {
+    await Promise.all([
+      createAIAnswerForQuestion(data.id, formData.title, formData.content, formData.imageUrls),
+      notifyNewQuestion({
+        questionId: data.id,
+        title: formData.title,
+        authorName: profile.name || "알 수 없음",
+      }),
+    ]);
+  } catch (err) {
+    console.error("[createQuestion] AI 답변 생성 또는 슬랙 알림 실패:", err);
+  }
 
   revalidatePath("/questions");
   revalidatePath("/dashboard");

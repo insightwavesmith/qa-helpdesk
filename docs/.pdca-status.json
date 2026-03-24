@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-24T05:30:00.000Z",
+  "lastUpdated": "2026-03-24T06:10:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1298,6 +1298,16 @@
         "analysis": "03-analysis/collection-v3-review.analysis.md"
       },
       "notes": "계정 디스커버리 + content_hash 기반 중복 제거"
+    },
+    "ai-answer-fix": {
+      "phase": "completed",
+      "matchRate": 100,
+      "notes": "after() silent fail → 동기 await 전환"
+    },
+    "login-fix": {
+      "phase": "completed",
+      "matchRate": 100,
+      "notes": "Server Action middleware 리다이렉트 회피"
     }
   },
   "phaseMapping": {

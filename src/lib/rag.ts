@@ -66,32 +66,37 @@ export async function createAIAnswerForQuestion(
   imageUrls?: string[]
 ): Promise<boolean> {
   const supabase = createServiceClient();
+  const startTime = Date.now();
 
   try {
     // T4: 이미지 Vision 전처리 — 각각 설명 텍스트 생성
     let imageDescriptions: string | undefined;
     if (imageUrls && imageUrls.length > 0) {
+      console.log(`[AI답변] ${questionId} 이미지 ${imageUrls.length}개 Vision 처리 시작`);
       const descriptions: string[] = [];
       for (const url of imageUrls) {
         try {
           const desc = await generateVisionText(url, VISION_PROMPT);
           if (desc) descriptions.push(desc);
-        } catch {
-          // 개별 이미지 실패 → 스킵
+        } catch (err) {
+          console.error(`[AI답변] ${questionId} Vision 실패:`, url, err instanceof Error ? err.message : err);
         }
       }
       if (descriptions.length > 0) {
         imageDescriptions = descriptions.join("\n");
       }
+      console.log(`[AI답변] ${questionId} Vision 완료 ${Date.now() - startTime}ms (${descriptions.length}/${imageUrls.length} 성공)`);
     }
 
     // RAG 기반 답변 생성
+    console.log(`[AI답변] ${questionId} RAG 답변 생성 시작`);
     const result = await generateRAGAnswer(questionTitle, questionContent, imageDescriptions);
 
     if (!result) {
-      console.error("Failed to generate AI answer for question:", questionId);
+      console.error(`[AI답변] ${questionId} RAG 답변 생성 실패 (null 반환) ${Date.now() - startTime}ms`);
       return false;
     }
+    console.log(`[AI답변] ${questionId} RAG 답변 생성 완료 ${Date.now() - startTime}ms (${result.answer.length}자, refs: ${result.sourceRefs.length})`);
 
     // AI 답변 저장 (승인 대기 상태)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -105,13 +110,14 @@ export async function createAIAnswerForQuestion(
     });
 
     if (error) {
-      console.error("Failed to save AI answer:", error);
+      console.error(`[AI답변] ${questionId} DB 저장 실패:`, error.message, error.code);
       return false;
     }
 
+    console.log(`[AI답변] ${questionId} 완료 ${Date.now() - startTime}ms`);
     return true;
   } catch (error) {
-    console.error("createAIAnswerForQuestion error:", error);
+    console.error(`[AI답변] ${questionId} 예외 발생 ${Date.now() - startTime}ms:`, error instanceof Error ? error.message : error);
     return false;
   }
 }
