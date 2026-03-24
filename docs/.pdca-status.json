@@ -1579,7 +1579,17 @@
       "startedAt": "2026-03-24",
       "completedAt": "2026-03-24",
       "notes": "수집→저장→분석 전수 코드리뷰. CAROUSEL 누락, reach 합산 버그 3곳, 13개 변경점 + Migration 초안 + 4 Wave 구현 순서."
+    },
+    "wave1-schema": {
+      "phase": "completed",
+      "documents": {
+        "plan": "01-plan/features/wave1-schema.plan.md",
+        "design": "02-design/features/wave1-schema.design.md"
+      },
+      "startedAt": "2026-03-24",
+      "completedAt": "2026-03-24",
+      "notes": "creative_media 1:N 전환. position/card_total/lp_id 추가, UNIQUE(creative_id,position), CAROUSEL 재분류, onConflict 3곳 변경."
     }
   },
-  "updatedAt": "2026-03-24T03:00:00+09:00"
+  "updatedAt": "2026-03-24T03:30:00+09:00"
 }

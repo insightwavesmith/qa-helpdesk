@@ -277,9 +277,10 @@ async function main() {
             storage_url: storageUrl,
             ad_copy: insight.ad_name || null,
             raw_creative: creative || null,
+            position: 0,
           };
           try {
-            await sbUpsert("creative_media", [mediaRow], "creative_id");
+            await sbUpsert("creative_media", [mediaRow], "creative_id,position");
           } catch (e) {
             console.log(`    → creative_media upsert 실패: ${e.message.slice(0, 60)}`);
           }

@@ -649,6 +649,7 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
                   media_hash: imageHash || null,
                   storage_url: (creativeId ? creativeIdToStorageUrl.get(creativeId) : null) || null,
                   raw_creative: ad.creative || null,
+                  position: 0,
                 };
               }).filter(Boolean);
 
@@ -656,7 +657,7 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const { error: mediaErr } = await (svc as any)
                   .from("creative_media")
-                  .upsert(mediaRows, { onConflict: "creative_id" });
+                  .upsert(mediaRows, { onConflict: "creative_id,position" });
                 if (mediaErr) {
                   console.error(`[collect-daily] v2 creative_media upsert error [${account.account_id}]:`, mediaErr);
                 } else {

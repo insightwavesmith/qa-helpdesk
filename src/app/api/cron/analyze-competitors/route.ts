@@ -364,8 +364,9 @@ export async function GET(req: NextRequest) {
           media_url: imageUrl,
           ad_copy: adCopy,
           media_type: isVideo ? "VIDEO" : "IMAGE",
+          position: 0,
         },
-        { onConflict: "creative_id" },
+        { onConflict: "creative_id,position" },
       );
 
     if (upsertError) {
