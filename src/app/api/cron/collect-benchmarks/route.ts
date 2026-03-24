@@ -119,7 +119,7 @@ const AD_FIELDS = [
   "id",
   "name",
   "adset_id",
-  "creative.fields(object_type,product_set_id,video_id,image_hash,asset_feed_spec)",
+  "creative.fields(object_type,product_set_id,video_id,image_hash,asset_feed_spec,object_story_spec)",
 ].join(",");
 
 // INSIGHT_FIELDS: nested insights 안에 들어갈 지표 필드
@@ -561,7 +561,7 @@ export async function GET(req: NextRequest) {
     // ────────────────────────────────────────────────────────
     const rankingTypes = ["quality", "engagement", "conversion"] as const;
     const rankingGroups = ["ABOVE_AVERAGE", "AVERAGE", "BELOW_AVERAGE", "UNKNOWN"] as const;
-    const creativeTypes = ["ALL", "VIDEO", "IMAGE", "CATALOG"] as const;
+    const creativeTypes = ["ALL", "VIDEO", "IMAGE", "CAROUSEL", "CATALOG"] as const;
 
     const benchmarkRows: Record<string, unknown>[] = [];
     const weekDate = getMondayOfWeek();
@@ -635,59 +635,102 @@ export async function GET(req: NextRequest) {
     }
 
     // ────────────────────────────────────────────────────────
-    // STEP 3.5: 콘텐츠 풀 자동 태깅 (벤치마크 >1.5× 초과 소재)
-    //   ABOVE_AVERAGE 벤치마크의 1.5배를 초과하는 소재를 식별하여
-    //   creatives.cohort 필드에 'content_pool' 태깅
-    //   (creatives 테이블에 tags 컬럼이 없으므로 cohort 필드 활용)
+    // STEP 3.5: is_benchmark 자동 태깅
+    //   형식별(IMAGE/VIDEO/CAROUSEL) MEDIAN_ALL 기준:
+    //   참여율(engagement_per_10k) >= 형식별 평균 AND
+    //   전환 순위(conversion_ranking) >= 평균(ABOVE_AVERAGE 또는 AVERAGE)
+    //   → creatives.is_benchmark = true
     // ────────────────────────────────────────────────────────
-    let contentPoolTagged = 0;
+    let benchmarkTagged = 0;
     try {
-      // ABOVE_AVERAGE 벤치마크에서 engagement 기준 ROAS/CTR 임계값 추출
-      const aboveBenchmark = benchmarkRows.find(
-        (r) =>
-          r.creative_type === "ALL" &&
-          r.ranking_type === "engagement" &&
-          r.ranking_group === "ABOVE_AVERAGE"
-      ) as Record<string, unknown> | undefined;
+      // 1. benchmarkRows에서 형식별 MEDIAN_ALL engagement 벤치마크 추출
+      const medianEngagementByType = new Map<string, number>();
+      for (const row of benchmarkRows) {
+        if (
+          row.ranking_type === "engagement" &&
+          row.ranking_group === "MEDIAN_ALL" &&
+          row.engagement_per_10k != null
+        ) {
+          medianEngagementByType.set(
+            row.creative_type as string,
+            row.engagement_per_10k as number
+          );
+        }
+      }
 
-      if (aboveBenchmark) {
-        const thresholdRoas = ((aboveBenchmark.roas as number) ?? 0) * 1.5;
-        const thresholdCtr = ((aboveBenchmark.ctr as number) ?? 0) * 1.5;
+      console.log(
+        `[STEP 3.5] MEDIAN_ALL engagement 기준:`,
+        Object.fromEntries(medianEngagementByType)
+      );
 
-        // 임계값 초과 소재 필터링
-        const contentPoolAds = allClassified.filter((ad) => {
-          const meetsRoas = ad.roas != null && ad.roas > thresholdRoas && thresholdRoas > 0;
-          const meetsCtr = ad.ctr != null && ad.ctr > thresholdCtr && thresholdCtr > 0;
-          // ROAS 또는 CTR 중 하나라도 1.5배 초과
-          return meetsRoas || meetsCtr;
+      // 2. 형식별로 기준 충족 소재 필터링
+      const benchmarkAdIds: string[] = [];
+      const perTypeTargets = ["IMAGE", "VIDEO", "CAROUSEL"] as const;
+
+      for (const ct of perTypeTargets) {
+        // 해당 형식의 MEDIAN_ALL engagement 값 (없으면 ALL 사용)
+        const threshold =
+          medianEngagementByType.get(ct) ??
+          medianEngagementByType.get("ALL") ??
+          0;
+
+        if (threshold <= 0) continue;
+
+        const qualifying = allClassified.filter((ad) => {
+          if (ad.creative_type !== ct) return false;
+          // 조건 1: 참여율(engagement_per_10k) >= 형식별 MEDIAN_ALL
+          const meetsEngagement =
+            ad.engagement_per_10k != null && ad.engagement_per_10k >= threshold;
+          // 조건 2: 전환 순위 평균 이상 (ABOVE_AVERAGE 또는 AVERAGE)
+          const meetsConversion =
+            ad.conversion_ranking === "ABOVE_AVERAGE" ||
+            ad.conversion_ranking === "AVERAGE";
+          return meetsEngagement && meetsConversion;
         });
 
-        if (contentPoolAds.length > 0) {
-          // creatives 테이블에서 해당 ad_id의 cohort를 'content_pool'로 업데이트
-          // TODO: creatives 테이블에 tags text[] 컬럼 추가 후 tags 기반으로 전환
-          const adIdsToTag = contentPoolAds.map((ad) => ad.ad_id);
+        if (qualifying.length > 0) {
+          benchmarkAdIds.push(...qualifying.map((a) => a.ad_id));
+          console.log(
+            `[STEP 3.5] ${ct}: ${qualifying.length}건 is_benchmark (threshold: ${round(threshold, 2)})`
+          );
+        }
+      }
 
+      // 3. 먼저 기존 is_benchmark=true를 전부 리셋 (이번 주기에 해당 안 되는 소재 정리)
+      //    → 수집된 계정의 소재만 리셋 (다른 계정 건드리지 않음)
+      const collectedAccountIds = [...new Set(allClassified.map((a) => a.account_id))];
+      if (collectedAccountIds.length > 0) {
+        const { error: resetErr } = await anySvc
+          .from("creatives")
+          .update({ is_benchmark: false })
+          .eq("is_benchmark", true)
+          .in("account_id", collectedAccountIds);
+
+        if (resetErr) {
+          console.error("[STEP 3.5] is_benchmark 리셋 실패:", resetErr.message);
+        }
+      }
+
+      // 4. 기준 충족 소재 is_benchmark=true 업데이트
+      if (benchmarkAdIds.length > 0) {
+        // 50건씩 배치 업데이트 (Supabase IN 절 제한 방어)
+        for (let i = 0; i < benchmarkAdIds.length; i += 50) {
+          const batch = benchmarkAdIds.slice(i, i + 50);
           const { error: tagErr } = await anySvc
             .from("creatives")
-            .update({ cohort: "content_pool" })
-            .in("ad_id", adIdsToTag);
+            .update({ is_benchmark: true })
+            .in("ad_id", batch);
 
           if (tagErr) {
-            console.error("[STEP 3.5] 콘텐츠 풀 태깅 실패:", tagErr.message);
-          } else {
-            contentPoolTagged = adIdsToTag.length;
-            console.log(
-              `[STEP 3.5] 콘텐츠 풀 태깅: ${contentPoolTagged}건 (ROAS 임계값: ${round(thresholdRoas, 2)}, CTR 임계값: ${round(thresholdCtr, 4)})`
-            );
+            console.error(`[STEP 3.5] is_benchmark 태깅 실패 (batch ${i}):`, tagErr.message);
           }
-        } else {
-          console.log("[STEP 3.5] 벤치마크 1.5× 초과 소재 없음");
         }
-      } else {
-        console.log("[STEP 3.5] ABOVE_AVERAGE 벤치마크 없음 — 콘텐츠 풀 태깅 스킵");
+        benchmarkTagged = benchmarkAdIds.length;
       }
+
+      console.log(`[STEP 3.5] is_benchmark 태깅 완료: ${benchmarkTagged}건`);
     } catch (e) {
-      console.error("[STEP 3.5] 콘텐츠 풀 태깅 에러:", e instanceof Error ? e.message : e);
+      console.error("[STEP 3.5] is_benchmark 태깅 에러:", e instanceof Error ? e.message : e);
       // non-fatal: 계속 진행
     }
 
@@ -858,9 +901,10 @@ export async function GET(req: NextRequest) {
       creative_type_breakdown: {
         VIDEO: allClassified.filter((r) => r.creative_type === "VIDEO").length,
         IMAGE: allClassified.filter((r) => r.creative_type === "IMAGE").length,
+        CAROUSEL: allClassified.filter((r) => r.creative_type === "CAROUSEL").length,
         CATALOG: allClassified.filter((r) => r.creative_type === "CATALOG").length,
       },
-      content_pool_tagged: contentPoolTagged,
+      benchmark_tagged: benchmarkTagged,
       media_uploaded: mediaUploaded,
       media_failed: mediaFailed,
       collected_at: collectedAt,

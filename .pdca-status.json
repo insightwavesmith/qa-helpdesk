@@ -781,5 +781,15 @@
     ],
     "updatedAt": "2026-03-24T06:00:00+09:00",
     "notes": "Wave 2(수집 입구) + Wave 3(하류 수정) 완료. CAROUSEL 카드별 수집/임베딩/5축/DeepGaze 대응. Match Rate 95% — creative_saliency position 컬럼 미지원(향후 과제)."
+  },
+  "benchmark-auto-tagging": {
+    "status": "completed",
+    "tasks": [
+      "collect-benchmarks STEP 3.5 → is_benchmark 자동 태깅",
+      "creativeTypes에 CAROUSEL 추가",
+      "AD_FIELDS에 object_story_spec 추가"
+    ],
+    "updatedAt": "2026-03-24T07:00:00+09:00",
+    "notes": "형식별(IMAGE/VIDEO/CAROUSEL) MEDIAN_ALL 참여율 기준 + 전환순위 평균 이상 → is_benchmark=true. 기존 cohort='content_pool' 제거."
   }
 }
