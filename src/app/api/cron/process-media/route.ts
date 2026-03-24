@@ -94,12 +94,14 @@ export async function GET(req: NextRequest) {
   try {
     const svc = createServiceClient();
 
-    // 1. storage_url이 NULL인 creative_media 조회
+    // 1. storage_url이 NULL인 creative_media 조회 (90일 이내만)
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (svc as any)
       .from("creative_media")
       .select("id, creative_id, media_type, media_url, raw_creative, position, media_hash, content_hash, creatives!inner(ad_id, account_id)")
       .is("storage_url", null)
+      .gte("created_at", ninetyDaysAgo)
       .order("created_at", { ascending: true })
       .limit(limit);
 
