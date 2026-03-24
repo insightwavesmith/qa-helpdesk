@@ -222,7 +222,52 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 4. 임베딩 없는 기존 row 보충
+    // 4. content_hash 기반 임베딩 재사용 (비주얼 embedding만 — ad_copy가 달라도 이미지는 동일)
+    // embedding이 없고 content_hash가 있는 row를 찾아, 동일 content_hash의 다른 row에서 복사
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: missingRows } = await (supabase as any)
+        .from("creative_media")
+        .select("id, content_hash, embedding, embedding_model, embedded_at")
+        .is("embedding", null)
+        .not("content_hash", "is", null)
+        .eq("is_active", true)
+        .limit(200);
+
+      let hashReuseCount = 0;
+      for (const row of (missingRows ?? [])) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: donor } = await (supabase as any)
+          .from("creative_media")
+          .select("embedding, embedding_model, embedded_at")
+          .eq("content_hash", row.content_hash)
+          .not("embedding", "is", null)
+          .neq("id", row.id)
+          .limit(1)
+          .maybeSingle();
+
+        if (donor?.embedding) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from("creative_media")
+            .update({
+              embedding: donor.embedding,
+              embedding_model: donor.embedding_model,
+              embedded_at: donor.embedded_at,
+            })
+            .eq("id", row.id);
+          hashReuseCount++;
+          console.log(`[embed-creatives] content_hash 임베딩 재사용: ${row.content_hash as string}`);
+        }
+      }
+      if (hashReuseCount > 0) {
+        console.log(`[embed-creatives] content_hash 재사용 완료: ${hashReuseCount}건`);
+      }
+    } catch (err) {
+      console.error("[embed-creatives] content_hash 재사용 단계 실패 (무시):", err);
+    }
+
+    // 5. 임베딩 없는 기존 row 보충 (content_hash 재사용 후에도 embedding 없는 row)
     try {
       stats.embeddingResults = await embedMissingCreatives(50, 500);
     } catch (err) {

@@ -341,6 +341,43 @@ export async function GET(req: NextRequest) {
     // 광고 카피: ad_text와 ad_title 합치기
     const adCopy = [ad.ad_title, ad.ad_text].filter(Boolean).join(" / ") || null;
 
+    // ═══ 동일 이미지 URL 기반 analysis_json 재사용 ═══
+    // 같은 media_url로 이미 분석된 row가 있으면 Gemini API 호출 없이 복사
+    const { data: existingAnalysis } = await svc
+      .from("creative_media")
+      .select("analysis_json, analyzed_at, analysis_model")
+      .eq("media_url", imageUrl)
+      .not("analysis_json", "is", null)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingAnalysis?.analysis_json) {
+      await svc
+        .from("creative_media")
+        .upsert(
+          {
+            creative_id: `${COMPETITOR_PREFIX}${ad.ad_archive_id}`,
+            analysis_json: existingAnalysis.analysis_json,
+            analyzed_at: existingAnalysis.analyzed_at,
+            analysis_model: existingAnalysis.analysis_model,
+            media_url: imageUrl,
+            ad_copy: adCopy,
+            media_type: isVideo ? "VIDEO" : "IMAGE",
+            position: 0,
+          },
+          { onConflict: "creative_id,position" },
+        );
+      console.log(`[analyze-competitors] analysis_json media_url 재사용: ${ad.ad_archive_id}`);
+
+      await svc
+        .from("competitor_analysis_queue")
+        .update({ status: "completed" })
+        .eq("id", qItem.id);
+      completed++;
+      mediaStoredCount++;
+      continue;
+    }
+
     // Gemini Vision 분석
     const analysis = await analyzeCreative(imageUrl, adCopy, ad.display_format);
 

@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-24T03:56:17.000Z",
+  "lastUpdated": "2026-03-24T05:30:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1288,6 +1288,16 @@
       "startedAt": "2026-03-24",
       "completedAt": "2026-03-24",
       "notes": "전용 video-saliency 크론, creative-saliency에서 VIDEO 분리, ADR-001 경로, creative_media.video_analysis 동기화"
+    },
+    "collection-v3": {
+      "phase": "completed",
+      "matchRate": 95,
+      "documents": {
+        "plan": "01-plan/features/collection-v3.plan.md",
+        "design": "02-design/features/collection-v3.design.md",
+        "analysis": "03-analysis/collection-v3-review.analysis.md"
+      },
+      "notes": "계정 디스커버리 + content_hash 기반 중복 제거"
     }
   },
   "phaseMapping": {

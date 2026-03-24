@@ -47,6 +47,7 @@ interface PendingMediaRow {
   raw_creative: Record<string, unknown> | null;
   position: number;
   media_hash: string | null;
+  content_hash: string | null;
   creatives: {
     ad_id: string;
     account_id: string;
@@ -57,6 +58,7 @@ interface ProcessResult {
   processed: number;
   uploaded: number;
   errors: number;
+  dedup: number;
   byType: {
     IMAGE: { processed: number; uploaded: number; errors: number };
     VIDEO: { processed: number; uploaded: number; errors: number };
@@ -82,6 +84,7 @@ export async function GET(req: NextRequest) {
     processed: 0,
     uploaded: 0,
     errors: 0,
+    dedup: 0,
     byType: {
       IMAGE: { processed: 0, uploaded: 0, errors: 0 },
       VIDEO: { processed: 0, uploaded: 0, errors: 0 },
@@ -95,7 +98,7 @@ export async function GET(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (svc as any)
       .from("creative_media")
-      .select("id, creative_id, media_type, media_url, raw_creative, position, media_hash, creatives!inner(ad_id, account_id)")
+      .select("id, creative_id, media_type, media_url, raw_creative, position, media_hash, content_hash, creatives!inner(ad_id, account_id)")
       .is("storage_url", null)
       .order("created_at", { ascending: true })
       .limit(limit);
@@ -229,6 +232,39 @@ async function processImageRows(
   }
 
   for (const row of rows) {
+    // ═══ content_hash 기반 중복 제거 ═══
+    // 같은 콘텐츠(image_hash)가 이미 다운로드됐으면 storage_url 복사
+    if (row.content_hash) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: donor } = await (svc as any)
+        .from("creative_media")
+        .select("storage_url, thumbnail_url")
+        .eq("content_hash", row.content_hash)
+        .not("storage_url", "is", null)
+        .neq("id", row.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (donor?.storage_url) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (svc as any)
+          .from("creative_media")
+          .update({
+            storage_url: donor.storage_url,
+            thumbnail_url: donor.thumbnail_url || null,
+          })
+          .eq("id", row.id);
+
+        console.log(
+          `[process-media] IMAGE content_hash 재사용: ${row.content_hash} → ${donor.storage_url.slice(-40)}`
+        );
+        result.dedup++;
+        result.processed++;
+        result.byType.IMAGE.processed++;
+        continue; // 다운로드 스킵
+      }
+    }
+
     result.byType.IMAGE.processed++;
     result.processed++;
 
@@ -364,6 +400,39 @@ async function processVideoRows(
 
   for (const [videoId, videoRows] of rowByVideoId) {
     for (const row of videoRows) {
+      // ═══ content_hash 기반 중복 제거 ═══
+      // 같은 콘텐츠(video_id)가 이미 다운로드됐으면 storage_url 복사
+      if (row.content_hash) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: donor } = await (svc as any)
+          .from("creative_media")
+          .select("storage_url, thumbnail_url")
+          .eq("content_hash", row.content_hash)
+          .not("storage_url", "is", null)
+          .neq("id", row.id)
+          .limit(1)
+          .maybeSingle();
+
+        if (donor?.storage_url) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (svc as any)
+            .from("creative_media")
+            .update({
+              storage_url: donor.storage_url,
+              thumbnail_url: donor.thumbnail_url || null,
+            })
+            .eq("id", row.id);
+
+          console.log(
+            `[process-media] VIDEO content_hash 재사용: ${row.content_hash} → ${donor.storage_url.slice(-40)}`
+          );
+          result.dedup++;
+          result.processed++;
+          result.byType.VIDEO.processed++;
+          continue; // 다운로드 스킵
+        }
+      }
+
       result.byType.VIDEO.processed++;
       result.processed++;
 

@@ -25,6 +25,7 @@ interface CreativeMediaRow {
   media_url: string | null;
   storage_url: string | null;
   saliency_url: string | null;
+  content_hash: string | null;
   creatives: {
     ad_id: string;
     account_id: string;
@@ -69,7 +70,7 @@ export async function GET() {
     const { data: rawRows, error: queryErr } = await svc
       .from("creative_media")
       .select(
-        "id, creative_id, position, media_type, media_url, storage_url, saliency_url, creatives!inner(ad_id, account_id, creative_type)",
+        "id, creative_id, position, media_type, media_url, storage_url, saliency_url, content_hash, creatives!inner(ad_id, account_id, creative_type)",
       )
       .eq("media_type", "IMAGE")
       .is("saliency_url", null)
@@ -103,13 +104,50 @@ export async function GET() {
       });
     }
 
-    // ━━━ 2. account별 이미지 카드 그룹핑 ━━━
+    // ━━━ 2. content_hash 기반 saliency_url 사전 복사 ━━━
+    // 동일 content_hash(= 동일 이미지)를 가진 다른 row에 saliency_url이 있으면
+    // Railway 호출 없이 바로 복사 → 처리 비용 절감
+    let hashReuseCount = 0;
+    for (const row of rows) {
+      if (!row.content_hash || row.saliency_url) continue;
+
+      const { data: donor } = await svc
+        .from("creative_media")
+        .select("saliency_url")
+        .eq("content_hash", row.content_hash)
+        .not("saliency_url", "is", null)
+        .neq("id", row.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (donor?.saliency_url) {
+        const { error: updateErr } = await svc
+          .from("creative_media")
+          .update({ saliency_url: donor.saliency_url })
+          .eq("id", row.id);
+
+        if (!updateErr) {
+          // row 객체에도 반영 — 아래 그룹핑 단계에서 remainingRows 필터링에 사용
+          row.saliency_url = donor.saliency_url;
+          hashReuseCount++;
+          console.log(`[creative-saliency] content_hash saliency 재사용: ${row.content_hash}`);
+        }
+      }
+    }
+    if (hashReuseCount > 0) {
+      console.log(`[creative-saliency] content_hash 재사용 완료: ${hashReuseCount}건`);
+    }
+
+    // 복사 후 saliency_url이 채워진 row 제외 — Railway에는 미분석 row만 전달
+    const remainingRows = rows.filter((r) => !r.saliency_url);
+
+    // ━━━ 3. account별 이미지 카드 그룹핑 ━━━
     // VIDEO 타입 카드는 이미 media_type=IMAGE 필터로 제외됨
     // CAROUSEL 내 IMAGE 카드(position=0,2 등)와 VIDEO 카드(position=1 등) 혼재 시
     // → IMAGE 카드만 포함됨을 로그로 명시
     const accountMap = new Map<string, AccountImageCards>();
 
-    for (const row of rows) {
+    for (const row of remainingRows) {
       const creative = row.creatives;
       if (!creative) continue;
 
@@ -146,14 +184,14 @@ export async function GET() {
 
     const accountList = Array.from(accountMap.values());
     console.log(
-      `[creative-saliency] 처리 계정 수: ${accountList.length}, 총 이미지 카드: ${
+      `[creative-saliency] 처리 계정 수: ${accountList.length}, 총 이미지 카드(신규): ${
         accountList.reduce((s, a) => s + a.imageCards.length, 0)
-      }건`,
+      }건 (hash 재사용: ${hashReuseCount}건 제외)`,
     );
 
-    // ━━━ 3. account별 Railway /saliency 호출 ━━━
+    // ━━━ 4. account별 Railway /saliency 호출 ━━━
     // Python predict.py가 media_type=IMAGE 필터 + creative_saliency dedup 처리
-    // CAROUSEL 카드별 결과는 creative_saliency → creative_media.saliency_url 동기화(step 4)로 반영
+    // CAROUSEL 카드별 결과는 creative_saliency → creative_media.saliency_url 동기화(step 5)로 반영
     const accountResults: Record<string, unknown>[] = [];
 
     for (const { accountId, imageCards } of accountList) {
@@ -185,13 +223,13 @@ export async function GET() {
       await new Promise((r) => setTimeout(r, 500));
     }
 
-    // ━━━ 4. creative_saliency → creative_media.saliency_url 동기화 ━━━
+    // ━━━ 5. creative_saliency → creative_media.saliency_url 동기화 ━━━
     // Railway Python이 creative_saliency 테이블에 저장한 결과를
     // creative_media.saliency_url 컬럼에도 반영
     let syncUpdated = 0;
     try {
-      // 방금 처리된 ad_id 목록
-      const processedAdIds = rows
+      // Railway가 방금 처리한 ad_id 목록 (content_hash 재사용분 제외)
+      const processedAdIds = remainingRows
         .map((r) => r.creatives?.ad_id)
         .filter(Boolean) as string[];
 
@@ -211,7 +249,7 @@ export async function GET() {
           );
 
           // creative_media.saliency_url 업데이트 (position=0 카드 기준)
-          for (const row of rows) {
+          for (const row of remainingRows) {
             const adId = row.creatives?.ad_id;
             if (!adId) continue;
             const mapUrl = saliencyMap.get(adId);
@@ -245,6 +283,7 @@ export async function GET() {
       message: "creative-saliency 완료",
       elapsed: `${elapsed}s`,
       totalCards,
+      hashReused: hashReuseCount,
       accounts: accountList.length,
       syncUpdated,
       image: accountResults,
