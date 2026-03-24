@@ -22,6 +22,8 @@ export interface CreativeEmbedInput {
   lpUrl: string | null;
   creativeType?: string;
   imageHash?: string;
+  /** CAROUSEL 카드 위치 (0-based). 미지정 시 0으로 처리 */
+  position?: number;
   // 성과 지표 (자사 광고용)
   roas?: number;
   ctr?: number;
@@ -95,24 +97,26 @@ export async function embedCreative(input: CreativeEmbedInput): Promise<EmbedRes
     }
   }
 
-  // 3. creative_media에 임베딩 업데이트
+  // 3. creative_media에 임베딩 업데이트 (position별 특정 row)
   if (Object.keys(updates).length > 2) {
     // embedding_model + updated_at 외에 실제 임베딩이 있을 때만
     updates.embedded_at = new Date().toISOString();
+    const position = input.position ?? 0;
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("creative_media")
         .update(updates)
-        .eq("creative_id", creative.id);
+        .eq("creative_id", creative.id)
+        .eq("position", position);
 
       if (error) {
         result.error = error.message;
-        console.error(`[creative-embedder] Update failed for ${input.adId}:`, error);
+        console.error(`[creative-embedder] Update failed for ${input.adId} pos=${position}:`, error);
       }
     } catch (err) {
       result.error = err instanceof Error ? err.message : String(err);
-      console.error(`[creative-embedder] DB error for ${input.adId}:`, err);
+      console.error(`[creative-embedder] DB error for ${input.adId} pos=${position}:`, err);
     }
   }
 

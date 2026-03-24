@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getCreativeType } from "@/lib/protractor/creative-type";
+import { runCollectDaily } from "@/app/api/cron/collect-daily/route";
 
 // ── collect-daily에서 재사용할 유틸리티 (동일 로직) ──
 
@@ -187,8 +188,72 @@ export async function POST(req: NextRequest) {
 
   // 요청 파싱
   const body = await req.json();
+  const mode: string | undefined = body.mode;
   const accountIds: string[] | "all" = body.accountIds;
   const dateParam: string | undefined = body.date;
+  const days: number = typeof body.days === "number" ? body.days : 90;
+
+  // ── backfill 모드 ──────────────────────────────────────────
+  if (mode === "backfill") {
+    if (!accountIds || accountIds === "all" || (accountIds as string[]).length === 0) {
+      return NextResponse.json({ error: "backfill은 계정 ID 지정 필수" }, { status: 400 });
+    }
+    const targetAccountIds = accountIds as string[];
+
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        function send(data: Record<string, unknown>) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        }
+
+        send({ type: "backfill_start", days, accounts: targetAccountIds.length });
+
+        let successDays = 0;
+        let failedDays = 0;
+
+        for (let i = days; i >= 1; i--) {
+          const d = new Date(Date.now() + 9 * 3600_000); // KST
+          d.setDate(d.getDate() - i);
+          const dateStr = d.toISOString().slice(0, 10);
+
+          try {
+            for (const accId of targetAccountIds) {
+              const result = await runCollectDaily(dateStr, undefined, accId);
+              send({
+                type: "day_complete",
+                date: dateStr,
+                accountId: accId,
+                ads: result.results.length,
+              });
+            }
+            successDays++;
+          } catch (e) {
+            failedDays++;
+            send({
+              type: "day_error",
+              date: dateStr,
+              error: e instanceof Error ? e.message : String(e),
+            });
+          }
+
+          // rate limit: 날짜 간 1초 딜레이
+          await new Promise(r => setTimeout(r, 1000));
+        }
+
+        send({ type: "backfill_complete", successDays, failedDays });
+        controller.close();
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
+  }
 
   // KST 어제 날짜
   const targetDate = dateParam ?? (() => {

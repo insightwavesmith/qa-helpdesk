@@ -5,10 +5,11 @@
 
 /**
  * Meta 광고 creative 필드 기반 소재 유형 분류
- * - 최우선: object_type SHARE → VIDEO (카탈로그+수동업로드 영상)
+ * - 최우선: CAROUSEL (template_data 존재 OR afs.images 2개 이상)
+ * - 차순위: object_type SHARE → VIDEO (카탈로그+수동업로드 영상)
  * - 1순위: video_id 또는 asset_feed_spec.videos → VIDEO
  * - 2순위: image_hash(+no product_set) → IMAGE
- * - 3순위: product_set_id → CATALOG
+ * - 3순위: product_set_id 존재 → CATALOG
  * - fallback: object_type 기반
  */
 export function getCreativeType(ad: Record<string, unknown>): string {
@@ -20,9 +21,11 @@ export function getCreativeType(ad: Record<string, unknown>): string {
         image_hash?: string;
         asset_feed_spec?: {
           videos?: { video_id?: string }[];
+          images?: { hash?: string; url?: string }[];
         };
         object_story_spec?: {
           video_data?: Record<string, unknown>;
+          template_data?: Record<string, unknown>;
         };
       }
     | undefined;
@@ -32,7 +35,15 @@ export function getCreativeType(ad: Record<string, unknown>): string {
   const productSetId = creative?.product_set_id;
   const objectType = creative?.object_type ?? "UNKNOWN";
   const afsVideos = creative?.asset_feed_spec?.videos;
+  const afsImages = creative?.asset_feed_spec?.images;
   const hasVideoData = !!creative?.object_story_spec?.video_data;
+  const hasTemplateData = !!creative?.object_story_spec?.template_data;
+
+  // 최우선: CAROUSEL 감지
+  // - oss.template_data 존재 → 캐러셀 광고 형식
+  if (hasTemplateData) return "CAROUSEL";
+  // - afs.images 2개 이상 + product_set_id 없음 → 멀티 이미지 캐러셀
+  if (afsImages && afsImages.length >= 2 && !productSetId) return "CAROUSEL";
 
   // SHARE: 이미지/영상 모두 가능 → video_data 존재 여부로 판별
   if (objectType === "SHARE") {

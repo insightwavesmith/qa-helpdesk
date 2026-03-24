@@ -138,6 +138,7 @@ function extractLpUrl(ad: Record<string, any>): string | null {
 
 // creative 필드 기반 분류 — 공용 모듈에서 import
 import { getCreativeType } from "@/lib/protractor/creative-type";
+import { extractCarouselCards } from "@/lib/protractor/carousel-cards";
 import {
   fetchImageUrlsByHash,
   extractImageHashes,
@@ -617,41 +618,88 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
                 (existingMedia ?? []).map((r: { creative_id: string; storage_url: string }) => [r.creative_id, r.storage_url])
               );
 
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const mediaRows = (ads as any[]).map((ad: any) => {
+              const mediaRows: Record<string, unknown>[] = [];
+              for (const ad of ads as any[]) {
                 const adId = (ad.ad_id ?? ad.id) as string;
                 const creativeId = adIdToCreativeId.get(adId);
-                if (!creativeId) return null;
+                if (!creativeId) continue;
 
                 const creative = ad.creative;
-                const imageHash = creative?.image_hash;
-                const videoId = creative?.video_id;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const creativeType = getCreativeType(ad as any);
 
-                // media_url 3단계 fallback (기존 로직과 동일)
-                const mediaUrl = (() => {
-                  if (imageHash && hashToUrl.has(imageHash)) return hashToUrl.get(imageHash)!;
-                  if (videoId && videoThumbMap.has(videoId)) return videoThumbMap.get(videoId)!;
-                  const afsImages = creative?.asset_feed_spec?.images;
-                  if (afsImages && Array.isArray(afsImages)) {
-                    for (const img of afsImages) {
-                      if (img.hash && hashToUrl.has(img.hash)) return hashToUrl.get(img.hash)!;
+                if (creativeType === "CAROUSEL") {
+                  // CAROUSEL: 카드별 N행 생성
+                  const cards = extractCarouselCards(ad as Record<string, unknown>);
+                  if (cards.length > 0) {
+                    for (const card of cards) {
+                      const cardMediaUrl = (() => {
+                        if (card.imageHash && hashToUrl.has(card.imageHash)) return hashToUrl.get(card.imageHash)!;
+                        if (card.imageUrl) return card.imageUrl;
+                        if (card.videoId && videoThumbMap.has(card.videoId)) return videoThumbMap.get(card.videoId)!;
+                        return null;
+                      })();
+
+                      mediaRows.push({
+                        creative_id: creativeId,
+                        media_type: card.videoId ? "VIDEO" : "IMAGE",
+                        media_url: cardMediaUrl,
+                        media_hash: card.imageHash || null,
+                        storage_url: creativeIdToStorageUrl.get(creativeId) || null,
+                        raw_creative: creative || null,
+                        position: card.position,
+                        card_total: cards.length,
+                      });
+                    }
+                  } else {
+                    // fallback: 카드 추출 실패 시 단일 미디어
+                    const imageHash = creative?.image_hash;
+                    const videoId = creative?.video_id;
+                    const mediaUrl = imageHash && hashToUrl.has(imageHash) ? hashToUrl.get(imageHash)!
+                      : videoId && videoThumbMap.has(videoId) ? videoThumbMap.get(videoId)!
+                      : null;
+                    if (mediaUrl) {
+                      mediaRows.push({
+                        creative_id: creativeId,
+                        media_type: videoId ? "VIDEO" : "IMAGE",
+                        media_url: mediaUrl,
+                        media_hash: imageHash || null,
+                        storage_url: creativeIdToStorageUrl.get(creativeId) || null,
+                        raw_creative: creative || null,
+                        position: 0,
+                        card_total: 1,
+                      });
                     }
                   }
-                  return null;
-                })();
+                } else {
+                  // IMAGE/VIDEO: 기존대로 position=0
+                  const imageHash = creative?.image_hash;
+                  const videoId = creative?.video_id;
+                  const mediaUrl = (() => {
+                    if (imageHash && hashToUrl.has(imageHash)) return hashToUrl.get(imageHash)!;
+                    if (videoId && videoThumbMap.has(videoId)) return videoThumbMap.get(videoId)!;
+                    const afsImages = creative?.asset_feed_spec?.images;
+                    if (afsImages && Array.isArray(afsImages)) {
+                      for (const img of afsImages) {
+                        if (img.hash && hashToUrl.has(img.hash)) return hashToUrl.get(img.hash)!;
+                      }
+                    }
+                    return null;
+                  })();
+                  if (!mediaUrl) continue;
 
-                if (!mediaUrl) return null;
-
-                return {
-                  creative_id: creativeId,
-                  media_type: videoId ? "VIDEO" : "IMAGE",
-                  media_url: mediaUrl,
-                  media_hash: imageHash || null,
-                  storage_url: (creativeId ? creativeIdToStorageUrl.get(creativeId) : null) || null,
-                  raw_creative: ad.creative || null,
-                  position: 0,
-                };
-              }).filter(Boolean);
+                  mediaRows.push({
+                    creative_id: creativeId,
+                    media_type: videoId ? "VIDEO" : "IMAGE",
+                    media_url: mediaUrl,
+                    media_hash: imageHash || null,
+                    storage_url: creativeIdToStorageUrl.get(creativeId) || null,
+                    raw_creative: creative || null,
+                    position: 0,
+                    card_total: 1,
+                  });
+                }
+              }
 
               if (mediaRows.length > 0) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any

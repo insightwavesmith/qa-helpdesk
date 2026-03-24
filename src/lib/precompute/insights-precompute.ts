@@ -185,7 +185,7 @@ function addToAccum(acc: DailyAccum, row: RawInsightRow): void {
   const p3sRaw = ((row.video_p3s_rate ?? 0) / 100) * imp;
 
   acc.impressions += imp;
-  acc.reach += row.reach ?? 0;
+  acc.reach = Math.max(acc.reach ?? 0, row.reach ?? 0);
   acc.clicks += clicks;
   acc.spend += row.spend ?? 0;
   acc.purchases += row.purchases ?? 0;

@@ -734,7 +734,7 @@ async function fetchStratifiedSample(targetCount) {
   let offset = 0;
   while (true) {
     let q =
-      `/creative_media?select=id,creative_id,storage_url,media_type,ad_copy,creatives!inner(ad_id,account_id,creative_performance(roas))` +
+      `/creative_media?select=id,creative_id,position,storage_url,media_type,ad_copy,creatives!inner(ad_id,account_id,creative_performance(roas))` +
       `&storage_url=not.is.null&analysis_json=is.null&order=id.asc&offset=${offset}&limit=${PAGE_SIZE}`;
     // B10: --include-inactive가 없으면 활성 소재만 (벤치마크 제외)
     if (!INCLUDE_INACTIVE) q += `&is_active=eq.true`;
@@ -1034,7 +1034,7 @@ async function main() {
   try {
     while (true) {
       let query =
-        `/creative_media?select=id,creative_id,storage_url,media_type,ad_copy,analysis_json,creatives!inner(ad_id,account_id)` +
+        `/creative_media?select=id,creative_id,position,storage_url,media_type,ad_copy,analysis_json,creatives!inner(ad_id,account_id)` +
         `&storage_url=not.is.null&order=id.asc&offset=${offset}&limit=${PAGE_SIZE}`;
       if (FILTER_TYPE) query += `&media_type=eq.${FILTER_TYPE}`;
       const batch = await sbGet(query);
@@ -1051,7 +1051,7 @@ async function main() {
     try {
       while (true) {
         let query =
-          `/creative_media?select=id,creative_id,storage_url,media_type,ad_copy,creatives!inner(ad_id,account_id)` +
+          `/creative_media?select=id,creative_id,position,storage_url,media_type,ad_copy,creatives!inner(ad_id,account_id)` +
           `&storage_url=not.is.null&order=id.asc&offset=${offset}&limit=${PAGE_SIZE}`;
         if (FILTER_TYPE) query += `&media_type=eq.${FILTER_TYPE}`;
         const batch = await sbGet(query);
@@ -1080,6 +1080,8 @@ async function main() {
     allItems.push({
       source: "creative_media",
       id: row.id,
+      creativeId: row.creative_id,
+      position: row.position ?? 0,
       adId: row.creatives?.ad_id,
       accountId: row.creatives?.account_id,
       storageUrl: row.storage_url,
@@ -1100,6 +1102,8 @@ async function main() {
       allItems = stratifiedItems.map((row) => ({
         source: "creative_media",
         id: row.id,
+        creativeId: row.creative_id,
+        position: row.position ?? 0,
         adId: row.creatives?.ad_id,
         accountId: row.creatives?.account_id,
         storageUrl: row.storage_url,
@@ -1136,14 +1140,14 @@ async function main() {
     if (DRY_RUN) {
       if (i < 5 || i % 100 === 0) {
         console.log(
-          `${prefix} [dry-run] ${item.adId} (${item.mediaType}, ${item.source})${item.roas !== undefined ? `, ROAS=${item.roas}` : ""}`
+          `${prefix} [dry-run] ${item.adId} (${item.mediaType}, ${item.source}, pos=${item.position})${item.roas !== undefined ? `, ROAS=${item.roas}` : ""}`
         );
       }
       success++;
       continue;
     }
 
-    process.stdout.write(`${prefix} ${item.adId} (${item.mediaType}) — `);
+    process.stdout.write(`${prefix} ${item.adId} (${item.mediaType}, pos=${item.position}) — `);
 
     // VIDEO 소재의 경우 비디오 원본 URL 조회
     let videoUrl = null;
@@ -1154,7 +1158,7 @@ async function main() {
       } else {
         // creatives 테이블에서 video_url 조회
         try {
-          const creatives = await sbGet(`/creatives?select=video_url&id=eq.${item.creative_id}&limit=1`);
+          const creatives = await sbGet(`/creatives?select=video_url&id=eq.${item.creativeId}&limit=1`);
           if (creatives?.[0]?.video_url) {
             videoUrl = creatives[0].video_url;
           }
@@ -1162,10 +1166,12 @@ async function main() {
       }
     }
 
-    // DeepGaze saliency 데이터 조회
+    // DeepGaze saliency 데이터 조회 (CAROUSEL: position=0 카드만 saliency 데이터 존재)
     let saliencyData = null;
     try {
-      const saliencyRows = await sbGet(`/creative_saliency?ad_id=eq.${item.adId}&limit=1`);
+      const saliencyRows = item.position === 0
+        ? await sbGet(`/creative_saliency?ad_id=eq.${item.adId}&limit=1`)
+        : [];
       if (saliencyRows && saliencyRows.length > 0) {
         saliencyData = saliencyRows[0];
         // VIDEO인 경우 프레임별 데이터도 조회

@@ -91,6 +91,97 @@ function extractDomain(url) {
   }
 }
 
+// ── Creative Type 판별 ────────────────────────────
+function getCreativeType(adData) {
+  const creative = adData.creative;
+  if (!creative) return "IMAGE";
+
+  const videoId = creative.video_id;
+  const imageHash = creative.image_hash;
+  const productSetId = creative.product_set_id;
+  const objectType = creative.object_type ?? "UNKNOWN";
+  const afsVideos = creative.asset_feed_spec?.videos;
+  const afsImages = creative.asset_feed_spec?.images;
+  const hasVideoData = !!creative.object_story_spec?.video_data;
+  const hasTemplateData = !!creative.object_story_spec?.template_data;
+
+  // CAROUSEL
+  if (hasTemplateData) return "CAROUSEL";
+  if (afsImages && afsImages.length >= 2 && !productSetId) return "CAROUSEL";
+
+  // SHARE → VIDEO
+  if (objectType === "SHARE") {
+    if (videoId || hasVideoData || (afsVideos && afsVideos.length > 0)) return "VIDEO";
+  }
+
+  if (videoId) return "VIDEO";
+  if (afsVideos && afsVideos.length > 0) return "VIDEO";
+  if (imageHash && !productSetId) return "IMAGE";
+  if (productSetId) return "CATALOG";
+
+  if (objectType === "VIDEO" || objectType === "PRIVACY_CHECK_FAIL") return "VIDEO";
+  return "IMAGE";
+}
+
+// ── LP URL 추출 (3단계 fallback) ──────────────────
+function extractLpUrl(adData) {
+  const creative = adData.creative;
+  if (!creative) return null;
+  const oss = creative.object_story_spec;
+
+  // 1) object_story_spec
+  if (oss?.link_data?.link) return oss.link_data.link;
+  if (oss?.video_data?.call_to_action?.value?.link) return oss.video_data.call_to_action.value.link;
+
+  // 2) asset_feed_spec
+  const afs = creative.asset_feed_spec;
+  if (afs) {
+    if (afs.link_urls?.length > 0) {
+      const url = afs.link_urls[0]?.website_url || afs.link_urls[0];
+      if (typeof url === "string" && url.startsWith("http")) return url;
+    }
+    if (afs.call_to_actions?.length > 0) {
+      const cta = afs.call_to_actions[0];
+      if (cta?.value?.link) return cta.value.link;
+    }
+  }
+
+  // 3) top-level call_to_action
+  if (creative.call_to_action?.value?.link) return creative.call_to_action.value.link;
+
+  return null;
+}
+
+// ── CAROUSEL 카드 추출 ────────────────────────────
+function extractCarouselCards(adData) {
+  const creative = adData.creative;
+  if (!creative) return [];
+  const oss = creative.object_story_spec;
+  const afs = creative.asset_feed_spec;
+
+  // template_data.elements 우선
+  if (oss?.template_data?.elements && Array.isArray(oss.template_data.elements)) {
+    return oss.template_data.elements.map((el, idx) => ({
+      imageHash: el.image_hash || null,
+      imageUrl: el.image_url || null,
+      videoId: el.video_id || null,
+      lpUrl: el.link || null,
+      position: idx,
+    }));
+  }
+  // fallback: afs.images
+  if (afs?.images && Array.isArray(afs.images)) {
+    return afs.images.map((img, idx) => ({
+      imageHash: img.hash || null,
+      imageUrl: img.url || null,
+      videoId: null,
+      lpUrl: null,
+      position: idx,
+    }));
+  }
+  return [];
+}
+
 // ── 메인 ──────────────────────────────────────────
 async function main() {
   console.log(`\n=== 벤치마크 소재 수집 시작 ===`);
@@ -187,7 +278,7 @@ async function main() {
       try {
         // 4. Meta API에서 광고 크리에이티브 정보 조회
         const adData = await metaGet(`/${adId}`, {
-          fields: "name,creative{id,object_type,video_id,image_hash,image_url,thumbnail_url,object_story_spec}",
+          fields: "name,creative{id,object_type,video_id,image_hash,image_url,thumbnail_url,object_story_spec,asset_feed_spec,product_set_id}",
         });
 
         const creative = adData.creative;
@@ -202,14 +293,10 @@ async function main() {
         // story_video_id: object_story_spec.video_data.video_id (권한 OK)
         const oss = creative.object_story_spec;
         const storyVideoId = oss?.video_data?.video_id || null;
-        const creativeType = storyVideoId ? "VIDEO" : "IMAGE";
+        const creativeType = getCreativeType(adData);
 
-        // LP URL 추출 (object_story_spec에서)
-        let lpUrl = null;
-        if (oss) {
-          if (oss.link_data?.link) lpUrl = oss.link_data.link;
-          else if (oss.video_data?.call_to_action?.value?.link) lpUrl = oss.video_data.call_to_action.value.link;
-        }
+        // LP URL 추출 (3단계 fallback)
+        let lpUrl = extractLpUrl(adData);
 
         // 5. creatives 테이블에 INSERT
         const creativeRow = {
@@ -269,20 +356,65 @@ async function main() {
             }
           }
 
-          // creative_media UPSERT
-          const mediaRow = {
-            creative_id: creativeId,
-            media_type: creativeType,
-            media_url: mediaUrl,
-            storage_url: storageUrl,
-            ad_copy: insight.ad_name || null,
-            raw_creative: creative || null,
-            position: 0,
-          };
-          try {
-            await sbUpsert("creative_media", [mediaRow], "creative_id,position");
-          } catch (e) {
-            console.log(`    → creative_media upsert 실패: ${e.message.slice(0, 60)}`);
+          // creative_media UPSERT (CAROUSEL: 카드별 N행, 나머지: 단일)
+          if (creativeType === "CAROUSEL") {
+            const cards = extractCarouselCards(adData);
+            if (cards.length > 0) {
+              for (const card of cards) {
+                const cardMediaUrl = card.imageUrl || mediaUrl;
+                const cardMediaRow = {
+                  creative_id: creativeId,
+                  media_type: card.videoId ? "VIDEO" : "IMAGE",
+                  media_url: cardMediaUrl,
+                  media_hash: card.imageHash || null,
+                  storage_url: storageUrl,
+                  ad_copy: insight.ad_name || null,
+                  raw_creative: creative || null,
+                  position: card.position,
+                  card_total: cards.length,
+                };
+                try {
+                  await sbUpsert("creative_media", [cardMediaRow], "creative_id,position");
+                } catch (e) {
+                  console.log(`    → creative_media 카드 upsert 실패: ${e.message.slice(0, 60)}`);
+                }
+              }
+              console.log(`    → CAROUSEL ${cards.length}장 카드 저장`);
+            } else {
+              // 카드 추출 실패 시 단일 미디어로 fallback (position=0)
+              const mediaRow = {
+                creative_id: creativeId,
+                media_type: "IMAGE",
+                media_url: mediaUrl,
+                storage_url: storageUrl,
+                ad_copy: insight.ad_name || null,
+                raw_creative: creative || null,
+                position: 0,
+                card_total: 1,
+              };
+              try {
+                await sbUpsert("creative_media", [mediaRow], "creative_id,position");
+              } catch (e) {
+                console.log(`    → creative_media upsert 실패: ${e.message.slice(0, 60)}`);
+              }
+            }
+          } else {
+            // IMAGE / VIDEO 단일 미디어 (position=0)
+            const mediaRow = {
+              creative_id: creativeId,
+              media_type: creativeType,
+              media_url: mediaUrl,
+              storage_url: storageUrl,
+              ad_copy: insight.ad_name || null,
+              raw_creative: creative || null,
+              position: 0,
+              card_total: 1,
+            };
+            try {
+              await sbUpsert("creative_media", [mediaRow], "creative_id,position");
+            } catch (e) {
+              console.log(`    → creative_media upsert 실패: ${e.message.slice(0, 60)}`);
+            }
           }
         }
 

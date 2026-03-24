@@ -761,5 +761,25 @@
     ],
     "updatedAt": "2026-03-24T03:30:00+09:00",
     "notes": "Wave 1 완료. creative_media 1:N 전환 + CAROUSEL 재분류. 후속: Wave 2 수집 입구."
+  },
+  "wave2-3-collection": {
+    "status": "completed",
+    "plan": "docs/01-plan/features/wave2-collection.plan.md",
+    "design": "docs/02-design/features/wave2-collection.design.md",
+    "analysis": "docs/03-analysis/wave2-collection.analysis.md",
+    "matchRate": 95,
+    "tasks": [
+      "T3: creative-type.ts CAROUSEL 분류 + carousel-cards.ts",
+      "T4: collect-daily CAROUSEL 카드별 N행 저장",
+      "T5: collect-benchmark getCreativeType 통일 + LP fallback",
+      "T6: backfill 크론 (90일, runCollectDaily 재사용)",
+      "T7: reach 합산 → Math.max (insights-precompute)",
+      "T8: embed-creatives 카드별 독립 임베딩",
+      "T9: analyze-five-axis 카드별 5축 분석",
+      "T10: creative-saliency IMAGE 카드만 DeepGaze",
+      "아키텍처 Mermaid 다이어그램 작성"
+    ],
+    "updatedAt": "2026-03-24T06:00:00+09:00",
+    "notes": "Wave 2(수집 입구) + Wave 3(하류 수정) 완료. CAROUSEL 카드별 수집/임베딩/5축/DeepGaze 대응. Match Rate 95% — creative_saliency position 컬럼 미지원(향후 과제)."
   }
 }

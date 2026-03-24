@@ -33,6 +33,8 @@ import {
   fetchImageUrlsByHash,
   extractImageHashes,
 } from "@/lib/protractor/creative-image-fetcher";
+import { getCreativeType } from "@/lib/protractor/creative-type";
+import { extractCarouselCards } from "@/lib/protractor/carousel-cards";
 import { embedCreative, embedMissingCreatives } from "@/lib/ad-creative-embedder";
 import type { CreativeEmbedInput } from "@/lib/ad-creative-embedder";
 
@@ -134,27 +136,74 @@ export async function GET(req: NextRequest) {
               (creative?.image_hash ? hashToUrl.get(creative.image_hash) : null) ||
               null;
 
-            const input: CreativeEmbedInput = {
-              adId,
-              accountId: cleanId,
-              source: "own",
-              brandName: account.account_name || undefined,
-              category: undefined,
-              mediaUrl: imageUrl,
-              mediaType: creative?.video_id ? "VIDEO" : "IMAGE",
-              adCopy: detail?.adCopy || null,
-              lpUrl: detail?.lpUrl || null,
-              imageHash: creative?.image_hash || undefined,
-            };
+            // 소재 유형 판별
+            const adRecord = ad as Record<string, unknown>;
+            const creativeType = getCreativeType(adRecord);
 
-            try {
-              const embedResult = await embedCreative(input);
-              if (embedResult.embeddingDone || embedResult.textEmbeddingDone) {
-                stats.newCreatives++;
+            if (creativeType === "CAROUSEL") {
+              // CAROUSEL: 각 카드(position)별 독립 임베딩
+              const cards = extractCarouselCards(adRecord);
+              const cardList = cards.length > 0
+                ? cards
+                : [{ position: 0, imageHash: creative?.image_hash || null, imageUrl, videoId: null, lpUrl: detail?.lpUrl || null }];
+
+              for (const card of cardList) {
+                const cardImageUrl =
+                  card.imageUrl ||
+                  (card.imageHash ? hashToUrl.get(card.imageHash) || null : null);
+
+                const input: CreativeEmbedInput = {
+                  adId,
+                  accountId: cleanId,
+                  source: "own",
+                  brandName: account.account_name || undefined,
+                  category: undefined,
+                  mediaUrl: cardImageUrl,
+                  mediaType: card.videoId ? "VIDEO" : "IMAGE",
+                  // 카피는 position=0 카드에만 (헤드라인은 광고 전체 카피)
+                  adCopy: card.position === 0 ? (detail?.adCopy || null) : null,
+                  lpUrl: card.lpUrl || detail?.lpUrl || null,
+                  imageHash: card.imageHash || undefined,
+                  creativeType,
+                  position: card.position,
+                };
+
+                try {
+                  const embedResult = await embedCreative(input);
+                  if (embedResult.embeddingDone || embedResult.textEmbeddingDone) {
+                    stats.newCreatives++;
+                  }
+                } catch (err) {
+                  const msg = `ad ${adId} pos=${card.position}: ${err instanceof Error ? err.message : String(err)}`;
+                  stats.errors.push(msg);
+                }
               }
-            } catch (err) {
-              const msg = `ad ${adId}: ${err instanceof Error ? err.message : String(err)}`;
-              stats.errors.push(msg);
+            } else {
+              // IMAGE / VIDEO: position=0 단일 임베딩 (기존 동작 유지)
+              const input: CreativeEmbedInput = {
+                adId,
+                accountId: cleanId,
+                source: "own",
+                brandName: account.account_name || undefined,
+                category: undefined,
+                mediaUrl: imageUrl,
+                mediaType: creative?.video_id ? "VIDEO" : "IMAGE",
+                adCopy: detail?.adCopy || null,
+                lpUrl: detail?.lpUrl || null,
+                imageHash: creative?.image_hash || undefined,
+                creativeType,
+                position: 0,
+              };
+
+              try {
+                const embedResult = await embedCreative(input);
+                if (embedResult.embeddingDone || embedResult.textEmbeddingDone) {
+                  stats.newCreatives++;
+                }
+              } catch (err) {
+                const msg = `ad ${adId}: ${err instanceof Error ? err.message : String(err)}`;
+                stats.errors.push(msg);
+              }
             }
           }
 
