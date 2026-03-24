@@ -805,6 +805,6 @@
       "성능 비교"
     ],
     "updatedAt": "2026-03-24T13:00:00+09:00",
-    "notes": "분석+설계 완료. collect-daily 891줄 → 450줄 경량화 + process-media 250줄 신규. 계정별 에러 격리. 38계정 22분→3분 예상. 코드 구현은 다음 TASK."
+    "notes": "구현 완료. collect-daily 891→451줄 경량화 + process-media 482줄 신규 + collect-daily-utils 287줄 공용 모듈. admin/collect 중복 제거(-155줄). tsc+build 통과."
   }
 }

@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-24T06:00:00.000Z",
+  "lastUpdated": "2026-03-24T13:30:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1260,6 +1260,15 @@
       "startedAt": "2026-03-23",
       "completedAt": "2026-03-23",
       "notes": "VIDEO_PROMPT_V3에 씬별 audio_tone/bgm_change/text_overlays + audio.tone_changes 추가"
+    },
+    "collect-daily-refactor": {
+      "phase": "implementing",
+      "documents": {
+        "plan": "01-plan/features/collect-daily-refactor.plan.md",
+        "design": "02-design/features/collect-daily-refactor.design.md"
+      },
+      "startedAt": "2026-03-24",
+      "notes": "3단계 분리 구현. collect-daily 891→451줄 경량화 + process-media 크론 신규 + collect-daily-utils 공용 모듈. tsc+build 통과."
     }
   },
   "phaseMapping": {
