@@ -376,8 +376,6 @@ async function collectTodoDocs(dbId: string, dbName: string): Promise<DocInput[]
 
 // ── GET /api/cron/sync-notion ───────────────────────────────
 
-export const maxDuration = 300;
-
 export async function GET(req: NextRequest) {
   if (!verifyCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

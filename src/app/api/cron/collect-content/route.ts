@@ -32,8 +32,6 @@ function verifyCron(req: NextRequest): boolean {
   return authHeader === `Bearer ${process.env.CRON_SECRET}`;
 }
 
-export const maxDuration = 300;
-
 // ── GET /api/cron/collect-content ─────────────────────────────
 // 매일 UTC 20:00 (KST 05:00) — 블로그/뉴스 RSS 크롤링
 export async function GET(req: NextRequest) {

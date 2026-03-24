@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runCollectDaily } from "@/app/api/cron/collect-daily/route";
 
-// Vercel 최대 실행 시간 5분
-export const maxDuration = 300;
-
 // ── GET /api/cron/collect-daily-1 ────────────────────────────
 // 계정 1~10번 처리 (전체 계정 중 offset=0, size=10)
 export async function GET(req: NextRequest) {

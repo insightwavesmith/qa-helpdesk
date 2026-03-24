@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { heavyLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limiter";
 import { requireAdmin } from "../../_shared";
 
-export const maxDuration = 300; // Vercel Pro
-
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GENERATION_MODEL = "gemini-3-pro-preview";
 

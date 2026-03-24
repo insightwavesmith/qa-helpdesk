@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "../../_shared";
 import { backfillAiSummary, backfillImportanceScore } from "@/actions/curation";
 
-export const maxDuration = 300;
-
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin();
   if ("response" in auth) return auth.response;

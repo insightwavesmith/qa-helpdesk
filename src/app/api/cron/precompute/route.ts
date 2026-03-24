@@ -16,8 +16,6 @@ import { precomputeDiagnosis } from "@/lib/precompute/diagnosis-precompute";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// Vercel Pro 최대 실행 시간 (초)
-export const maxDuration = 300;
 
 interface PhaseResult {
   count: number;

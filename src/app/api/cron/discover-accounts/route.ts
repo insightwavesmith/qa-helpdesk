@@ -30,8 +30,6 @@ function verifyCron(req: NextRequest): boolean {
   return authHeader === `Bearer ${process.env.CRON_SECRET}`;
 }
 
-export const maxDuration = 300; // 5분 (Vercel Pro 최대)
-
 // ── Meta API 응답 타입 ────────────────────────────────────────
 interface MetaAdAccount {
   id: string;           // "act_12345" 형식

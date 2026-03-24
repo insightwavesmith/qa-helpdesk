@@ -8,7 +8,6 @@ import { requireAdmin } from "@/app/api/admin/_shared";
 import { generateClusters } from "@/lib/creative-analyzer";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 120; // 2분
 
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin();

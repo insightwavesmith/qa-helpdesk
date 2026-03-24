@@ -42,8 +42,6 @@ function verifyCron(req: NextRequest): boolean {
   return authHeader === `Bearer ${process.env.CRON_SECRET}`;
 }
 
-export const maxDuration = 300; // 5분 (Vercel Pro 최대)
-
 // ── 수집 결과 타입 ──────────────────────────────────────────
 export interface CollectDailyResult {
   message: string;

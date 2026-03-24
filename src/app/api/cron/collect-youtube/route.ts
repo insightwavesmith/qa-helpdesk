@@ -15,8 +15,6 @@ function verifyCron(req: NextRequest): boolean {
   return authHeader === `Bearer ${process.env.CRON_SECRET}`;
 }
 
-export const maxDuration = 300;
-
 // ── GET /api/cron/collect-youtube ─────────────────────────────
 // 매일 UTC 21:00 (KST 06:00) — YouTube 자막 수집
 export async function GET(req: NextRequest) {

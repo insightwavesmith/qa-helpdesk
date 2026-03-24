@@ -304,8 +304,6 @@ function calcTrimmedWeightedAvg(
   return row;
 }
 
-export const maxDuration = 300; // 5분 (Vercel Pro 최대)
-
 // ── GET /api/cron/collect-benchmarks ─────────────────────────
 export async function GET(req: NextRequest) {
   if (!verifyCron(req)) {

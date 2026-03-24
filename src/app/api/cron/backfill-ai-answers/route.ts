@@ -8,8 +8,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { createAIAnswerForQuestion } from "@/lib/rag";
 
-export const maxDuration = 300; // 5분
-
 export async function POST(request: NextRequest) {
   // CRON_SECRET 인증 (CLI 호출용)
   const authHeader = request.headers.get("Authorization");

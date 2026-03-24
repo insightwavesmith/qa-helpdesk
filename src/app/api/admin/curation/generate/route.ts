@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { searchChunks } from "@/lib/knowledge";
 import { requireAdmin } from "../../_shared";
 
-export const maxDuration = 300;
-
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 
 // --- 프록시 / 직접 호출 헬퍼 ---

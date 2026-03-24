@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { embedContentToChunks, embedAllPending } from "@/actions/embed-pipeline";
 
-export const maxDuration = 300; // 5분 — 대량 임베딩용
-
 // POST /api/admin/embed — 개별 또는 전체 임베딩
 export async function POST(req: NextRequest) {
   // 관리자 인증: 브라우저 쿠키 또는 서비스 키

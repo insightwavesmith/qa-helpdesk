@@ -40,7 +40,6 @@ import type { CreativeEmbedInput } from "@/lib/ad-creative-embedder";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 300; // 5분
 
 function verifyCron(req: NextRequest): boolean {
   const cronSecret = process.env.CRON_SECRET;

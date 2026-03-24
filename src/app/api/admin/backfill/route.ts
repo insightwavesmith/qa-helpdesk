@@ -15,8 +15,6 @@ import {
   makePairKey,
 } from "@/lib/protractor/overlap-utils";
 
-export const maxDuration = 300; // 5분 (Vercel Pro)
-
 // ── SSE 타입 ──────────────────────────────────────────────────
 type PhaseName = "ad" | "mixpanel" | "overlap";
 

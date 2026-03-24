@@ -8,8 +8,6 @@ import {
   type OverlapPair,
 } from "@/lib/protractor/overlap-utils";
 
-export const maxDuration = 300;
-
 // ── 타입 ────────────────────────────────────────────────────────
 // OverlapPair는 overlap-utils.ts에서 re-export
 export type { OverlapPair };

@@ -10,7 +10,6 @@ import {
 
 // ── POST /api/admin/protractor/collect ────────────────────────
 // 관리자 전용: 전체 또는 선택 계정 일괄 수집 (SSE 스트리밍)
-export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
   // 인증

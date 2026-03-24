@@ -15,7 +15,6 @@ import { createServiceClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
 
 const BATCH_LIMIT = 50;
 const DAYS_WINDOW = 7;

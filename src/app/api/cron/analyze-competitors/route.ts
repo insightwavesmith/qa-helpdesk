@@ -4,7 +4,6 @@ import { uploadCompetitorMedia } from "@/lib/competitor/competitor-storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 300; // 5분
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = "gemini-3-pro-preview";

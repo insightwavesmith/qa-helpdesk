@@ -14,7 +14,6 @@ import { createServiceClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
 
 // ━━━ creative_media 행 타입 ━━━
 interface CreativeMediaRow {

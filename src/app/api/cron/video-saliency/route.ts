@@ -15,7 +15,6 @@ import { createServiceClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
 
 // ━━━ 타입 ━━━
 interface VideoMediaRow {

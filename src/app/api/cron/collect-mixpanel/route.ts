@@ -10,8 +10,6 @@ function verifyCron(req: NextRequest): boolean {
   return authHeader === `Bearer ${process.env.CRON_SECRET}`;
 }
 
-export const maxDuration = 300; // 5분 (Vercel Pro 최대)
-
 // ── GET /api/cron/collect-mixpanel ─────────────────────────────
 // Vercel Cron: 매일 18:30 UTC (KST 다음날 03:30) — collect-daily 30분 후
 export async function GET(req: NextRequest) {

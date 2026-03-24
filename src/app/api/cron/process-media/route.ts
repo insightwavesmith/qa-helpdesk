@@ -30,8 +30,6 @@ import {
 import { uploadToGcs } from "@/lib/gcs-storage";
 import { triggerNext } from "@/lib/pipeline-chain";
 
-export const maxDuration = 300;
-
 // ── Vercel Cron 인증 ──────────────────────────────────────────
 function verifyCron(req: NextRequest): boolean {
   const authHeader = req.headers.get("authorization");

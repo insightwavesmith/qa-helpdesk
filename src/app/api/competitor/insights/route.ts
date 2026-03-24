@@ -5,7 +5,6 @@ import type { CompetitorAd } from "@/types/competitor";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
 
 /**
  * POST /api/competitor/insights

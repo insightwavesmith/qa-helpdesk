@@ -13,7 +13,6 @@ import { uploadToGcs } from "@/lib/gcs-storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
 
 // 크롤링 배제 URL 패턴 (자동 비활성화)
 const BLOCKED_URL_PATTERNS = [

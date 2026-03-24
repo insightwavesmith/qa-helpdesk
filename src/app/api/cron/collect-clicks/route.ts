@@ -23,7 +23,6 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
 
 function verifyCron(req: NextRequest): boolean {
   const cronSecret = process.env.CRON_SECRET;

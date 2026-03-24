@@ -3,8 +3,6 @@ import { after } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { embedContentToChunks } from "@/actions/embed-pipeline";
 
-export const maxDuration = 60;
-
 export async function POST(request: NextRequest) {
   try {
     // CRON_SECRET 인증

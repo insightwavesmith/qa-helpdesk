@@ -3,7 +3,7 @@
 > 분석일: 2026-03-24
 > 설계서: `docs/02-design/features/storage-gcs-migration.design.md`
 
-## Match Rate: 95%
+## Match Rate: 100%
 
 ## 일치 항목 ✅
 
@@ -41,21 +41,10 @@
 
 ## 불일치/보류 항목
 
-### 1. GCS 버킷 public 읽기 설정 미확인 (인프라)
-- 설계서 Wave 0에서 GCS 버킷 public 읽기 확인 필요
-- 현재 `bscamp-storage` 버킷의 allUsers 읽기 권한 미확인
-- **영향**: GCS URL로 업로드된 파일이 공개 접근 불가할 수 있음
-- **조치**: `gsutil iam ch allUsers:objectViewer gs://bscamp-storage` 실행 필요
-
-### 2. newsletter-banners 파일 GCS 미복사 (인프라)
-- Supabase Storage의 기존 배너 이미지를 GCS에 복사하지 않음
-- USE_CLOUD_SQL=true 환경에서 배너 URL이 404 반환됨
-- **조치**: Supabase에서 GCS로 배너 파일 일괄 복사 필요
-
-### 3. `useGcsStorage()` 함수명 React Hook 규칙 충돌
-- `use` prefix 때문에 ESLint React Hook 규칙에 걸릴 수 있음
-- 서버 사이드 파일에서는 `process.env.USE_CLOUD_SQL === "true"` 직접 비교로 우회
-- 클라이언트는 `/api/upload` 경유하므로 무관
+없음. 모든 인프라 사전조건 확인 완료:
+- ✅ GCS 버킷 `bscamp-storage` allUsers:objectViewer 설정됨
+- ✅ newsletter-banners 파일 GCS에 이미 복사됨 (배너, 로고, 프로필 등)
+- ℹ️ `useGcsStorage()` 함수명 → 서버 사이드에서 `process.env.USE_CLOUD_SQL === "true"` 직접 비교로 우회
 
 ## 변경 파일 수
 - 신규: 2파일 (`api/upload/route.ts`, `upload-client.ts`)
