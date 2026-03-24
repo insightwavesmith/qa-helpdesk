@@ -70,6 +70,7 @@
 - [x] Cloud Run Job: bscamp-analyze-five-axis (2GB, 3600초)
 - [x] Scheduler: bscamp-job-five-axis, 매일 01:00 UTC
 - [x] 테스트: dry-run 성공 확인
+- [x] 프로덕션 args 전환: --dry-run 제거, --limit 50
 
 ### 3-2. DeepGaze 시선 분석 — Railway 유지
 - [x] Python + PyTorch + CLIP 의존 → Railway 유지
