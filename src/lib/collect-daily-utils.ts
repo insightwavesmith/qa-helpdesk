@@ -280,7 +280,12 @@ export async function fetchMetaWithRetry(
 }
 
 // ── Meta Graph API 호출 (GCP 방식: /ads 엔드포인트) ───────────
-export async function fetchAccountAds(accountId: string, targetDate?: string): Promise<Record<string, unknown>[]> {
+// includeInactive=true: 백필용 — ACTIVE+PAUSED+ARCHIVED 광고 포함
+export async function fetchAccountAds(
+  accountId: string,
+  targetDate?: string,
+  includeInactive = false,
+): Promise<Record<string, unknown>[]> {
   const token = process.env.META_ACCESS_TOKEN;
   if (!token) throw new Error("META_ACCESS_TOKEN not set");
 
@@ -296,9 +301,13 @@ export async function fetchAccountAds(accountId: string, targetDate?: string): P
   const url = new URL(`https://graph.facebook.com/v21.0/act_${cleanId}/ads`);
   url.searchParams.set("access_token", token);
   url.searchParams.set("fields", fields);
+
+  const statuses = includeInactive
+    ? ["ACTIVE", "PAUSED", "ARCHIVED", "WITH_ISSUES"]
+    : ["ACTIVE"];
   url.searchParams.set(
     "filtering",
-    JSON.stringify([{ field: "effective_status", operator: "IN", value: ["ACTIVE"] }])
+    JSON.stringify([{ field: "effective_status", operator: "IN", value: statuses }])
   );
   url.searchParams.set("limit", "100");
 

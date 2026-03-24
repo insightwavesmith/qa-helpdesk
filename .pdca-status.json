@@ -871,5 +871,13 @@
     ],
     "updatedAt": "2026-03-24",
     "notes": "knowledge.ts Anthropic API → Gemini 3 Pro Preview 전환. 27초에 502자 답변 생성 확인."
+  },
+  "meta-full-fields": {
+    "status": "implementing",
+    "plan": "docs/01-plan/features/meta-full-fields.plan.md",
+    "design": "docs/02-design/features/meta-full-fields.design.md",
+    "tasks": ["INSIGHT_FIELDS 확장", "AD_FIELDS 확장", "DB 마이그레이션", "트리거 업데이트", "backfill 모드"],
+    "updatedAt": "2026-03-24",
+    "notes": "INSIGHT 12→30, AD 9→12, DB 8컬럼 추가, backfill includeInactive 모드 추가"
   }
 }

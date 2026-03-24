@@ -52,7 +52,7 @@ export interface CollectDailyResult {
 }
 
 // ── 핵심 수집 로직 (크론 + 수동수집 공용) ───────────────────
-export async function runCollectDaily(dateParam?: string, batch?: number, accountId?: string): Promise<CollectDailyResult> {
+export async function runCollectDaily(dateParam?: string, batch?: number, accountId?: string, backfill = false): Promise<CollectDailyResult> {
   const svc = createServiceClient();
   // 배치 번호가 있으면 cron_runs에 배치 이름으로 기록
   const cronName = batch ? `collect-daily-${batch}` : "collect-daily";
@@ -162,7 +162,7 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
 
       // ── Meta 광고 데이터 수집 (GCP 방식) ──
       try {
-        const ads = await fetchAccountAds(account.account_id, dateParam ?? undefined);
+        const ads = await fetchAccountAds(account.account_id, dateParam ?? undefined, backfill);
 
         if (ads.length > 0) {
           console.log(`[collect-daily] Sample ad keys [${account.account_id}]:`, Object.keys(ads[0]));
@@ -443,9 +443,11 @@ export async function GET(req: NextRequest) {
   // 수동 호출 시 batch 파라미터로 특정 배치만 실행 가능 (예: ?batch=2)
   const batchParam = searchParams.get("batch");
   const batch = batchParam ? parseInt(batchParam, 10) : undefined;
+  // backfill=true: ACTIVE+PAUSED+ARCHIVED 광고 포함 (과거 데이터 수집용)
+  const isBackfill = searchParams.get("backfill") === "true";
 
   try {
-    const result = await runCollectDaily(dateParam, batch);
+    const result = await runCollectDaily(dateParam, batch, undefined, isBackfill);
     return NextResponse.json(result);
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : "Unknown error";
