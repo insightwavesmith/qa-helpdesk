@@ -913,8 +913,8 @@
       "process-media-trigger",
       "cloud-scheduler"
     ],
-    "updatedAt": "2026-03-24T19:55:00+09:00",
-    "notes": "이벤트 체인 완료. Cloud SQL 호환 fix + PIPELINE_URL 기본값 추가. 배치 실행 중."
+    "updatedAt": "2026-03-24T20:40:00+09:00",
+    "notes": "이벤트 체인 + Cloud Scheduler 4건 등록 완료. 배치 2회차 실행 완료. bulk sync 2804건."
   },
   "vercel-removal": {
     "status": "completed",
@@ -924,13 +924,13 @@
       "maxDuration-removal",
       "vercel-json-cleanup"
     ],
-    "updatedAt": "2026-03-24T19:55:00+09:00",
-    "notes": "33파일 maxDuration 제거 + vercel.json 정리 완료."
+    "updatedAt": "2026-03-24T20:40:00+09:00",
+    "notes": "33파일 maxDuration 제거 + vercel.json 정리 + page.tsx maxDuration 삭제 완료."
   },
   "destructive-detector": {
     "status": "completed",
     "tasks": ["hook-script", "settings-json", "claude-md-rule"],
-    "updatedAt": "2026-03-24T19:55:00+09:00",
+    "updatedAt": "2026-03-24T20:40:00+09:00",
     "notes": "PreToolUse hook 8패턴 차단. settings.json + CLAUDE.md 규칙 추가."
   }
 }

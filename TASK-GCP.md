@@ -89,27 +89,96 @@
 - scripts/analyze-creative-lp-alignment.mjs: getSupabaseConfig() 사용으로 전환
 - Dockerfile.scripts: 배치 스크립트 전용 경량 이미지
 
-## Phase 4: Railway 상태 정리
+## Phase 4: Railway → Cloud Run URL 이관 ✅
+
+### 완료 (2026-03-24)
+- [x] `RAILWAY_CRAWLER_URL` 기본값 → Cloud Run URL (`bscamp-crawler-906295665279.asia-northeast3.run.app`)
+- [x] `CREATIVE_PIPELINE_URL` 기본값 → Cloud Run URL (`creative-pipeline-906295665279.asia-northeast3.run.app`)
+- [x] creative-saliency, video-saliency, analyze-lp-saliency 3파일에 기본값 추가 (commit 4e3673e)
 
 ### Railway 서비스 현황
-- **bscamp-crawler** (Playwright 크롤러): Cloud Run crawl-lps 라우트가 Railway 호출 → Railway 유지
-- **creative-pipeline** (DeepGaze 시선분석): analyze-lp-saliency 라우트가 Railway 호출 → Railway 유지
+- **bscamp-crawler**: GCP Cloud Run으로 이관 완료. Railway 중단 가능.
+- **creative-pipeline**: GCP Cloud Run으로 이관 완료. Railway 중단 가능.
 
-### 결론
-Railway 서비스 2개는 당분간 유지 (Python/Playwright 의존):
-- 크롤러: Playwright 환경 (mcr.microsoft.com/playwright 기반)
-- DeepGaze: Python + PyTorch + CLIP
+## Phase 5: Vercel 의존 제거 ✅
 
-향후 Cloud Run GPU 서비스 or Cloud Run Playwright 이미지로 이관 가능.
-
-## Phase 5: Vercel 크론 정리 ✅
-
+### 5-1. Vercel 크론 정리 ✅
 - [x] vercel.json crons 배열 제거 (18개 → 0개)
-- [x] Vercel = 프론트엔드 + 가벼운 API만
 - [x] 모든 크론은 Cloud Scheduler에서 관리
 
+### 5-2. maxDuration 제거 ✅ (2026-03-24)
+- [x] 33개 API route에서 `export const maxDuration` 삭제 (commit 4292148)
+- [x] `vercel.json` → `{}` 빈 객체로 정리
+- [x] `questions/new/page.tsx` maxDuration도 삭제
+
+## Phase 6: Storage→GCS 이관 ✅ (2026-03-24)
+
+### 6-1. Wave 1: 서버 사이드 (4파일) ✅
+- [x] `/api/upload/route.ts` — POST+DELETE 핸들러
+- [x] `contents.ts` — resolveImagePlaceholders()
+- [x] `lp-media-downloader.ts` — uploadBufferToStorage()
+- [x] `crawl-lps/route.ts` — uploadToStorage() + uploadHtmlToStorage()
+
+### 6-2. Wave 2: 클라이언트 (10파일) ✅
+- [x] 10파일 `uploadFile()` from `@/lib/upload-client` 교체
+
+### 6-3. Wave 3: URL 교체 (3파일) ✅
+- [x] `newsletter-row-templates.ts` — BANNER_BASE_URL dual-write
+- [x] `email-template-utils.ts` — BANNER_BASE_URL dual-write
+- [x] `email-default-template.ts` — BANNER_BASE dual-write
+
+### 6-4. Wave 4: 빌드 검증 ✅
+- [x] tsc + lint + build 통과
+
+## Phase 7: 이벤트 체인 + Cloud Scheduler ✅ (2026-03-24)
+
+### 7-1. 이벤트 체인 구현 ✅
+- [x] `pipeline-chain.ts` — fire-and-forget triggerNext() 유틸
+- [x] `collect-daily` → process-media 체인 트리거
+- [x] `process-media` → embed+saliency 병렬 트리거
+
+### 7-2. Cloud Scheduler 등록 ✅
+- [x] collect-daily?chain=true (매일 03:00 KST)
+- [x] embed-creatives (매일 20:00 KST, 백업)
+- [x] creative-saliency (매일 20:30 KST, 백업, 신규)
+- [x] video-saliency (매일 21:00 KST, 백업, 신규)
+
+### 7-3. Cloud SQL 호환 fix ✅
+- [x] creative-saliency: creatives!inner → 2-step query (commit 9bcd934)
+- [x] video-saliency: creatives!inner → 2-step query (commit 9bcd934)
+
+### 7-4. 배치 실행 결과
+- creative-saliency: 1000카드 처리, 894건 동기화 + 2804건 bulk sync
+- embed-creatives: 100건 처리
+- video-saliency: 157건 처리
+
+## Phase 8: Destructive Detector ✅ (2026-03-24)
+- [x] PreToolUse hook 8패턴 차단 (commit dd72d45)
+- [x] CLAUDE.md 규칙 9번 추가
+
+---
+
+## 남은 작업 (다음 세션)
+
+### P0 (즉시)
+- [ ] GCS 버킷 `bscamp-storage` public read 설정
+- [ ] 뉴스레터 배너 PNG GCS 복사
+- [ ] `USE_CLOUD_SQL=true` Cloud Run 환경변수 설정
+- [ ] Railway 2개 서비스 중단 (crawler + creative-pipeline)
+
+### P1 (이번 주)
+- [ ] embed-creatives 전량 처리 (~400건 미처리)
+- [ ] video-saliency stderr maxBuffer 오류 해결
+- [ ] creative-saliency 미처리분 반복 실행
+- [ ] 5축분석 배치 (analyze-creatives) 크론 등록
+
+### P2 (다음 주)
+- [ ] Supabase Auth → Firebase Auth 전환
+- [ ] Supabase DB → Cloud SQL 전환
+- [ ] Vercel → Cloud Run 프론트 전환
+
 ## 주의사항
-- Supabase DB는 유지 (이관 안 함)
+- Supabase DB는 아직 유지 (Cloud SQL 전환 전)
 - 리전: asia-northeast3 (서울)
-- 환경변수는 Secret Manager 사용 권장
-- 기존 Vercel/Railway 즉시 끄지 마 — Cloud Run 안정 확인 후 전환
+- Cloud Run 최신 리비전: bscamp-cron-00019-b7j
+- 기존 Vercel 즉시 끄지 마 — Cloud Run 프론트 안정 확인 후 전환
