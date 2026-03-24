@@ -14,22 +14,53 @@ export const AD_FIELDS = [
   "campaign_name",
   "account_id",
   "account_name",
-  "creative.fields(object_type,product_set_id,video_id,image_hash,asset_feed_spec)",
+  "effective_status",
+  "configured_status",
+  "creative.fields(object_type,product_set_id,video_id,image_hash,asset_feed_spec,object_story_spec,thumbnail_url,body,title,link_url)",
 ].join(",");
 
 export const INSIGHT_FIELDS = [
+  // 기본 지표
   "spend",
   "impressions",
   "clicks",
   "ctr",
   "reach",
+  "frequency",
+  // 액션/가치 (JSONB 배열)
   "actions",
   "action_values",
+  "cost_per_action_type",
+  // 동영상 지표
   "video_thruplay_watched_actions",
   "video_p100_watched_actions",
+  "video_p25_watched_actions",
+  "video_p50_watched_actions",
+  "video_p75_watched_actions",
+  "video_avg_time_watched_actions",
+  "video_play_actions",
+  "cost_per_thruplay",
+  // 랭킹
   "quality_ranking",
   "engagement_rate_ranking",
   "conversion_rate_ranking",
+  // 비용 지표
+  "cpm",
+  "cpp",
+  "cost_per_unique_click",
+  // 유니크 지표
+  "unique_clicks",
+  "unique_ctr",
+  // 외부 클릭
+  "outbound_clicks",
+  "outbound_clicks_ctr",
+  // 인라인
+  "inline_link_clicks",
+  "inline_link_click_ctr",
+  // ROAS
+  "website_purchase_roas",
+  // 기타
+  "social_spend",
 ].join(",");
 
 // ── 유틸리티 ──────────────────────────────────────────────────

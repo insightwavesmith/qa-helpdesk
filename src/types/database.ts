@@ -828,7 +828,15 @@ export type Database = {
           spend: number | null
           thruplay_rate: number | null
           video_p100: number | null
+          video_p25: number | null
+          video_p3s: number | null
           video_p3s_rate: number | null
+          video_p50: number | null
+          video_p75: number | null
+          video_avg_time: number | null
+          frequency: number | null
+          cpm: number | null
+          cpp: number | null
         }
         Insert: {
           account_id: string
@@ -871,7 +879,15 @@ export type Database = {
           spend?: number | null
           thruplay_rate?: number | null
           video_p100?: number | null
+          video_p25?: number | null
+          video_p3s?: number | null
           video_p3s_rate?: number | null
+          video_p50?: number | null
+          video_p75?: number | null
+          video_avg_time?: number | null
+          frequency?: number | null
+          cpm?: number | null
+          cpp?: number | null
         }
         Update: {
           account_id?: string
@@ -914,7 +930,15 @@ export type Database = {
           spend?: number | null
           thruplay_rate?: number | null
           video_p100?: number | null
+          video_p25?: number | null
+          video_p3s?: number | null
           video_p3s_rate?: number | null
+          video_p50?: number | null
+          video_p75?: number | null
+          video_avg_time?: number | null
+          frequency?: number | null
+          cpm?: number | null
+          cpp?: number | null
         }
         Relationships: []
       }
