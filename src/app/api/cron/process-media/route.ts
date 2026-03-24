@@ -99,14 +99,11 @@ export async function GET(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (svc as any)
       .from("creative_media")
-      .select("id, creative_id, media_type, media_url, raw_creative, position, media_hash, content_hash, creatives!inner(ad_id, account_id)")
+      .select("id, creative_id, media_type, media_url, raw_creative, position, media_hash, content_hash")
       .is("storage_url", null)
       .gte("created_at", ninetyDaysAgo)
       .order("created_at", { ascending: true })
       .limit(limit);
-
-    // media_url 또는 raw_creative가 있는 건만 처리
-    query = query.or("media_url.not.is.null,raw_creative.not.is.null");
 
     // 타입 필터
     if (typeParam === "IMAGE" || typeParam === "VIDEO") {
@@ -126,7 +123,35 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: "처리할 미디어 없음", ...result });
     }
 
-    const rows = pendingRows as PendingMediaRow[];
+    // 2단계: creative_id → creatives 테이블에서 ad_id, account_id 조회
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const creativeIds = [...new Set(pendingRows.map((r: any) => r.creative_id as string))];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: creativesData } = await (svc as any)
+      .from("creatives")
+      .select("id, ad_id, account_id")
+      .in("id", creativeIds);
+
+    const creativeMap = new Map<string, { ad_id: string; account_id: string }>(
+      (creativesData ?? []).map((c: { id: string; ad_id: string; account_id: string }) => [c.id, { ad_id: c.ad_id, account_id: c.account_id }])
+    );
+
+    // creative 정보 합치기 + media_url/raw_creative 없는 행 필터
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows: PendingMediaRow[] = pendingRows
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((r: any) => {
+        const creative = creativeMap.get(r.creative_id);
+        if (!creative) return null;
+        if (!r.media_url && !r.raw_creative) return null;
+        return { ...r, creatives: creative } as PendingMediaRow;
+      })
+      .filter(Boolean) as PendingMediaRow[];
+
+    if (rows.length === 0) {
+      await completeCronRun(cronRunId, "success", 0);
+      return NextResponse.json({ message: "처리할 미디어 없음 (creative 매칭 실패)", ...result });
+    }
 
     // accountId 필터 (쿼리 파라미터로 받은 경우 JS 레벨 필터링)
     const filteredRows = accountIdParam
