@@ -13,7 +13,8 @@ export async function GET() {
   const start = Date.now();
 
   try {
-    const pipelineUrl = process.env.CREATIVE_PIPELINE_URL;
+    const pipelineUrl = process.env.CREATIVE_PIPELINE_URL
+      || "https://creative-pipeline-906295665279.asia-northeast3.run.app";
     const pipelineSecret = process.env.CREATIVE_PIPELINE_SECRET;
 
     if (!pipelineUrl) {
