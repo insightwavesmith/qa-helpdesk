@@ -76,14 +76,22 @@ export async function updateBusinessCertUrl(userId: string, url: string) {
  * Cloud SQL Proxy 경유하여 프로필 조회
  */
 export async function getProfileById(userId: string) {
-  const svc = createServiceClient();
-  const { data, error } = await svc
-    .from("profiles")
-    .select("name, role, cohort, shop_name, shop_url, annual_revenue, monthly_ad_budget, category, onboarding_status, meta_account_id, mixpanel_project_id, mixpanel_board_id, mixpanel_secret_key")
-    .eq("id", userId)
-    .single();
-  if (error) return { data: null, error: error.message };
-  return { data, error: null };
+  try {
+    const svc = createServiceClient();
+    const { data, error } = await svc
+      .from("profiles")
+      .select("name, role, cohort, shop_name, shop_url, annual_revenue, monthly_ad_budget, category, onboarding_status, meta_account_id, mixpanel_project_id, mixpanel_board_id, mixpanel_secret_key")
+      .eq("id", userId)
+      .single();
+    if (error) {
+      console.error("[getProfileById] Supabase error:", error.message, error.code, error.details);
+      return { data: null, error: error.message };
+    }
+    return { data, error: null };
+  } catch (err) {
+    console.error("[getProfileById] Exception:", err instanceof Error ? err.message : err);
+    return { data: null, error: String(err) };
+  }
 }
 
 /**

@@ -84,8 +84,11 @@ export async function updateSession(request: NextRequest) {
 
   // --- 이하 인증된 사용자 ---
 
+  // Server Action 요청은 리다이렉트하지 않음 (Next-Action 헤더 존재)
+  const isServerAction = request.headers.has("Next-Action");
+
   // 4. 인증된 사용자의 /login, /signup, / 접근 → /dashboard 리다이렉트
-  if (pathname === "/login" || pathname === "/signup" || pathname === "/") {
+  if (!isServerAction && (pathname === "/login" || pathname === "/signup" || pathname === "/")) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
