@@ -852,7 +852,7 @@
       "maxDuration"
     ],
     "updatedAt": "2026-03-24",
-    "notes": "after() silent fail → 동기 await 전환 + 로깅 강화"
+    "notes": "after() → await 전환 + 로깅 강화. 근본 원인: Anthropic API 크레딧 부족 (400 invalid_request_error)"
   },
   "login-fix": {
     "status": "completed",

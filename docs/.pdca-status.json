@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-24T06:10:00.000Z",
+  "lastUpdated": "2026-03-24T06:30:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1302,7 +1302,7 @@
     "ai-answer-fix": {
       "phase": "completed",
       "matchRate": 100,
-      "notes": "after() silent fail → 동기 await 전환"
+      "notes": "Anthropic API 크레딧 부족이 근본 원인. 코드 수정: after()→await + 로깅 강화"
     },
     "login-fix": {
       "phase": "completed",

@@ -50,7 +50,7 @@ export async function generateRAGAnswer(
       sourceRefs: result.sourceRefs,
     };
   } catch (error) {
-    console.error("RAG answer generation error:", error);
+    console.error("[RAG] 답변 생성 실패:", error instanceof Error ? error.message : error);
     return null;
   }
 }
