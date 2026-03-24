@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-24T13:30:00.000Z",
+  "lastUpdated": "2026-03-24T03:38:17.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1269,6 +1269,14 @@
       },
       "startedAt": "2026-03-24",
       "notes": "3단계 분리 구현. collect-daily 891→451줄 경량화 + process-media 크론 신규 + collect-daily-utils 공용 모듈. tsc+build 통과."
+    },
+    "prescription-cost-test": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {},
+      "startedAt": "2026-03-24",
+      "completedAt": "2026-03-24",
+      "notes": "처방 비용 테스트 스크립트. Gemini 3 Pro Preview 건당 토큰+비용 측정. scripts/test-prescription-cost.mjs"
     }
   },
   "phaseMapping": {

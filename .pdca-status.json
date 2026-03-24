@@ -806,5 +806,14 @@
     ],
     "updatedAt": "2026-03-24T13:00:00+09:00",
     "notes": "구현 완료. collect-daily 891→451줄 경량화 + process-media 482줄 신규 + collect-daily-utils 287줄 공용 모듈. admin/collect 중복 제거(-155줄). tsc+build 통과."
+  },
+  "prescription-cost-test": {
+    "status": "completed",
+    "tasks": [
+      "T1"
+    ],
+    "completedAt": "2026-03-24",
+    "updatedAt": "2026-03-24",
+    "notes": "처방 비용 테스트 스크립트 — Gemini 3 Pro 건당 토큰+비용 측정"
   }
 }
