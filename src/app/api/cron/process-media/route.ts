@@ -28,6 +28,7 @@ import {
   fetchVideoSourceUrls,
 } from "@/lib/protractor/creative-image-fetcher";
 import { uploadToGcs } from "@/lib/gcs-storage";
+import { triggerNext } from "@/lib/pipeline-chain";
 
 export const maxDuration = 300;
 
@@ -191,6 +192,17 @@ export async function GET(req: NextRequest) {
       : "success";
 
     await completeCronRun(cronRunId, status, result.uploaded, undefined, result);
+
+    // 이벤트 체인: chain=true이고 처리 결과가 있으면 embed+saliency 병렬 트리거
+    const isChain = searchParams.get("chain") === "true";
+    if (isChain && (result.uploaded > 0 || result.processed > 0)) {
+      await triggerNext([
+        "embed-creatives",
+        "creative-saliency",
+        "video-saliency",
+      ]);
+      console.log("[process-media] chain → embed+saliency triggered");
+    }
 
     return NextResponse.json({
       message: "process-media completed",

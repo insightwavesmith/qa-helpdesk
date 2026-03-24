@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-24T07:10:00.000Z",
+  "lastUpdated": "2026-03-24T08:00:00.000Z",
   "features": {
     "railway-l2-batch": {
       "phase": "completed",
@@ -1332,6 +1332,15 @@
         "analysis": "docs/03-analysis/storage-gcs-migration.analysis.md"
       },
       "notes": "Phase 1 Storage→GCS 완료. 듀얼라이트 패턴 적용. 17파일."
+    },
+    "pipeline-event-chain": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {
+        "plan": "docs/01-plan/features/pipeline-event-chain.plan.md",
+        "design": "docs/02-design/features/pipeline-event-chain.design.md"
+      },
+      "notes": "pipeline-chain.ts 생성, collect-daily+process-media 체인 트리거 추가. Cloud Scheduler 등록 대기."
     }
   },
   "phaseMapping": {

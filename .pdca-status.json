@@ -902,5 +902,18 @@
     ],
     "updatedAt": "2026-03-24",
     "notes": "Supabase Storage→GCS 듀얼라이트 패턴. 17파일 수정. Match Rate 95% (GCS 버킷 public 설정+배너 복사 미완)."
+  },
+  "pipeline-event-chain": {
+    "status": "implementing",
+    "plan": "docs/01-plan/features/pipeline-event-chain.plan.md",
+    "design": "docs/02-design/features/pipeline-event-chain.design.md",
+    "tasks": [
+      "pipeline-chain-util",
+      "collect-daily-trigger",
+      "process-media-trigger",
+      "cloud-scheduler"
+    ],
+    "updatedAt": "2026-03-24",
+    "notes": "pipeline-chain.ts 생성, collect-daily + process-media 체인 트리거 추가 완료. Cloud Scheduler 등록 대기."
   }
 }

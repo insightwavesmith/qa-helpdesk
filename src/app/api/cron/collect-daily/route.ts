@@ -33,6 +33,7 @@ import {
 import { getCreativeType } from "@/lib/protractor/creative-type";
 import { extractCarouselCards } from "@/lib/protractor/carousel-cards";
 import { normalizeUrl, classifyUrl } from "@/lib/lp-normalizer";
+import { triggerNext } from "@/lib/pipeline-chain";
 
 // ── Vercel Cron 인증 ──────────────────────────────────────────
 function verifyCron(req: NextRequest): boolean {
@@ -448,6 +449,14 @@ export async function GET(req: NextRequest) {
 
   try {
     const result = await runCollectDaily(dateParam, batch, undefined, isBackfill);
+
+    // 이벤트 체인: chain=true이고 수집 결과가 있으면 process-media 트리거
+    const isChain = searchParams.get("chain") === "true";
+    if (isChain && result.results && result.results.length > 0) {
+      await triggerNext("process-media");
+      console.log("[collect-daily] chain → process-media triggered");
+    }
+
     return NextResponse.json(result);
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : "Unknown error";
