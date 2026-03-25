@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
+import { createServiceClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/types";
 import { ProtractorTabNav } from "./protractor-tab-nav";
 
@@ -16,10 +17,7 @@ export default async function ProtractorLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return <>{children}</>;
@@ -29,7 +27,7 @@ export default async function ProtractorLayout({
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", user.uid)
     .single();
 
   if (!profile) {

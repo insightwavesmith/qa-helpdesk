@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
 
 // contents 행을 기존 Post 인터페이스 형태로 변환
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -150,10 +151,7 @@ export async function createPost(formData: {
   content: string;
   category: "education" | "notice" | "case_study";
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return { data: null, error: "인증되지 않은 사용자입니다." };
@@ -167,7 +165,7 @@ export async function createPost(formData: {
       body_md: formData.content,
       category: formData.category,
       type: formData.category,
-      author_id: user.id,
+      author_id: user.uid,
       status: "draft",
     })
     .select()
@@ -187,10 +185,7 @@ export async function updatePostInline(
   id: string,
   input: { title?: string; body_md?: string; status?: string }
 ) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return { data: null, error: "인증되지 않은 사용자입니다." };
@@ -200,7 +195,7 @@ export async function updatePostInline(
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", user.uid)
     .single();
 
   if (profile?.role !== "admin") {
@@ -258,10 +253,7 @@ export async function createComment(formData: {
   questionId?: string;
   content: string;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return { data: null, error: "인증되지 않은 사용자입니다." };
@@ -273,7 +265,7 @@ export async function createComment(formData: {
     .insert({
       question_id: formData.questionId || null,
       content: formData.content,
-      author_id: user.id,
+      author_id: user.uid,
     })
     .select()
     .single();

@@ -4,7 +4,8 @@ import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { createClient } from "@/lib/supabase/client";
+import { getFirebaseClientAuth } from "@/lib/firebase/client";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { uploadFile } from "@/lib/upload-client";
 import { mp } from "@/lib/mixpanel";
 import { ensureProfile, updateBusinessCertUrl, savePrivacyConsent } from "@/actions/auth";
@@ -32,26 +33,17 @@ function formatBusinessNumber(value: string): string {
   return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
 }
 
-// --- T2: Supabase 에러 한국어 매핑 ---
-const SUPABASE_ERROR_MAP: Record<string, string> = {
-  "User already registered": "이미 가입된 이메일입니다",
-  "Password should be at least 6 characters":
-    "비밀번호는 6자 이상이어야 합니다",
-  "Invalid email": "올바른 이메일 형식이 아닙니다",
-  "Signups not allowed for this instance":
-    "현재 회원가입이 제한되어 있습니다",
-  "Email rate limit exceeded":
-    "너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해 주세요.",
-  "For security purposes, you can only request this after":
-    "보안을 위해 잠시 후 다시 시도해 주세요.",
+// --- T2: Firebase 에러 한국어 매핑 ---
+const FIREBASE_ERROR_MAP: Record<string, string> = {
+  "auth/email-already-in-use": "이미 가입된 이메일입니다",
+  "auth/invalid-email": "올바른 이메일 형식이 아닙니다",
+  "auth/weak-password": "비밀번호는 6자 이상이어야 합니다",
+  "auth/operation-not-allowed": "현재 회원가입이 제한되어 있습니다",
+  "auth/too-many-requests": "너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해 주세요.",
 };
 
-function mapSupabaseError(message: string): string {
-  if (SUPABASE_ERROR_MAP[message]) return SUPABASE_ERROR_MAP[message];
-  for (const [key, val] of Object.entries(SUPABASE_ERROR_MAP)) {
-    if (message.includes(key)) return val;
-  }
-  return "회원가입 중 오류가 발생했습니다. 다시 시도해 주세요.";
+function mapFirebaseError(code: string): string {
+  return FIREBASE_ERROR_MAP[code] || "회원가입 중 오류가 발생했습니다. 다시 시도해 주세요.";
 }
 
 export default function SignupPage() {
@@ -280,9 +272,7 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-
-      // signUp에 metadata 포함 → trigger가 profiles 자동 생성
+      // metadata는 ensureProfile 호출 시 사용 (Firebase signUp에는 불포함) → trigger가 profiles 자동 생성
       const metadata: Record<string, string | null> = {
         name: formData.name,
       };
@@ -305,29 +295,26 @@ export default function SignupPage() {
         metadata.business_number = formData.businessNumber;
       }
 
-      const { data: authData, error: authError } =
-        await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: metadata,
-          },
-        });
+      const auth = getFirebaseClientAuth();
+      const cred = await createUserWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
 
-      // B1: authError가 있어도 유저가 실제 생성됐으면 정상 플로우 진행
-      if (authError && !authData?.user) {
-        setError(mapSupabaseError(authError.message)); // T2: 한국어 매핑
-        return;
-      }
+      // 세션 쿠키 생성
+      const idToken = await cred.user.getIdToken();
+      await fetch("/api/auth/firebase-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
 
-      if (!authData?.user) {
-        setError("회원가입 중 오류가 발생했습니다.");
-        return;
-      }
+      const uid = cred.user.uid;
 
       // Phase 5: Cloud SQL 환경에서 profile 생성 (trigger 대체)
       try {
-        await ensureProfile(authData.user.id, formData.email, {
+        await ensureProfile(uid, formData.email, {
           name: metadata.name || "",
           phone: metadata.phone || undefined,
           shop_url: metadata.shop_url || undefined,
@@ -343,11 +330,11 @@ export default function SignupPage() {
       // 사업자등록증 파일 업로드 (lead 모드에서만)
       if (!isStudentMode && businessFile) {
         const fileExt = businessFile.name.split(".").pop();
-        const filePath = `business-docs/${authData.user.id}.${fileExt}`;
+        const filePath = `business-docs/${uid}.${fileExt}`;
         try {
           const publicUrl = await uploadFile(businessFile, "documents", filePath);
           // server action으로 프로필 업데이트 (service role = RLS 우회)
-          await updateBusinessCertUrl(authData.user.id, publicUrl);
+          await updateBusinessCertUrl(uid, publicUrl);
         } catch (uploadErr) {
           console.error("[signup] 사업자등록증 업로드 실패:", uploadErr);
           // 업로드 실패해도 가입 자체는 완료 → 리다이렉트 진행
@@ -357,7 +344,7 @@ export default function SignupPage() {
       // 개인정보처리방침 동의 시점 DB 기록
       // 실패해도 가입 자체는 완료 → 리다이렉트 진행
       try {
-        await savePrivacyConsent(authData.user.id);
+        await savePrivacyConsent(uid);
       } catch (consentErr) {
         console.error("[signup] savePrivacyConsent failed:", consentErr);
       }
@@ -367,7 +354,7 @@ export default function SignupPage() {
       if (isStudentMode && inviteCode.trim()) {
         try {
           const inviteResult = await consumeInviteCode(
-            authData.user.id,
+            uid,
             formData.email,
             inviteCode.trim()
           );
@@ -394,18 +381,11 @@ export default function SignupPage() {
       }
     } catch (err) {
       console.error("[signup] unexpected error:", err);
-
-      // 이미 가입된 이메일인지 체크 (signUp은 성공했지만 identities가 비어있으면 기존 유저)
-      if (
-        err instanceof Error &&
-        (err.message?.includes("already registered") ||
-          err.message?.includes("User already registered"))
-      ) {
-        setError("이미 가입된 이메일입니다. 로그인해 주세요.");
+      const code = (err as { code?: string }).code;
+      if (code) {
+        setError(mapFirebaseError(code));
       } else {
-        setError(
-          "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
-        );
+        setError("일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
       }
     } finally {
       setLoading(false);

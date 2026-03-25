@@ -1,5 +1,6 @@
 import { Suspense } from "react";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
+import { createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import RealDashboard from "./real-dashboard";
 import SampleDashboard from "./sample-dashboard";
@@ -11,10 +12,7 @@ import SampleDashboard from "./sample-dashboard";
  * - student/member 미연결 → 샘플 대시보드 (광고계정 연결 안내)
  */
 export default async function ProtractorPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return <SampleDashboard bannerType="member" />;
@@ -24,7 +22,7 @@ export default async function ProtractorPage() {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", user.uid)
     .single();
 
   if (!profile) {
@@ -48,7 +46,7 @@ export default async function ProtractorPage() {
     const { data: adAccounts } = await svc
       .from("ad_accounts")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", user.uid)
       .eq("active", true)
       .order("created_at", { ascending: false });
 

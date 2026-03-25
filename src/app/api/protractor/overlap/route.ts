@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     // 계정 소유권 확인
     const hasAccess = await verifyAccountOwnership(
       svc,
-      user.id,
+      user.uid,
       profile.role,
       accountId
     );

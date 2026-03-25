@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
     dateEnd = range.end;
   }
 
-  const hasAccess = await verifyAccountOwnership(svc, user.id, profile.role, accountId);
+  const hasAccess = await verifyAccountOwnership(svc, user.uid, profile.role, accountId);
   if (!hasAccess) {
     return NextResponse.json({ error: "접근 권한 없음" }, { status: 403 });
   }

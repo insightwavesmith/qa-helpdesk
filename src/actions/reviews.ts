@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
 
 // 수강후기 목록 조회
 export async function getReviews({
@@ -92,10 +93,7 @@ export async function createReview(data: {
   category?: string;
   rating?: number | null;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { error: "인증되지 않은 사용자입니다." };
 
   // student 권한 확인
@@ -103,7 +101,7 @@ export async function createReview(data: {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", user.uid)
     .single();
 
   if (profile?.role !== "student") {
@@ -113,7 +111,7 @@ export async function createReview(data: {
   const { data: review, error } = await svc
     .from("reviews")
     .insert({
-      author_id: user.id,
+      author_id: user.uid,
       title: data.title,
       content: data.content,
       image_urls: data.imageUrls,
@@ -142,17 +140,14 @@ export async function createAdminReview(data: {
   category?: string;
   rating?: number | null;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { error: "인증되지 않은 사용자입니다." };
 
   const svc = createServiceClient();
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", user.uid)
     .single();
 
   if (profile?.role !== "admin") {
@@ -167,7 +162,7 @@ export async function createAdminReview(data: {
   const { data: review, error } = await svc
     .from("reviews")
     .insert({
-      author_id: user.id,
+      author_id: user.uid,
       title: data.title,
       content: data.content,
       youtube_url: data.youtubeUrl || null,
@@ -190,17 +185,14 @@ export async function createAdminReview(data: {
 
 // 후기 고정/해제 토글 (관리자 전용)
 export async function togglePinReview(id: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { error: "인증되지 않은 사용자입니다." };
 
   const svc = createServiceClient();
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", user.uid)
     .single();
 
   if (profile?.role !== "admin") {
@@ -233,17 +225,14 @@ export async function togglePinReview(id: string) {
 
 // 베스트 후기 선정/해제 토글 (관리자 전용, 최대 5개)
 export async function toggleFeaturedReview(reviewId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { success: false, error: "인증되지 않은 사용자입니다." };
 
   const svc = createServiceClient();
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", user.uid)
     .single();
 
   if (profile?.role !== "admin") {
@@ -346,17 +335,14 @@ export async function getReviewsAdmin() {
 
 // 수강후기 삭제 (admin만)
 export async function deleteReview(id: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { error: "인증되지 않은 사용자입니다." };
 
   const svc = createServiceClient();
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", user.uid)
     .single();
 
   // Check if admin or author
@@ -368,7 +354,7 @@ export async function deleteReview(id: string) {
   if (!review) return { error: "후기를 찾을 수 없습니다." };
 
   const isAdmin = profile?.role === "admin";
-  const isOwner = review.author_id === user.id;
+  const isOwner = review.author_id === user.uid;
   if (!isAdmin && !isOwner) {
     return { error: "권한이 없습니다." };
   }

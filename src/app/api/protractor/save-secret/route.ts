@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
 import { encrypt } from "@/lib/crypto";
 
 // POST /api/protractor/save-secret
@@ -7,10 +8,7 @@ import { encrypt } from "@/lib/crypto";
 export async function POST(req: NextRequest) {
   try {
     // 인증 확인
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
 
     if (!user) {
       return NextResponse.json(
@@ -31,7 +29,7 @@ export async function POST(req: NextRequest) {
     const { error } = await svc
       .from("service_secrets" as never)
       .upsert({
-        user_id: user.id,
+        user_id: user.uid,
         service: "mixpanel",
         key_name: `secret_${metaAccountId}`,
         key_value: encrypt(mixpanelSecret),

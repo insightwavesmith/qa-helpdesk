@@ -4,7 +4,8 @@ import { ChevronRight, MessageSquare, Sparkles, User, Shield, Pencil } from "luc
 import { getQuestionById, getFollowUpQuestions } from "@/actions/questions";
 import { getAnswersByQuestionId } from "@/actions/answers";
 import { AnswerForm } from "./answer-form";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
+import { createServiceClient } from "@/lib/supabase/server";
 import { ImageGallery } from "@/components/questions/ImageGallery";
 import { SourceReferences } from "@/components/questions/SourceReferences";
 import { Badge } from "@/components/ui/badge";
@@ -57,15 +58,14 @@ export default async function QuestionDetailPage({
   let isAdmin = false;
   let currentUserId: string | null = null;
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (user) {
-      currentUserId = user.id;
+      currentUserId = user.uid;
       const svc = createServiceClient();
       const { data: profile } = await svc
         .from("profiles")
         .select("role")
-        .eq("id", user.id)
+        .eq("id", user.uid)
         .single();
       isAdmin = profile?.role === "admin" || profile?.role === "assistant";
     }

@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { createServiceClient } from "@/lib/supabase/server";
+import { verifyIdToken } from "@/lib/firebase/auth";
 import { handleOptions, withCors } from "../_cors";
 
 export function OPTIONS() {
   return handleOptions();
 }
 
+/**
+ * 크롬 확장 로그인 엔드포인트
+ * 클라이언트(확장)에서 Firebase signInWithEmailAndPassword() 후
+ * ID Token을 이 엔드포인트로 전송하여 사용자 정보 + 역할을 조회
+ */
 export async function POST(request: NextRequest) {
   let body: unknown;
   try {
@@ -20,37 +25,22 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { email, password } = body as { email?: unknown; password?: unknown };
+  const { idToken } = body as { idToken?: unknown };
 
-  if (typeof email !== "string" || !email.trim()) {
-    return withCors(
-      NextResponse.json({ error: "이메일을 입력해주세요." }, { status: 400 })
-    );
-  }
-
-  if (typeof password !== "string" || !password) {
+  if (typeof idToken !== "string" || !idToken) {
     return withCors(
       NextResponse.json(
-        { error: "비밀번호를 입력해주세요." },
+        { error: "ID 토큰이 필요합니다." },
         { status: 400 }
       )
     );
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-  const { data: authData, error: authError } =
-    await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-
-  if (authError || !authData.session || !authData.user) {
+  const authUser = await verifyIdToken(idToken);
+  if (!authUser) {
     return withCors(
       NextResponse.json(
-        { error: "이메일 또는 비밀번호가 올바르지 않습니다." },
+        { error: "유효하지 않은 토큰입니다." },
         { status: 401 }
       )
     );
@@ -60,16 +50,15 @@ export async function POST(request: NextRequest) {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", authData.user.id)
+    .eq("id", authUser.uid)
     .single();
 
   return withCors(
     NextResponse.json({
-      accessToken: authData.session.access_token,
-      refreshToken: authData.session.refresh_token,
+      idToken,
       user: {
-        id: authData.user.id,
-        email: authData.user.email,
+        id: authUser.uid,
+        email: authUser.email,
         role: profile?.role ?? null,
       },
     })

@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   }
 
   // 3. 계정 소유권 확인
-  const hasAccess = await verifyAccountOwnership(svc, user.id, profile.role, accountId);
+  const hasAccess = await verifyAccountOwnership(svc, user.uid, profile.role, accountId);
   if (!hasAccess) {
     return NextResponse.json({ error: '해당 계정에 접근 권한이 없습니다.' }, { status: 403 });
   }

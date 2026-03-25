@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Clock, Mail, LogOut, Loader2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { getFirebaseClientAuth } from "@/lib/firebase/client";
+import { onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
 import { getProfileRoleStatus } from "@/actions/auth";
 
 export default function PendingPage() {
@@ -12,22 +13,17 @@ export default function PendingPage() {
   const [checking, setChecking] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  // T1: 마운트 시 DB에서 현재 role 재조회 → lead가 아니면 리다이렉트
+  // T1: 마운트 시 Firebase Auth에서 현재 user 확인 → DB에서 role 재조회
   useEffect(() => {
-    const checkRole = async () => {
+    const auth = getFirebaseClientAuth();
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
+
       try {
-        const supabase = createClient();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (!user) {
-          // 세션 없음 → /login
-          router.replace("/login");
-          return;
-        }
-
-        const { data: profile } = await getProfileRoleStatus(user.id);
+        const { data: profile } = await getProfileRoleStatus(user.uid);
 
         if (!profile || profile.role === "lead") {
           // 아직 승인 대기 중 → 현재 페이지 유지
@@ -50,17 +46,18 @@ export default function PendingPage() {
       } catch {
         setChecking(false);
       }
-    };
+    });
 
-    checkRole();
+    return () => unsubscribe();
   }, [router]);
 
   // T3: 로그아웃 → 세션 종료 + 캐시 쿠키 삭제 + /login 이동
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
-      const supabase = createClient();
-      await supabase.auth.signOut();
+      const auth = getFirebaseClientAuth();
+      await firebaseSignOut(auth);
+      await fetch("/api/auth/firebase-logout", { method: "POST" });
       document.cookie = "x-user-role=; Max-Age=0; path=/";
       document.cookie = "x-onboarding-status=; Max-Age=0; path=/";
       router.replace("/login");

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { createClient } from "@supabase/supabase-js";
+import { verifyIdToken } from "@/lib/firebase/auth";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 
@@ -14,7 +14,7 @@ type ExtAuthFailure = { response: NextResponse };
 
 /**
  * 크롬 확장 API 인증 헬퍼
- * Authorization: Bearer <supabase_access_token> 헤더에서 JWT 검증
+ * Authorization: Bearer <firebase_id_token> 헤더에서 토큰 검증
  * 허용 역할: admin, member, student (기본)
  */
 export async function requireExtUser(
@@ -33,18 +33,8 @@ export async function requireExtUser(
 
   const token = authHeader.replace("Bearer ", "");
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
+  const authUser = await verifyIdToken(token);
+  if (!authUser) {
     return {
       response: NextResponse.json(
         { error: "유효하지 않은 토큰입니다." },
@@ -52,6 +42,8 @@ export async function requireExtUser(
       ),
     };
   }
+
+  const user = { id: authUser.uid, email: authUser.email };
 
   const svc = createServiceClient();
   const { data: profile } = await svc
