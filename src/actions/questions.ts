@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { createServiceClient } from "@/lib/db";
 import { createAIAnswerForQuestion } from "@/lib/rag";
-import { notifyNewQuestion } from "@/lib/slack";
 import { getCurrentUser } from "@/lib/firebase/auth";
 
 export async function getQuestions({
@@ -138,18 +137,11 @@ export async function createQuestion(formData: {
     return { data: null, error: error.message };
   }
 
-  // AI 답변 자동 생성 + 슬랙 알림 (동기 실행 — after()는 Vercel serverless 타임아웃 시 silent fail)
+  // AI 답변 자동 생성 (동기 실행 — after()는 Vercel serverless 타임아웃 시 silent fail)
   try {
-    await Promise.all([
-      createAIAnswerForQuestion(data.id, formData.title, formData.content, formData.imageUrls),
-      notifyNewQuestion({
-        questionId: data.id,
-        title: formData.title,
-        authorName: profile.name || "알 수 없음",
-      }),
-    ]);
+    await createAIAnswerForQuestion(data.id, formData.title, formData.content, formData.imageUrls);
   } catch (err) {
-    console.error("[createQuestion] AI 답변 생성 또는 슬랙 알림 실패:", err);
+    console.error("[createQuestion] AI 답변 생성 실패:", err);
   }
 
   revalidatePath("/questions");

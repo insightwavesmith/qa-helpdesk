@@ -6,6 +6,16 @@
   "hooks": {
     "PreToolUse": [
       {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/enforce-teamcreate.sh",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
         "matcher": "Task",
         "hooks": [
           {
