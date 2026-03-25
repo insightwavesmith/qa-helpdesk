@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-03-24T06:30:17.133Z",
+  "timestamp": "2026-03-25T05:40:19.433Z",
   "reason": "compaction",
   "status": {
     "version": "3.0",
-    "lastUpdated": "2026-03-24T07:00:00.000Z",
+    "lastUpdated": "2026-03-25T10:46:20.628866",
     "features": {
       "railway-l2-batch": {
         "phase": "completed",
@@ -1242,12 +1242,14 @@
         "notes": "PR #2. collect-daily 권한 체크, health sync-notion 제거, 82/83건 미디어 다운로드. 커밋 a22028a."
       },
       "deepgaze-gemini-pipeline": {
-        "phase": "completed",
+        "phase": "designing",
         "matchRate": null,
         "documents": {},
         "startedAt": "2026-03-23",
         "completedAt": "2026-03-23",
-        "notes": "PR #2. creative-saliency 크론 신규(93줄), analyze-five-axis DeepGaze 주입(+75줄). 커밋 a22028a."
+        "notes": "PR #2. creative-saliency 크론 신규(93줄), analyze-five-axis DeepGaze 주입(+75줄). 커밋 a22028a.",
+        "status": "ready",
+        "updatedAt": "2026-03-25T10:46:20.628866"
       },
       "gcp-migration": {
         "phase": "testing",
@@ -1265,13 +1267,15 @@
         "notes": "VIDEO_PROMPT_V3에 씬별 audio_tone/bgm_change/text_overlays + audio.tone_changes 추가"
       },
       "collect-daily-refactor": {
-        "phase": "implementing",
+        "phase": "deployed",
         "documents": {
           "plan": "01-plan/features/collect-daily-refactor.plan.md",
           "design": "02-design/features/collect-daily-refactor.design.md"
         },
         "startedAt": "2026-03-24",
-        "notes": "3단계 분리 구현. collect-daily 891→451줄 경량화 + process-media 크론 신규 + collect-daily-utils 공용 모듈. tsc+build 통과."
+        "notes": "3단계 분리 구현. collect-daily 891→451줄 경량화 + process-media 크론 신규 + collect-daily-utils 공용 모듈. tsc+build 통과.",
+        "status": "completed",
+        "updatedAt": "2026-03-25T10:46:20.628866"
       },
       "prescription-cost-test": {
         "phase": "completed",
@@ -1316,6 +1320,49 @@
         "phase": "completed",
         "matchRate": 100,
         "notes": "Anthropic → Gemini 3 Pro Preview 전환 완료"
+      },
+      "meta-full-fields": {
+        "phase": "implementing",
+        "matchRate": null,
+        "documents": {
+          "plan": "01-plan/features/meta-full-fields.plan.md",
+          "design": "02-design/features/meta-full-fields.design.md"
+        },
+        "notes": "process-media Cloud SQL 호환 쿼리 수정"
+      },
+      "storage-gcs-migration": {
+        "phase": "completed",
+        "matchRate": 95,
+        "documents": {
+          "plan": "docs/01-plan/features/storage-gcs-migration.plan.md",
+          "design": "docs/02-design/features/storage-gcs-migration.design.md",
+          "analysis": "docs/03-analysis/storage-gcs-migration.analysis.md"
+        },
+        "notes": "Phase 1 Storage→GCS 완료. 듀얼라이트 패턴 적용. 17파일."
+      },
+      "pipeline-event-chain": {
+        "phase": "implementing",
+        "matchRate": null,
+        "documents": {
+          "plan": "docs/01-plan/features/pipeline-event-chain.plan.md",
+          "design": "docs/02-design/features/pipeline-event-chain.design.md"
+        },
+        "notes": "pipeline-chain.ts 생성, collect-daily+process-media 체인 트리거 추가. Cloud Scheduler 등록 대기."
+      },
+      "slack-notification": {
+        "status": "completed",
+        "phase": "deployed",
+        "updatedAt": "2026-03-25T10:46:20.628866"
+      },
+      "agent-dashboard": {
+        "status": "completed",
+        "phase": "deployed",
+        "updatedAt": "2026-03-25T10:46:20.628866"
+      },
+      "web-terminal-dashboard": {
+        "status": "ready",
+        "phase": "planning",
+        "updatedAt": "2026-03-25T10:46:20.628866"
       }
     },
     "phaseMapping": {
@@ -1659,6 +1706,6 @@
         "notes": "Wave 2(수집 입구) + Wave 3(하류 수정). CAROUSEL 카드별 수집/임베딩/5축/DeepGaze. T3~T10 + 아키텍처 다이어그램."
       }
     },
-    "updatedAt": "2026-03-24T07:00:00+09:00"
+    "updatedAt": "2026-03-24T20:00:00+09:00"
   }
 }
