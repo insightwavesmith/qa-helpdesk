@@ -2,7 +2,7 @@
  * GET /api/cron/collect-clicks
  * Mixpanel 클릭 이벤트 수집 → lp_click_data 테이블
  *
- * Vercel Cron: 매일 19:00 UTC (KST 다음날 04:00)
+ * Cloud Run Cron: 매일 19:00 UTC (KST 다음날 04:00)
  * collect-mixpanel 30분 후 실행
  *
  * 흐름:
@@ -14,7 +14,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 import {
   fetchMixpanelClicks,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { after } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { embedContentToChunks } from "@/actions/embed-pipeline";
 
 export async function POST(request: NextRequest) {

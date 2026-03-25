@@ -2,24 +2,22 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { getReviews } from "@/actions/reviews";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
+import { createServiceClient } from "@/lib/db";
 import { ReviewListClient } from "./review-list-client";
 
 const PAGE_SIZE = 12;
 
 async function getUserRole(): Promise<string | null> {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) return null;
 
     const svc = createServiceClient();
     const { data: profile } = await svc
       .from("profiles")
       .select("role")
-      .eq("id", user.id)
+      .eq("id", user.uid)
       .single();
 
     return profile?.role || null;
@@ -73,7 +71,7 @@ export default async function ReviewsPage({
       </div>
 
       <ReviewListClient
-        reviews={(reviews ?? []).map((r) => ({
+        reviews={(reviews ?? []).map((r: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
           ...r,
           image_urls: r.image_urls ?? [],
           view_count: r.view_count ?? 0,

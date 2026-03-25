@@ -5,7 +5,7 @@
  * - service_role 클라이언트로 RLS 우회
  */
 
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { extractExpiresAt } from "@/lib/competitor/meta-ad-library";
 import type { CompetitorAd, CompetitorAdCacheRow } from "@/types/competitor";
 

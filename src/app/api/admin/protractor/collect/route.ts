@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
+import { getCurrentUser } from "@/lib/firebase/auth";
 import { getCreativeType } from "@/lib/protractor/creative-type";
 import { runCollectDaily } from "@/app/api/cron/collect-daily/route";
 import {
@@ -13,8 +14,7 @@ import {
 
 export async function POST(req: NextRequest) {
   // 인증
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
   }
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", user.uid)
     .single();
 
   if (!profile || !["admin", "assistant"].includes(profile.role)) {
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
       .select("account_id, account_name")
       .eq("active", true)
       .order("account_name");
-    accounts = (data ?? []).map((a) => ({
+    accounts = (data ?? []).map((a: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
       account_id: a.account_id as string,
       account_name: (a.account_name ?? a.account_id) as string,
     }));
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
       .select("account_id, account_name")
       .eq("active", true)
       .in("account_id", accountIds);
-    accounts = (data ?? []).map((a) => ({
+    accounts = (data ?? []).map((a: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
       account_id: a.account_id as string,
       account_name: (a.account_name ?? a.account_id) as string,
     }));

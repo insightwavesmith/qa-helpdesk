@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     title: "자사몰사관학교",
     description:
       "메타 광고 전문 교육 플랫폼. 자사몰 운영자를 위한 실전 광고 전략과 Q&A 헬프데스크.",
-    url: "https://bscamp.vercel.app",
+    url: "https://bscamp.app",
     siteName: "자사몰사관학교",
     locale: "ko_KR",
     type: "website",

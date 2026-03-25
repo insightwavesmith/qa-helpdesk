@@ -2,7 +2,7 @@
 
 import { after } from "next/server";
 import { requireStaff } from "@/lib/auth-utils";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { generateEmbedding } from "@/lib/gemini";
 import { uploadToGcs } from "@/lib/gcs-storage";
 import { embedContentToChunks } from "@/actions/embed-pipeline";
@@ -71,35 +71,18 @@ async function resolveImagePlaceholders(bodyMd: string, contentId: string): Prom
       const slug = slugifyAlt(alt);
       const fileName = `posts/${contentId}/${slug}.jpg`;
 
-      // 3. Storage 업로드 (GCS 또는 Supabase 듀얼 라이트)
-      let uploadedUrl: string;
-      if (process.env.USE_CLOUD_SQL === "true") {
-        const { publicUrl, error: gcsError } = await uploadToGcs(
-          "content-images",
-          fileName,
-          imageBuffer,
-          "image/jpeg",
-        );
-        if (gcsError || !publicUrl) {
-          console.warn(`resolveImagePlaceholders: GCS 업로드 실패 (${alt}):`, gcsError);
-          continue;
-        }
-        uploadedUrl = publicUrl;
-      } else {
-        const { error: uploadError } = await supabase.storage
-          .from("content-images")
-          .upload(fileName, imageBuffer, { contentType: "image/jpeg", upsert: true });
-
-        if (uploadError) {
-          console.warn(`resolveImagePlaceholders: 업로드 실패 (${alt}):`, uploadError.message);
-          continue;
-        }
-
-        const { data: urlData } = supabase.storage
-          .from("content-images")
-          .getPublicUrl(fileName);
-        uploadedUrl = urlData.publicUrl;
+      // 3. Storage 업로드 (GCS)
+      const { publicUrl, error: gcsError } = await uploadToGcs(
+        "content-images",
+        fileName,
+        imageBuffer,
+        "image/jpeg",
+      );
+      if (gcsError || !publicUrl) {
+        console.warn(`resolveImagePlaceholders: GCS 업로드 실패 (${alt}):`, gcsError);
+        continue;
       }
+      const uploadedUrl = publicUrl;
 
       // 4. body_md 치환
       result = result.replace(fullMatch, `![${alt}](${uploadedUrl})`);
@@ -448,14 +431,14 @@ export async function generateNewsletterFromContents(contentIds: string[]) {
     return "<p>선택된 콘텐츠가 없습니다.</p>";
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://qa-knowledge-base.vercel.app";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://bscamp.app";
   const typeLabels: Record<string, string> = {
     education: "교육", notice: "공지", case_study: "고객사례",
     webinar: "웨비나", promo: "홍보",
   };
 
   const sectionsHtml = contents
-    .map((c) => {
+    .map((c: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
       const contentType = c.type || "education";
       const typeLabel = typeLabels[contentType] || contentType;
 
@@ -600,7 +583,7 @@ export async function embedAllContents() {
   for (let i = 0; i < items.length; i += BATCH_SIZE) {
     const batch = items.slice(i, i + BATCH_SIZE);
     const results = await Promise.allSettled(
-      batch.map(async (c) => {
+      batch.map(async (c: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
         const embedding = await generateEmbedding(c.title + " " + c.body_md);
         const { error: updateError } = await supabase
           .from("contents")
@@ -624,7 +607,7 @@ export async function crawlUrl(
     const res = await fetch(url, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; QA-Helpdesk-Bot/1.0; +https://bscamp.vercel.app)",
+          "Mozilla/5.0 (compatible; BSCamp-Bot/1.0; +https://bscamp.app)",
       },
       signal: AbortSignal.timeout(15000),
     });

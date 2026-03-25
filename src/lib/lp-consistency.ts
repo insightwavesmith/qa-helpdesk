@@ -3,7 +3,7 @@
  * creative_lp_map 테이블에서 결과 조회
  */
 
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 export interface LPConsistencyResult {
   creative_id: string;

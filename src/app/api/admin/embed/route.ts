@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
 import { embedContentToChunks, embedAllPending } from "@/actions/embed-pipeline";
 
 // POST /api/admin/embed — 개별 또는 전체 임베딩
 export async function POST(req: NextRequest) {
-  // 관리자 인증: 브라우저 쿠키 또는 서비스 키
+  // 관리자 인증: 브라우저 쿠키 또는 크론 시크릿
   const serviceKey = req.headers.get("x-service-key");
-  if (serviceKey === process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    // 서비스 키로 인증 — CLI/스크립트용
+  if (serviceKey && serviceKey === process.env.CRON_SECRET) {
+    // 크론 시크릿으로 인증 — CLI/스크립트용
   } else {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "인증 필요" }, { status: 401 });
     }

@@ -1,11 +1,11 @@
 /**
- * 경쟁사 소재 이미지 → Supabase Storage 업로드
+ * 경쟁사 소재 이미지 → GCS Storage 업로드
  * 경로 패턴: competitor/{page_id}/media/{ad_archive_id}.{ext} (ADR-001)
  *
  * best-effort: 실패해도 상위 흐름을 중단하지 않음
  */
 
-import { createServiceClient } from "@/lib/supabase/server";
+import { uploadToGcs } from "@/lib/gcs-storage";
 
 /**
  * 경쟁사 소재 이미지를 Storage에 업로드
@@ -44,19 +44,17 @@ export async function uploadCompetitorMedia(
   // Storage 경로: competitor/{page_id}/media/{ad_archive_id}.{ext}
   const storagePath = `competitor/${pageId}/media/${adArchiveId}.${ext}`;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const svc = createServiceClient() as any;
-  const { error: uploadErr } = await svc.storage
-    .from("creatives")
-    .upload(storagePath, buffer, {
-      contentType: ct.startsWith("image/") ? ct.split(";")[0] : "image/jpeg",
-      upsert: true,
-    });
+  const { error: gcsError } = await uploadToGcs(
+    "creatives",
+    storagePath,
+    buffer,
+    ct.startsWith("image/") ? ct.split(";")[0] : "image/jpeg",
+  );
 
-  if (uploadErr) {
+  if (gcsError) {
     console.warn(
       `[competitor-storage] 업로드 실패: ${storagePath}`,
-      uploadErr.message,
+      gcsError,
     );
     return null;
   }

@@ -325,12 +325,13 @@ interface ChannelApiClient {
 }
 ```
 
-#### 네이버 블로그 (`naver-blog.ts`)
-- **API**: `POST https://openapi.naver.com/blog/writePost.json` (OAuth 2.0)
-- **환경변수**: `NAVER_BLOG_CLIENT_ID`, `NAVER_BLOG_CLIENT_SECRET`
-- **metadata**: `{ tags[], categoryNo, publishOpen: 'all'|'neighbor'|'private' }`
-- **externalId** = `logNo`, **externalUrl** = `https://blog.naver.com/{blogId}/{logNo}`
-- **인증 흐름**: channel_credentials 토큰 복호화 → 만료 시 refresh → `Authorization: Bearer` 호출
+#### 네이버 블로그 (`naver-blog.ts`) — 반자동 방식
+- **API 폐지**: `writePost.json` API가 2025년 폐지됨 (404 반환). 완전 자동화 불가.
+- **대안**: AI 변환 결과를 클립보드 복사 + 블로그 에디터 URL 오픈하는 반자동 흐름
+- **publish() 동작**: DB status를 `review`로 유지 (자동 `published` 전환 없음)
+- **사용자 흐름**: ① 어드민에서 "클립보드 복사" 클릭 → ② 블로그 에디터 열림 → ③ 붙여넣기 + 수동 발행 → ④ 어드민에서 external_url 입력 → status `published`로 수동 변경
+- **미래 대안**: 크롬 확장 `CafePublisher.ts` 패턴 확장 (Phase 3+)
+- **환경변수**: 불필요 (API 호출 없음)
 
 #### 네이버 카페 (`naver-cafe.ts`)
 - **API**: `POST https://openapi.naver.com/v1/cafe/{clubId}/articles`
@@ -535,8 +536,8 @@ interface ChannelApiClient {
 | AI 변환 — API 오류 | `TRANSFORM_AI_ERROR` | "AI 변환에 실패했습니다. 잠시 후 다시 시도해주세요." | toast.error + 재시도 버튼 |
 | AI 변환 — 타임아웃 (30초) | `TRANSFORM_TIMEOUT` | "변환 시간이 초과되었습니다." | toast.error |
 | AI 변환 — 할당량 초과 | `TRANSFORM_QUOTA_EXCEEDED` | "오늘 AI 변환 횟수를 모두 사용했습니다." | toast.error + 잔여 횟수 |
-| 네이버 블로그 — 인증 만료 | `NAVER_AUTH_EXPIRED` | "네이버 블로그 연동이 만료되었습니다. 설정에서 재연동해주세요." | toast.error + 재연동 링크 |
-| 네이버 블로그 — 발행 실패 | `NAVER_PUBLISH_ERROR` | "네이버 블로그 발행에 실패했습니다. ({detail})" | toast.error + 재시도 |
+| 네이버 블로그 — 클립보드 복사 실패 | `NAVER_BLOG_COPY_FAILED` | "블로그 글 복사에 실패했습니다. 다시 시도해주세요." | toast.error + 재시도 |
+| 네이버 블로그 — 반자동 안내 | `NAVER_BLOG_MANUAL_GUIDE` | "클립보드에 복사되었습니다. 네이버 블로그 에디터에서 붙여넣기 해주세요." | toast.info + 블로그 에디터 링크 |
 | 네이버 카페 — 발행 실패 | `NAVER_CAFE_ERROR` | "네이버 카페 게시에 실패했습니다." | toast.error |
 | 뉴스레터 — 구독자 없음 | `NEWSLETTER_NO_SUBSCRIBERS` | "발송 대상 구독자가 없습니다. 세그먼트를 확인해주세요." | toast.error + 발행 중단 |
 | 유튜브 — 인증 만료 | `YOUTUBE_AUTH_EXPIRED` | "유튜브 연동이 만료되었습니다." | toast.error + 재연동 링크 |
@@ -584,7 +585,7 @@ interface ChannelApiClient {
 - [ ] `src/types/distribution.ts` — 타입 정의 (ChannelDistribution, TransformChannel 등)
 - [ ] `src/lib/ai-transform.ts` — AI 포맷 변환 엔진 (Anthropic API, 채널별 프롬프트)
 - [ ] `src/lib/channel-api/types.ts` — 공통 인터페이스
-- [ ] `src/lib/channel-api/naver-blog.ts` — 네이버 블로그 OAuth + writePost
+- [ ] `src/lib/channel-api/naver-blog.ts` — 네이버 블로그 반자동 (클립보드 복사 + 에디터 URL)
 - [ ] `src/lib/channel-api/naver-cafe.ts` — 네이버 카페 글쓰기 API
 - [ ] `src/lib/channel-api/newsletter.ts` — 기존 email 파이프라인 래핑
 - [ ] `src/actions/distribution.ts` — Server Actions 6개

@@ -14,7 +14,7 @@ import {
   FileText,
   TrendingUp,
 } from "lucide-react";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 

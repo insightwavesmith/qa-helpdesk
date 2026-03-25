@@ -1,6 +1,6 @@
 "use server";
 
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 export async function subscribeNewsletter(email: string, name?: string) {
   if (!email || !email.includes("@")) {

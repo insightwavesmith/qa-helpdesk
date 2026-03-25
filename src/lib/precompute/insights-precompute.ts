@@ -3,13 +3,13 @@
  * daily_ad_insights를 계정+일자별로 집계하여 insights_aggregated_daily에 저장
  * 5,000행 raw 쿼리 대신 30~90행 집계 데이터로 빠른 응답
  */
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { DbClient } from "@/lib/db";
 
 /** 집계 대상: 최근 N일 (최대 90일) */
 const LOOKBACK_DAYS = 90;
 
 export async function precomputeInsights(
-  supabase: SupabaseClient,
+  supabase: DbClient,
 ): Promise<{ computed: number; errors: string[] }> {
   const errors: string[] = [];
   let computed = 0;

@@ -1,8 +1,35 @@
 {
   "protractor-refactoring": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/protractor-refactoring.plan.md",
-    "design": "docs/02-design/features/protractor-refactoring.design.md",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/protractor-refactoring.plan.md",
+      "at": "2026-03-22"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/protractor-refactoring.design.md",
+      "at": "2026-03-22"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T1",
       "T2",
@@ -15,23 +42,77 @@
       "T9",
       "T10"
     ],
+    "notes": "원래 범위 완료. Architecture v3 five-axis-analysis로 통합됨.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22",
-    "notes": "원래 범위 완료. Architecture v3 five-axis-analysis로 통합됨."
+    "updatedAt": "2026-03-22"
   },
   "invite-expiry": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/invite-expiry.plan.md",
-    "design": "docs/02-design/features/invite-expiry.design.md",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/invite-expiry.plan.md",
+      "at": "2026-03-08"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/invite-expiry.design.md",
+      "at": "2026-03-08"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-08"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T1"
     ],
     "updatedAt": "2026-03-08"
   },
   "embedding-v2-migration": {
-    "status": "deployed",
-    "plan": "docs/01-plan/features/embedding-v2-migration.plan.md",
-    "design": "docs/02-design/features/embedding-v2-migration.design.md",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/embedding-v2-migration.plan.md",
+      "at": "2026-03-18"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/embedding-v2-migration.design.md",
+      "at": "2026-03-18"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-18"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": true,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T1-이중컬럼",
       "T2-RPC교체",
@@ -40,13 +121,40 @@
       "T5-DB마이그레이션",
       "T6-배포검증"
     ],
-    "updatedAt": "2026-03-18",
-    "notes": "Supabase SQL 4개 실행 완료. embedding_v2 3,488/3,488건(100%). Vercel 배포 정상. HNSW 인덱스 미생성(pgvector 3072차원 제한)."
+    "notes": "Supabase SQL 4개 실행 완료. embedding_v2 3,488/3,488건(100%). Vercel 배포 정상. HNSW 인덱스 미생성(pgvector 3072차원 제한).",
+    "updatedAt": "2026-03-18"
   },
   "phase2-creative-embedding": {
-    "status": "deployed",
-    "plan": "docs/01-plan/features/phase2-creative-embedding.plan.md",
-    "design": "docs/02-design/features/phase2-creative-embedding.design.md",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/phase2-creative-embedding.plan.md",
+      "at": "2026-03-18"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/phase2-creative-embedding.design.md",
+      "at": "2026-03-18"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-18"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": true,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T1-migration",
       "T2-fetcher",
@@ -57,28 +165,80 @@
       "T7-lp-crawler",
       "T8-seed"
     ],
-    "updatedAt": "2026-03-18",
-    "notes": "ad_creative_embeddings 352건 seed 완료. search_similar_creatives RPC 동작 확인. screenshot_hash 컬럼 추가."
+    "notes": "ad_creative_embeddings 352건 seed 완료. search_similar_creatives RPC 동작 확인. screenshot_hash 컬럼 추가.",
+    "updatedAt": "2026-03-18"
   },
   "lp-crawling-qa": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/phase2-creative-embedding.plan.md",
-    "design": "docs/02-design/features/phase2-creative-embedding.design.md",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/phase2-creative-embedding.plan.md",
+      "at": "2026-03-18"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/phase2-creative-embedding.design.md",
+      "at": "2026-03-18"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-18"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T1-LP크롤링실행",
       "T2-소재검색QA",
       "T3-사이드바확인"
     ],
+    "notes": "3단계 LP 크롤링 + 소재 검색 QA 완료. LP 77건 중 74건 크롤링 성공(100%). 스크린샷 75건(97%), LP이미지임베딩 66건(85%), LP텍스트임베딩 72건(94%). creatives Storage 버킷 생성+RLS. scripts/crawl-lps.mjs 단독 크롤러 작성. search_similar_creatives RPC 정상. /creatives 페이지 검색/필터/모달 QA 통과. 사이드바 메뉴 확인. npm run build 통과.",
     "completedAt": "2026-03-18",
-    "updatedAt": "2026-03-18",
-    "notes": "3단계 LP 크롤링 + 소재 검색 QA 완료. LP 77건 중 74건 크롤링 성공(100%). 스크린샷 75건(97%), LP이미지임베딩 66건(85%), LP텍스트임베딩 72건(94%). creatives Storage 버킷 생성+RLS. scripts/crawl-lps.mjs 단독 크롤러 작성. search_similar_creatives RPC 정상. /creatives 페이지 검색/필터/모달 QA 통과. 사이드바 메뉴 확인. npm run build 통과."
+    "updatedAt": "2026-03-18"
   },
   "meta-embedding-arch": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/meta-embedding-arch.plan.md",
-    "design": "docs/02-design/features/meta-embedding-arch.design.md",
-    "analysis": "docs/03-analysis/meta-embedding-arch.analysis.md",
-    "matchRate": 92,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/meta-embedding-arch.plan.md",
+      "at": "2026-03-22"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/meta-embedding-arch.design.md",
+      "at": "2026-03-22"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/meta-embedding-arch.analysis.md",
+      "matchRate": 92
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T1-SQL마이그레이션",
       "T2-creative-analyzer",
@@ -97,16 +257,41 @@
       "T15-영상VLM분석",
       "T16-영상분석API"
     ],
+    "notes": "Phase 1(T1-T8) + Phase 2(T9-T16) 완료. Architecture v3로 후속 기능 분리됨(five-axis-analysis, embed-creatives-dual-write 등). Gap 92%.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22",
-    "notes": "Phase 1(T1-T8) + Phase 2(T9-T16) 완료. Architecture v3로 후속 기능 분리됨(five-axis-analysis, embed-creatives-dual-write 등). Gap 92%."
+    "updatedAt": "2026-03-22"
   },
   "lp-mobile-crawl": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/lp-mobile-crawl.plan.md",
-    "design": "docs/02-design/features/lp-mobile-crawl.design.md",
-    "analysis": "docs/03-analysis/lp-mobile-crawl.analysis.md",
-    "matchRate": 95,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/lp-mobile-crawl.plan.md",
+      "at": "2026-03-19"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/lp-mobile-crawl.design.md",
+      "at": "2026-03-19"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-19"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/lp-mobile-crawl.analysis.md",
+      "matchRate": 95
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T1-SQL마이그레이션",
       "T2-모바일크롤러",
@@ -115,14 +300,41 @@
       "T5-API",
       "T6-검증"
     ],
+    "notes": "완료. 크롤링 33/33 LP(에러 0), Vision 88건, LP임베딩 92건, 일관성점수 80건(평균 56%). tsc+build 통과. Match Rate 95%.",
     "completedAt": "2026-03-19",
-    "updatedAt": "2026-03-19",
-    "notes": "완료. 크롤링 33/33 LP(에러 0), Vision 88건, LP임베딩 92건, 일관성점수 80건(평균 56%). tsc+build 통과. Match Rate 95%."
+    "updatedAt": "2026-03-19"
   },
   "creative-analysis-tab": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/creative-analysis-tab.plan.md",
-    "design": "docs/02-design/features/creative-analysis-tab.design.md",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/creative-analysis-tab.plan.md",
+      "at": "2026-03-22"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/creative-analysis-tab.design.md",
+      "at": "2026-03-22"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "탭추가",
       "서버컴포넌트",
@@ -130,29 +342,81 @@
       "포트폴리오뷰",
       "경쟁사비교뷰"
     ],
+    "notes": "STEP 1 실제 구현 완료. protractor-tab-nav에 소재 분석 탭 추가. /protractor/creatives/ 3개 서브탭. tsc+lint+build 통과.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22",
-    "notes": "STEP 1 실제 구현 완료. protractor-tab-nav에 소재 분석 탭 추가. /protractor/creatives/ 3개 서브탭. tsc+lint+build 통과."
+    "updatedAt": "2026-03-22"
   },
   "collect-daily-media-url": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/collect-daily-media-url.plan.md",
-    "design": "docs/02-design/features/collect-daily-media-url.design.md",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/collect-daily-media-url.plan.md",
+      "at": "2026-03-22"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/collect-daily-media-url.design.md",
+      "at": "2026-03-22"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T1-fetchVideoThumbnails",
       "T2-extractImageHashes확장",
       "T3-mediaUrl-3단계fallback"
     ],
+    "notes": "구현 완료. creative-image-fetcher.ts fetchVideoThumbnails + extractImageHashes asset_feed_spec + collect-daily media_url 3단계 fallback. effective_object_story_spec→object_story_spec+asset_feed_spec 전환 완료. E2E 파이프라인 테스트 통과.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22",
-    "notes": "구현 완료. creative-image-fetcher.ts fetchVideoThumbnails + extractImageHashes asset_feed_spec + collect-daily media_url 3단계 fallback. effective_object_story_spec→object_story_spec+asset_feed_spec 전환 완료. E2E 파이프라인 테스트 통과."
+    "updatedAt": "2026-03-22"
   },
   "creative-intelligence": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/creative-intelligence.plan.md",
-    "design": "docs/02-design/features/creative-intelligence.design.md",
-    "analysis": "docs/03-analysis/creative-intelligence.analysis.md",
-    "matchRate": 93,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/creative-intelligence.plan.md",
+      "at": "2026-03-22"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/creative-intelligence.design.md",
+      "at": "2026-03-22"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/creative-intelligence.analysis.md",
+      "matchRate": 93
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T1-SQL마이그레이션",
       "T2-소재태깅스크립트",
@@ -164,16 +428,41 @@
       "T8-점수조회API",
       "T9-검증"
     ],
+    "notes": "전체 구현 완료. Gemini 모델 gemini-2.5-pro 통일, API responseMimeType 추가. L4 358건 처리. Gap 분석 93%.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22",
-    "notes": "전체 구현 완료. Gemini 모델 gemini-2.5-pro 통일, API responseMimeType 추가. L4 358건 처리. Gap 분석 93%."
+    "updatedAt": "2026-03-22"
   },
   "creative-saliency": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/creative-saliency.plan.md",
-    "design": "docs/02-design/features/creative-saliency.design.md",
-    "analysis": "docs/03-analysis/creative-saliency.analysis.md",
-    "matchRate": 93,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/creative-saliency.plan.md",
+      "at": "2026-03-22"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/creative-saliency.design.md",
+      "at": "2026-03-22"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/creative-saliency.analysis.md",
+      "matchRate": 93
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T1-SQL마이그레이션",
       "T2-requirements",
@@ -181,16 +470,41 @@
       "T4-조회API",
       "T5-배치실행검증"
     ],
+    "notes": "배치 2,784/2,914 (95.5%) 완료. 130건 미처리는 신규 추가분. DeepGaze IIE 파이프라인 정상 동작. Railway EAGAIN 수정 완료. Gap 93%.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22",
-    "notes": "배치 2,784/2,914 (95.5%) 완료. 130건 미처리는 신규 추가분. DeepGaze IIE 파이프라인 정상 동작. Railway EAGAIN 수정 완료. Gap 93%."
+    "updatedAt": "2026-03-22"
   },
   "railway-l2-batch": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/railway-l2-batch.plan.md",
-    "design": "docs/02-design/features/railway-l2-batch.design.md",
-    "analysis": "docs/03-analysis/railway-l2-batch.analysis.md",
-    "matchRate": 100,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/railway-l2-batch.plan.md",
+      "at": "2026-03-18"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/railway-l2-batch.design.md",
+      "at": "2026-03-18"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-18"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/railway-l2-batch.analysis.md",
+      "matchRate": 100
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T1-plan-design",
       "T2-predict.py",
@@ -199,16 +513,41 @@
       "T5-build검증",
       "T6-Gap분석"
     ],
+    "notes": "services/creative-pipeline/에 L2 시선 예측 추가. saliency/predict.py(DeepGaze IIE), saliency/requirements.txt(CPU PyTorch), Dockerfile 멀티스테이지, server.js /saliency + /pipeline L2. tsc+build 통과. Match Rate 100%.",
     "completedAt": "2026-03-18",
-    "updatedAt": "2026-03-18",
-    "notes": "services/creative-pipeline/에 L2 시선 예측 추가. saliency/predict.py(DeepGaze IIE), saliency/requirements.txt(CPU PyTorch), Dockerfile 멀티스테이지, server.js /saliency + /pipeline L2. tsc+build 통과. Match Rate 100%."
+    "updatedAt": "2026-03-18"
   },
   "creative-pipeline-railway": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/creative-pipeline-railway.plan.md",
-    "design": "docs/02-design/features/creative-pipeline-railway.design.md",
-    "analysis": "docs/03-analysis/creative-pipeline-railway.analysis.md",
-    "matchRate": 97,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/creative-pipeline-railway.plan.md",
+      "at": "2026-03-18"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/creative-pipeline-railway.design.md",
+      "at": "2026-03-18"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-18"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/creative-pipeline-railway.analysis.md",
+      "matchRate": 97
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "서비스코드",
       "Dockerfile",
@@ -216,16 +555,41 @@
       "빌드검증",
       "Gap분석"
     ],
+    "notes": "services/creative-pipeline/ Express 서비스 7파일 + collect-daily 연동 + eslint 설정. tsc+build 통과. Match Rate 97%.",
     "completedAt": "2026-03-18",
-    "updatedAt": "2026-03-18",
-    "notes": "services/creative-pipeline/ Express 서비스 7파일 + collect-daily 연동 + eslint 설정. tsc+build 통과. Match Rate 97%."
+    "updatedAt": "2026-03-18"
   },
   "admin-mobile-responsive": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/admin-mobile-responsive.plan.md",
-    "design": "docs/02-design/features/admin-mobile-responsive.design.md",
-    "analysis": "docs/03-analysis/admin-mobile-responsive.analysis.md",
-    "matchRate": 100,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/admin-mobile-responsive.plan.md",
+      "at": "2026-03-18"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/admin-mobile-responsive.design.md",
+      "at": "2026-03-18"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-18"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/admin-mobile-responsive.analysis.md",
+      "matchRate": 100
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "P1-members",
       "P1-accounts",
@@ -241,63 +605,204 @@
       "P3-stats",
       "P3-organic"
     ],
+    "notes": "관리자 13개 페이지 모바일 반응형 완료. P1(members/accounts/performance/answers) 테이블→카드, P2(content/email/invites/reviews) 테이블→카드+폼 반응형, P3(protractor/knowledge/owner-accounts/stats/organic) 제목/그리드 조정. Tailwind CSS만 변경, 기능 변경 없음. 16파일 +1314/-569줄. tsc+build 통과. Match Rate 100%.",
     "completedAt": "2026-03-18",
-    "updatedAt": "2026-03-18",
-    "notes": "관리자 13개 페이지 모바일 반응형 완료. P1(members/accounts/performance/answers) 테이블→카드, P2(content/email/invites/reviews) 테이블→카드+폼 반응형, P3(protractor/knowledge/owner-accounts/stats/organic) 제목/그리드 조정. Tailwind CSS만 변경, 기능 변경 없음. 16파일 +1314/-569줄. tsc+build 통과. Match Rate 100%."
+    "updatedAt": "2026-03-18"
   },
   "batch-scripts-step4-7": {
-    "status": "completed",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-20"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-20"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-20"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T4-LP크롤링큐",
       "T5-미디어Storage",
       "T6-경쟁사L1큐",
       "T7-사전계산"
     ],
+    "notes": "STEP 1~7 전체 완료. LP크롤링 1736/1796(97%) — Railway EAGAIN 수정(공유 브라우저)+Playwright 재크롤링. 60건 실패(Meta Canvas 만료). Saliency 2711/2873(94%). Storage 2873+건. 사전계산 40계정 완료. 경쟁사 62건 모니터.",
     "completedAt": "2026-03-20",
-    "updatedAt": "2026-03-20",
-    "notes": "STEP 1~7 전체 완료. LP크롤링 1736/1796(97%) — Railway EAGAIN 수정(공유 브라우저)+Playwright 재크롤링. 60건 실패(Meta Canvas 만료). Saliency 2711/2873(94%). Storage 2873+건. 사전계산 40계정 완료. 경쟁사 62건 모니터."
+    "updatedAt": "2026-03-20"
   },
   "benchmark-color-fix": {
-    "status": "completed",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-19"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-19"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-19"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T1-API-normalizeParts",
       "T2-precompute-snake_case",
       "T3-frontend-benchmark-visibility"
     ],
+    "notes": "벤치마크 색상+기준값 수정. API normalizeParts()+adIds캐시체크+실시간폴백. MJS snake_case+top10+배치5. 프론트: adIds전달+benchVal조건완화. diagnosis-precompute TOP_ADS_LIMIT 10. 캐시 175건 재생성. 0% 123건 전부🔴 검증.",
     "completedAt": "2026-03-19",
-    "updatedAt": "2026-03-19",
-    "notes": "벤치마크 색상+기준값 수정. API normalizeParts()+adIds캐시체크+실시간폴백. MJS snake_case+top10+배치5. 프론트: adIds전달+benchVal조건완화. diagnosis-precompute TOP_ADS_LIMIT 10. 캐시 175건 재생성. 0% 123건 전부🔴 검증."
+    "updatedAt": "2026-03-19"
   },
   "cron-batch-split": {
-    "status": "completed",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-20"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-20"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-20"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T1-runCollectDaily-batch파라미터",
       "T2-라우트4개생성",
       "T3-vercel.json크론분할",
       "T4-빌드검증"
     ],
+    "notes": "collect-daily 배치 4분할. 계정 10개씩 5분 간격(18:00~18:15 UTC). batch 4만 후처리. 수집 로직 변경 없음. tsc+build 통과.",
     "completedAt": "2026-03-20",
-    "updatedAt": "2026-03-20",
-    "notes": "collect-daily 배치 4분할. 계정 10개씩 5분 간격(18:00~18:15 UTC). batch 4만 후처리. 수집 로직 변경 없음. tsc+build 통과."
+    "updatedAt": "2026-03-20"
   },
   "competitor-l1-analysis": {
-    "status": "completed",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-22"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-22"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T1-큐등록스크립트",
       "T2-전체큐등록3848건",
       "T3-크론배치확대",
       "T4-배치처리실행"
     ],
+    "notes": "경쟁사 L1 분석 파이프라인 완료. 3,848건 큐 등록. BATCH_LIMIT 20→100. 크론 6시간마다. 배치 처리 완료(~60% 성공, 40% CDN 만료 — 예상된 비율).",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22",
-    "notes": "경쟁사 L1 분석 파이프라인 완료. 3,848건 큐 등록. BATCH_LIMIT 20→100. 크론 6시간마다. 배치 처리 완료(~60% 성공, 40% CDN 만료 — 예상된 비율)."
+    "updatedAt": "2026-03-22"
   },
   "db-restructure-phase1": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/db-restructure-phase1.plan.md",
-    "design": "docs/02-design/features/db-restructure-phase1.design.md",
-    "analysis": "docs/03-analysis/db-restructure-phase1.analysis.md",
-    "matchRate": 92,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/db-restructure-phase1.plan.md",
+      "at": "2026-03-22"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/db-restructure-phase1.design.md",
+      "at": "2026-03-22"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/db-restructure-phase1.analysis.md",
+      "matchRate": 92
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T1-SQL마이그레이션",
       "T2-normalize-lps.mjs",
@@ -305,16 +810,41 @@
       "T4-validate-lp-crawl.mjs",
       "T5-crawl-all-lps.mjs"
     ],
+    "notes": "Phase 1 완료. SQL Supabase 적용 확인(landing_pages 15컬럼, lp_snapshots 10컬럼, 8인덱스, 4 RLS). 스크립트 4개 구현 완료. Gap 92%.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22",
-    "notes": "Phase 1 완료. SQL Supabase 적용 확인(landing_pages 15컬럼, lp_snapshots 10컬럼, 8인덱스, 4 RLS). 스크립트 4개 구현 완료. Gap 92%."
+    "updatedAt": "2026-03-22"
   },
   "collect-daily-v2": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/collect-daily-v2.plan.md",
-    "design": "docs/02-design/features/collect-daily-v2.design.md",
-    "analysis": "docs/03-analysis/collect-daily-v2.analysis.md",
-    "matchRate": 95,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/collect-daily-v2.plan.md",
+      "at": "2026-03-21T00:58:55"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/collect-daily-v2.design.md",
+      "at": "2026-03-21T00:58:55"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-20"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/collect-daily-v2.analysis.md",
+      "matchRate": 95
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "S1-lp-normalizer.ts",
       "S2-AD_FIELDS변경",
@@ -327,29 +857,82 @@
       "S9-빌드검증",
       "S10-Gap분석"
     ],
+    "notes": "STEP 1 완료. collect-daily v2 정규화 테이블 UPSERT. lp-normalizer.ts 신규. LP URL effective_object_story_spec 추출. ad_creative_embeddings 호환 유지. tsc+build 통과.",
     "completedAt": "2026-03-20",
-    "updatedAt": "2026-03-21T00:58:55",
-    "notes": "STEP 1 완료. collect-daily v2 정규화 테이블 UPSERT. lp-normalizer.ts 신규. LP URL effective_object_story_spec 추출. ad_creative_embeddings 호환 유지. tsc+build 통과."
+    "updatedAt": "2026-03-21T00:58:55"
   },
   "p0-db-schema-v3": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/p0-db-schema-v3.plan.md",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/p0-db-schema-v3.plan.md",
+      "at": "2026-03-22T12:30:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-22T12:30:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T1-SQL실행",
       "T1-DB적용확인",
       "T1-코드동기화",
       "T1-커밋"
     ],
+    "notes": "P0-1 완료. 마이그레이션 9개 섹션 전부 Supabase 적용. 신규 컬럼 14개 + 테이블 2개 + CHECK 제약. source 3096건 bscamp→member 전환. RPC 재정의. collect-daily/migrate-to-v2 코드 변경. TASK-*.md 64개 아카이브. DEV-STATUS.md 최신화. tsc+build 통과. 커밋 6f70f83.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T12:30:00",
-    "notes": "P0-1 완료. 마이그레이션 9개 섹션 전부 Supabase 적용. 신규 컬럼 14개 + 테이블 2개 + CHECK 제약. source 3096건 bscamp→member 전환. RPC 재정의. collect-daily/migrate-to-v2 코드 변경. TASK-*.md 64개 아카이브. DEV-STATUS.md 최신화. tsc+build 통과. 커밋 6f70f83."
+    "updatedAt": "2026-03-22T12:30:00"
   },
   "five-axis-analysis": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
-    "design": "docs/02-design/features/five-axis-analysis.design.md",
-    "analysis": "docs/03-analysis/five-axis-analysis.analysis.md",
-    "matchRate": 96,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/architecture-v3-execution-plan.md",
+      "at": "2026-03-22T22:00:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/five-axis-analysis.design.md",
+      "at": "2026-03-22T22:00:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/five-axis-analysis.analysis.md",
+      "matchRate": 96
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T2-프롬프트재설계",
       "T2-A-자유태깅100건",
@@ -360,177 +943,541 @@
       "T2-C-scores백분위",
       "T2-Gap분석최종"
     ],
+    "notes": "T2 Gap 분석 완료(backend-dev 최종 검토). analyze-five-axis.mjs v3 재설계(3모드 free/cluster/final, psychology/quality 신규 축). compute-score-percentiles.mjs 신규. compute-fatigue-risk.mjs 신규. --source competitor 모드(T11 추가) 포함 전체 체크포인트 충족 확인. tsc+lint+build 통과. Match Rate 96%.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T22:00:00",
-    "notes": "T2 Gap 분석 완료(backend-dev 최종 검토). analyze-five-axis.mjs v3 재설계(3모드 free/cluster/final, psychology/quality 신규 축). compute-score-percentiles.mjs 신규. compute-fatigue-risk.mjs 신규. --source competitor 모드(T11 추가) 포함 전체 체크포인트 충족 확인. tsc+lint+build 통과. Match Rate 96%."
+    "updatedAt": "2026-03-22T22:00:00"
   },
   "embed-creatives-dual-write": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
-    "design": "docs/02-design/features/embed-creatives-dual-write.design.md",
-    "analysis": "docs/03-analysis/embed-creatives-dual-write.analysis.md",
-    "analysis2": "docs/03-analysis/embed-creatives.analysis.md",
-    "matchRate": 97,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/architecture-v3-execution-plan.md",
+      "at": "2026-03-22T17:30:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/embed-creatives-dual-write.design.md",
+      "at": "2026-03-22T17:30:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/embed-creatives-dual-write.analysis.md",
+      "matchRate": 97
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T3-embedCreative듀얼라이트",
       "T3-embedMissingCreatives보충",
       "T3-빌드검증",
       "T3-Gap분석(embed-creatives.analysis.md)"
     ],
+    "notes": "T3 완료. ad-creative-embedder.ts에 creative_media 듀얼 라이트 추가. embedCreative() 5단계 추가(독립 try-catch). embedMissingCreatives() CM 보충 블록 추가. tsc+lint+build 통과. Match Rate 97%. Gap 분석 embed-creatives.analysis.md 추가 작성.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T17:30:00",
-    "notes": "T3 완료. ad-creative-embedder.ts에 creative_media 듀얼 라이트 추가. embedCreative() 5단계 추가(독립 try-catch). embedMissingCreatives() CM 보충 블록 추가. tsc+lint+build 통과. Match Rate 97%. Gap 분석 embed-creatives.analysis.md 추가 작성."
+    "updatedAt": "2026-03-22T17:30:00"
   },
   "crawl-lps-v2": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
-    "design": "docs/02-design/features/crawl-lps-v2.design.md",
-    "analysis": "docs/03-analysis/crawl-lps-v2.analysis.md",
-    "matchRate": 95,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/architecture-v3-execution-plan.md",
+      "at": "2026-03-22T19:00:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/crawl-lps-v2.design.md",
+      "at": "2026-03-22T19:00:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/crawl-lps-v2.analysis.md",
+      "matchRate": 95
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T4-A-crawlV2함수",
       "T4-B-route재작성",
       "T4-C-마이그레이션스크립트",
       "T4-D-빌드검증"
     ],
+    "notes": "T4 완료. railway-crawler.ts crawlV2() 추가(+80줄). route.ts 전면 재작성(landing_pages 기준, ADR-001 경로, lp_snapshots UPSERT). migrate-lp-screenshots-v2.mjs 신규(265줄). tsc+build 통과. Match Rate 95%.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T19:00:00",
-    "notes": "T4 완료. railway-crawler.ts crawlV2() 추가(+80줄). route.ts 전면 재작성(landing_pages 기준, ADR-001 경로, lp_snapshots UPSERT). migrate-lp-screenshots-v2.mjs 신규(265줄). tsc+build 통과. Match Rate 95%."
+    "updatedAt": "2026-03-22T19:00:00"
   },
   "lp-analysis-v2": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
-    "design": "docs/02-design/features/lp-analysis-v2.design.md",
-    "analysis": "docs/03-analysis/lp-analysis-v2.analysis.md",
-    "matchRate": 93,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/architecture-v3-execution-plan.md",
+      "at": "2026-03-22T21:30:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/lp-analysis-v2.design.md",
+      "at": "2026-03-22T21:30:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/lp-analysis-v2.analysis.md",
+      "matchRate": 93
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T5-LP분석2축구조"
     ],
+    "notes": "T5 Gap 분석 완료. analyze-lps-v2.mjs 신규(473줄). Gemini 2.5 Pro LP 8카테고리 reference_based 분석. Storage이미지 base64→Gemini. lp_analysis UPSERT(reference_based+16 flat 컬럼 동기). 유일 Gap: JOIN→별도조회(기능동일). 이미지URL이중중첩버그수정완료. node --check OK. tsc+build 통과. Match Rate 93%.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T21:30:00",
-    "notes": "T5 Gap 분석 완료. analyze-lps-v2.mjs 신규(473줄). Gemini 2.5 Pro LP 8카테고리 reference_based 분석. Storage이미지 base64→Gemini. lp_analysis UPSERT(reference_based+16 flat 컬럼 동기). 유일 Gap: JOIN→별도조회(기능동일). 이미지URL이중중첩버그수정완료. node --check OK. tsc+build 통과. Match Rate 93%."
+    "updatedAt": "2026-03-22T21:30:00"
   },
   "video-audio-axis": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
-    "design": "docs/02-design/features/video-audio-axis.design.md",
-    "analysis": "docs/03-analysis/video-audio-axis.analysis.md",
-    "matchRate": 96,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/architecture-v3-execution-plan.md",
+      "at": "2026-03-22T21:00:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/video-audio-axis.design.md",
+      "at": "2026-03-22T21:00:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/video-audio-axis.analysis.md",
+      "matchRate": 96
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T6-영상Audio축"
     ],
+    "notes": "T6 완료. analyzeWithGemini() videoUrl 5번째 파라미터 추가. mp4 다운로드(30초 타임아웃, 20MB 제한) + 썸네일 폴백. tsc+build 통과.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T21:00:00",
-    "notes": "T6 완료. analyzeWithGemini() videoUrl 5번째 파라미터 추가. mp4 다운로드(30초 타임아웃, 20MB 제한) + 썸네일 폴백. tsc+build 통과."
+    "updatedAt": "2026-03-22T21:00:00"
   },
   "video-eye-tracking": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
-    "design": "docs/02-design/features/video-eye-tracking.design.md",
-    "analysis": "docs/03-analysis/video-eye-tracking.analysis.md",
-    "matchRate": 97,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/architecture-v3-execution-plan.md",
+      "at": "2026-03-22T21:00:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/video-eye-tracking.design.md",
+      "at": "2026-03-22T21:00:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/video-eye-tracking.analysis.md",
+      "matchRate": 97
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T7-EyeTracking+Canvas"
     ],
+    "notes": "T7 완료. VIDEO_PROMPT_V3에 eye_tracking frames 추가. video-heatmap-overlay.tsx 신규(Canvas radialGradient 오버레이, 색상 존 분기). tsc+build 통과.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T21:00:00",
-    "notes": "T7 완료. VIDEO_PROMPT_V3에 eye_tracking frames 추가. video-heatmap-overlay.tsx 신규(Canvas radialGradient 오버레이, 색상 존 분기). tsc+build 통과."
+    "updatedAt": "2026-03-22T21:00:00"
   },
   "andromeda-signals": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
-    "design": "docs/02-design/features/andromeda-signals.design.md",
-    "analysis": "docs/03-analysis/andromeda-signals.analysis.md",
-    "matchRate": 96,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/architecture-v3-execution-plan.md",
+      "at": "2026-03-22T21:00:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/andromeda-signals.design.md",
+      "at": "2026-03-22T21:00:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/andromeda-signals.analysis.md",
+      "matchRate": 96
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T8-Andromeda신호+유사도"
     ],
+    "notes": "T8 완료. IMAGE/VIDEO 프롬프트에 andromeda_signals 추가. compute-andromeda-similarity.mjs 신규(4축 가중 Jaccard, 임계값 0.60). tsc+build 통과.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T21:00:00",
-    "notes": "T8 완료. IMAGE/VIDEO 프롬프트에 andromeda_signals 추가. compute-andromeda-similarity.mjs 신규(4축 가중 Jaccard, 임계값 0.60). tsc+build 통과."
+    "updatedAt": "2026-03-22T21:00:00"
   },
   "creative-lp-alignment": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
-    "design": "docs/02-design/features/creative-lp-alignment.design.md",
-    "analysis": "docs/03-analysis/creative-lp-alignment.analysis.md",
-    "matchRate": 95,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/architecture-v3-execution-plan.md",
+      "at": "2026-03-22T21:00:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/creative-lp-alignment.design.md",
+      "at": "2026-03-22T21:00:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/creative-lp-alignment.analysis.md",
+      "matchRate": 95
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T9-creative_lp_map리뉴얼"
     ],
+    "notes": "T9 완료. analyze-creative-lp-alignment.mjs 신규. Gemini 소재↔LP 일관성 4축 분석(message/visual/cta/offer). overall_score 가중 평균. issues JSONB. tsc+build 통과.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T21:00:00",
-    "notes": "T9 완료. analyze-creative-lp-alignment.mjs 신규. Gemini 소재↔LP 일관성 4축 분석(message/visual/cta/offer). overall_score 가중 평균. issues JSONB. tsc+build 통과."
+    "updatedAt": "2026-03-22T21:00:00"
   },
   "lp-data-analysis": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
-    "design": "docs/02-design/features/lp-data-analysis.design.md",
-    "analysis": "docs/03-analysis/lp-data-analysis.analysis.md",
-    "matchRate": 96,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/architecture-v3-execution-plan.md",
+      "at": "2026-03-22T21:00:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/lp-data-analysis.design.md",
+      "at": "2026-03-22T21:00:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/lp-data-analysis.analysis.md",
+      "matchRate": 96
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T10-LP교차분석+전환율"
     ],
+    "notes": "T10 완료. compute-lp-data-analysis.mjs 신규(423줄). LP→creatives→daily_ad_insights JOIN 체인. 8개 boolean 요소 교차분석. conversion_score 백분위. tsc+build 통과.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T21:00:00",
-    "notes": "T10 완료. compute-lp-data-analysis.mjs 신규(423줄). LP→creatives→daily_ad_insights JOIN 체인. 8개 boolean 요소 교차분석. conversion_score 백분위. tsc+build 통과."
+    "updatedAt": "2026-03-22T21:00:00"
   },
   "competitor-five-axis": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/architecture-v3-execution-plan.md",
-    "design": "docs/02-design/features/competitor-five-axis.design.md",
-    "analysis": "docs/03-analysis/competitor-five-axis.analysis.md",
-    "matchRate": 97,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/architecture-v3-execution-plan.md",
+      "at": "2026-03-22T21:00:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/competitor-five-axis.design.md",
+      "at": "2026-03-22T21:00:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/competitor-five-axis.analysis.md",
+      "matchRate": 97
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T11-경쟁사5축분석"
     ],
+    "notes": "T11 완료. analyze-five-axis.mjs에 --source competitor 모드 추가. gemini-2.0-flash 사용. competitor_ad_cache.analysis_json_v3 PATCH. CDN 403/404 스킵. tsc+build 통과.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T21:00:00",
-    "notes": "T11 완료. analyze-five-axis.mjs에 --source competitor 모드 추가. gemini-2.0-flash 사용. competitor_ad_cache.analysis_json_v3 PATCH. CDN 403/404 스킵. tsc+build 통과."
+    "updatedAt": "2026-03-22T21:00:00"
   },
   "lp-change-detection": {
-    "status": "completed",
-    "matchRate": 95,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-22T23:00:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-22T23:00:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "",
+      "matchRate": 95
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "LP변경감지-재분석트리거"
     ],
+    "notes": "crawl-lps에서 content_hash diff → change_log INSERT + lp_analysis.analyzed_at 리셋. analyze-lps-v2.mjs에 재분석 필터 추가.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T23:00:00",
-    "notes": "crawl-lps에서 content_hash diff → change_log INSERT + lp_analysis.analyzed_at 리셋. analyze-lps-v2.mjs에 재분석 필터 추가."
+    "updatedAt": "2026-03-22T23:00:00"
   },
   "performance-tracking": {
-    "status": "completed",
-    "matchRate": 95,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-22T23:00:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-22T23:00:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "",
+      "matchRate": 95
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "성과변화추적-크론"
     ],
+    "notes": "track-performance 크론 신규. change_log의 미처리 항목에 before/after 7일 성과 평균 채움. vercel.json 매일 23:00 UTC.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T23:00:00",
-    "notes": "track-performance 크론 신규. change_log의 미처리 항목에 before/after 7일 성과 평균 채움. vercel.json 매일 23:00 UTC."
+    "updatedAt": "2026-03-22T23:00:00"
   },
   "protractor-3axis-mapping": {
-    "status": "completed",
-    "matchRate": 90,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-22T23:00:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-22T23:00:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "",
+      "matchRate": 90
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "3축매핑-속성연결"
     ],
+    "notes": "metric-groups.ts에 ATTRIBUTE_AXIS_MAP 15속성 매핑 추가. Phase 2 가중치 보정 예정.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T23:00:00",
-    "notes": "metric-groups.ts에 ATTRIBUTE_AXIS_MAP 15속성 매핑 추가. Phase 2 가중치 보정 예정."
+    "updatedAt": "2026-03-22T23:00:00"
   },
   "lp-saliency-eye-tracking": {
-    "status": "completed",
-    "matchRate": 93,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-22T23:30:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-22T23:30:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "",
+      "matchRate": 93
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "LP시선분석-DeepGaze"
     ],
+    "notes": "predict_lp.py 신규(Railway). /lp-saliency 엔드포인트 + server.js. analyze-lp-saliency Vercel cron (23:30 UTC). eye_tracking JSONB: 섹션별 weight, fixation, fold/CTA attention, cognitive load.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T23:30:00",
-    "notes": "predict_lp.py 신규(Railway). /lp-saliency 엔드포인트 + server.js. analyze-lp-saliency Vercel cron (23:30 UTC). eye_tracking JSONB: 섹션별 weight, fixation, fold/CTA attention, cognitive load."
+    "updatedAt": "2026-03-22T23:30:00"
   },
   "checklist-completion-batch": {
-    "status": "completed",
-    "matchRate": 93,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-22T23:59:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-22T23:59:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "",
+      "matchRate": 93
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "benchmark-storage-path",
       "competitor-storage-path",
@@ -547,24 +1494,81 @@
       "role-documentation",
       "lp-saliency-eye-tracking"
     ],
+    "notes": "체크리스트 64→78/84 완료 (93%). 14건 일괄 구현.",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T23:59:00",
-    "notes": "체크리스트 64→78/84 완료 (93%). 14건 일괄 구현."
+    "updatedAt": "2026-03-22T23:59:00"
   },
   "mixpanel-click-collection": {
-    "status": "completed",
-    "matchRate": 98,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-22T23:59:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-22T23:59:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-22"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "",
+      "matchRate": 98
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "fetchMixpanelClicks-함수",
       "collect-clicks-크론",
       "벤치마크-콘텐츠풀-확인"
     ],
+    "notes": "Mixpanel 클릭 수집 구현. fetchMixpanelClicks (Export API + Segmentation fallback). collect-clicks 크론 (19:00 UTC). lp_click_data INSERT. 벤치마크 콘텐츠 풀 STEP 3.5 이미 구현 확인. 82/84 (98%).",
     "completedAt": "2026-03-22",
-    "updatedAt": "2026-03-22T23:59:00",
-    "notes": "Mixpanel 클릭 수집 구현. fetchMixpanelClicks (Export API + Segmentation fallback). collect-clicks 크론 (19:00 UTC). lp_click_data INSERT. 벤치마크 콘텐츠 풀 STEP 3.5 이미 구현 확인. 82/84 (98%)."
+    "updatedAt": "2026-03-22T23:59:00"
   },
   "e2e-pipeline-neonvelo": {
-    "status": "implementing",
+    "phase": "implementing",
+    "plan": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "design": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "P1-벤치마크소재수집",
       "P2-미수집이미지",
@@ -573,11 +1577,40 @@
       "5축분석",
       "임베딩"
     ],
-    "updatedAt": "2026-03-22",
-    "notes": "네온벨로 E2E 파이프라인 검증 중. 소재40건+LP2건+5축분석40건+임베딩40건 완료. 나머지 계정 수집 병렬 진행."
+    "notes": "네온벨로 E2E 파이프라인 검증 중. 소재40건+LP2건+5축분석40건+임베딩40건 완료. 나머지 계정 수집 병렬 진행.",
+    "updatedAt": "2026-03-22"
   },
   "pipeline-bugfix-b5-b11": {
-    "status": "completed",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-23"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-23"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-23"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "B5-fatigue-ad_id-매칭",
       "B6-fatigue-메모리절약",
@@ -587,12 +1620,41 @@
       "B10-five-axis-include-inactive",
       "B11-env-공용파서"
     ],
+    "notes": "파이프라인 헬스체크에서 발견된 버그 7건 수정. B5: ad_id String 강제변환+진단로그. B6: 계정별 임베딩 로드. B7: profiles LEFT JOIN. B8: 10건 병렬 PATCH. B9: 임계값 0.60→0.40+CLI옵션. B10: --include-inactive 플래그. B11: scripts/lib/env.mjs 공용파서. tsc+build 통과.",
     "completedAt": "2026-03-23",
-    "updatedAt": "2026-03-23",
-    "notes": "파이프라인 헬스체크에서 발견된 버그 7건 수정. B5: ad_id String 강제변환+진단로그. B6: 계정별 임베딩 로드. B7: profiles LEFT JOIN. B8: 10건 병렬 PATCH. B9: 임계값 0.60→0.40+CLI옵션. B10: --include-inactive 플래그. B11: scripts/lib/env.mjs 공용파서. tsc+build 통과."
+    "updatedAt": "2026-03-23"
   },
   "gcp-cloudrun-migration": {
-    "status": "completed",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-23"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-23"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-23"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "Phase1-Dockerfile",
       "Phase1-ArtifactRegistry",
@@ -605,12 +1667,41 @@
       "Phase4-Railway유지판단",
       "Phase5-vercelCrons제거"
     ],
+    "notes": "Phase 1-5 완료. Cloud Run Service(bscamp-cron) + Cloud Run Jobs(bscamp-scripts). Scheduler 21개(서비스15+잡6). Vercel crons 제거. Railway 2개(Playwright+DeepGaze) 유지. collect-daily 39계정/258광고 테스트 통과. 6개 분석잡 전부 성공.",
     "completedAt": "2026-03-23",
-    "updatedAt": "2026-03-23",
-    "notes": "Phase 1-5 완료. Cloud Run Service(bscamp-cron) + Cloud Run Jobs(bscamp-scripts). Scheduler 21개(서비스15+잡6). Vercel crons 제거. Railway 2개(Playwright+DeepGaze) 유지. collect-daily 39계정/258광고 테스트 통과. 6개 분석잡 전부 성공."
+    "updatedAt": "2026-03-23"
   },
   "db-cleanup-v1-tables": {
-    "status": "completed",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-23T15:00:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-23T15:00:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-23"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "전체테이블73개전수조사",
       "v1코드참조grep체크",
@@ -620,12 +1711,41 @@
       "DB테이블15개DROP",
       "프론트수동수집GCP프록시"
     ],
+    "notes": "DB 73→60 테이블. v1 7개(ad_creative_embeddings, creative_element_analysis, creative_intelligence_scores, creative_element_performance, lp_crawl_queue, lp_structure_analysis, creative_lp_consistency) + 미사용 8개(keyword_rankings, likes, organic_conversions, seo_benchmarks, neuron_*4개) DROP. src/ 21파일 v2 마이그레이션. scripts/ 27개+services/ 4개+admin routes 5개 삭제. collect-daily/mixpanel GCP 프록시 전환.",
     "completedAt": "2026-03-23",
-    "updatedAt": "2026-03-23T15:00:00",
-    "notes": "DB 73→60 테이블. v1 7개(ad_creative_embeddings, creative_element_analysis, creative_intelligence_scores, creative_element_performance, lp_crawl_queue, lp_structure_analysis, creative_lp_consistency) + 미사용 8개(keyword_rankings, likes, organic_conversions, seo_benchmarks, neuron_*4개) DROP. src/ 21파일 v2 마이그레이션. scripts/ 27개+services/ 4개+admin routes 5개 삭제. collect-daily/mixpanel GCP 프록시 전환."
+    "updatedAt": "2026-03-23T15:00:00"
   },
   "railway-to-gcp": {
-    "status": "completed",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-23T15:20:00+09:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-23T15:20:00+09:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-23"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "GCP 크롤러 health+crawl 동작 확인 ✅",
       "GCP creative-pipeline health+saliency 동작 확인 ✅",
@@ -633,60 +1753,197 @@
       "trigger-saliency-batch.mjs Railway→GCP URL ✅",
       ".env.local RAILWAY_CRAWLER_URL+CREATIVE_PIPELINE_URL GCP로 변경 ✅"
     ],
-    "updatedAt": "2026-03-23T15:20:00+09:00",
+    "notes": "Railway URL 참조 전부 GCP Cloud Run으로 전환. Railway 서비스 중지는 1주일 모니터링 후.",
     "completedAt": "2026-03-23",
-    "notes": "Railway URL 참조 전부 GCP Cloud Run으로 전환. Railway 서비스 중지는 1주일 모니터링 후."
+    "updatedAt": "2026-03-23T15:20:00+09:00"
   },
   "lp-media-download": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/lp-media-download.plan.md",
-    "design": "docs/02-design/features/lp-media-download.design.md",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/lp-media-download.plan.md",
+      "at": "2026-03-23T19:00:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/lp-media-download.design.md",
+      "at": "2026-03-23T19:00:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-23"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "DB-media_assets-컬럼추가",
       "lp-media-downloader.ts-신규작성",
       "crawl-lps-route-통합",
       "tsc+build통과"
     ],
+    "notes": "LP HTML 파싱 → img/gif/video URL 추출 → Storage 다운로드. GIF→WebP 애니메이션 변환(sharp, ~80% 용량 절감). lp-media-downloader.ts 신규. crawl-lps hashChanged 시 미디어 다운로드. landing_pages.media_assets jsonb. SHA-256 중복 방지.",
     "completedAt": "2026-03-23",
-    "updatedAt": "2026-03-23T19:00:00",
-    "notes": "LP HTML 파싱 → img/gif/video URL 추출 → Storage 다운로드. GIF→WebP 애니메이션 변환(sharp, ~80% 용량 절감). lp-media-downloader.ts 신규. crawl-lps hashChanged 시 미디어 다운로드. landing_pages.media_assets jsonb. SHA-256 중복 방지."
+    "updatedAt": "2026-03-23T19:00:00"
   },
   "collect-and-embed": {
-    "status": "completed",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-23T13:30:00+09:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-23T13:30:00+09:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-23"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "Meta API 권한 체크 ✅",
       "health sync-notion 제거 ✅",
       "storage 미다운로드 82건 완료 ✅",
       "임베딩 배치 트리거 완료 ✅"
     ],
-    "updatedAt": "2026-03-23T13:30:00+09:00",
+    "notes": "PR #2 생성. collect-daily 권한 체크, health sync-notion 제거, 82/83건 다운로드 완료. 커밋 a22028a.",
     "completedAt": "2026-03-23",
-    "notes": "PR #2 생성. collect-daily 권한 체크, health sync-notion 제거, 82/83건 다운로드 완료. 커밋 a22028a."
+    "updatedAt": "2026-03-23T13:30:00+09:00"
   },
   "deepgaze-gemini-pipeline": {
-    "status": "implementing",
-    "matchRate": null,
-    "documents": {
-      "plan": "docs/01-plan/features/deepgaze-gemini-pipeline.plan.md",
-      "design": "docs/02-design/features/deepgaze-gemini-pipeline.design.md"
+    "phase": "implementing",
+    "plan": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
     },
-    "startedAt": "2026-03-25",
-    "updatedAt": "2026-03-25T23:30:00+09:00",
-    "notes": "결합 분석 크론 + 체인 트리거 구현 완료, 체크 미진행"
+    "design": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
+    "notes": "결합 분석 크론 + 체인 트리거 구현 완료, 체크 미진행",
+    "updatedAt": "2026-03-25T23:30:00+09:00"
   },
   "ad-account-id-bugfix": {
-    "status": "completed",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-25T23:30:00+09:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-25T23:30:00+09:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-25"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "frontend-edit-field",
       "backend-account_id-param",
       "duplicate-check"
     ],
+    "notes": "광고계정ID 수정 버그 핫픽스. admin.ts updateAdAccount + member-detail-modal.tsx 수정 (2파일)",
     "completedAt": "2026-03-25",
-    "updatedAt": "2026-03-25T23:30:00+09:00",
-    "notes": "광고계정ID 수정 버그 핫픽스. admin.ts updateAdAccount + member-detail-modal.tsx 수정 (2파일)"
+    "updatedAt": "2026-03-25T23:30:00+09:00"
   },
   "cloud-run-jobs-crawl-lps": {
-    "status": "implementing",
+    "phase": "implementing",
+    "plan": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "design": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "crawl-all-lps.mjs 환경변수 fallback 추가 ✅",
       "bscamp-scripts Docker 이미지 빌드+푸시 ✅",
@@ -694,23 +1951,81 @@
       "analyze-five-axis VIDEO 100MB 제한 ✅",
       "LP 216건 초기화+재크롤링 실행중"
     ],
-    "updatedAt": "2026-03-23T14:10:00+09:00",
-    "notes": "crawl-all-lps → Cloud Run Job 전환. title→product_name 수정. lp_snapshots 277건+landing_pages 216건 NULL 초기화. VIDEO 20→100MB."
+    "notes": "crawl-all-lps → Cloud Run Job 전환. title→product_name 수정. lp_snapshots 277건+landing_pages 216건 NULL 초기화. VIDEO 20→100MB.",
+    "updatedAt": "2026-03-23T14:10:00+09:00"
   },
   "batch-pipeline": {
-    "status": "completed",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-23T14:40:00+09:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-23T14:40:00+09:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-23"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "collect-benchmark-creatives 벤치마크 기준 필터 추가 ✅",
       "벤치마크 소재 24건 수집 완료 (IMAGE 16 + VIDEO 8) ✅",
       "mp4 8건 다운로드 + LP 9건 저장 ✅",
       "env fallback 추가 (Cloud Run Job 대응) ✅"
     ],
-    "updatedAt": "2026-03-23T14:40:00+09:00",
+    "notes": "벤치마크 기준: hook>25.81% OR ctr>3.48% OR engage>27.0, quality=ABOVE_AVERAGE/UNKNOWN. 62건 중 24건 신규, 올스타 2건.",
     "completedAt": "2026-03-23",
-    "notes": "벤치마크 기준: hook>25.81% OR ctr>3.48% OR engage>27.0, quality=ABOVE_AVERAGE/UNKNOWN. 62건 중 24건 신규, 올스타 2건."
+    "updatedAt": "2026-03-23T14:40:00+09:00"
   },
   "gcp-migration": {
-    "status": "testing",
+    "phase": "testing",
+    "plan": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "design": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "Phase1-Schema ✅",
       "Phase2-Data ✅",
@@ -726,33 +2041,117 @@
       "검수-파이프라인코드리뷰 ✅",
       "검수-Vercel-Preview-QA ✅"
     ],
-    "updatedAt": "2026-03-24T01:30:00+09:00",
-    "notes": "Phase 1-5 완료 + 검수 Critical 10건 수정 + 파이프라인 코드리뷰 + Vercel Preview QA 통과 + 벤치마크 수집 중복 방지. Phase6 대기."
+    "notes": "Phase 1-5 완료 + 검수 Critical 10건 수정 + 파이프라인 코드리뷰 + Vercel Preview QA 통과 + 벤치마크 수집 중복 방지. Phase6 대기.",
+    "updatedAt": "2026-03-24T01:30:00+09:00"
   },
   "five-axis-prompt-v3": {
-    "status": "completed",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-23T16:43:55"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-23T16:43:55"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-23T16:43:55"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "VIDEO_PROMPT_V3 씬별 오디오+텍스트 분석 추가"
     ],
-    "updatedAt": "2026-03-23T16:43:55",
-    "notes": "structure.scenes에 audio_tone/bgm_change/text_overlays, audio에 tone_changes 추가"
+    "notes": "structure.scenes에 audio_tone/bgm_change/text_overlays, audio에 tone_changes 추가",
+    "updatedAt": "2026-03-23T16:43:55"
   },
   "collection-refactor": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/collection-refactor.plan.md",
-    "design": "docs/02-design/features/collection-refactor.design.md",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/collection-refactor.plan.md",
+      "at": "2026-03-24T02:00:00+09:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/collection-refactor.design.md",
+      "at": "2026-03-24T02:00:00+09:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-24T02:00:00+09:00"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "Migration SQL: is_member/is_benchmark + raw_creative on creative_media",
       "collect-daily: is_member + raw_creative",
       "collect-benchmark-creatives: is_benchmark + raw_creative",
       "database.ts 타입 확인 (스킵 — as any 패턴 사용 중)"
     ],
-    "updatedAt": "2026-03-24T02:00:00+09:00",
-    "notes": "raw-jsonb-collection 후속작업. is_member/is_benchmark 플래그, creative_media raw_creative 추가"
+    "notes": "raw-jsonb-collection 후속작업. is_member/is_benchmark 플래그, creative_media raw_creative 추가",
+    "updatedAt": "2026-03-24T02:00:00+09:00"
   },
   "collection-review": {
-    "status": "completed",
-    "analysis": "docs/03-analysis/collection-review.analysis.md",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-24T03:00:00+09:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-24T03:00:00+09:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-24T03:00:00+09:00"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/collection-review.analysis.md",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "섹션 A: 수집 입구 코드리뷰",
       "섹션 B: 저장 스키마 점검",
@@ -760,26 +2159,78 @@
       "섹션 D: 분석 파이프라인 점검",
       "산출물 통합 보고서 작성"
     ],
-    "updatedAt": "2026-03-24T03:00:00+09:00",
-    "notes": "CAROUSEL 누락 CRITICAL, reach 합산 버그 3곳, creative_media 1:1→1:N 전환 필요. 13개 변경점 도출."
+    "notes": "CAROUSEL 누락 CRITICAL, reach 합산 버그 3곳, creative_media 1:1→1:N 전환 필요. 13개 변경점 도출.",
+    "updatedAt": "2026-03-24T03:00:00+09:00"
   },
   "wave1-schema": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/wave1-schema.plan.md",
-    "design": "docs/02-design/features/wave1-schema.design.md",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/wave1-schema.plan.md",
+      "at": "2026-03-24T03:30:00+09:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/wave1-schema.design.md",
+      "at": "2026-03-24T03:30:00+09:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-24T03:30:00+09:00"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "Migration SQL: position/card_total/lp_id + UNIQUE 변경 + CAROUSEL 재분류",
       "onConflict 변경 3곳: collect-daily, collect-benchmark, analyze-competitors"
     ],
-    "updatedAt": "2026-03-24T03:30:00+09:00",
-    "notes": "Wave 1 완료. creative_media 1:N 전환 + CAROUSEL 재분류. 후속: Wave 2 수집 입구."
+    "notes": "Wave 1 완료. creative_media 1:N 전환 + CAROUSEL 재분류. 후속: Wave 2 수집 입구.",
+    "updatedAt": "2026-03-24T03:30:00+09:00"
   },
   "wave2-3-collection": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/wave2-collection.plan.md",
-    "design": "docs/02-design/features/wave2-collection.design.md",
-    "analysis": "docs/03-analysis/wave2-collection.analysis.md",
-    "matchRate": 95,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/wave2-collection.plan.md",
+      "at": "2026-03-24T06:00:00+09:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/wave2-collection.design.md",
+      "at": "2026-03-24T06:00:00+09:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-24T06:00:00+09:00"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/wave2-collection.analysis.md",
+      "matchRate": 95
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T3: creative-type.ts CAROUSEL 분류 + carousel-cards.ts",
       "T4: collect-daily CAROUSEL 카드별 N행 저장",
@@ -791,23 +2242,79 @@
       "T10: creative-saliency IMAGE 카드만 DeepGaze",
       "아키텍처 Mermaid 다이어그램 작성"
     ],
-    "updatedAt": "2026-03-24T06:00:00+09:00",
-    "notes": "Wave 2(수집 입구) + Wave 3(하류 수정) 완료. CAROUSEL 카드별 수집/임베딩/5축/DeepGaze 대응. Match Rate 95% — creative_saliency position 컬럼 미지원(향후 과제)."
+    "notes": "Wave 2(수집 입구) + Wave 3(하류 수정) 완료. CAROUSEL 카드별 수집/임베딩/5축/DeepGaze 대응. Match Rate 95% — creative_saliency position 컬럼 미지원(향후 과제).",
+    "updatedAt": "2026-03-24T06:00:00+09:00"
   },
   "benchmark-auto-tagging": {
-    "status": "completed",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-24T07:00:00+09:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-24T07:00:00+09:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-24T07:00:00+09:00"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "collect-benchmarks STEP 3.5 → is_benchmark 자동 태깅",
       "creativeTypes에 CAROUSEL 추가",
       "AD_FIELDS에 object_story_spec 추가"
     ],
-    "updatedAt": "2026-03-24T07:00:00+09:00",
-    "notes": "형식별(IMAGE/VIDEO/CAROUSEL) MEDIAN_ALL 참여율 기준 + 전환순위 평균 이상 → is_benchmark=true. 기존 cohort='content_pool' 제거."
+    "notes": "형식별(IMAGE/VIDEO/CAROUSEL) MEDIAN_ALL 참여율 기준 + 전환순위 평균 이상 → is_benchmark=true. 기존 cohort='content_pool' 제거.",
+    "updatedAt": "2026-03-24T07:00:00+09:00"
   },
   "collect-daily-refactor": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/collect-daily-refactor.plan.md",
-    "design": "docs/02-design/features/collect-daily-refactor.design.md",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/collect-daily-refactor.plan.md",
+      "at": "2026-03-24T13:00:00+09:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/collect-daily-refactor.design.md",
+      "at": "2026-03-24T13:00:00+09:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-24T13:00:00+09:00"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "현재 코드 전수 분석 (891줄 블록별)",
       "3단계 분리 설계 (수집/미디어/후처리)",
@@ -816,34 +2323,116 @@
       "영향도 분석",
       "성능 비교"
     ],
-    "updatedAt": "2026-03-24T13:00:00+09:00",
-    "notes": "구현 완료. collect-daily 891→451줄 경량화 + process-media 482줄 신규 + collect-daily-utils 287줄 공용 모듈. admin/collect 중복 제거(-155줄). tsc+build 통과."
+    "notes": "구현 완료. collect-daily 891→451줄 경량화 + process-media 482줄 신규 + collect-daily-utils 287줄 공용 모듈. admin/collect 중복 제거(-155줄). tsc+build 통과.",
+    "updatedAt": "2026-03-24T13:00:00+09:00"
   },
   "prescription-cost-test": {
-    "status": "completed",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-24"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-24"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-24"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T1"
     ],
+    "notes": "처방 비용 테스트 스크립트 — Gemini 3 Pro 건당 토큰+비용 측정",
     "completedAt": "2026-03-24",
-    "updatedAt": "2026-03-24",
-    "notes": "처방 비용 테스트 스크립트 — Gemini 3 Pro 건당 토큰+비용 측정"
+    "updatedAt": "2026-03-24"
   },
   "video-saliency": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/video-saliency.plan.md",
-    "design": "docs/02-design/features/video-saliency.design.md",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/video-saliency.plan.md",
+      "at": "2026-03-24"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/video-saliency.design.md",
+      "at": "2026-03-24"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-24"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "T1"
     ],
+    "notes": "영상 1초별 DeepGaze 시선 흐름 — 전용 크론 + ADR-001 경로 + video_analysis 동기화",
     "completedAt": "2026-03-24",
-    "updatedAt": "2026-03-24",
-    "notes": "영상 1초별 DeepGaze 시선 흐름 — 전용 크론 + ADR-001 경로 + video_analysis 동기화"
+    "updatedAt": "2026-03-24"
   },
   "collection-v3": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/collection-v3.plan.md",
-    "design": "docs/02-design/features/collection-v3.design.md",
-    "analysis": "docs/03-analysis/collection-v3-review.analysis.md",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/collection-v3.plan.md",
+      "at": "2026-03-24"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/collection-v3.design.md",
+      "at": "2026-03-24"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-24"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/collection-v3-review.analysis.md",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "DB-migration",
       "discover-accounts",
@@ -853,41 +2442,155 @@
       "creative-saliency-dedup",
       "analyze-competitors-dedup"
     ],
-    "updatedAt": "2026-03-24",
-    "notes": "계정 디스커버리 + content_hash 기반 중복 제거. 10파일 +1150줄."
+    "notes": "계정 디스커버리 + content_hash 기반 중복 제거. 10파일 +1150줄.",
+    "updatedAt": "2026-03-24"
   },
   "ai-answer-fix": {
-    "status": "completed",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-24"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-24"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-24"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "after-to-await",
       "logging",
       "maxDuration"
     ],
-    "updatedAt": "2026-03-24",
-    "notes": "after() → await 전환 + 로깅 강화. 근본 원인: Anthropic API 크레딧 부족 (400 invalid_request_error)"
+    "notes": "after() → await 전환 + 로깅 강화. 근본 원인: Anthropic API 크레딧 부족 (400 invalid_request_error)",
+    "updatedAt": "2026-03-24"
   },
   "login-fix": {
-    "status": "completed",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-24"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-24"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-24"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "middleware-server-action-bypass"
     ],
-    "updatedAt": "2026-03-24",
-    "notes": "Server Action이 middleware 리다이렉트에 가로채이는 버그 수정"
+    "notes": "Server Action이 middleware 리다이렉트에 가로채이는 버그 수정",
+    "updatedAt": "2026-03-24"
   },
   "gemini-migration": {
-    "status": "completed",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-24"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-24"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-24"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "anthropic-to-gemini",
       "consumer-configs",
       "test-verified"
     ],
-    "updatedAt": "2026-03-24",
-    "notes": "knowledge.ts Anthropic API → Gemini 3 Pro Preview 전환. 27초에 502자 답변 생성 확인."
+    "notes": "knowledge.ts Anthropic API → Gemini 3 Pro Preview 전환. 27초에 502자 답변 생성 확인.",
+    "updatedAt": "2026-03-24"
   },
   "meta-full-fields": {
-    "status": "implementing",
-    "plan": "docs/01-plan/features/meta-full-fields.plan.md",
-    "design": "docs/02-design/features/meta-full-fields.design.md",
+    "phase": "implementing",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/meta-full-fields.plan.md",
+      "at": "2026-03-24T16:10:00+09:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/meta-full-fields.design.md",
+      "at": "2026-03-24T16:10:00+09:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "INSIGHT_FIELDS 확장",
       "AD_FIELDS 확장",
@@ -897,156 +2600,553 @@
       "Cloud SQL 라우팅",
       "페이지네이션"
     ],
-    "updatedAt": "2026-03-24T16:10:00+09:00",
-    "notes": "Cloud SQL 라우팅 + 페이지네이션 + process-media 90일 필터. 백필 실행 중."
+    "notes": "Cloud SQL 라우팅 + 페이지네이션 + process-media 90일 필터. 백필 실행 중.",
+    "updatedAt": "2026-03-24T16:10:00+09:00"
   },
   "storage-gcs-migration": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/storage-gcs-migration.plan.md",
-    "design": "docs/02-design/features/storage-gcs-migration.design.md",
-    "analysis": "docs/03-analysis/storage-gcs-migration.analysis.md",
-    "matchRate": 95,
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/storage-gcs-migration.plan.md",
+      "at": "2026-03-24"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/storage-gcs-migration.design.md",
+      "at": "2026-03-24"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-24"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/storage-gcs-migration.analysis.md",
+      "matchRate": 95
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "Wave1-server",
       "Wave2-client",
       "Wave3-urls",
       "Wave4-build"
     ],
-    "updatedAt": "2026-03-24",
-    "notes": "Supabase Storage→GCS 듀얼라이트 패턴. 17파일 수정. Match Rate 95% (GCS 버킷 public 설정+배너 복사 미완)."
+    "notes": "Supabase Storage→GCS 듀얼라이트 패턴. 17파일 수정. Match Rate 95% (GCS 버킷 public 설정+배너 복사 미완).",
+    "updatedAt": "2026-03-24"
   },
   "pipeline-event-chain": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/pipeline-event-chain.plan.md",
-    "design": "docs/02-design/features/pipeline-event-chain.design.md",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/pipeline-event-chain.plan.md",
+      "at": "2026-03-24T20:40:00+09:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/pipeline-event-chain.design.md",
+      "at": "2026-03-24T20:40:00+09:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-24T20:40:00+09:00"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "pipeline-chain-util",
       "collect-daily-trigger",
       "process-media-trigger",
       "cloud-scheduler"
     ],
-    "updatedAt": "2026-03-24T20:40:00+09:00",
-    "notes": "이벤트 체인 + Cloud Scheduler 4건 등록 완료. 배치 2회차 실행 완료. bulk sync 2804건."
+    "notes": "이벤트 체인 + Cloud Scheduler 4건 등록 완료. 배치 2회차 실행 완료. bulk sync 2804건.",
+    "updatedAt": "2026-03-24T20:40:00+09:00"
   },
   "vercel-removal": {
-    "status": "completed",
-    "plan": "docs/01-plan/features/vercel-removal.plan.md",
-    "design": "docs/02-design/features/vercel-removal.design.md",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/vercel-removal.plan.md",
+      "at": "2026-03-24T20:40:00+09:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/vercel-removal.design.md",
+      "at": "2026-03-24T20:40:00+09:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-24T20:40:00+09:00"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "maxDuration-removal",
       "vercel-json-cleanup"
     ],
-    "updatedAt": "2026-03-24T20:40:00+09:00",
-    "notes": "33파일 maxDuration 제거 + vercel.json 정리 + page.tsx maxDuration 삭제 완료."
+    "notes": "33파일 maxDuration 제거 + vercel.json 정리 + page.tsx maxDuration 삭제 완료.",
+    "updatedAt": "2026-03-24T20:40:00+09:00"
   },
   "destructive-detector": {
-    "status": "completed",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-24T20:40:00+09:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-24T20:40:00+09:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-24T20:40:00+09:00"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "hook-script",
       "settings-json",
       "claude-md-rule"
     ],
-    "updatedAt": "2026-03-24T20:40:00+09:00",
-    "notes": "PreToolUse hook 8패턴 차단. settings.json + CLAUDE.md 규칙 추가."
+    "notes": "PreToolUse hook 8패턴 차단. settings.json + CLAUDE.md 규칙 추가.",
+    "updatedAt": "2026-03-24T20:40:00+09:00"
   },
   "organic-channel-distribution": {
-    "status": "designing",
-    "plan": "docs/01-plan/features/organic-channel-distribution.plan.md",
-    "design": "docs/02-design/features/organic-channel-distribution.design.md",
+    "phase": "designing",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/organic-channel-distribution.plan.md",
+      "at": "2026-03-25T14:00:00+09:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/organic-channel-distribution.design.md",
+      "at": "2026-03-25T14:00:00+09:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [],
-    "updatedAt": "2026-03-25T14:00:00+09:00",
-    "notes": "Design 문서 완성. 신규 테이블 4개(channel_distributions, channel_credentials, content_analytics, newsletter_segments), AI 변환 엔진, 채널 API 클라이언트, 5탭 어드민 UI, 에러 처리 체계. Phase 2~4 구현 순서 포함."
+    "notes": "Design 문서 완성. 신규 테이블 4개(channel_distributions, channel_credentials, content_analytics, newsletter_segments), AI 변환 엔진, 채널 API 클라이언트, 5탭 어드민 UI, 에러 처리 체계. Phase 2~4 구현 순서 포함.",
+    "updatedAt": "2026-03-25T14:00:00+09:00"
   },
   "collection-gaps-batch": {
     "phase": "planning",
-    "matchRate": 0,
-    "documents": {
-      "plan": "docs/01-plan/features/collection-gaps-batch.plan.md"
+    "plan": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
     },
-    "startedAt": "2026-03-25",
-    "notes": "미수집 19계정 + 미분석 2526건 + LP 132건. 배치 실행 계획."
+    "design": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": 0
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
+    "notes": "미수집 19계정 + 미분석 2526건 + LP 132건. 배치 실행 계획.",
+    "updatedAt": "2026-03-25T16:11:24.554564"
   },
   "agent-dashboard": {
     "phase": "designing",
-    "matchRate": 0,
-    "documents": {
-      "plan": "docs/01-plan/features/agent-dashboard.plan.md",
-      "design": "docs/02-design/features/agent-dashboard.design.md"
+    "plan": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
     },
-    "startedAt": "2026-03-24",
-    "notes": "CTO팀 구현 중. Plan+Design 완료."
+    "design": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": 0
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
+    "notes": "CTO팀 구현 중. Plan+Design 완료.",
+    "updatedAt": "2026-03-25T16:11:24.554565"
   },
   "slack-notification": {
-    "status": "implementing",
-    "matchRate": null,
-    "documents": {
-      "design": "docs/02-design/features/slack-notification.design.md"
+    "phase": "implementing",
+    "plan": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
     },
-    "startedAt": "2026-03-25",
-    "updatedAt": "2026-03-25T23:30:00+09:00",
-    "notes": "통합 채널 + 재시도 + rate limit 큐 구현 완료, 체크 미진행"
+    "design": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
+    "notes": "통합 채널 + 재시도 + rate limit 큐 구현 완료, 체크 미진행",
+    "updatedAt": "2026-03-25T23:30:00+09:00"
   },
   "orchestration-chain": {
     "phase": "designing",
-    "matchRate": 0,
-    "documents": {
-      "design": "docs/02-design/features/orchestration-chain.design.md"
+    "plan": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
     },
-    "startedAt": "2026-03-25",
-    "notes": "/tmp/cross-team/ 프로토콜 표준화. 마커 파일 규약 정의."
+    "design": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": 0
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
+    "notes": "/tmp/cross-team/ 프로토콜 표준화. 마커 파일 규약 정의.",
+    "updatedAt": "2026-03-25T16:11:24.554568"
   },
   "web-terminal-dashboard": {
-    "status": "implementing",
-    "matchRate": null,
-    "documents": {
-      "plan": "docs/01-plan/features/web-terminal-dashboard.plan.md",
-      "design": "docs/02-design/features/web-terminal-dashboard.design.md"
+    "phase": "implementing",
+    "plan": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
     },
-    "startedAt": "2026-03-25",
-    "updatedAt": "2026-03-25T23:30:00+09:00",
-    "notes": "xterm.js + WS + REST API 17파일 신규 생성, 체크 미진행"
+    "design": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
+    "notes": "xterm.js + WS + REST API 17파일 신규 생성, 체크 미진행",
+    "updatedAt": "2026-03-25T23:30:00+09:00"
   },
   "collect-daily-refactoring-qa": {
-    "status": "completed",
-    "matchRate": 97,
-    "analysis": "docs/03-analysis/collect-daily-refactoring.analysis.md",
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-25T23:30:00+09:00"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-25T23:30:00+09:00"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-25"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/collect-daily-refactoring.analysis.md",
+      "matchRate": 97
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
     "tasks": [
       "gap-analysis",
       "build-verify",
       "eslint-fix"
     ],
+    "notes": "병렬화 + collectAccount 분리 + incremental 수집 검증 완료. Match Rate 97%.",
     "completedAt": "2026-03-25",
-    "updatedAt": "2026-03-25T23:30:00+09:00",
-    "notes": "병렬화 + collectAccount 분리 + incremental 수집 검증 완료. Match Rate 97%."
+    "updatedAt": "2026-03-25T23:30:00+09:00"
   },
   "agent-ops-platform": {
-    "status": "planning",
     "phase": "plan",
-    "documents": {
-      "plan": "docs/01-plan/features/agent-ops-platform.plan.md"
+    "plan": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
     },
-    "startedAt": "2026-03-25",
-    "updatedAt": "2026-03-25T13:00:00+09:00",
-    "notes": "통합 기획서 1,086줄 완료. 7개 컴포넌트, 6개 레퍼런스, 4주 로드맵. Design 작성 대기."
+    "design": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
+    "notes": "통합 기획서 1,086줄 완료. 7개 컴포넌트, 6개 레퍼런스, 4주 로드맵. Design 작성 대기.",
+    "updatedAt": "2026-03-25T13:00:00+09:00"
   },
   "prescription-system-mvp": {
-    "status": "planning",
     "phase": "plan",
-    "documents": {
-      "plan": "docs/01-plan/features/prescription-system-mvp.plan.md"
+    "plan": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
     },
-    "startedAt": "2026-03-25",
-    "updatedAt": "2026-03-25T13:00:00+09:00",
-    "notes": "MVP Plan 413줄 완료. 5축 배치 90%+ 선행 필요. Design 작성 대기."
+    "design": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null,
+      "deployedAt": null
+    },
+    "notes": "MVP Plan 413줄 완료. 5축 배치 90%+ 선행 필요. Design 작성 대기.",
+    "updatedAt": "2026-03-25T13:00:00+09:00"
   },
-  "lastUpdated": "2026-03-25T13:00:00+09:00",
-  "vercel-firebase-hotfix": {
-    "status": "completed",
-    "tasks": [
-      "Firebase Admin JSON 환경변수 지원"
-    ],
-    "updatedAt": "2026-03-25",
-    "completedAt": "2026-03-25",
-    "notes": "Vercel 서버리스에서 FIREBASE_SERVICE_ACCOUNT_JSON 환경변수 우선 사용"
+  "features": {
+    "supabase-removal": {
+      "phase": "completed",
+      "matchRate": 97,
+      "notes": "Supabase SDK 완전 제거 완료"
+    }
+  },
+  "updatedAt": "2026-03-25T22:30:00.000000",
+  "_lastUpdated": "2026-03-25T18:46:00.604358",
+  "_note": "agent-ops GitHub repo + Vercel 배포 작업 중",
+  "vercel-supabase-migration": {
+    "phase": "plan",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/vercel-supabase-migration.plan.md",
+      "at": "2026-03-25"
+    },
+    "design": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null
+    },
+    "updatedAt": "2026-03-25T20:54:26",
+    "notes": "Plan 보완 완료 - 의존성 맵, GCP 대안, Phase A/B/C 추가"
+  },
+  "creative-analysis-v3": {
+    "phase": "plan",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/mockup/creative-analysis-v3.html",
+      "at": "2026-03-25"
+    },
+    "design": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null
+    },
+    "updatedAt": "2026-03-25T20:54:26",
+    "notes": "목업 v3 완료 - 5축 분석 + 총가치각도기 UI"
   }
 }

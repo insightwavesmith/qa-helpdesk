@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
+import { createServiceClient } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,10 +13,7 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return NextResponse.json(
@@ -33,7 +31,7 @@ export async function GET(
     .from("competitor_monitors")
     .select("id")
     .eq("id", id)
-    .eq("user_id", user.id)
+    .eq("user_id", user.uid)
     .single();
 
   if (!monitor) {
@@ -85,10 +83,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return NextResponse.json(
@@ -113,7 +108,7 @@ export async function PATCH(
     .from("competitor_monitors")
     .select("id")
     .eq("id", id)
-    .eq("user_id", user.id)
+    .eq("user_id", user.uid)
     .single();
 
   if (!monitor) {

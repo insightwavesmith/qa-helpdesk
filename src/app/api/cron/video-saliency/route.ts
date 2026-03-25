@@ -11,7 +11,7 @@
  */
 
 import { NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { triggerNext } from "@/lib/pipeline-chain";
 
 export const runtime = "nodejs";

@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/app/api/admin/_shared";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 

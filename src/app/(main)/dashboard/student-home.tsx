@@ -5,7 +5,8 @@ import { getQuestions } from "@/actions/questions";
 import { StudentAdSummary, type AdSummaryData } from "./student-ad-summary";
 import { getExcerpt } from "@/components/posts/post-card";
 import { decodeHtmlEntities } from "@/lib/utils/decode-entities";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
+import { createServiceClient } from "@/lib/db";
 
 function timeAgo(dateStr: string | null) {
   if (!dateStr) return "";
@@ -55,14 +56,13 @@ export async function StudentHome({}: StudentHomeProps) {
   // 광고 성과 데이터 (실패해도 무시)
   let adSummary: AdSummaryData | null = null;
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (user) {
       const svc = createServiceClient();
       const { data: accounts } = await svc
         .from("ad_accounts")
         .select("account_id")
-        .eq("user_id", user.id)
+        .eq("user_id", user.uid)
         .limit(1);
 
       if (accounts && accounts.length > 0) {
@@ -143,7 +143,7 @@ export async function StudentHome({}: StudentHomeProps) {
           </div>
         ) : (
           <div className="bg-card-bg rounded-xl border border-border-color p-6 card-hover">
-            {notices.slice(0, 1).map((notice) => (
+            {notices.slice(0, 1).map((notice: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
               <Link key={notice.id} href={`/notices/${notice.id}`} className="block">
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
@@ -250,7 +250,7 @@ export async function StudentHome({}: StudentHomeProps) {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {latestPosts.map((post) => (
+            {latestPosts.map((post: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
               <Link key={post.id} href={`/posts/${post.id}`}>
                 <article className="bg-card-bg rounded-xl border border-border-color p-6 card-hover fade-in h-full">
                   <h3 className="font-bold text-lg mb-3 line-clamp-2 text-text-main">

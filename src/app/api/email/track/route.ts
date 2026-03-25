@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 // 1x1 투명 GIF (43 bytes)
 const TRANSPARENT_GIF = Buffer.from(
@@ -8,7 +8,7 @@ const TRANSPARENT_GIF = Buffer.from(
 );
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://bscamp.vercel.app";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://bscamp.app";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;

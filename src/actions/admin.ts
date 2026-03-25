@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import nodemailer from "nodemailer";
 import type { Database } from "@/types/database";
 import { requireAdmin, requireStaff } from "@/lib/auth-utils";
@@ -41,7 +41,7 @@ export async function getMembers({
   }
 
   // Fetch ad_accounts for these members to show 광고관리자 바로가기
-  const memberIds = (data || []).map((m) => m.id);
+  const memberIds = (data || []).map((m: any) => m.id); // eslint-disable-line @typescript-eslint/no-explicit-any
   const accountMap: Record<string, string> = {};
   if (memberIds.length > 0) {
     const { data: accounts } = await supabase
@@ -59,7 +59,7 @@ export async function getMembers({
     }
   }
 
-  const membersWithAccounts = (data || []).map((m) => ({
+  const membersWithAccounts = (data || []).map((m: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
     ...m,
     ad_account_id: accountMap[m.id] || null,
   }));
@@ -76,7 +76,7 @@ export async function getDistinctCohorts(): Promise<string[]> {
     .neq("cohort", "");
 
   if (!data) return [];
-  const unique = [...new Set(data.map((d) => d.cohort as string))].sort();
+  const unique = [...new Set(data.map((d: any) => d.cohort as string))].sort() as string[]; // eslint-disable-line @typescript-eslint/no-explicit-any
   return unique;
 }
 
@@ -337,7 +337,7 @@ export async function getWeeklyQuestionStats() {
     dailyCounts[key] = 0;
   }
 
-  data?.forEach((q) => {
+  data?.forEach((q: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
     const key = q.created_at?.split("T")[0] ?? "unknown";
     if (dailyCounts[key] !== undefined) {
       dailyCounts[key]++;
@@ -479,12 +479,14 @@ export async function deleteMember(userId: string) {
     return { error: profileError.message };
   }
 
-  // 2. auth.users 삭제
-  const { error: authError } = await svc.auth.admin.deleteUser(userId);
-
-  if (authError) {
-    console.error("deleteMember auth error:", authError);
-    return { error: `프로필 삭제됨, auth 삭제 실패: ${authError.message}` };
+  // 2. Firebase Auth 사용자 삭제
+  try {
+    const { getFirebaseAuth } = await import("@/lib/firebase/admin");
+    const firebaseAuth = getFirebaseAuth();
+    await firebaseAuth.deleteUser(userId);
+  } catch (authErr: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    console.error("deleteMember auth error:", authErr);
+    return { error: `프로필 삭제됨, auth 삭제 실패: ${authErr.message}` };
   }
 
   revalidatePath("/admin/members");

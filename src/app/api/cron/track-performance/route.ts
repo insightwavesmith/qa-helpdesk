@@ -1,7 +1,7 @@
 /**
  * GET /api/cron/track-performance
  * 성과 변화 추적 크론 — change_log의 미처리 항목에 before/after 7일 성과 데이터 채움
- * Vercel Cron: 매일 1회 또는 수동 호출
+ * Cloud Run Cron: 매일 1회 또는 수동 호출
  *
  * 동작:
  *   1. change_log에서 performance_before IS NULL인 항목 조회 (최대 50건)
@@ -11,7 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

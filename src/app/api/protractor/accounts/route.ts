@@ -12,7 +12,7 @@ export async function GET() {
 
     let query = svc.from("ad_accounts").select("*").eq("active", true);
     if (profile.role !== "admin") {
-      query = query.eq("user_id", user.id);
+      query = query.eq("user_id", user.uid);
     }
 
     const { data, error } = await query.order("created_at", { ascending: false });

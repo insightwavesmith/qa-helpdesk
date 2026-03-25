@@ -21,12 +21,12 @@
  *   - embed-creatives : 분석 강화 (Gemini → 임베딩/분석). "이것이 어떤 소재인가?"
  *
  * 배치 처리: 50개씩, 500ms 딜레이
- * Vercel Cron: 매일 1회
+ * Cloud Run Cron: 매일 1회
  * ═══════════════════════════════════════════════════════════════
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { fetchAccountAds } from "@/lib/protractor/meta-collector";
 import {
   fetchCreativeDetails,

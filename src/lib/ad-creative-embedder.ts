@@ -5,7 +5,7 @@
  */
 
 import { generateEmbedding } from "@/lib/gemini";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "gemini-embedding-2-preview";
 

@@ -2,7 +2,7 @@
 // gemini-embedding-2-preview의 멀티모달 기능 활용
 
 import { generateVisionText, generateEmbedding } from "@/lib/gemini";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 const VISION_PROMPT = `이 이미지는 메타(Facebook) 광고 교육 자료의 일부입니다.
 이미지에 보이는 내용을 한국어로 상세히 설명하세요.

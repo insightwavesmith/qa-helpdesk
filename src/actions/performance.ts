@@ -1,6 +1,6 @@
 "use server";
 
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import {
   ALL_METRIC_DEFS,
   type BenchEntry,
@@ -149,7 +149,7 @@ export async function getStudentPerformance(
   }
 
   // 3. 학생별 ad_accounts 조회 (mixpanel_project_id 포함)
-  const studentIds = students.map((s) => s.id);
+  const studentIds = students.map((s: any) => s.id); // eslint-disable-line @typescript-eslint/no-explicit-any
   const { data: adAccounts } = await supabase
     .from("ad_accounts")
     .select("account_id, user_id, mixpanel_project_id")
@@ -157,7 +157,7 @@ export async function getStudentPerformance(
     .eq("active", true);
 
   if (!adAccounts || adAccounts.length === 0) {
-    const rows: StudentPerformanceRow[] = students.map((s) => ({
+    const rows: StudentPerformanceRow[] = students.map((s: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
       userId: s.id,
       name: s.name,
       email: s.email,
@@ -185,7 +185,7 @@ export async function getStudentPerformance(
   periodStartDate.setDate(periodStartDate.getDate() - (validPeriod - 1));
   const periodStart = `${periodStartDate.getFullYear()}-${String(periodStartDate.getMonth() + 1).padStart(2, "0")}-${String(periodStartDate.getDate()).padStart(2, "0")}`;
 
-  const accountIds = adAccounts.map((a) => a.account_id);
+  const accountIds = adAccounts.map((a: any) => a.account_id); // eslint-disable-line @typescript-eslint/no-explicit-any
   // T4: 전체 컬럼 조회 (T3 계산에 필요)
   const { data: insights } = await supabase
     .from("daily_ad_insights")
@@ -237,8 +237,8 @@ export async function getStudentPerformance(
 
   // Mixpanel 데이터 조회 (daily_mixpanel_insights)
   const projectIds = adAccounts
-    .map((a) => a.mixpanel_project_id)
-    .filter((id): id is string => id != null);
+    .map((a: any) => a.mixpanel_project_id) // eslint-disable-line @typescript-eslint/no-explicit-any
+    .filter((id: any): id is string => id != null); // eslint-disable-line @typescript-eslint/no-explicit-any
 
   const userMixpanel = new Map<string, { revenue: number; purchases: number }>();
   if (projectIds.length > 0) {
@@ -258,7 +258,7 @@ export async function getStudentPerformance(
     }
   }
 
-  const rows: StudentPerformanceRow[] = students.map((s) => {
+  const rows: StudentPerformanceRow[] = students.map((s: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
     const agg = userAgg.get(s.id);
     const rawRows = userRawRows.get(s.id);
 
@@ -388,9 +388,9 @@ export async function getOwnerAdSummaries(): Promise<OwnerSummaryResult> {
 
   // 최신 period 기준으로만 보여주기
   const latestEnd = data[0].period_end;
-  const latestRows = data.filter((d) => d.period_end === latestEnd);
+  const latestRows = data.filter((d: any) => d.period_end === latestEnd); // eslint-disable-line @typescript-eslint/no-explicit-any
 
-  const rows: OwnerAdSummaryRow[] = latestRows.map((d) => ({
+  const rows: OwnerAdSummaryRow[] = latestRows.map((d: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
     id: d.id,
     accountId: d.account_id,
     accountName: d.account_name,

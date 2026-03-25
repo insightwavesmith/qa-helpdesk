@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
+import { createServiceClient } from "@/lib/db";
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 
@@ -24,10 +25,7 @@ JSON 형식:
 export async function POST(request: NextRequest) {
   try {
     // 인증 확인
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
 
     if (!user) {
       return NextResponse.json({ error: "인증 필요" }, { status: 401 });
@@ -38,7 +36,7 @@ export async function POST(request: NextRequest) {
     const { data: profile } = await svc
       .from("profiles")
       .select("role")
-      .eq("id", user.id)
+      .eq("id", user.uid)
       .single();
 
     if (!profile || !["admin", "assistant"].includes(profile.role)) {

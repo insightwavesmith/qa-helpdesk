@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 export async function GET(request: Request) {
   // 1. CRON_SECRET 검증

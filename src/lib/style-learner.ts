@@ -9,7 +9,7 @@
 //   created_at timestamptz DEFAULT now()
 // );
 
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const ANALYSIS_MODEL = "claude-sonnet-4-6";

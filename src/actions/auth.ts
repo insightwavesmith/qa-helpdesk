@@ -1,6 +1,6 @@
 "use server";
 
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 /**
  * Phase 5: 회원가입 후 profile 생성 (Cloud SQL용)
@@ -84,7 +84,7 @@ export async function getProfileById(userId: string) {
       .eq("id", userId)
       .single();
     if (error) {
-      console.error("[getProfileById] Supabase error:", error.message, error.code, error.details);
+      console.error("[getProfileById] Supabase error:", error.message, error.code);
       return { data: null, error: error.message };
     }
     return { data, error: null };

@@ -1,12 +1,7 @@
 /**
- * .env.local 공용 파서 (B11 수정)
+ * .env.local 공용 파서
  *
- * 기존 수동 정규식 파싱의 문제:
- *   - `export KEY=value` → key가 "export KEY"로 잘못 파싱
- *   - `KEY=value # comment` → 인라인 주석이 값에 포함
- *   - `KEY=val=ue` → 첫 번째 = 이후만 값이어야 하는데 정규식에 따라 동작 불안정
- *
- * 이 모듈은 dotenv 호환 파싱을 제공한다.
+ * dotenv 호환 파싱을 제공한다.
  */
 
 import { readFileSync, existsSync } from "fs";
@@ -70,8 +65,7 @@ export function loadEnv(envFileName = ".env.local") {
 }
 
 /**
- * Supabase 접속 정보 반환 (SB_URL, SB_KEY, env 전체)
- * 필수 키가 없으면 에러 출력 후 프로세스 종료
+ * Supabase 접속 정보 반환 (Storage 스크립트용 — DB는 Cloud SQL 직접 사용)
  */
 export function getSupabaseConfig() {
   const env = loadEnv();
@@ -84,12 +78,4 @@ export function getSupabaseConfig() {
   }
 
   return { SB_URL, SB_KEY, env };
-}
-
-/**
- * Cloud SQL 사용 여부 (USE_CLOUD_SQL=true)
- */
-export function useCloudSql() {
-  const env = loadEnv();
-  return (env.USE_CLOUD_SQL || process.env.USE_CLOUD_SQL) === "true";
 }

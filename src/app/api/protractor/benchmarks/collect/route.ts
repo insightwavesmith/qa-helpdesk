@@ -24,7 +24,7 @@ export async function POST() {
   try {
     const baseUrl =
       process.env.NEXT_PUBLIC_SITE_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+      (process.env.NEXT_PUBLIC_SITE_URL || "https://bscamp.app");
 
     const cronUrl = new URL("/api/cron/collect-benchmarks", baseUrl);
 
@@ -33,7 +33,7 @@ export async function POST() {
       headers: {
         authorization: `Bearer ${process.env.CRON_SECRET ?? ""}`,
       },
-      // 최대 5분 (Vercel Pro 기준)
+      // 최대 5분 (Cloud Run 기준)
       signal: AbortSignal.timeout(290_000),
     });
 

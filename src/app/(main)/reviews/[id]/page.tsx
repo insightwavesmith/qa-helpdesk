@@ -1,24 +1,22 @@
 import { notFound } from "next/navigation";
 import { getReviewById } from "@/actions/reviews";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
+import { createServiceClient } from "@/lib/db";
 import { ReviewDetailClient } from "./ReviewDetailClient";
 
 async function getUserInfo(): Promise<{ role: string | null; userId: string | null }> {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) return { role: null, userId: null };
 
     const svc = createServiceClient();
     const { data: profile } = await svc
       .from("profiles")
       .select("role")
-      .eq("id", user.id)
+      .eq("id", user.uid)
       .single();
 
-    return { role: profile?.role || null, userId: user.id };
+    return { role: profile?.role || null, userId: user.uid };
   } catch {
     return { role: null, userId: null };
   }

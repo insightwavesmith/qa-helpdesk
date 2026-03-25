@@ -2,7 +2,7 @@
  * T3 점수 사전계산 — collect-daily 크론 완료 후 실행
  * 계정별 × 기간별(7/30/90) T3 점수를 계산하여 t3_scores_precomputed에 UPSERT
  */
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { DbClient } from "@/lib/db";
 import {
   ALL_METRIC_DEFS,
   type BenchEntry,
@@ -16,7 +16,7 @@ const PERIODS = [1, 7, 14, 30, 90];
 
 /** total-value route와 동일한 벤치마크 조회 로직 */
 async function fetchBenchmarks(
-  svc: SupabaseClient,
+  svc: DbClient,
   dominantCT: string,
 ): Promise<Record<string, BenchEntry>> {
   const benchMap: Record<string, BenchEntry> = {};
@@ -68,7 +68,7 @@ async function fetchBenchmarks(
 }
 
 export async function precomputeT3Scores(
-  supabase: SupabaseClient,
+  supabase: DbClient,
 ): Promise<{ computed: number; errors: string[] }> {
   const errors: string[] = [];
   let computed = 0;

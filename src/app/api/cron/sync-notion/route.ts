@@ -1,6 +1,6 @@
 /**
  * sync-notion — 노션 캠프반 데이터 자동 동기화
- * Vercel Cron: 매일 04:00 UTC (KST 13:00)
+ * Cloud Run Cron: 매일 04:00 UTC (KST 13:00)
  *
  * 수집 대상: 멤버 DB → Sprint 문서 / 몰입노트 DB / to-do DB
  * 저장: contents → knowledge_chunks (임베딩)
@@ -8,12 +8,12 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { generateEmbedding } from "@/lib/gemini";
 import { chunkText } from "@/lib/chunk-utils";
 import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 
-// ── Vercel Cron 인증 ─────────────────────────────────────────
+// ── Cloud Run Cron 인증 ─────────────────────────────────────────
 function verifyCron(req: NextRequest): boolean {
   const authHeader = req.headers.get("authorization");
   if (!authHeader) return false;

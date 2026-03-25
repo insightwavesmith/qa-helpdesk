@@ -1,5 +1,5 @@
 "use server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 export async function startCronRun(cronName: string): Promise<string | null> {
   try {

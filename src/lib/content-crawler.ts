@@ -24,7 +24,7 @@ export async function parseRSSFeed(
   const res = await fetch(feedUrl, {
     headers: {
       "User-Agent":
-        "Mozilla/5.0 (compatible; BSCamp-Bot/1.0; +https://bscamp.vercel.app)",
+        "Mozilla/5.0 (compatible; BSCamp-Bot/1.0; +https://bscamp.app)",
     },
     signal: AbortSignal.timeout(15000),
   });
@@ -90,7 +90,7 @@ export async function parseYouTubeRSS(
   const res = await fetch(feedUrl, {
     headers: {
       "User-Agent":
-        "Mozilla/5.0 (compatible; BSCamp-Bot/1.0; +https://bscamp.vercel.app)",
+        "Mozilla/5.0 (compatible; BSCamp-Bot/1.0; +https://bscamp.app)",
     },
     signal: AbortSignal.timeout(15000),
   });
@@ -136,7 +136,7 @@ export async function fetchAndParseUrl(
     const res = await fetch(url, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; BSCamp-Bot/1.0; +https://bscamp.vercel.app)",
+          "Mozilla/5.0 (compatible; BSCamp-Bot/1.0; +https://bscamp.app)",
       },
       signal: AbortSignal.timeout(15000),
     });

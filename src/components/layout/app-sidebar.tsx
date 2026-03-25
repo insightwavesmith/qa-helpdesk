@@ -45,7 +45,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { createClient } from "@/lib/supabase/client";
+import { getFirebaseClientAuth } from "@/lib/firebase/client";
+import { signOut as firebaseSignOut } from "firebase/auth";
 import { mp } from "@/lib/mixpanel";
 
 interface NavItem {
@@ -102,8 +103,11 @@ export default function AppSidebar({
       session_duration_seconds: Math.round((Date.now() - loginTime.current) / 1000),
     });
     mp.reset();
-    const supabase = createClient();
-    try { await supabase.auth.signOut(); } finally {
+    try {
+      const auth = getFirebaseClientAuth();
+      await firebaseSignOut(auth);
+      await fetch("/api/auth/firebase-logout", { method: "POST" });
+    } finally {
       document.cookie = "x-user-role=; path=/; max-age=0";
       document.cookie = "x-onboarding-status=; path=/; max-age=0";
     }

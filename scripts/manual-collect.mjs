@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * 수동 수집 스크립트 — 날짜 지정해서 collect-daily 실행
- * 프로덕션 Vercel API를 직접 호출 (CRON_SECRET 인증)
+ * 프로덕션 API를 직접 호출 (CRON_SECRET 인증)
  * 
  * 사용법: node scripts/manual-collect.mjs 2026-03-18 2026-03-19 2026-03-20
  */
@@ -14,7 +14,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: join(__dirname, '..', '.env.local') });
 
 const CRON_SECRET = process.env.CRON_SECRET;
-const BASE_URL = 'https://bscamp.vercel.app';
+const BASE_URL = process.env.COLLECT_URL || 'https://bscamp.app';
 
 if (!CRON_SECRET) {
   console.error('❌ CRON_SECRET 환경변수 필요');

@@ -9,9 +9,7 @@ import {
   createSectionContentRows,
 } from "./newsletter-row-templates";
 
-const BANNER_BASE_URL = process.env.USE_CLOUD_SQL === "true"
-  ? "https://storage.googleapis.com/bscamp-storage/content-images/newsletter-banners"
-  : "https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners";
+const BANNER_BASE_URL = "https://storage.googleapis.com/bscamp-storage/content-images/newsletter-banners";
 
 const BANNER_MAP: Record<string, string> = {
   "INSIGHT": "banner-insight",
@@ -894,7 +892,7 @@ function extractClosingText(sections: SummarySection[]): string {
  */
 export function buildDesignFromSummary(content: Content): object {
   const contentType = content.type ?? "education";
-  const articleUrl = `https://bscamp.vercel.app/posts/${content.id}`;
+  const articleUrl = `https://bscamp.app/posts/${content.id}`;
 
   // Base template shell (counters, body.values, schemaVersion 등)
   const baseTemplate =

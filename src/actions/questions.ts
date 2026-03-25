@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { createAIAnswerForQuestion } from "@/lib/rag";
-import { notifyNewQuestion } from "@/lib/slack";
+import { getCurrentUser } from "@/lib/firebase/auth";
 
 export async function getQuestions({
   page = 1,
@@ -95,10 +95,7 @@ export async function createQuestion(formData: {
   imageUrls?: string[];
   parentQuestionId?: string;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return { data: null, error: "인증되지 않은 사용자입니다." };
@@ -110,7 +107,7 @@ export async function createQuestion(formData: {
   const { data: profile } = await svc
     .from("profiles")
     .select("role, name")
-    .eq("id", user.id)
+    .eq("id", user.uid)
     .single();
 
   if (!profile || !["student", "member", "admin"].includes(profile.role)) {
@@ -124,7 +121,7 @@ export async function createQuestion(formData: {
       title: formData.title,
       content: formData.content,
       category_id: formData.categoryId,
-      author_id: user.id,
+      author_id: user.uid,
       image_urls: formData.imageUrls && formData.imageUrls.length > 0
         ? formData.imageUrls
         : [],
@@ -140,18 +137,11 @@ export async function createQuestion(formData: {
     return { data: null, error: error.message };
   }
 
-  // AI 답변 자동 생성 + 슬랙 알림 (동기 실행 — after()는 Vercel serverless 타임아웃 시 silent fail)
+  // AI 답변 자동 생성 (동기 실행 — after()는 서버리스 타임아웃 시 silent fail)
   try {
-    await Promise.all([
-      createAIAnswerForQuestion(data.id, formData.title, formData.content, formData.imageUrls),
-      notifyNewQuestion({
-        questionId: data.id,
-        title: formData.title,
-        authorName: profile.name || "알 수 없음",
-      }),
-    ]);
+    await createAIAnswerForQuestion(data.id, formData.title, formData.content, formData.imageUrls);
   } catch (err) {
-    console.error("[createQuestion] AI 답변 생성 또는 슬랙 알림 실패:", err);
+    console.error("[createQuestion] AI 답변 생성 실패:", err);
   }
 
   revalidatePath("/questions");
@@ -167,19 +157,18 @@ export async function createQuestion(formData: {
  * 꼬리질문 삭제 — 답변 cascade 삭제 + 부모 스레드 임베딩 재생성
  */
 export async function deleteFollowUpQuestion(id: string, parentQuestionId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { error: "인증되지 않은 사용자입니다." };
 
   const svc = createServiceClient();
 
-  const { data: profile } = await svc.from("profiles").select("role").eq("id", user.id).single();
+  const { data: profile } = await svc.from("profiles").select("role").eq("id", user.uid).single();
   const isAdmin = profile?.role === "admin";
 
   const { data: question } = await svc.from("questions").select("author_id").eq("id", id).single();
   if (!question) return { error: "질문을 찾을 수 없습니다." };
 
-  const isOwner = question.author_id === user.id;
+  const isOwner = question.author_id === user.uid;
   if (!isAdmin && !isOwner) return { error: "권한이 없습니다." };
 
   // 답변 먼저 삭제
@@ -202,21 +191,20 @@ export async function deleteFollowUpQuestion(id: string, parentQuestionId: strin
 }
 
 export async function deleteQuestion(id: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { error: "인증되지 않은 사용자입니다." };
 
   const svc = createServiceClient();
 
   // Get user role
-  const { data: profile } = await svc.from("profiles").select("role").eq("id", user.id).single();
+  const { data: profile } = await svc.from("profiles").select("role").eq("id", user.uid).single();
   const isAdmin = profile?.role === "admin";
 
   // Get question author
   const { data: question } = await svc.from("questions").select("author_id").eq("id", id).single();
   if (!question) return { error: "질문을 찾을 수 없습니다." };
 
-  const isOwner = question.author_id === user.id;
+  const isOwner = question.author_id === user.uid;
   if (!isAdmin && !isOwner) return { error: "권한이 없습니다." };
 
   // 답변 먼저 삭제
@@ -241,10 +229,7 @@ export async function updateQuestion(formData: {
   categoryId: number | null;
   imageUrls?: string[];
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return { data: null, error: "인증되지 않은 사용자입니다." };
@@ -256,7 +241,7 @@ export async function updateQuestion(formData: {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", user.uid)
     .single();
 
   const isStaff =
@@ -272,7 +257,7 @@ export async function updateQuestion(formData: {
     return { data: null, error: "질문을 찾을 수 없습니다." };
   }
 
-  const isOwner = question.author_id === user.id;
+  const isOwner = question.author_id === user.uid;
   if (!isStaff && !isOwner) {
     return { data: null, error: "수정 권한이 없습니다." };
   }

@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     }
     const { data: contents } = await query.limit(MAX_SECTIONS);
 
-    const sections: ContentSection[] = (contents || []).map((c) => ({
+    const sections: ContentSection[] = (contents || []).map((c: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
       title: c.title,
       content: c.body_md,
       source: c.source_ref || c.category,

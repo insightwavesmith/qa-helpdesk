@@ -15,12 +15,12 @@
  *   Authorization: Bearer {CRON_SECRET}
  *   Query: accountId, limit (기본 200), type (IMAGE|VIDEO)
  *
- * Vercel Cron: 매일 1회 (collect-daily 이후)
+ * Cloud Run Cron: 매일 1회 (collect-daily 이후)
  * ═══════════════════════════════════════════════════════════════
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 import {
   fetchImageUrlsByHash,
@@ -30,7 +30,7 @@ import {
 import { uploadToGcs } from "@/lib/gcs-storage";
 import { triggerNext } from "@/lib/pipeline-chain";
 
-// ── Vercel Cron 인증 ──────────────────────────────────────────
+// ── Cloud Run Cron 인증 ──────────────────────────────────────────
 function verifyCron(req: NextRequest): boolean {
   const authHeader = req.headers.get("authorization");
   if (!authHeader) return false;

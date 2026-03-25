@@ -13,9 +13,10 @@ import { Pool } from "pg";
 import { getPool } from "./pool";
 import { PostgresQueryBuilder, PostgresRpcBuilder } from "./query-builder";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface DbClient {
-  from: <T = Record<string, unknown>>(table: string) => PostgresQueryBuilder<T>;
-  rpc: <T = Record<string, unknown>>(funcName: string, params?: Record<string, unknown>) => PostgresRpcBuilder<T>;
+  from: <T = any>(table: string) => PostgresQueryBuilder<T>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  rpc: <T = any>(funcName: string, params?: Record<string, unknown>) => PostgresRpcBuilder<T>; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 let cachedClient: DbClient | null = null;
@@ -30,8 +31,10 @@ export function createDbClient(): DbClient {
   const pool: Pool = getPool();
 
   cachedClient = {
-    from: <T = Record<string, unknown>>(table: string) => new PostgresQueryBuilder<T>(pool, table),
-    rpc: <T = Record<string, unknown>>(funcName: string, params?: Record<string, unknown>) =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    from: <T = any>(table: string) => new PostgresQueryBuilder<T>(pool, table),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rpc: <T = any>(funcName: string, params?: Record<string, unknown>) =>
       new PostgresRpcBuilder<T>(pool, funcName, params),
   };
 
@@ -45,6 +48,14 @@ export function createDbClient(): DbClient {
  */
 export function useCloudSql(): boolean {
   return process.env.USE_CLOUD_SQL === "true";
+}
+
+/**
+ * 서비스 역할 클라이언트 (Server Actions, API Routes — RLS 우회)
+ * 기존 createServiceClient() 호환 — Cloud SQL 직접 연결
+ */
+export function createServiceClient(): DbClient {
+  return createDbClient();
 }
 
 export { getPool, query } from "./pool";

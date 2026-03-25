@@ -1,12 +1,12 @@
 /**
  * GET /api/cron/crawl-lps
  * LP 크롤링 크론 v2 — landing_pages 기준, ADR-001 Storage 경로, lp_snapshots 저장
- * Vercel Cron: 1시간마다 또는 수동 호출
+ * Cloud Run Cron: 1시간마다 또는 수동 호출
  */
 
 import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { crawlV2 } from "@/lib/railway-crawler";
 import { downloadLpMedia, type MediaAsset } from "@/lib/lp-media-downloader";
 import { uploadToGcs } from "@/lib/gcs-storage";
@@ -43,7 +43,7 @@ function computeHash(base64Data: string): string {
   return createHash("sha256").update(base64Data).digest("hex");
 }
 
-// Vercel Cron은 GET 호출
+// Cloud Run Cron은 GET 호출
 export async function GET(req: NextRequest) {
   return handleCrawl(req);
 }
@@ -146,7 +146,6 @@ async function handleCrawl(req: NextRequest) {
         // 스크린샷 → Storage 업로드
         const storagePath = `lp/${lp.account_id}/${lp.id}/mobile_full.jpg`;
         const uploadOk = await uploadToStorage(
-          supabase,
           storagePath,
           crawlResult.screenshot,
         );
@@ -163,7 +162,6 @@ async function handleCrawl(req: NextRequest) {
         if (crawlResult.ctaScreenshot) {
           const ctaPath = `lp/${lp.account_id}/${lp.id}/mobile_cta.jpg`;
           const ctaOk = await uploadToStorage(
-            supabase,
             ctaPath,
             crawlResult.ctaScreenshot,
           );
@@ -179,7 +177,7 @@ async function handleCrawl(req: NextRequest) {
           htmlContent = await fetchHtmlContent(lp.canonical_url);
           if (htmlContent) {
             const htmlPath = `lp/${lp.account_id}/${lp.id}/page.html`;
-            const htmlOk = await uploadHtmlToStorage(supabase, htmlPath, htmlContent);
+            const htmlOk = await uploadHtmlToStorage(htmlPath, htmlContent);
             if (htmlOk) {
               htmlStoragePath = htmlPath;
               stats.htmlSaved++;
@@ -195,7 +193,6 @@ async function handleCrawl(req: NextRequest) {
         if (htmlContent) {
           try {
             newMediaAssets = await downloadLpMedia(
-              supabase,
               { id: lp.id, account_id: lp.account_id, canonical_url: lp.canonical_url },
               htmlContent,
               lp.media_assets || [],
@@ -314,35 +311,19 @@ async function handleCrawl(req: NextRequest) {
 /**
  * base64 → Storage 업로드 (creatives 버킷)
  * ADR-001 경로: lp/{account_id}/{lp_id}/{viewport}_full.jpg
- * GCS 또는 Supabase 듀얼 라이트 패턴.
  */
 async function uploadToStorage(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
   path: string,
   base64Data: string,
 ): Promise<boolean> {
   try {
     const buffer = Buffer.from(base64Data, "base64");
 
-    if (process.env.USE_CLOUD_SQL === "true") {
-      const { error } = await uploadToGcs("creatives", path, buffer, "image/jpeg");
-      if (error) {
-        console.error(`[crawl-lps v2] GCS upload failed (${path}):`, error);
-        return false;
-      }
-      return true;
-    }
-
-    const { error } = await supabase.storage
-      .from("creatives")
-      .upload(path, buffer, { contentType: "image/jpeg", upsert: true });
-
+    const { error } = await uploadToGcs("creatives", path, buffer, "image/jpeg");
     if (error) {
-      console.error(`[crawl-lps v2] Storage upload failed (${path}):`, error.message);
+      console.error(`[crawl-lps v2] GCS upload failed (${path}):`, error);
       return false;
     }
-
     return true;
   } catch (err) {
     console.error(`[crawl-lps v2] Storage upload error:`, err);
@@ -406,35 +387,19 @@ async function fetchHtmlContent(url: string): Promise<string | null> {
 /**
  * HTML 문자열 → Storage 업로드 (creatives 버킷)
  * ADR-001 경로: lp/{account_id}/{lp_id}/page.html
- * GCS 또는 Supabase 듀얼 라이트 패턴.
  */
 async function uploadHtmlToStorage(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
   path: string,
   htmlContent: string,
 ): Promise<boolean> {
   try {
     const buffer = Buffer.from(htmlContent, "utf-8");
 
-    if (process.env.USE_CLOUD_SQL === "true") {
-      const { error } = await uploadToGcs("creatives", path, buffer, "text/html");
-      if (error) {
-        console.error(`[crawl-lps v2] GCS HTML upload failed (${path}):`, error);
-        return false;
-      }
-      return true;
-    }
-
-    const { error } = await supabase.storage
-      .from("creatives")
-      .upload(path, buffer, { contentType: "text/html", upsert: true });
-
+    const { error } = await uploadToGcs("creatives", path, buffer, "text/html");
     if (error) {
-      console.error(`[crawl-lps v2] HTML Storage upload failed (${path}):`, error.message);
+      console.error(`[crawl-lps v2] GCS HTML upload failed (${path}):`, error);
       return false;
     }
-
     return true;
   } catch (err) {
     console.error(`[crawl-lps v2] HTML Storage upload error:`, err);

@@ -3,7 +3,7 @@
 
 import { searchBrave } from "@/lib/brave-search";
 import { generateEmbedding } from "@/lib/gemini";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 const API_URL = "https://api.anthropic.com/v1/messages";
 const TIMEOUT_MS = 15_000;
@@ -237,9 +237,9 @@ export async function analyzeDomain(
           ),
         ]);
 
-        termDefinitions = results.filter(
+        termDefinitions = (results.filter(
           (r): r is { term: string; definition: string } => r !== null
-        );
+        )) as Array<{ term: string; definition: string }>;
       } catch (err) {
         console.warn("[DomainIntelligence] 용어 정의 조회 실패:", err);
         // 실패 시 빈 배열 — 기존 동작 유지

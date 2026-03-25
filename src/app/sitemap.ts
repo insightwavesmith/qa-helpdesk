@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
-const BASE_URL = "https://bscamp.vercel.app";
+const BASE_URL = "https://bscamp.app";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 정적 페이지

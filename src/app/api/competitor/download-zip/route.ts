@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
 import JSZip from "jszip";
 
 export const runtime = "nodejs";
@@ -25,10 +25,7 @@ const USER_AGENT =
  */
 export async function POST(req: NextRequest) {
   // 인증 확인
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return NextResponse.json(

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { uploadCompetitorMedia } from "@/lib/competitor/competitor-storage";
 
 export const runtime = "nodejs";

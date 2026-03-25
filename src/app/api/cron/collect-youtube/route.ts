@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { after } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 import { embedContentToChunks } from "@/actions/embed-pipeline";
 import {
@@ -8,7 +8,7 @@ import {
   fetchYouTubeTranscript,
 } from "@/lib/content-crawler";
 
-// ── Vercel Cron 인증 ──────────────────────────────────────────
+// ── Cloud Run Cron 인증 ──────────────────────────────────────────
 function verifyCron(req: NextRequest): boolean {
   const authHeader = req.headers.get("authorization");
   if (!authHeader) return false;

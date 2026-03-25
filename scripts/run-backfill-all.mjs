@@ -12,7 +12,7 @@
 
 import 'dotenv/config';
 
-const BASE_URL = process.env.BACKFILL_URL || 'https://bscamp.vercel.app';
+const BASE_URL = process.env.BACKFILL_URL || 'https://bscamp.app';
 const CRON_SECRET = process.env.CRON_SECRET;
 const DAYS = parseInt(process.argv[2] || '90', 10);
 

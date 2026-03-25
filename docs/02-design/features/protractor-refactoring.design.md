@@ -142,3 +142,5 @@ UI:
 - [x] collect-mixpanel — Mixpanel 매출 수집
 - [x] benchmark-compare.tsx — 성과요약 UI
 - [x] content-ranking.tsx — 콘텐츠 순위 UI
+
+<!-- 2026-03-25: Supabase SDK 제거 — import @/lib/supabase/server → @/lib/db 전환 완료 -->

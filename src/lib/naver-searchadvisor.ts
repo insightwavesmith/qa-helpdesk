@@ -25,7 +25,7 @@ export async function getSiteAnalytics(
     return [];
   }
 
-  const siteUrl = "https://bscamp.vercel.app";
+  const siteUrl = "https://bscamp.app";
   const apiUrl = "https://searchadvisor.naver.com/api/v1/sites/analytics";
 
   try {

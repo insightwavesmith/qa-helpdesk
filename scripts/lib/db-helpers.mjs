@@ -1,34 +1,27 @@
 /**
- * 스크립트용 이중 모드 DB 헬퍼 (Cloud SQL / Supabase REST)
+ * 스크립트용 DB 헬퍼 (Cloud SQL 전용)
  *
- * USE_CLOUD_SQL=true → pg Pool 직접 쿼리
- * USE_CLOUD_SQL=false → Supabase PostgREST REST API
- *
- * 기존 sbGet/sbPatch/sbPost/sbUpsert/sbDelete 와 동일한 인터페이스 유지
- * → 각 스크립트에서 import만 변경하면 됨
+ * pg Pool로 직접 쿼리. PostgREST 호환 인터페이스 유지.
+ * → 각 스크립트에서 sbGet/sbPatch/sbPost/sbUpsert/sbDelete 그대로 사용 가능
  *
  * Usage:
  *   import { sbGet, sbPatch, sbPost, sbUpsert, sbDelete } from './lib/db-helpers.mjs';
  */
 
-import { getSupabaseConfig, useCloudSql } from "./env.mjs";
+import { loadEnv, getSupabaseConfig } from "./env.mjs";
 
-const { SB_URL, SB_KEY, env } = getSupabaseConfig();
-const USE_CLOUD_SQL = useCloudSql();
+const env = loadEnv();
 
-let _pool = null;
+// Storage 스크립트 호환용 (DB 쿼리는 Cloud SQL 전용)
+const { SB_URL, SB_KEY } = getSupabaseConfig();
 
-if (USE_CLOUD_SQL) {
-  const pg = await import("pg");
-  _pool = new pg.default.Pool({
-    connectionString: env.DATABASE_URL || process.env.DATABASE_URL,
-    max: 10,
-    idleTimeoutMillis: 30000,
-  });
-  console.log("[DB] Cloud SQL 모드");
-} else {
-  console.log("[DB] Supabase REST 모드");
-}
+import pg from "pg";
+const _pool = new pg.Pool({
+  connectionString: env.DATABASE_URL || process.env.DATABASE_URL,
+  max: 10,
+  idleTimeoutMillis: 30000,
+});
+console.log("[DB] Cloud SQL 모드");
 
 // ── PostgREST 파서 ──
 
@@ -42,7 +35,6 @@ function parseFilters(queryStr, startIdx = 1) {
   const params = [];
   let idx = startIdx;
 
-  // URLSearchParams 대신 수동 파싱 (select, order, limit, offset 등 예약어 스킵)
   const reserved = new Set(["select", "order", "limit", "offset", "on_conflict"]);
 
   for (const segment of queryStr.split("&")) {
@@ -81,10 +73,9 @@ function parseFilters(queryStr, startIdx = 1) {
       parts.push(`"${col}" ILIKE $${idx++}`);
       params.push(rest.slice(6).replace(/\*/g, "%"));
     } else if (rest.startsWith("in.")) {
-      // in.(a,b,c)
-      const inner = rest.slice(4, -1); // remove "in.(" and ")"
+      const inner = rest.slice(4, -1);
       const vals = inner.split(",");
-      const placeholders = vals.map((v) => `$${idx++}`);
+      const placeholders = vals.map(() => `$${idx++}`);
       parts.push(`"${col}" IN (${placeholders.join(",")})`);
       params.push(...vals);
     }
@@ -99,7 +90,6 @@ function parseFilters(queryStr, startIdx = 1) {
 
 /**
  * PostgREST GET 경로를 SQL SELECT로 변환
- * 예: "/creative_media?select=id,name&media_type=eq.IMAGE&order=created_at.desc&limit=100"
  */
 function parseGetPath(path) {
   const [tablePart, queryString] = path.split("?");
@@ -111,7 +101,6 @@ function parseGetPath(path) {
   const limit = params.get("limit");
   const offset = params.get("offset");
 
-  // 필터만 추출 (예약어 제외)
   const filterStr = (queryString || "")
     .split("&")
     .filter((s) => {
@@ -120,7 +109,7 @@ function parseGetPath(path) {
     })
     .join("&");
 
-  const { where, params: filterParams, nextIdx } = parseFilters(filterStr);
+  const { where, params: filterParams } = parseFilters(filterStr);
 
   let sql = `SELECT ${select} FROM "${table}"${where}`;
 
@@ -138,148 +127,96 @@ function parseGetPath(path) {
   return { sql, params: filterParams, table };
 }
 
-// ── 공개 API (Supabase REST 호환) ──
+// ── 공개 API (PostgREST 호환 인터페이스) ──
 
 /**
- * sbGet — PostgREST GET 호환
+ * sbGet — SELECT
  * @param {string} path — 예: "/creative_media?select=id,name&media_type=eq.IMAGE&order=created_at.desc&limit=100"
  * @returns {Promise<any[]>}
  */
 export async function sbGet(path) {
-  if (USE_CLOUD_SQL) {
-    const { sql, params } = parseGetPath(path);
-    const result = await _pool.query(sql, params);
-    return result.rows;
-  }
-
-  // Supabase REST fallback
-  const res = await fetch(`${SB_URL}/rest/v1${path}`, {
-    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
-  });
-  if (!res.ok) throw new Error(`sbGet ${res.status}: ${await res.text()}`);
-  return res.json();
+  const { sql, params } = parseGetPath(path);
+  const result = await _pool.query(sql, params);
+  return result.rows;
 }
 
 /**
- * sbPatch — PostgREST PATCH 호환
+ * sbPatch — UPDATE
  * @param {string} table — 테이블명
  * @param {string} query — 필터 쿼리 (예: "id=eq.123")
  * @param {object} body — 업데이트할 데이터
- * @returns {Promise<{ok: boolean, status?: number, body?: string}>}
  */
 export async function sbPatch(table, query, body) {
-  if (USE_CLOUD_SQL) {
-    const { where, params, nextIdx } = parseFilters(query);
-    const setClauses = [];
-    let idx = nextIdx;
-    for (const [col, val] of Object.entries(body)) {
-      if (val !== undefined && val !== null && typeof val === "object") {
-        setClauses.push(`"${col}" = $${idx++}::jsonb`);
-        params.push(JSON.stringify(val));
-      } else {
-        setClauses.push(`"${col}" = $${idx++}`);
-        params.push(val);
-      }
-    }
-    const sql = `UPDATE "${table}" SET ${setClauses.join(", ")}${where}`;
-    try {
-      await _pool.query(sql, params);
-      return { ok: true };
-    } catch (err) {
-      return { ok: false, status: 500, body: err.message };
+  const { where, params, nextIdx } = parseFilters(query);
+  const setClauses = [];
+  let idx = nextIdx;
+  for (const [col, val] of Object.entries(body)) {
+    if (val !== undefined && val !== null && typeof val === "object") {
+      setClauses.push(`"${col}" = $${idx++}::jsonb`);
+      params.push(JSON.stringify(val));
+    } else {
+      setClauses.push(`"${col}" = $${idx++}`);
+      params.push(val);
     }
   }
-
-  // Supabase REST fallback
-  const res = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, {
-    method: "PATCH",
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "return=minimal",
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) return { ok: false, status: res.status, body: await res.text() };
-  return { ok: true };
+  const sql = `UPDATE "${table}" SET ${setClauses.join(", ")}${where}`;
+  try {
+    await _pool.query(sql, params);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, status: 500, body: err.message };
+  }
 }
 
 /**
- * sbPost — PostgREST POST 호환
+ * sbPost — INSERT (onConflict 지정 시 UPSERT)
  * @param {string} table — 테이블명
  * @param {object|object[]} rows — 삽입할 데이터
  * @param {string} [onConflict] — ON CONFLICT 컬럼 (upsert용)
- * @returns {Promise<{ok: boolean, status?: number, body?: string}>}
  */
 export async function sbPost(table, rows, onConflict) {
   const rowArr = Array.isArray(rows) ? rows : [rows];
 
-  if (USE_CLOUD_SQL) {
-    try {
-      for (const row of rowArr) {
-        const cols = Object.keys(row);
-        const vals = [];
-        const placeholders = [];
-        let idx = 1;
-        for (const col of cols) {
-          const val = row[col];
-          if (val !== undefined && val !== null && typeof val === "object") {
-            placeholders.push(`$${idx++}::jsonb`);
-            vals.push(JSON.stringify(val));
-          } else {
-            placeholders.push(`$${idx++}`);
-            vals.push(val);
-          }
+  try {
+    for (const row of rowArr) {
+      const cols = Object.keys(row);
+      const vals = [];
+      const placeholders = [];
+      let idx = 1;
+      for (const col of cols) {
+        const val = row[col];
+        if (val !== undefined && val !== null && typeof val === "object") {
+          placeholders.push(`$${idx++}::jsonb`);
+          vals.push(JSON.stringify(val));
+        } else {
+          placeholders.push(`$${idx++}`);
+          vals.push(val);
         }
+      }
 
-        let sql;
-        if (onConflict) {
-          const updateCols = cols.filter((c) => c !== onConflict);
-          const updateClause = updateCols
-            .map((c) => `"${c}" = EXCLUDED."${c}"`)
-            .join(", ");
-          sql = `INSERT INTO "${table}" (${cols.map((c) => `"${c}"`).join(",")})
+      let sql;
+      if (onConflict) {
+        const updateCols = cols.filter((c) => c !== onConflict);
+        const updateClause = updateCols
+          .map((c) => `"${c}" = EXCLUDED."${c}"`)
+          .join(", ");
+        sql = `INSERT INTO "${table}" (${cols.map((c) => `"${c}"`).join(",")})
             VALUES (${placeholders.join(",")})
             ON CONFLICT ("${onConflict}") DO UPDATE SET ${updateClause}`;
-        } else {
-          sql = `INSERT INTO "${table}" (${cols.map((c) => `"${c}"`).join(",")})
+      } else {
+        sql = `INSERT INTO "${table}" (${cols.map((c) => `"${c}"`).join(",")})
             VALUES (${placeholders.join(",")})`;
-        }
-        await _pool.query(sql, vals);
       }
-      return { ok: true };
-    } catch (err) {
-      return { ok: false, status: 500, body: err.message };
+      await _pool.query(sql, vals);
     }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, status: 500, body: err.message };
   }
-
-  // Supabase REST fallback
-  const url = onConflict
-    ? `${SB_URL}/rest/v1/${table}?on_conflict=${onConflict}`
-    : `${SB_URL}/rest/v1/${table}`;
-  const prefer = onConflict
-    ? "resolution=merge-duplicates,return=minimal"
-    : "return=minimal";
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: prefer,
-    },
-    body: JSON.stringify(rowArr),
-  });
-  if (!res.ok) return { ok: false, status: res.status, body: await res.text() };
-  return { ok: true };
 }
 
 /**
- * sbUpsert — PostgREST UPSERT 호환 (sbPost + onConflict 래퍼)
- * @param {string} table — 테이블명
- * @param {object|object[]} rows — 삽입/업데이트할 데이터
- * @param {string} onConflict — ON CONFLICT 컬럼
+ * sbUpsert — INSERT ... ON CONFLICT UPDATE
  */
 export async function sbUpsert(table, rows, onConflict) {
   const result = await sbPost(table, rows, onConflict);
@@ -289,44 +226,25 @@ export async function sbUpsert(table, rows, onConflict) {
 }
 
 /**
- * sbDelete — PostgREST DELETE 호환
+ * sbDelete — DELETE
  * @param {string} table — 테이블명
  * @param {string} filter — 필터 쿼리 (예: "id=eq.123")
- * @returns {Promise<{ok: boolean, status?: number, body?: string}>}
  */
 export async function sbDelete(table, filter) {
-  if (USE_CLOUD_SQL) {
-    const { where, params } = parseFilters(filter);
-    const sql = `DELETE FROM "${table}"${where}`;
-    try {
-      await _pool.query(sql, params);
-      return { ok: true };
-    } catch (err) {
-      return { ok: false, status: 500, body: err.message };
-    }
+  const { where, params } = parseFilters(filter);
+  const sql = `DELETE FROM "${table}"${where}`;
+  try {
+    await _pool.query(sql, params);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, status: 500, body: err.message };
   }
-
-  // Supabase REST fallback
-  const res = await fetch(`${SB_URL}/rest/v1/${table}?${filter}`, {
-    method: "DELETE",
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "return=minimal",
-    },
-  });
-  if (!res.ok) return { ok: false, status: res.status, body: await res.text() };
-  return { ok: true };
 }
 
 /**
- * 직접 SQL 쿼리 (Cloud SQL 전용, Supabase 모드에서는 에러)
+ * 직접 SQL 쿼리
  */
 export async function rawQuery(sql, params) {
-  if (!USE_CLOUD_SQL) {
-    throw new Error("rawQuery는 Cloud SQL 모드에서만 사용 가능");
-  }
   const result = await _pool.query(sql, params);
   return result.rows;
 }
@@ -338,5 +256,5 @@ export async function closePool() {
   if (_pool) await _pool.end();
 }
 
-// 환경 설정 re-export
-export { SB_URL, SB_KEY, env, USE_CLOUD_SQL };
+// 환경 설정 re-export (Storage 스크립트 호환)
+export { env, SB_URL, SB_KEY };

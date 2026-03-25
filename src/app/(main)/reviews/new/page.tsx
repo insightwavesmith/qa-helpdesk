@@ -1,12 +1,10 @@
 import { redirect } from "next/navigation";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
+import { createServiceClient } from "@/lib/db";
 import { NewReviewForm } from "./new-review-form";
 
 export default async function NewReviewPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) redirect("/login");
 
@@ -14,7 +12,7 @@ export default async function NewReviewPage() {
   const { data: profile } = await svc
     .from("profiles")
     .select("role, cohort")
-    .eq("id", user.id)
+    .eq("id", user.uid)
     .single();
 
   if (profile?.role !== "student") {

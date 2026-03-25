@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { getFirebaseClientAuth } from "@/lib/firebase/client";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { getProfileById } from "@/actions/auth";
 import { mp } from "@/lib/mixpanel";
 import Image from "next/image";
@@ -22,32 +23,26 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const auth = getFirebaseClientAuth();
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+
+      // 세션 쿠키 생성
+      const idToken = await cred.user.getIdToken();
+      await fetch("/api/auth/firebase-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
       });
 
-      if (error) {
-        if (error.message?.includes("Invalid login credentials")) {
-          setError("이메일 또는 비밀번호가 올바르지 않습니다.");
-        } else if (error.message?.includes("Failed to fetch") || error.status === 0) {
-          setError("서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.");
-        } else {
-          setError("로그인 중 오류가 발생했습니다.");
-        }
-        return;
-      }
-
       // Mixpanel: 로그인 트래킹
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = cred.user;
       if (user) {
-        mp.identify(user.id);
-        const { data: profile } = await getProfileById(user.id);
+        mp.identify(user.uid);
+        const { data: profile } = await getProfileById(user.uid);
         if (profile) {
           mp.people.set({
             $name: profile.name,
-            $email: user.email,
+            $email: user.email || "",
             role: profile.role,
             cohort: profile.cohort,
             brand_name: profile.shop_name,
@@ -70,8 +65,19 @@ export default function LoginPage() {
 
       router.push("/dashboard");
       router.refresh();
-    } catch {
-      setError("서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+    } catch (err) {
+      const code = (err as { code?: string }).code;
+      if (
+        code === "auth/invalid-credential" ||
+        code === "auth/user-not-found" ||
+        code === "auth/wrong-password"
+      ) {
+        setError("이메일 또는 비밀번호가 올바르지 않습니다.");
+      } else if (code === "auth/too-many-requests") {
+        setError("너무 많은 시도가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+      } else {
+        setError("서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+      }
     } finally {
       setLoading(false);
     }

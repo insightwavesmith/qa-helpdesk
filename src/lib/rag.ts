@@ -1,7 +1,7 @@
 // RAG (Retrieval-Augmented Generation) 서비스
 // 질문에 대해 강의 자료 기반 AI 답변 생성
 
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { generateVisionText } from "@/lib/gemini";
 import {
   generate as ksGenerate,
