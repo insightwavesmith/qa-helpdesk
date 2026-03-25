@@ -8,12 +8,13 @@ let pool: Pool | null = null;
 
 export function getPool(): Pool {
   if (!pool) {
+    const isUnixSocket = (process.env.DATABASE_URL || "").includes("/cloudsql/");
     pool = new Pool({
       connectionString: process.env.DATABASE_URL,
       max: 10,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
-      ssl: { rejectUnauthorized: false },
+      ...(isUnixSocket ? {} : { ssl: { rejectUnauthorized: false } }),
     });
 
     pool.on("error", (err) => {

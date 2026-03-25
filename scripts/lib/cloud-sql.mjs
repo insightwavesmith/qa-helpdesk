@@ -20,10 +20,12 @@ if (!DATABASE_URL) {
   process.exit(1);
 }
 
+const isUnixSocket = DATABASE_URL.includes("/cloudsql/");
 export const pool = new pg.Pool({
   connectionString: DATABASE_URL,
   max: 10,
   idleTimeoutMillis: 30000,
+  ...(isUnixSocket ? {} : { ssl: { rejectUnauthorized: false } }),
 });
 
 /**
