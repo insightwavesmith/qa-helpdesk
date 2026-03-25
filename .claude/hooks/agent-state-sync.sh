@@ -386,7 +386,8 @@ PYEOF
 # 8. GCS에 checkpoint + pdca-status 동기화
 if command -v gsutil &>/dev/null; then
   [ -f "$CHECKPOINT_FILE" ] && gsutil -q cp "$CHECKPOINT_FILE" "$GCS_BUCKET/$TEAM/checkpoint.json" 2>/dev/null &
-  [ -f "$PDCA_ROOT" ] && gsutil -q cp "$PDCA_ROOT" "$GCS_BUCKET/pdca-status.json" 2>/dev/null &
+  [ -f "$PDCA_DOCS" ] && gsutil -q cp "$PDCA_DOCS" "$GCS_BUCKET/pdca-status.json" 2>/dev/null &
+  [ -f "$PDCA_ROOT" ] && gsutil -q cp "$PDCA_ROOT" "$GCS_BUCKET/pdca-status-root.json" 2>/dev/null &
 fi
 
 exit 0

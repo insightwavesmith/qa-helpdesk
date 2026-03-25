@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
 import { readGcsJson, readGcsJsonl } from "@/lib/gcs-storage";
 import type {
   DashboardState,
@@ -71,15 +72,66 @@ interface PdcaStatusJson {
   >;
 }
 
-function parsePdcaFeatures(raw: PdcaStatusJson | null): PdcaFeature[] {
-  if (!raw?.features) return [];
+/** 루트 pdca-status.json 형식 (features 래퍼 없이 flat) */
+interface PdcaRootJson {
+  [feature: string]: {
+    status?: string;
+    matchRate?: number;
+    plan?: string;
+    design?: string;
+    updatedAt?: string;
+    completedAt?: string;
+    notes?: string;
+    team?: string;
+    tasks?: unknown[];
+  };
+}
 
-  return Object.entries(raw.features).map(([name, feature]) => ({
+/** phase 문자열 → PdcaPhase 매핑 */
+function toPdcaPhase(status?: string): PdcaPhase {
+  const map: Record<string, PdcaPhase> = {
+    planning: "planning",
+    designing: "designing",
+    implementing: "implementing",
+    checking: "checking",
+    completed: "completed",
+    deployed: "completed",
+  };
+  return map[status ?? ""] ?? "implementing";
+}
+
+function parsePdcaFeatures(raw: PdcaStatusJson | PdcaRootJson | null): PdcaFeature[] {
+  if (!raw) return [];
+
+  // Format 1: docs/.pdca-status.json — { features: { ... } }
+  if ("features" in raw && raw.features) {
+    return Object.entries(raw.features).map(([name, feature]) => ({
+      name,
+      phase: (feature.phase as PdcaPhase) || "planning",
+      matchRate: feature.matchRate ?? 0,
+      documents: feature.documents ?? {},
+      startedAt: feature.startedAt ?? new Date().toISOString(),
+      completedAt: feature.completedAt,
+      notes: feature.notes ?? "",
+      team: (feature.team as TeamId) ?? "cto",
+    }));
+  }
+
+  // Format 2: root .pdca-status.json — flat object { "feature-name": { status, ... } }
+  const entries = Object.entries(raw).filter(
+    ([key]) => !["status", "tasks", "features"].includes(key),
+  );
+  if (entries.length === 0) return [];
+
+  return entries.map(([name, feature]) => ({
     name,
-    phase: (feature.phase as PdcaPhase) || "planning",
+    phase: toPdcaPhase(feature.status),
     matchRate: feature.matchRate ?? 0,
-    documents: feature.documents ?? {},
-    startedAt: feature.startedAt ?? new Date().toISOString(),
+    documents: {
+      plan: feature.plan,
+      design: feature.design,
+    },
+    startedAt: feature.updatedAt ?? new Date().toISOString(),
     completedAt: feature.completedAt,
     notes: feature.notes ?? "",
     team: (feature.team as TeamId) ?? "cto",
@@ -88,8 +140,7 @@ function parsePdcaFeatures(raw: PdcaStatusJson | null): PdcaFeature[] {
 
 export async function GET() {
   // 인증 확인
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   }
@@ -99,7 +150,7 @@ export async function GET() {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", user.uid)
     .single();
 
   if (profile?.role !== "admin") {
