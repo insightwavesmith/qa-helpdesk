@@ -676,7 +676,11 @@
   },
   "ad-account-id-bugfix": {
     "status": "completed",
-    "tasks": ["frontend-edit-field", "backend-account_id-param", "duplicate-check"],
+    "tasks": [
+      "frontend-edit-field",
+      "backend-account_id-param",
+      "duplicate-check"
+    ],
     "completedAt": "2026-03-25",
     "updatedAt": "2026-03-25T23:30:00+09:00",
     "notes": "광고계정ID 수정 버그 핫픽스. admin.ts updateAdAccount + member-detail-modal.tsx 수정 (2파일)"
@@ -937,7 +941,11 @@
   },
   "destructive-detector": {
     "status": "completed",
-    "tasks": ["hook-script", "settings-json", "claude-md-rule"],
+    "tasks": [
+      "hook-script",
+      "settings-json",
+      "claude-md-rule"
+    ],
     "updatedAt": "2026-03-24T20:40:00+09:00",
     "notes": "PreToolUse hook 8패턴 차단. settings.json + CLAUDE.md 규칙 추가."
   },
@@ -1002,7 +1010,11 @@
     "status": "completed",
     "matchRate": 97,
     "analysis": "docs/03-analysis/collect-daily-refactoring.analysis.md",
-    "tasks": ["gap-analysis", "build-verify", "eslint-fix"],
+    "tasks": [
+      "gap-analysis",
+      "build-verify",
+      "eslint-fix"
+    ],
     "completedAt": "2026-03-25",
     "updatedAt": "2026-03-25T23:30:00+09:00",
     "notes": "병렬화 + collectAccount 분리 + incremental 수집 검증 완료. Match Rate 97%."
@@ -1027,5 +1039,14 @@
     "updatedAt": "2026-03-25T13:00:00+09:00",
     "notes": "MVP Plan 413줄 완료. 5축 배치 90%+ 선행 필요. Design 작성 대기."
   },
-  "lastUpdated": "2026-03-25T13:00:00+09:00"
+  "lastUpdated": "2026-03-25T13:00:00+09:00",
+  "vercel-firebase-hotfix": {
+    "status": "completed",
+    "tasks": [
+      "Firebase Admin JSON 환경변수 지원"
+    ],
+    "updatedAt": "2026-03-25",
+    "completedAt": "2026-03-25",
+    "notes": "Vercel 서버리스에서 FIREBASE_SERVICE_ACCOUNT_JSON 환경변수 우선 사용"
+  }
 }

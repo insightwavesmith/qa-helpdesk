@@ -42,6 +42,14 @@
       },
       "notes": "병렬화 + collectAccount 분리 + incremental 수집 완료",
       "updatedAt": "2026-03-25"
+    },
+    "vercel-firebase-hotfix": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": {},
+      "notes": "Vercel 서버리스 Firebase Admin JSON 환경변수 핫픽스",
+      "updatedAt": "2026-03-25",
+      "completedAt": "2026-03-25"
     }
   },
   "updatedAt": "2026-03-25T14:30:00+09:00"
