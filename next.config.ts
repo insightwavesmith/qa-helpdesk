@@ -7,8 +7,8 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "symvlrsmkjlztoopbnht.supabase.co",
-        pathname: "/storage/v1/object/public/**",
+        hostname: "storage.googleapis.com",
+        pathname: "/bscamp-storage/**",
       },
     ],
   },
