@@ -43,8 +43,11 @@ function markdownToHtml(md: string): string {
     if (/IMAGE.*PLACEHOLDER/i.test(src)) {
       return `<figure class="post-image-figure"><img data-unsplash-query="${alt}" src="${placeholderDataUri}" loading="lazy" alt="${alt}" /><figcaption>${alt}</figcaption></figure>`;
     }
-    // Supabase Storage URL이면 figure로 래핑하여 스타일 일관성 유지
-    if (src.includes("supabase.co/storage")) {
+    // Storage URL(GCS 또는 구 Supabase)이면 figure로 래핑하여 스타일 일관성 유지
+    if (
+      src.includes("storage.googleapis.com") ||
+      src.includes("supabase.co/storage")
+    ) {
       return `<figure class="post-image-figure"><img src="${src}" loading="lazy" alt="${alt}" /><figcaption>${alt}</figcaption></figure>`;
     }
     return `<img src="${src}" alt="${alt}" />`;
