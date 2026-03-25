@@ -28,6 +28,9 @@ const PRIORITY_MAP: Record<SlackEventType, SlackPriority> = {
   "approval.needed": "important",
   "pdca.phase_change": "normal",
   "background.completed": "normal",
+  "team.idle": "normal",        // 3회 연속 시 important로 동적 변경
+  "team.recovered": "normal",
+  "session.crashed": "urgent",
 };
 
 /** 이벤트별 라우팅 규칙 (CEO DM 여부) */
@@ -36,6 +39,8 @@ const CEO_NOTIFY_EVENTS: SlackEventType[] = [
   "deploy.completed",
   "error.critical",
   "approval.needed",
+  "session.crashed",
+  // team.idle은 3회 연속 시만 → 호출자가 ceoNotify=true로 설정
 ];
 
 /** 팀 표시명 */
@@ -57,6 +62,9 @@ function buildSlackBlocks(notification: SlackNotification): any[] {
     "approval.needed": "🔔",
     "pdca.phase_change": "📊",
     "background.completed": "⏳",
+    "team.idle": "⚠️",
+    "team.recovered": "✅",
+    "session.crashed": "🚨",
   };
   const emoji = emojiMap[notification.event];
 
@@ -90,6 +98,46 @@ function buildSlackBlocks(notification: SlackNotification): any[] {
     blocks.push({
       type: "section",
       text: { type: "mrkdwn", text: `\`\`\`\n${notification.metadata.errorMessage}\n\`\`\`` },
+    });
+  }
+
+  // team.idle: 무활동 시간 및 연속 감지 횟수 표시
+  if (notification.event === "team.idle") {
+    const mins = notification.metadata?.idleMinutes || 5;
+    const count = notification.metadata?.staleCount || 1;
+    blocks.push({
+      type: "context",
+      elements: [{
+        type: "mrkdwn",
+        text: `⏱ 무활동: *${mins}분* | 연속 감지: *${count}회* | 마지막 활동: ${notification.metadata?.lastActivity || '불명'}`,
+      }],
+    });
+  }
+
+  // team.recovered: 복구 안내
+  if (notification.event === "team.recovered") {
+    blocks.push({
+      type: "context",
+      elements: [{
+        type: "mrkdwn",
+        text: `✅ 이전 상태에서 복구됨`,
+      }],
+    });
+  }
+
+  // session.crashed: 복구 명령 및 checkpoint 안내
+  if (notification.event === "session.crashed") {
+    const tmux = notification.metadata?.tmuxSession || `sdk-${notification.team}`;
+    blocks.push({
+      type: "section",
+      text: { type: "mrkdwn", text: `복구 명령:\n\`\`\`tmux new-session -s ${tmux}\`\`\`` },
+    });
+    blocks.push({
+      type: "context",
+      elements: [{
+        type: "mrkdwn",
+        text: `💾 Checkpoint: ${notification.metadata?.lastActivity ? '존재 (복구 가능)' : '없음'}`,
+      }],
     });
   }
 

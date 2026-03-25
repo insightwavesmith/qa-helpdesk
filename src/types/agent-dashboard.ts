@@ -87,7 +87,10 @@ export type SlackEventType =
   | 'error.critical'
   | 'approval.needed'
   | 'pdca.phase_change'
-  | 'background.completed';
+  | 'background.completed'
+  | 'team.idle'
+  | 'team.recovered'
+  | 'session.crashed';
 
 /** 슬랙 알림 우선순위 */
 export type SlackPriority = 'normal' | 'important' | 'urgent';
@@ -107,6 +110,11 @@ export interface SlackNotification {
     matchRate?: number;
     errorMessage?: string;
     dashboardUrl?: string;
+    // 팀 idle/recovered/crashed 이벤트 전용
+    idleMinutes?: number;
+    staleCount?: number;
+    lastActivity?: string;
+    tmuxSession?: string;
   };
   channels: string[];
   ceoNotify: boolean;
