@@ -167,15 +167,13 @@ export function extractMediaUrls(html: string, baseUrl: string): MediaUrl[] {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * LP HTML에서 미디어를 추출하고 Supabase Storage에 업로드한다.
+ * LP HTML에서 미디어를 추출하고 GCS Storage에 업로드한다.
  * - extractMediaUrls()로 URL 목록 추출
  * - existingAssets의 hash와 비교하여 중복 스킵
  * - 개별 파일 50MB, LP당 총 200MB 제한
  * - 에러 발생 시 해당 파일만 스킵 (전체 중단 안 함)
  */
 export async function downloadLpMedia(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
   lp: { id: string; account_id: string; canonical_url: string },
   html: string,
   existingAssets: Array<{ hash: string }>,
@@ -264,7 +262,7 @@ export async function downloadLpMedia(
       console.log(`[lp-media] ${lp.id} 다운로드: ${mediaUrl.url} → ${storagePath}`);
 
       // Storage 업로드
-      const uploadOk = await uploadBufferToStorage(supabase, storagePath, uploadBuffer, uploadMimeType);
+      const uploadOk = await uploadBufferToStorage(storagePath, uploadBuffer, uploadMimeType);
       if (!uploadOk) continue;
 
       totalBytes += uploadSize;
@@ -344,35 +342,20 @@ async function fetchMediaFile(url: string): Promise<{
 
 /**
  * Buffer를 Storage(creatives 버킷)에 업로드한다.
- * GCS 또는 Supabase 듀얼 라이트 패턴.
+ * GCS 사용 (Vercel 서버리스 환경).
  * upsert: true (같은 경로면 덮어씀)
  */
 async function uploadBufferToStorage(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
   path: string,
   buffer: Buffer,
   contentType: string,
 ): Promise<boolean> {
   try {
-    if (process.env.USE_CLOUD_SQL === "true") {
-      const { error } = await uploadToGcs("creatives", path, buffer, contentType);
-      if (error) {
-        console.error(`[lp-media] GCS 업로드 실패 (${path}):`, error);
-        return false;
-      }
-      return true;
-    }
-
-    const { error } = await supabase.storage
-      .from("creatives")
-      .upload(path, buffer, { contentType, upsert: true });
-
+    const { error } = await uploadToGcs("creatives", path, buffer, contentType);
     if (error) {
-      console.error(`[lp-media] Storage 업로드 실패 (${path}):`, error.message);
+      console.error(`[lp-media] GCS 업로드 실패 (${path}):`, error);
       return false;
     }
-
     return true;
   } catch (err) {
     console.error(`[lp-media] Storage 업로드 에러 (${path}):`, err);

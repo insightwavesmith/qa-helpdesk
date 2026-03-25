@@ -14,9 +14,7 @@ import type {
 
 // ─── 상수 ───
 
-const BANNER_BASE_URL = process.env.USE_CLOUD_SQL === "true"
-  ? "https://storage.googleapis.com/bscamp-storage/content-images/newsletter-banners"
-  : "https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners";
+const BANNER_BASE_URL = "https://storage.googleapis.com/bscamp-storage/content-images/newsletter-banners";
 
 /** 배너키 → 파일명 매핑 (기존 BANNER_MAP과 동일) */
 const BANNER_MAP: Record<string, string> = {

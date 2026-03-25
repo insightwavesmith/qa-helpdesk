@@ -146,7 +146,6 @@ async function handleCrawl(req: NextRequest) {
         // 스크린샷 → Storage 업로드
         const storagePath = `lp/${lp.account_id}/${lp.id}/mobile_full.jpg`;
         const uploadOk = await uploadToStorage(
-          supabase,
           storagePath,
           crawlResult.screenshot,
         );
@@ -163,7 +162,6 @@ async function handleCrawl(req: NextRequest) {
         if (crawlResult.ctaScreenshot) {
           const ctaPath = `lp/${lp.account_id}/${lp.id}/mobile_cta.jpg`;
           const ctaOk = await uploadToStorage(
-            supabase,
             ctaPath,
             crawlResult.ctaScreenshot,
           );
@@ -179,7 +177,7 @@ async function handleCrawl(req: NextRequest) {
           htmlContent = await fetchHtmlContent(lp.canonical_url);
           if (htmlContent) {
             const htmlPath = `lp/${lp.account_id}/${lp.id}/page.html`;
-            const htmlOk = await uploadHtmlToStorage(supabase, htmlPath, htmlContent);
+            const htmlOk = await uploadHtmlToStorage(htmlPath, htmlContent);
             if (htmlOk) {
               htmlStoragePath = htmlPath;
               stats.htmlSaved++;
@@ -195,7 +193,6 @@ async function handleCrawl(req: NextRequest) {
         if (htmlContent) {
           try {
             newMediaAssets = await downloadLpMedia(
-              supabase,
               { id: lp.id, account_id: lp.account_id, canonical_url: lp.canonical_url },
               htmlContent,
               lp.media_assets || [],
@@ -314,11 +311,8 @@ async function handleCrawl(req: NextRequest) {
 /**
  * base64 → Storage 업로드 (creatives 버킷)
  * ADR-001 경로: lp/{account_id}/{lp_id}/{viewport}_full.jpg
- * GCS 또는 Supabase 듀얼 라이트 패턴.
  */
 async function uploadToStorage(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
   path: string,
   base64Data: string,
 ): Promise<boolean> {
@@ -393,11 +387,8 @@ async function fetchHtmlContent(url: string): Promise<string | null> {
 /**
  * HTML 문자열 → Storage 업로드 (creatives 버킷)
  * ADR-001 경로: lp/{account_id}/{lp_id}/page.html
- * GCS 또는 Supabase 듀얼 라이트 패턴.
  */
 async function uploadHtmlToStorage(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
   path: string,
   htmlContent: string,
 ): Promise<boolean> {

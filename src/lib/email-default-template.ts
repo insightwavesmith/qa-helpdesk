@@ -3,9 +3,7 @@
 // 스티비/마켓핏랩 스타일 — 깔끔하고 읽기 쉬운 레이아웃
 // Last verified: 2026-02-14
 
-const BANNER_BASE = process.env.USE_CLOUD_SQL === "true"
-  ? "https://storage.googleapis.com/bscamp-storage/content-images/newsletter-banners"
-  : "https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/content-images/newsletter-banners";
+const BANNER_BASE = "https://storage.googleapis.com/bscamp-storage/content-images/newsletter-banners";
 
 // 스미스 코치 프로필 카드 (모든 템플릿 공통, CTA 위에 삽입)
 const SMITH_PROFILE_ROW = {

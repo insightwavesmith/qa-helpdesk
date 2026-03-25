@@ -194,16 +194,50 @@
         "team": "qa",
         "done": true,
         "doc": "docs/03-analysis/supabase-removal.analysis.md",
-        "matchRate": 97
+        "matchRate": 93
       },
       "act": {
         "done": true,
         "commit": null,
         "deployedAt": null
       },
-      "notes": "Supabase SDK 완전 제거 — @supabase/supabase-js, @supabase/ssr 패키지 삭제, 95파일 import 전환, .storage 6파일 GCS 전환",
+      "notes": "Supabase SDK 완전 제거 + 재분석(85%→93%): 이메일 템플릿 URL fallback 제거, supabase.ts 삭제, 환경변수 정리 필요(Vercel 수동)",
+      "updatedAt": "2026-03-25"
+    },
+    "organic-channel-distribution-phase2": {
+      "phase": "implementing",
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/01-plan/features/organic-channel-distribution.plan.md",
+        "at": "2026-03-24"
+      },
+      "design": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/02-design/features/organic-channel-distribution.design.md",
+        "at": "2026-03-25"
+      },
+      "do": {
+        "team": "cto",
+        "done": false,
+        "commit": null,
+        "at": "2026-03-25"
+      },
+      "check": {
+        "team": "qa",
+        "done": false,
+        "doc": "",
+        "matchRate": null
+      },
+      "act": {
+        "done": false,
+        "commit": null,
+        "deployedAt": null
+      },
+      "notes": "Phase 2: AI 변환 엔진 + 5채널 배포. Wave 1(DB+타입) 시작",
       "updatedAt": "2026-03-25"
     }
   },
-  "updatedAt": "2026-03-25T17:00:00.000000"
+  "updatedAt": "2026-03-25T21:00:00.000000"
 }

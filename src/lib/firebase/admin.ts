@@ -17,17 +17,20 @@ function getFirebaseAdmin(): { app: App; auth: Auth } {
     app = existing[0];
   } else {
     // 서비스 계정 키 경로 (로컬 개발용)
+    const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
     const serviceAccountPath =
       process.env.GOOGLE_APPLICATION_CREDENTIALS ||
       process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
-    if (serviceAccountPath) {
-      // 파일에서 서비스 계정 키 읽기 (동기 방식 — 초기화 시 1회만 실행)
+    if (serviceAccountJson) {
+      // Vercel: JSON 문자열 환경변수에서 서비스 계정 키 파싱
+      const serviceAccount = JSON.parse(serviceAccountJson) as ServiceAccount;
+      app = initializeApp({ credential: cert(serviceAccount) });
+    } else if (serviceAccountPath) {
+      // 로컬 개발: 파일에서 서비스 계정 키 읽기 (동기 방식 — 초기화 시 1회만 실행)
       const raw = fs.readFileSync(serviceAccountPath, "utf-8");
       const serviceAccount = JSON.parse(raw) as ServiceAccount;
-      app = initializeApp({
-        credential: cert(serviceAccount),
-      });
+      app = initializeApp({ credential: cert(serviceAccount) });
     } else {
       // GCP Cloud Run: ADC (Application Default Credentials) 자동 사용
       app = initializeApp();
