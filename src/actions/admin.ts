@@ -538,9 +538,14 @@ export async function updateAdAccount(
 
   const { account_id: newAccountId, ...restData } = data;
 
+  // undefined 필드를 제거하여 의도치 않은 null 업데이트 방지
+  const filteredRestData = Object.fromEntries(
+    Object.entries(restData).filter(([, v]) => v !== undefined)
+  );
+
   // account_id 이외 필드 업데이트
-  if (Object.keys(restData).length > 0) {
-    const { error } = await svc.from('ad_accounts').update(restData).eq('id', id);
+  if (Object.keys(filteredRestData).length > 0) {
+    const { error } = await svc.from('ad_accounts').update(filteredRestData).eq('id', id);
     if (error) return { error: error.message };
   }
 
