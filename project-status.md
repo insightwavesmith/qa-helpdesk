@@ -1,3 +1,9 @@
+> ⚠️ **DEPRECATED (2026-03-25)**: 이 파일은 더 이상 갱신하지 않습니다.
+> 정본(Single Source of Truth)은 `DEV-STATUS.md` + `.pdca-status.json` 입니다.
+> 마지막 갱신: 2026-03-14
+
+---
+
 # BS CAMP QA Helpdesk — 프로젝트 현황
 
 > 최종 업데이트: 2026-03-14 KST

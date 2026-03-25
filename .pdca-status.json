@@ -664,14 +664,14 @@
     "notes": "PR #2 생성. collect-daily 권한 체크, health sync-notion 제거, 82/83건 다운로드 완료. 커밋 a22028a."
   },
   "deepgaze-gemini-pipeline": {
-    "status": "completed",
-    "tasks": [
-      "creative-saliency 크론 생성 ✅",
-      "analyze-five-axis DeepGaze 주입 ✅"
-    ],
-    "updatedAt": "2026-03-23T14:00:00+09:00",
-    "completedAt": "2026-03-23",
-    "notes": "PR #2 생성. creative-saliency 크론 신규(93줄). analyze-five-axis.mjs DeepGaze 시선 데이터 주입(+75줄). 커밋 a22028a."
+    "phase": "planning",
+    "matchRate": 0,
+    "documents": {
+      "plan": "docs/01-plan/features/deepgaze-gemini-pipeline.plan.md",
+      "design": "docs/02-design/features/deepgaze-gemini-pipeline.design.md"
+    },
+    "startedAt": "2026-03-25",
+    "notes": "Smith님 확정 8단계 파이프라인. DeepGaze→Gemini 결합. Plan+Design 완료."
   },
   "cloud-run-jobs-crawl-lps": {
     "status": "implementing",
@@ -793,7 +793,7 @@
     "notes": "형식별(IMAGE/VIDEO/CAROUSEL) MEDIAN_ALL 참여율 기준 + 전환순위 평균 이상 → is_benchmark=true. 기존 cohort='content_pool' 제거."
   },
   "collect-daily-refactor": {
-    "status": "designing",
+    "status": "completed",
     "plan": "docs/01-plan/features/collect-daily-refactor.plan.md",
     "design": "docs/02-design/features/collect-daily-refactor.design.md",
     "tasks": [
@@ -942,17 +942,51 @@
     "notes": "Design 문서 완성. 신규 테이블 4개(channel_distributions, channel_credentials, content_analytics, newsletter_segments), AI 변환 엔진, 채널 API 클라이언트, 5탭 어드민 UI, 에러 처리 체계. Phase 2~4 구현 순서 포함."
   },
   "collection-gaps-batch": {
-    "status": "planning",
-    "plan": "docs/01-plan/features/collection-gaps-batch.plan.md",
-    "design": null,
-    "tasks": [
-      "T1-미수집계정원인파악",
-      "T2-5축배치2526건",
-      "T3-LP배치132건",
-      "T4-LP미디어다운로드",
-      "T5-나머지갭해소"
-    ],
-    "updatedAt": "2026-03-25",
-    "notes": "Plan 완료. 배치 실행+원인 진단 중심. 코드 신규 구현 최소. 비용 $10~$38 예상. Design은 배치 실행 위주라 별도 작성 불필요할 수 있음."
-  }
+    "phase": "planning",
+    "matchRate": 0,
+    "documents": {
+      "plan": "docs/01-plan/features/collection-gaps-batch.plan.md"
+    },
+    "startedAt": "2026-03-25",
+    "notes": "미수집 19계정 + 미분석 2526건 + LP 132건. 배치 실행 계획."
+  },
+  "agent-dashboard": {
+    "phase": "designing",
+    "matchRate": 0,
+    "documents": {
+      "plan": "docs/01-plan/features/agent-dashboard.plan.md",
+      "design": "docs/02-design/features/agent-dashboard.design.md"
+    },
+    "startedAt": "2026-03-24",
+    "notes": "CTO팀 구현 중. Plan+Design 완료."
+  },
+  "slack-notification": {
+    "phase": "designing",
+    "matchRate": 0,
+    "documents": {
+      "design": "docs/02-design/features/slack-notification.design.md"
+    },
+    "startedAt": "2026-03-25",
+    "notes": "CTO팀 구현 중. 상세 설계(Block Kit JSON, Rate Limit 전략) 완료."
+  },
+  "orchestration-chain": {
+    "phase": "designing",
+    "matchRate": 0,
+    "documents": {
+      "design": "docs/02-design/features/orchestration-chain.design.md"
+    },
+    "startedAt": "2026-03-25",
+    "notes": "/tmp/cross-team/ 프로토콜 표준화. 마커 파일 규약 정의."
+  },
+  "web-terminal-dashboard": {
+    "phase": "designing",
+    "matchRate": 0,
+    "documents": {
+      "plan": "docs/01-plan/features/web-terminal-dashboard.plan.md",
+      "design": "docs/02-design/features/web-terminal-dashboard.design.md"
+    },
+    "startedAt": "2026-03-25",
+    "notes": "CTO팀 구현 중. Codeman 기반 xterm.js + WebSocket."
+  },
+  "lastUpdated": "2026-03-25T14:00:00+09:00"
 }

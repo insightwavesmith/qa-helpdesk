@@ -89,6 +89,11 @@
             "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.claude/hooks/pdca-sync-monitor.sh",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/notify-completion.sh",
+            "timeout": 10
           }
         ]
       }
@@ -104,5 +109,6 @@
         ]
       }
     ]
-  }
+  },
+  "permissionMode": "bypassPermissions"
 }

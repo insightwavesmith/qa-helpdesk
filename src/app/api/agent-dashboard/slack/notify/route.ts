@@ -9,23 +9,64 @@ import path from 'path';
 
 const SLACK_QUEUE_PATH = '/tmp/cross-team/slack/queue.jsonl';
 
+const VALID_EVENTS: SlackEventType[] = [
+  'task.started', 'task.completed', 'chain.handoff', 'deploy.completed',
+  'error.critical', 'approval.needed', 'pdca.phase_change', 'background.completed',
+];
+const VALID_TEAMS: TeamId[] = ['pm', 'marketing', 'cto'];
+
 export async function POST(request: NextRequest) {
   // 인증 체크
   const user = await getCurrentUser();
   if (!user) {
-    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: 'UNAUTHORIZED', message: 'admin 권한이 필요합니다' },
+      { status: 401 }
+    );
   }
 
   try {
     const body = await request.json();
     const { event, team, targetTeam, title, message, metadata } = body;
 
-    // 입력 검증
-    if (!event || !team || !title || !message) {
+    // ── 필드별 개별 검증 ──
+    if (!event || !VALID_EVENTS.includes(event as SlackEventType)) {
       return NextResponse.json(
-        { error: 'INVALID_REQUEST', message: 'event, team, title, message 필수' },
+        { ok: false, error: 'INVALID_EVENT_TYPE', message: `event 필드가 유효하지 않습니다: '${event}'` },
         { status: 400 }
       );
+    }
+    if (!team || !VALID_TEAMS.includes(team as TeamId)) {
+      return NextResponse.json(
+        { ok: false, error: 'INVALID_TEAM', message: `team 필드가 유효하지 않습니다: '${team}'` },
+        { status: 400 }
+      );
+    }
+    if (!title || typeof title !== 'string' || title.length > 200) {
+      return NextResponse.json(
+        { ok: false, error: 'INVALID_TITLE', message: 'title은 1~200자 문자열이어야 합니다' },
+        { status: 400 }
+      );
+    }
+    if (!message || typeof message !== 'string' || message.length > 3000) {
+      return NextResponse.json(
+        { ok: false, error: 'INVALID_MESSAGE', message: 'message는 1~3000자 문자열이어야 합니다' },
+        { status: 400 }
+      );
+    }
+    if (event === 'chain.handoff') {
+      if (!targetTeam || !VALID_TEAMS.includes(targetTeam as TeamId)) {
+        return NextResponse.json(
+          { ok: false, error: 'MISSING_TARGET_TEAM', message: 'chain.handoff 이벤트는 targetTeam이 필수입니다' },
+          { status: 400 }
+        );
+      }
+      if (targetTeam === team) {
+        return NextResponse.json(
+          { ok: false, error: 'MISSING_TARGET_TEAM', message: 'targetTeam은 team과 달라야 합니다' },
+          { status: 400 }
+        );
+      }
     }
 
     const eventType = event as SlackEventType;
@@ -52,8 +93,8 @@ export async function POST(request: NextRequest) {
       status: 'pending',
     };
 
-    // 슬랙 전송
-    await sendSlackNotification(notification);
+    // 슬랙 전송 (부분 실패 정보 포함)
+    const sendResult = await sendSlackNotification(notification);
     notification.status = 'sent';
     notification.sentAt = new Date().toISOString();
 
@@ -68,8 +109,6 @@ export async function POST(request: NextRequest) {
     // 체인 전달 감지 — chain.handoff 이벤트 시 추가 체인 처리
     if (event === 'chain.handoff') {
       const chains = detectChainHandoff(teamId, 'implementation.completed');
-      // 체인 규칙이 있으면 이미 요청에서 처리됨
-      // 추가 체인이 필요한 경우만 처리
       for (const chain of chains) {
         if (chain.toTeam !== targetTeam) {
           const chainNotification: SlackNotification = {
@@ -90,11 +129,39 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true, id: notification.id });
+    // 부분 실패 시 207 반환
+    if (sendResult.failedChannels.length > 0 && sendResult.channelsSent.length > 0) {
+      return NextResponse.json({
+        ok: true,
+        notificationId: notification.id,
+        channelsSent: sendResult.channelsSent,
+        failedChannels: sendResult.failedChannels,
+        ceoNotified: sendResult.ceoNotified,
+        sentAt: notification.sentAt,
+      }, { status: 207 });
+    }
+
+    // 전체 실패
+    if (sendResult.failedChannels.length > 0 && sendResult.channelsSent.length === 0) {
+      return NextResponse.json({
+        ok: false,
+        error: 'SLACK_SEND_FAILED',
+        message: '모든 채널 전송에 실패했습니다',
+        failedChannels: sendResult.failedChannels,
+      }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      notificationId: notification.id,
+      channelsSent: sendResult.channelsSent,
+      ceoNotified: sendResult.ceoNotified,
+      sentAt: notification.sentAt,
+    });
   } catch (err) {
     console.error('[slack/notify] 전송 실패:', err);
     return NextResponse.json(
-      { error: 'SEND_FAILED', message: '슬랙 알림 전송 실패' },
+      { ok: false, error: 'SLACK_SEND_FAILED', message: '슬랙 알림 전송 실패' },
       { status: 500 }
     );
   }

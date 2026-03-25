@@ -50,6 +50,269 @@ export interface CollectDailyResult {
   results: Record<string, unknown>[];
 }
 
+// ── 병렬 처리 동시성 ──────────────────────────────────────────
+const CONCURRENCY = 5;
+
+// ── 단일 계정 수집 로직 ──────────────────────────────────────
+async function collectAccount(
+  svc: ReturnType<typeof createServiceClient>,
+  account: { account_id: string; account_name: string },
+  yesterday: string,
+  dateParam: string | undefined,
+  backfill: boolean,
+): Promise<Record<string, unknown>> {
+  const accountResult: Record<string, unknown> = {
+    account_id: account.account_id,
+    meta_ads: 0,
+  };
+
+  // ── Meta 광고 데이터 수집 (GCP 방식) ──
+  try {
+    const ads = await fetchAccountAds(account.account_id, dateParam ?? undefined, backfill);
+
+    if (ads.length > 0) {
+      console.log(`[collect-daily] Sample ad keys [${account.account_id}]:`, Object.keys(ads[0]));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rows = ads.map((ad: any) => {
+        const insight = (ad.insights as { data: Record<string, unknown>[] }).data[0];
+        const metrics = calculateMetrics(insight);
+        const creativeType = getCreativeType(ad);
+
+        return {
+          date: yesterday,
+          account_id: account.account_id,
+          account_name: account.account_name,
+          campaign_id: ad.campaign_id ?? null,
+          campaign_name: ad.campaign_name ?? null,
+          adset_id: ad.adset_id ?? null,
+          adset_name: ad.adset_name ?? null,
+          ad_id: (ad.ad_id ?? ad.id) as string | null,
+          ad_name: (ad.ad_name ?? ad.name) as string | null,
+          creative_type: creativeType,
+          quality_ranking: normalizeRanking(insight.quality_ranking as string),
+          engagement_ranking: normalizeRanking(insight.engagement_rate_ranking as string),
+          conversion_ranking: normalizeRanking(insight.conversion_rate_ranking as string),
+          ...metrics,
+          collected_at: new Date().toISOString(),
+          // raw JSONB — Meta API 응답 원본 저장
+          raw_insight: insight,
+          raw_ad: { id: ad.id, name: ad.name, creative: ad.creative, campaign_id: ad.campaign_id, campaign_name: ad.campaign_name, adset_id: ad.adset_id, adset_name: ad.adset_name },
+        };
+      });
+
+      const { error: insertErr } = await svc
+        .from("daily_ad_insights")
+        .upsert(rows as never[], { onConflict: "account_id,date,ad_id" });
+
+      if (insertErr) {
+        console.error(
+          `daily_ad_insights insert error [${account.account_id}]:`,
+          insertErr
+        );
+      } else {
+        accountResult.meta_ads = rows.length;
+      }
+
+      // ── 정규화 테이블 UPSERT (landing_pages → creatives → creative_media) ──
+      try {
+        // Step 1: LP URL 수집 + 정규화 + landing_pages UPSERT
+        const lpUrlMap = new Map<string, { canonical: string; hostname: string; account_id: string }>();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        for (const ad of ads as any[]) {
+          const rawLpUrl = extractLpUrl(ad);
+          if (!rawLpUrl) continue;
+          const norm = normalizeUrl(rawLpUrl);
+          if (!norm) continue;
+          lpUrlMap.set(norm.canonical, { ...norm, account_id: account.account_id });
+        }
+
+        let canonicalToLpId = new Map<string, string>();
+
+        if (lpUrlMap.size > 0) {
+          const lpRows = Array.from(lpUrlMap.values()).map((lp) => {
+            const { page_type, platform } = classifyUrl(lp.canonical, lp.hostname);
+            return {
+              account_id: lp.account_id,
+              canonical_url: lp.canonical,
+              domain: lp.hostname,
+              page_type,
+              platform,
+              is_active: true,
+              updated_at: new Date().toISOString(),
+            };
+          });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error: lpErr } = await (svc as any)
+            .from("landing_pages")
+            .upsert(lpRows, { onConflict: "canonical_url" });
+          if (lpErr) {
+            console.error(`[collect-daily] v2 landing_pages upsert error [${account.account_id}]:`, lpErr);
+          } else {
+            console.log(`[collect-daily] v2 landing_pages: ${lpRows.length}건 upserted`);
+          }
+
+          // canonical_url → lp_id 매핑 조회
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: lpIdData } = await (svc as any)
+            .from("landing_pages")
+            .select("id, canonical_url")
+            .in("canonical_url", Array.from(lpUrlMap.keys()));
+
+          canonicalToLpId = new Map<string, string>(
+            (lpIdData ?? []).map((lp: { canonical_url: string; id: string }) => [lp.canonical_url, lp.id])
+          );
+        }
+
+        // Step 2: creatives UPSERT (lp_id FK 포함, LP 없으면 null)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const v2CreativeRows = (ads as any[]).map((ad: any) => {
+          const adId = (ad.ad_id ?? ad.id) as string;
+          if (!adId) return null;
+          const creativeType = getCreativeType(ad);
+          const rawLpUrl = extractLpUrl(ad);
+          let lpId: string | null = null;
+          if (rawLpUrl) {
+            const norm = normalizeUrl(rawLpUrl);
+            if (norm) lpId = canonicalToLpId.get(norm.canonical) ?? null;
+          }
+          return {
+            ad_id: adId,
+            account_id: account.account_id,
+            creative_type: creativeType,
+            source: "member",
+            is_member: true,
+            brand_name: account.account_name || null,
+            is_active: true,
+            lp_url: rawLpUrl || null,
+            lp_id: lpId,
+            updated_at: new Date().toISOString(),
+            raw_creative: ad.creative || null,
+          };
+        }).filter(Boolean);
+
+        if (v2CreativeRows.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error: v2CreativeErr } = await (svc as any)
+            .from("creatives")
+            .upsert(v2CreativeRows, { onConflict: "ad_id" });
+          if (v2CreativeErr) {
+            console.error(`[collect-daily] v2 creatives upsert error [${account.account_id}]:`, v2CreativeErr);
+          } else {
+            console.log(`[collect-daily] v2 creatives: ${v2CreativeRows.length}건 upserted`);
+          }
+        }
+
+        // Step 3: creative_media UPSERT
+        if (v2CreativeRows.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const adIds = v2CreativeRows.map((r: any) => r.ad_id as string);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: creativeIdData } = await (svc as any)
+            .from("creatives")
+            .select("id, ad_id")
+            .in("ad_id", adIds);
+
+          const adIdToCreativeId = new Map<string, string>(
+            (creativeIdData ?? []).map((c: { ad_id: string; id: string }) => [c.ad_id, c.id])
+          );
+
+          // 기존 creative_media에서 storage_url 조회 (이미 다운로드된 미디어 보존)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: existingMedia } = await (svc as any)
+            .from("creative_media")
+            .select("creative_id, position, storage_url, media_url")
+            .in("creative_id", Array.from(adIdToCreativeId.values()));
+          const existingMap = new Map<string, { storage_url: string | null; media_url: string | null }>(
+            (existingMedia ?? []).map((r: any) => [`${r.creative_id}_${r.position ?? 0}`, { storage_url: r.storage_url, media_url: r.media_url }])
+          );
+
+          const mediaRows: Record<string, unknown>[] = [];
+          for (const ad of ads as any[]) {
+            const adId = (ad.ad_id ?? ad.id) as string;
+            const creativeId = adIdToCreativeId.get(adId);
+            if (!creativeId) continue;
+
+            const creative = ad.creative;
+            const creativeType = getCreativeType(ad as any);
+
+            if (creativeType === "CAROUSEL") {
+              const cards = extractCarouselCards(ad as Record<string, unknown>);
+              if (cards.length > 0) {
+                for (const card of cards) {
+                  const key = `${creativeId}_${card.position}`;
+                  const existing = existingMap.get(key);
+                  mediaRows.push({
+                    creative_id: creativeId,
+                    media_type: card.videoId ? "VIDEO" : "IMAGE",
+                    media_url: existing?.media_url || card.imageUrl || null,
+                    media_hash: card.imageHash || null,
+                    content_hash: card.imageHash || card.videoId || null,
+                    storage_url: existing?.storage_url || null,
+                    raw_creative: creative || null,
+                    position: card.position,
+                    card_total: cards.length,
+                  });
+                }
+              } else {
+                const imageHash = creative?.image_hash;
+                const videoId = creative?.video_id;
+                const key = `${creativeId}_0`;
+                const existing = existingMap.get(key);
+                mediaRows.push({
+                  creative_id: creativeId,
+                  media_type: videoId ? "VIDEO" : "IMAGE",
+                  media_url: existing?.media_url || null,
+                  media_hash: imageHash || null,
+                  content_hash: imageHash || videoId || null,
+                  storage_url: existing?.storage_url || null,
+                  raw_creative: creative || null,
+                  position: 0,
+                  card_total: 1,
+                });
+              }
+            } else {
+              const imageHash = creative?.image_hash;
+              const videoId = creative?.video_id;
+              const key = `${creativeId}_0`;
+              const existing = existingMap.get(key);
+              mediaRows.push({
+                creative_id: creativeId,
+                media_type: videoId ? "VIDEO" : "IMAGE",
+                media_url: existing?.media_url || null,
+                media_hash: imageHash || null,
+                content_hash: imageHash || videoId || null,
+                storage_url: existing?.storage_url || null,
+                raw_creative: creative || null,
+                position: 0,
+                card_total: 1,
+              });
+            }
+          }
+
+          if (mediaRows.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error: mediaErr } = await (svc as any)
+              .from("creative_media")
+              .upsert(mediaRows, { onConflict: "creative_id,position" });
+            if (mediaErr) {
+              console.error(`[collect-daily] creative_media upsert error [${account.account_id}]:`, mediaErr);
+            } else {
+              console.log(`[collect-daily] creative_media: ${mediaRows.length}건 upserted`);
+            }
+          }
+        }
+      } catch (v2Err) {
+        console.error(`[collect-daily] v2 UPSERT 실패 (기존 로직 영향 없음) [${account.account_id}]:`, v2Err);
+      }
+    }
+  } catch (e) {
+    accountResult.meta_error = e instanceof Error ? e.message : String(e);
+    console.error(`Meta error [${account.account_id}]:`, e);
+  }
+
+  return accountResult;
+}
+
 // ── 핵심 수집 로직 (크론 + 수동수집 공용) ───────────────────
 export async function runCollectDaily(dateParam?: string, batch?: number, accountId?: string, backfill = false): Promise<CollectDailyResult> {
   const svc = createServiceClient();
@@ -151,260 +414,42 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
 
     console.log(`[collect-daily] 권한 체크 완료: ${permittedAccounts.length}개 허용, ${deniedIds.length}개 거부`);
 
+    // ── incremental 수집 (이미 수집된 계정 스킵, backfill 아닐 때만) ──
+    let accountsToCollect = permittedAccounts;
+    if (!backfill && permittedAccounts.length > 0) {
+      const { data: existing } = await svc
+        .from("daily_ad_insights")
+        .select("account_id")
+        .eq("date", yesterday)
+        .in("account_id", permittedAccounts.map((a) => a.account_id));
+      const alreadyCollected = new Set((existing ?? []).map((r: { account_id: string }) => r.account_id));
+      if (alreadyCollected.size > 0) {
+        console.log(`[collect-daily] incremental: ${alreadyCollected.size}개 계정 이미 수집됨, 스킵`);
+        accountsToCollect = permittedAccounts.filter((a) => !alreadyCollected.has(a.account_id));
+      }
+    }
+
+    // ── 계정별 병렬 수집 (CONCURRENCY=5, Meta API rate limit 고려) ──
     const results: Record<string, unknown>[] = [];
 
-    for (const account of permittedAccounts) {
-      const accountResult: Record<string, unknown> = {
-        account_id: account.account_id,
-        meta_ads: 0,
-      };
+    for (let i = 0; i < accountsToCollect.length; i += CONCURRENCY) {
+      const chunk = accountsToCollect.slice(i, i + CONCURRENCY);
+      console.log(`[collect-daily] 병렬 수집 chunk ${Math.floor(i / CONCURRENCY) + 1}: ${chunk.length}개 계정`);
 
-      // ── Meta 광고 데이터 수집 (GCP 방식) ──
-      try {
-        const ads = await fetchAccountAds(account.account_id, dateParam ?? undefined, backfill);
+      const chunkResults = await Promise.allSettled(
+        chunk.map((account) => collectAccount(svc, account, yesterday, dateParam, backfill))
+      );
 
-        if (ads.length > 0) {
-          console.log(`[collect-daily] Sample ad keys [${account.account_id}]:`, Object.keys(ads[0]));
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const rows = ads.map((ad: any) => {
-            const insight = (ad.insights as { data: Record<string, unknown>[] }).data[0];
-            const metrics = calculateMetrics(insight);
-            const creativeType = getCreativeType(ad);
-
-            return {
-              date: yesterday,
-              account_id: account.account_id,
-              account_name: account.account_name,
-              campaign_id: ad.campaign_id ?? null,
-              campaign_name: ad.campaign_name ?? null,
-              adset_id: ad.adset_id ?? null,
-              adset_name: ad.adset_name ?? null,
-              ad_id: (ad.ad_id ?? ad.id) as string | null,
-              ad_name: (ad.ad_name ?? ad.name) as string | null,
-              creative_type: creativeType,
-              quality_ranking: normalizeRanking(insight.quality_ranking as string),
-              engagement_ranking: normalizeRanking(insight.engagement_rate_ranking as string),
-              conversion_ranking: normalizeRanking(insight.conversion_rate_ranking as string),
-              ...metrics,
-              collected_at: new Date().toISOString(),
-              // raw JSONB — Meta API 응답 원본 저장
-              raw_insight: insight,
-              raw_ad: { id: ad.id, name: ad.name, creative: ad.creative, campaign_id: ad.campaign_id, campaign_name: ad.campaign_name, adset_id: ad.adset_id, adset_name: ad.adset_name },
-            };
-          });
-
-          const { error: insertErr } = await svc
-            .from("daily_ad_insights")
-            .upsert(rows as never[], { onConflict: "account_id,date,ad_id" });
-
-          if (insertErr) {
-            console.error(
-              `daily_ad_insights insert error [${account.account_id}]:`,
-              insertErr
-            );
-          } else {
-            accountResult.meta_ads = rows.length;
-          }
-
-          // ── 정규화 테이블 UPSERT (landing_pages → creatives → creative_media) ──
-          try {
-            // Step 1: LP URL 수집 + 정규화 + landing_pages UPSERT
-            const lpUrlMap = new Map<string, { canonical: string; hostname: string; account_id: string }>();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            for (const ad of ads as any[]) {
-              const rawLpUrl = extractLpUrl(ad);
-              if (!rawLpUrl) continue;
-              const norm = normalizeUrl(rawLpUrl);
-              if (!norm) continue;
-              lpUrlMap.set(norm.canonical, { ...norm, account_id: account.account_id });
-            }
-
-            let canonicalToLpId = new Map<string, string>();
-
-            if (lpUrlMap.size > 0) {
-              const lpRows = Array.from(lpUrlMap.values()).map((lp) => {
-                const { page_type, platform } = classifyUrl(lp.canonical, lp.hostname);
-                return {
-                  account_id: lp.account_id,
-                  canonical_url: lp.canonical,
-                  domain: lp.hostname,
-                  page_type,
-                  platform,
-                  is_active: true,
-                  updated_at: new Date().toISOString(),
-                };
-              });
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const { error: lpErr } = await (svc as any)
-                .from("landing_pages")
-                .upsert(lpRows, { onConflict: "canonical_url" });
-              if (lpErr) {
-                console.error(`[collect-daily] v2 landing_pages upsert error [${account.account_id}]:`, lpErr);
-              } else {
-                console.log(`[collect-daily] v2 landing_pages: ${lpRows.length}건 upserted`);
-              }
-
-              // canonical_url → lp_id 매핑 조회
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const { data: lpIdData } = await (svc as any)
-                .from("landing_pages")
-                .select("id, canonical_url")
-                .in("canonical_url", Array.from(lpUrlMap.keys()));
-
-              canonicalToLpId = new Map<string, string>(
-                (lpIdData ?? []).map((lp: { canonical_url: string; id: string }) => [lp.canonical_url, lp.id])
-              );
-            }
-
-            // Step 2: creatives UPSERT (lp_id FK 포함, LP 없으면 null)
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const v2CreativeRows = (ads as any[]).map((ad: any) => {
-              const adId = (ad.ad_id ?? ad.id) as string;
-              if (!adId) return null;
-              const creativeType = getCreativeType(ad);
-              const rawLpUrl = extractLpUrl(ad);
-              let lpId: string | null = null;
-              if (rawLpUrl) {
-                const norm = normalizeUrl(rawLpUrl);
-                if (norm) lpId = canonicalToLpId.get(norm.canonical) ?? null;
-              }
-              return {
-                ad_id: adId,
-                account_id: account.account_id,
-                creative_type: creativeType,
-                source: "member",
-                is_member: true,
-                brand_name: account.account_name || null,
-                is_active: true,
-                lp_url: rawLpUrl || null,
-                lp_id: lpId,
-                updated_at: new Date().toISOString(),
-                raw_creative: ad.creative || null,
-              };
-            }).filter(Boolean);
-
-            if (v2CreativeRows.length > 0) {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const { error: v2CreativeErr } = await (svc as any)
-                .from("creatives")
-                .upsert(v2CreativeRows, { onConflict: "ad_id" });
-              if (v2CreativeErr) {
-                console.error(`[collect-daily] v2 creatives upsert error [${account.account_id}]:`, v2CreativeErr);
-              } else {
-                console.log(`[collect-daily] v2 creatives: ${v2CreativeRows.length}건 upserted`);
-              }
-            }
-
-            // Step 3: creative_media UPSERT
-            if (v2CreativeRows.length > 0) {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const adIds = v2CreativeRows.map((r: any) => r.ad_id as string);
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const { data: creativeIdData } = await (svc as any)
-                .from("creatives")
-                .select("id, ad_id")
-                .in("ad_id", adIds);
-
-              const adIdToCreativeId = new Map<string, string>(
-                (creativeIdData ?? []).map((c: { ad_id: string; id: string }) => [c.ad_id, c.id])
-              );
-
-              // 기존 creative_media에서 storage_url 조회 (이미 다운로드된 미디어 보존)
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const { data: existingMedia } = await (svc as any)
-                .from("creative_media")
-                .select("creative_id, position, storage_url, media_url")
-                .in("creative_id", Array.from(adIdToCreativeId.values()));
-              const existingMap = new Map<string, { storage_url: string | null; media_url: string | null }>(
-                (existingMedia ?? []).map((r: any) => [`${r.creative_id}_${r.position ?? 0}`, { storage_url: r.storage_url, media_url: r.media_url }])
-              );
-
-              const mediaRows: Record<string, unknown>[] = [];
-              for (const ad of ads as any[]) {
-                const adId = (ad.ad_id ?? ad.id) as string;
-                const creativeId = adIdToCreativeId.get(adId);
-                if (!creativeId) continue;
-
-                const creative = ad.creative;
-                const creativeType = getCreativeType(ad as any);
-
-                if (creativeType === "CAROUSEL") {
-                  const cards = extractCarouselCards(ad as Record<string, unknown>);
-                  if (cards.length > 0) {
-                    for (const card of cards) {
-                      const key = `${creativeId}_${card.position}`;
-                      const existing = existingMap.get(key);
-                      mediaRows.push({
-                        creative_id: creativeId,
-                        media_type: card.videoId ? "VIDEO" : "IMAGE",
-                        media_url: existing?.media_url || card.imageUrl || null,
-                        media_hash: card.imageHash || null,
-                        content_hash: card.imageHash || card.videoId || null,
-                        storage_url: existing?.storage_url || null,
-                        raw_creative: creative || null,
-                        position: card.position,
-                        card_total: cards.length,
-                      });
-                    }
-                  } else {
-                    const imageHash = creative?.image_hash;
-                    const videoId = creative?.video_id;
-                    const key = `${creativeId}_0`;
-                    const existing = existingMap.get(key);
-                    mediaRows.push({
-                      creative_id: creativeId,
-                      media_type: videoId ? "VIDEO" : "IMAGE",
-                      media_url: existing?.media_url || null,
-                      media_hash: imageHash || null,
-                      content_hash: imageHash || videoId || null,
-                      storage_url: existing?.storage_url || null,
-                      raw_creative: creative || null,
-                      position: 0,
-                      card_total: 1,
-                    });
-                  }
-                } else {
-                  const imageHash = creative?.image_hash;
-                  const videoId = creative?.video_id;
-                  const key = `${creativeId}_0`;
-                  const existing = existingMap.get(key);
-                  mediaRows.push({
-                    creative_id: creativeId,
-                    media_type: videoId ? "VIDEO" : "IMAGE",
-                    media_url: existing?.media_url || null,
-                    media_hash: imageHash || null,
-                    content_hash: imageHash || videoId || null,
-                    storage_url: existing?.storage_url || null,
-                    raw_creative: creative || null,
-                    position: 0,
-                    card_total: 1,
-                  });
-                }
-              }
-
-              if (mediaRows.length > 0) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const { error: mediaErr } = await (svc as any)
-                  .from("creative_media")
-                  .upsert(mediaRows, { onConflict: "creative_id,position" });
-                if (mediaErr) {
-                  console.error(`[collect-daily] creative_media upsert error [${account.account_id}]:`, mediaErr);
-                } else {
-                  console.log(`[collect-daily] creative_media: ${mediaRows.length}건 upserted`);
-                }
-              }
-            }
-          } catch (v2Err) {
-            console.error(`[collect-daily] v2 UPSERT 실패 (기존 로직 영향 없음) [${account.account_id}]:`, v2Err);
-          }
+      for (const r of chunkResults) {
+        if (r.status === "fulfilled") {
+          results.push(r.value);
+          if (r.value.meta_error) hasPartialError = true;
+        } else {
+          hasPartialError = true;
+          console.error("[collect-daily] account error:", r.reason);
+          results.push({ account_id: "unknown", meta_ads: 0, meta_error: String(r.reason) });
         }
-      } catch (e) {
-        accountResult.meta_error = e instanceof Error ? e.message : String(e);
-        console.error(`Meta error [${account.account_id}]:`, e);
-        hasPartialError = true;
       }
-
-      results.push(accountResult);
     }
 
     const totalRecords = results.reduce((sum, r) => sum + (typeof r.meta_ads === "number" ? r.meta_ads : 0), 0);
