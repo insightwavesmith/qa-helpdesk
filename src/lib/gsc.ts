@@ -31,7 +31,7 @@ export async function getSearchAnalytics(
     return [];
   }
 
-  const siteUrl = "https://bscamp.vercel.app";
+  const siteUrl = "https://bscamp.app";
   const apiUrl = `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`;
 
   try {

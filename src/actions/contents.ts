@@ -431,7 +431,7 @@ export async function generateNewsletterFromContents(contentIds: string[]) {
     return "<p>선택된 콘텐츠가 없습니다.</p>";
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://qa-knowledge-base.vercel.app";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://bscamp.app";
   const typeLabels: Record<string, string> = {
     education: "교육", notice: "공지", case_study: "고객사례",
     webinar: "웨비나", promo: "홍보",
@@ -607,7 +607,7 @@ export async function crawlUrl(
     const res = await fetch(url, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; QA-Helpdesk-Bot/1.0; +https://bscamp.vercel.app)",
+          "Mozilla/5.0 (compatible; BSCamp-Bot/1.0; +https://bscamp.app)",
       },
       signal: AbortSignal.timeout(15000),
     });

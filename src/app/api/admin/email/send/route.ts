@@ -175,11 +175,11 @@ export async function POST(request: NextRequest) {
 
     // 수신거부 URL용 base URL
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
-      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://bscamp.kr");
+      || "https://bscamp.kr";
 
     // 추적 URL base
     const trackBaseUrl = process.env.NEXT_PUBLIC_SITE_URL
-      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://bscamp.vercel.app");
+      || "https://bscamp.app";
 
     // CTA 버튼 href를 추적 URL로 감싸기 (수신거부 링크는 제외)
     function wrapCtaLinks(htmlStr: string, sendId: string): string {

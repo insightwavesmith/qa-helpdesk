@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/admin", "/api"],
       },
     ],
-    sitemap: "https://bscamp.vercel.app/sitemap.xml",
+    sitemap: "https://bscamp.app/sitemap.xml",
   };
 }
