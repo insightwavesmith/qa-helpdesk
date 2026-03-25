@@ -21,27 +21,27 @@ const PHASE_CONFIG: Record<
   { label: string; color: string; bgClass: string }
 > = {
   planning: {
-    label: 'planning',
+    label: '기획 중',
     color: '#8B5CF6',
     bgClass: 'bg-purple-100 text-purple-700',
   },
   designing: {
-    label: 'designing',
+    label: '설계 중',
     color: '#3B82F6',
     bgClass: 'bg-blue-100 text-blue-700',
   },
   implementing: {
-    label: 'implementing',
+    label: '구현 중',
     color: '#F59E0B',
     bgClass: 'bg-amber-100 text-amber-700',
   },
   checking: {
-    label: 'checking',
+    label: '검증 중',
     color: '#10B981',
     bgClass: 'bg-green-100 text-green-700',
   },
   completed: {
-    label: 'completed',
+    label: '완료',
     color: '#64748B',
     bgClass: 'bg-gray-100 text-gray-600',
   },

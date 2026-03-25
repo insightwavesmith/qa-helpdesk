@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as fs from "fs/promises";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/app/api/admin/_shared";
 import type { CommLog, TeamId } from "@/types/agent-dashboard";
 
 const VALID_TEAMS: TeamId[] = ["pm", "marketing", "cto"];
@@ -8,11 +8,10 @@ const LOG_PATH = "/tmp/cross-team/logs/comm.jsonl";
 const LOG_DIR = "/tmp/cross-team/logs";
 
 export async function POST(request: NextRequest) {
-  // 인증 확인
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  // admin 권한 확인
+  const auth = await requireAdmin();
+  if ("response" in auth) {
+    return auth.response;
   }
 
   let body: { from?: unknown; team?: unknown; to?: unknown; msg?: unknown };

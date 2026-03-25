@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as fs from "fs/promises";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/app/api/admin/_shared";
 import type { BackgroundTask } from "@/types/agent-dashboard";
 
 const TASKS_PATH = "/tmp/cross-team/background/tasks.json";
@@ -10,11 +10,10 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ taskId: string }> }
 ) {
-  // 인증 확인
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  // admin 권한 확인
+  const auth = await requireAdmin();
+  if ("response" in auth) {
+    return auth.response;
   }
 
   const { taskId } = await params;

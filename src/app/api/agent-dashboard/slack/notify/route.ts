@@ -12,6 +12,8 @@ const SLACK_QUEUE_PATH = '/tmp/cross-team/slack/queue.jsonl';
 const VALID_EVENTS: SlackEventType[] = [
   'task.started', 'task.completed', 'chain.handoff', 'deploy.completed',
   'error.critical', 'approval.needed', 'pdca.phase_change', 'background.completed',
+  // Phase 1에서 추가된 팀 상태 이벤트
+  'team.idle', 'team.recovered', 'session.crashed',
 ];
 const VALID_TEAMS: TeamId[] = ['pm', 'marketing', 'cto'];
 
