@@ -4,7 +4,7 @@
 // 주의: rag.ts가 이 파일을 import하므로, rag.ts import 금지 (순환 의존성)
 
 import { generateEmbedding } from "@/lib/gemini";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { rerankChunks } from "@/lib/reranker";
 import { expandQuery } from "@/lib/query-expander";
 import { analyzeDomain, type DomainAnalysis } from "@/lib/domain-intelligence";

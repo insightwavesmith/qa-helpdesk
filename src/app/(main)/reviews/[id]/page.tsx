@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getReviewById } from "@/actions/reviews";
 import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { ReviewDetailClient } from "./ReviewDetailClient";
 
 async function getUserInfo(): Promise<{ role: string | null; userId: string | null }> {

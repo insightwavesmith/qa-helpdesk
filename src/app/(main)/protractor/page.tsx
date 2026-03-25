@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { redirect } from "next/navigation";
 import RealDashboard from "./real-dashboard";
 import SampleDashboard from "./sample-dashboard";

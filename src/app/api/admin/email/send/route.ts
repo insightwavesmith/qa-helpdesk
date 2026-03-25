@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
         .select("email")
         .eq("email_opted_out", false)
         .limit(5000);
-      recipients = (data || []).map((r) => ({ email: r.email, type: "lead" }));
+      recipients = (data || []).map((r: any) => ({ email: r.email, type: "lead" })); // eslint-disable-line @typescript-eslint/no-explicit-any
     } else if (target === "all_students") {
       const { data } = await svc
         .from("profiles")
@@ -94,14 +94,14 @@ export async function POST(request: NextRequest) {
         .not("email", "is", null)
         .neq("email", "")
         .limit(5000);
-      recipients = (data || []).map((r) => ({ email: r.email, type: "student" }));
+      recipients = (data || []).map((r: any) => ({ email: r.email, type: "student" })); // eslint-disable-line @typescript-eslint/no-explicit-any
     } else if (target === "all_members") {
       const { data } = await svc
         .from("profiles")
         .select("email")
         .eq("role", "member")
         .limit(5000);
-      recipients = (data || []).map((r) => ({ email: r.email, type: "member" }));
+      recipients = (data || []).map((r: any) => ({ email: r.email, type: "member" })); // eslint-disable-line @typescript-eslint/no-explicit-any
     } else if (target === "all") {
       const [leadsRes, studentsRes, membersRes] = await Promise.all([
         svc.from("leads").select("email").eq("email_opted_out", false).limit(5000),

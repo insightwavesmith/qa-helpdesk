@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { fetchAccountAds, buildInsightRows, upsertInsights } from "@/lib/protractor/meta-collector";
 import { fetchMixpanelRevenue, lookupMixpanelSecret } from "@/lib/protractor/mixpanel-collector";

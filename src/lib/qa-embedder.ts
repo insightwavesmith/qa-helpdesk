@@ -1,7 +1,7 @@
 // T1: QA 분리 임베딩 — 승인된 QA를 qa_question + qa_answer chunks로 분리 저장
 // F-02 반영: 재승인 시 기존 chunks DELETE 후 재생성
 
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { generateEmbedding, generateVisionText } from "@/lib/gemini";
 import { chunkText } from "@/lib/chunk-utils";
 

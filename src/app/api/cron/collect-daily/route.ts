@@ -23,7 +23,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 import {
   normalizeRanking, extractLpUrl,
@@ -348,7 +348,7 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
       return { message: "등록된 활성 계정 없음", date: yesterday, accounts: 0, results: [] };
     }
 
-    const accounts = adAccountRows.map((a) => ({
+    const accounts = adAccountRows.map((a: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
       account_id: a.account_id.replace(/^act_/, ""),
       account_name: a.account_name ?? "",
     }));
@@ -356,7 +356,7 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
     // 단일 계정 필터 (테스트/디버깅용)
     let filteredAccounts = accounts;
     if (accountId) {
-      filteredAccounts = accounts.filter((a) => a.account_id === accountId);
+      filteredAccounts = accounts.filter((a: any) => a.account_id === accountId); // eslint-disable-line @typescript-eslint/no-explicit-any
       console.log(`[collect-daily] account filter: ${accountId} → ${filteredAccounts.length}건`);
     } else if (batch != null && batch >= 1 && batch <= 4) {
       const BATCH_SIZE = 10;
@@ -406,7 +406,7 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
     }
 
     // 권한 있는 계정 중 이전에 denied였던 것은 상태 복구
-    const permittedIds = permittedAccounts.map((a) => a.account_id);
+    const permittedIds = permittedAccounts.map((a: any) => a.account_id); // eslint-disable-line @typescript-eslint/no-explicit-any
     if (permittedIds.length > 0) {
       await svc
         .from("ad_accounts")
@@ -424,11 +424,11 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
         .from("daily_ad_insights")
         .select("account_id")
         .eq("date", yesterday)
-        .in("account_id", permittedAccounts.map((a) => a.account_id));
+        .in("account_id", permittedAccounts.map((a: any) => a.account_id)); // eslint-disable-line @typescript-eslint/no-explicit-any
       const alreadyCollected = new Set((existing ?? []).map((r: { account_id: string }) => r.account_id));
       if (alreadyCollected.size > 0) {
         console.log(`[collect-daily] incremental: ${alreadyCollected.size}개 계정 이미 수집됨, 스킵`);
-        accountsToCollect = permittedAccounts.filter((a) => !alreadyCollected.has(a.account_id));
+        accountsToCollect = permittedAccounts.filter((a: any) => !alreadyCollected.has(a.account_id)); // eslint-disable-line @typescript-eslint/no-explicit-any
       }
     }
 
@@ -440,7 +440,7 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
       console.log(`[collect-daily] 병렬 수집 chunk ${Math.floor(i / CONCURRENCY) + 1}: ${chunk.length}개 계정`);
 
       const chunkResults = await Promise.allSettled(
-        chunk.map((account) => collectAccount(svc, account, yesterday, dateParam, backfill))
+        chunk.map((account: any) => collectAccount(svc, account, yesterday, dateParam, backfill)) // eslint-disable-line @typescript-eslint/no-explicit-any
       );
 
       for (const r of chunkResults) {

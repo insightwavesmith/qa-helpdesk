@@ -1,6 +1,6 @@
 "use server";
 
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { getCurrentUser } from "@/lib/firebase/auth";
 
 export interface QaReport {

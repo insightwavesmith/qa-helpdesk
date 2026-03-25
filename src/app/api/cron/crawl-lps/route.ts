@@ -6,7 +6,7 @@
 
 import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { crawlV2 } from "@/lib/railway-crawler";
 import { downloadLpMedia, type MediaAsset } from "@/lib/lp-media-downloader";
 import { uploadToGcs } from "@/lib/gcs-storage";
@@ -325,24 +325,11 @@ async function uploadToStorage(
   try {
     const buffer = Buffer.from(base64Data, "base64");
 
-    if (process.env.USE_CLOUD_SQL === "true") {
-      const { error } = await uploadToGcs("creatives", path, buffer, "image/jpeg");
-      if (error) {
-        console.error(`[crawl-lps v2] GCS upload failed (${path}):`, error);
-        return false;
-      }
-      return true;
-    }
-
-    const { error } = await supabase.storage
-      .from("creatives")
-      .upload(path, buffer, { contentType: "image/jpeg", upsert: true });
-
+    const { error } = await uploadToGcs("creatives", path, buffer, "image/jpeg");
     if (error) {
-      console.error(`[crawl-lps v2] Storage upload failed (${path}):`, error.message);
+      console.error(`[crawl-lps v2] GCS upload failed (${path}):`, error);
       return false;
     }
-
     return true;
   } catch (err) {
     console.error(`[crawl-lps v2] Storage upload error:`, err);
@@ -417,24 +404,11 @@ async function uploadHtmlToStorage(
   try {
     const buffer = Buffer.from(htmlContent, "utf-8");
 
-    if (process.env.USE_CLOUD_SQL === "true") {
-      const { error } = await uploadToGcs("creatives", path, buffer, "text/html");
-      if (error) {
-        console.error(`[crawl-lps v2] GCS HTML upload failed (${path}):`, error);
-        return false;
-      }
-      return true;
-    }
-
-    const { error } = await supabase.storage
-      .from("creatives")
-      .upload(path, buffer, { contentType: "text/html", upsert: true });
-
+    const { error } = await uploadToGcs("creatives", path, buffer, "text/html");
     if (error) {
-      console.error(`[crawl-lps v2] HTML Storage upload failed (${path}):`, error.message);
+      console.error(`[crawl-lps v2] GCS HTML upload failed (${path}):`, error);
       return false;
     }
-
     return true;
   } catch (err) {
     console.error(`[crawl-lps v2] HTML Storage upload error:`, err);

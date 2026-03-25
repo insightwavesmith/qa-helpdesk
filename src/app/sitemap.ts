@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 const BASE_URL = "https://bscamp.vercel.app";
 

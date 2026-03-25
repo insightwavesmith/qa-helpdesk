@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { getReviews } from "@/actions/reviews";
 import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { ReviewListClient } from "./review-list-client";
 
 const PAGE_SIZE = 12;
@@ -71,7 +71,7 @@ export default async function ReviewsPage({
       </div>
 
       <ReviewListClient
-        reviews={(reviews ?? []).map((r) => ({
+        reviews={(reviews ?? []).map((r: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
           ...r,
           image_urls: r.image_urls ?? [],
           view_count: r.view_count ?? 0,

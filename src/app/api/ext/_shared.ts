@@ -1,14 +1,10 @@
 import { NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient, type DbClient } from "@/lib/db";
 import { verifyIdToken } from "@/lib/firebase/auth";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/database";
-
-type ServiceClient = SupabaseClient<Database>;
 
 type ExtAuthSuccess = {
   user: { id: string; email?: string };
-  svc: ServiceClient;
+  svc: DbClient;
 };
 type ExtAuthFailure = { response: NextResponse };
 

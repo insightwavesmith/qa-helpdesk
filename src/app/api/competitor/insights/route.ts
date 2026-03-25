@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { analyzeAds } from "@/lib/competitor/analyze-ads";
 import type { CompetitorAd } from "@/types/competitor";
 

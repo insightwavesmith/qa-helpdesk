@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { getCreativeType } from "@/lib/protractor/creative-type";
 import { runCollectDaily } from "@/app/api/cron/collect-daily/route";
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
       .select("account_id, account_name")
       .eq("active", true)
       .order("account_name");
-    accounts = (data ?? []).map((a) => ({
+    accounts = (data ?? []).map((a: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
       account_id: a.account_id as string,
       account_name: (a.account_name ?? a.account_id) as string,
     }));
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
       .select("account_id, account_name")
       .eq("active", true)
       .in("account_id", accountIds);
-    accounts = (data ?? []).map((a) => ({
+    accounts = (data ?? []).map((a: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
       account_id: a.account_id as string,
       account_name: (a.account_name ?? a.account_id) as string,
     }));

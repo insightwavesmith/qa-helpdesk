@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { publicLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limiter";
 

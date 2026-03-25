@@ -1,7 +1,7 @@
 /**
  * 사전계산 오케스트레이터 — collect-daily 크론 완료 후 호출
  */
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { DbClient } from "@/lib/db";
 import { precomputeT3Scores } from "./t3-precompute";
 import { precomputeStudentPerformance } from "./performance-precompute";
 import { precomputeDiagnosis } from "./diagnosis-precompute";
@@ -27,7 +27,7 @@ export interface PrecomputeResult {
 }
 
 export async function runPrecomputeAll(
-  supabase: SupabaseClient,
+  supabase: DbClient,
 ): Promise<PrecomputeResult> {
   console.log("[precompute] 사전계산 시작");
 

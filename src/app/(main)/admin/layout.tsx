@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 // 관리자 레이아웃: admin 역할만 접근 가능
 // 사이드바/헤더는 (main) 레이아웃에서 제공하므로 여기선 권한 체크만

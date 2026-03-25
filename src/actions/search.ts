@@ -1,6 +1,6 @@
 "use server";
 
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 export async function searchQuestions(query: string, limit = 5) {
   if (!query || query.trim().length < 1) {

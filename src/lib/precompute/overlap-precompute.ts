@@ -3,7 +3,7 @@
  * 모든 활성 계정 × 주요 기간의 타겟중복을 미리 계산하여 daily_overlap_insights에 저장
  * 사용자 요청 시 DB 캐시 즉시 반환 (100ms 이내)
  */
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { DbClient } from "@/lib/db";
 import {
   fetchActiveAdsets,
   fetchCombinedReach,
@@ -19,7 +19,7 @@ const CONCURRENCY = 5;
 const PAIR_TIMEOUT_MS = 50_000;
 
 export async function precomputeOverlap(
-  supabase: SupabaseClient,
+  supabase: DbClient,
 ): Promise<{ computed: number; errors: string[] }> {
   const errors: string[] = [];
   let computed = 0;
@@ -258,7 +258,7 @@ export async function precomputeOverlap(
 }
 
 async function upsertOverlapResult(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   accountId: string,
   dateEnd: string,
   overallRate: number,

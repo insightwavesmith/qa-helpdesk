@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { createAIAnswerForQuestion } from "@/lib/rag";
 import { notifyNewQuestion } from "@/lib/slack";
 import { getCurrentUser } from "@/lib/firebase/auth";

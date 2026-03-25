@@ -1,7 +1,7 @@
 /**
  * 이메일 캠페인 통계 사전계산 — email_sends → subject별 집계
  */
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { DbClient } from "@/lib/db";
 
 function maskEmail(email: string): string {
   const [local, domain] = email.split("@");
@@ -11,7 +11,7 @@ function maskEmail(email: string): string {
 }
 
 export async function precomputeEmailCampaigns(
-  supabase: SupabaseClient
+  supabase: DbClient
 ): Promise<{ computed: number; errors: string[] }> {
   const errors: string[] = [];
   let computed = 0;

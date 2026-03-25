@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getPostById, getPosts } from "@/actions/posts";
 import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import PostDetailClient from "./PostDetailClient";
 import { PageViewTracker } from "@/components/tracking/page-view-tracker";
 
@@ -88,7 +88,7 @@ export default async function PostDetailPage({
             created_at: post.created_at ?? "",
             author: post.author,
           }}
-          relatedPosts={relatedPosts.map((p) => ({
+          relatedPosts={relatedPosts.map((p: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
             id: p.id,
             title: p.title,
             content: p.content,

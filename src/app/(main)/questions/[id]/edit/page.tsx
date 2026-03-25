@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { getQuestionById, getCategories } from "@/actions/questions";
 import { NewQuestionForm } from "../../new/new-question-form";
 

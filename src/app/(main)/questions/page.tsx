@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { getQuestions, getCategories } from "@/actions/questions";
 import { QuestionsListClient } from "./questions-list-client";
 import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 export default async function QuestionsPage({
   searchParams,
@@ -65,7 +65,7 @@ export default async function QuestionsPage({
   } else {
     // 카테고리 slug → id 변환 필요
     let categoryId: number | null = null;
-    const found = categories.find((c) => c.slug === categorySlug);
+    const found = categories.find((c: any) => c.slug === categorySlug); // eslint-disable-line @typescript-eslint/no-explicit-any
     if (found) categoryId = found.id;
 
     questionsResult = await getQuestions({
@@ -83,7 +83,7 @@ export default async function QuestionsPage({
 
   const totalPages = Math.ceil((count || 0) / 12);
 
-  const categoryTabs = categories.map((c) => ({
+  const categoryTabs = categories.map((c: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
     value: c.slug,
     label: c.name,
   }));

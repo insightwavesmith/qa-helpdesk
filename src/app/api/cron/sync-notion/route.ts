@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { generateEmbedding } from "@/lib/gemini";
 import { chunkText } from "@/lib/chunk-utils";
 import { startCronRun, completeCronRun } from "@/lib/cron-logger";

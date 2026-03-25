@@ -2,7 +2,7 @@
  * 수강생 성과 사전계산 — collect-daily 크론 완료 후 실행
  * performance.ts의 getStudentPerformance()와 동일한 계산을 수행하여 student_performance_daily에 UPSERT
  */
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { DbClient } from "@/lib/db";
 import {
   ALL_METRIC_DEFS,
   type BenchEntry,
@@ -14,7 +14,7 @@ const DEFAULT_PERIOD = 30;
 
 /** performance.ts의 fetchBenchmarksForT3과 동일한 로직 */
 async function fetchBenchmarksForT3(
-  supabase: SupabaseClient,
+  supabase: DbClient,
 ): Promise<Map<string, Record<string, BenchEntry>>> {
   const byType = new Map<string, Record<string, BenchEntry>>();
 
@@ -66,7 +66,7 @@ function resolveBenchmarks(
 }
 
 export async function precomputeStudentPerformance(
-  supabase: SupabaseClient,
+  supabase: DbClient,
 ): Promise<{ computed: number; errors: string[] }> {
   const errors: string[] = [];
   let computed = 0;
@@ -81,7 +81,7 @@ export async function precomputeStudentPerformance(
     if (!students || students.length === 0) return { computed, errors };
 
     // 2. ad_accounts (active)
-    const studentIds = students.map((s) => s.id);
+    const studentIds = students.map((s: any) => s.id); // eslint-disable-line @typescript-eslint/no-explicit-any
     const { data: adAccounts } = await supabase
       .from("ad_accounts")
       .select("account_id, user_id, mixpanel_project_id")
@@ -120,7 +120,7 @@ export async function precomputeStudentPerformance(
     startDate.setDate(startDate.getDate() - (DEFAULT_PERIOD - 1));
     const periodStart = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}-${String(startDate.getDate()).padStart(2, "0")}`;
 
-    const accountIds = adAccounts.map((a) => a.account_id);
+    const accountIds = adAccounts.map((a: any) => a.account_id); // eslint-disable-line @typescript-eslint/no-explicit-any
     const { data: insights } = await supabase
       .from("daily_ad_insights")
       .select("*")
@@ -166,8 +166,8 @@ export async function precomputeStudentPerformance(
 
     // 7. Mixpanel
     const projectIds = adAccounts
-      .map((a) => a.mixpanel_project_id)
-      .filter((id): id is string => id != null);
+      .map((a: any) => a.mixpanel_project_id) // eslint-disable-line @typescript-eslint/no-explicit-any
+      .filter((id: any): id is string => id != null); // eslint-disable-line @typescript-eslint/no-explicit-any
 
     const userMixpanel = new Map<string, { revenue: number; purchases: number }>();
     if (projectIds.length > 0) {

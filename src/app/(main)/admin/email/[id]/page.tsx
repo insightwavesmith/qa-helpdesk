@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { getContentById } from "@/actions/contents";
 import NewsletterInlineEditor from "@/components/email/NewsletterInlineEditor";
 

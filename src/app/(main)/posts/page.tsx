@@ -7,7 +7,7 @@ import { getPosts } from "@/actions/posts";
 import { getExcerpt } from "@/components/posts/post-card";
 import { PostsRedesignClient } from "./posts-redesign-client";
 import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 const PAGE_SIZE = 12;
 
@@ -54,7 +54,7 @@ export default async function PostsPage({
   const totalPages = Math.ceil((count || 0) / PAGE_SIZE);
 
   // nullable → non-null 변환 + 서버사이드 excerpt (body_md 클라이언트 전달 제거)
-  const safePosts = posts.map((p) => ({
+  const safePosts = posts.map((p: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
     id: p.id,
     title: p.title,
     excerpt: getExcerpt(p.body_md || p.content || "", 150),
@@ -70,8 +70,8 @@ export default async function PostsPage({
   }));
 
   // 베스트 콘텐츠: is_pinned 첫 번째 글
-  const pinnedPost = safePosts.find((p) => p.is_pinned) || null;
-  const regularPosts = safePosts.filter((p) => p.id !== pinnedPost?.id);
+  const pinnedPost = safePosts.find((p: any) => p.is_pinned) || null; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const regularPosts = safePosts.filter((p: any) => p.id !== pinnedPost?.id); // eslint-disable-line @typescript-eslint/no-explicit-any
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">

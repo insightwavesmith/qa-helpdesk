@@ -2,7 +2,7 @@ import { ProtractorAdminClient } from "./protractor-admin-client";
 import { BenchmarkAdmin } from "../../protractor/components/benchmark-admin";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BackfillSection } from "./backfill-section";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 export default async function AdminProtractorPage() {
   // T8: 계정 목록 서버에서 조회 → BackfillSection에 전달
@@ -13,7 +13,7 @@ export default async function AdminProtractorPage() {
     .eq("active", true)
     .order("account_name");
 
-  const backfillAccounts = (adAccounts ?? []).map((a) => ({
+  const backfillAccounts = (adAccounts ?? []).map((a: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
     account_id: a.account_id as string,
     account_name: (a.account_name ?? a.account_id) as string,
   }));

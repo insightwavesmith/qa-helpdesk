@@ -4,7 +4,7 @@
  *
  * precompute-scores.mjs Phase 2 로직을 TypeScript로 포팅
  */
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { DbClient } from "@/lib/db";
 import {
   computeMetricValues,
   calculateT3Score,
@@ -26,7 +26,7 @@ function getPeriodStart(periodDays: number): string {
 
 /** "ALL" 타입 벤치마크 맵 조회 */
 async function fetchBenchmarkMap(
-  svc: SupabaseClient,
+  svc: DbClient,
 ): Promise<Record<string, number>> {
   const benchMap: Record<string, number> = {};
   try {
@@ -111,7 +111,7 @@ interface MixpanelAgg {
 }
 
 export async function precomputeStudentPerformance(
-  svc: SupabaseClient,
+  svc: DbClient,
 ): Promise<{ computed: number; errors: string[] }> {
   const errors: string[] = [];
   let computed = 0;
@@ -235,7 +235,7 @@ export async function precomputeStudentPerformance(
       }
 
       // 7. 해당 기간 기존 데이터 삭제 (UPSERT 대신 DELETE + INSERT 패턴)
-      await (svc.from("student_performance_daily" as never) as ReturnType<SupabaseClient["from"]>)
+      await (svc.from("student_performance_daily" as never) as ReturnType<DbClient["from"]>)
         .delete()
         .eq("period", period);
 
@@ -292,7 +292,7 @@ export async function precomputeStudentPerformance(
       const BATCH = 100;
       for (let i = 0; i < rows.length; i += BATCH) {
         const batch = rows.slice(i, i + BATCH);
-        const { error: insertErr } = await (svc.from("student_performance_daily" as never) as ReturnType<SupabaseClient["from"]>)
+        const { error: insertErr } = await (svc.from("student_performance_daily" as never) as ReturnType<DbClient["from"]>)
           .insert(batch as never[]);
 
         if (insertErr) {

@@ -2,7 +2,6 @@
  * 미들웨어용 Firebase 세션 검증 + 역할 기반 라우팅
  * src/lib/supabase/middleware.ts를 Firebase 기반으로 재작성
  */
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE_NAME } from "@/lib/firebase/auth";
 
@@ -95,27 +94,12 @@ export async function updateSession(request: NextRequest) {
   if (!role) {
     // cookie 없음 → profiles 조회
     try {
-      let profile: { role: string; onboarding_status: string } | null = null;
-
-      if (process.env.USE_CLOUD_SQL === "true") {
-        const { query } = await import("@/lib/db/pool");
-        const result = await query(
-          "SELECT role, onboarding_status FROM profiles WHERE id = $1 LIMIT 1",
-          [uid]
-        );
-        profile = result.rows[0] || null;
-      } else {
-        const svc = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!
-        );
-        const { data } = await svc
-          .from("profiles")
-          .select("role, onboarding_status")
-          .eq("id", uid)
-          .single();
-        profile = data;
-      }
+      const { query } = await import("@/lib/db/pool");
+      const result = await query(
+        "SELECT role, onboarding_status FROM profiles WHERE id = $1 LIMIT 1",
+        [uid]
+      );
+      const profile: { role: string; onboarding_status: string } | null = result.rows[0] || null;
 
       if (profile) {
         const fetchedRole = profile.role as string;

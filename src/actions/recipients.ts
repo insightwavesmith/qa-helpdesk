@@ -51,7 +51,7 @@ export async function getRecipients(
         .eq("email_opted_out", false)
         .limit(5000);
       return {
-        recipients: (data || []).map((r) => ({
+        recipients: (data || []).map((r: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
           email: r.email,
           name: r.name || "",
           source: "lead" as const,
@@ -69,7 +69,7 @@ export async function getRecipients(
         .neq("email", "")
         .limit(5000);
       return {
-        recipients: (data || []).map((r) => ({
+        recipients: (data || []).map((r: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
           email: r.email,
           name: r.name || "",
           source: "profiles" as const,
@@ -85,7 +85,7 @@ export async function getRecipients(
         .eq("role", "member")
         .limit(5000);
       return {
-        recipients: (data || []).map((r) => ({
+        recipients: (data || []).map((r: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
           email: r.email,
           name: r.name || "",
           source: "member" as const,
@@ -148,9 +148,9 @@ export async function getRecipientStats(): Promise<{
         .limit(5000),
     ]);
 
-    const leadsEmails = (leadsResult.data || []).map((r) => r.email);
-    const studentsEmails = (studentsResult.data || []).map((r) => r.email);
-    const membersEmails = (membersResult.data || []).map((r) => r.email);
+    const leadsEmails = (leadsResult.data || []).map((r: any) => r.email); // eslint-disable-line @typescript-eslint/no-explicit-any
+    const studentsEmails = (studentsResult.data || []).map((r: any) => r.email); // eslint-disable-line @typescript-eslint/no-explicit-any
+    const membersEmails = (membersResult.data || []).map((r: any) => r.email); // eslint-disable-line @typescript-eslint/no-explicit-any
 
     // 전체 중복 제거
     const allEmails = new Set([...leadsEmails, ...studentsEmails, ...membersEmails]);

@@ -2,47 +2,208 @@
   "features": {
     "ad-account-id-bugfix": {
       "phase": "completed",
-      "matchRate": null,
-      "documents": {},
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "",
+        "at": "2026-03-25"
+      },
+      "design": {
+        "team": "pm",
+        "done": true,
+        "doc": "",
+        "at": "2026-03-25"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": null,
+        "at": "2026-03-25"
+      },
+      "check": {
+        "team": "qa",
+        "done": false,
+        "doc": "",
+        "matchRate": null
+      },
+      "act": {
+        "done": true,
+        "commit": null,
+        "deployedAt": null
+      },
       "notes": "광고계정ID 수정 버그 핫픽스 (2파일)",
       "updatedAt": "2026-03-25"
     },
     "slack-notification": {
       "phase": "implementing",
-      "matchRate": null,
-      "documents": {
-        "design": "docs/02-design/features/slack-notification.design.md"
+      "plan": {
+        "team": "pm",
+        "done": false,
+        "doc": "",
+        "at": "2026-03-25"
+      },
+      "design": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/02-design/features/slack-notification.design.md",
+        "at": "2026-03-25"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": null,
+        "at": null
+      },
+      "check": {
+        "team": "qa",
+        "done": false,
+        "doc": "",
+        "matchRate": null
+      },
+      "act": {
+        "done": false,
+        "commit": null,
+        "deployedAt": null
       },
       "notes": "통합 채널 + 재시도 + rate limit 큐 구현 완료, 체크 미진행",
       "updatedAt": "2026-03-25"
     },
     "web-terminal-dashboard": {
       "phase": "implementing",
-      "matchRate": null,
-      "documents": {
-        "design": "docs/02-design/features/web-terminal-dashboard.design.md"
+      "plan": {
+        "team": "pm",
+        "done": false,
+        "doc": "",
+        "at": "2026-03-25"
+      },
+      "design": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/02-design/features/web-terminal-dashboard.design.md",
+        "at": "2026-03-25"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": null,
+        "at": null
+      },
+      "check": {
+        "team": "qa",
+        "done": false,
+        "doc": "",
+        "matchRate": null
+      },
+      "act": {
+        "done": false,
+        "commit": null,
+        "deployedAt": null
       },
       "notes": "xterm.js + WS + REST API 17파일 신규 생성, 체크 미진행",
       "updatedAt": "2026-03-25"
     },
     "deepgaze-gemini-pipeline": {
       "phase": "implementing",
-      "matchRate": null,
-      "documents": {
-        "plan": "docs/01-plan/features/deepgaze-gemini-pipeline.plan.md"
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/01-plan/features/deepgaze-gemini-pipeline.plan.md",
+        "at": "2026-03-25"
+      },
+      "design": {
+        "team": "pm",
+        "done": false,
+        "doc": "",
+        "at": "2026-03-25"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": null,
+        "at": null
+      },
+      "check": {
+        "team": "qa",
+        "done": false,
+        "doc": "",
+        "matchRate": null
+      },
+      "act": {
+        "done": false,
+        "commit": null,
+        "deployedAt": null
       },
       "notes": "결합 분석 크론 + 체인 트리거 구현 완료, 체크 미진행",
       "updatedAt": "2026-03-25"
     },
     "collect-daily-refactoring": {
       "phase": "completed",
-      "matchRate": 97,
-      "documents": {
-        "analysis": "docs/03-analysis/collect-daily-refactoring.analysis.md"
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "",
+        "at": "2026-03-25"
+      },
+      "design": {
+        "team": "pm",
+        "done": true,
+        "doc": "",
+        "at": "2026-03-25"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": null,
+        "at": "2026-03-25"
+      },
+      "check": {
+        "team": "qa",
+        "done": true,
+        "doc": "docs/03-analysis/collect-daily-refactoring.analysis.md",
+        "matchRate": 97
+      },
+      "act": {
+        "done": true,
+        "commit": null,
+        "deployedAt": null
       },
       "notes": "병렬화 + collectAccount 분리 + incremental 수집 완료",
       "updatedAt": "2026-03-25"
+    },
+    "supabase-removal": {
+      "phase": "completed",
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/01-plan/features/supabase-removal.plan.md",
+        "at": "2026-03-25"
+      },
+      "design": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/02-design/features/supabase-removal.design.md",
+        "at": "2026-03-25"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": null,
+        "at": "2026-03-25"
+      },
+      "check": {
+        "team": "qa",
+        "done": true,
+        "doc": "docs/03-analysis/supabase-removal.analysis.md",
+        "matchRate": 97
+      },
+      "act": {
+        "done": true,
+        "commit": null,
+        "deployedAt": null
+      },
+      "notes": "Supabase SDK 완전 제거 — @supabase/supabase-js, @supabase/ssr 패키지 삭제, 95파일 import 전환, .storage 6파일 GCS 전환",
+      "updatedAt": "2026-03-25"
     }
   },
-  "updatedAt": "2026-03-25T14:30:00+09:00"
+  "updatedAt": "2026-03-25T17:00:00.000000"
 }

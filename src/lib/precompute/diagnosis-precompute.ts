@@ -2,7 +2,7 @@
  * 광고 진단 사전계산 — collect-daily 크론 완료 후 실행
  * diagnose route와 동일한 로직으로 계정별 상위 5개 광고 진단 → ad_diagnosis_cache에 UPSERT
  */
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { DbClient } from "@/lib/db";
 import { diagnoseAd, Verdict, PART_METRICS, type GCPBenchmarks } from "@/lib/diagnosis";
 
 const TOP_ADS_LIMIT = 10;
@@ -16,7 +16,7 @@ for (const partConfig of Object.values(PART_METRICS)) {
 }
 
 /** diagnose route와 동일한 벤치마크 조회 */
-async function fetchGCPBenchmarks(supabase: SupabaseClient): Promise<GCPBenchmarks> {
+async function fetchGCPBenchmarks(supabase: DbClient): Promise<GCPBenchmarks> {
   const gcpBenchmarks: GCPBenchmarks = {};
 
   const { data: latestBench } = await supabase
@@ -67,7 +67,7 @@ async function fetchGCPBenchmarks(supabase: SupabaseClient): Promise<GCPBenchmar
 }
 
 export async function precomputeDiagnosis(
-  supabase: SupabaseClient,
+  supabase: DbClient,
 ): Promise<{ computed: number; errors: string[] }> {
   const errors: string[] = [];
   let computed = 0;

@@ -53,7 +53,8 @@ interface EmbeddedRelation {
   isArray: boolean;
 }
 
-interface QueryResult<T = Record<string, unknown>> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface QueryResult<T = any> {
   data: T | T[] | null;
   error: { message: string; code?: string } | null;
   count?: number | null;
@@ -61,7 +62,8 @@ interface QueryResult<T = Record<string, unknown>> {
 
 // ─── 쿼리 빌더 ───
 
-export class PostgresQueryBuilder<T = Record<string, unknown>> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export class PostgresQueryBuilder<T = any> {
   private pool: Pool;
   private _table: string;
   private _operation: "select" | "insert" | "update" | "delete" | "upsert" = "select";
@@ -817,7 +819,8 @@ export class PostgresQueryBuilder<T = Record<string, unknown>> {
 
 // ─── RPC 호출 ───
 
-export class PostgresRpcBuilder<T = Record<string, unknown>> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export class PostgresRpcBuilder<T = any> {
   private pool: Pool;
   private funcName: string;
   private params: Record<string, unknown>;

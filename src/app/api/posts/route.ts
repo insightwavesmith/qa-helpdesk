@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 // 모찌(시스템) API: 외부에서 콘텐츠 생성용
 // CRON_SECRET을 API 키로 사용

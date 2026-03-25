@@ -27,7 +27,7 @@ export async function GET() {
           const accountMap = new Map((accounts || []).map((a: { id: string; account_id: string; created_at: string | null }) => [a.account_id, a]));
 
           const result = cached.map((c: Record<string, unknown>) => {
-            const acc = accountMap.get(c.account_id as string);
+            const acc = accountMap.get(c.account_id as string) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
             return {
               id: acc?.id || c.account_id,
               account_id: c.account_id,
@@ -70,7 +70,7 @@ export async function GET() {
 
     if (accountsError) throw accountsError;
 
-    const accountIds = (accounts || []).map((a) => a.account_id);
+    const accountIds = (accounts || []).map((a: any) => a.account_id); // eslint-disable-line @typescript-eslint/no-explicit-any
 
     if (accountIds.length === 0) {
       return NextResponse.json({
@@ -115,7 +115,7 @@ export async function GET() {
     }
 
     // 3) service_secrets 유무 체크
-    const secretKeyNames = accountIds.map((id) => `secret_${id}`);
+    const secretKeyNames = accountIds.map((id: any) => `secret_${id}`); // eslint-disable-line @typescript-eslint/no-explicit-any
     const { data: secrets } = await svc
       .from("service_secrets" as never)
       .select("key_name" as never)
@@ -145,7 +145,7 @@ export async function GET() {
     );
 
     // 4) 결과 조합
-    const result = (accounts || []).map((acc) => {
+    const result = (accounts || []).map((acc: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
       const meta = metaStatusMap.get(acc.account_id);
 
       const metaOk = !!meta;
@@ -189,9 +189,9 @@ export async function GET() {
 
     const stats = {
       total: result.length,
-      metaOk: result.filter((r) => r.meta.ok).length,
-      mixpanelOk: result.filter((r) => r.mixpanel.ok).length,
-      error: result.filter((r) => !r.meta.ok || !r.mixpanel.ok).length,
+      metaOk: result.filter((r: any) => r.meta.ok).length, // eslint-disable-line @typescript-eslint/no-explicit-any
+      mixpanelOk: result.filter((r: any) => r.mixpanel.ok).length, // eslint-disable-line @typescript-eslint/no-explicit-any
+      error: result.filter((r: any) => !r.meta.ok || !r.mixpanel.ok).length, // eslint-disable-line @typescript-eslint/no-explicit-any
     };
 
     return NextResponse.json({ accounts: result, stats });

@@ -1,6 +1,6 @@
 "use server";
 
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth-utils";
 import { getCurrentUser } from "@/lib/firebase/auth";
 
@@ -76,7 +76,7 @@ export async function getInviteCodes() {
     }
   }
 
-  const merged = (data || []).map((invite) => ({
+  const merged = (data || []).map((invite: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
     ...invite,
     used_count: actualCounts.get(invite.code.toLowerCase()) ?? 0,
   }));

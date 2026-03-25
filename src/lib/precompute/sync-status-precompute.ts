@@ -1,10 +1,10 @@
 /**
  * 계정 동기화 상태 사전계산 — ad_accounts + daily_ad_insights + mixpanel 상태
  */
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { DbClient } from "@/lib/db";
 
 export async function precomputeSyncStatus(
-  supabase: SupabaseClient
+  supabase: DbClient
 ): Promise<{ computed: number; errors: string[] }> {
   const errors: string[] = [];
   let computed = 0;
@@ -19,7 +19,7 @@ export async function precomputeSyncStatus(
     if (accountsError) throw accountsError;
     if (!accounts || accounts.length === 0) return { computed, errors };
 
-    const accountIds = accounts.map((a) => a.account_id);
+    const accountIds = accounts.map((a: any) => a.account_id); // eslint-disable-line @typescript-eslint/no-explicit-any
 
     // 2) Meta 최근 3일 데이터
     const threeDaysAgo = new Date();

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { requireStaff } from "@/lib/auth-utils";
 import { embedImage } from "@/lib/image-embedder";
 import { embedQAPair, embedQAThread } from "@/lib/qa-embedder";

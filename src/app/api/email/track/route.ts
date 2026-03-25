@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 // 1x1 투명 GIF (43 bytes)
 const TRANSPARENT_GIF = Buffer.from(

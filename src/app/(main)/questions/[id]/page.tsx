@@ -5,7 +5,7 @@ import { getQuestionById, getFollowUpQuestions } from "@/actions/questions";
 import { getAnswersByQuestionId } from "@/actions/answers";
 import { AnswerForm } from "./answer-form";
 import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { ImageGallery } from "@/components/questions/ImageGallery";
 import { SourceReferences } from "@/components/questions/SourceReferences";
 import { Badge } from "@/components/ui/badge";
@@ -90,7 +90,7 @@ export default async function QuestionDetailPage({
     const { data: answers = [] } = await getAnswersByQuestionId(id, {
       includeUnapproved: isAdmin,
     });
-    approvedAnswers = (answers ?? []).filter((a) => a.is_approved);
+    approvedAnswers = (answers ?? []).filter((a: any) => a.is_approved); // eslint-disable-line @typescript-eslint/no-explicit-any
   } catch (e) {
     void e;
   }
@@ -106,7 +106,7 @@ export default async function QuestionDetailPage({
       });
       followUps.push({
         question: fq,
-        answers: (fqAnswers ?? []).filter((a) => a.is_approved),
+        answers: (fqAnswers ?? []).filter((a: any) => a.is_approved), // eslint-disable-line @typescript-eslint/no-explicit-any
       });
     }
   } catch (e) {
@@ -228,7 +228,7 @@ export default async function QuestionDetailPage({
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            {approvedAnswers.map((answer) => {
+            {approvedAnswers.map((answer: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
               const isAI = answer.is_ai;
               const isOfficial = !isAI && isOfficialAnswer(answer.author);
 
@@ -346,7 +346,7 @@ export default async function QuestionDetailPage({
                 </article>
 
                 {/* 꼬리질문의 답변 */}
-                {fu.answers.map((answer) => {
+                {fu.answers.map((answer: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
                   const isAI = answer.is_ai;
                   const isOfficial = !isAI && isOfficialAnswer(answer.author);
                   return (

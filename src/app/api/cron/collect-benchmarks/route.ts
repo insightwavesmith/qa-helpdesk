@@ -9,7 +9,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
+import { uploadToGcs } from "@/lib/gcs-storage";
 import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 import { classifyAccount } from "@/lib/classify-account";
 import {
@@ -841,19 +842,19 @@ export async function GET(req: NextRequest) {
 
               // Storage 업로드: benchmark/{account_id}/media/{ad_id}.{ext}
               const storagePath = `benchmark/${accountId}/media/${adId}.${ext}`;
-              const { error: uploadErr } = await anySvc.storage
-                .from("creatives")
-                .upload(storagePath, imgBuffer, {
-                  contentType,
-                  upsert: true,
-                });
+              const { error: uploadErr } = await uploadToGcs(
+                "creatives",
+                storagePath,
+                imgBuffer,
+                contentType,
+              );
 
               if (!uploadErr) {
                 mediaUploaded++;
               } else {
                 console.warn(
                   `[STEP 4] ${adId} 업로드 실패:`,
-                  uploadErr.message
+                  uploadErr
                 );
                 mediaFailed++;
               }

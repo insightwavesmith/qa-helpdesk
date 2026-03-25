@@ -9,7 +9,7 @@
  * 개별 실행: ?only=t3|student|diagnosis
  */
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { precomputeT3Scores } from "@/lib/precompute/t3-precompute";
 import { precomputeStudentPerformance } from "@/lib/precompute/student-precompute";
 import { precomputeDiagnosis } from "@/lib/precompute/diagnosis-precompute";

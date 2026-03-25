@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { SettingsForm } from "./settings-form";
 import { PageViewTracker } from "@/components/tracking/page-view-tracker";

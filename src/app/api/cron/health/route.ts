@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 function verifyCron(request: Request): boolean {
   const authHeader = request.headers.get("authorization");

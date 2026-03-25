@@ -110,3 +110,5 @@ EmailManagementPage
 - [x] 구독/수신거부 API
 - [x] AI 콘텐츠 생성 (KnowledgeService 위임)
 - [x] 이메일 요약 생성 (JSON 스키마 파이프라인)
+
+<!-- 2026-03-25: Supabase SDK 제거 — import @/lib/supabase/server → @/lib/db 전환 완료 -->

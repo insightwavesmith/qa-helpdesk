@@ -20,7 +20,6 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireAdmin();
     if ("response" in auth) return auth.response;
-    const { svc } = auth;
 
     // 멀티파트 폼 데이터 파싱
     const formData = await request.formData();
@@ -49,49 +48,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Storage 업로드 (GCS 또는 Supabase 듀얼 라이트)
+    // Storage 업로드 (GCS)
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileName = `${Date.now()}-${file.name}`;
 
-    if (process.env.USE_CLOUD_SQL === "true") {
-      const { publicUrl, error: gcsError } = await uploadToGcs(
-        "email-attachments",
-        fileName,
-        buffer,
-        file.type,
-      );
-      if (gcsError || !publicUrl) {
-        console.error("GCS upload error:", gcsError);
-        return NextResponse.json({ error: "파일 업로드에 실패했습니다." }, { status: 500 });
-      }
-      return NextResponse.json({ url: publicUrl, filename: file.name, size: file.size });
+    const { publicUrl, error: gcsError } = await uploadToGcs(
+      "email-attachments",
+      fileName,
+      buffer,
+      file.type,
+    );
+    if (gcsError || !publicUrl) {
+      console.error("GCS upload error:", gcsError);
+      return NextResponse.json({ error: "파일 업로드에 실패했습니다." }, { status: 500 });
     }
 
-    const { data, error } = await svc.storage
-      .from("email-attachments")
-      .upload(fileName, buffer, {
-        contentType: file.type,
-        upsert: false,
-      });
-
-    if (error) {
-      console.error("Storage upload error:", error);
-      return NextResponse.json(
-        { error: "파일 업로드에 실패했습니다." },
-        { status: 500 }
-      );
-    }
-
-    // Public URL 생성
-    const { data: urlData } = svc.storage
-      .from("email-attachments")
-      .getPublicUrl(data.path);
-
-    return NextResponse.json({
-      url: urlData.publicUrl,
-      filename: file.name,
-      size: file.size,
-    });
+    return NextResponse.json({ url: publicUrl, filename: file.name, size: file.size });
   } catch (error) {
     console.error("File upload error:", error);
     return NextResponse.json(

@@ -19,7 +19,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 import { fetchMetaWithRetry } from "@/lib/collect-daily-utils";
 
@@ -145,7 +145,7 @@ export async function GET(req: NextRequest) {
     }
 
     const existingMap = new Map<string, boolean>(
-      (existingRows ?? []).map((r) => [r.account_id, r.active ?? false])
+      (existingRows ?? []).map((r: any) => [r.account_id, r.active ?? false]) // eslint-disable-line @typescript-eslint/no-explicit-any
     );
 
     console.log(`[discover-accounts] DB 기존 계정: ${existingMap.size}개`);
@@ -237,8 +237,8 @@ export async function GET(req: NextRequest) {
         console.error("[discover-accounts] 활성 계정 조회 오류:", activeErr.message);
       } else {
         const toDeactivateIds = (activeRows ?? [])
-          .map((r) => r.account_id)
-          .filter((id) => !processedAccountIds.includes(id));
+          .map((r: any) => r.account_id) // eslint-disable-line @typescript-eslint/no-explicit-any
+          .filter((id: any) => !processedAccountIds.includes(id)); // eslint-disable-line @typescript-eslint/no-explicit-any
 
         if (toDeactivateIds.length > 0) {
           const { error: deactivateErr } = await svc

@@ -2,7 +2,7 @@
 
 import { after } from "next/server";
 import { requireStaff } from "@/lib/auth-utils";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { generateEmbedding } from "@/lib/gemini";
 import { uploadToGcs } from "@/lib/gcs-storage";
 import { embedContentToChunks } from "@/actions/embed-pipeline";
@@ -71,35 +71,18 @@ async function resolveImagePlaceholders(bodyMd: string, contentId: string): Prom
       const slug = slugifyAlt(alt);
       const fileName = `posts/${contentId}/${slug}.jpg`;
 
-      // 3. Storage 업로드 (GCS 또는 Supabase 듀얼 라이트)
-      let uploadedUrl: string;
-      if (process.env.USE_CLOUD_SQL === "true") {
-        const { publicUrl, error: gcsError } = await uploadToGcs(
-          "content-images",
-          fileName,
-          imageBuffer,
-          "image/jpeg",
-        );
-        if (gcsError || !publicUrl) {
-          console.warn(`resolveImagePlaceholders: GCS 업로드 실패 (${alt}):`, gcsError);
-          continue;
-        }
-        uploadedUrl = publicUrl;
-      } else {
-        const { error: uploadError } = await supabase.storage
-          .from("content-images")
-          .upload(fileName, imageBuffer, { contentType: "image/jpeg", upsert: true });
-
-        if (uploadError) {
-          console.warn(`resolveImagePlaceholders: 업로드 실패 (${alt}):`, uploadError.message);
-          continue;
-        }
-
-        const { data: urlData } = supabase.storage
-          .from("content-images")
-          .getPublicUrl(fileName);
-        uploadedUrl = urlData.publicUrl;
+      // 3. Storage 업로드 (GCS)
+      const { publicUrl, error: gcsError } = await uploadToGcs(
+        "content-images",
+        fileName,
+        imageBuffer,
+        "image/jpeg",
+      );
+      if (gcsError || !publicUrl) {
+        console.warn(`resolveImagePlaceholders: GCS 업로드 실패 (${alt}):`, gcsError);
+        continue;
       }
+      const uploadedUrl = publicUrl;
 
       // 4. body_md 치환
       result = result.replace(fullMatch, `![${alt}](${uploadedUrl})`);
@@ -455,7 +438,7 @@ export async function generateNewsletterFromContents(contentIds: string[]) {
   };
 
   const sectionsHtml = contents
-    .map((c) => {
+    .map((c: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
       const contentType = c.type || "education";
       const typeLabel = typeLabels[contentType] || contentType;
 
@@ -600,7 +583,7 @@ export async function embedAllContents() {
   for (let i = 0; i < items.length; i += BATCH_SIZE) {
     const batch = items.slice(i, i + BATCH_SIZE);
     const results = await Promise.allSettled(
-      batch.map(async (c) => {
+      batch.map(async (c: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
         const embedding = await generateEmbedding(c.title + " " + c.body_md);
         const { error: updateError } = await supabase
           .from("contents")

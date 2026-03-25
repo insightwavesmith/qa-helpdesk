@@ -1,6 +1,6 @@
 "use server";
 
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 import { cookies } from "next/headers";
 import { encrypt } from "@/lib/crypto";
 import { getCurrentUser } from "@/lib/firebase/auth";

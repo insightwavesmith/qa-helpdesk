@@ -1,18 +1,14 @@
 import { NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/database";
+import { createServiceClient, type DbClient } from "@/lib/db";
 import type { UserRole } from "@/types";
 import { getCurrentUser } from "@/lib/firebase/auth";
-
-type ServiceClient = SupabaseClient<Database>;
 
 const ALLOWED_ROLES: UserRole[] = ["student", "member", "admin"];
 
 type AuthSuccess = {
   user: { uid: string; email?: string };
   profile: { role: UserRole };
-  svc: ServiceClient;
+  svc: DbClient;
 };
 type AuthFailure = { response: NextResponse };
 
@@ -49,7 +45,7 @@ export async function requireProtractorAccess(): Promise<AuthSuccess | AuthFailu
 
 // 계정 소유권 확인 (admin은 전체 접근 가능)
 export async function verifyAccountOwnership(
-  svc: ServiceClient,
+  svc: DbClient,
   userId: string,
   role: UserRole,
   accountId: string

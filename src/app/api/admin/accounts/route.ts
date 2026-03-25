@@ -19,8 +19,8 @@ export async function GET() {
 
     // 배정된 user_id 목록에서 프로필 조회
     const userIds = (accounts || [])
-      .map((a) => a.user_id)
-      .filter((id): id is string => !!id);
+      .map((a: any) => a.user_id) // eslint-disable-line @typescript-eslint/no-explicit-any
+      .filter((id: any): id is string => !!id); // eslint-disable-line @typescript-eslint/no-explicit-any
 
     let profilesMap: Record<string, { name: string; email: string }> = {};
     if (userIds.length > 0) {
@@ -30,7 +30,7 @@ export async function GET() {
         .in("id", userIds);
 
       profilesMap = (profiles || []).reduce(
-        (acc, p) => {
+        (acc: any, p: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
           acc[p.id] = { name: p.name, email: p.email };
           return acc;
         },
@@ -45,7 +45,7 @@ export async function GET() {
       .in("role", ["student", "member"])
       .order("name");
 
-    const result = (accounts || []).map((acc) => ({
+    const result = (accounts || []).map((acc: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
       ...acc,
       assigned_user: acc.user_id ? profilesMap[acc.user_id] || null : null,
     }));

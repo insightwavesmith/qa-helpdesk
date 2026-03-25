@@ -1,14 +1,10 @@
 import { NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/database";
+import { createServiceClient, type DbClient } from "@/lib/db";
 import { getCurrentUser } from "@/lib/firebase/auth";
-
-type ServiceClient = SupabaseClient<Database>;
 
 type AdminAuthSuccess = {
   user: { uid: string; email?: string };
-  svc: ServiceClient;
+  svc: DbClient;
 };
 type AdminAuthFailure = { response: NextResponse };
 

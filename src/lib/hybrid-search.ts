@@ -4,7 +4,7 @@
 import { generateEmbedding } from "@/lib/gemini";
 import { searchChunksByEmbedding, type ChunkResult } from "@/lib/knowledge";
 import { rerankChunks } from "@/lib/reranker";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/db";
 
 export interface HybridSearchOptions {
   queries: string[];
