@@ -371,8 +371,41 @@
       },
       "updatedAt": "2026-03-25T20:55:31",
       "notes": "목업 v3 완료"
+    },
+    "lp-analysis-pipeline": {
+      "phase": "plan",
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/01-plan/features/lp-analysis-pipeline.plan.md",
+        "at": "2026-03-25"
+      },
+      "design": {
+        "team": "pm",
+        "done": false,
+        "doc": "",
+        "at": null
+      },
+      "do": {
+        "team": "cto",
+        "done": false,
+        "commit": null,
+        "at": null
+      },
+      "check": {
+        "team": "qa",
+        "done": false,
+        "doc": "",
+        "matchRate": null
+      },
+      "act": {
+        "done": false,
+        "commit": null
+      },
+      "updatedAt": "2026-03-25T21:38:47",
+      "notes": "Plan 완료"
     }
   },
   "updatedAt": "2026-03-25T09:30:00.000000",
-  "_lastUpdated": "2026-03-25T20:55:31"
+  "_lastUpdated": "2026-03-25T21:38:47"
 }

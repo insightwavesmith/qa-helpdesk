@@ -3148,5 +3148,38 @@
     },
     "updatedAt": "2026-03-25T20:54:26",
     "notes": "목업 v3 완료 - 5축 분석 + 총가치각도기 UI"
+  },
+  "lp-analysis-pipeline": {
+    "phase": "plan",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/lp-analysis-pipeline.plan.md",
+      "at": "2026-03-25"
+    },
+    "design": {
+      "team": "pm",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null
+    },
+    "updatedAt": "2026-03-25T21:38:47",
+    "notes": "Plan 완료 - 소재↔LP 유기적 연결 + Mixpanel 텍소노미 + reach_to_purchase_rate"
   }
 }
