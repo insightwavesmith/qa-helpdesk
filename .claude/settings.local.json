@@ -1,7 +1,4 @@
 {
-  "model": "claude-opus-4-6",
-  "alwaysThinkingEnabled": true,
-  "effortLevel": "high",
   "permissions": {
     "allow": [
       "Bash(*)",
@@ -13,10 +10,12 @@
       "Glob(*)",
       "Grep(*)",
       "TodoRead(*)",
-      "TodoWrite(*)"
+      "TodoWrite(*)",
+      "WebSearch"
     ],
     "deny": []
   },
+  "model": "claude-opus-4-6",
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "context7"
@@ -147,5 +146,7 @@
         ]
       }
     ]
-  }
+  },
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "high"
 }

@@ -23,6 +23,8 @@ const PUBLIC_PATHS = [
   "/api/internal",
   "/api/competitor",
   "/privacy",
+  "/sitemap.xml",
+  "/robots.txt",
 ];
 
 // 정적 파일 및 공개 경로 매칭 ("/"는 middleware에서 직접 처리)
