@@ -53,6 +53,11 @@
           },
           {
             "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-design.sh",
+            "timeout": 15000
+          },
+          {
+            "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.claude/hooks/enforce-qa-before-merge.sh",
             "timeout": 30000
           }
