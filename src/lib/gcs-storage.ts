@@ -17,7 +17,18 @@ let storage: Storage | null = null;
 
 function getStorage(): Storage {
   if (!storage) {
-    storage = new Storage();
+    // Vercel 서버리스: JSON 문자열 환경변수에서 credentials 로드
+    const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    if (serviceAccountJson) {
+      const credentials = JSON.parse(serviceAccountJson);
+      storage = new Storage({
+        projectId: credentials.project_id,
+        credentials,
+      });
+    } else {
+      // 로컬/Cloud Run: ADC 자동 인증
+      storage = new Storage();
+    }
   }
   return storage;
 }
