@@ -1,17 +1,9 @@
 {
-<<<<<<<< HEAD:.bkit/snapshots/snapshot-1774431797079.json
-  "timestamp": "2026-03-25T09:43:17.079Z",
-  "reason": "compaction",
-  "status": {
-    "version": "3.0",
-    "lastUpdated": "2026-03-25T17:56:41.938392",
-========
-  "timestamp": "2026-03-25T06:30:33.575Z",
+  "timestamp": "2026-03-25T07:30:15.951Z",
   "reason": "compaction",
   "status": {
     "version": "3.0",
     "lastUpdated": "2026-03-25T10:46:20.628866",
->>>>>>>> main:.bkit/snapshots/snapshot-1774420233575.json
     "features": {
       "railway-l2-batch": {
         "phase": "completed",
@@ -1257,11 +1249,7 @@
         "completedAt": "2026-03-23",
         "notes": "PR #2. creative-saliency 크론 신규(93줄), analyze-five-axis DeepGaze 주입(+75줄). 커밋 a22028a.",
         "status": "ready",
-<<<<<<<< HEAD:.bkit/snapshots/snapshot-1774431797079.json
-        "updatedAt": "2026-03-25T17:56:41.938392"
-========
         "updatedAt": "2026-03-25T10:46:20.628866"
->>>>>>>> main:.bkit/snapshots/snapshot-1774420233575.json
       },
       "gcp-migration": {
         "phase": "testing",
@@ -1287,11 +1275,7 @@
         "startedAt": "2026-03-24",
         "notes": "3단계 분리 구현. collect-daily 891→451줄 경량화 + process-media 크론 신규 + collect-daily-utils 공용 모듈. tsc+build 통과.",
         "status": "completed",
-<<<<<<<< HEAD:.bkit/snapshots/snapshot-1774431797079.json
-        "updatedAt": "2026-03-25T17:56:41.938392"
-========
         "updatedAt": "2026-03-25T10:46:20.628866"
->>>>>>>> main:.bkit/snapshots/snapshot-1774420233575.json
       },
       "prescription-cost-test": {
         "phase": "completed",
@@ -1366,16 +1350,6 @@
         "notes": "pipeline-chain.ts 생성, collect-daily+process-media 체인 트리거 추가. Cloud Scheduler 등록 대기."
       },
       "slack-notification": {
-<<<<<<<< HEAD:.bkit/snapshots/snapshot-1774431797079.json
-        "status": "ready",
-        "phase": "designing",
-        "updatedAt": "2026-03-25T17:56:41.938392"
-      },
-      "agent-dashboard": {
-        "status": "ready",
-        "phase": "designing",
-        "updatedAt": "2026-03-25T17:56:41.938392"
-========
         "status": "completed",
         "phase": "deployed",
         "updatedAt": "2026-03-25T10:46:20.628866"
@@ -1384,16 +1358,11 @@
         "status": "completed",
         "phase": "deployed",
         "updatedAt": "2026-03-25T10:46:20.628866"
->>>>>>>> main:.bkit/snapshots/snapshot-1774420233575.json
       },
       "web-terminal-dashboard": {
         "status": "ready",
         "phase": "planning",
-<<<<<<<< HEAD:.bkit/snapshots/snapshot-1774431797079.json
-        "updatedAt": "2026-03-25T17:56:41.938392"
-========
         "updatedAt": "2026-03-25T10:46:20.628866"
->>>>>>>> main:.bkit/snapshots/snapshot-1774420233575.json
       }
     },
     "phaseMapping": {

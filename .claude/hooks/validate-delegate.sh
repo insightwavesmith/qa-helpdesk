@@ -1,9 +1,19 @@
 #!/bin/bash
-# validate-delegate.sh — delegate 모드(팀원) 없이 src/ 수정 차단
-# PreToolUse hook (Edit|Write): src/ 파일 수정 시 팀원 존재 확인
+# validate-delegate.sh — 리더의 src/ 직접 수정 차단 (팀원은 허용)
+# PreToolUse hook (Edit|Write): 리더(pane 0)가 src/ 수정 시 차단, 팀원(pane 1+)은 통과
 # exit 2 = 차단 (게이트)
+#
+# Agent Teams 구조:
+#   pane_index 0 = 리더 (코드 직접 수정 금지, delegate만)
+#   pane_index 1+ = 팀원 (코드 작성이 본업)
+#   tmux 없음 = 로컬 개발 → 패스
+
+# 안전 실패: hook 에러 시 팀원 작업 방해 방지 → 허용
+trap 'exit 0' ERR
 
 INPUT=$(cat)
+
+PROJECT_DIR="/Users/smith/projects/bscamp"
 
 FILE=$(echo "$INPUT" | python3 -c "
 import sys, json
@@ -15,37 +25,52 @@ except:
     print('')
 " 2>/dev/null)
 
+# 파일 경로 없으면 패스
+if [ -z "$FILE" ]; then
+    exit 0
+fi
+
+# 절대 경로에서 프로젝트 경로 제거
+REL_FILE=$(echo "$FILE" | sed "s|${PROJECT_DIR}/||")
+
 # src/ 파일이 아니면 패스
-if ! echo "$FILE" | grep -q "^src/"; then
+if ! echo "$REL_FILE" | grep -q "^src/"; then
     exit 0
 fi
 
-# .claude/ .md docs/ 등은 패스
-if echo "$FILE" | grep -qE '^\.(claude|md)|^docs/|^TASK|^CLAUDE'; then
+# 설정/문서 파일은 패스
+if echo "$REL_FILE" | grep -qE '^\.(claude|md)|^docs/|^TASK|^CLAUDE'; then
     exit 0
 fi
 
-# 현재 tmux 세션 이름 자동 감지 (sdk-cto, sdk-pm, sdk-mkt 등)
-if [ -n "$TMUX" ]; then
-    CURRENT_SESSION=$(tmux display-message -p '#S' 2>/dev/null)
-else
-    # tmux 밖이면 sdk- 세션 찾기
-    CURRENT_SESSION=$(tmux list-sessions -F '#S' 2>/dev/null | grep "^sdk-" | head -1)
+# tmux 환경 아니면 패스 (로컬 개발 / tmux 외 환경)
+if [ -z "$TMUX" ]; then
+    exit 0
 fi
 
-if [ -z "$CURRENT_SESSION" ]; then
-    exit 0  # tmux 세션 감지 안 되면 패스
+# Agent Teams 미활성이면 패스 (일반 Claude Code 사용)
+if [ "$CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" != "1" ]; then
+    exit 0
 fi
 
-# tmux pane 수로 팀원 존재 확인
-PANE_COUNT=$(tmux list-panes -t "$CURRENT_SESSION" 2>/dev/null | wc -l | tr -d ' ')
-PANE_COUNT=${PANE_COUNT:-0}
+# ─── 핵심: 리더 vs 팀원 구분 ───
+# tmux pane_index: 0 = 리더, 1+ = 팀원
+PANE_INDEX=$(tmux display-message -p '#{pane_index}' 2>/dev/null)
 
-if [ "$PANE_COUNT" -le 1 ]; then
-    echo "❌ delegate 모드(팀원)가 없습니다. (세션: $CURRENT_SESSION, pane: $PANE_COUNT)" >&2
-    echo "Shift+Tab → delegate 모드로 전환하고 팀원을 만드세요." >&2
-    echo "CLAUDE.md 절대규칙 0번: 팀 없이 단독 작업 금지" >&2
-    exit 2
+# pane_index 감지 실패 시 → 허용 (팀원 작업 방해 방지)
+if [ -z "$PANE_INDEX" ]; then
+    exit 0
 fi
 
-exit 0
+# 팀원 (pane_index > 0) → 허용 (팀원은 코드 작성이 본업)
+if [ "$PANE_INDEX" -gt 0 ] 2>/dev/null; then
+    exit 0
+fi
+
+# ─── 리더 (pane_index == 0) → 차단 ───
+echo "❌ [delegate 강제] 리더는 src/ 코드를 직접 수정할 수 없습니다." >&2
+echo "팀원(frontend-dev, backend-dev)에게 작업을 위임하세요." >&2
+echo "CLAUDE.md 규칙: '리더가 직접 코드 쓰면 리젝'" >&2
+source "$PROJECT_DIR/.claude/hooks/notify-hook.sh" 2>/dev/null && \
+    notify_hook "🚫 [게이트] 리더가 src/ 직접 수정 시도: $REL_FILE" "validate-delegate"
+exit 2

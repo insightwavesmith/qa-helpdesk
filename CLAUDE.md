@@ -21,6 +21,18 @@
 8. **SERVICE-VISION.md 필독 (2026-03-20 추가)**: TASK 시작 전 `~/.openclaw/workspace/SERVICE-VISION.md` 읽어라. 서비스가 뭘 하는 건지, 사용자 흐름이 뭔지 모르고 개발하면 리젝. 스타일만 복사하는 목업은 실패.
 9. **Destructive Detector (2026-03-24 추가)**: rm -rf, force push, 전체 DELETE 등 위험 작업은 hook이 자동 차단. 우회 불가. 긴급 핫픽스만 Smith님 직접 실행.
 
+## PDCA 자동 순차 진행 (공통규칙, 예외 없음)
+
+**이 규칙은 모든 에이전트팀(CTO-1, CTO-2, PM, 마케팅)에 공통 적용된다.**
+
+1. Plan → Design → Do → Check → Act 순서를 자동으로 진행한다. **물어보지 마라.**
+2. Plan 문서가 없으면 → 작성하고 다음 단계로 넘어간다.
+3. Design 문서가 없으면 → 작성하고 다음 단계로 넘어간다.
+4. 구현(Do) → 완료 후 자동으로 Check(Gap 분석) 실행.
+5. **멈추는 유일한 조건**: Check에서 Match Rate < 90%. 이 경우 Act(수정) 후 재검증.
+6. Match Rate ≥ 90% → 완료 보고서 생성 → 다음 기능으로 자동 이동.
+7. 각 단계 전환 시 Smith님에게 확인 묻지 않는다. 자동 진행이 기본값.
+
 ## bkit PDCA 워크플로우 (필수)
 
 **모든 기능 개발은 이 순서를 따른다. 예외 없음.**
@@ -111,14 +123,40 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 - **Plan→Do 전환**: Plan 세션의 탐색/질의 컨텍스트는 구현에 불필요. Plan 확정 후 새 세션에서 plan 파일만 로드하고 구현 시작 권장.
 - **TASK 연속 진행**: 이전 TASK 컨텍스트 유지가 유리하면 세션 이어서 진행
 
-### 팀 구성
-- 이 프로젝트는 **상시 에이전트팀**으로 운영됨
-- **Leader**: **delegate 모드 강제** — 코드 직접 작성 절대 금지, 조율/분배/검토만
-- **frontend-dev**: 프론트엔드 컴포넌트 구현
-- **backend-dev**: API/DB/서버 액션 구현
-- **qa-engineer**: Gap 분석 + 빌드 검증 + 브라우저 QA
-- 모든 구현은 plan approval 후에만 진행
-- TASK.md를 읽고 작업 분배 (의존성 순서 준수)
+### 리더-팀원 역할 분리 (공통규칙, 예외 없음)
+
+**이 규칙은 모든 에이전트팀(CTO-1, CTO-2, PM, 마케팅)에 공통 적용된다.**
+
+#### 리더(Lead)가 하는 것:
+- 팀 생성 + 팀원 spawn
+- TASK 분해 + 팀원에게 배정
+- 팀원 간 조율 (shared task list 관리)
+- 팀원 결과물 검증/체크
+- 기획서/설계서 작성 (Plan, Design 문서)
+- 최종 결과 종합 + 보고
+
+#### 리더가 절대 안 하는 것:
+- **src/ 코드 직접 수정 (validate-delegate.sh가 차단)**
+- 직접 구현/코딩
+- 팀원 없이 혼자 작업
+
+#### 팀원(Teammate)이 하는 것:
+- 리더가 배정한 TASK 실행
+- 코드 작성/수정
+- 다른 팀원과 직접 메시지로 소통 (리더 거치지 않아도 됨)
+- shared task list에서 자기 TASK claim + 완료 보고
+
+#### 팀원 구성 패턴:
+- **backend-dev**: API, DB, 서버 로직
+- **frontend-dev**: UI, 컴포넌트, 페이지
+- **qa-engineer**: tsc+build 검증, Gap 분석, 테스트
+
+#### 핵심:
+- display mode: tmux (split panes) — `agentTeamDisplay: "tmux"` 설정
+- 팀원끼리 직접 소통 가능 — 리더가 중계할 필요 없음
+- shared task list로 자동 coordination
+- TeammateIdle hook으로 팀원 idle 시 자동 다음 TASK 배정
+- **리더가 직접 코드 쓰면 리젝. validate-delegate.sh hook이 강제 차단.**
 
 ### Delegate 모드 (강제)
 - Leader는 세션 시작 후 반드시 **Shift+Tab으로 delegate 모드 진입**
