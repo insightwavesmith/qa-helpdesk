@@ -1,19 +1,19 @@
 import { redirect } from "next/navigation";
-import { createServiceClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getCategories } from "@/actions/questions";
 import { NewQuestionForm } from "./new-question-form";
 
 export default async function NewQuestionPage() {
   // 접근제어: student/member/admin만 질문 작성 가능
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
   const svc = createServiceClient();
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", user.id)
     .single();
 
   if (!["student", "member", "admin"].includes(profile?.role || "")) {

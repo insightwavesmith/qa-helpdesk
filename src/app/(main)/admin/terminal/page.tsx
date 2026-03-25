@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { getCurrentUser } from '@/lib/firebase/auth';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import TerminalClient from './terminal-client';
 
 export const metadata: Metadata = {
@@ -9,7 +8,8 @@ export const metadata: Metadata = {
 };
 
 export default async function TerminalPage() {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     redirect('/login');
@@ -19,7 +19,7 @@ export default async function TerminalPage() {
   const { data: profile } = await svc
     .from('profiles')
     .select('role')
-    .eq('id', user.uid)
+    .eq('id', user.id)
     .single();
 
   if (profile?.role !== 'admin') {

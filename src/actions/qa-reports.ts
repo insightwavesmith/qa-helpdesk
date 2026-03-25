@@ -1,7 +1,6 @@
 "use server";
 
-import { createServiceClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 export interface QaReport {
   id: string;
@@ -28,7 +27,10 @@ export async function createQaReport(data: {
   pageUrl?: string;
   aiRawResponse?: Record<string, unknown>;
 }): Promise<{ id: string } | { error: string }> {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) return { error: "인증되지 않은 사용자입니다." };
 
@@ -38,7 +40,7 @@ export async function createQaReport(data: {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", user.id)
     .single();
 
   if (!profile || !["admin", "assistant"].includes(profile.role)) {
@@ -49,7 +51,7 @@ export async function createQaReport(data: {
   const { data: report, error } = await (svc as any)
     .from("qa_reports")
     .insert({
-      author_id: user.uid,
+      author_id: user.id,
       title: data.title,
       description: data.description,
       severity: data.severity,
@@ -75,7 +77,10 @@ export async function getQaReports(options?: {
   limit?: number;
   offset?: number;
 }): Promise<QaReport[]> {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) return [];
 
@@ -85,7 +90,7 @@ export async function getQaReports(options?: {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", user.id)
     .single();
 
   if (!profile || !["admin", "assistant"].includes(profile.role)) {
@@ -128,7 +133,10 @@ export async function updateQaReportStatus(
   reportId: string,
   status: "open" | "in_progress" | "resolved" | "closed"
 ): Promise<{ success: boolean } | { error: string }> {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) return { error: "인증되지 않은 사용자입니다." };
 
@@ -138,7 +146,7 @@ export async function updateQaReportStatus(
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", user.id)
     .single();
 
   if (!profile || !["admin", "assistant"].includes(profile.role)) {

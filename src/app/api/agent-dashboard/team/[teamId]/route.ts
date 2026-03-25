@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as fs from "fs/promises";
-import { getCurrentUser } from "@/lib/firebase/auth";
+import { createClient } from "@/lib/supabase/server";
 import type { TeamId, TeamState } from "@/types/agent-dashboard";
 
 const VALID_TEAMS: TeamId[] = ["pm", "marketing", "cto"];
@@ -10,7 +10,8 @@ export async function PUT(
   { params }: { params: Promise<{ teamId: string }> }
 ) {
   // 인증 확인
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   }

@@ -1,16 +1,56 @@
-/**
- * Firebase Auth 전환 후 이 Supabase OAuth 콜백은 더 이상 사용하지 않음.
- * 비밀번호 재설정 등 일부 레거시 플로우가 있을 수 있어 파일 유지.
- * Firebase로 완전 전환 후 삭제 예정.
- */
 import { NextResponse } from "next/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
+import type { EmailOtpType } from "@supabase/supabase-js";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get("code");
+  // Supabase recovery 이메일은 token_hash + type 방식으로 전달될 수 있음 (PKCE 설정에 따라)
+  const token_hash = searchParams.get("token_hash");
+  const type = searchParams.get("type") as EmailOtpType | null;
   const next = searchParams.get("next") ?? "/dashboard";
+
+  // 외부 URL 리다이렉트 방지: 내부 경로만 허용
   const redirectPath = next.startsWith("/") ? next : "/dashboard";
 
-  // Firebase Auth 전환 완료 — Supabase code exchange 제거됨
-  // 이 경로로 오는 요청은 /login으로 리다이렉트
-  return NextResponse.redirect(`${origin}${redirectPath}`);
+  const supabase = await createClient();
+
+  // Case 1: OAuth / Magic Link / PKCE code exchange
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      // Phase 5: Cloud SQL 환경에서 OAuth 사용자 profile 보장
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const svc = createServiceClient();
+          const { data: existing } = await svc.from("profiles").select("id").eq("id", user.id).maybeSingle();
+          if (!existing) {
+            await svc.from("profiles").insert({
+              id: user.id,
+              email: user.email || "",
+              name: user.user_metadata?.name || user.user_metadata?.full_name || "",
+              role: "lead",
+              onboarding_status: "not_started",
+              onboarding_step: 0,
+            } as never);
+          }
+        }
+      } catch (profileErr) {
+        console.error("[auth/callback] ensureProfile failed:", profileErr);
+      }
+      return NextResponse.redirect(`${origin}${redirectPath}`);
+    }
+  }
+
+  // Case 2: Recovery 이메일 token_hash 방식 (비밀번호 재설정)
+  if (token_hash && type) {
+    const { error } = await supabase.auth.verifyOtp({ type, token_hash });
+    if (!error) {
+      return NextResponse.redirect(`${origin}${redirectPath}`);
+    }
+  }
+
+  // 실패 시 로그인 페이지로
+  return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
 }

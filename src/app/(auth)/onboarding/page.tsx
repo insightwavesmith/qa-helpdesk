@@ -14,8 +14,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import { getFirebaseClientAuth } from "@/lib/firebase/client";
-import { signOut as firebaseSignOut } from "firebase/auth";
+import { createClient } from "@/lib/supabase/client";
 import {
   Select,
   SelectContent,
@@ -836,11 +835,8 @@ export default function OnboardingPage() {
             <button
               type="button"
               onClick={async () => {
-                const auth = getFirebaseClientAuth();
-                await firebaseSignOut(auth);
-                await fetch("/api/auth/firebase-logout", { method: "POST" });
-                document.cookie = "x-user-role=; path=/; max-age=0";
-                document.cookie = "x-onboarding-status=; path=/; max-age=0";
+                const supabase = createClient();
+                await supabase.auth.signOut();
                 window.location.href = "/login";
               }}
               className="flex items-center gap-1.5 text-sm text-[#6B7280] hover:text-[#F75D5D] transition-colors"

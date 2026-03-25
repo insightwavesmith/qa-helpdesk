@@ -24,8 +24,7 @@ import {
   Star,
   Palette,
 } from "lucide-react";
-import { getFirebaseClientAuth } from "@/lib/firebase/client";
-import { signOut as firebaseSignOut } from "firebase/auth";
+import { createClient } from "@/lib/supabase/client";
 
 interface NavItem {
   label: string;
@@ -75,11 +74,8 @@ export function DashboardSidebar({
   const initials = userName.slice(0, 2).toUpperCase();
 
   const handleLogout = async () => {
-    try {
-      const auth = getFirebaseClientAuth();
-      await firebaseSignOut(auth);
-      await fetch("/api/auth/firebase-logout", { method: "POST" });
-    } finally {
+    const supabase = createClient();
+    try { await supabase.auth.signOut(); } finally {
       document.cookie = "x-user-role=; path=/; max-age=0";
       document.cookie = "x-onboarding-status=; path=/; max-age=0";
     }

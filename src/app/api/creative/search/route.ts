@@ -4,8 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { generateEmbedding } from "@/lib/gemini";
 
 export const runtime = "nodejs";
@@ -13,7 +12,10 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   // 인증 확인
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });

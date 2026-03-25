@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 
@@ -19,7 +18,10 @@ type AdminAuthFailure = { response: NextResponse };
 export async function requireAdmin(
   allowedRoles: string[] = ["admin"],
 ): Promise<AdminAuthSuccess | AdminAuthFailure> {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return {
@@ -34,7 +36,7 @@ export async function requireAdmin(
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", user.id)
     .single();
 
   if (!profile?.role || !allowedRoles.includes(profile.role)) {
@@ -46,5 +48,5 @@ export async function requireAdmin(
     };
   }
 
-  return { user: { id: user.uid, email: user.email }, svc };
+  return { user, svc };
 }

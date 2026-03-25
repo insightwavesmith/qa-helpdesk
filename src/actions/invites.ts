@@ -1,7 +1,6 @@
 "use server";
 
-import { createServiceClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth-utils";
 
 // ---------------------------------------------------------------------------
@@ -96,7 +95,8 @@ export async function createInviteCode(input: {
   const svc = await requireAdmin();
 
   // auth check already done by requireAdmin; get userId for created_by
-  const authUser = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const { error } = await svc.from("invite_codes").insert({
     code: input.code.trim(),
@@ -104,7 +104,7 @@ export async function createInviteCode(input: {
     expires_at: input.expiresAt,
     max_uses: input.maxUses,
     used_count: 0,
-    created_by: authUser!.uid,
+    created_by: user!.id,
   });
 
   if (error) {

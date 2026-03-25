@@ -2,22 +2,24 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { getReviews } from "@/actions/reviews";
-import { createServiceClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { ReviewListClient } from "./review-list-client";
 
 const PAGE_SIZE = 12;
 
 async function getUserRole(): Promise<string | null> {
   try {
-    const user = await getCurrentUser();
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return null;
 
     const svc = createServiceClient();
     const { data: profile } = await svc
       .from("profiles")
       .select("role")
-      .eq("id", user.uid)
+      .eq("id", user.id)
       .single();
 
     return profile?.role || null;

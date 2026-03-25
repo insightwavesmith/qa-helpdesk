@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/supabase/server";
 import { generateEmbedding } from "@/lib/gemini";
 
@@ -7,19 +6,19 @@ const DEFAULT_BATCH_SIZE = 100;
 const DEFAULT_DELAY_MS = 500;
 
 export async function POST(request: NextRequest) {
+  const supabase = createServiceClient();
+
   // 인증 확인
-  const user = await getCurrentUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "인증 필요" }, { status: 401 });
   }
-
-  const supabase = createServiceClient();
 
   // admin 역할 확인
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", user.id)
     .single();
 
   if (profile?.role !== "admin") {

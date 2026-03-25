@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,7 +12,10 @@ export const dynamic = "force-dynamic";
  * 내 모니터링 목록 조회
  */
 export async function GET() {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return NextResponse.json(
@@ -29,7 +31,7 @@ export async function GET() {
   const { data: monitors, error } = await svc
     .from("competitor_monitors")
     .select("*")
-    .eq("user_id", user.uid)
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -100,7 +102,10 @@ export async function GET() {
  * 브랜드 모니터링 등록
  */
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return NextResponse.json(
@@ -127,7 +132,7 @@ export async function POST(req: NextRequest) {
   const { count } = await svc
     .from("competitor_monitors")
     .select("id", { count: "exact", head: true })
-    .eq("user_id", user.uid);
+    .eq("user_id", user.id);
 
   if ((count ?? 0) >= 10) {
     return NextResponse.json(
@@ -143,7 +148,7 @@ export async function POST(req: NextRequest) {
   const { data: existing } = await svc
     .from("competitor_monitors")
     .select("id")
-    .eq("user_id", user.uid)
+    .eq("user_id", user.id)
     .eq("brand_name", brandName)
     .maybeSingle();
 
@@ -164,7 +169,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await svc
     .from("competitor_monitors")
     .insert({
-      user_id: user.uid,
+      user_id: user.id,
       brand_name: brandName,
       page_id: pageId,
       page_profile_url: pageProfileUrl,

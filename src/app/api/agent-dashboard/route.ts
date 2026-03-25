@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import * as fs from "fs/promises";
-import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import type {
   DashboardState,
   OrgChart,
@@ -117,7 +116,8 @@ function parsePdcaFeatures(raw: PdcaStatusJson | null): PdcaFeature[] {
 
 export async function GET() {
   // 인증 확인
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   }
@@ -127,7 +127,7 @@ export async function GET() {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", user.id)
     .single();
 
   if (profile?.role !== "admin") {

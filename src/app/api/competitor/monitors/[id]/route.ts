@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +16,10 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return NextResponse.json(
@@ -50,7 +52,7 @@ export async function PATCH(
     .from("competitor_monitors")
     .update(updateFields)
     .eq("id", id)
-    .eq("user_id", user.uid);
+    .eq("user_id", user.id);
 
   if (error) {
     return NextResponse.json(
@@ -70,7 +72,10 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return NextResponse.json(
@@ -88,7 +93,7 @@ export async function DELETE(
     .from("competitor_monitors")
     .delete()
     .eq("id", id)
-    .eq("user_id", user.uid);
+    .eq("user_id", user.id);
 
   if (error) {
     return NextResponse.json(

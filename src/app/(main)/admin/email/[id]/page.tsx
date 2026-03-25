@@ -1,19 +1,21 @@
 import { notFound } from "next/navigation";
-import { createServiceClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getContentById } from "@/actions/contents";
 import NewsletterInlineEditor from "@/components/email/NewsletterInlineEditor";
 
 async function checkIsAdmin(): Promise<boolean> {
   try {
-    const user = await getCurrentUser();
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return false;
 
     const svc = createServiceClient();
     const { data: profile } = await svc
       .from("profiles")
       .select("role")
-      .eq("id", user.uid)
+      .eq("id", user.id)
       .single();
 
     return profile?.role === "admin";

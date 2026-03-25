@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { analyzeAds } from "@/lib/competitor/analyze-ads";
 import type { CompetitorAd } from "@/types/competitor";
 
@@ -15,7 +14,10 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   try {
     // 인증 체크 (C2 — 비용 보안)
-    const user = await getCurrentUser();
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json(

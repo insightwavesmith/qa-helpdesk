@@ -6,8 +6,7 @@ import { Plus } from "lucide-react";
 import { getPosts } from "@/actions/posts";
 import { getExcerpt } from "@/components/posts/post-card";
 import { PostsRedesignClient } from "./posts-redesign-client";
-import { createServiceClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 const PAGE_SIZE = 12;
 
@@ -22,7 +21,8 @@ export default async function PostsPage({
   const search = params.search || "";
 
   // 관리자 여부 확인
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const isTypeFilter = category === "promo";
 
@@ -40,7 +40,7 @@ export default async function PostsPage({
   if (user) {
     const svc = createServiceClient();
     const [{ data: profile }, result] = await Promise.all([
-      svc.from("profiles").select("role").eq("id", user.uid).single(),
+      svc.from("profiles").select("role").eq("id", user.id).single(),
       postsPromise,
     ]);
     isAdmin = profile?.role === "admin";

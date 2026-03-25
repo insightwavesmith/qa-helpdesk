@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { createAIAnswerForQuestion } from "@/lib/rag";
 import { notifyNewQuestion } from "@/lib/slack";
 
@@ -96,7 +95,10 @@ export async function createQuestion(formData: {
   imageUrls?: string[];
   parentQuestionId?: string;
 }) {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return { data: null, error: "인증되지 않은 사용자입니다." };
@@ -108,7 +110,7 @@ export async function createQuestion(formData: {
   const { data: profile } = await svc
     .from("profiles")
     .select("role, name")
-    .eq("id", user.uid)
+    .eq("id", user.id)
     .single();
 
   if (!profile || !["student", "member", "admin"].includes(profile.role)) {
@@ -122,7 +124,7 @@ export async function createQuestion(formData: {
       title: formData.title,
       content: formData.content,
       category_id: formData.categoryId,
-      author_id: user.uid,
+      author_id: user.id,
       image_urls: formData.imageUrls && formData.imageUrls.length > 0
         ? formData.imageUrls
         : [],
@@ -165,18 +167,19 @@ export async function createQuestion(formData: {
  * 꼬리질문 삭제 — 답변 cascade 삭제 + 부모 스레드 임베딩 재생성
  */
 export async function deleteFollowUpQuestion(id: string, parentQuestionId: string) {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "인증되지 않은 사용자입니다." };
 
   const svc = createServiceClient();
 
-  const { data: profile } = await svc.from("profiles").select("role").eq("id", user.uid).single();
+  const { data: profile } = await svc.from("profiles").select("role").eq("id", user.id).single();
   const isAdmin = profile?.role === "admin";
 
   const { data: question } = await svc.from("questions").select("author_id").eq("id", id).single();
   if (!question) return { error: "질문을 찾을 수 없습니다." };
 
-  const isOwner = question.author_id === user.uid;
+  const isOwner = question.author_id === user.id;
   if (!isAdmin && !isOwner) return { error: "권한이 없습니다." };
 
   // 답변 먼저 삭제
@@ -199,20 +202,21 @@ export async function deleteFollowUpQuestion(id: string, parentQuestionId: strin
 }
 
 export async function deleteQuestion(id: string) {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "인증되지 않은 사용자입니다." };
 
   const svc = createServiceClient();
 
   // Get user role
-  const { data: profile } = await svc.from("profiles").select("role").eq("id", user.uid).single();
+  const { data: profile } = await svc.from("profiles").select("role").eq("id", user.id).single();
   const isAdmin = profile?.role === "admin";
 
   // Get question author
   const { data: question } = await svc.from("questions").select("author_id").eq("id", id).single();
   if (!question) return { error: "질문을 찾을 수 없습니다." };
 
-  const isOwner = question.author_id === user.uid;
+  const isOwner = question.author_id === user.id;
   if (!isAdmin && !isOwner) return { error: "권한이 없습니다." };
 
   // 답변 먼저 삭제
@@ -237,7 +241,10 @@ export async function updateQuestion(formData: {
   categoryId: number | null;
   imageUrls?: string[];
 }) {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return { data: null, error: "인증되지 않은 사용자입니다." };
@@ -249,7 +256,7 @@ export async function updateQuestion(formData: {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", user.id)
     .single();
 
   const isStaff =
@@ -265,7 +272,7 @@ export async function updateQuestion(formData: {
     return { data: null, error: "질문을 찾을 수 없습니다." };
   }
 
-  const isOwner = question.author_id === user.uid;
+  const isOwner = question.author_id === user.id;
   if (!isStaff && !isOwner) {
     return { data: null, error: "수정 권한이 없습니다." };
   }

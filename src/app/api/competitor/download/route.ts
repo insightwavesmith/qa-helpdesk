@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
+import { createClient } from "@/lib/supabase/server";
 import { getAdFromCache, isUrlExpired } from "@/lib/competitor/ad-cache";
 import {
   searchMetaAds,
@@ -39,7 +39,10 @@ function isAllowedFbcdnUrl(url: string): boolean {
  */
 export async function GET(req: NextRequest) {
   // 인증 확인
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return NextResponse.json(

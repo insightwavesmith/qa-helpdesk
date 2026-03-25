@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
+import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/server";
 
 export async function GET() {
   // 인증 체크
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "인증 필요" }, { status: 401 });
   }

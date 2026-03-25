@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { unstable_cache } from "next/cache";
-import { createServiceClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { StudentHeader } from "@/components/layout/student-header";
 import { getPendingAnswersCount } from "@/actions/answers";
 import { DashboardSidebar } from "@/components/dashboard/Sidebar";
@@ -23,7 +22,10 @@ export default async function MainLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return (
@@ -50,7 +52,7 @@ export default async function MainLayout({
   const { data: profile } = (await serviceClient
     .from("profiles")
     .select("name, role, email")
-    .eq("id", user.uid)
+    .eq("id", user.id)
     .single()) as {
     data: { name: string; role: string; email: string } | null;
   };

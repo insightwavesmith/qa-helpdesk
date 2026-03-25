@@ -1,6 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { createServiceClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getQuestionById, getCategories } from "@/actions/questions";
 import { NewQuestionForm } from "../../new/new-question-form";
 
@@ -12,7 +11,10 @@ export default async function EditQuestionPage({
   const { id } = await params;
 
   // 인증 체크
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
   // 질문 로드
@@ -24,12 +26,12 @@ export default async function EditQuestionPage({
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", user.id)
     .single();
 
   const isStaff =
     profile?.role === "admin" || profile?.role === "assistant";
-  const isOwner = question.author?.id === user.uid;
+  const isOwner = question.author?.id === user.id;
 
   if (!isStaff && !isOwner) {
     redirect(`/questions/${id}`);

@@ -1,20 +1,20 @@
 "use server";
 
-import { createServiceClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { encrypt } from "@/lib/crypto";
 
 // 현재 프로필 조회 (온보딩 페이지용)
 export async function getOnboardingProfile() {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: null, error: "인증되지 않은 사용자입니다" };
 
   const svc = createServiceClient();
   const { data, error } = await svc
     .from("profiles")
     .select("name, cohort, shop_name, shop_url, annual_revenue, monthly_ad_budget, category, meta_account_id, mixpanel_project_id, mixpanel_secret_key, onboarding_step, onboarding_status")
-    .eq("id", user.uid)
+    .eq("id", user.id)
     .single();
 
   if (error) return { data: null, error: error.message };
@@ -23,7 +23,8 @@ export async function getOnboardingProfile() {
 
 // 온보딩 step 진행
 export async function updateOnboardingStep(step: number) {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "인증되지 않은 사용자입니다" };
 
   const svc = createServiceClient();
@@ -35,7 +36,7 @@ export async function updateOnboardingStep(step: number) {
   const { error } = await svc
     .from("profiles")
     .update(updates as never)
-    .eq("id", user.uid);
+    .eq("id", user.id);
 
   if (error) return { error: error.message };
   return { error: null };
@@ -50,7 +51,8 @@ export async function saveOnboardingProfile(data: {
   monthlyAdBudget: string;
   category: string;
 }) {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "인증되지 않은 사용자입니다" };
 
   const svc = createServiceClient();
@@ -66,7 +68,7 @@ export async function saveOnboardingProfile(data: {
       onboarding_step: 2,
       onboarding_status: "in_progress",
     } as never)
-    .eq("id", user.uid);
+    .eq("id", user.id);
 
   if (error) return { error: error.message };
   return { error: null };
@@ -80,7 +82,8 @@ export async function saveAdAccount(data: {
   mixpanelBoardId?: string | null;
   accountName?: string;
 }) {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "인증되지 않은 사용자입니다" };
 
   const svc = createServiceClient();
@@ -95,7 +98,7 @@ export async function saveAdAccount(data: {
   const { error } = await svc
     .from("profiles")
     .update(updates as never)
-    .eq("id", user.uid);
+    .eq("id", user.id);
 
   if (error) return { error: error.message };
 
@@ -109,7 +112,7 @@ export async function saveAdAccount(data: {
 
     if (existing) {
       await svc.from("ad_accounts").update({
-        user_id: user.uid,
+        user_id: user.id,
         active: true,
         mixpanel_project_id: data.mixpanelProjectId || null,
         mixpanel_board_id: data.mixpanelBoardId || null,
@@ -118,7 +121,7 @@ export async function saveAdAccount(data: {
     } else {
       await svc.from("ad_accounts").insert({
         account_id: data.metaAccountId,
-        user_id: user.uid,
+        user_id: user.id,
         account_name: data.accountName || data.metaAccountId,
         mixpanel_project_id: data.mixpanelProjectId || null,
         mixpanel_board_id: data.mixpanelBoardId || null,
@@ -130,7 +133,7 @@ export async function saveAdAccount(data: {
       await svc
         .from("service_secrets" as never)
         .upsert({
-          user_id: user.uid,
+          user_id: user.id,
           service: "mixpanel",
           key_name: `secret_${data.metaAccountId}`,
           key_value: encrypt(data.mixpanelSecretKey),
@@ -149,7 +152,8 @@ export async function syncAdAccount(data: {
   mixpanelBoardId: string | null;
   accountName?: string;
 }) {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "인증되지 않은 사용자입니다" };
 
   const svc = createServiceClient();
@@ -163,7 +167,7 @@ export async function syncAdAccount(data: {
 
     if (existing) {
       await svc.from("ad_accounts").update({
-        user_id: user.uid,
+        user_id: user.id,
         mixpanel_project_id: data.mixpanelProjectId || null,
         mixpanel_board_id: data.mixpanelBoardId || null,
         active: true,
@@ -172,7 +176,7 @@ export async function syncAdAccount(data: {
     } else {
       await svc.from("ad_accounts").insert({
         account_id: data.metaAccountId,
-        user_id: user.uid,
+        user_id: user.id,
         account_name: data.accountName || data.metaAccountId,
         mixpanel_project_id: data.mixpanelProjectId || null,
         mixpanel_board_id: data.mixpanelBoardId || null,
@@ -184,7 +188,7 @@ export async function syncAdAccount(data: {
       await svc
         .from("service_secrets" as never)
         .upsert({
-          user_id: user.uid,
+          user_id: user.id,
           service: "mixpanel",
           key_name: `secret_${data.metaAccountId}`,
           key_value: encrypt(data.mixpanelSecretKey),
@@ -192,7 +196,7 @@ export async function syncAdAccount(data: {
     }
   } else {
     // meta_account_id가 비었으면 기존 ad_accounts 비활성화
-    await svc.from("ad_accounts").update({ active: false }).eq("user_id", user.uid);
+    await svc.from("ad_accounts").update({ active: false }).eq("user_id", user.id);
   }
 
   return { error: null };
@@ -206,7 +210,8 @@ export async function addAdAccount(data: {
   mixpanelSecretKey?: string | null;
   mixpanelBoardId?: string | null;
 }) {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "인증되지 않은 사용자입니다" };
 
   const svc = createServiceClient();
@@ -220,7 +225,7 @@ export async function addAdAccount(data: {
 
   if (existing) {
     await svc.from("ad_accounts").update({
-      user_id: user.uid,
+      user_id: user.id,
       account_name: data.accountName || data.metaAccountId,
       mixpanel_project_id: data.mixpanelProjectId || null,
       mixpanel_board_id: data.mixpanelBoardId || null,
@@ -229,7 +234,7 @@ export async function addAdAccount(data: {
   } else {
     await svc.from("ad_accounts").insert({
       account_id: data.metaAccountId,
-      user_id: user.uid,
+      user_id: user.id,
       account_name: data.accountName || data.metaAccountId,
       mixpanel_project_id: data.mixpanelProjectId || null,
       mixpanel_board_id: data.mixpanelBoardId || null,
@@ -242,7 +247,7 @@ export async function addAdAccount(data: {
     await svc
       .from("service_secrets" as never)
       .upsert({
-        user_id: user.uid,
+        user_id: user.id,
         service: "mixpanel",
         key_name: `secret_${data.metaAccountId}`,
         key_value: encrypt(data.mixpanelSecretKey),
@@ -253,19 +258,19 @@ export async function addAdAccount(data: {
   const { data: existingAccounts } = await svc
     .from("ad_accounts")
     .select("id")
-    .eq("user_id", user.uid)
+    .eq("user_id", user.id)
     .eq("active", true);
 
   if (existingAccounts && existingAccounts.length <= 1) {
     await svc.from("profiles").update({
       meta_account_id: data.metaAccountId,
-    } as never).eq("id", user.uid);
+    } as never).eq("id", user.id);
   }
 
   return { error: null };
 }
 
-// 광고계정 편집 (계정 ID 변경 + 믹스패널 설정 업데이트)
+// 광고계정 편집 (믹스패널 설정 업데이트)
 export async function updateAdAccount(data: {
   metaAccountId: string;
   newMetaAccountId?: string;
@@ -274,12 +279,13 @@ export async function updateAdAccount(data: {
   mixpanelBoardId?: string | null;
   mixpanelSecretKey?: string | null;
 }) {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "인증되지 않은 사용자입니다" };
 
   const svc = createServiceClient();
 
-  // account_id 변경 시 중복 체크
+  // 광고계정 ID 변경 시 중복 체크
   if (data.newMetaAccountId && data.newMetaAccountId !== data.metaAccountId) {
     const { data: dup } = await svc
       .from("ad_accounts")
@@ -305,33 +311,34 @@ export async function updateAdAccount(data: {
     .from("ad_accounts")
     .update(updates)
     .eq("account_id", data.metaAccountId)
-    .eq("user_id", user.uid);
+    .eq("user_id", user.id);
 
   if (error) return { error: error.message };
 
-  // profiles.meta_account_id도 동기화 (대표 계정이면 새 ID로 갱신)
+  // 광고계정 ID 변경 시 profiles.meta_account_id도 업데이트
   if (data.newMetaAccountId && data.newMetaAccountId !== data.metaAccountId) {
     const { data: profile } = await svc
       .from("profiles")
       .select("meta_account_id")
-      .eq("id", user.uid)
+      .eq("id", user.id)
       .single();
     if (profile?.meta_account_id === data.metaAccountId) {
-      await svc.from("profiles").update({
-        meta_account_id: data.newMetaAccountId,
-      } as never).eq("id", user.uid);
+      await svc
+        .from("profiles")
+        .update({ meta_account_id: data.newMetaAccountId } as never)
+        .eq("id", user.id);
     }
   }
 
   // 시크릿키가 입력된 경우에만 upsert (빈 문자열이면 변경 안 함)
-  const effectiveAccountId = data.newMetaAccountId || data.metaAccountId;
+  const secretAccountId = data.newMetaAccountId || data.metaAccountId;
   if (data.mixpanelSecretKey) {
     await svc
       .from("service_secrets" as never)
       .upsert({
-        user_id: user.uid,
+        user_id: user.id,
         service: "mixpanel",
-        key_name: `secret_${effectiveAccountId}`,
+        key_name: `secret_${secretAccountId}`,
         key_value: encrypt(data.mixpanelSecretKey),
       } as never, { onConflict: "user_id,service,key_name" } as never);
   }
@@ -341,20 +348,21 @@ export async function updateAdAccount(data: {
 
 // 광고계정 삭제 (비활성화 + service_secrets 정리)
 export async function removeAdAccount(accountId: string) {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "인증되지 않은 사용자입니다" };
 
   const svc = createServiceClient();
 
   // ad_accounts 비활성화
-  const { error: updateError } = await svc.from("ad_accounts").update({ active: false }).eq("account_id", accountId).eq("user_id", user.uid);
+  const { error: updateError } = await svc.from("ad_accounts").update({ active: false }).eq("account_id", accountId).eq("user_id", user.id);
   if (updateError) return { error: `계정 삭제 실패: ${updateError.message}` };
 
   // service_secrets 삭제 (실패해도 계속 진행 — 경고 로그만)
   const { error: secretError } = await svc
     .from("service_secrets" as never)
     .delete()
-    .eq("user_id" as never, user.uid)
+    .eq("user_id" as never, user.id)
     .eq("service" as never, "mixpanel")
     .eq("key_name" as never, `secret_${accountId}`);
   if (secretError) {
@@ -362,17 +370,17 @@ export async function removeAdAccount(accountId: string) {
   }
 
   // 대표 계정이었으면 다른 활성 계정으로 교체
-  const { data: profile } = await svc.from("profiles").select("meta_account_id").eq("id", user.uid).single();
+  const { data: profile } = await svc.from("profiles").select("meta_account_id").eq("id", user.id).single();
   if (profile?.meta_account_id === accountId) {
     const { data: remaining } = await svc
       .from("ad_accounts")
       .select("account_id")
-      .eq("user_id", user.uid)
+      .eq("user_id", user.id)
       .eq("active", true)
       .limit(1);
     await svc.from("profiles").update({
       meta_account_id: remaining?.[0]?.account_id || null,
-    } as never).eq("id", user.uid);
+    } as never).eq("id", user.id);
   }
 
   return { error: null };
@@ -380,7 +388,8 @@ export async function removeAdAccount(accountId: string) {
 
 // Step 3: 온보딩 완료
 export async function completeOnboarding() {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "인증되지 않은 사용자입니다" };
 
   const svc = createServiceClient();
@@ -390,7 +399,7 @@ export async function completeOnboarding() {
       onboarding_step: 3,
       onboarding_status: "completed",
     } as never)
-    .eq("id", user.uid);
+    .eq("id", user.id);
 
   if (error) return { error: error.message };
 

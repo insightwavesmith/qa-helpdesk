@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { fetchAccountAds, buildInsightRows, upsertInsights } from "@/lib/protractor/meta-collector";
 import { fetchMixpanelRevenue, lookupMixpanelSecret } from "@/lib/protractor/mixpanel-collector";
 import {
@@ -40,7 +40,8 @@ const PHASES: PhaseInfo[] = [
 
 export async function POST(request: NextRequest) {
   // 1. admin 권한 확인
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "인증 필요" }, { status: 401 });
   }
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", user.id)
     .single();
 
   if (!profile || profile.role !== "admin") {

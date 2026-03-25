@@ -1,6 +1,5 @@
 import { Suspense } from "react";
-import { createServiceClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/firebase/auth";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import CreativeAnalysis from "./creative-analysis";
 
 /**
@@ -11,7 +10,10 @@ import CreativeAnalysis from "./creative-analysis";
  * - 미연결 → 안내 메시지
  */
 export default async function CreativesPage() {
-  const user = await getCurrentUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return <NoAccountGuide type="member" />;
@@ -21,7 +23,7 @@ export default async function CreativesPage() {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", user.id)
     .single();
 
   if (!profile) {
@@ -50,7 +52,7 @@ export default async function CreativesPage() {
     const { data: adAccounts } = await svc
       .from("ad_accounts")
       .select("*")
-      .eq("user_id", user.uid)
+      .eq("user_id", user.id)
       .eq("active", true)
       .order("created_at", { ascending: false });
 

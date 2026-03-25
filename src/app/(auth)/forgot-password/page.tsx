@@ -4,8 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
-import { getFirebaseClientAuth } from "@/lib/firebase/client";
-import { sendPasswordResetEmail } from "firebase/auth";
+import { createClient } from "@/lib/supabase/client";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -17,9 +16,13 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const auth = getFirebaseClientAuth();
-      // Firebase 콘솔의 "비밀번호 재설정 URL" 설정 사용
-      await sendPasswordResetEmail(auth, email);
+      const supabase = createClient();
+      const siteUrl =
+        process.env.NEXT_PUBLIC_SITE_URL ?? "https://bscamp.vercel.app";
+
+      await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${siteUrl}/reset-password`,
+      });
     } catch {
       // 에러도 동일 메시지 표시 (정보 노출 방지)
     } finally {
