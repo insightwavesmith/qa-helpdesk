@@ -49,11 +49,13 @@ const TEAM_DISPLAY = {
 
 // ─── 상태 추적 ────────────────────────────────────────────────────────────────
 
-/** @type {Record<string, { lastStatus: string, staleCount: number, lastAlertAt: number | null }>} */
+/** @type {Record<string, { lastStatus: string, staleCount: number, lastAlertAt: number | null, lastRestartAt: number | null }>} */
 const teamState = {};
 for (const team of TEAMS) {
-  teamState[team] = { lastStatus: 'unknown', staleCount: 0, lastAlertAt: null };
+  teamState[team] = { lastStatus: 'unknown', staleCount: 0, lastAlertAt: null, lastRestartAt: null };
 }
+
+const RESTART_COOLDOWN_MS = 10 * 60 * 1000; // 10분 쿨다운
 
 // ─── tmux 세션 확인 ───────────────────────────────────────────────────────────
 
@@ -264,6 +266,52 @@ async function checkTeam(team) {
       current.lastStatus = 'dead';
       current.staleCount = 0;
       current.lastAlertAt = now;
+
+      // 자동 재시작 시도 (10분 쿨다운 내 1회만)
+      const canRestart = !current.lastRestartAt || (now - current.lastRestartAt > RESTART_COOLDOWN_MS);
+      if (canRestart) {
+        console.log(`[idle-detector] ${team}: 세션 자동 재시작 시도`);
+        try {
+          execSync(`tmux new-session -d -s sdk-${team}`, { stdio: 'ignore', timeout: 5000 });
+          current.lastRestartAt = now;
+          console.log(`[idle-detector] ${team}: tmux 세션 재시작 성공`);
+
+          // checkpoint resume context 주입
+          try {
+            const resumeCtx = execSync(
+              `node scripts/session-resume.mjs ${team}`,
+              { encoding: 'utf8', timeout: 5000, cwd: '/Users/smith/projects/bscamp' }
+            ).trim();
+            if (resumeCtx) {
+              // 긴 텍스트를 tmux에 전달하기 위해 임시 파일 사용
+              const tmpFile = `/tmp/cross-team/${team}/resume-ctx.txt`;
+              const { writeFileSync } = await import('fs');
+              writeFileSync(tmpFile, resumeCtx);
+              execSync(`tmux load-buffer ${tmpFile} \\; paste-buffer -t sdk-${team}`, { stdio: 'ignore', timeout: 3000 });
+              console.log(`[idle-detector] ${team}: checkpoint resume context 주입 완료`);
+            }
+          } catch (resumeErr) {
+            console.warn(`[idle-detector] ${team}: resume context 주입 실패 (세션은 재시작됨): ${resumeErr.message}`);
+          }
+
+          // 재시작 성공 슬랙 알림
+          const restartBlocks = [
+            { type: 'header', text: { type: 'plain_text', text: '🔄 세션 자동 재시작' } },
+            { type: 'section', text: { type: 'mrkdwn', text: `*${TEAM_DISPLAY[team]?.emoji || '🤖'} ${TEAM_DISPLAY[team]?.name || team}* 세션이 자동으로 재시작되었습니다.` } },
+          ];
+          await sendSlack(SLACK_UNIFIED_CHANNEL, restartBlocks, `🔄 ${team} 세션 자동 재시작`);
+        } catch (restartErr) {
+          console.error(`[idle-detector] ${team}: 세션 재시작 실패: ${restartErr.message}`);
+          const failBlocks = [
+            { type: 'header', text: { type: 'plain_text', text: '❌ 세션 재시작 실패' } },
+            { type: 'section', text: { type: 'mrkdwn', text: `*${TEAM_DISPLAY[team]?.emoji || '🤖'} ${TEAM_DISPLAY[team]?.name || team}* 세션 자동 재시작에 실패했습니다.\n수동 복구 필요: \`tmux new-session -s sdk-${team}\`` } },
+          ];
+          await sendSlack(SLACK_UNIFIED_CHANNEL, failBlocks, `❌ ${team} 세션 재시작 실패`);
+          if (SLACK_CEO_USER_ID) {
+            await sendSlack(SLACK_CEO_USER_ID, failBlocks, `❌ ${team} 세션 재시작 실패`);
+          }
+        }
+      }
     }
     return;
   }

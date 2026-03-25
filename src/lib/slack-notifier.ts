@@ -19,6 +19,24 @@ const CHANNELS: SlackChannelConfig = {
 /** 통합 채널 (설정 시 모든 이벤트가 이 채널로 전송, fallback으로 팀별 채널) */
 const UNIFIED_CHANNEL = process.env.SLACK_UNIFIED_CHANNEL || "";
 
+/** 서킷 브레이커 — 5회 연속 실패 시 2분간 전송 차단 */
+const CIRCUIT_BREAKER_THRESHOLD = 5;
+const CIRCUIT_BREAKER_BLOCK_MS = 120_000; // 2분
+
+interface CircuitBreakerState {
+  consecutiveFailures: number;
+  lastFailureAt: number;
+  openUntil: number | null;
+  isOpen: boolean;
+}
+
+const circuitBreaker: CircuitBreakerState = {
+  consecutiveFailures: 0,
+  lastFailureAt: 0,
+  openUntil: null,
+  isOpen: false,
+};
+
 const PRIORITY_MAP: Record<SlackEventType, SlackPriority> = {
   "task.started": "normal",
   "task.completed": "normal",
@@ -42,6 +60,43 @@ const CEO_NOTIFY_EVENTS: SlackEventType[] = [
   "session.crashed",
   // team.idle은 3회 연속 시만 → 호출자가 ceoNotify=true로 설정
 ];
+
+/** 서킷 브레이커 상태 확인 (half-open 자동 전환 포함) */
+function isCircuitOpen(): boolean {
+  if (!circuitBreaker.isOpen) return false;
+  if (circuitBreaker.openUntil && Date.now() > circuitBreaker.openUntil) {
+    // half-open: 차단 시간 경과 → 한 번 시도 허용
+    circuitBreaker.isOpen = false;
+    circuitBreaker.consecutiveFailures = 0;
+    console.log("[slack-notifier] 서킷 브레이커 HALF-OPEN → 전송 재시도 허용");
+    return false;
+  }
+  return true;
+}
+
+/** 전송 결과에 따른 서킷 브레이커 상태 갱신 */
+function updateCircuitBreaker(success: boolean): void {
+  if (success) {
+    if (circuitBreaker.consecutiveFailures > 0) {
+      console.log("[slack-notifier] 서킷 브레이커 RESET (전송 성공)");
+    }
+    circuitBreaker.consecutiveFailures = 0;
+    circuitBreaker.isOpen = false;
+    circuitBreaker.openUntil = null;
+    return;
+  }
+
+  circuitBreaker.consecutiveFailures++;
+  circuitBreaker.lastFailureAt = Date.now();
+
+  if (circuitBreaker.consecutiveFailures >= CIRCUIT_BREAKER_THRESHOLD) {
+    circuitBreaker.isOpen = true;
+    circuitBreaker.openUntil = Date.now() + CIRCUIT_BREAKER_BLOCK_MS;
+    console.error(
+      `[slack-notifier] 서킷 브레이커 OPEN — ${CIRCUIT_BREAKER_THRESHOLD}회 연속 실패, ${CIRCUIT_BREAKER_BLOCK_MS / 1000}초간 전송 차단`
+    );
+  }
+}
 
 /** 팀 표시명 */
 const TEAM_DISPLAY: Record<TeamId, { name: string; emoji: string }> = {
@@ -299,6 +354,18 @@ export async function sendSlackNotification(
     return result;
   }
 
+  // 서킷 브레이커 체크
+  if (isCircuitOpen()) {
+    console.warn("[slack-notifier] 서킷 브레이커 OPEN — 전송 차단 중, 큐에 적재");
+    const blocks = buildSlackBlocks(notification);
+    for (const channelId of notification.channels) {
+      if (channelId) {
+        await enqueueNotification(channelId, blocks, notification.title);
+      }
+    }
+    return result;
+  }
+
   const blocks = buildSlackBlocks(notification);
 
   // 1. 팀 채널에 전송 (재시도 포함, 채널 간 1초 간격 — Slack API Rate Limit 1msg/sec 대응)
@@ -312,8 +379,10 @@ export async function sendSlackNotification(
     const sendResult = await sendWithRetry(channelId, blocks, notification.title);
     if (sendResult.ok) {
       result.channelsSent.push(channelId);
+      updateCircuitBreaker(true);
     } else {
       result.failedChannels.push(channelId);
+      updateCircuitBreaker(false);
     }
   }
 
