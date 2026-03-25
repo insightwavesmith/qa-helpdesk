@@ -18,7 +18,7 @@
  *   - 5축 분석 실행 (→ embed-creatives가 트리거)
  *   - 벤치마크 계산 (→ collect-benchmarks가 담당)
  *
- * Vercel Cron: 매일 4회 배치 실행 (batch 1~4)
+ * Cloud Run Cron: 매일 4회 배치 실행 (batch 1~4)
  * ═══════════════════════════════════════════════════════════════
  */
 
@@ -35,7 +35,7 @@ import { extractCarouselCards } from "@/lib/protractor/carousel-cards";
 import { normalizeUrl, classifyUrl } from "@/lib/lp-normalizer";
 import { triggerNext } from "@/lib/pipeline-chain";
 
-// ── Vercel Cron 인증 ──────────────────────────────────────────
+// ── Cloud Run Cron 인증 ──────────────────────────────────────────
 function verifyCron(req: NextRequest): boolean {
   const authHeader = req.headers.get("authorization");
   if (!authHeader) return false;
@@ -479,7 +479,7 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
 }
 
 // ── GET /api/cron/collect-daily ──────────────────────────────
-// Vercel Cron: 매일 18:00 UTC (KST 다음날 03:00)
+// Cloud Run Cron: 매일 18:00 UTC (KST 다음날 03:00)
 export async function GET(req: NextRequest) {
   if (!verifyCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -23,7 +23,7 @@ function getFirebaseAdmin(): { app: App; auth: Auth } {
       process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
     if (serviceAccountJson) {
-      // Vercel: JSON 문자열 환경변수에서 서비스 계정 키 파싱
+      // 클라우드 환경: JSON 문자열 환경변수에서 서비스 계정 키 파싱
       const serviceAccount = JSON.parse(serviceAccountJson) as ServiceAccount;
       app = initializeApp({ credential: cert(serviceAccount) });
     } else if (serviceAccountPath) {

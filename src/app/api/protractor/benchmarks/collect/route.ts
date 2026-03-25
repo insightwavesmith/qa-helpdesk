@@ -33,7 +33,7 @@ export async function POST() {
       headers: {
         authorization: `Bearer ${process.env.CRON_SECRET ?? ""}`,
       },
-      // 최대 5분 (Vercel Pro 기준)
+      // 최대 5분 (Cloud Run 기준)
       signal: AbortSignal.timeout(290_000),
     });
 

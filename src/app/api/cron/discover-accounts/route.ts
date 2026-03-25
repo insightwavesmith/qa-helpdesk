@@ -14,7 +14,7 @@
  *      - 기존: account_name, account_status, currency, last_checked_at 업데이트
  *   4. API 응답에 없는 기존 계정 → active=false
  *
- * Vercel Cron: 주 1회 월요일
+ * Cloud Run Cron: 주 1회 월요일
  * ═══════════════════════════════════════════════════════════════
  */
 
@@ -23,7 +23,7 @@ import { createServiceClient } from "@/lib/db";
 import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 import { fetchMetaWithRetry } from "@/lib/collect-daily-utils";
 
-// ── Vercel Cron 인증 ──────────────────────────────────────────
+// ── Cloud Run Cron 인증 ──────────────────────────────────────────
 function verifyCron(req: NextRequest): boolean {
   const authHeader = req.headers.get("authorization");
   if (!authHeader) return false;

@@ -8,7 +8,7 @@ import {
   fetchYouTubeTranscript,
 } from "@/lib/content-crawler";
 
-// ── Vercel Cron 인증 ──────────────────────────────────────────
+// ── Cloud Run Cron 인증 ──────────────────────────────────────────
 function verifyCron(req: NextRequest): boolean {
   const authHeader = req.headers.get("authorization");
   if (!authHeader) return false;

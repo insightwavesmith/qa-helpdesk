@@ -342,7 +342,7 @@ async function fetchMediaFile(url: string): Promise<{
 
 /**
  * Buffer를 Storage(creatives 버킷)에 업로드한다.
- * GCS 사용 (Vercel 서버리스 환경).
+ * GCS 사용 (Cloud Run 서버리스 환경).
  * upsert: true (같은 경로면 덮어씀)
  */
 async function uploadBufferToStorage(

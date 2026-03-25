@@ -1,6 +1,6 @@
 /**
  * collect-benchmarks — GCP 방식 벤치마크 수집 (전면 재작성)
- * Vercel Cron: 매주 월요일 17:00 UTC (KST 화요일 02:00)
+ * Cloud Run Cron: 매주 월요일 17:00 UTC (KST 화요일 02:00)
  *
  * STEP 0: 계정 카테고리 분류 (profiles 매칭 → account_categories → AI 자동 분류)
  * STEP 1: Meta API로 활성 계정의 광고 원본 수집 → ad_insights_classified UPSERT
@@ -18,7 +18,7 @@ import {
   fetchImageUrlsByHash,
 } from "@/lib/protractor/creative-image-fetcher";
 
-// ── Vercel Cron 인증 ─────────────────────────────────────────
+// ── Cloud Run Cron 인증 ─────────────────────────────────────────
 function verifyCron(req: NextRequest): boolean {
   const authHeader = req.headers.get("authorization");
   if (!authHeader) return false;

@@ -137,7 +137,7 @@ export async function createQuestion(formData: {
     return { data: null, error: error.message };
   }
 
-  // AI 답변 자동 생성 (동기 실행 — after()는 Vercel serverless 타임아웃 시 silent fail)
+  // AI 답변 자동 생성 (동기 실행 — after()는 서버리스 타임아웃 시 silent fail)
   try {
     await createAIAnswerForQuestion(data.id, formData.title, formData.content, formData.imageUrls);
   } catch (err) {

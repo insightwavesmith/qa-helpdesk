@@ -10,7 +10,7 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// 한글→영문 변환 결과 서버 메모리 캐시 (Vercel 인스턴스 재활용 시 유효)
+// 한글→영문 변환 결과 서버 메모리 캐시 (Cloud Run 인스턴스 재활용 시 유효)
 const brandNameCache = new Map<string, { englishName: string; timestamp: number }>();
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
 

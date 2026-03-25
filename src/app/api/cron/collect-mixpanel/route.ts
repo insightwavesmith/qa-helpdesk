@@ -3,7 +3,7 @@ import { createServiceClient } from "@/lib/db";
 import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 import { fetchMixpanelRevenue, lookupMixpanelSecret } from "@/lib/protractor/mixpanel-collector";
 
-// ── Vercel Cron 인증 ──────────────────────────────────────────
+// ── Cloud Run Cron 인증 ──────────────────────────────────────────
 function verifyCron(req: NextRequest): boolean {
   const authHeader = req.headers.get("authorization");
   if (!authHeader) return false;
@@ -11,7 +11,7 @@ function verifyCron(req: NextRequest): boolean {
 }
 
 // ── GET /api/cron/collect-mixpanel ─────────────────────────────
-// Vercel Cron: 매일 18:30 UTC (KST 다음날 03:30) — collect-daily 30분 후
+// Cloud Run Cron: 매일 18:30 UTC (KST 다음날 03:30) — collect-daily 30분 후
 export async function GET(req: NextRequest) {
   if (!verifyCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

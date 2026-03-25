@@ -1,7 +1,7 @@
 /**
  * GET /api/cron/crawl-lps
  * LP 크롤링 크론 v2 — landing_pages 기준, ADR-001 Storage 경로, lp_snapshots 저장
- * Vercel Cron: 1시간마다 또는 수동 호출
+ * Cloud Run Cron: 1시간마다 또는 수동 호출
  */
 
 import { createHash } from "crypto";
@@ -43,7 +43,7 @@ function computeHash(base64Data: string): string {
   return createHash("sha256").update(base64Data).digest("hex");
 }
 
-// Vercel Cron은 GET 호출
+// Cloud Run Cron은 GET 호출
 export async function GET(req: NextRequest) {
   return handleCrawl(req);
 }
