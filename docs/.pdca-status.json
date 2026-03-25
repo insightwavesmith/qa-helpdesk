@@ -237,8 +237,7 @@
       },
       "notes": "Phase 2: AI 변환 엔진 + 5채널 배포. Wave 1(DB+타입) 시작",
       "updatedAt": "2026-03-25"
-    }
-  },
+    },
     "agent-ops-separation": {
       "phase": "completed",
       "plan": {
@@ -272,8 +271,7 @@
       },
       "notes": "bscamp에서 52파일 삭제 + agent-ops 독립 프로젝트 생성 완료 (63파일, +908/-14096줄)",
       "updatedAt": "2026-03-25"
-    }
-  },
+    },
     "vercel-removal": {
       "phase": "completed",
       "plan": {
@@ -307,9 +305,74 @@
       },
       "notes": "Wave 1-3 완료(97%): src/ bscamp.vercel.app 0건, VERCEL_URL 0건, vercel.json 삭제. Wave 4(RLS)+Wave 5(Cloud Run) 별도 진행 예정. .env.local 수동 업데이트 필요.",
       "updatedAt": "2026-03-25"
+    },
+    "vercel-supabase-migration": {
+      "phase": "plan",
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/01-plan/features/vercel-supabase-migration.plan.md",
+        "at": "2026-03-25"
+      },
+      "design": {
+        "team": "pm",
+        "done": false,
+        "doc": "",
+        "at": null
+      },
+      "do": {
+        "team": "cto",
+        "done": false,
+        "commit": null,
+        "at": null
+      },
+      "check": {
+        "team": "qa",
+        "done": false,
+        "doc": "",
+        "matchRate": null
+      },
+      "act": {
+        "done": false,
+        "commit": null
+      },
+      "updatedAt": "2026-03-25T20:55:31",
+      "notes": "Plan 보완 완료 - 의존성 맵, GCP 대안, Phase A/B/C 추가"
+    },
+    "creative-analysis-v3": {
+      "phase": "plan",
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/mockup/creative-analysis-v3.html",
+        "at": "2026-03-25"
+      },
+      "design": {
+        "team": "pm",
+        "done": false,
+        "doc": "",
+        "at": null
+      },
+      "do": {
+        "team": "cto",
+        "done": false,
+        "commit": null,
+        "at": null
+      },
+      "check": {
+        "team": "qa",
+        "done": false,
+        "doc": "",
+        "matchRate": null
+      },
+      "act": {
+        "done": false,
+        "commit": null
+      },
+      "updatedAt": "2026-03-25T20:55:31",
+      "notes": "목업 v3 완료"
     }
   },
-  "updatedAt": "2026-03-25T09:30:00.000000"
-,
-  "_lastUpdated": "2026-03-25T18:46:06.296880"
+  "updatedAt": "2026-03-25T09:30:00.000000",
+  "_lastUpdated": "2026-03-25T20:55:31"
 }
