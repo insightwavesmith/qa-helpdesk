@@ -134,6 +134,37 @@ function buildSlackBlocks(notification: SlackNotification): any[] {
   return blocks;
 }
 
+/** 큐 파일 경로 */
+const SLACK_QUEUE_PATH = "/tmp/cross-team/slack/queue.jsonl";
+
+/** 큐에 항목 적재 (429 지속 실패 시 fallback) */
+async function enqueueNotification(
+  channelId: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  blocks: any[],
+  text: string
+): Promise<void> {
+  try {
+    const { promises: fs } = await import("fs");
+    const path = await import("path");
+    const { randomUUID } = await import("crypto");
+    await fs.mkdir(path.dirname(SLACK_QUEUE_PATH), { recursive: true });
+    const entry = {
+      id: randomUUID(),
+      channelId,
+      blocks,
+      text,
+      queuedAt: new Date().toISOString(),
+      status: "queued",
+      retryCount: 0,
+    };
+    await fs.appendFile(SLACK_QUEUE_PATH, JSON.stringify(entry) + "\n");
+    console.warn(`[slack-notifier] 채널 ${channelId} 큐에 적재 (429 지속)`);
+  } catch (queueErr) {
+    console.error("[slack-notifier] 큐 적재 실패:", queueErr);
+  }
+}
+
 /** 재시도 래퍼 (최대 3회, Exponential Backoff, 429 Retry-After 대응) */
 async function sendWithRetry(
   channelId: string,
@@ -142,6 +173,8 @@ async function sendWithRetry(
   text: string,
   maxRetries = 3
 ): Promise<{ ok: boolean; error?: string }> {
+  let allRateLimit = true; // 모든 실패가 429인지 추적
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       await slack.chat.postMessage({ channel: channelId, blocks, text });
@@ -152,6 +185,8 @@ async function sendWithRetry(
         ? (err as { retryAfter: number }).retryAfter
         : undefined;
 
+      if (!isRateLimit) allRateLimit = false;
+
       if (attempt < maxRetries) {
         const delay = retryAfter ? retryAfter * 1000 : Math.pow(2, attempt - 1) * 1000;
         console.warn(`[slack-notifier] 채널 ${channelId} 재시도 ${attempt}/${maxRetries} (${delay}ms 대기)`);
@@ -159,6 +194,12 @@ async function sendWithRetry(
       } else {
         const errorMsg = err instanceof Error ? err.message : String(err);
         console.error(`[slack-notifier] 채널 ${channelId} 최종 실패:`, errorMsg);
+
+        // 모든 실패가 429(Rate Limit)이면 큐에 적재
+        if (allRateLimit && isRateLimit) {
+          await enqueueNotification(channelId, blocks, text);
+        }
+
         return { ok: false, error: errorMsg };
       }
     }
@@ -212,9 +253,14 @@ export async function sendSlackNotification(
 
   const blocks = buildSlackBlocks(notification);
 
-  // 1. 팀 채널에 전송 (재시도 포함)
-  for (const channelId of notification.channels) {
+  // 1. 팀 채널에 전송 (재시도 포함, 채널 간 1초 간격 — Slack API Rate Limit 1msg/sec 대응)
+  for (let i = 0; i < notification.channels.length; i++) {
+    const channelId = notification.channels[i];
     if (!channelId) continue;
+    // 두 번째 채널부터 1초 간격 (chain.handoff 등 다중 채널 전송 시)
+    if (i > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
     const sendResult = await sendWithRetry(channelId, blocks, notification.title);
     if (sendResult.ok) {
       result.channelsSent.push(channelId);

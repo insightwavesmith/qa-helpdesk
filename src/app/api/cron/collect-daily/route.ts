@@ -223,16 +223,19 @@ async function collectAccount(
             .select("creative_id, position, storage_url, media_url")
             .in("creative_id", Array.from(adIdToCreativeId.values()));
           const existingMap = new Map<string, { storage_url: string | null; media_url: string | null }>(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (existingMedia ?? []).map((r: any) => [`${r.creative_id}_${r.position ?? 0}`, { storage_url: r.storage_url, media_url: r.media_url }])
           );
 
           const mediaRows: Record<string, unknown>[] = [];
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           for (const ad of ads as any[]) {
             const adId = (ad.ad_id ?? ad.id) as string;
             const creativeId = adIdToCreativeId.get(adId);
             if (!creativeId) continue;
 
             const creative = ad.creative;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const creativeType = getCreativeType(ad as any);
 
             if (creativeType === "CAROUSEL") {

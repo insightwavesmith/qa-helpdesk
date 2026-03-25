@@ -72,7 +72,7 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
-  const [accountForm, setAccountForm] = useState({ account_name: "", mixpanel_project_id: "", mixpanel_board_id: "", mixpanel_secret_key: "" });
+  const [accountForm, setAccountForm] = useState({ account_id: "", account_name: "", mixpanel_project_id: "", mixpanel_board_id: "", mixpanel_secret_key: "" });
   const [accountSaving, setAccountSaving] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newAccountForm, setNewAccountForm] = useState({ account_id: "", account_name: "", mixpanel_project_id: "", mixpanel_board_id: "", mixpanel_secret_key: "" });
@@ -87,6 +87,7 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
   const handleEditAccount = (acc: AdAccount) => {
     setEditingAccountId(acc.id);
     setAccountForm({
+      account_id: acc.account_id,
       account_name: acc.account_name ?? "",
       mixpanel_project_id: acc.mixpanel_project_id ?? "",
       mixpanel_board_id: acc.mixpanel_board_id ?? "",
@@ -110,6 +111,7 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
       const { error } = await updateAdAccount(
         editingAccountId,
         {
+          account_id: accountForm.account_id || undefined,
           account_name: accountForm.account_name || undefined,
           mixpanel_project_id: accountForm.mixpanel_project_id || undefined,
           mixpanel_board_id: accountForm.mixpanel_board_id || undefined,
@@ -445,7 +447,17 @@ export function MemberDetailModal({ profile, accounts, onClose, onUpdated }: Mem
                 <div key={acc.id} className="bg-gray-50 rounded-lg px-3 py-2">
                   {editingAccountId === acc.id ? (
                     <div className="space-y-2">
-                      <p className="text-xs text-gray-500 font-mono mb-1">{acc.account_id}</p>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-0.5">광고계정 ID</label>
+                        <input
+                          type="text"
+                          name="edit-account-id"
+                          autoComplete="off"
+                          value={accountForm.account_id}
+                          onChange={(e) => setAccountForm((p) => ({ ...p, account_id: e.target.value }))}
+                          className="w-full rounded border border-gray-200 px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#F75D5D] focus:border-transparent"
+                        />
+                      </div>
                       <div>
                         <label className="block text-xs text-gray-500 mb-0.5">광고계정명</label>
                         <input

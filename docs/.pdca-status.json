@@ -1,0 +1,48 @@
+{
+  "features": {
+    "ad-account-id-bugfix": {
+      "phase": "completed",
+      "matchRate": null,
+      "documents": {},
+      "notes": "광고계정ID 수정 버그 핫픽스 (2파일)",
+      "updatedAt": "2026-03-25"
+    },
+    "slack-notification": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {
+        "design": "docs/02-design/features/slack-notification.design.md"
+      },
+      "notes": "통합 채널 + 재시도 + rate limit 큐 구현 완료, 체크 미진행",
+      "updatedAt": "2026-03-25"
+    },
+    "web-terminal-dashboard": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {
+        "design": "docs/02-design/features/web-terminal-dashboard.design.md"
+      },
+      "notes": "xterm.js + WS + REST API 17파일 신규 생성, 체크 미진행",
+      "updatedAt": "2026-03-25"
+    },
+    "deepgaze-gemini-pipeline": {
+      "phase": "implementing",
+      "matchRate": null,
+      "documents": {
+        "plan": "docs/01-plan/features/deepgaze-gemini-pipeline.plan.md"
+      },
+      "notes": "결합 분석 크론 + 체인 트리거 구현 완료, 체크 미진행",
+      "updatedAt": "2026-03-25"
+    },
+    "collect-daily-refactoring": {
+      "phase": "completed",
+      "matchRate": 97,
+      "documents": {
+        "analysis": "docs/03-analysis/collect-daily-refactoring.analysis.md"
+      },
+      "notes": "병렬화 + collectAccount 분리 + incremental 수집 완료",
+      "updatedAt": "2026-03-25"
+    }
+  },
+  "updatedAt": "2026-03-25T14:30:00+09:00"
+}

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/firebase/auth';
+import { requireAdmin } from '@/app/api/admin/_shared';
 import { sendSlackNotification, resolveChannels, PRIORITY_MAP, CEO_NOTIFY_EVENTS } from '@/lib/slack-notifier';
 import { detectChainHandoff } from '@/lib/chain-detector';
 import type { SlackNotification, SlackEventType, TeamId } from '@/types/agent-dashboard';
@@ -16,9 +16,9 @@ const VALID_EVENTS: SlackEventType[] = [
 const VALID_TEAMS: TeamId[] = ['pm', 'marketing', 'cto'];
 
 export async function POST(request: NextRequest) {
-  // 인증 체크
-  const user = await getCurrentUser();
-  if (!user) {
+  // 인증 체크 (admin 역할 필수)
+  const auth = await requireAdmin();
+  if ('response' in auth) {
     return NextResponse.json(
       { ok: false, error: 'UNAUTHORIZED', message: 'admin 권한이 필요합니다' },
       { status: 401 }

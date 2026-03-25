@@ -12,6 +12,7 @@
 
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { triggerNext } from "@/lib/pipeline-chain";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -243,6 +244,12 @@ export async function GET() {
       }
     } catch (syncErr) {
       console.error("[video-saliency] 동기화 오류 (무시):", syncErr);
+    }
+
+    // ━━━ 5. 파이프라인 체인 트리거 ━━━
+    // video-saliency 완료 → deepgaze-gemini 결합 분석 트리거
+    if (synced > 0) {
+      await triggerNext("deepgaze-gemini");
     }
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);

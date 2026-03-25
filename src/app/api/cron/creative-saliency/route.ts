@@ -11,6 +11,7 @@
 
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { triggerNext } from "@/lib/pipeline-chain";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -311,6 +312,12 @@ export async function GET() {
     }
 
     // VIDEO saliency는 전용 크론(/api/cron/video-saliency)으로 분리됨
+
+    // ━━━ 6. 파이프라인 체인 트리거 ━━━
+    // creative-saliency 완료 → deepgaze-gemini 결합 분석 트리거
+    if (syncUpdated > 0 || hashReuseCount > 0) {
+      await triggerNext("deepgaze-gemini");
+    }
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
 

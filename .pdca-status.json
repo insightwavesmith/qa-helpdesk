@@ -664,14 +664,22 @@
     "notes": "PR #2 생성. collect-daily 권한 체크, health sync-notion 제거, 82/83건 다운로드 완료. 커밋 a22028a."
   },
   "deepgaze-gemini-pipeline": {
-    "phase": "planning",
-    "matchRate": 0,
+    "status": "implementing",
+    "matchRate": null,
     "documents": {
       "plan": "docs/01-plan/features/deepgaze-gemini-pipeline.plan.md",
       "design": "docs/02-design/features/deepgaze-gemini-pipeline.design.md"
     },
     "startedAt": "2026-03-25",
-    "notes": "Smith님 확정 8단계 파이프라인. DeepGaze→Gemini 결합. Plan+Design 완료."
+    "updatedAt": "2026-03-25T23:30:00+09:00",
+    "notes": "결합 분석 크론 + 체인 트리거 구현 완료, 체크 미진행"
+  },
+  "ad-account-id-bugfix": {
+    "status": "completed",
+    "tasks": ["frontend-edit-field", "backend-account_id-param", "duplicate-check"],
+    "completedAt": "2026-03-25",
+    "updatedAt": "2026-03-25T23:30:00+09:00",
+    "notes": "광고계정ID 수정 버그 핫픽스. admin.ts updateAdAccount + member-detail-modal.tsx 수정 (2파일)"
   },
   "cloud-run-jobs-crawl-lps": {
     "status": "implementing",
@@ -961,13 +969,14 @@
     "notes": "CTO팀 구현 중. Plan+Design 완료."
   },
   "slack-notification": {
-    "phase": "designing",
-    "matchRate": 0,
+    "status": "implementing",
+    "matchRate": null,
     "documents": {
       "design": "docs/02-design/features/slack-notification.design.md"
     },
     "startedAt": "2026-03-25",
-    "notes": "CTO팀 구현 중. 상세 설계(Block Kit JSON, Rate Limit 전략) 완료."
+    "updatedAt": "2026-03-25T23:30:00+09:00",
+    "notes": "통합 채널 + 재시도 + rate limit 큐 구현 완료, 체크 미진행"
   },
   "orchestration-chain": {
     "phase": "designing",
@@ -979,14 +988,24 @@
     "notes": "/tmp/cross-team/ 프로토콜 표준화. 마커 파일 규약 정의."
   },
   "web-terminal-dashboard": {
-    "phase": "designing",
-    "matchRate": 0,
+    "status": "implementing",
+    "matchRate": null,
     "documents": {
       "plan": "docs/01-plan/features/web-terminal-dashboard.plan.md",
       "design": "docs/02-design/features/web-terminal-dashboard.design.md"
     },
     "startedAt": "2026-03-25",
-    "notes": "CTO팀 구현 중. Codeman 기반 xterm.js + WebSocket."
+    "updatedAt": "2026-03-25T23:30:00+09:00",
+    "notes": "xterm.js + WS + REST API 17파일 신규 생성, 체크 미진행"
   },
-  "lastUpdated": "2026-03-25T14:00:00+09:00"
+  "collect-daily-refactoring-qa": {
+    "status": "completed",
+    "matchRate": 97,
+    "analysis": "docs/03-analysis/collect-daily-refactoring.analysis.md",
+    "tasks": ["gap-analysis", "build-verify", "eslint-fix"],
+    "completedAt": "2026-03-25",
+    "updatedAt": "2026-03-25T23:30:00+09:00",
+    "notes": "병렬화 + collectAccount 분리 + incremental 수집 검증 완료. Match Rate 97%."
+  },
+  "lastUpdated": "2026-03-25T23:30:00+09:00"
 }

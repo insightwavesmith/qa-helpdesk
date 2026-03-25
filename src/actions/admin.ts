@@ -531,12 +531,32 @@ export async function addAdAccount(data: {
 // A6: 광고계정 수정 (시크릿키 포함)
 export async function updateAdAccount(
   id: string,
-  data: { account_name?: string; mixpanel_project_id?: string; mixpanel_board_id?: string },
+  data: { account_id?: string; account_name?: string; mixpanel_project_id?: string; mixpanel_board_id?: string },
   secretKey?: string
 ) {
   const svc = await requireAdmin();
-  const { error } = await svc.from('ad_accounts').update(data).eq('id', id);
-  if (error) return { error: error.message };
+
+  const { account_id: newAccountId, ...restData } = data;
+
+  // account_id 이외 필드 업데이트
+  if (Object.keys(restData).length > 0) {
+    const { error } = await svc.from('ad_accounts').update(restData).eq('id', id);
+    if (error) return { error: error.message };
+  }
+
+  // account_id 변경 (고유 키 — 중복 확인 필수)
+  if (newAccountId) {
+    const { data: dup } = await svc
+      .from('ad_accounts')
+      .select('id')
+      .eq('account_id', newAccountId)
+      .neq('id', id)
+      .maybeSingle();
+    if (dup) return { error: `이미 등록된 광고계정 ID입니다: ${newAccountId}` };
+
+    const { error: idErr } = await svc.from('ad_accounts').update({ account_id: newAccountId }).eq('id', id);
+    if (idErr) return { error: idErr.message };
+  }
 
   // 시크릿키 업데이트
   if (secretKey) {
