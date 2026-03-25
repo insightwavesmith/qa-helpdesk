@@ -1007,5 +1007,25 @@
     "updatedAt": "2026-03-25T23:30:00+09:00",
     "notes": "병렬화 + collectAccount 분리 + incremental 수집 검증 완료. Match Rate 97%."
   },
-  "lastUpdated": "2026-03-25T23:30:00+09:00"
+  "agent-ops-platform": {
+    "status": "planning",
+    "phase": "plan",
+    "documents": {
+      "plan": "docs/01-plan/features/agent-ops-platform.plan.md"
+    },
+    "startedAt": "2026-03-25",
+    "updatedAt": "2026-03-25T13:00:00+09:00",
+    "notes": "통합 기획서 1,086줄 완료. 7개 컴포넌트, 6개 레퍼런스, 4주 로드맵. Design 작성 대기."
+  },
+  "prescription-system-mvp": {
+    "status": "planning",
+    "phase": "plan",
+    "documents": {
+      "plan": "docs/01-plan/features/prescription-system-mvp.plan.md"
+    },
+    "startedAt": "2026-03-25",
+    "updatedAt": "2026-03-25T13:00:00+09:00",
+    "notes": "MVP Plan 413줄 완료. 5축 배치 90%+ 선행 필요. Design 작성 대기."
+  },
+  "lastUpdated": "2026-03-25T13:00:00+09:00"
 }

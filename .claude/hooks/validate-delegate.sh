@@ -25,17 +25,25 @@ if echo "$FILE" | grep -qE '^\.(claude|md)|^docs/|^TASK|^CLAUDE'; then
     exit 0
 fi
 
+# 현재 tmux 세션 이름 자동 감지 (sdk-cto, sdk-pm, sdk-mkt 등)
+if [ -n "$TMUX" ]; then
+    CURRENT_SESSION=$(tmux display-message -p '#S' 2>/dev/null)
+else
+    # tmux 밖이면 sdk- 세션 찾기
+    CURRENT_SESSION=$(tmux list-sessions -F '#S' 2>/dev/null | grep "^sdk-" | head -1)
+fi
+
+if [ -z "$CURRENT_SESSION" ]; then
+    exit 0  # tmux 세션 감지 안 되면 패스
+fi
+
 # tmux pane 수로 팀원 존재 확인
-PANE_COUNT=$(tmux list-panes -t sdk-dev 2>/dev/null | wc -l | tr -d ' ')
+PANE_COUNT=$(tmux list-panes -t "$CURRENT_SESSION" 2>/dev/null | wc -l | tr -d ' ')
 PANE_COUNT=${PANE_COUNT:-0}
 
 if [ "$PANE_COUNT" -le 1 ]; then
-    # 노티
-    source /Users/smith/projects/bscamp/.claude/hooks/notify-hook.sh && \
-        notify_hook "⚠️ [게이트 차단] delegate 모드 없이 src/ 수정 시도. 팀원 만들어라" "delegate"
-    
-    echo "❌ delegate 모드(팀원)가 없습니다." >&2
-    echo "Shift+Tab → delegate 모드로 전환하고 팀원(frontend-dev, backend-dev, qa-engineer)을 만드세요." >&2
+    echo "❌ delegate 모드(팀원)가 없습니다. (세션: $CURRENT_SESSION, pane: $PANE_COUNT)" >&2
+    echo "Shift+Tab → delegate 모드로 전환하고 팀원을 만드세요." >&2
     echo "CLAUDE.md 절대규칙 0번: 팀 없이 단독 작업 금지" >&2
     exit 2
 fi
