@@ -1,6 +1,6 @@
 /**
  * GET /api/cron/creative-saliency
- * 광고 소재 시선 분석 크론 — Railway DeepGaze 서비스 호출
+ * 광고 소재 시선 분석 크론 — Cloud Run DeepGaze 서비스 호출
  *
  * CAROUSEL 지원 (Wave 1 이후):
  *   - creative_media N행(position별) 조회
@@ -141,7 +141,7 @@ export async function GET() {
 
     // ━━━ 2. content_hash 기반 saliency_url 사전 복사 ━━━
     // 동일 content_hash(= 동일 이미지)를 가진 다른 row에 saliency_url이 있으면
-    // Railway 호출 없이 바로 복사 → 처리 비용 절감
+    // Cloud Run 호출 없이 바로 복사 → 처리 비용 절감
     let hashReuseCount = 0;
     for (const row of rows) {
       if (!row.content_hash || row.saliency_url) continue;
@@ -173,7 +173,7 @@ export async function GET() {
       console.log(`[creative-saliency] content_hash 재사용 완료: ${hashReuseCount}건`);
     }
 
-    // 복사 후 saliency_url이 채워진 row 제외 — Railway에는 미분석 row만 전달
+    // 복사 후 saliency_url이 채워진 row 제외 — Cloud Run에는 미분석 row만 전달
     const remainingRows = rows.filter((r) => !r.saliency_url);
 
     // ━━━ 3. account별 이미지 카드 그룹핑 ━━━
@@ -224,7 +224,7 @@ export async function GET() {
       }건 (hash 재사용: ${hashReuseCount}건 제외)`,
     );
 
-    // ━━━ 4. account별 Railway /saliency 호출 ━━━
+    // ━━━ 4. account별 Cloud Run /saliency 호출 ━━━
     // Python predict.py가 media_type=IMAGE 필터 + creative_saliency dedup 처리
     // CAROUSEL 카드별 결과는 creative_saliency → creative_media.saliency_url 동기화(step 5)로 반영
     const accountResults: Record<string, unknown>[] = [];
@@ -232,7 +232,7 @@ export async function GET() {
     for (const { accountId, imageCards } of accountList) {
       try {
         console.log(
-          `[creative-saliency] account=${accountId} 이미지 카드 ${imageCards.length}건 → Railway /saliency 호출`,
+          `[creative-saliency] account=${accountId} 이미지 카드 ${imageCards.length}건 → Cloud Run /saliency 호출`,
         );
         const res = await fetch(`${pipelineUrl}/saliency`, {
           method: "POST",
@@ -254,16 +254,16 @@ export async function GET() {
         accountResults.push({ accountId, error: msg });
       }
 
-      // account 간 딜레이 (Railway 부하 분산)
+      // account 간 딜레이 (Cloud Run 부하 분산)
       await new Promise((r) => setTimeout(r, 500));
     }
 
     // ━━━ 5. creative_saliency → creative_media.saliency_url 동기화 ━━━
-    // Railway Python이 creative_saliency 테이블에 저장한 결과를
+    // Cloud Run Python이 creative_saliency 테이블에 저장한 결과를
     // creative_media.saliency_url 컬럼에도 반영
     let syncUpdated = 0;
     try {
-      // Railway가 방금 처리한 ad_id 목록 (content_hash 재사용분 제외)
+      // Cloud Run이 방금 처리한 ad_id 목록 (content_hash 재사용분 제외)
       const processedAdIds = remainingRows
         .map((r) => r.creatives?.ad_id)
         .filter(Boolean) as string[];

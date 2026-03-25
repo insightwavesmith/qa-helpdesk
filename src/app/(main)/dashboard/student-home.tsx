@@ -5,7 +5,8 @@ import { getQuestions } from "@/actions/questions";
 import { StudentAdSummary, type AdSummaryData } from "./student-ad-summary";
 import { getExcerpt } from "@/components/posts/post-card";
 import { decodeHtmlEntities } from "@/lib/utils/decode-entities";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
 
 function timeAgo(dateStr: string | null) {
   if (!dateStr) return "";
@@ -55,14 +56,13 @@ export async function StudentHome({}: StudentHomeProps) {
   // 광고 성과 데이터 (실패해도 무시)
   let adSummary: AdSummaryData | null = null;
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (user) {
       const svc = createServiceClient();
       const { data: accounts } = await svc
         .from("ad_accounts")
         .select("account_id")
-        .eq("user_id", user.id)
+        .eq("user_id", user.uid)
         .limit(1);
 
       if (accounts && accounts.length > 0) {

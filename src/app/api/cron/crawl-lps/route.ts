@@ -125,7 +125,7 @@ async function handleCrawl(req: NextRequest) {
         continue;
       }
 
-      // Railway 크롤링 (mobile 뷰포트)
+      // Cloud Run 크롤링 (mobile 뷰포트)
       const crawlResult = await crawlV2(lp.canonical_url, {
         viewport: "mobile",
         sections: false,

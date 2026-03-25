@@ -3,11 +3,11 @@
  * DELETE /api/upload — GCS 파일 삭제
  *
  * GCS SDK는 서버 사이드 전용이므로 클라이언트 컴포넌트는 이 엔드포인트를 통해 업로드.
- * 인증: Supabase Auth getUser() (로그인된 사용자면 누구나 허용)
+ * 인증: Firebase Auth getCurrentUser() (로그인된 사용자면 누구나 허용)
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
 import { uploadToGcs, deleteFromGcs } from "@/lib/gcs-storage";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -25,10 +25,7 @@ const ALLOWED_BUCKETS = new Set([
 export async function POST(request: NextRequest) {
   try {
     // 인증 확인
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
 
     if (!user) {
       return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
@@ -84,10 +81,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // 인증 확인
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
 
     if (!user) {
       return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });

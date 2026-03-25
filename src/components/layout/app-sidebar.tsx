@@ -23,6 +23,7 @@ import {
   Megaphone,
   Share2,
   Palette,
+  Bot,
 } from "lucide-react";
 import {
   Sidebar,
@@ -45,7 +46,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { createClient } from "@/lib/supabase/client";
+import { getFirebaseClientAuth } from "@/lib/firebase/client";
+import { signOut as firebaseSignOut } from "firebase/auth";
 import { mp } from "@/lib/mixpanel";
 
 interface NavItem {
@@ -77,6 +79,7 @@ const adminNavItems: NavItem[] = [
   { label: "내 광고계정", href: "/admin/owner-accounts", icon: BarChart3 },
   { label: "수강후기 관리", href: "/admin/reviews", icon: Star },
   { label: "소재 분석", href: "/creatives", icon: Palette },
+  { label: "에이전트 대시보드", href: "/admin/agent-dashboard", icon: Bot },
 ];
 
 interface AppSidebarProps {
@@ -102,8 +105,11 @@ export default function AppSidebar({
       session_duration_seconds: Math.round((Date.now() - loginTime.current) / 1000),
     });
     mp.reset();
-    const supabase = createClient();
-    try { await supabase.auth.signOut(); } finally {
+    try {
+      const auth = getFirebaseClientAuth();
+      await firebaseSignOut(auth);
+      await fetch("/api/auth/firebase-logout", { method: "POST" });
+    } finally {
       document.cookie = "x-user-role=; path=/; max-age=0";
       document.cookie = "x-onboarding-status=; path=/; max-age=0";
     }

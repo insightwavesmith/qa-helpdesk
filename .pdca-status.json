@@ -932,5 +932,27 @@
     "tasks": ["hook-script", "settings-json", "claude-md-rule"],
     "updatedAt": "2026-03-24T20:40:00+09:00",
     "notes": "PreToolUse hook 8패턴 차단. settings.json + CLAUDE.md 규칙 추가."
+  },
+  "organic-channel-distribution": {
+    "status": "designing",
+    "plan": "docs/01-plan/features/organic-channel-distribution.plan.md",
+    "design": "docs/02-design/features/organic-channel-distribution.design.md",
+    "tasks": [],
+    "updatedAt": "2026-03-25T14:00:00+09:00",
+    "notes": "Design 문서 완성. 신규 테이블 4개(channel_distributions, channel_credentials, content_analytics, newsletter_segments), AI 변환 엔진, 채널 API 클라이언트, 5탭 어드민 UI, 에러 처리 체계. Phase 2~4 구현 순서 포함."
+  },
+  "collection-gaps-batch": {
+    "status": "planning",
+    "plan": "docs/01-plan/features/collection-gaps-batch.plan.md",
+    "design": null,
+    "tasks": [
+      "T1-미수집계정원인파악",
+      "T2-5축배치2526건",
+      "T3-LP배치132건",
+      "T4-LP미디어다운로드",
+      "T5-나머지갭해소"
+    ],
+    "updatedAt": "2026-03-25",
+    "notes": "Plan 완료. 배치 실행+원인 진단 중심. 코드 신규 구현 최소. 비용 $10~$38 예상. Design은 배치 실행 위주라 별도 작성 불필요할 수 있음."
   }
 }

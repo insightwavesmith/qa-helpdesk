@@ -1,12 +1,9 @@
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
 import { redirect } from "next/navigation";
 import CompetitorDashboard from "./competitor-dashboard";
 
 export default async function CompetitorPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login");

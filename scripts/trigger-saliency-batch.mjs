@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * L2 시선 예측 배치 트리거 — Railway /saliency 엔드포인트 호출
+ * L2 시선 예측 배치 트리거 — Cloud Run /saliency 엔드포인트 호출
  *
  * Usage: node scripts/trigger-saliency-batch.mjs [--limit N] [--account-id xxx] [--wait-deploy] [--repeat]
  *
  * --limit N          : 최대 N건 처리 (기본: 9999)
  * --account-id xxx   : 특정 광고 계정만
- * --wait-deploy      : Railway 배포 완료 대기 후 실행
+ * --wait-deploy      : Cloud Run 배포 완료 대기 후 실행
  * --repeat           : 타임아웃/에러 시 자동 재실행 (analyzed=0이 될 때까지 반복)
  */
 
@@ -30,7 +30,7 @@ async function checkHealth() {
 }
 
 async function waitForNewDeploy(oldVersion, maxWaitMs = 600000) {
-  console.log(`⏳ Railway 배포 대기 중... (현재: ${oldVersion})`);
+  console.log(`⏳ Cloud Run 배포 대기 중... (현재: ${oldVersion})`);
   const start = Date.now();
   while (Date.now() - start < maxWaitMs) {
     await new Promise((r) => setTimeout(r, 15000));
@@ -71,10 +71,10 @@ async function main() {
   // 1. 헬스 체크
   const health = await checkHealth();
   if (!health) {
-    console.error("❌ Railway 서비스 응답 없음");
+    console.error("❌ Cloud Run 서비스 응답 없음");
     process.exit(1);
   }
-  console.log(`✅ Railway 정상 — version: ${health.version}`);
+  console.log(`✅ Cloud Run 정상 — version: ${health.version}`);
 
   // 2. 배포 대기 (--wait-deploy 옵션)
   if (waitDeploy) {

@@ -1,0 +1,12 @@
+allContacts:
+  email: smith.kim@inwv.co
+  phoneNumber: '+8210000000000'
+  postalAddress:
+    regionCode: KR
+    postalCode: '00000'
+    administrativeArea: Seoul
+    locality: Seoul
+    addressLines:
+    - 'Seoul, Korea'
+    recipients:
+    - 'Smith Kim'

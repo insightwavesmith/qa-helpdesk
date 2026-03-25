@@ -1,10 +1,9 @@
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
 import { redirect } from "next/navigation";
 import { NewPostForm } from "./new-post-form";
 
 export default async function NewPostPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login");

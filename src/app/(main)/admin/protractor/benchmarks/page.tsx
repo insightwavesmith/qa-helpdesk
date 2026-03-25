@@ -1,4 +1,5 @@
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
 import { redirect } from "next/navigation";
 import { BenchmarkAdmin } from "@/app/(main)/protractor/components/benchmark-admin";
 
@@ -7,10 +8,7 @@ import { BenchmarkAdmin } from "@/app/(main)/protractor/components/benchmark-adm
  * 벤치마크 데이터 확인 + 수동 재수집
  */
 export default async function BenchmarkManagementPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) redirect("/login");
 
@@ -18,7 +16,7 @@ export default async function BenchmarkManagementPage() {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", user.uid)
     .single();
 
   if (!profile || profile.role !== "admin") {

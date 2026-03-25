@@ -5,7 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { getFirebaseClientAuth } from "@/lib/firebase/client";
+import { confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -14,63 +15,33 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
+  const [oobCode, setOobCode] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const supabase = createClient();
-
-    // 1. onAuthStateChange 먼저 등록 (PASSWORD_RECOVERY 이벤트 감지)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event) => {
-        if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
-          setSessionReady(true);
-        }
-      }
-    );
-
-    // 2. PKCE flow: URL에 code가 있으면 교환
+    // Firebase 비밀번호 재설정: URL에서 oobCode 추출 후 검증
     const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ error: codeError }) => {
-        if (!codeError) {
-          setSessionReady(true);
-          window.history.replaceState({}, "", "/reset-password");
-        } else {
-          console.error("code exchange failed:", codeError.message);
-          setError("인증 코드가 만료되었거나 유효하지 않습니다. 비밀번호 재설정을 다시 요청해 주세요.");
-        }
-      });
-    }
+    const code = params.get("oobCode");
 
-    // 3. hash fragment 방식 (token_hash) - URL hash에서 직접 처리
-    const hash = window.location.hash;
-    if (hash) {
-      // Supabase가 hash로 토큰을 전달하는 경우 onAuthStateChange가 자동 처리
-      // 별도 처리 불필요
-    }
-
-    // 4. 이미 세션이 있을 수 있음
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setSessionReady(true);
-      }
-    });
-
-    // 5. code도 hash도 없으면 10초 후 안내 메시지
-    if (!code && !hash) {
+    if (!code) {
+      // oobCode 없으면 10초 후 안내 메시지
       const timer = setTimeout(() => {
         setError("세션을 찾을 수 없습니다. 비밀번호 재설정을 다시 요청해 주세요.");
       }, 10000);
-      return () => {
-        subscription.unsubscribe();
-        clearTimeout(timer);
-      };
+      return () => clearTimeout(timer);
     }
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    const auth = getFirebaseClientAuth();
+    verifyPasswordResetCode(auth, code)
+      .then(() => {
+        setOobCode(code);
+        setSessionReady(true);
+        // URL에서 oobCode 제거 (새로고침 시 재사용 방지)
+        window.history.replaceState({}, "", "/reset-password");
+      })
+      .catch(() => {
+        setError("인증 코드가 만료되었거나 유효하지 않습니다. 비밀번호 재설정을 다시 요청해 주세요.");
+      });
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -87,34 +58,28 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    if (!oobCode) {
+      setError("유효하지 않은 재설정 링크입니다. 다시 요청해 주세요.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const supabase = createClient();
-      const { error: updateError } = await supabase.auth.updateUser({
-        password,
-      });
-
-      if (updateError) {
-        if (
-          updateError.message?.includes("expired") ||
-          updateError.message?.includes("invalid")
-        ) {
-          setError("링크가 만료되었거나 유효하지 않습니다.");
-        } else {
-          setError(
-            updateError.message || "비밀번호 변경 중 오류가 발생했습니다."
-          );
-        }
-        return;
-      }
+      const auth = getFirebaseClientAuth();
+      await confirmPasswordReset(auth, oobCode, password);
 
       setSuccess(true);
       setTimeout(() => {
         router.push("/login");
       }, 3000);
-    } catch {
-      setError("서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code ?? "";
+      if (code === "auth/expired-action-code" || code === "auth/invalid-action-code") {
+        setError("링크가 만료되었거나 유효하지 않습니다.");
+      } else {
+        setError("비밀번호 변경 중 오류가 발생했습니다.");
+      }
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
 import { requireStaff } from "@/lib/auth-utils";
 import { embedImage } from "@/lib/image-embedder";
 import { embedQAPair, embedQAThread } from "@/lib/qa-embedder";
@@ -59,10 +60,7 @@ export async function createAnswer(formData: {
   content: string;
   imageUrls?: string[];
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return { data: null, error: "인증되지 않은 사용자입니다." };
@@ -74,7 +72,7 @@ export async function createAnswer(formData: {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", user.uid)
     .single();
 
   if (!profile || !["student", "member", "admin"].includes(profile.role)) {
@@ -86,7 +84,7 @@ export async function createAnswer(formData: {
     .insert({
       question_id: formData.questionId,
       content: formData.content,
-      author_id: user.id,
+      author_id: user.uid,
       is_ai: false,
       is_approved: false,
       image_urls: formData.imageUrls || [],
@@ -288,8 +286,7 @@ export async function updateAnswer(answerId: string, content: string, imageUrls?
 }
 
 export async function updateAnswerByAuthor(answerId: string, content: string, imageUrls?: string[]) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return { error: "로그인이 필요합니다." };
@@ -312,11 +309,11 @@ export async function updateAnswerByAuthor(answerId: string, content: string, im
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", user.uid)
     .single();
 
   const isStaff = profile?.role === "admin" || profile?.role === "assistant";
-  const isAuthor = answer.author_id === user.id;
+  const isAuthor = answer.author_id === user.uid;
 
   if (!isAuthor && !isStaff) {
     return { error: "수정 권한이 없습니다." };

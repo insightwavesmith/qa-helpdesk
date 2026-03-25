@@ -3,11 +3,27 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { getFirebaseClientAuth } from "@/lib/firebase/client";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { getProfileById } from "@/actions/auth";
 import { mp } from "@/lib/mixpanel";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
+
+const FIREBASE_ERROR_MAP: Record<string, string> = {
+  "auth/invalid-credential": "이메일 또는 비밀번호가 올바르지 않습니다.",
+  "auth/user-not-found": "등록되지 않은 이메일입니다.",
+  "auth/wrong-password": "비밀번호가 올바르지 않습니다.",
+  "auth/too-many-requests": "너무 많은 시도입니다. 잠시 후 다시 시도해주세요.",
+  "auth/user-disabled": "비활성화된 계정입니다.",
+  "auth/email-already-in-use": "이미 가입된 이메일입니다.",
+  "auth/weak-password": "비밀번호가 너무 짧습니다. 6자 이상 입력해주세요.",
+  "auth/invalid-email": "올바르지 않은 이메일 형식입니다.",
+};
+
+function mapFirebaseError(code: string): string {
+  return FIREBASE_ERROR_MAP[code] ?? "로그인 중 오류가 발생했습니다.";
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -22,56 +38,58 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const auth = getFirebaseClientAuth();
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await result.user.getIdToken();
+
+      // 서버 세션 쿠키 생성
+      await fetch("/api/auth/firebase-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
       });
 
-      if (error) {
-        if (error.message?.includes("Invalid login credentials")) {
-          setError("이메일 또는 비밀번호가 올바르지 않습니다.");
-        } else if (error.message?.includes("Failed to fetch") || error.status === 0) {
-          setError("서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.");
-        } else {
-          setError("로그인 중 오류가 발생했습니다.");
-        }
-        return;
-      }
-
       // Mixpanel: 로그인 트래킹
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        mp.identify(user.id);
-        const { data: profile } = await getProfileById(user.id);
-        if (profile) {
-          mp.people.set({
-            $name: profile.name,
-            $email: user.email,
-            role: profile.role,
-            cohort: profile.cohort,
-            brand_name: profile.shop_name,
-            shop_url: profile.shop_url,
-            annual_revenue: profile.annual_revenue,
-            monthly_ad_budget: profile.monthly_ad_budget,
-            category: profile.category,
-            onboarding_completed: profile.onboarding_status === "completed",
-            last_login: new Date().toISOString(),
-          });
-          mp.register({
-            platform: "web",
-            app_version: "1.0.0",
-            user_role: profile.role,
-            user_cohort: profile.cohort,
-          });
-        }
-        mp.track("login", { method: "email" });
+      const uid = result.user.uid;
+      mp.identify(uid);
+      const { data: profile } = await getProfileById(uid);
+      if (profile) {
+        mp.people.set({
+          $name: profile.name,
+          $email: result.user.email,
+          role: profile.role,
+          cohort: profile.cohort,
+          brand_name: profile.shop_name,
+          shop_url: profile.shop_url,
+          annual_revenue: profile.annual_revenue,
+          monthly_ad_budget: profile.monthly_ad_budget,
+          category: profile.category,
+          onboarding_completed: profile.onboarding_status === "completed",
+          last_login: new Date().toISOString(),
+        });
+        mp.register({
+          platform: "web",
+          app_version: "1.0.0",
+          user_role: profile.role,
+          user_cohort: profile.cohort,
+        });
       }
+      mp.track("login", { method: "email" });
 
       router.push("/dashboard");
       router.refresh();
-    } catch {
-      setError("서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code ?? "";
+      if (code) {
+        setError(mapFirebaseError(code));
+      } else if (
+        err instanceof Error &&
+        (err.message?.includes("Failed to fetch") || err.message?.includes("network"))
+      ) {
+        setError("서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+      } else {
+        setError("서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+      }
     } finally {
       setLoading(false);
     }

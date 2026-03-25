@@ -1,6 +1,6 @@
 /**
  * GET /api/cron/analyze-lp-saliency
- * LP 스크린샷 시선 분석 크론 — Railway DeepGaze 서비스 호출
+ * LP 스크린샷 시선 분석 크론 — Cloud Run DeepGaze 서비스 호출
  * lp_analysis.eye_tracking이 NULL인 항목을 분석
  */
 
@@ -24,7 +24,7 @@ export async function GET() {
       );
     }
 
-    console.log("[analyze-lp-saliency] Railway /lp-saliency 호출 시작");
+    console.log("[analyze-lp-saliency] Cloud Run /lp-saliency 호출 시작");
 
     const res = await fetch(`${pipelineUrl}/lp-saliency`, {
       method: "POST",

@@ -27,6 +27,11 @@
             "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.claude/hooks/destructive-detector.sh",
             "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/enforce-qa-before-merge.sh",
+            "timeout": 120000
           }
         ]
       },
@@ -41,6 +46,11 @@
           {
             "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-plan.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/enforce-plan-before-do.sh",
             "timeout": 5000
           }
         ]

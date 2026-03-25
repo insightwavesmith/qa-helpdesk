@@ -15,7 +15,7 @@ COPY . .
 # NEXT_PUBLIC_* 변수는 빌드 시점에 인라인됨
 ENV NEXT_PUBLIC_SUPABASE_URL=https://symvlrsmkjlztoopbnht.supabase.co
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5bXZscnNta2psenRvb3Bibmh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU2MDg2MjIsImV4cCI6MjA4MTE4NDYyMn0.l2uJrUU0q32UozzD9iWyn7Jhy5QNgTjo_MXVW524i_o
-ENV NEXT_PUBLIC_SITE_URL=https://bscamp.vercel.app
+ENV NEXT_PUBLIC_SITE_URL=https://bscamp.app
 ENV NEXT_PUBLIC_MIXPANEL_TOKEN=7274354ebbdfae7d96d716ff2a5275d5
 
 # next.config.ts에 output: "standalone" 설정됨

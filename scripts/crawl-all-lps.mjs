@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * LP 재크롤링 — landing_pages → Railway 크롤러 → lp_snapshots
+ * LP 재크롤링 — landing_pages → Cloud Run 크롤러 → lp_snapshots
  * Usage: node scripts/crawl-all-lps.mjs [--limit N] [--viewport mobile|desktop|both] [--dry-run]
  *
  * --limit N: 처리할 LP 수 제한
@@ -35,7 +35,7 @@ const VIEWPORTS =
 // Supabase client (Storage 업로드용)
 const supabase = createClient(SB_URL, SB_KEY);
 
-// ─── Railway 크롤러 ──────────────────────────────────────────────────────────
+// ─── Cloud Run 크롤러 ────────────────────────────────────────────────────────
 
 async function callCrawler(url, viewport) {
   const res = await fetch(`${CRAWLER_URL}/crawl`, {
@@ -253,7 +253,7 @@ async function main() {
         totalFailed++;
       }
 
-      // 요청 간 딜레이 (Railway 부하 방지)
+      // 요청 간 딜레이 (Cloud Run 부하 방지)
       if (i < lps.length - 1 || viewport !== VIEWPORTS[VIEWPORTS.length - 1]) {
         await sleep(2000);
       }

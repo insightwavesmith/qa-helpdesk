@@ -5,7 +5,8 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Settings, Menu, X } from "lucide-react";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getFirebaseClientAuth } from "@/lib/firebase/client";
+import { signOut as firebaseSignOut } from "firebase/auth";
 
 interface StudentHeaderProps {
   userName: string;
@@ -23,8 +24,11 @@ export function StudentHeader({ userName, userEmail, userRole }: StudentHeaderPr
   const initials = userName.charAt(0);
 
   const handleLogout = async () => {
-    const supabase = createClient();
-    try { await supabase.auth.signOut(); } finally {
+    try {
+      const auth = getFirebaseClientAuth();
+      await firebaseSignOut(auth);
+      await fetch("/api/auth/firebase-logout", { method: "POST" });
+    } finally {
       document.cookie = "x-user-role=; path=/; max-age=0";
       document.cookie = "x-onboarding-status=; path=/; max-age=0";
     }

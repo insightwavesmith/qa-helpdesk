@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import { getQuestions, getCategories } from "@/actions/questions";
 import { QuestionsListClient } from "./questions-list-client";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/firebase/auth";
 
 export default async function QuestionsPage({
   searchParams,
@@ -21,9 +22,8 @@ export default async function QuestionsPage({
   const status = params.status || "all";
   const tab = params.tab || "all";
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const currentUserId = user?.id;
+  const user = await getCurrentUser();
+  const currentUserId = user?.uid;
 
   // 역할 조회: student/member/admin만 질문 작성 가능
   let canCreateQuestion = false;
@@ -34,7 +34,7 @@ export default async function QuestionsPage({
   // categories + profile + (가능하면 questions) 병렬 실행
   const categoriesPromise = getCategories();
   const profilePromise = user
-    ? createServiceClient().from("profiles").select("role").eq("id", user.id).single()
+    ? createServiceClient().from("profiles").select("role").eq("id", user.uid).single()
     : Promise.resolve({ data: null });
 
   // 카테고리 필터 불필요 시 getQuestions도 즉시 시작

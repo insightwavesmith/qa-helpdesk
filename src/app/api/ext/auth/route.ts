@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getFirebaseAuth } from "@/lib/firebase/admin";
 import { createServiceClient } from "@/lib/supabase/server";
 import { handleOptions, withCors } from "../_cors";
 
@@ -20,58 +20,45 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { email, password } = body as { email?: unknown; password?: unknown };
+  const { idToken } = body as { idToken?: unknown };
 
-  if (typeof email !== "string" || !email.trim()) {
-    return withCors(
-      NextResponse.json({ error: "이메일을 입력해주세요." }, { status: 400 })
-    );
-  }
-
-  if (typeof password !== "string" || !password) {
+  if (typeof idToken !== "string" || !idToken.trim()) {
     return withCors(
       NextResponse.json(
-        { error: "비밀번호를 입력해주세요." },
+        { error: "idToken이 필요합니다." },
         { status: 400 }
       )
     );
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  try {
+    // Firebase ID 토큰 검증
+    const auth = getFirebaseAuth();
+    const decoded = await auth.verifyIdToken(idToken);
 
-  const { data: authData, error: authError } =
-    await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+    const svc = createServiceClient();
+    const { data: profile } = await svc
+      .from("profiles")
+      .select("role")
+      .eq("id", decoded.uid)
+      .single();
 
-  if (authError || !authData.session || !authData.user) {
+    return withCors(
+      NextResponse.json({
+        user: {
+          id: decoded.uid,
+          email: decoded.email,
+          role: profile?.role ?? null,
+        },
+      })
+    );
+  } catch (err) {
+    console.error("[ext/auth] Firebase 토큰 검증 실패:", err);
     return withCors(
       NextResponse.json(
-        { error: "이메일 또는 비밀번호가 올바르지 않습니다." },
+        { error: "유효하지 않은 토큰입니다." },
         { status: 401 }
       )
     );
   }
-
-  const svc = createServiceClient();
-  const { data: profile } = await svc
-    .from("profiles")
-    .select("role")
-    .eq("id", authData.user.id)
-    .single();
-
-  return withCors(
-    NextResponse.json({
-      accessToken: authData.session.access_token,
-      refreshToken: authData.session.refresh_token,
-      user: {
-        id: authData.user.id,
-        email: authData.user.email,
-        role: profile?.role ?? null,
-      },
-    })
-  );
 }
