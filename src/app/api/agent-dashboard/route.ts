@@ -50,6 +50,13 @@ const DEFAULT_TEAM_STATE: TeamState = {
   tasks: [],
 };
 
+interface PdcaPhaseEntry {
+  team?: string;
+  done?: boolean;
+  doc?: string;
+  matchRate?: number;
+}
+
 interface PdcaStatusJson {
   status?: string;
   tasks?: unknown[];
@@ -68,6 +75,11 @@ interface PdcaStatusJson {
       completedAt?: string;
       notes?: string;
       team?: string;
+      // 중첩 구조 (docs/.pdca-status.json 실제 포맷)
+      plan?: PdcaPhaseEntry;
+      design?: PdcaPhaseEntry;
+      do?: PdcaPhaseEntry;
+      check?: PdcaPhaseEntry;
     }
   >;
 }
@@ -108,12 +120,19 @@ function parsePdcaFeatures(raw: PdcaStatusJson | PdcaRootJson | null): PdcaFeatu
     return Object.entries(raw.features).map(([name, feature]) => ({
       name,
       phase: (feature.phase as PdcaPhase) || "planning",
-      matchRate: feature.matchRate ?? 0,
-      documents: feature.documents ?? {},
+      // root level matchRate 우선, 없으면 check 서브키에서 추출 (하위 호환)
+      matchRate: feature.matchRate ?? feature.check?.matchRate ?? 0,
+      // root level documents 우선, 없으면 중첩 구조에서 추출
+      documents: feature.documents ?? {
+        plan: feature.plan?.doc,
+        design: feature.design?.doc,
+        analysis: feature.check?.doc,
+      },
       startedAt: feature.startedAt ?? new Date().toISOString(),
       completedAt: feature.completedAt,
       notes: feature.notes ?? "",
-      team: (feature.team as TeamId) ?? "cto",
+      // root level team 우선, 없으면 check → do 순서로 탐색
+      team: (feature.team ?? feature.check?.team ?? feature.do?.team ?? "cto") as TeamId,
     }));
   }
 

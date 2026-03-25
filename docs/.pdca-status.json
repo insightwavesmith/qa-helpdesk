@@ -239,5 +239,40 @@
       "updatedAt": "2026-03-25"
     }
   },
-  "updatedAt": "2026-03-25T21:00:00.000000"
+    "agent-ops-separation": {
+      "phase": "planning",
+      "plan": {
+        "team": "cto",
+        "done": true,
+        "doc": "docs/01-plan/features/agent-ops-separation.plan.md",
+        "at": "2026-03-25"
+      },
+      "design": {
+        "team": "cto",
+        "done": false,
+        "doc": "",
+        "at": null
+      },
+      "do": {
+        "team": "cto",
+        "done": false,
+        "commit": null,
+        "at": null
+      },
+      "check": {
+        "team": "qa",
+        "done": false,
+        "doc": "",
+        "matchRate": null
+      },
+      "act": {
+        "done": false,
+        "commit": null,
+        "deployedAt": null
+      },
+      "notes": "bscamp에서 Agent Ops 35+파일 분리 계획. Phase 1~4 수립 완료.",
+      "updatedAt": "2026-03-25"
+    }
+  },
+  "updatedAt": "2026-03-25T22:30:00.000000"
 }
