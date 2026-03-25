@@ -18,9 +18,10 @@
  *   POLL_INTERVAL_SECONDS — 폴링 간격 초 (기본: 30)
  */
 
-import { readFileSync, mkdirSync } from 'fs';
+import { mkdirSync } from 'fs';
 import { execSync } from 'child_process';
 import { join } from 'path';
+import { readJson } from './lib/gcs-agent-ops.mjs';
 
 // ─── 설정 ────────────────────────────────────────────────────────────────────
 
@@ -73,16 +74,14 @@ function checkTmuxSession(team) {
 // ─── state.json 읽기 ──────────────────────────────────────────────────────────
 
 /**
- * 팀 state.json 읽기
+ * 팀 state.json 읽기 (GCS)
  * @param {string} team - 팀 ID
- * @returns {{ updatedAt: string | null, status: string | null, activeTasks: number } | null}
+ * @returns {Promise<{ updatedAt: string | null, status: string | null, activeTasks: number } | null>}
  */
-function readTeamState(team) {
-  const stateFile = join(CROSS_TEAM_DIR, team, 'state.json');
-
+async function readTeamState(team) {
   try {
-    const raw = readFileSync(stateFile, 'utf8');
-    const data = JSON.parse(raw);
+    const data = await readJson(`${team}/state.json`);
+    if (!data) return null;
 
     // activeTasks: tasks 배열에서 status가 active/implementing인 것 카운트
     let activeTasks = 0;
@@ -245,7 +244,7 @@ function buildCrashedBlocks(team) {
  * @param {string} team - 팀 ID
  */
 async function checkTeam(team) {
-  const state = readTeamState(team);
+  const state = await readTeamState(team);
   const tmuxAlive = checkTmuxSession(team);
   const now = Date.now();
   const current = teamState[team];

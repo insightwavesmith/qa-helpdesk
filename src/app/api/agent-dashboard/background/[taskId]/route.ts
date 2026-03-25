@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import * as fs from "fs/promises";
 import { requireAdmin } from "@/app/api/admin/_shared";
+import { readGcsJson, writeGcsJson } from "@/lib/gcs-storage";
 import type { BackgroundTask } from "@/types/agent-dashboard";
-
-const TASKS_PATH = "/tmp/cross-team/background/tasks.json";
-const TASKS_DIR = "/tmp/cross-team/background";
 
 export async function PUT(
   request: NextRequest,
@@ -46,17 +43,10 @@ export async function PUT(
     );
   }
 
-  // 디렉토리 없으면 자동 생성
-  await fs.mkdir(TASKS_DIR, { recursive: true });
-
-  // tasks.json 읽기 (없으면 빈 배열)
+  // GCS에서 tasks.json 읽기 (없으면 빈 배열)
   let tasks: BackgroundTask[] = [];
-  try {
-    const content = await fs.readFile(TASKS_PATH, "utf-8");
-    tasks = JSON.parse(content) as BackgroundTask[];
-  } catch {
-    tasks = [];
-  }
+  const existing = await readGcsJson<BackgroundTask[]>("background/tasks.json");
+  tasks = existing ?? [];
 
   // 해당 taskId 업데이트
   const existingIndex = tasks.findIndex((t) => t.id === taskId);
@@ -80,7 +70,7 @@ export async function PUT(
     });
   }
 
-  await fs.writeFile(TASKS_PATH, JSON.stringify(tasks, null, 2), "utf-8");
+  await writeGcsJson("background/tasks.json", tasks);
 
   return NextResponse.json({ ok: true, taskId });
 }

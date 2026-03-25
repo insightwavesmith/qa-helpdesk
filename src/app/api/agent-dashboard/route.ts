@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import * as fs from "fs/promises";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { readGcsJson, readGcsJsonl } from "@/lib/gcs-storage";
 import type {
   DashboardState,
   OrgChart,
@@ -48,34 +48,6 @@ const DEFAULT_TEAM_STATE: TeamState = {
   members: [],
   tasks: [],
 };
-
-async function readJsonFile<T>(filePath: string): Promise<T | null> {
-  try {
-    const content = await fs.readFile(filePath, "utf-8");
-    return JSON.parse(content) as T;
-  } catch {
-    return null;
-  }
-}
-
-async function readJsonlFile(filePath: string, maxLines: number): Promise<CommLog[]> {
-  try {
-    const content = await fs.readFile(filePath, "utf-8");
-    const lines = content.trim().split("\n").filter(Boolean);
-    const recent = lines.slice(-maxLines);
-    return recent
-      .map((line) => {
-        try {
-          return JSON.parse(line) as CommLog;
-        } catch {
-          return null;
-        }
-      })
-      .filter((item): item is CommLog => item !== null);
-  } catch {
-    return [];
-  }
-}
 
 interface PdcaStatusJson {
   status?: string;
@@ -143,24 +115,21 @@ export async function GET() {
   };
 
   for (const teamId of teamIds) {
-    const filePath = `/tmp/cross-team/${teamId}/state.json`;
-    const data = await readJsonFile<TeamState>(filePath);
+    const data = await readGcsJson<TeamState>(`${teamId}/state.json`);
     if (data) {
       teamStates[teamId] = data;
     }
   }
 
   // 소통 로그 읽기 (최근 50건)
-  const logs = await readJsonlFile("/tmp/cross-team/logs/comm.jsonl", 50);
+  const logs = await readGcsJsonl<CommLog>("logs/comm.jsonl", 50);
 
   // 백그라운드 태스크 읽기
-  const backgroundData = await readJsonFile<BackgroundTask[]>("/tmp/cross-team/background/tasks.json");
+  const backgroundData = await readGcsJson<BackgroundTask[]>("background/tasks.json");
   const background = backgroundData ?? [];
 
   // PDCA 상태 읽기
-  const pdcaRaw = await readJsonFile<PdcaStatusJson>(
-    "/Users/smith/projects/bscamp/.pdca-status.json"
-  );
+  const pdcaRaw = await readGcsJson<PdcaStatusJson>("pdca-status.json");
   const features = parsePdcaFeatures(pdcaRaw);
 
   const completed = features.filter((f) => f.phase === "completed").length;

@@ -92,6 +92,12 @@ else
   echo "$CURRENT_STATE" > "$STATE_FILE"
 fi
 
+# 5.1 GCS에도 state.json 동기화 (agent-ops/{team}/state.json)
+GCS_BUCKET="gs://bscamp-storage/agent-ops"
+if command -v gsutil &>/dev/null; then
+  gsutil -q cp "$STATE_FILE" "$GCS_BUCKET/$TEAM/state.json" 2>/dev/null &
+fi
+
 # 6. PDCA auto-sync
 PDCA_ROOT="$PROJECT_ROOT/.pdca-status.json"
 PDCA_DOCS="$PROJECT_ROOT/docs/.pdca-status.json"
@@ -183,6 +189,17 @@ if os.path.exists(pdca_root_file):
         root_data[current_feature]['updatedAt'] = now
         if new_phase == 'checking':
             root_data[current_feature]['status'] = 'checking'
+        # matchRate 자동 추출 (analysis 파일에서)
+        if analysis_exists:
+            try:
+                import re
+                with open(analysis_path, 'r') as af:
+                    ac = af.read()
+                mr = re.search(r'Match Rate:\s*(\d+)%', ac)
+                if mr:
+                    root_data[current_feature]['matchRate'] = int(mr.group(1))
+            except Exception:
+                pass
     else:
         root_data[current_feature] = {
             'status': new_phase,
@@ -215,6 +232,18 @@ if os.path.exists(pdca_docs_file):
     else:
         features[current_feature]['phase'] = new_phase
         features[current_feature]['updatedAt'] = now
+    # matchRate 자동 추출 (analysis 파일에서 "Match Rate: XX%" 패턴)
+    if analysis_exists:
+        try:
+            import re
+            with open(analysis_path, 'r') as af:
+                analysis_content = af.read()
+            mr_match = re.search(r'Match Rate:\s*(\d+)%', analysis_content)
+            if mr_match:
+                features[current_feature]['matchRate'] = int(mr_match.group(1))
+        except Exception:
+            pass
+
     # documents 갱신
     docs = features[current_feature].get('documents', {})
     if plan_exists:
@@ -353,5 +382,11 @@ try:
 except Exception as e:
     sys.stderr.write(f'checkpoint write error: {e}\n')
 PYEOF
+
+# 8. GCS에 checkpoint + pdca-status 동기화
+if command -v gsutil &>/dev/null; then
+  [ -f "$CHECKPOINT_FILE" ] && gsutil -q cp "$CHECKPOINT_FILE" "$GCS_BUCKET/$TEAM/checkpoint.json" 2>/dev/null &
+  [ -f "$PDCA_ROOT" ] && gsutil -q cp "$PDCA_ROOT" "$GCS_BUCKET/pdca-status.json" 2>/dev/null &
+fi
 
 exit 0

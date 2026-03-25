@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import * as fs from "fs/promises";
 import { requireAdmin } from "@/app/api/admin/_shared";
+import { writeGcsJson } from "@/lib/gcs-storage";
 import type { TeamId, TeamState } from "@/types/agent-dashboard";
 
 const VALID_TEAMS: TeamId[] = ["pm", "marketing", "cto"];
@@ -32,14 +32,8 @@ export async function PUT(
     return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
   }
 
-  const dirPath = `/tmp/cross-team/${teamId}`;
-  const filePath = `${dirPath}/state.json`;
-
-  // 디렉토리 없으면 자동 생성
-  await fs.mkdir(dirPath, { recursive: true });
-
-  // state.json 덮어쓰기
-  await fs.writeFile(filePath, JSON.stringify(body, null, 2), "utf-8");
+  // GCS에 state.json 쓰기
+  await writeGcsJson(`${teamId}/state.json`, body);
 
   return NextResponse.json({ ok: true, teamId });
 }

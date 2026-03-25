@@ -20,13 +20,13 @@
  *   CHAIN_POLL_INTERVAL — 폴링 간격 ms (기본: 5000)
  */
 
-import { readdirSync, statSync, appendFileSync, mkdirSync, existsSync } from 'fs';
+import { readdirSync, statSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { appendJsonl } from './lib/gcs-agent-ops.mjs';
 
 // ─── 설정 ────────────────────────────────────────────────────────────────────
 
 const CROSS_TEAM_DIR = '/tmp/cross-team';
-const COMM_JSONL = '/tmp/cross-team/comm.jsonl';
 const POLL_INTERVAL = parseInt(process.env.CHAIN_POLL_INTERVAL || '5000', 10);
 const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
 const SLACK_UNIFIED_CHANNEL = process.env.SLACK_UNIFIED_CHANNEL || 'C0AN7ATS4DD';
@@ -193,7 +193,7 @@ async function sendHandoffNotification(fromTeam, toTeam, event, toAction) {
  * @param {string} toTeam - 도착 팀
  * @param {string} toAction - 액션 설명
  */
-function appendCommLog(fromTeam, toTeam, toAction) {
+async function appendCommLog(fromTeam, toTeam, toAction) {
   const from = TEAM_DISPLAY[fromTeam] || { name: fromTeam, emoji: '🤖' };
 
   const entry = {
@@ -206,9 +206,9 @@ function appendCommLog(fromTeam, toTeam, toAction) {
   };
 
   try {
-    appendFileSync(COMM_JSONL, JSON.stringify(entry) + '\n', 'utf8');
+    await appendJsonl('logs/comm.jsonl', entry);
   } catch (err) {
-    console.error(`[chain-watcher] comm.jsonl 기록 실패: ${err.message}`);
+    console.error(`[chain-watcher] GCS comm.jsonl 기록 실패: ${err.message}`);
   }
 }
 

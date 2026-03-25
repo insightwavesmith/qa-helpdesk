@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import * as fs from "fs/promises";
 import { requireAdmin } from "@/app/api/admin/_shared";
+import { appendGcsJsonl } from "@/lib/gcs-storage";
 import type { CommLog, TeamId } from "@/types/agent-dashboard";
 
 const VALID_TEAMS: TeamId[] = ["pm", "marketing", "cto"];
-const LOG_PATH = "/tmp/cross-team/logs/comm.jsonl";
-const LOG_DIR = "/tmp/cross-team/logs";
 
 export async function POST(request: NextRequest) {
   // admin 권한 확인
@@ -44,12 +42,8 @@ export async function POST(request: NextRequest) {
     ...(typeof to === "string" && to.trim() ? { to: to.trim() } : {}),
   };
 
-  // 디렉토리 없으면 자동 생성
-  await fs.mkdir(LOG_DIR, { recursive: true });
-
-  // JSONL에 append
-  const line = JSON.stringify(logEntry) + "\n";
-  await fs.appendFile(LOG_PATH, line, "utf-8");
+  // GCS JSONL에 append
+  await appendGcsJsonl("logs/comm.jsonl", logEntry);
 
   return NextResponse.json({ ok: true, entry: logEntry }, { status: 201 });
 }
