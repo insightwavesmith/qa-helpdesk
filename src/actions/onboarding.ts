@@ -265,9 +265,10 @@ export async function addAdAccount(data: {
   return { error: null };
 }
 
-// 광고계정 편집 (믹스패널 설정 업데이트)
+// 광고계정 편집 (계정 ID 변경 + 믹스패널 설정 업데이트)
 export async function updateAdAccount(data: {
   metaAccountId: string;
+  newMetaAccountId?: string;
   accountName?: string;
   mixpanelProjectId?: string | null;
   mixpanelBoardId?: string | null;
@@ -278,6 +279,16 @@ export async function updateAdAccount(data: {
 
   const svc = createServiceClient();
 
+  // account_id 변경 시 중복 체크
+  if (data.newMetaAccountId && data.newMetaAccountId !== data.metaAccountId) {
+    const { data: dup } = await svc
+      .from("ad_accounts")
+      .select("id")
+      .eq("account_id", data.newMetaAccountId)
+      .maybeSingle();
+    if (dup) return { error: `이미 등록된 광고계정 ID입니다: ${data.newMetaAccountId}` };
+  }
+
   // ad_accounts 업데이트
   const updates: Record<string, unknown> = {
     mixpanel_project_id: data.mixpanelProjectId || null,
@@ -285,6 +296,9 @@ export async function updateAdAccount(data: {
   };
   if (data.accountName) {
     updates.account_name = data.accountName;
+  }
+  if (data.newMetaAccountId && data.newMetaAccountId !== data.metaAccountId) {
+    updates.account_id = data.newMetaAccountId;
   }
 
   const { error } = await svc
@@ -295,14 +309,29 @@ export async function updateAdAccount(data: {
 
   if (error) return { error: error.message };
 
+  // profiles.meta_account_id도 동기화 (대표 계정이면 새 ID로 갱신)
+  if (data.newMetaAccountId && data.newMetaAccountId !== data.metaAccountId) {
+    const { data: profile } = await svc
+      .from("profiles")
+      .select("meta_account_id")
+      .eq("id", user.uid)
+      .single();
+    if (profile?.meta_account_id === data.metaAccountId) {
+      await svc.from("profiles").update({
+        meta_account_id: data.newMetaAccountId,
+      } as never).eq("id", user.uid);
+    }
+  }
+
   // 시크릿키가 입력된 경우에만 upsert (빈 문자열이면 변경 안 함)
+  const effectiveAccountId = data.newMetaAccountId || data.metaAccountId;
   if (data.mixpanelSecretKey) {
     await svc
       .from("service_secrets" as never)
       .upsert({
         user_id: user.uid,
         service: "mixpanel",
-        key_name: `secret_${data.metaAccountId}`,
+        key_name: `secret_${effectiveAccountId}`,
         key_value: encrypt(data.mixpanelSecretKey),
       } as never, { onConflict: "user_id,service,key_name" } as never);
   }

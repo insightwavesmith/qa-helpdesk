@@ -72,6 +72,7 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
 
   // 편집 상태
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  const [editMetaAccountId, setEditMetaAccountId] = useState("");
   const [editAccountName, setEditAccountName] = useState("");
   const [editMixpanelProjectId, setEditMixpanelProjectId] = useState("");
   const [editMixpanelBoardId, setEditMixpanelBoardId] = useState("");
@@ -176,6 +177,7 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
 
   const handleStartEdit = (acc: AdAccountRow) => {
     setEditingAccountId(acc.account_id);
+    setEditMetaAccountId(acc.account_id);
     setEditAccountName(acc.account_name || "");
     setEditMixpanelProjectId(acc.mixpanel_project_id || "");
     setEditMixpanelBoardId(acc.mixpanel_board_id || "");
@@ -190,9 +192,16 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
   const handleSaveEdit = async () => {
     if (!editingAccountId) return;
 
+    const newMetaId = editMetaAccountId.trim();
+    if (!newMetaId) {
+      toast.error("Meta 계정 ID를 입력하세요.");
+      return;
+    }
+
     setEditingAccount(true);
     const result = await updateAdAccount({
       metaAccountId: editingAccountId,
+      newMetaAccountId: newMetaId !== editingAccountId ? newMetaId : undefined,
       accountName: editAccountName.trim() || undefined,
       mixpanelProjectId: editMixpanelProjectId.trim() || null,
       mixpanelBoardId: editMixpanelBoardId.trim() || null,
@@ -205,11 +214,13 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
       toast.error(`저장 실패: ${result.error}`);
     } else {
       toast.success("계정 설정이 저장되었습니다.");
+      const updatedId = newMetaId || editingAccountId;
       setAccounts((prev) =>
         prev.map((a) =>
           a.account_id === editingAccountId
             ? {
                 ...a,
+                account_id: updatedId,
                 account_name: editAccountName.trim() || a.account_name,
                 mixpanel_project_id: editMixpanelProjectId.trim() || null,
                 mixpanel_board_id: editMixpanelBoardId.trim() || null,
@@ -354,9 +365,10 @@ export function SettingsForm({ profile, userId, accounts: initialAccounts }: Set
                     <div className="space-y-1">
                       <Label className="text-xs">Meta 계정 ID</Label>
                       <Input
-                        value={acc.account_id}
-                        disabled
-                        className="h-8 text-sm rounded-lg border-gray-200 bg-gray-100 text-gray-500 font-mono"
+                        value={editMetaAccountId}
+                        onChange={(e) => setEditMetaAccountId(e.target.value)}
+                        placeholder="예: 123456789012345"
+                        className="h-8 text-sm rounded-lg border-gray-200 bg-white font-mono"
                       />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
