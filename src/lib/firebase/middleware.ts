@@ -75,7 +75,7 @@ export async function updateSession(request: NextRequest) {
       // 런타임에서만 firebase-admin import (Edge Runtime 비호환 방지)
       const { getFirebaseAuth } = await import("@/lib/firebase/admin");
       const auth = getFirebaseAuth();
-      const decoded = await auth.verifySessionCookie(sessionCookie, true);
+      const decoded = await auth.verifySessionCookie(sessionCookie, false);
       uid = decoded.uid;
     } catch {
       // 쿠키 무효 → 미인증 처리

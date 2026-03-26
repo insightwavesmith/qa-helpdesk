@@ -45,8 +45,7 @@ function markdownToHtml(md: string): string {
     }
     // Storage URL(GCS 또는 구 Supabase)이면 figure로 래핑하여 스타일 일관성 유지
     if (
-      src.includes("storage.googleapis.com") ||
-      src.includes("supabase.co/storage")
+      src.includes("storage.googleapis.com")
     ) {
       return `<figure class="post-image-figure"><img src="${src}" loading="lazy" alt="${alt}" /><figcaption>${alt}</figcaption></figure>`;
     }

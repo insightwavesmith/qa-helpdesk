@@ -44,7 +44,7 @@ export function getGcsPublicUrl(bucket: string, path: string): string {
 
 /**
  * Supabase Storage URL → GCS URL 변환
- * Input:  https://symvlrsmkjlztoopbnht.supabase.co/storage/v1/object/public/creatives/account/media/file.jpg
+ * Input:  (구) /storage/v1/object/public/{bucket}/{path}
  * Output: https://storage.googleapis.com/bscamp-storage/creatives/account/media/file.jpg
  */
 export function convertSupabaseUrlToGcs(supabaseUrl: string): string {

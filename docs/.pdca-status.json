@@ -260,16 +260,16 @@
       },
       "check": {
         "team": "qa",
-        "done": false,
-        "doc": "",
-        "matchRate": null
+        "done": true,
+        "doc": "docs/03-analysis/query-builder-audit.analysis.md",
+        "matchRate": 100
       },
       "act": {
         "done": false,
         "commit": null
       },
-      "updatedAt": "2026-03-26T02:45:00",
-      "notes": "의존성 0% 확인: src/ 0건, .env 0건, DB URL 0건, Firebase Auth 35명 bcrypt 임포트, Storage GCS 전환 완료."
+      "updatedAt": "2026-03-26",
+      "notes": "BUG 9건 전수 수정 완료. Match Rate 100%."
     },
     "prescription-system-v2": {
       "phase": "completed",
@@ -339,5 +339,5 @@
     }
   },
   "updatedAt": "2026-03-26T09:30:00",
-  "_lastUpdated": "2026-03-26T09:30:00"
+  "_lastUpdated": "2026-03-26T10:50:00"
 }

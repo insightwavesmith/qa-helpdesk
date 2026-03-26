@@ -80,6 +80,7 @@ export class PostgresQueryBuilder<T = any> {
   private _data: Record<string, unknown> | Record<string, unknown>[] | null = null;
   private _onConflict: string | null = null;
   private _returning = false;
+  private _ignoreDuplicates = false;
   private _embeddedRelations: EmbeddedRelation[] = [];
   private _baseColumns: string[] = [];
 
@@ -91,6 +92,12 @@ export class PostgresQueryBuilder<T = any> {
   // ─── 작업 ───
 
   select(columns?: string, options?: SelectOptions): this {
+    // insert/update/upsert 뒤의 .select()는 RETURNING으로 처리
+    if (this._operation !== "select" && this._data !== null) {
+      this._applyReturning(columns);
+      if (options?.count) this._count = options.count as "exact";
+      return this;
+    }
     this._operation = "select";
     if (columns) {
       this._parseSelectColumns(columns);
@@ -123,6 +130,7 @@ export class PostgresQueryBuilder<T = any> {
     this._operation = "upsert";
     this._data = data;
     if (options?.onConflict) this._onConflict = options.onConflict;
+    if (options?.ignoreDuplicates) this._ignoreDuplicates = true;
     return this;
   }
 
@@ -515,7 +523,10 @@ export class PostgresQueryBuilder<T = any> {
 
     const returning = " RETURNING *";
     const conflictColSql = conflictCols.map((c) => this._quoteCol(c)).join(", ");
-    const sql = `INSERT INTO "${this._table}" (${colList}) VALUES ${valueRows.join(", ")} ON CONFLICT (${conflictColSql}) DO UPDATE SET ${updateCols}${returning}`;
+    const onConflictAction = this._ignoreDuplicates
+      ? "DO NOTHING"
+      : `DO UPDATE SET ${updateCols}`;
+    const sql = `INSERT INTO "${this._table}" (${colList}) VALUES ${valueRows.join(", ")} ON CONFLICT (${conflictColSql}) ${onConflictAction}${returning}`;
 
     const result = await this.pool.query(sql, params);
 
@@ -667,7 +678,9 @@ export class PostgresQueryBuilder<T = any> {
     while ((match = embedWithFkRegex.exec(columns)) !== null) {
       const [fullMatch, alias, targetTable, fkName, targetCols] = match;
       // FK 이름에서 source column 추출: reviews_author_id_fkey → author_id
-      const sourceColumn = this._extractSourceColumn(fkName, this._table);
+      const sourceColumn = fkName === "inner"
+        ? `${alias}_id`
+        : this._extractSourceColumn(fkName, this._table);
       this._embeddedRelations.push({
         alias,
         targetTable,
@@ -694,6 +707,22 @@ export class PostgresQueryBuilder<T = any> {
         targetColumns: ["count"],
         isArray: false,
         isCount: true,
+      });
+      cleanColumns = cleanColumns.replace(fullMatch, "").replace(/,\s*,/g, ",").replace(/^,\s*|,\s*$/g, "");
+    }
+
+    // Step 2.5: table!inner(cols) — INNER JOIN 힌트 패턴 (alias 없음)
+    const innerStr = cleanColumns;
+    const innerJoinRegex = /(\w+)!inner\(([^)]+)\)/g;
+    while ((match = innerJoinRegex.exec(innerStr)) !== null) {
+      const [fullMatch, targetTable, targetCols] = match;
+      this._embeddedRelations.push({
+        alias: targetTable,
+        targetTable,
+        sourceColumn: `${targetTable.replace(/s$/, "")}_id`,
+        targetColumns: targetCols.split(",").map((c) => c.trim()),
+        isArray: false,
+        isCount: false,
       });
       cleanColumns = cleanColumns.replace(fullMatch, "").replace(/,\s*,/g, ",").replace(/^,\s*|,\s*$/g, "");
     }
@@ -852,9 +881,15 @@ export class PostgresQueryBuilder<T = any> {
   // ─── 컬럼 이름 인용 (예약어 보호) ───
 
   private _quoteCol(col: string): string {
-    // 이미 인용된 경우 그대로
     if (col.startsWith('"')) return col;
-    // order, limit 등 예약어는 인용
+    // dot-notation: table.column → "table"."column"
+    if (col.includes('.')) {
+      return col.split('.').map(part => this._quoteColPart(part)).join('.');
+    }
+    return this._quoteColPart(col);
+  }
+
+  private _quoteColPart(col: string): string {
     const reserved = new Set(["order", "limit", "offset", "user", "group", "table", "column", "index", "check", "primary", "key", "default", "constraint", "references", "type", "role", "name"]);
     if (reserved.has(col.toLowerCase())) return `"${col}"`;
     return col;
