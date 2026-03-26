@@ -16,7 +16,7 @@ export default async function DashboardPage() {
 
   const role = profile?.role;
 
-  if (role === "admin") {
+  if (role === "admin" || role === "assistant") {
     return <AdminDashboard />;
   }
 

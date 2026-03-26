@@ -28,11 +28,12 @@ export default function LoginPage() {
 
       // 세션 쿠키 생성
       const idToken = await cred.user.getIdToken();
-      await fetch("/api/auth/firebase-session", {
+      const res = await fetch("/api/auth/firebase-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idToken }),
       });
+      if (!res.ok) throw new Error("세션 생성 실패");
 
       // Mixpanel: 로그인 트래킹
       const user = cred.user;

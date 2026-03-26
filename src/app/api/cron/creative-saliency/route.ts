@@ -9,7 +9,7 @@
  *   - IMAGE/VIDEO 소재(position=0 단일): 기존 동작과 동일
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/db";
 import { triggerNext } from "@/lib/pipeline-chain";
 
@@ -45,8 +45,14 @@ interface AccountImageCards {
   }>;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const start = Date.now();
+
+  // Cron 인증 확인
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
     const pipelineUrl = process.env.CREATIVE_PIPELINE_URL
