@@ -402,6 +402,10 @@ export class PostgresQueryBuilder<T = any> {
           if (col === "embedding" || col.endsWith("_embedding")) {
             valueParts.push(`$${paramIdx++}::vector`);
             params.push(`[${(val as number[]).join(",")}]`);
+          } else if (val.length === 0 || val.every((v: unknown) => typeof v !== "object" || v === null)) {
+            // 원시 타입 배열 (string[], number[]) → pg 네이티브 배열로 전달
+            valueParts.push(`$${paramIdx++}`);
+            params.push(val);
           } else {
             valueParts.push(`$${paramIdx++}::jsonb`);
             params.push(JSON.stringify(val));
@@ -442,6 +446,10 @@ export class PostgresQueryBuilder<T = any> {
         if (col === "embedding" || col.endsWith("_embedding")) {
           setParts.push(`${this._quoteCol(col)} = $${paramIdx++}::vector`);
           params.push(`[${(val as number[]).join(",")}]`);
+        } else if (val.length === 0 || val.every((v: unknown) => typeof v !== "object" || v === null)) {
+          // 원시 타입 배열 (string[], number[]) → pg 네이티브 배열로 전달
+          setParts.push(`${this._quoteCol(col)} = $${paramIdx++}`);
+          params.push(val);
         } else {
           setParts.push(`${this._quoteCol(col)} = $${paramIdx++}::jsonb`);
           params.push(JSON.stringify(val));
@@ -500,6 +508,10 @@ export class PostgresQueryBuilder<T = any> {
           if (col === "embedding" || col.endsWith("_embedding")) {
             valueParts.push(`$${paramIdx++}::vector`);
             params.push(`[${(val as number[]).join(",")}]`);
+          } else if (val.length === 0 || val.every((v: unknown) => typeof v !== "object" || v === null)) {
+            // 원시 타입 배열 (string[], number[]) → pg 네이티브 배열로 전달
+            valueParts.push(`$${paramIdx++}`);
+            params.push(val);
           } else {
             valueParts.push(`$${paramIdx++}::jsonb`);
             params.push(JSON.stringify(val));
