@@ -1,6 +1,7 @@
 # 총가치각도기 (Protractor) 설계서
 
-> 최종 갱신: 2026-02-28 (아키텍처 재설계 A1~A4, B1~B3, C1~C3 반영)
+> 최종 갱신: 2026-03-26 (처방 시스템 v2 확장 — 별도 설계서 참조)
+> 처방 시스템 v2 설계서: `docs/02-design/features/prescription-system-v2.design.md`
 
 ---
 
