@@ -3012,7 +3012,7 @@
       "notes": "Supabase SDK 완전 제거 완료"
     }
   },
-  "updatedAt": "2026-03-26T22:10:00",
+  "updatedAt": "2026-03-26T14:43:39",
   "_lastUpdated": "2026-03-26T22:10:00",
   "_note": "서비스 전수검사 v3: PR #6 머지 완료",
   "vercel-supabase-migration": {
@@ -3113,5 +3113,38 @@
     },
     "updatedAt": "2026-03-26T12:00:00",
     "notes": "Phase 2-4 구현 완료 + Act(100%) 완료. 19개 신규 파일(3724줄). Phase 5(품질 검토) 별도 진행."
+  },
+  "numeric-type-fix": {
+    "phase": "completed",
+    "plan": {
+      "team": "cto",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-26"
+    },
+    "design": {
+      "team": "cto",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-26"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-26"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "",
+      "matchRate": 100
+    },
+    "act": {
+      "done": true,
+      "commit": null
+    },
+    "updatedAt": "2026-03-26",
+    "notes": "pg NUMERIC/BIGINT 타입 파서 추가. 대시보드 NaN + 총가치각도기 점수 0 해결. Cloud Run 00011-cw7 배포."
   }
 }

@@ -2,7 +2,14 @@
  * Cloud SQL PostgreSQL 연결 풀
  * Phase 4: Supabase → Cloud SQL 이관
  */
-import { Pool } from "pg";
+import { Pool, types } from "pg";
+
+// pg 드라이버는 NUMERIC/DECIMAL을 문자열로 반환 → parseFloat 변환 필수
+// OID 1700 = NUMERIC, OID 20 = BIGINT, OID 700 = FLOAT4, OID 701 = FLOAT8
+types.setTypeParser(1700, (val: string) => parseFloat(val));
+types.setTypeParser(20, (val: string) => parseInt(val, 10));
+types.setTypeParser(700, (val: string) => parseFloat(val));
+types.setTypeParser(701, (val: string) => parseFloat(val));
 
 let pool: Pool | null = null;
 
