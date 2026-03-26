@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  serverExternalPackages: ["firebase-admin", "pg"],
   experimental: {
     staleTimes: {
       dynamic: 30,

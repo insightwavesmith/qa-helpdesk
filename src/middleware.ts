@@ -1,13 +1,14 @@
 import { type NextRequest } from "next/server";
 import { updateSession } from "@/lib/firebase/middleware";
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   return await updateSession(request);
 }
 
+export const runtime = "nodejs";
+
 export const config = {
   matcher: [
-    // API 라우트, 정적 파일, 이미지 제외
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
