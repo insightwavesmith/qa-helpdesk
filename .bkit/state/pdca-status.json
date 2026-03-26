@@ -1239,14 +1239,17 @@
       "notes": "PR #2. collect-daily 권한 체크, health sync-notion 제거, 82/83건 미디어 다운로드. 커밋 a22028a."
     },
     "deepgaze-gemini-pipeline": {
-      "phase": "designing",
+      "phase": "cancelled",
       "matchRate": null,
-      "documents": {},
+      "documents": {
+        "plan": "01-plan/features/deepgaze-gemini-pipeline.plan.md",
+        "design": "02-design/features/deepgaze-gemini-pipeline.design.md"
+      },
       "startedAt": "2026-03-23",
-      "completedAt": "2026-03-23",
-      "notes": "PR #2. creative-saliency 크론 신규(93줄), analyze-five-axis DeepGaze 주입(+75줄). 커밋 a22028a.",
-      "status": "ready",
-      "updatedAt": "2026-03-25T17:56:41.938392"
+      "completedAt": "2026-03-26",
+      "notes": "Smith님 결정으로 취소 (2026-03-26). 구현물: /api/cron/deepgaze-gemini/route.ts(552줄), creative-saliency 크론(93줄), analyze-five-axis DeepGaze 주입(+75줄). PR #2 커밋 a22028a. 코드는 잔존하나 미사용.",
+      "status": "cancelled",
+      "updatedAt": "2026-03-26T09:00:00.000000"
     },
     "gcp-migration": {
       "phase": "testing",

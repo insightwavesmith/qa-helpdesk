@@ -18,7 +18,11 @@ export default function ForgotPasswordPage() {
 
     try {
       const auth = getFirebaseClientAuth();
-      await sendPasswordResetEmail(auth, email);
+      const actionCodeSettings = {
+        url: `${window.location.origin}/reset-password`,
+        handleCodeInApp: true,
+      };
+      await sendPasswordResetEmail(auth, email, actionCodeSettings);
     } catch {
       // 에러도 동일 메시지 표시 (정보 노출 방지)
     } finally {
