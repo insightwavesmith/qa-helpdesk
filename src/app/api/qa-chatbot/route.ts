@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/db";
 
-const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 const SYSTEM_PROMPT = `당신은 QA 리포트 정리 도우미입니다.
 사용자가 보내는 버그/이슈 내용을 구조화된 QA 항목으로 정리하세요.
@@ -57,10 +59,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Sonnet API 호출
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      console.error("ANTHROPIC_API_KEY 미설정");
+    // Gemini API 호출
+    if (!GEMINI_API_KEY) {
+      console.error("GEMINI_API_KEY 미설정");
       return NextResponse.json(
         { error: "AI 서비스 설정 오류" },
         { status: 500 }
@@ -78,28 +79,35 @@ export async function POST(request: NextRequest) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
 
-    const response = await fetch(ANTHROPIC_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1000,
-        temperature: 0.3,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: userPrompt }],
-      }),
-      signal: controller.signal,
-    });
+    const response = await fetch(
+      `${GEMINI_BASE}/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [
+                { text: `${SYSTEM_PROMPT}\n\n사용자 입력:\n${userPrompt}` },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 1000,
+            responseMimeType: "application/json",
+          },
+        }),
+        signal: controller.signal,
+      }
+    );
 
     clearTimeout(timeout);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Anthropic API 에러:", response.status, errorText);
+      console.error("Gemini API 에러:", response.status, errorText);
       return NextResponse.json(
         { error: "AI 분석에 실패했습니다. 다시 시도해주세요." },
         { status: 500 }
@@ -107,10 +115,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    const textBlock = data.content?.find(
-      (b: { type: string }) => b.type === "text"
-    );
-    const text = textBlock?.text || "";
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     // JSON 파싱
     try {

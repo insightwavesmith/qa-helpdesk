@@ -11,6 +11,14 @@ types.setTypeParser(20, (val: string) => parseInt(val, 10));
 types.setTypeParser(700, (val: string) => parseFloat(val));
 types.setTypeParser(701, (val: string) => parseFloat(val));
 
+// pg 드라이버는 TIMESTAMP를 Date 객체로 반환 → 문자열 그대로 유지 (Supabase 호환)
+// OID 1114 = TIMESTAMP, OID 1184 = TIMESTAMPTZ
+types.setTypeParser(1114, (val: string) => val);
+types.setTypeParser(1184, (val: string) => val);
+
+// OID 1082 = DATE — 문자열 그대로 유지 (시간대 변환 방지)
+types.setTypeParser(1082, (val: string) => val);
+
 let pool: Pool | null = null;
 
 export function getPool(): Pool {
