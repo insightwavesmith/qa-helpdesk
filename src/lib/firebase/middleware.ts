@@ -39,6 +39,30 @@ const ONBOARDING_COOKIE = "x-onboarding-status";
 const COOKIE_MAX_AGE = 300; // 5분
 
 export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  // 정적 파일 스킵 (Next.js 16 proxy.ts에 matcher 없으므로 여기서 필터링)
+  if (
+    pathname.startsWith("/_next/") ||
+    pathname.startsWith("/favicon") ||
+    pathname.startsWith("/icons/") ||
+    pathname.startsWith("/images/") ||
+    pathname.endsWith(".ico") ||
+    pathname.endsWith(".png") ||
+    pathname.endsWith(".jpg") ||
+    pathname.endsWith(".jpeg") ||
+    pathname.endsWith(".svg") ||
+    pathname.endsWith(".webp") ||
+    pathname.endsWith(".css") ||
+    pathname.endsWith(".js") ||
+    pathname.endsWith(".map") ||
+    pathname.endsWith(".woff") ||
+    pathname.endsWith(".woff2") ||
+    pathname.endsWith(".ttf")
+  ) {
+    return NextResponse.next();
+  }
+
   const response = NextResponse.next({ request });
 
   // 1. Firebase 세션 쿠키 검증
@@ -58,8 +82,6 @@ export async function updateSession(request: NextRequest) {
       uid = null;
     }
   }
-
-  const pathname = request.nextUrl.pathname;
 
   // 2. 공개 경로 체크: 미인증 사용자는 공개 경로만 접근 가능
   if (!uid && !isPublicPath(pathname)) {
