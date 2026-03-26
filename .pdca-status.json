@@ -1839,40 +1839,6 @@
     "completedAt": "2026-03-23",
     "updatedAt": "2026-03-23T13:30:00+09:00"
   },
-  "deepgaze-gemini-pipeline": {
-    "phase": "implementing",
-    "plan": {
-      "team": "pm",
-      "done": false,
-      "doc": "",
-      "at": null
-    },
-    "design": {
-      "team": "pm",
-      "done": false,
-      "doc": "",
-      "at": null
-    },
-    "do": {
-      "team": "cto",
-      "done": false,
-      "commit": null,
-      "at": null
-    },
-    "check": {
-      "team": "qa",
-      "done": false,
-      "doc": "",
-      "matchRate": null
-    },
-    "act": {
-      "done": false,
-      "commit": null,
-      "deployedAt": null
-    },
-    "notes": "결합 분석 크론 + 체인 트리거 구현 완료, 체크 미진행",
-    "updatedAt": "2026-03-25T23:30:00+09:00"
-  },
   "ad-account-id-bugfix": {
     "phase": "completed",
     "plan": {
@@ -2931,40 +2897,6 @@
     "notes": "/tmp/cross-team/ 프로토콜 표준화. 마커 파일 규약 정의.",
     "updatedAt": "2026-03-25T16:11:24.554568"
   },
-  "web-terminal-dashboard": {
-    "phase": "implementing",
-    "plan": {
-      "team": "pm",
-      "done": false,
-      "doc": "",
-      "at": null
-    },
-    "design": {
-      "team": "pm",
-      "done": false,
-      "doc": "",
-      "at": null
-    },
-    "do": {
-      "team": "cto",
-      "done": false,
-      "commit": null,
-      "at": null
-    },
-    "check": {
-      "team": "qa",
-      "done": false,
-      "doc": "",
-      "matchRate": null
-    },
-    "act": {
-      "done": false,
-      "commit": null,
-      "deployedAt": null
-    },
-    "notes": "xterm.js + WS + REST API 17파일 신규 생성, 체크 미진행",
-    "updatedAt": "2026-03-25T23:30:00+09:00"
-  },
   "collect-daily-refactoring-qa": {
     "phase": "completed",
     "plan": {
@@ -3080,11 +3012,11 @@
       "notes": "Supabase SDK 완전 제거 완료"
     }
   },
-  "updatedAt": "2026-03-25T22:30:00.000000",
+  "updatedAt": "2026-03-25T23:43:45",
   "_lastUpdated": "2026-03-25T18:46:00.604358",
   "_note": "agent-ops GitHub repo + Vercel 배포 작업 중",
   "vercel-supabase-migration": {
-    "phase": "plan",
+    "phase": "checking",
     "plan": {
       "team": "pm",
       "done": true,
@@ -3093,15 +3025,15 @@
     },
     "design": {
       "team": "pm",
-      "done": false,
-      "doc": "",
-      "at": null
+      "done": true,
+      "doc": "docs/02-design/features/vercel-removal.design.md",
+      "at": "2026-03-25"
     },
     "do": {
       "team": "cto",
-      "done": false,
+      "done": true,
       "commit": null,
-      "at": null
+      "at": "2026-03-26"
     },
     "check": {
       "team": "qa",
@@ -3113,15 +3045,15 @@
       "done": false,
       "commit": null
     },
-    "updatedAt": "2026-03-25T20:54:26",
-    "notes": "Plan 보완 완료 - 의존성 맵, GCP 대안, Phase A/B/C 추가"
+    "updatedAt": "2026-03-26T00:50:00",
+    "notes": "Wave 1-5 완료. RLS OFF, Cloud Run env 31개, Global LB+도메인 매핑, 스모크 6/6 PASS. Check 진행 중."
   },
-  "creative-analysis-v3": {
+  "lp-analysis-pipeline": {
     "phase": "plan",
     "plan": {
       "team": "pm",
       "done": true,
-      "doc": "docs/mockup/creative-analysis-v3.html",
+      "doc": "docs/01-plan/features/lp-analysis-pipeline.plan.md",
       "at": "2026-03-25"
     },
     "design": {
@@ -3146,7 +3078,40 @@
       "done": false,
       "commit": null
     },
-    "updatedAt": "2026-03-25T20:54:26",
-    "notes": "목업 v3 완료 - 5축 분석 + 총가치각도기 UI"
+    "updatedAt": "2026-03-25T21:38:47",
+    "notes": "Plan 완료 - 소재↔LP 유기적 연결 + Mixpanel 텍소노미 + reach_to_purchase_rate"
+  },
+  "prescription-system-v2": {
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/prescription-system-v2.plan.md",
+      "at": "2026-03-25"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/prescription-system-v2.design.md",
+      "at": "2026-03-26"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-26"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "docs/03-analysis/prescription-system-v2.analysis.md",
+      "matchRate": 100
+    },
+    "act": {
+      "done": true,
+      "commit": null
+    },
+    "updatedAt": "2026-03-26T12:00:00",
+    "notes": "Phase 2-4 구현 완료 + Act(100%) 완료. 19개 신규 파일(3724줄). Phase 5(품질 검토) 별도 진행."
   }
 }

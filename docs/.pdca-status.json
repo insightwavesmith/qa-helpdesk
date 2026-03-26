@@ -68,74 +68,6 @@
       "notes": "통합 채널 + 재시도 + rate limit 큐 구현 완료, 체크 미진행",
       "updatedAt": "2026-03-25"
     },
-    "web-terminal-dashboard": {
-      "phase": "implementing",
-      "plan": {
-        "team": "pm",
-        "done": false,
-        "doc": "",
-        "at": "2026-03-25"
-      },
-      "design": {
-        "team": "pm",
-        "done": true,
-        "doc": "docs/02-design/features/web-terminal-dashboard.design.md",
-        "at": "2026-03-25"
-      },
-      "do": {
-        "team": "cto",
-        "done": true,
-        "commit": null,
-        "at": null
-      },
-      "check": {
-        "team": "qa",
-        "done": false,
-        "doc": "",
-        "matchRate": null
-      },
-      "act": {
-        "done": false,
-        "commit": null,
-        "deployedAt": null
-      },
-      "notes": "xterm.js + WS + REST API 17파일 신규 생성, 체크 미진행",
-      "updatedAt": "2026-03-25"
-    },
-    "deepgaze-gemini-pipeline": {
-      "phase": "implementing",
-      "plan": {
-        "team": "pm",
-        "done": true,
-        "doc": "docs/01-plan/features/deepgaze-gemini-pipeline.plan.md",
-        "at": "2026-03-25"
-      },
-      "design": {
-        "team": "pm",
-        "done": false,
-        "doc": "",
-        "at": "2026-03-25"
-      },
-      "do": {
-        "team": "cto",
-        "done": true,
-        "commit": null,
-        "at": null
-      },
-      "check": {
-        "team": "qa",
-        "done": false,
-        "doc": "",
-        "matchRate": null
-      },
-      "act": {
-        "done": false,
-        "commit": null,
-        "deployedAt": null
-      },
-      "notes": "결합 분석 크론 + 체인 트리거 구현 완료, 체크 미진행",
-      "updatedAt": "2026-03-25"
-    },
     "collect-daily-refactoring": {
       "phase": "completed",
       "plan": {
@@ -307,7 +239,7 @@
       "updatedAt": "2026-03-25"
     },
     "vercel-supabase-migration": {
-      "phase": "plan",
+      "phase": "completed",
       "plan": {
         "team": "pm",
         "done": true,
@@ -316,15 +248,15 @@
       },
       "design": {
         "team": "pm",
-        "done": false,
-        "doc": "",
-        "at": null
+        "done": true,
+        "doc": "docs/02-design/features/vercel-removal.design.md",
+        "at": "2026-03-25"
       },
       "do": {
         "team": "cto",
-        "done": false,
+        "done": true,
         "commit": null,
-        "at": null
+        "at": "2026-03-26"
       },
       "check": {
         "team": "qa",
@@ -336,15 +268,48 @@
         "done": false,
         "commit": null
       },
-      "updatedAt": "2026-03-25T20:55:31",
-      "notes": "Plan 보완 완료 - 의존성 맵, GCP 대안, Phase A/B/C 추가"
+      "updatedAt": "2026-03-26T02:45:00",
+      "notes": "의존성 0% 확인: src/ 0건, .env 0건, DB URL 0건, Firebase Auth 35명 bcrypt 임포트, Storage GCS 전환 완료."
     },
-    "creative-analysis-v3": {
+    "prescription-system-v2": {
+      "phase": "completed",
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/01-plan/features/prescription-system-v2.plan.md",
+        "at": "2026-03-25"
+      },
+      "design": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/02-design/features/prescription-system-v2.design.md",
+        "at": "2026-03-26"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": null,
+        "at": "2026-03-26"
+      },
+      "check": {
+        "team": "qa",
+        "done": true,
+        "doc": "docs/03-analysis/prescription-system-v2.analysis.md",
+        "matchRate": 100
+      },
+      "act": {
+        "done": true,
+        "commit": null
+      },
+      "updatedAt": "2026-03-26T12:00:00",
+      "notes": "Phase 2-4 구현 완료 + Act(100%) 완료. 19개 신규 파일(3724줄). Phase 5(품질 검토) 별도 진행."
+    },
+    "lp-analysis-pipeline": {
       "phase": "plan",
       "plan": {
         "team": "pm",
         "done": true,
-        "doc": "docs/mockup/creative-analysis-v3.html",
+        "doc": "docs/01-plan/features/lp-analysis-pipeline.plan.md",
         "at": "2026-03-25"
       },
       "design": {
@@ -369,10 +334,10 @@
         "done": false,
         "commit": null
       },
-      "updatedAt": "2026-03-25T20:55:31",
-      "notes": "목업 v3 완료"
+      "updatedAt": "2026-03-25T21:38:47",
+      "notes": "Plan 완료"
     }
   },
-  "updatedAt": "2026-03-25T09:30:00.000000",
-  "_lastUpdated": "2026-03-25T20:55:31"
+  "updatedAt": "2026-03-26T09:30:00",
+  "_lastUpdated": "2026-03-26T09:30:00"
 }
