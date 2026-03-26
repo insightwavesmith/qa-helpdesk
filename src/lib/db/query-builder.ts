@@ -51,6 +51,7 @@ interface EmbeddedRelation {
   sourceColumn: string;
   targetColumns: string[];
   isArray: boolean;
+  isCount: boolean;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -307,12 +308,19 @@ export class PostgresQueryBuilder<T = any> {
       }
       // 임베디드 관계 서브쿼리
       for (const rel of this._embeddedRelations) {
-        const targetCols = rel.targetColumns.includes("*")
-          ? `to_json("${rel.targetTable}".*)`
-          : `json_build_object(${rel.targetColumns.map((c) => `'${c}', "${rel.targetTable}".${this._quoteCol(c)}`).join(", ")})`;
-        parts.push(
-          `(SELECT ${targetCols} FROM "${rel.targetTable}" WHERE "${rel.targetTable}"."id" = "${this._table}".${this._quoteCol(rel.sourceColumn)} LIMIT 1) AS "${rel.alias}"`,
-        );
+        if (rel.isCount) {
+          // count 집계: answers(count) → SELECT json_build_array(json_build_object('count', COUNT(*)))
+          parts.push(
+            `(SELECT json_build_array(json_build_object('count', COUNT(*))) FROM "${rel.targetTable}" WHERE "${rel.targetTable}".${this._quoteCol(rel.sourceColumn)} = "${this._table}"."id") AS "${rel.alias}"`,
+          );
+        } else {
+          const targetCols = rel.targetColumns.includes("*")
+            ? `to_json("${rel.targetTable}".*)`
+            : `json_build_object(${rel.targetColumns.map((c) => `'${c}', "${rel.targetTable}".${this._quoteCol(c)}`).join(", ")})`;
+          parts.push(
+            `(SELECT ${targetCols} FROM "${rel.targetTable}" WHERE "${rel.targetTable}"."id" = "${this._table}".${this._quoteCol(rel.sourceColumn)} LIMIT 1) AS "${rel.alias}"`,
+          );
+        }
       }
       selectClause = parts.join(", ");
     } else {
@@ -651,12 +659,12 @@ export class PostgresQueryBuilder<T = any> {
   // ─── SELECT 컬럼 파싱 (임베디드 관계 포함) ───
 
   private _parseSelectColumns(columns: string): void {
-    // PostgREST 임베딩 패턴: alias:table!fk_name(cols)
-    const embedRegex = /(\w+):(\w+)!(\w+)\(([^)]+)\)/g;
-    let match: RegExpExecArray | null;
     let cleanColumns = columns;
+    let match: RegExpExecArray | null;
 
-    while ((match = embedRegex.exec(columns)) !== null) {
+    // Step 1: alias:table!fk_name(cols) - FK 있는 패턴
+    const embedWithFkRegex = /(\w+):(\w+)!(\w+)\(([^)]+)\)/g;
+    while ((match = embedWithFkRegex.exec(columns)) !== null) {
       const [fullMatch, alias, targetTable, fkName, targetCols] = match;
       // FK 이름에서 source column 추출: reviews_author_id_fkey → author_id
       const sourceColumn = this._extractSourceColumn(fkName, this._table);
@@ -666,6 +674,42 @@ export class PostgresQueryBuilder<T = any> {
         sourceColumn,
         targetColumns: targetCols.split(",").map((c) => c.trim()),
         isArray: false,
+        isCount: false,
+      });
+      cleanColumns = cleanColumns.replace(fullMatch, "").replace(/,\s*,/g, ",").replace(/^,\s*|,\s*$/g, "");
+    }
+
+    // Step 2: count 집계 패턴 - [alias:]table(count)
+    const countStr = cleanColumns;
+    const countRegex = /(?:(\w+):)?(\w+)\(count\)/g;
+    while ((match = countRegex.exec(countStr)) !== null) {
+      const [fullMatch, alias, targetTable] = match;
+      const effectiveAlias = alias || targetTable;
+      // count FK 추론: 부모 테이블 단수형 + _id (questions → question_id)
+      const parentSingular = this._table.replace(/s$/, "");
+      this._embeddedRelations.push({
+        alias: effectiveAlias,
+        targetTable,
+        sourceColumn: `${parentSingular}_id`,
+        targetColumns: ["count"],
+        isArray: false,
+        isCount: true,
+      });
+      cleanColumns = cleanColumns.replace(fullMatch, "").replace(/,\s*,/g, ",").replace(/^,\s*|,\s*$/g, "");
+    }
+
+    // Step 3: alias:table(cols) - FK 없는 단축 패턴 (FK 추론: alias_id)
+    const noFkStr = cleanColumns;
+    const embedNoFkRegex = /(\w+):(\w+)\(([^)]+)\)/g;
+    while ((match = embedNoFkRegex.exec(noFkStr)) !== null) {
+      const [fullMatch, alias, targetTable, targetCols] = match;
+      this._embeddedRelations.push({
+        alias,
+        targetTable,
+        sourceColumn: `${alias}_id`,
+        targetColumns: targetCols.split(",").map((c) => c.trim()),
+        isArray: false,
+        isCount: false,
       });
       cleanColumns = cleanColumns.replace(fullMatch, "").replace(/,\s*,/g, ",").replace(/^,\s*|,\s*$/g, "");
     }
