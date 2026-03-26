@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/firebase/auth";
-import { createServiceClient } from "@/lib/db";
+import { getProfile } from "@/lib/auth-utils";
 import { redirect } from "next/navigation";
 import { StudentHome } from "./student-home";
 import { AdminDashboard } from "./admin-dashboard";
@@ -12,12 +12,7 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const svc = createServiceClient();
-  const { data: profile } = (await svc
-    .from("profiles")
-    .select("role, name")
-    .eq("id", user.uid)
-    .single()) as { data: { role: string; name: string } | null };
+  const profile = await getProfile(user.uid) as { role: string; name: string } | null;
 
   const role = profile?.role;
 
