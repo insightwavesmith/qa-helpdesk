@@ -1,7 +1,21 @@
 "use server";
 
+import { cache } from "react";
 import { createServiceClient, type DbClient } from "@/lib/db";
 import { getCurrentUser } from "@/lib/firebase/auth";
+
+/**
+ * 같은 요청 내 profiles 중복 조회 방지용 캐시 함수
+ */
+export const getProfile = cache(async (uid: string) => {
+  const svc = createServiceClient();
+  const { data } = await svc
+    .from("profiles")
+    .select("id, name, role, email, shop_name, onboarding_status")
+    .eq("id", uid)
+    .single();
+  return data;
+});
 
 /**
  * admin 전용: 회원 삭제, role 변경, 이메일 발송

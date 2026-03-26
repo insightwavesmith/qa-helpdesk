@@ -188,7 +188,7 @@ export default function AppSidebar({
         </SidebarGroup>
 
         {/* Admin Navigation */}
-        {userRole === "admin" && (
+        {(userRole === "admin" || userRole === "assistant") && (
           <>
             <SidebarSeparator className="mx-3 opacity-50" />
             <SidebarGroup className="py-1">

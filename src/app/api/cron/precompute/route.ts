@@ -33,10 +33,8 @@ interface CronResult {
 
 export async function GET(req: NextRequest) {
   // Cron 인증 확인
-  const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers.get("authorization");
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!authHeader || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

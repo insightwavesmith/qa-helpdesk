@@ -304,11 +304,12 @@ export default function SignupPage() {
 
       // 세션 쿠키 생성
       const idToken = await cred.user.getIdToken();
-      await fetch("/api/auth/firebase-session", {
+      const sessionRes = await fetch("/api/auth/firebase-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idToken }),
       });
+      if (!sessionRes.ok) throw new Error("세션 생성 실패");
 
       const uid = cred.user.uid;
 

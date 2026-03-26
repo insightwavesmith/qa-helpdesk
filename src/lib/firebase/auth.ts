@@ -2,6 +2,7 @@
  * Firebase 서버측 인증 헬퍼
  * Server Components, Server Actions, API Routes에서 사용
  */
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { getFirebaseAuth } from "./admin";
 
@@ -17,19 +18,22 @@ export interface AuthUser {
  * 현재 요청의 세션 쿠키에서 사용자 정보를 추출.
  * Server Component, Server Action, API Route에서 사용.
  */
-export async function getCurrentUser(): Promise<AuthUser | null> {
+async function _getCurrentUserImpl(): Promise<AuthUser | null> {
   try {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value;
     if (!sessionCookie) return null;
 
     const auth = getFirebaseAuth();
-    const decoded = await auth.verifySessionCookie(sessionCookie, true);
+    const decoded = await auth.verifySessionCookie(sessionCookie, false);
     return { uid: decoded.uid, email: decoded.email };
   } catch {
     return null;
   }
 }
+
+// React.cache()로 래핑 — 같은 요청 내 중복 호출 방지
+export const getCurrentUser = cache(_getCurrentUserImpl);
 
 /**
  * Firebase ID Token → 세션 쿠키 생성.

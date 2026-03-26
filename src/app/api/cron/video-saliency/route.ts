@@ -10,7 +10,7 @@
  *   4. creative_saliency → creative_media.video_analysis 시계열 동기화
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/db";
 import { triggerNext } from "@/lib/pipeline-chain";
 
@@ -36,8 +36,14 @@ interface AccountGroup {
   mediaIds: string[];
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const start = Date.now();
+
+  // Cron 인증 확인
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
     const pipelineUrl = process.env.CREATIVE_PIPELINE_URL

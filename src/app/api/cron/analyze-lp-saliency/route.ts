@@ -4,13 +4,19 @@
  * lp_analysis.eye_tracking이 NULL인 항목을 분석
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const start = Date.now();
+
+  // Cron 인증 확인
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
     const pipelineUrl = process.env.CREATIVE_PIPELINE_URL
