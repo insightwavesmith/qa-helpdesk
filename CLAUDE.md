@@ -5,9 +5,11 @@
 1. 이 파일 (CLAUDE.md) — 규칙
 2. docs/adr/ADR-002-service-context.md — 서비스 이해 (우리가 뭘 만드는지)
 3. docs/adr/ADR-001-account-ownership.md — 설계 원칙
-4. .claude/tasks/ 폴더 — 현재 TASK 확인
+4. docs/retrospective/README.md — 과거 사고 교훈 (같은 실수 반복 방지)
+5. .claude/tasks/ 폴더 — 현재 TASK 확인
 ```
-> 위 4개를 읽지 않고 작업 시작하면 리젝. 서비스를 이해하지 못한 코드는 의미 없다.
+> 위 5개를 읽지 않고 작업 시작하면 리젝. 서비스를 이해하지 못한 코드는 의미 없다.
+> 특히 4번 회고는 **마이그레이션, 대규모 변경, SDK 교체** 작업 시 반드시 해당 RET 항목 정독.
 
 ## 절대 규칙
 0. **세션 시작 즉시 delegate 모드 진입**: Shift+Tab → delegate 모드. 팀원(frontend-dev, backend-dev, qa-engineer) 생성 후 작업 배정. Leader가 직접 코드 쓰면 리젝. 팀 없이 단독 작업 금지.
@@ -191,7 +193,14 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 ### TeammateIdle (자동 배정)
 - 팀원이 할 일 끝나면 TeammateIdle hook이 자동으로 남은 TASK 확인
 - 미완료 항목이 있으면 다음 작업 배정
-- 전부 완료면 idle 허용
+- 전부 완료면 idle 허용 → 즉시 종료
+
+### 팀원 종료 (절대 규칙 — 토큰 낭비 방지)
+- **작업 완료 확인 즉시 TeamDelete 실행** — shutdown_request에 의존하지 말 것
+- shutdown_request 1회 전송 후 10초 내 종료 안 되면 → TeamDelete로 팀 삭제
+- 팀원이 idle 상태에서 대기하면 토큰이 지속 소모됨 — 절대 방치 금지
+- Leader는 산출물 확인 + 커밋 완료 후 바로 TeamDelete
+- 팀원 spawn 프롬프트에 반드시 포함: "작업 완료 후 Leader에게 보고하고 즉시 종료하세요"
 
 ### Split Pane (tmux)
 - `agentTeamDisplay: "tmux"` 설정됨
@@ -334,6 +343,32 @@ npm run build
 - [ ] Gap 분석 문서 작성 (Match Rate 90%+)
 
 **이 체크리스트를 실행하지 않고 "완료"라고 보고하면 리젝된다.**
+
+## 작업 완료 보고 + 정리 (강제 — 2026-03-26 추가)
+
+**모든 TASK 완료 후 반드시 아래 3가지를 수행한다.**
+
+### 1. 완료 보고서
+세션 종료 전 Smith님에게 보고:
+```
+## 완료 보고
+- 완료: [완료된 항목 목록 + 커밋 해시]
+- 미완료: [진행중/미착수 항목 + 사유]
+- 다음 할 일: [우선순위 순]
+- 교훈: [이번에 발견한 패턴, 실수, 주의사항]
+```
+
+### 2. 회고 기록 (사고 발생 시)
+버그 3건 이상 또는 장애 발생 시 `docs/retrospective/` 에 회고 파일 작성:
+- 파일명: `{YYYY-MM-DD}-{주제}.md`
+- 필수 항목: 사고 요약, 타임라인, 근본 원인, 재발 방지
+- `docs/retrospective/README.md` 인덱스에 RET-XXX 추가
+
+### 3. 팀 정리
+- 팀원 전원 종료 확인 (TeamDelete)
+- ~/.claude/teams/ 좀비 디렉토리 정리
+- ~/.claude/tasks/ 좀비 디렉토리 정리
+- **작업 완료 후 팀원이 idle 상태로 남아있으면 즉시 종료 — 토큰 낭비**
 
 ## TASK.md 작성 규칙 (텐동 → 에이전트팀)
 
