@@ -115,7 +115,7 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 | 항목 | 값 | 비고 |
 |------|-----|------|
 | **실행 방식** | tmux 세션 | nohup/background 금지 |
-| **모델** | claude-opus-4-6 | Sonnet 금지 |
+| **모델** | Opus 4.6 / Sonnet 4.6 | 팀원 구성 패턴 참조 |
 | **사고 모델** | thinking high | 반드시 활성화 |
 | **에이전트팀** | 활성화 | CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 |
 | **컨텍스트** | 1M (100만 토큰) | Max 플랜 기본 포함 |
@@ -172,24 +172,22 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 
 #### 팀원 구성 패턴 (필요할 때 꺼내 쓰기):
 
-**개발:**
+**Opus 4.6 (코드 구현/아키텍처 판단):**
 - **backend-dev**: API, DB, 서버 로직
 - **frontend-dev**: UI, 컴포넌트, 페이지
-- **bkend-expert**: BaaS 백엔드, 인증, 데이터 모델링
 - **frontend-architect**: UI 아키텍처, 디자인시스템, React/Next.js
 - **infra-architect**: AWS, K8s, Terraform, CI/CD
 - **enterprise-expert**: 마이크로서비스, 엔터프라이즈 전략
 - **security-architect**: 보안, OWASP, 인증 설계 리뷰
 
-**QA/검증:**
+**Sonnet 4.6 (검증/분석/리포팅):**
 - **qa-engineer**: tsc+build 검증, Gap 분석, 테스트
 - **qa-strategist**: QA 전략, 품질 기준 수립
 - **qa-monitor**: Docker 로그 실시간 모니터링, Zero Script QA
 - **code-analyzer**: 코드 품질, 보안, 성능 분석
 - **gap-detector**: 설계 vs 구현 Gap 분석
 - **design-validator**: 설계 문서 완성도/일관성 검증
-
-**유틸리티:**
+- **bkend-expert**: BaaS 백엔드, 인증, 데이터 모델링
 - **report-generator**: PDCA 완료 보고서 생성
 - **pdca-iterator**: Gap < 90% 자동 반복 개선
 - **pipeline-guide**: 9단계 개발 파이프라인 가이드
