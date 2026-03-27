@@ -18,6 +18,7 @@ const PUBLIC_PATHS = [
   "/api/auth/callback",
   "/api/auth/firebase-session",
   "/api/auth/firebase-logout",
+  "/api/auth/reset-password",
   "/api/og",
   "/api/cron",
   "/api/internal",
