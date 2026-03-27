@@ -69,6 +69,11 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 3. **코딩 중 설계서 참조**: 설계에 없는 기능 임의 추가 금지
 4. **Check 필수**: 구현 완료 → Gap 분석 (설계 vs 코드 비교)
 5. **Match Rate**: 90% 이상이어야 완료. 미만이면 Act(수정) 후 재검증
+5-1. **배포 후 런타임 검증 필수 (RET-004)**: 배포가 포함된 작업은 Match Rate만으로 완료 불가. 아래 3가지 추가 확인:
+   - **환경 체크**: IAM 권한, 환경변수, 네트워크 설정이 프로덕션에 반영됐는가?
+   - **로그 확인**: 배포 후 실제 요청 1회 → 에러 로그 0건 확인
+   - **핵심 플로우**: 로그인 → DB 쿼리 성공 → 데이터 표시 확인
+   - "배포 성공" ≠ "서비스 정상". 로컬 테스트 통과 ≠ 프로덕션 정상. **로그를 봐야 안다.**
 6. **상태 업데이트 (절대 규칙)**: 각 단계 완료 시 반드시 아래 2개 파일 업데이트. 누락 시 작업 미완료 처리.
    - `.pdca-status.json` (루트) — status, tasks, updatedAt
    - `docs/.pdca-status.json` — features 객체에 phase, matchRate, documents, notes 추가/갱신
@@ -136,11 +141,28 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 - 팀원 결과물 검증/체크
 - 기획서/설계서 작성 (Plan, Design 문서)
 - 최종 결과 종합 + 보고
+- **PDCA 기록 (리더 전용 의무)** — 아래 섹션 참조
 
 #### 리더가 절대 안 하는 것:
 - **src/ 코드 직접 수정 (validate-delegate.sh가 차단)**
 - 직접 구현/코딩
 - 팀원 없이 혼자 작업
+
+### PDCA 기록 (리더 전용 의무 — 2026-03-28 추가)
+
+**PDCA 상태 파일(docs/.pdca-status.json)과 TASK 체크박스 관리는 리더만의 책임이다.**
+팀원은 PDCA 개념에 포함되지 않으며, PDCA 관련 hook은 팀원을 즉시 통과시킨다.
+
+**팀원 완료 → 리더에게 보고 → 리더가 PDCA 기록.** 이것이 유일한 흐름.
+
+#### TeamDelete 전 필수 (validate-pdca-before-teamdelete.sh가 강제):
+1. `docs/.pdca-status.json` — updatedAt, phase, completedTasks, notes 갱신
+2. `.claude/tasks/TASK-*.md` — 완료 항목 체크박스 처리
+3. 위 2개 완료 후 TeamDelete 실행
+
+- TeamDelete 시도 시 docs/.pdca-status.json이 10분+ 미갱신이면 **자동 차단**
+- 팀원의 모든 PDCA hook → IS_TEAMMATE=true → 즉시 exit 0 (통과)
+- pdca-update.sh, pdca-sync-monitor.sh, auto-team-cleanup.sh → 리더만 실행
 
 #### 팀원(Teammate)이 하는 것:
 - 리더가 배정한 TASK 실행

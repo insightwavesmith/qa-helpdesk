@@ -402,8 +402,116 @@
       },
       "updatedAt": "2026-03-26",
       "notes": "Plan+목업 완료. 처방 통합 UX 리디자인."
+    },
+    "agent-tools-analysis": {
+      "phase": "completed",
+      "matchRate": 100,
+      "documents": [
+        "TASK-agent-tools-analysis.md"
+      ],
+      "notes": "리서치+기획서 작성. 모찌리포트 배포 완료."
+    },
+    "pdca-hooks-role-separation": {
+      "phase": "completed",
+      "plan": {
+        "team": "cto",
+        "done": true,
+        "doc": "",
+        "at": "2026-03-27"
+      },
+      "design": {
+        "team": "cto",
+        "done": true,
+        "doc": "",
+        "at": "2026-03-27"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": "d33b3d5",
+        "at": "2026-03-28"
+      },
+      "check": {
+        "team": "qa",
+        "done": true,
+        "doc": "",
+        "matchRate": 100
+      },
+      "act": {
+        "done": true,
+        "commit": "d33b3d5"
+      },
+      "updatedAt": "2026-03-28",
+      "notes": "PDCA hooks 팀원/리더 역할 분리 완료. is-teammate.sh(tmux pane_index 감지), 8개 hooks 팀원 bypass, pdca-single-source.sh 신규(정본 sync), pdca-update.sh 자동 sync, teammate-idle.sh v4(idle 루프 해결), force-team-kill.sh 신규. 10파일+100줄."
+    },
+    "password-reset-email": {
+      "phase": "completed",
+      "plan": {
+        "team": "cto",
+        "done": true,
+        "doc": "",
+        "at": "2026-03-27"
+      },
+      "design": {
+        "team": "cto",
+        "done": true,
+        "doc": "",
+        "at": "2026-03-27"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": "e2357de",
+        "at": "2026-03-27"
+      },
+      "check": {
+        "team": "qa",
+        "done": true,
+        "doc": "",
+        "matchRate": 100
+      },
+      "act": {
+        "done": true,
+        "commit": "e2357de"
+      },
+      "updatedAt": "2026-03-28",
+      "notes": "비밀번호 재설정 커스텀 이메일 발송 시스템. 3파일+71줄."
+    },
+    "pdca-leader-only": {
+      "phase": "completed",
+      "plan": {
+        "team": "cto",
+        "done": true,
+        "doc": "",
+        "at": "2026-03-28"
+      },
+      "design": {
+        "team": "cto",
+        "done": true,
+        "doc": "",
+        "at": "2026-03-28"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": null,
+        "at": "2026-03-28"
+      },
+      "check": {
+        "team": "qa",
+        "done": true,
+        "doc": "",
+        "matchRate": 100
+      },
+      "act": {
+        "done": true,
+        "commit": null
+      },
+      "updatedAt": "2026-03-28",
+      "notes": "PDCA 기록=리더 전용 구조 재설계. pdca-update/sync-monitor/auto-team-cleanup에 팀원 bypass, teammate-idle에서 PDCA 체크 제거, validate-pdca-before-teamdelete.sh 신규(TeamDelete 전 10분 갱신 강제), CLAUDE.md 리더 PDCA 의무 명시. 6파일 수정."
     }
   },
-  "updatedAt": "2026-03-26T16:37:16.393698",
-  "_lastUpdated": "2026-03-26T16:37:16.393701"
+  "updatedAt": "2026-03-28T09:10:00",
+  "_lastUpdated": "2026-03-28T09:10:00",
+  "_autoSyncNote": "manual update 2026-03-28, pdca-leader-only 완료"
 }

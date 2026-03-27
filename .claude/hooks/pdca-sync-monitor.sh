@@ -1,6 +1,11 @@
 #!/bin/bash
 # pdca-sync-monitor.sh — 커밋 후 PDCA 자동 싱크 체크
 # TaskCompleted hook에서 실행
+# 팀원은 PDCA 기록 책임 없음 → 리더만 실행
+
+# 팀원 즉시 통과
+source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
+[ "$IS_TEAMMATE" = "true" ] && exit 0
 
 PROJECT_DIR="/Users/smith/projects/bscamp"
 cd "$PROJECT_DIR" || exit 0

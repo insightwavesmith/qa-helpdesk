@@ -11,7 +11,8 @@
       "Grep(*)",
       "TodoRead(*)",
       "TodoWrite(*)",
-      "WebSearch"
+      "WebSearch",
+      "Skill(bkit:pm-discovery)"
     ],
     "deny": []
   },
@@ -59,6 +60,11 @@
             "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.claude/hooks/enforce-qa-before-merge.sh",
             "timeout": 30000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/pdca-single-source.sh",
+            "timeout": 10000
           }
         ]
       },
@@ -93,6 +99,16 @@
           {
             "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-before-delegate.sh",
+            "timeout": 10000
+          }
+        ]
+      },
+      {
+        "matcher": "TeamDelete",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-pdca-before-teamdelete.sh",
             "timeout": 10000
           }
         ]
@@ -136,21 +152,16 @@
             "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.claude/hooks/pdca-sync-monitor.sh",
             "timeout": 30000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/auto-team-cleanup.sh",
+            "timeout": 5000
           }
         ]
       }
     ],
-    "TeammateIdle": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/teammate-idle.sh",
-            "timeout": 10000
-          }
-        ]
-      }
-    ]
+    "TeammateIdle": []
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "high"

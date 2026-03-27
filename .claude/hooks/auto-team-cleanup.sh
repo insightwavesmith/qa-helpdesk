@@ -10,6 +10,10 @@
 # 원리: TaskCompleted hook은 exit 2로 피드백을 줄 수 있음
 #        → "모든 TASK 완료. TeamDelete로 팀을 종료하세요" 메시지 전달
 
+# 팀원은 팀 정리 책임 없음 → 즉시 통과
+source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
+[ "$IS_TEAMMATE" = "true" ] && exit 0
+
 PROJECT_DIR="/Users/smith/projects/bscamp"
 TASKS_DIR="$PROJECT_DIR/.claude/tasks"
 

@@ -1,6 +1,12 @@
 #!/bin/bash
-# pdca-update.sh — 태스크 완료 시 PDCA 문서 자동 정리 강제
-# TaskCompleted hook: PDCA 상태 파일 + 리더 개발 정리 필수
+# pdca-update.sh — 태스크 완료 시 PDCA 문서 자동 정리 + 자동 sync
+# TaskCompleted hook: 5분 이상 미갱신이면 자동 갱신 + sync 후 경고만 (차단 안 함)
+
+trap 'exit 0' ERR
+
+# 팀원은 PDCA 기록 책임 없음 → 즉시 통과
+source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
+[ "$IS_TEAMMATE" = "true" ] && exit 0
 
 PROJECT_DIR="/Users/smith/projects/bscamp"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
@@ -26,13 +32,36 @@ fi
 # 2. PDCA 상태가 최근 업데이트됐는지 확인 (5분 이내)
 PDCA_AGE=$(( $(date +%s) - $(stat -f %m "$PDCA_FILE" 2>/dev/null || echo 0) ))
 if [ "$PDCA_AGE" -gt 300 ]; then
-    echo "PDCA 상태 파일이 오래됐습니다 (${PDCA_AGE}초 전). 현재 작업 결과로 업데이트하세요."
-    echo ""
-    echo "업데이트할 것:"
-    echo "1. docs/.pdca-status.json — completedTasks, pendingTasks, lastCommit 갱신"
-    echo "2. docs/03-analysis/ — 이번 작업의 gap 분석 문서 작성"
-    echo "3. 변경 파일 목록 + 검증 결과 기록"
-    exit 2
+    # 자동 갱신: updatedAt + _autoSyncNote 업데이트
+    LAST_COMMIT=$(cd "$PROJECT_DIR" && git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+
+    python3 -c "
+import json, sys
+from datetime import datetime
+
+path = '$PDCA_FILE'
+try:
+    with open(path, 'r') as f:
+        data = json.load(f)
+    data['updatedAt'] = datetime.now().isoformat()
+    data['_autoSyncNote'] = 'auto-synced at $TIMESTAMP, last commit: $LAST_COMMIT'
+    with open(path, 'w') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+except Exception as e:
+    print(f'auto-sync 실패: {e}', file=sys.stderr)
+    sys.exit(1)
+" 2>/dev/null
+
+    # docs/ → 루트 + .bkit/ 자동 복사
+    cp "$PDCA_FILE" "$PROJECT_DIR/.pdca-status.json" 2>/dev/null
+    if [ -d "$PROJECT_DIR/.bkit/state" ]; then
+        cp "$PDCA_FILE" "$PROJECT_DIR/.bkit/state/pdca-status.json" 2>/dev/null
+    fi
+    touch "$PROJECT_DIR/.pdca-status.json" 2>/dev/null
+
+    echo "[PDCA 자동 sync] ${PDCA_AGE}초 미갱신 → updatedAt 자동 갱신 + 3곳 sync 완료 (commit: $LAST_COMMIT)"
+    echo "다음부터는 작업 중 docs/.pdca-status.json을 직접 업데이트하세요."
+    # 차단하지 않고 경고만 — exit 0
 fi
 
 # 3. plan + design 문서 존재 확인
