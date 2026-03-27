@@ -26,6 +26,18 @@ fi
 
 PROJECT_DIR="/Users/smith/projects/bscamp"
 
+# 프로세스 레벨 판단
+source "$(dirname "$0")/detect-process-level.sh" 2>/dev/null
+REL_FILE=$(echo "$FILE" | sed "s|${PROJECT_DIR}/||")
+detect_level_from_file "$REL_FILE"
+
+# L0(응급)/L1(경량): Plan/Design 체크 스킵
+if [ "$PROCESS_LEVEL" = "L0" ] || [ "$PROCESS_LEVEL" = "L1" ]; then
+    echo "✅ [PDCA $PROCESS_LEVEL] Plan/Design 사전 검증 스킵"
+    exit 0
+fi
+
+# L2/L3: 전체 검증
 # ── 1. TASK 파일 존재 확인 ──
 TASK_FILES=$(find "$PROJECT_DIR" -maxdepth 1 -name "TASK*.md" -not -name "TASK.template.md" -type f 2>/dev/null)
 if [ -z "$TASK_FILES" ]; then

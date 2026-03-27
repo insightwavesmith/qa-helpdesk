@@ -34,6 +34,16 @@ fi
 PROJECT_DIR="/Users/smith/projects/bscamp"
 MIN_ANALYSIS_LINES=20
 
+# 프로세스 레벨 판단
+source "$(dirname "$0")/detect-process-level.sh" 2>/dev/null
+detect_level_from_commit "$COMMAND"
+
+# L1(경량): QA 전체 스킵
+if [ "$PROCESS_LEVEL" = "L1" ]; then
+    echo "✅ [PDCA L1] QA 검증 스킵 (src/ 미수정)"
+    exit 0
+fi
+
 # git push의 경우 별도 처리
 if echo "$COMMAND" | grep -q 'git push'; then
     # build 마커 확인
@@ -74,10 +84,27 @@ if ! (cd "$PROJECT_DIR" && npm run build 2>&1 1>/dev/null); then
     ERRORS=$((ERRORS + 1))
 fi
 
-# 3. lint 체크 (차단함)
+# L0(응급): tsc + build만 통과하면 OK — 나머지 스킵
+if [ "$PROCESS_LEVEL" = "L0" ]; then
+    if [ "$ERRORS" -gt 0 ]; then
+        echo "🚫 [PDCA L0 응급] tsc/build 실패 (${ERRORS}건):" >&2
+        echo -e "$MESSAGES" >&2
+        exit 2
+    fi
+    echo "✅ [PDCA L0 응급] tsc + build 통과 → 커밋 허용"
+    exit 0
+fi
+
+# 3. lint 체크 (L2/L3)
 if ! (cd "$PROJECT_DIR" && npx eslint src/ --max-warnings 999 2>&1 1>/dev/null); then
     MESSAGES="${MESSAGES}\n❌ lint 에러 있음"
     ERRORS=$((ERRORS + 1))
+fi
+
+# L3: Match Rate 95% 기준 적용
+MIN_MATCH_RATE=90
+if [ "$PROCESS_LEVEL" = "L3" ]; then
+    MIN_MATCH_RATE=95
 fi
 
 # 4. Gap 분석 문서 확인 (존재 + 최소 줄 수 + Match Rate 포함 확인)
@@ -105,10 +132,10 @@ else
             ERRORS=$((ERRORS + 1))
         fi
 
-        # Match Rate 90%+ 확인
+        # Match Rate 확인 (L2: 90%+, L3: 95%+)
         MATCH_RATE=$(grep -ioE 'Match Rate[: ]*([0-9]+)' "$LATEST_ANALYSIS" 2>/dev/null | grep -oE '[0-9]+' | head -1)
-        if [ -n "$MATCH_RATE" ] && [ "$MATCH_RATE" -lt 90 ] 2>/dev/null; then
-            MESSAGES="${MESSAGES}\n❌ Match Rate가 90% 미만입니다. (${MATCH_RATE}%)"
+        if [ -n "$MATCH_RATE" ] && [ "$MATCH_RATE" -lt "$MIN_MATCH_RATE" ] 2>/dev/null; then
+            MESSAGES="${MESSAGES}\n❌ [$PROCESS_LEVEL] Match Rate가 ${MIN_MATCH_RATE}% 미만입니다. (${MATCH_RATE}%)"
             ERRORS=$((ERRORS + 1))
         fi
     fi
@@ -148,18 +175,18 @@ except:
 fi
 
 if [ "$ERRORS" -gt 0 ]; then
-    echo "🚫 [PDCA Check 강제] QA 검증 실패 (${ERRORS}건):" >&2
+    echo "🚫 [PDCA Check $PROCESS_LEVEL] QA 검증 실패 (${ERRORS}건):" >&2
     echo -e "$MESSAGES" >&2
     echo "" >&2
     echo "Do 끝나면 반드시 Check(QA)를 수행하세요:" >&2
     echo "1. npx tsc --noEmit 통과" >&2
     echo "2. npm run build 통과" >&2
     echo "3. npx eslint src/ --max-warnings 999 통과" >&2
-    echo "4. docs/03-analysis/에 QA 분석 문서 작성 (${MIN_ANALYSIS_LINES}줄+, Match Rate 포함)" >&2
+    echo "4. docs/03-analysis/에 QA 분석 문서 작성 (${MIN_ANALYSIS_LINES}줄+, Match Rate ${MIN_MATCH_RATE}%+)" >&2
     source "$PROJECT_DIR/.claude/hooks/notify-hook.sh" 2>/dev/null && \
         notify_hook "🚫 [PDCA Check] QA 검증 실패 (${ERRORS}건)" "enforce-qa"
     exit 2
 fi
 
-echo "✅ [PDCA Check] QA 검증 통과: tsc ✓ build ✓ lint ✓ 분석문서 ${GAP_COUNT}건(${MIN_ANALYSIS_LINES}줄+) ✓"
+echo "✅ [PDCA Check $PROCESS_LEVEL] QA 검증 통과: tsc ✓ build ✓ lint ✓ 분석문서 ${GAP_COUNT}건(Match Rate ${MIN_MATCH_RATE}%+) ✓"
 exit 0

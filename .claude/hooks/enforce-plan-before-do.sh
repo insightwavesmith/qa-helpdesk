@@ -38,6 +38,17 @@ if ! echo "$REL_FILE" | grep -q "^src/"; then
     exit 0
 fi
 
+# 프로세스 레벨 판단
+source "$(dirname "$0")/detect-process-level.sh" 2>/dev/null
+detect_level_from_file "$REL_FILE"
+
+# L0(응급)/L1(경량): Plan 체크 스킵
+if [ "$PROCESS_LEVEL" = "L0" ] || [ "$PROCESS_LEVEL" = "L1" ]; then
+    echo "✅ [PDCA $PROCESS_LEVEL] Plan 체크 스킵 → Do 진입 허용"
+    exit 0
+fi
+
+# L2/L3: Plan 강제
 # 1. Plan 문서 존재 확인
 PLAN_FILES=$(find "$PROJECT_DIR/docs/01-plan/features" -name "*.plan.md" -type f 2>/dev/null)
 PLAN_COUNT=$(echo "$PLAN_FILES" | grep -c "." 2>/dev/null || echo 0)

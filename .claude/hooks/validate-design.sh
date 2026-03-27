@@ -47,6 +47,17 @@ except:
         exit 0
     fi
 
+    # 프로세스 레벨 판단
+    source "$(dirname "$0")/detect-process-level.sh" 2>/dev/null
+    detect_level_from_file "$REL_FILE"
+
+    # L0(응급)/L1(경량): Design 체크 스킵
+    if [ "$PROCESS_LEVEL" = "L0" ] || [ "$PROCESS_LEVEL" = "L1" ]; then
+        echo "✅ [PDCA $PROCESS_LEVEL] Design 체크 스킵 → Do 진입 허용"
+        exit 0
+    fi
+
+    # L2/L3: Design 강제
     # 1. Design 문서 존재 확인
     DESIGN_FILES=$(find "$PROJECT_DIR/docs/02-design/features" -name "*.design.md" -type f 2>/dev/null)
     DESIGN_COUNT=$(echo "$DESIGN_FILES" | grep -c "." 2>/dev/null || echo 0)
@@ -125,6 +136,16 @@ fi
 
 # docs/chore/style 커밋은 패스
 if echo "$COMMAND" | grep -qE '(docs:|chore:|style:)'; then
+    exit 0
+fi
+
+# 프로세스 레벨 판단 (커밋 기반)
+source "$(dirname "$0")/detect-process-level.sh" 2>/dev/null
+detect_level_from_commit "$COMMAND"
+
+# L0(응급)/L1(경량): 설계서 갱신 체크 스킵
+if [ "$PROCESS_LEVEL" = "L0" ] || [ "$PROCESS_LEVEL" = "L1" ]; then
+    echo "✅ [PDCA $PROCESS_LEVEL] 설계서 갱신 체크 스킵"
     exit 0
 fi
 

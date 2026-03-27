@@ -35,10 +35,33 @@
 6. Match Rate ≥ 90% → 완료 보고서 생성 → 다음 기능으로 자동 이동.
 7. 각 단계 전환 시 Smith님에게 확인 묻지 않는다. 자동 진행이 기본값.
 
+## PDCA 프로세스 레벨 시스템 (2026-03-28 적용)
+
+**모든 작업은 PDCA를 거치되, 산출물 깊이만 조절한다.**
+레벨은 hook이 자동 판단한다 (`detect-process-level.sh`).
+
+| 레벨 | 대상 | Plan | Design | Check | Match Rate |
+|------|------|------|--------|-------|------------|
+| **L0 응급** | fix:/hotfix: 커밋, 프로덕션 장애 | 커밋 메시지 1줄 | 스킵 | tsc+build만 | - |
+| **L1 경량** | src/ 미수정 (리서치, 마케팅, 문서) | TASK 1~3줄 | 스킵 | 결과물 존재 확인 | - |
+| **L2 표준** | src/ 수정 일반 기능 개발 | plan.md 필수 | design.md 필수 | Gap 분석 + tsc + build | 90%+ |
+| **L3 풀** | DB/Auth/인프라/마이그레이션 | plan.md + ADR | design.md + 롤백 전략 | Gap + 보안 감사 | **95%+** |
+
+### 자동 판단 기준 (hook이 처리):
+- `fix:` / `hotfix:` 커밋 메시지 → **L0**
+- staged/수정 파일에 `src/` 없음 → **L1**
+- `src/` 수정 + 일반 → **L2**
+- `migration`, `auth`, `middleware.ts`, `firebase`, `.env` 등 → **L3**
+
+### L3 추가 요구사항:
+- ADR(Architecture Decision Record) 작성 필수
+- 롤백 전략 명시
+- Smith님 최종 승인 필수 (자동 진행 불가)
+
 ## bkit PDCA 워크플로우 (필수)
 
-**모든 기능 개발은 이 순서를 따른다. 예외 없음.**
-**코딩부터 시작하면 리젝한다. Plan → Design 문서가 docs/에 있어야 코딩 시작 가능.**
+**L2/L3 기능 개발은 이 순서를 따른다.**
+**L0/L1은 Plan/Design 스킵 가능 (위 레벨 시스템 참조).**
 
 ```
 Plan → Design → Do → Check → Act
@@ -99,6 +122,37 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 ## 4. 에러 처리 — 에러 코드, 사용자 메시지
 ## 5. 구현 순서 — 체크리스트 (의존성 순서)
 ```
+
+### TDD 워크플로우 (L2/L3 전용 — 2026-03-28 적용)
+
+**L2/L3 작업의 Do 단계는 TDD로 진행한다.**
+
+```
+테스트 먼저 작성 → 코드 구현 → 리팩터 (Red → Green → Refactor)
+```
+
+#### 테스트 프레임워크: vitest
+#### 테스트 파일 경로: `__tests__/{feature}/*.test.ts`
+#### Fixture 경로: `__tests__/{feature}/fixtures/*.json`
+
+#### Plan 문서에 테스트 시나리오 필수 포함:
+```markdown
+## 성공 기준 (테스트 시나리오)
+### Happy Path
+- [API/함수] → [기대 결과]
+### Edge Cases (P0/P1/P2)
+- [예외 상황] → [기대 에러/fallback]
+### Mock Data
+- fixtures/{데이터}.json
+```
+
+#### TDD 진행 순서:
+1. Plan의 테스트 시나리오 → `__tests__/{feature}/` 에 테스트 파일 작성
+2. `npx vitest run __tests__/{feature}/` → 전부 실패 확인 (Red)
+3. src/ 코드 구현 → 테스트 통과 (Green)
+4. 리팩터 → 테스트 재통과
+
+> L0/L1은 TDD 불필요. L2/L3만 적용.
 
 ### Check (Gap 분석) 필수 항목
 ```markdown

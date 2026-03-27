@@ -82,29 +82,38 @@ if [ "$DOCS_AGE" -gt 1800 ]; then
     exit 2
 fi
 
-# ── 5. Plan + Design 문서 존재 확인 ──
-# src/ 변경이 staged 되어있으면 관련 plan/design이 있어야 함
+# ── 5. 프로세스 레벨 판단 후 Plan + Design 문서 존재 확인 ──
+source "$(dirname "$0")/detect-process-level.sh" 2>/dev/null
+detect_level_from_commit "$COMMAND"
+
+# L0(응급)/L1(경량): Plan/Design 체크 스킵
+if [ "$PROCESS_LEVEL" = "L0" ] || [ "$PROCESS_LEVEL" = "L1" ]; then
+    echo "✅ PDCA 검증 통과 [$PROCESS_LEVEL]: root(${ROOT_AGE}초 전), docs(${DOCS_AGE}초 전). Plan/Design 스킵."
+    exit 0
+fi
+
+# L2/L3: src/ 변경이 staged 되어있으면 관련 plan/design이 있어야 함
 STAGED_SRC=$(cd "$PROJECT_DIR" && git diff --cached --name-only 2>/dev/null | grep "^src/" | head -1)
 if [ -n "$STAGED_SRC" ]; then
     PLAN_COUNT=$(find "$PROJECT_DIR/docs/01-plan/features" -name "*.plan.md" -type f 2>/dev/null | wc -l | tr -d ' ')
     DESIGN_COUNT=$(find "$PROJECT_DIR/docs/02-design/features" -name "*.design.md" -type f 2>/dev/null | wc -l | tr -d ' ')
-    
+
     if [ "${PLAN_COUNT:-0}" -eq 0 ]; then
         source /Users/smith/projects/bscamp/.claude/hooks/notify-hook.sh 2>/dev/null && \
             notify_hook "🚫 [PDCA 게이트] Plan 문서 없이 src/ 커밋 시도" "pdca"
-        echo "❌ src/ 파일이 변경됐지만 Plan 문서가 없습니다." >&2
+        echo "❌ [$PROCESS_LEVEL] src/ 파일이 변경됐지만 Plan 문서가 없습니다." >&2
         echo "docs/01-plan/features/{기능}.plan.md를 먼저 작성하세요." >&2
         exit 2
     fi
-    
+
     if [ "${DESIGN_COUNT:-0}" -eq 0 ]; then
         source /Users/smith/projects/bscamp/.claude/hooks/notify-hook.sh 2>/dev/null && \
             notify_hook "🚫 [PDCA 게이트] Design 문서 없이 src/ 커밋 시도" "pdca"
-        echo "❌ src/ 파일이 변경됐지만 Design 문서가 없습니다." >&2
+        echo "❌ [$PROCESS_LEVEL] src/ 파일이 변경됐지만 Design 문서가 없습니다." >&2
         echo "docs/02-design/features/{기능}.design.md를 먼저 작성하세요." >&2
         exit 2
     fi
 fi
 
-echo "✅ PDCA 검증 통과: root(${ROOT_AGE}초 전), docs(${DOCS_AGE}초 전), Plan/Design 존재"
+echo "✅ PDCA 검증 통과 [$PROCESS_LEVEL]: root(${ROOT_AGE}초 전), docs(${DOCS_AGE}초 전), Plan/Design 존재"
 exit 0
