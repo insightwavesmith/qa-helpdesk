@@ -170,10 +170,32 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 - 다른 팀원과 직접 메시지로 소통 (리더 거치지 않아도 됨)
 - shared task list에서 자기 TASK claim + 완료 보고
 
-#### 팀원 구성 패턴:
+#### 팀원 구성 패턴 (필요할 때 꺼내 쓰기):
+
+**개발:**
 - **backend-dev**: API, DB, 서버 로직
 - **frontend-dev**: UI, 컴포넌트, 페이지
+- **bkend-expert**: BaaS 백엔드, 인증, 데이터 모델링
+- **frontend-architect**: UI 아키텍처, 디자인시스템, React/Next.js
+- **infra-architect**: AWS, K8s, Terraform, CI/CD
+- **enterprise-expert**: 마이크로서비스, 엔터프라이즈 전략
+- **security-architect**: 보안, OWASP, 인증 설계 리뷰
+
+**QA/검증:**
 - **qa-engineer**: tsc+build 검증, Gap 분석, 테스트
+- **qa-strategist**: QA 전략, 품질 기준 수립
+- **qa-monitor**: Docker 로그 실시간 모니터링, Zero Script QA
+- **code-analyzer**: 코드 품질, 보안, 성능 분석
+- **gap-detector**: 설계 vs 구현 Gap 분석
+- **design-validator**: 설계 문서 완성도/일관성 검증
+
+**유틸리티:**
+- **report-generator**: PDCA 완료 보고서 생성
+- **pdca-iterator**: Gap < 90% 자동 반복 개선
+- **pipeline-guide**: 9단계 개발 파이프라인 가이드
+- **starter-guide**: 초보자/비개발자 가이드
+
+> PM팀(pm-lead, pm-discovery, pm-strategy, pm-research, pm-prd)은 별도 운영.
 
 #### 핵심:
 - display mode: tmux (split panes) — `agentTeamDisplay: "tmux"` 설정
