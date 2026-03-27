@@ -8,6 +8,10 @@
 # 안전 실패: 스크립트 에러 시 차단
 trap 'echo "❌ [validate-design] hook 에러 발생 → 안전 차단" >&2; exit 2' ERR
 
+# 팀원은 PDCA 게이팅 패스 (리더 전용 검증)
+source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
+[ "$IS_TEAMMATE" = "true" ] && exit 0
+
 INPUT=$(cat)
 
 PROJECT_DIR="/Users/smith/projects/bscamp"

@@ -8,6 +8,10 @@
 # - ANALYSIS-*.md (프로젝트 루트, 최근 30분 이내)
 # - DEV-STATUS.md에 "구조 분석" 또는 "설계" 관련 기록 (최근 30분)
 
+# 팀원은 PDCA 게이팅 패스 (리더 전용 검증)
+source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
+[ "$IS_TEAMMATE" = "true" ] && exit 0
+
 INPUT=$(cat)
 
 # Task tool (팀원 위임)인지 확인

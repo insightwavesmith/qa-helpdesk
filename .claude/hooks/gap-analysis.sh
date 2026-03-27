@@ -2,6 +2,10 @@
 # gap-analysis.sh — git commit 전 TASK.md 대비 gap 분석
 # PreToolUse hook: Bash 도구에서 git commit 실행 시 자동 체크
 
+# 팀원은 PDCA 게이팅 패스 (리더 전용 검증)
+source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
+[ "$IS_TEAMMATE" = "true" ] && exit 0
+
 # stdin에서 hook 입력 읽기
 INPUT=$(cat)
 

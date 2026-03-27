@@ -3,6 +3,10 @@
 # PreToolUse hook (Edit|Write): src/ 파일 수정 시 PDCA 전체 검증
 # exit 2 = 차단 (게이트)
 
+# 팀원은 PDCA 게이팅 패스 (리더 전용 검증)
+source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
+[ "$IS_TEAMMATE" = "true" ] && exit 0
+
 INPUT=$(cat)
 
 FILE=$(echo "$INPUT" | python3 -c "

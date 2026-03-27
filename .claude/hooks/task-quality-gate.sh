@@ -8,6 +8,10 @@
 #   - Gap 분석 문서 존재 확인
 #   - .pdca-status.json 업데이트 확인
 
+# 팀원은 PDCA 게이팅 패스 (리더 전용 검증)
+source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
+[ "$IS_TEAMMATE" = "true" ] && exit 0
+
 PROJECT_DIR="/Users/smith/projects/bscamp"
 cd "$PROJECT_DIR" || exit 0
 
