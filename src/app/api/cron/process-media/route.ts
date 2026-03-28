@@ -422,7 +422,7 @@ async function processVideoRows(
   // 소스 URL 조회
   let sourceUrlMap = new Map<string, string>();
   try {
-    sourceUrlMap = await fetchVideoSourceUrls(videoIds);
+    sourceUrlMap = await fetchVideoSourceUrls(cleanAccountId, videoIds);
   } catch (err) {
     console.warn(`[process-media] VIDEO fetchVideoSourceUrls 실패 [${cleanAccountId}]:`, err);
   }

@@ -277,6 +277,7 @@ export async function fetchVideoThumbnails(
  * URL은 시간 제한 있으므로 즉시 다운로드 필요
  */
 export async function fetchVideoSourceUrls(
+  accountId: string,
   videoIds: string[],
 ): Promise<Map<string, string>> {
   const token = process.env.META_ACCESS_TOKEN;
@@ -285,29 +286,48 @@ export async function fetchVideoSourceUrls(
   const result = new Map<string, string>();
   if (videoIds.length === 0) return result;
 
-  for (const videoId of videoIds) {
-    try {
-      const url = new URL(`${META_API_BASE}/${videoId}`);
-      url.searchParams.set("access_token", token);
-      url.searchParams.set("fields", "source");
+  const cleanId = accountId.replace(/^act_/, "");
+  const needed = new Set(videoIds);
 
+  let after: string | null = null;
+
+  do {
+    const url = new URL(`${META_API_BASE}/act_${cleanId}/advideos`);
+    url.searchParams.set("access_token", token);
+    url.searchParams.set("fields", "id,source");
+    url.searchParams.set("limit", "500");
+    if (after) url.searchParams.set("after", after);
+
+    try {
       const res = await fetchMetaWithRetry(url.toString());
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data: any = await res.json();
 
       if (data.error) {
-        console.error(`[creative-fetcher] video source ${videoId} error:`, data.error.message);
-        continue;
+        console.error(`[creative-fetcher] advideos error [${cleanId}]:`, data.error.message);
+        break;
       }
 
-      if (data.source) {
-        result.set(videoId, data.source);
+      for (const video of data.data ?? []) {
+        if (needed.has(video.id) && video.source) {
+          result.set(video.id, video.source);
+          needed.delete(video.id);
+        }
       }
+
+      if (needed.size === 0) break;
+
+      after = data.paging?.cursors?.after ?? null;
     } catch (e) {
-      console.error(`[creative-fetcher] video source ${videoId} failed:`, e);
+      console.error(`[creative-fetcher] advideos fetch failed [${cleanId}]:`, e);
+      break;
     }
+  } while (after);
 
-    await new Promise((r) => setTimeout(r, 100));
+  if (needed.size > 0) {
+    console.warn(
+      `[creative-fetcher] ${needed.size}개 video source 미발견 [${cleanId}]: ${[...needed].slice(0, 5).join(",")}`,
+    );
   }
 
   return result;
