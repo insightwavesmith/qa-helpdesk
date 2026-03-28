@@ -5,7 +5,7 @@ import { createServiceClient } from "@/lib/db";
 /**
  * Phase 5: 회원가입 후 profile 생성 (Cloud SQL용)
  * Supabase DB trigger handle_new_user 대체
- * USE_CLOUD_SQL=true 시 auth.signUp() 후 이 함수를 호출해야 프로필이 생성됨
+ * auth.signUp() 후 이 함수를 호출해야 프로필이 생성됨
  */
 export async function ensureProfile(
   userId: string,

@@ -7,7 +7,6 @@
  *
  * 환경변수:
  * - DATABASE_URL: Cloud SQL 연결 문자열
- * - USE_CLOUD_SQL: "true"이면 Cloud SQL 사용, 아니면 Supabase 유지
  */
 import { Pool } from "pg";
 import { getPool } from "./pool";
@@ -39,15 +38,6 @@ export function createDbClient(): DbClient {
   };
 
   return cachedClient;
-}
-
-/**
- * 환경변수 기반 클라이언트 선택
- * USE_CLOUD_SQL=true → Cloud SQL
- * 그 외 → Supabase (기존 로직)
- */
-export function useCloudSql(): boolean {
-  return process.env.USE_CLOUD_SQL === "true";
 }
 
 /**

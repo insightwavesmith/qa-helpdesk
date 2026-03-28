@@ -4,7 +4,6 @@
  * Phase 4: supabase.storage.from('bucket').upload() → GCS 직접 업로드
  * 공개 URL: https://storage.googleapis.com/bscamp-storage/{bucket}/{path}
  *
- * USE_CLOUD_SQL=true 시 활성화
  * ADC(Application Default Credentials) 기반 인증 — Cloud Run 서비스 계정 자동 적용
  */
 
@@ -101,9 +100,3 @@ export async function deleteFromGcs(
   }
 }
 
-/**
- * USE_CLOUD_SQL 환경에서 GCS를 사용할지 판단
- */
-export function useGcsStorage(): boolean {
-  return process.env.USE_CLOUD_SQL === "true";
-}
