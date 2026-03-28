@@ -1,7 +1,7 @@
 // Stage 0: 도메인 인텔리전스 — 질문 분석 및 도메인 용어 정규화
 // Gemini Flash로 질문의 도메인 용어를 이해하고 검색 쿼리를 최적화
 
-import { searchBrave } from "@/lib/brave-search";
+import { searchGoogle } from "@/lib/brave-search";
 import { generateEmbedding, generateFlashText } from "@/lib/gemini";
 import { createServiceClient } from "@/lib/db";
 
@@ -187,13 +187,8 @@ export async function analyzeDomain(
             const parts = cached[0].content.split(": ");
             return { term: t.normalized, definition: parts.slice(1).join(": ") };
           }
-          // glossary 미스 → Brave 검색 (키 있을 때만)
-          if (!process.env.BRAVE_API_KEY) return null;
-          const results = await searchBrave({
-            query: `${t.normalized} 뜻 자사몰 메타광고 맥락`,
-            count: 2,
-            country: "KR",
-          });
+          // glossary 미스 → Google Search (Gemini grounding)
+          const results = await searchGoogle(`${t.normalized} 뜻 자사몰 메타광고 맥락`, 2);
           if (results.length > 0) {
             return {
               term: t.normalized,

@@ -1,15 +1,17 @@
-// Stage 2: Brave Search API 클라이언트
-// 조건부 웹서치 — RAG가 AMBIGUOUS/INCORRECT일 때, 또는 플랫폼 현황 질문일 때
+// Stage 2: Google Search Grounding (via Gemini API)
+// Brave Search → Gemini Google Search Grounding으로 교체
+// 레이트리밋 없음, GEMINI_API_KEY 재사용
 
 import type { DomainAnalysis } from "@/lib/domain-intelligence";
 
-const BRAVE_API_URL = "https://api.search.brave.com/res/v1/web/search";
+const GEMINI_SEARCH_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 const TIMEOUT_MS = 10_000;
 
 export interface BraveSearchOptions {
   query: string;
   count?: number;
-  freshness?: string; // "pd" (past day), "pw" (past week), "pm" (past month)
+  freshness?: string;
   country?: string;
 }
 
@@ -26,36 +28,39 @@ export interface WebSearchContext {
 }
 
 /**
- * Brave Search API 호출
+ * Gemini Google Search Grounding으로 웹 검색
+ * BraveSearchResult[] 반환 — 호출부 인터페이스 유지
  */
-export async function searchBrave(
-  options: BraveSearchOptions
+export async function searchGoogle(
+  query: string,
+  count: number = 5
 ): Promise<BraveSearchResult[]> {
-  const apiKey = process.env.BRAVE_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.warn("[BraveSearch] BRAVE_API_KEY 미설정");
+    console.warn("[GoogleSearch] GEMINI_API_KEY 미설정");
     return [];
-  }
-
-  const params = new URLSearchParams({
-    q: options.query,
-    count: String(options.count || 5),
-    country: options.country || "KR",
-  });
-  if (options.freshness) {
-    params.set("freshness", options.freshness);
   }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
-    const response = await fetch(`${BRAVE_API_URL}?${params}`, {
-      method: "GET",
-      headers: {
-        "X-Subscription-Token": apiKey,
-        Accept: "application/json",
-      },
+    const response = await fetch(`${GEMINI_SEARCH_URL}?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: `다음 주제에 대해 한국어로 간략히 설명하세요: ${query}`,
+              },
+            ],
+          },
+        ],
+        tools: [{ google_search: {} }],
+        generationConfig: { temperature: 0.3, maxOutputTokens: 2048 },
+      }),
       signal: controller.signal,
     });
 
@@ -63,7 +68,7 @@ export async function searchBrave(
 
     if (!response.ok) {
       console.error(
-        "[BraveSearch] API error:",
+        "[GoogleSearch] API error:",
         response.status,
         await response.text()
       );
@@ -71,37 +76,54 @@ export async function searchBrave(
     }
 
     const data = await response.json();
-    const results: BraveSearchResult[] = (data.web?.results || [])
-      .slice(0, options.count || 5)
-      .map(
-        (r: {
-          title?: string;
-          url?: string;
-          description?: string;
-          age?: string;
-        }) => ({
-          title: r.title || "",
-          url: r.url || "",
-          description: r.description || "",
-          age: r.age,
-        })
-      );
+    const candidate = data.candidates?.[0];
+    if (!candidate) return [];
+
+    const text: string = candidate.content?.parts?.[0]?.text || "";
+    const groundingChunks: Array<{ web?: { uri?: string; title?: string } }> =
+      candidate.groundingMetadata?.groundingChunks || [];
+
+    // groundingChunks → BraveSearchResult[] 변환
+    const results: BraveSearchResult[] = groundingChunks
+      .slice(0, count)
+      .map((chunk) => ({
+        title: chunk.web?.title || query,
+        url: chunk.web?.uri || "",
+        description: text.slice(0, 400),
+      }));
+
+    // groundingChunks 없을 때 — grounded 응답 자체를 하나의 결과로
+    if (results.length === 0 && text) {
+      results.push({
+        title: query,
+        url: "",
+        description: text.slice(0, 400),
+      });
+    }
 
     return results;
   } catch (error) {
     clearTimeout(timeout);
     if (error instanceof Error && error.name === "AbortError") {
-      console.warn("[BraveSearch] 타임아웃 (10초)");
+      console.warn("[GoogleSearch] 타임아웃 (10초)");
     } else {
-      console.error("[BraveSearch] 실패:", error);
+      console.error("[GoogleSearch] 실패:", error);
     }
     return [];
   }
 }
 
 /**
+ * 하위 호환 래퍼 — BraveSearchOptions 인터페이스 유지
+ */
+export async function searchBrave(
+  options: BraveSearchOptions
+): Promise<BraveSearchResult[]> {
+  return searchGoogle(options.query, options.count);
+}
+
+/**
  * Stage 2: 도메인 분석 기반 웹서치
- * domainAnalysis의 normalizedTerms + intent를 활용해 검색 쿼리 구성
  */
 export async function searchWeb(
   domainAnalysis: DomainAnalysis | null,
@@ -112,10 +134,8 @@ export async function searchWeb(
     formattedContext: "",
   };
 
-  // 검색 쿼리 구성: 도메인 분석이 있으면 활용, 없으면 원본 사용
   let searchQuery: string;
   if (domainAnalysis && domainAnalysis.normalizedTerms.length > 0) {
-    // 정규화된 용어 + 의도 기반
     const terms = domainAnalysis.normalizedTerms
       .map((t) => t.normalized)
       .join(" ");
@@ -126,22 +146,15 @@ export async function searchWeb(
     searchQuery = originalQuestion.slice(0, 200);
   }
 
-  const results = await searchBrave({
-    query: searchQuery,
-    count: 5,
-    freshness: "pm", // 최근 1개월
-    country: "KR",
-  });
+  const results = await searchGoogle(searchQuery, 5);
 
   if (results.length === 0) return emptyResult;
 
-  // LLM에 전달할 형식으로 포맷팅
+  const separator = "\n---\n";
   const formattedContext = [
     "## 웹서치 결과 (참고용 - 강의 내용이 우선)",
-    ...results.map(
-      (r) => `[출처: ${r.title}](${r.url})\n${r.description}`
-    ),
-  ].join("\n---\n");
+    ...results.map((r) => `[출처: ${r.title}](${r.url})\n${r.description}`),
+  ].join(separator);
 
   return { results, formattedContext };
 }
