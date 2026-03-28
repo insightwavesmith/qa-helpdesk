@@ -1,13 +1,9 @@
 {
-<<<<<<<< Updated upstream:.bkit/snapshots/snapshot-1774417219433.json
-  "timestamp": "2026-03-25T05:40:19.433Z",
-========
-  "timestamp": "2026-03-25T05:35:35.728Z",
->>>>>>>> Stashed changes:.bkit/snapshots/snapshot-1774416935729.json
+  "timestamp": "2026-03-26T06:10:08.644Z",
   "reason": "compaction",
   "status": {
     "version": "3.0",
-    "lastUpdated": "2026-03-25T10:46:20.628866",
+    "lastUpdated": "2026-03-25T17:56:41.938392",
     "features": {
       "railway-l2-batch": {
         "phase": "completed",
@@ -1253,7 +1249,7 @@
         "completedAt": "2026-03-23",
         "notes": "PR #2. creative-saliency 크론 신규(93줄), analyze-five-axis DeepGaze 주입(+75줄). 커밋 a22028a.",
         "status": "ready",
-        "updatedAt": "2026-03-25T10:46:20.628866"
+        "updatedAt": "2026-03-25T17:56:41.938392"
       },
       "gcp-migration": {
         "phase": "testing",
@@ -1279,7 +1275,7 @@
         "startedAt": "2026-03-24",
         "notes": "3단계 분리 구현. collect-daily 891→451줄 경량화 + process-media 크론 신규 + collect-daily-utils 공용 모듈. tsc+build 통과.",
         "status": "completed",
-        "updatedAt": "2026-03-25T10:46:20.628866"
+        "updatedAt": "2026-03-25T17:56:41.938392"
       },
       "prescription-cost-test": {
         "phase": "completed",
@@ -1354,19 +1350,19 @@
         "notes": "pipeline-chain.ts 생성, collect-daily+process-media 체인 트리거 추가. Cloud Scheduler 등록 대기."
       },
       "slack-notification": {
-        "status": "completed",
-        "phase": "deployed",
-        "updatedAt": "2026-03-25T10:46:20.628866"
+        "status": "ready",
+        "phase": "designing",
+        "updatedAt": "2026-03-25T17:56:41.938392"
       },
       "agent-dashboard": {
-        "status": "completed",
-        "phase": "deployed",
-        "updatedAt": "2026-03-25T10:46:20.628866"
+        "status": "ready",
+        "phase": "designing",
+        "updatedAt": "2026-03-25T17:56:41.938392"
       },
       "web-terminal-dashboard": {
         "status": "ready",
         "phase": "planning",
-        "updatedAt": "2026-03-25T10:46:20.628866"
+        "updatedAt": "2026-03-25T17:56:41.938392"
       }
     },
     "phaseMapping": {

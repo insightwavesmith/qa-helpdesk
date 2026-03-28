@@ -1,0 +1,998 @@
+{
+  "timestamp": "2026-03-28T06:12:36.217Z",
+  "reason": "compaction",
+  "status": {
+    "version": "3.0",
+    "lastUpdated": "2026-03-28T15:11:02.369431",
+    "activeFeatures": [
+      "slack-notification",
+      "organic-channel-distribution-phase2",
+      "lp-analysis-pipeline",
+      "protractor-ux-prescription"
+    ],
+    "primaryFeature": null,
+    "features": {
+      "ad-account-id-bugfix": {
+        "phase": "completed",
+        "plan": {
+          "team": "pm",
+          "done": true,
+          "doc": "",
+          "at": "2026-03-25"
+        },
+        "design": {
+          "team": "pm",
+          "done": true,
+          "doc": "",
+          "at": "2026-03-25"
+        },
+        "do": {
+          "team": "cto",
+          "done": true,
+          "commit": null,
+          "at": "2026-03-25"
+        },
+        "check": {
+          "team": "qa",
+          "done": false,
+          "doc": "",
+          "matchRate": null
+        },
+        "act": {
+          "done": true,
+          "commit": null,
+          "deployedAt": null
+        },
+        "notes": "광고계정ID 수정 버그 핫픽스 (2파일)",
+        "updatedAt": "2026-03-25",
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-03-28T06:09:17.843Z",
+          "lastUpdated": "2026-03-25"
+        },
+        "stateMachine": {
+          "currentState": "completed",
+          "previousState": null,
+          "stateHistory": [],
+          "retryCount": 0,
+          "maxRetries": 5,
+          "circuitBreakerOpen": false
+        },
+        "metrics": {
+          "qualityScore": null,
+          "conventionCompliance": null,
+          "apiCompliance": null,
+          "cycleTimeMs": null,
+          "iterationEfficiency": null
+        },
+        "phaseTimestamps": {},
+        "automationLevel": 2
+      },
+      "slack-notification": {
+        "phase": "designing",
+        "plan": {
+          "team": "pm",
+          "done": false,
+          "doc": "",
+          "at": "2026-03-25"
+        },
+        "design": {
+          "team": "pm",
+          "done": true,
+          "doc": "docs/02-design/features/slack-notification.design.md",
+          "at": "2026-03-25"
+        },
+        "do": {
+          "team": "cto",
+          "done": true,
+          "commit": null,
+          "at": null
+        },
+        "check": {
+          "team": "qa",
+          "done": false,
+          "doc": "",
+          "matchRate": null
+        },
+        "act": {
+          "done": false,
+          "commit": null,
+          "deployedAt": null
+        },
+        "notes": "통합 채널 + 재시도 + rate limit 큐 구현 완료, 체크 미진행",
+        "updatedAt": "2026-03-28T15:11:02.369431",
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-03-28T06:09:17.843Z",
+          "lastUpdated": "2026-03-25"
+        },
+        "stateMachine": {
+          "currentState": "implementing",
+          "previousState": null,
+          "stateHistory": [],
+          "retryCount": 0,
+          "maxRetries": 5,
+          "circuitBreakerOpen": false
+        },
+        "metrics": {
+          "qualityScore": null,
+          "conventionCompliance": null,
+          "apiCompliance": null,
+          "cycleTimeMs": null,
+          "iterationEfficiency": null
+        },
+        "phaseTimestamps": {},
+        "automationLevel": 2,
+        "status": "ready"
+      },
+      "collect-daily-refactoring": {
+        "phase": "completed",
+        "plan": {
+          "team": "pm",
+          "done": true,
+          "doc": "",
+          "at": "2026-03-25"
+        },
+        "design": {
+          "team": "pm",
+          "done": true,
+          "doc": "",
+          "at": "2026-03-25"
+        },
+        "do": {
+          "team": "cto",
+          "done": true,
+          "commit": null,
+          "at": "2026-03-25"
+        },
+        "check": {
+          "team": "qa",
+          "done": true,
+          "doc": "docs/03-analysis/collect-daily-refactoring.analysis.md",
+          "matchRate": 97
+        },
+        "act": {
+          "done": true,
+          "commit": null,
+          "deployedAt": null
+        },
+        "notes": "병렬화 + collectAccount 분리 + incremental 수집 완료",
+        "updatedAt": "2026-03-25",
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-03-28T06:09:17.843Z",
+          "lastUpdated": "2026-03-25"
+        },
+        "stateMachine": {
+          "currentState": "completed",
+          "previousState": null,
+          "stateHistory": [],
+          "retryCount": 0,
+          "maxRetries": 5,
+          "circuitBreakerOpen": false
+        },
+        "metrics": {
+          "qualityScore": null,
+          "conventionCompliance": null,
+          "apiCompliance": null,
+          "cycleTimeMs": null,
+          "iterationEfficiency": null
+        },
+        "phaseTimestamps": {},
+        "automationLevel": 2
+      },
+      "supabase-removal": {
+        "phase": "completed",
+        "plan": {
+          "team": "pm",
+          "done": true,
+          "doc": "docs/01-plan/features/supabase-removal.plan.md",
+          "at": "2026-03-25"
+        },
+        "design": {
+          "team": "pm",
+          "done": true,
+          "doc": "docs/02-design/features/supabase-removal.design.md",
+          "at": "2026-03-25"
+        },
+        "do": {
+          "team": "cto",
+          "done": true,
+          "commit": null,
+          "at": "2026-03-25"
+        },
+        "check": {
+          "team": "qa",
+          "done": true,
+          "doc": "docs/03-analysis/supabase-removal.analysis.md",
+          "matchRate": 93
+        },
+        "act": {
+          "done": true,
+          "commit": null,
+          "deployedAt": null
+        },
+        "notes": "Supabase SDK 완전 제거 + 재분석(85%→93%): 이메일 템플릿 URL fallback 제거, supabase.ts 삭제, 환경변수 정리 필요(Vercel 수동)",
+        "updatedAt": "2026-03-25",
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-03-28T06:09:17.843Z",
+          "lastUpdated": "2026-03-25"
+        },
+        "stateMachine": {
+          "currentState": "completed",
+          "previousState": null,
+          "stateHistory": [],
+          "retryCount": 0,
+          "maxRetries": 5,
+          "circuitBreakerOpen": false
+        },
+        "metrics": {
+          "qualityScore": null,
+          "conventionCompliance": null,
+          "apiCompliance": null,
+          "cycleTimeMs": null,
+          "iterationEfficiency": null
+        },
+        "phaseTimestamps": {},
+        "automationLevel": 2
+      },
+      "organic-channel-distribution-phase2": {
+        "phase": "implementing",
+        "plan": {
+          "team": "pm",
+          "done": true,
+          "doc": "docs/01-plan/features/organic-channel-distribution.plan.md",
+          "at": "2026-03-24"
+        },
+        "design": {
+          "team": "pm",
+          "done": true,
+          "doc": "docs/02-design/features/organic-channel-distribution.design.md",
+          "at": "2026-03-25"
+        },
+        "do": {
+          "team": "cto",
+          "done": false,
+          "commit": null,
+          "at": "2026-03-25"
+        },
+        "check": {
+          "team": "qa",
+          "done": false,
+          "doc": "",
+          "matchRate": null
+        },
+        "act": {
+          "done": false,
+          "commit": null,
+          "deployedAt": null
+        },
+        "notes": "Phase 2: AI 변환 엔진 + 5채널 배포. Wave 1(DB+타입) 시작",
+        "updatedAt": "2026-03-25",
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-03-28T06:09:17.843Z",
+          "lastUpdated": "2026-03-25"
+        },
+        "stateMachine": {
+          "currentState": "implementing",
+          "previousState": null,
+          "stateHistory": [],
+          "retryCount": 0,
+          "maxRetries": 5,
+          "circuitBreakerOpen": false
+        },
+        "metrics": {
+          "qualityScore": null,
+          "conventionCompliance": null,
+          "apiCompliance": null,
+          "cycleTimeMs": null,
+          "iterationEfficiency": null
+        },
+        "phaseTimestamps": {},
+        "automationLevel": 2
+      },
+      "agent-ops-separation": {
+        "phase": "completed",
+        "plan": {
+          "team": "cto",
+          "done": true,
+          "doc": "docs/01-plan/features/agent-ops-separation.plan.md",
+          "at": "2026-03-25"
+        },
+        "design": {
+          "team": "cto",
+          "done": true,
+          "doc": "docs/02-design/features/agent-ops-separation.design.md",
+          "at": "2026-03-25"
+        },
+        "do": {
+          "team": "cto",
+          "done": true,
+          "commit": "1606abd",
+          "at": "2026-03-25"
+        },
+        "check": {
+          "team": "qa",
+          "done": true,
+          "doc": "docs/03-analysis/agent-ops-separation.analysis.md",
+          "matchRate": 100
+        },
+        "act": {
+          "done": true,
+          "commit": "1606abd",
+          "deployedAt": null
+        },
+        "notes": "bscamp에서 52파일 삭제 + agent-ops 독립 프로젝트 생성 완료 (63파일, +908/-14096줄)",
+        "updatedAt": "2026-03-25",
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-03-28T06:09:17.843Z",
+          "lastUpdated": "2026-03-25"
+        },
+        "stateMachine": {
+          "currentState": "completed",
+          "previousState": null,
+          "stateHistory": [],
+          "retryCount": 0,
+          "maxRetries": 5,
+          "circuitBreakerOpen": false
+        },
+        "metrics": {
+          "qualityScore": null,
+          "conventionCompliance": null,
+          "apiCompliance": null,
+          "cycleTimeMs": null,
+          "iterationEfficiency": null
+        },
+        "phaseTimestamps": {},
+        "automationLevel": 2
+      },
+      "vercel-removal": {
+        "phase": "completed",
+        "plan": {
+          "team": "cto",
+          "done": true,
+          "doc": "docs/01-plan/features/gcp-full-migration.plan.md",
+          "at": "2026-03-24"
+        },
+        "design": {
+          "team": "cto",
+          "done": true,
+          "doc": "docs/02-design/features/vercel-removal.design.md",
+          "at": "2026-03-25"
+        },
+        "do": {
+          "team": "cto",
+          "done": true,
+          "commit": null,
+          "at": "2026-03-25"
+        },
+        "check": {
+          "team": "qa",
+          "done": true,
+          "doc": "docs/03-analysis/vercel-removal.analysis.md",
+          "matchRate": 97
+        },
+        "act": {
+          "done": true,
+          "commit": null,
+          "deployedAt": null
+        },
+        "notes": "Wave 1-3 완료(97%): src/ bscamp.vercel.app 0건, VERCEL_URL 0건, vercel.json 삭제. Wave 4(RLS)+Wave 5(Cloud Run) 별도 진행 예정. .env.local 수동 업데이트 필요.",
+        "updatedAt": "2026-03-25",
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-03-28T06:09:17.843Z",
+          "lastUpdated": "2026-03-25"
+        },
+        "stateMachine": {
+          "currentState": "completed",
+          "previousState": null,
+          "stateHistory": [],
+          "retryCount": 0,
+          "maxRetries": 5,
+          "circuitBreakerOpen": false
+        },
+        "metrics": {
+          "qualityScore": null,
+          "conventionCompliance": null,
+          "apiCompliance": null,
+          "cycleTimeMs": null,
+          "iterationEfficiency": null
+        },
+        "phaseTimestamps": {},
+        "automationLevel": 2
+      },
+      "vercel-supabase-migration": {
+        "phase": "completed",
+        "plan": {
+          "team": "pm",
+          "done": true,
+          "doc": "docs/01-plan/features/vercel-supabase-migration.plan.md",
+          "at": "2026-03-25"
+        },
+        "design": {
+          "team": "pm",
+          "done": true,
+          "doc": "docs/02-design/features/vercel-removal.design.md",
+          "at": "2026-03-25"
+        },
+        "do": {
+          "team": "cto",
+          "done": true,
+          "commit": null,
+          "at": "2026-03-26"
+        },
+        "check": {
+          "team": "qa",
+          "done": true,
+          "doc": "docs/03-analysis/query-builder-audit.analysis.md",
+          "matchRate": 100
+        },
+        "act": {
+          "done": false,
+          "commit": null
+        },
+        "updatedAt": "2026-03-26",
+        "notes": "BUG 9건 전수 수정 완료. Match Rate 100%.",
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-03-28T06:09:17.843Z",
+          "lastUpdated": "2026-03-26"
+        },
+        "stateMachine": {
+          "currentState": "completed",
+          "previousState": null,
+          "stateHistory": [],
+          "retryCount": 0,
+          "maxRetries": 5,
+          "circuitBreakerOpen": false
+        },
+        "metrics": {
+          "qualityScore": null,
+          "conventionCompliance": null,
+          "apiCompliance": null,
+          "cycleTimeMs": null,
+          "iterationEfficiency": null
+        },
+        "phaseTimestamps": {},
+        "automationLevel": 2
+      },
+      "prescription-system-v2": {
+        "phase": "completed",
+        "plan": {
+          "team": "pm",
+          "done": true,
+          "doc": "docs/01-plan/features/prescription-system-v2.plan.md",
+          "at": "2026-03-25"
+        },
+        "design": {
+          "team": "pm",
+          "done": true,
+          "doc": "docs/02-design/features/prescription-system-v2.design.md",
+          "at": "2026-03-26"
+        },
+        "do": {
+          "team": "cto",
+          "done": true,
+          "commit": null,
+          "at": "2026-03-26"
+        },
+        "check": {
+          "team": "qa",
+          "done": true,
+          "doc": "docs/03-analysis/prescription-system-v2.analysis.md",
+          "matchRate": 100
+        },
+        "act": {
+          "done": true,
+          "commit": null
+        },
+        "updatedAt": "2026-03-26T12:00:00",
+        "notes": "Phase 2-4 구현 완료 + Act(100%) 완료. 19개 신규 파일(3724줄). Phase 5(품질 검토) 별도 진행.",
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-03-28T06:09:17.843Z",
+          "lastUpdated": "2026-03-26T12:00:00"
+        },
+        "stateMachine": {
+          "currentState": "completed",
+          "previousState": null,
+          "stateHistory": [],
+          "retryCount": 0,
+          "maxRetries": 5,
+          "circuitBreakerOpen": false
+        },
+        "metrics": {
+          "qualityScore": null,
+          "conventionCompliance": null,
+          "apiCompliance": null,
+          "cycleTimeMs": null,
+          "iterationEfficiency": null
+        },
+        "phaseTimestamps": {},
+        "automationLevel": 2
+      },
+      "lp-analysis-pipeline": {
+        "phase": "plan",
+        "plan": {
+          "team": "pm",
+          "done": true,
+          "doc": "docs/01-plan/features/lp-analysis-pipeline.plan.md",
+          "at": "2026-03-25"
+        },
+        "design": {
+          "team": "pm",
+          "done": false,
+          "doc": "",
+          "at": null
+        },
+        "do": {
+          "team": "cto",
+          "done": false,
+          "commit": null,
+          "at": null
+        },
+        "check": {
+          "team": "qa",
+          "done": false,
+          "doc": "",
+          "matchRate": null
+        },
+        "act": {
+          "done": false,
+          "commit": null
+        },
+        "updatedAt": "2026-03-25T21:38:47",
+        "notes": "Plan 완료",
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-03-28T06:09:17.843Z",
+          "lastUpdated": "2026-03-25T21:38:47"
+        },
+        "stateMachine": {
+          "currentState": "plan",
+          "previousState": null,
+          "stateHistory": [],
+          "retryCount": 0,
+          "maxRetries": 5,
+          "circuitBreakerOpen": false
+        },
+        "metrics": {
+          "qualityScore": null,
+          "conventionCompliance": null,
+          "apiCompliance": null,
+          "cycleTimeMs": null,
+          "iterationEfficiency": null
+        },
+        "phaseTimestamps": {},
+        "automationLevel": 2
+      },
+      "numeric-type-fix": {
+        "phase": "completed",
+        "plan": {
+          "team": "cto",
+          "done": true,
+          "doc": "",
+          "at": "2026-03-26"
+        },
+        "design": {
+          "team": "cto",
+          "done": true,
+          "doc": "",
+          "at": "2026-03-26"
+        },
+        "do": {
+          "team": "cto",
+          "done": true,
+          "commit": null,
+          "at": "2026-03-26"
+        },
+        "check": {
+          "team": "qa",
+          "done": true,
+          "doc": "",
+          "matchRate": 100
+        },
+        "act": {
+          "done": true,
+          "commit": null
+        },
+        "updatedAt": "2026-03-26T18:00:00",
+        "notes": "pg 전체 타입 파서 추가(NUMERIC/BIGINT/FLOAT/TIMESTAMP/DATE). QA 챗봇 Anthropic→Gemini 전환. Cloud Run 00013-flr 배포.",
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-03-28T06:09:17.843Z",
+          "lastUpdated": "2026-03-26T18:00:00"
+        },
+        "stateMachine": {
+          "currentState": "completed",
+          "previousState": null,
+          "stateHistory": [],
+          "retryCount": 0,
+          "maxRetries": 5,
+          "circuitBreakerOpen": false
+        },
+        "metrics": {
+          "qualityScore": null,
+          "conventionCompliance": null,
+          "apiCompliance": null,
+          "cycleTimeMs": null,
+          "iterationEfficiency": null
+        },
+        "phaseTimestamps": {},
+        "automationLevel": 2
+      },
+      "protractor-ux-prescription": {
+        "phase": "plan",
+        "plan": {
+          "team": "pm",
+          "done": true,
+          "doc": "docs/01-plan/features/protractor-ux-prescription.plan.md",
+          "at": "2026-03-26"
+        },
+        "design": {
+          "team": "pm",
+          "done": false,
+          "doc": "",
+          "at": null
+        },
+        "do": {
+          "team": "cto",
+          "done": false,
+          "commit": null,
+          "at": null
+        },
+        "check": {
+          "team": "qa",
+          "done": false,
+          "doc": "",
+          "matchRate": null
+        },
+        "act": {
+          "done": false,
+          "commit": null
+        },
+        "updatedAt": "2026-03-26",
+        "notes": "Plan+목업 완료. 처방 통합 UX 리디자인.",
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-03-28T06:09:17.843Z",
+          "lastUpdated": "2026-03-26"
+        },
+        "stateMachine": {
+          "currentState": "plan",
+          "previousState": null,
+          "stateHistory": [],
+          "retryCount": 0,
+          "maxRetries": 5,
+          "circuitBreakerOpen": false
+        },
+        "metrics": {
+          "qualityScore": null,
+          "conventionCompliance": null,
+          "apiCompliance": null,
+          "cycleTimeMs": null,
+          "iterationEfficiency": null
+        },
+        "phaseTimestamps": {},
+        "automationLevel": 2
+      },
+      "agent-tools-analysis": {
+        "phase": "completed",
+        "matchRate": 100,
+        "documents": [
+          "TASK-agent-tools-analysis.md"
+        ],
+        "notes": "리서치+기획서 작성. 모찌리포트 배포 완료.",
+        "requirements": [],
+        "timestamps": {
+          "started": "2026-03-28T06:09:17.843Z",
+          "lastUpdated": "2026-03-28T06:09:17.843Z"
+        },
+        "stateMachine": {
+          "currentState": "completed",
+          "previousState": null,
+          "stateHistory": [],
+          "retryCount": 0,
+          "maxRetries": 5,
+          "circuitBreakerOpen": false
+        },
+        "metrics": {
+          "qualityScore": null,
+          "conventionCompliance": null,
+          "apiCompliance": null,
+          "cycleTimeMs": null,
+          "iterationEfficiency": null
+        },
+        "phaseTimestamps": {},
+        "automationLevel": 2
+      },
+      "pdca-hooks-role-separation": {
+        "phase": "completed",
+        "plan": {
+          "team": "cto",
+          "done": true,
+          "doc": "",
+          "at": "2026-03-27"
+        },
+        "design": {
+          "team": "cto",
+          "done": true,
+          "doc": "",
+          "at": "2026-03-27"
+        },
+        "do": {
+          "team": "cto",
+          "done": true,
+          "commit": "d33b3d5",
+          "at": "2026-03-28"
+        },
+        "check": {
+          "team": "qa",
+          "done": true,
+          "doc": "",
+          "matchRate": 100
+        },
+        "act": {
+          "done": true,
+          "commit": "d33b3d5"
+        },
+        "updatedAt": "2026-03-28",
+        "notes": "PDCA hooks 팀원/리더 역할 분리 완료. is-teammate.sh(tmux pane_index 감지), 8개 hooks 팀원 bypass, pdca-single-source.sh 신규(정본 sync), pdca-update.sh 자동 sync, teammate-idle.sh v4(idle 루프 해결), force-team-kill.sh 신규. 10파일+100줄.",
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-03-28T06:09:17.843Z",
+          "lastUpdated": "2026-03-28"
+        },
+        "stateMachine": {
+          "currentState": "completed",
+          "previousState": null,
+          "stateHistory": [],
+          "retryCount": 0,
+          "maxRetries": 5,
+          "circuitBreakerOpen": false
+        },
+        "metrics": {
+          "qualityScore": null,
+          "conventionCompliance": null,
+          "apiCompliance": null,
+          "cycleTimeMs": null,
+          "iterationEfficiency": null
+        },
+        "phaseTimestamps": {},
+        "automationLevel": 2
+      },
+      "password-reset-email": {
+        "phase": "completed",
+        "plan": {
+          "team": "cto",
+          "done": true,
+          "doc": "",
+          "at": "2026-03-27"
+        },
+        "design": {
+          "team": "cto",
+          "done": true,
+          "doc": "",
+          "at": "2026-03-27"
+        },
+        "do": {
+          "team": "cto",
+          "done": true,
+          "commit": "e2357de",
+          "at": "2026-03-27"
+        },
+        "check": {
+          "team": "qa",
+          "done": true,
+          "doc": "",
+          "matchRate": 100
+        },
+        "act": {
+          "done": true,
+          "commit": "e2357de"
+        },
+        "updatedAt": "2026-03-28",
+        "notes": "비밀번호 재설정 커스텀 이메일 발송 시스템. 3파일+71줄.",
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-03-28T06:09:17.843Z",
+          "lastUpdated": "2026-03-28"
+        },
+        "stateMachine": {
+          "currentState": "completed",
+          "previousState": null,
+          "stateHistory": [],
+          "retryCount": 0,
+          "maxRetries": 5,
+          "circuitBreakerOpen": false
+        },
+        "metrics": {
+          "qualityScore": null,
+          "conventionCompliance": null,
+          "apiCompliance": null,
+          "cycleTimeMs": null,
+          "iterationEfficiency": null
+        },
+        "phaseTimestamps": {},
+        "automationLevel": 2
+      },
+      "pdca-leader-only": {
+        "phase": "completed",
+        "plan": {
+          "team": "cto",
+          "done": true,
+          "doc": "",
+          "at": "2026-03-28"
+        },
+        "design": {
+          "team": "cto",
+          "done": true,
+          "doc": "",
+          "at": "2026-03-28"
+        },
+        "do": {
+          "team": "cto",
+          "done": true,
+          "commit": null,
+          "at": "2026-03-28"
+        },
+        "check": {
+          "team": "qa",
+          "done": true,
+          "doc": "",
+          "matchRate": 100
+        },
+        "act": {
+          "done": true,
+          "commit": null
+        },
+        "updatedAt": "2026-03-28",
+        "notes": "PDCA 기록=리더 전용 구조 재설계. pdca-update/sync-monitor/auto-team-cleanup에 팀원 bypass, teammate-idle에서 PDCA 체크 제거, validate-pdca-before-teamdelete.sh 신규(TeamDelete 전 10분 갱신 강제), CLAUDE.md 리더 PDCA 의무 명시. 6파일 수정.",
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-03-28T06:09:17.843Z",
+          "lastUpdated": "2026-03-28"
+        },
+        "stateMachine": {
+          "currentState": "completed",
+          "previousState": null,
+          "stateHistory": [],
+          "retryCount": 0,
+          "maxRetries": 5,
+          "circuitBreakerOpen": false
+        },
+        "metrics": {
+          "qualityScore": null,
+          "conventionCompliance": null,
+          "apiCompliance": null,
+          "cycleTimeMs": null,
+          "iterationEfficiency": null
+        },
+        "phaseTimestamps": {},
+        "automationLevel": 2
+      },
+      "task-ownership-process": {
+        "phase": "completed",
+        "plan": {
+          "team": "pm",
+          "done": true,
+          "doc": "docs/01-plan/features/task-ownership-process.plan.md",
+          "at": "2026-03-28"
+        },
+        "design": {
+          "team": "cto",
+          "done": true,
+          "doc": "docs/02-design/features/hook-task-ownership.design.md",
+          "at": "2026-03-28"
+        },
+        "do": {
+          "team": "cto",
+          "done": true,
+          "commit": null,
+          "at": "2026-03-28"
+        },
+        "check": {
+          "team": "qa",
+          "done": true,
+          "doc": "docs/03-analysis/hook-task-ownership.analysis.md",
+          "matchRate": 92.8
+        },
+        "act": {
+          "done": true,
+          "commit": null
+        },
+        "updatedAt": "2026-03-28",
+        "notes": "Hook+TASK 소유권 시스템 완료. teammate-idle v6(3단계 폴백), TASK 프론트매터 9파일, BOARD.json, vitest 12/12 통과, Match Rate 92.8%",
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-03-28T06:09:17.843Z",
+          "lastUpdated": "2026-03-28"
+        },
+        "stateMachine": {
+          "currentState": "completed",
+          "previousState": null,
+          "stateHistory": [],
+          "retryCount": 0,
+          "maxRetries": 5,
+          "circuitBreakerOpen": false
+        },
+        "metrics": {
+          "qualityScore": null,
+          "conventionCompliance": null,
+          "apiCompliance": null,
+          "cycleTimeMs": null,
+          "iterationEfficiency": null
+        },
+        "phaseTimestamps": {},
+        "automationLevel": 2
+      },
+      "deepgaze-gemini-pipeline": {
+        "status": "ready",
+        "phase": "designing",
+        "updatedAt": "2026-03-28T15:11:02.369431"
+      },
+      "collect-daily-refactor": {
+        "status": "completed",
+        "phase": "deployed",
+        "updatedAt": "2026-03-28T15:11:02.369431"
+      },
+      "agent-dashboard": {
+        "status": "ready",
+        "phase": "designing",
+        "updatedAt": "2026-03-28T15:11:02.369431"
+      },
+      "web-terminal-dashboard": {
+        "status": "ready",
+        "phase": "planning",
+        "updatedAt": "2026-03-28T15:11:02.369431"
+      }
+    },
+    "pipeline": {
+      "currentPhase": 1,
+      "level": "Dynamic",
+      "phaseHistory": []
+    },
+    "session": {
+      "startedAt": "2026-03-28T06:09:17.844Z",
+      "onboardingCompleted": false,
+      "lastActivity": "2026-03-28T06:09:17.844Z"
+    },
+    "history": [],
+    "stateMachine": {
+      "defaultWorkflow": "default",
+      "activeWorkflows": {},
+      "totalTransitions": 0
+    },
+    "automation": {
+      "globalLevel": 2,
+      "trustScore": 40,
+      "pendingApprovals": 0,
+      "lastGateResult": null
+    },
+    "team": {
+      "enabled": true,
+      "stateFile": ".bkit/runtime/agent-state.json",
+      "eventsFile": ".bkit/runtime/agent-events.jsonl"
+    }
+  }
+}

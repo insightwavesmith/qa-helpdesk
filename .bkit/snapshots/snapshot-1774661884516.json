@@ -1,0 +1,110 @@
+{
+  "timestamp": "2026-03-28T01:38:04.515Z",
+  "reason": "compaction",
+  "status": {
+    "version": "3.0",
+    "lastUpdated": "2026-03-28T01:26:48.869Z",
+    "activeFeatures": [
+      "__tests__",
+      ".claude"
+    ],
+    "primaryFeature": "__tests__",
+    "features": {
+      "__tests__": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-03-28T01:14:25.865Z",
+          "lastUpdated": "2026-03-28T01:15:06.516Z"
+        },
+        "lastFile": "/Users/smith/projects/bscamp/__tests__/hooks/teammate-idle.test.ts",
+        "stateMachine": {
+          "currentState": "do",
+          "previousState": null,
+          "stateHistory": [],
+          "retryCount": 0,
+          "maxRetries": 5,
+          "circuitBreakerOpen": false
+        },
+        "metrics": {
+          "qualityScore": null,
+          "conventionCompliance": null,
+          "apiCompliance": null,
+          "cycleTimeMs": null,
+          "iterationEfficiency": null
+        },
+        "phaseTimestamps": {},
+        "automationLevel": 2
+      },
+      ".claude": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-03-28T01:26:48.869Z",
+          "lastUpdated": "2026-03-28T01:26:48.869Z"
+        },
+        "lastFile": "/Users/smith/projects/bscamp/.claude/hooks/teammate-idle.sh"
+      }
+    },
+    "pipeline": {
+      "currentPhase": 1,
+      "level": "Dynamic",
+      "phaseHistory": []
+    },
+    "session": {
+      "startedAt": "2026-03-28T01:14:25.865Z",
+      "onboardingCompleted": false,
+      "lastActivity": "2026-03-28T01:26:48.869Z"
+    },
+    "history": [
+      {
+        "timestamp": "2026-03-28T01:14:25.865Z",
+        "feature": "__tests__",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-03-28T01:14:41.308Z",
+        "feature": "__tests__",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-03-28T01:15:06.516Z",
+        "feature": "__tests__",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-03-28T01:26:48.869Z",
+        "feature": ".claude",
+        "phase": "do",
+        "action": "updated"
+      }
+    ],
+    "stateMachine": {
+      "defaultWorkflow": "default",
+      "activeWorkflows": {},
+      "totalTransitions": 0
+    },
+    "automation": {
+      "globalLevel": 2,
+      "trustScore": 40,
+      "pendingApprovals": 0,
+      "lastGateResult": null
+    },
+    "team": {
+      "enabled": true,
+      "stateFile": ".bkit/runtime/agent-state.json",
+      "eventsFile": ".bkit/runtime/agent-events.jsonl"
+    }
+  }
+}

@@ -1,9 +1,11 @@
 # Hook + TASK 소유권 시스템 설계서
 
+> **통합 예정 → `agent-team-operations.design.md`로 통합. 이 파일은 이력 보존용.**
+
 > **설계 문서** — CTO 기술 기획서 + PM 프로세스 기획서의 구현 명세
 > 작성일: 2026-03-28
 > PDCA 레벨: L1 (src/ 미수정, .claude/ hooks + settings 정비)
-> 상태: Design
+> 상태: ~~Design~~ → Archived (통합 예정)
 
 ---
 
@@ -284,7 +286,7 @@ count_checkboxes() {
 | 분류 | 파일 | 작업 |
 |------|------|------|
 | **신규** | `.claude/tasks/BOARD.json` | 중앙 TASK 보드 초기 생성 |
-| **수정** | `.claude/hooks/teammate-idle.sh` | 소유권 필터링 로직 전면 재작성 (v6) |
+| **변경 없음** | `.claude/hooks/teammate-idle.sh` | 비활성 유지 (작업 배정은 SendMessage) |
 | **수정** | `.claude/hooks/task-completed.sh` | BOARD.json 갱신 로직 추가 |
 | **수정** | `.claude/hooks/validate-pdca-before-teamdelete.sh` | team-context.json 삭제 로직 추가 |
 | **수정** | `.claude/settings.local.json` | Hook 등록 통합 정비 |
@@ -300,31 +302,23 @@ count_checkboxes() {
 | **삭제** | `.claude/hooks/notify-hook.sh` | 비활성 (always exit 0), notify-completion과 중복 |
 | **삭제** | `.claude/hooks/notify-task-completed.sh` | task-completed.sh와 중복 |
 | **삭제** | `.claude/hooks/notify-openclaw.sh` | 비활성 (always exit 0), Stop + TaskCompleted에 중복 등록 |
-| **신규** | `__tests__/hooks/teammate-idle.test.ts` | vitest 테스트 |
+| ~~삭제~~ | ~~`__tests__/hooks/teammate-idle.test.ts`~~ | ~~비활성 유지로 테스트 불필요~~ |
 | **신규** | `__tests__/hooks/task-completed.test.ts` | vitest 테스트 |
 | **신규** | `__tests__/hooks/frontmatter-parser.test.ts` | vitest 테스트 |
 | **신규** | `__tests__/hooks/fixtures/*.json, *.md` | 테스트 fixture |
 
-### 3-2. teammate-idle.sh 전면 재작성 (v6)
+### 3-2. teammate-idle.sh — 비활성 유지 (변경 없음)
 
-현재 44줄 → 약 80줄. 3단계 폴백 로직:
+**TeammateIdle hook은 비활성(빈 배열 `[]`) 상태를 유지한다.**
+
+작업 배정은 리더가 SendMessage로 직접 수행한다. 이것이 Claude Code의 네이티브 프로세스이며,
+hook 기반 자동 배정보다 안정적이다. 크로스팀 TASK 충돌 문제는 hook 비활성화로 완전히 해결됨.
 
 ```
-[1단계] team-context.json 로드
-  ├─ 성공 → taskFiles 배열로 자기 팀 TASK만 스캔
-  └─ 실패 ↓
-[2단계] TASK 프론트매터에서 team 필드 매칭
-  ├─ CURRENT_TEAM 있음 → 같은 팀 TASK + 프론트매터 없는 레거시 TASK 스캔
-  └─ CURRENT_TEAM 없음 ↓
-[3단계] 전체 스캔 (레거시 호환)
-  └─ 기존 v4/v5와 동일 동작
+팀원 idle → 대기 → 리더 SendMessage → 작업 수행 → 완료 보고
 ```
 
-**핵심 변경점**:
-- `grep '^\- \[ \]'` → `scan_unchecked()` (프론트매터 제외 awk 기반)
-- 전체 TASK 스캔 → team-context.json 우선 + 프론트매터 폴백
-- `status: completed/archived` TASK 자동 제외
-- `team: unassigned` TASK 자동 제외
+**기존 teammate-idle.sh 파일은 삭제하지 않고 보존** (향후 모니터링 용도 전환 가능성).
 
 ### 3-3. task-completed.sh 수정
 
@@ -544,17 +538,7 @@ fi
         ]
       }
     ],
-    "TeammateIdle": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/teammate-idle.sh",
-            "timeout": 10000
-          }
-        ]
-      }
-    ]
+    "TeammateIdle": []
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "high"
@@ -574,7 +558,7 @@ fi
 | **추가** | TaskCompleted | `pdca-update.sh` | settings.json에만 있어서 미실행 중이던 것 |
 | **추가** | TaskCompleted | `pdca-sync-monitor.sh` | 유지 (이미 등록됨) |
 | **추가** | TaskCompleted | `auto-team-cleanup.sh` | settings.json에만 있어서 미실행 중이던 것 |
-| **활성화** | TeammateIdle | `teammate-idle.sh` | 빈 배열 `[]` → 소유권 로직 적용 후 등록 |
+| **비활성 유지** | TeammateIdle | `teammate-idle.sh` | 빈 배열 `[]` 유지 — 작업 배정은 SendMessage. 재활성화 불필요 |
 | **제거** | PreToolUse(Bash) | `validate-design.sh` | Edit\|Write에만 유지. Bash에서 매 git commit마다 불필요 실행 |
 | **제거** | Stop | `notify-openclaw.sh` | 비활성 (always exit 0). 파일도 삭제 |
 | **정리** | Stop | — | hooks를 빈 배열 `[]`로 (notify-openclaw 제거) |
@@ -605,20 +589,10 @@ TaskCompleted 실행 순서:
 
 ## 4. 에러 처리
 
-### 4-1. teammate-idle.sh 에러 시나리오
+### 4-1. teammate-idle.sh — 해당 없음 (비활성 유지)
 
-| 시나리오 | 감지 방법 | 폴백 동작 | exit code |
-|----------|-----------|-----------|-----------|
-| team-context.json 없음 | `[ ! -f "$CONTEXT_FILE" ]` | 2단계: 프론트매터 파싱으로 폴백 | — (계속 진행) |
-| team-context.json 손상 (invalid JSON) | `jq` 비정상 종료 | `TEAM_NAME=""` → 2단계 폴백 | — |
-| jq 미설치 | `jq` command not found | `TEAM_NAME=""` → 3단계: 전체 스캔 | — |
-| TASK 파일에 프론트매터 없음 | `parse_frontmatter_field` 빈 반환 | team=빈값 → 모든 팀에 포함 (레거시 호환) | — |
-| taskFiles에 삭제된 파일 | `[ -f "$f" ]` 체크 | 안전 스킵 | — |
-| 프론트매터 내 `- [ ]` 패턴 | `scan_unchecked`의 awk가 --- 블록 외부만 스캔 | 오탐 없음 | — |
-| team: unassigned | `parse_frontmatter_field` 반환값 체크 | 스캔 제외 | — |
-| status: completed/archived | `parse_frontmatter_field` 반환값 체크 | 스캔 제외 | — |
-| 미완료 항목 있음 | `UNCHECKED_COUNT -gt 0` | 다음 TASK 배정 메시지 | **exit 2** |
-| 미완료 0건 | `UNCHECKED_COUNT == 0` | idle 허용 메시지 | **exit 0** |
+TeammateIdle hook은 비활성 상태(`[]`)를 유지하므로 에러 시나리오 없음.
+작업 배정은 리더 SendMessage로 수행.
 
 ### 4-2. task-completed.sh 에러 시나리오
 
@@ -668,15 +642,14 @@ TaskCompleted 실행 순서:
 
 ### Wave 2: Hook 개선 (Wave 1 완료 후)
 
-- [ ] **W2-1**: `teammate-idle.sh` 소유권 로직 전면 재작성 (섹션 3-2의 v6 코드)
-- [ ] **W2-2**: `task-completed.sh`에 BOARD.json 갱신 로직 추가 (섹션 3-3)
-- [ ] **W2-3**: `validate-pdca-before-teamdelete.sh`에 team-context.json 삭제 로직 추가 (섹션 3-4)
-- [ ] **W2-4**: `settings.local.json` 통합 정비 (섹션 3-5의 최종 JSON)
+- [ ] **W2-1**: `task-completed.sh`에 BOARD.json 갱신 로직 추가 (섹션 3-3)
+- [ ] **W2-2**: `validate-pdca-before-teamdelete.sh`에 team-context.json 삭제 로직 추가 (섹션 3-4)
+- [ ] **W2-3**: `settings.local.json` 통합 정비 (섹션 3-5의 최종 JSON, TeammateIdle 비활성 유지)
 
 ### Wave 3: 검증
 
 - [ ] **W3-1**: vitest 테스트 전부 통과 확인
-- [ ] **W3-2**: 다팀 시뮬레이션 수동 테스트 (CTO + PM TASK 공존 시 teammate-idle 동작)
+- [ ] **W3-2**: 다팀 시뮬레이션 수동 테스트 (CTO + PM TASK 공존 시 SendMessage 배정 동작)
 - [ ] **W3-3**: Gap 분석 → `docs/03-analysis/hook-task-ownership.analysis.md`
 
 ---
@@ -688,7 +661,6 @@ TaskCompleted 실행 순서:
 ```
 __tests__/
 └── hooks/
-    ├── teammate-idle.test.ts
     ├── task-completed.test.ts
     ├── frontmatter-parser.test.ts
     └── fixtures/
@@ -778,129 +750,9 @@ export function prepareHookScript(
 }
 ```
 
-### 6-3. teammate-idle.test.ts
+### 6-3. teammate-idle.test.ts — 해당 없음
 
-```typescript
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createTestEnv, runHook, cleanupTestEnv, prepareHookScript } from './helpers';
-import { writeFileSync, readFileSync } from 'fs';
-import { join } from 'path';
-
-const ORIGINAL_HOOK = '/Users/smith/projects/bscamp/.claude/hooks/teammate-idle.sh';
-
-describe('teammate-idle.sh', () => {
-  let env: ReturnType<typeof createTestEnv>;
-  let hookPath: string;
-
-  beforeEach(() => {
-    env = createTestEnv();
-    hookPath = prepareHookScript(ORIGINAL_HOOK, env.tmpDir, env.hooksDir);
-  });
-
-  afterEach(() => {
-    cleanupTestEnv(env.tmpDir);
-  });
-
-  describe('1단계: team-context.json 기반 필터링', () => {
-    it('UT-1: 자기 팀 TASK만 스캔, 다른 팀 TASK 무시', () => {
-      // team-context: CTO-1, taskFiles: [TASK-CTO-RESUME.md]
-      writeFileSync(join(env.runtimeDir, 'team-context.json'), JSON.stringify({
-        team: 'CTO-1',
-        taskFiles: ['TASK-CTO-RESUME.md'],
-        teammates: []
-      }));
-      // CTO TASK: 미완료 있음
-      writeFileSync(join(env.tasksDir, 'TASK-CTO-RESUME.md'),
-        '---\nteam: CTO-1\nstatus: in-progress\ncreated: 2026-03-28\nowner: leader\n---\n# TASK\n- [ ] 미완료 항목\n');
-      // PM TASK: 미완료 있음 (스캔되면 안 됨)
-      writeFileSync(join(env.tasksDir, 'TASK-PM-RESUME.md'),
-        '---\nteam: PM-1\nstatus: in-progress\ncreated: 2026-03-28\nowner: leader\n---\n# TASK\n- [ ] PM 미완료\n');
-
-      const result = runHook(hookPath);
-      expect(result.exitCode).toBe(2); // 미완료 있음 → 계속 작업
-      expect(result.stdout).toContain('TASK-CTO-RESUME');
-      expect(result.stdout).not.toContain('PM');
-    });
-
-    it('UT-3: 등록된 TASK 모두 완료 → exit 0', () => {
-      writeFileSync(join(env.runtimeDir, 'team-context.json'), JSON.stringify({
-        team: 'CTO-1',
-        taskFiles: ['TASK-CTO-RESUME.md'],
-        teammates: []
-      }));
-      writeFileSync(join(env.tasksDir, 'TASK-CTO-RESUME.md'),
-        '---\nteam: CTO-1\nstatus: in-progress\ncreated: 2026-03-28\nowner: leader\n---\n# TASK\n- [x] 완료 항목\n');
-
-      const result = runHook(hookPath);
-      expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain('완료');
-    });
-  });
-
-  describe('2단계: 프론트매터 폴백', () => {
-    it('UT-2: team-context.json 없으면 프론트매터로 폴백 → 전체 스캔', () => {
-      // team-context.json 없음
-      writeFileSync(join(env.tasksDir, 'TASK-A.md'),
-        '---\nteam: CTO-1\nstatus: in-progress\ncreated: 2026-03-28\nowner: leader\n---\n# TASK\n- [ ] 항목A\n');
-      writeFileSync(join(env.tasksDir, 'TASK-B.md'),
-        '---\nteam: PM-1\nstatus: in-progress\ncreated: 2026-03-28\nowner: leader\n---\n# TASK\n- [ ] 항목B\n');
-      writeFileSync(join(env.tasksDir, 'TASK-C.md'),
-        '# TASK\n- [ ] 레거시 항목C\n');
-
-      const result = runHook(hookPath);
-      expect(result.exitCode).toBe(2);
-      // team-context 없고 CURRENT_TEAM도 없으면 전체 스캔 → 3개 모두 포함
-    });
-  });
-
-  describe('엣지 케이스', () => {
-    it('E-1: team-context.json 손상 → 프론트매터 폴백', () => {
-      writeFileSync(join(env.runtimeDir, 'team-context.json'), '{invalid json!!!');
-      writeFileSync(join(env.tasksDir, 'TASK-X.md'),
-        '---\nteam: CTO-1\nstatus: in-progress\ncreated: 2026-03-28\nowner: leader\n---\n# TASK\n- [ ] 항목\n');
-
-      const result = runHook(hookPath);
-      expect(result.exitCode).toBe(2); // 폴백으로 전체 스캔 → 미완료 발견
-    });
-
-    it('E-4: 프론트매터 내 - [ ] 패턴은 체크박스로 오인 안 함', () => {
-      writeFileSync(join(env.runtimeDir, 'team-context.json'), JSON.stringify({
-        team: 'CTO-1',
-        taskFiles: ['TASK-TRAP.md'],
-        teammates: []
-      }));
-      // 프론트매터 안에 - [ ] 가 있고, 본문엔 체크박스 없음
-      writeFileSync(join(env.tasksDir, 'TASK-TRAP.md'),
-        '---\nteam: CTO-1\nstatus: in-progress\ncreated: 2026-03-28\nowner: leader\nassignees:\n  - role: backend-dev\n    tasks: [T1]\n---\n# TASK\n- [x] 완료된 항목만\n');
-
-      const result = runHook(hookPath);
-      expect(result.exitCode).toBe(0); // 프론트매터의 - 패턴은 무시됨
-    });
-
-    it('E-5: team: unassigned TASK는 스캔 제외', () => {
-      // team-context 없으면 프론트매터 폴백
-      writeFileSync(join(env.tasksDir, 'TASK-ORPHAN.md'),
-        '---\nteam: unassigned\nstatus: pending\ncreated: 2026-03-28\nowner: leader\n---\n# TASK\n- [ ] 미배정 항목\n');
-
-      const result = runHook(hookPath);
-      expect(result.exitCode).toBe(0); // unassigned는 제외 → 미완료 0건
-    });
-
-    it('E-6: status: completed TASK는 체크박스 무관하게 스킵', () => {
-      writeFileSync(join(env.runtimeDir, 'team-context.json'), JSON.stringify({
-        team: 'CTO-1',
-        taskFiles: ['TASK-DONE.md'],
-        teammates: []
-      }));
-      writeFileSync(join(env.tasksDir, 'TASK-DONE.md'),
-        '---\nteam: CTO-1\nstatus: completed\ncreated: 2026-03-28\nowner: leader\n---\n# TASK\n- [ ] 이건 무시됨\n');
-
-      const result = runHook(hookPath);
-      expect(result.exitCode).toBe(0); // completed → 스킵
-    });
-  });
-});
-```
+TeammateIdle hook 비활성 유지로 테스트 불필요. 파일 생성하지 않음.
 
 ### 6-4. frontmatter-parser.test.ts
 
@@ -1233,7 +1085,7 @@ assignees:
 | 19 | pdca-sync-monitor.sh | ✅ 유지 | TaskCompleted | 이미 등록 |
 | 20 | auto-team-cleanup.sh | ✅ 유지 | TaskCompleted | settings.local에 추가 |
 | 21 | notify-completion.sh | ✅ 유지 | TaskCompleted | 이미 등록 |
-| 22 | teammate-idle.sh | 🔧 개선 | TeammateIdle | 소유권 로직 구현 후 등록 |
+| 22 | teammate-idle.sh | ⏸️ 비활성 유지 | TeammateIdle | 빈 배열 `[]` 유지. 작업 배정은 SendMessage |
 | 23 | is-teammate.sh | 🔨 헬퍼 | — | source용. 삭제 금지 |
 | 24 | detect-process-level.sh | 🔨 헬퍼 | — | source용. L0~L3 판단 |
 | 25 | notify-hook.sh | ❌ 삭제 | — | 비활성. 중복 |

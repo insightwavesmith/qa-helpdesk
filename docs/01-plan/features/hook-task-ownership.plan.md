@@ -1,8 +1,11 @@
 # Hook + TASK 소유권 기술 구현 기획서
 
+> **통합됨 → `agent-team-operations.plan.md` 참조. 이 파일은 이력 보존용.**
+
 > **CTO 관점 기술적 구현 방안** — PM 프로세스 기획서(`task-ownership-process.plan.md`)의 기술 pair
 > 작성일: 2026-03-28
 > PDCA 레벨: L1 (src/ 미수정, .claude/ hooks + settings 정비)
+> 상태: ~~Plan~~ → Archived (통합됨)
 > 상태: Plan
 
 ---
@@ -209,7 +212,7 @@ load_team_context() {
 | 19 | `notify-completion.sh` | TaskCompleted | 양쪽 ✅ | ✅ 유지 | 전체 완료 알림 |
 | 20 | `pdca-sync-monitor.sh` | TaskCompleted | 양쪽 ✅ | ✅ 유지 | PDCA 동기화 모니터 |
 | 21 | `auto-team-cleanup.sh` | TaskCompleted | settings.json ✅ | ✅ 유지 | 전체 완료 시 TeamDelete 안내. **settings.local에 누락 → 추가 필요** |
-| 22 | `teammate-idle.sh` | TeammateIdle | settings.local ✅ (settings.json은 빈 배열) | 🔧 개선 | **소유권 필터링 로직 구현** (핵심 변경) |
+| 22 | `teammate-idle.sh` | TeammateIdle | settings.local ✅ (빈 배열 `[]`) | ⏸️ 비활성 유지 | 작업 배정은 SendMessage로 수행. 재활성화 불필요 |
 | 23 | `agent-slack-notify.sh` | 미등록 | ❌ | ⏸️ 보류 | Slack 연동 미구현 |
 | 24 | `agent-state-sync.sh` | 미등록 | ❌ | ⏸️ 보류 | team-context.json과 역할 중복 가능 → 추후 평가 |
 | 25 | `detect-process-level.sh` | 미등록 (헬퍼) | ❌ | 🔨 헬퍼 | source용. 다른 hook에서 L0~L3 판단 시 사용 |
@@ -225,7 +228,7 @@ load_team_context() {
 | 분류 | 건수 | 상세 |
 |------|------|------|
 | ✅ 유지 | 15 | 변경 없이 현행 유지 |
-| 🔧 개선 | 4 | validate-design(중복 제거), validate-pdca-before-teamdelete(정리 추가), task-completed(BOARD 갱신), teammate-idle(소유권) |
+| 🔧 개선 | 3 | validate-design(중복 제거), validate-pdca-before-teamdelete(정리 추가), task-completed(BOARD 갱신) |
 | ➕ 신규 등록 | 1 | gap-analysis → TaskCompleted |
 | ❌ 삭제 | 3 | notify-openclaw, notify-hook, notify-task-completed |
 | ⏸️ 보류 | 4 | agent-slack-notify, agent-state-sync, force-team-kill, protect-stage |
@@ -246,124 +249,31 @@ load_team_context() {
 
 ---
 
-## 4. teammate-idle.sh 소유권 로직 구현
+## 4. 작업 배정 프로세스 — SendMessage 기반
 
-### 4-1. 개선된 알고리즘
+### 4-1. TeammateIdle hook 비활성 유지
+
+**TeammateIdle hook은 비활성(빈 배열 `[]`) 상태를 유지한다.**
+
+크로스팀 TASK 배정 문제(섹션 1)는 이 hook을 비활성화하여 이미 해결되었다.
+작업 배정은 리더가 SendMessage로 직접 수행하는 것이 Claude Code의 네이티브 프로세스다.
 
 ```
-1. team-context.json 로드 시도
-   ├─ 성공 → taskFiles 배열에서 자기 팀 TASK 파일 목록 획득
-   └─ 실패 → TASK 프론트매터에서 team 필드 파싱 (2차 폴백)
-              └─ 프론트매터도 없으면 → 전체 스캔 (3차 폴백, 레거시 호환)
-
-2. 필터된 TASK 파일에서 미완료 체크박스 스캔
-   - 프론트매터 --- 블록 내부는 제외 (오탐 방지)
-   - status: completed/archived인 TASK는 스킵
-
-3. 미완료 항목 존재 → exit 2 (계속 작업)
-   미완료 0건 → exit 0 (idle 허용, 종료 가능)
+팀원 idle → 자연 대기 → 리더 SendMessage → 작업 수행 → 완료 보고 → 리더 SendMessage 또는 종료
 ```
 
-### 4-2. 구현 코드
+**재활성화 불필요한 이유**:
+1. SendMessage는 팀 컨텍스트가 보장됨 (리더가 자기 팀원에게만 보냄)
+2. Hook 기반 자동 배정은 크로스팀 충돌 + 무한 루프의 근본 원인
+3. 비활성화로 문제가 완전히 해결된 상태 — 재활성화는 불필요한 복잡도 추가
+4. 기존 teammate-idle.sh 파일은 삭제하지 않고 보존 (참고/모니터링 전환 가능)
 
-```bash
-#!/bin/bash
-# teammate-idle.sh — 팀원 idle 시 자기 팀 TASK만 배정
-# TeammateIdle hook: exit 0 = idle 허용, exit 2 = 피드백 + 계속 작업
-# v6 (2026-03-28): 소유권 필터링 도입
+### 4-2. team-context.json의 용도
 
-PROJECT_DIR="/Users/smith/projects/bscamp"
-TASKS_DIR="$PROJECT_DIR/.claude/tasks"
-CONTEXT_FILE="$PROJECT_DIR/.claude/runtime/team-context.json"
-
-# --- 프론트매터 파싱 헬퍼 ---
-parse_frontmatter_field() {
-    local file="$1" key="$2"
-    awk '/^---$/{n++; next} n==1{print}' "$file" | grep "^${key}:" | sed "s/^${key}: *//"
-}
-
-# 프론트매터 이후 영역에서만 체크박스 스캔
-scan_unchecked() {
-    local file="$1"
-    awk '/^---$/{n++; next} n>=2 || n==0{print NR": "$0}' "$file" | grep '^[0-9]*: *- \[ \]'
-}
-
-# --- 1단계: 자기 팀 TASK 파일 목록 결정 ---
-FILTERED_FILES=""
-
-if [ -f "$CONTEXT_FILE" ]; then
-    # 방법 A: team-context.json에서 taskFiles 추출
-    TASK_LIST=$(jq -r '.taskFiles[]?' "$CONTEXT_FILE" 2>/dev/null)
-    if [ -n "$TASK_LIST" ]; then
-        while IFS= read -r fname; do
-            [ -f "$TASKS_DIR/$fname" ] && FILTERED_FILES="$FILTERED_FILES $TASKS_DIR/$fname"
-        done <<< "$TASK_LIST"
-    fi
-fi
-
-if [ -z "$FILTERED_FILES" ]; then
-    # 방법 B: TASK 프론트매터에서 team 필드로 필터링
-    CURRENT_TEAM=""
-    if [ -f "$CONTEXT_FILE" ]; then
-        CURRENT_TEAM=$(jq -r '.team // empty' "$CONTEXT_FILE" 2>/dev/null)
-    fi
-
-    for f in "$TASKS_DIR"/TASK-*.md; do
-        [ -f "$f" ] || continue
-        TASK_TEAM=$(parse_frontmatter_field "$f" "team")
-        TASK_STATUS=$(parse_frontmatter_field "$f" "status")
-
-        # completed/archived는 스킵
-        [ "$TASK_STATUS" = "completed" ] || [ "$TASK_STATUS" = "archived" ] && continue
-        # unassigned는 스킵
-        [ "$TASK_TEAM" = "unassigned" ] && continue
-
-        if [ -z "$CURRENT_TEAM" ]; then
-            # 팀 컨텍스트 완전 부재 → 전체 스캔 (레거시 호환)
-            FILTERED_FILES="$FILTERED_FILES $f"
-        elif [ "$TASK_TEAM" = "$CURRENT_TEAM" ] || [ -z "$TASK_TEAM" ]; then
-            # 같은 팀이거나 프론트매터 없는 레거시 TASK
-            FILTERED_FILES="$FILTERED_FILES $f"
-        fi
-    done
-fi
-
-# --- 2단계: 필터된 TASK에서 미완료 체크박스 스캔 ---
-UNCHECKED=""
-for f in $FILTERED_FILES; do
-    [ -f "$f" ] || continue
-    ITEMS=$(scan_unchecked "$f")
-    if [ -n "$ITEMS" ]; then
-        BASENAME=$(basename "$f")
-        FIRST=$(echo "$ITEMS" | head -1 | sed 's/^[0-9]*: *//' | sed 's/^- \[ \] //')
-        UNCHECKED="${UNCHECKED}\n[${BASENAME}] ${FIRST}"
-    fi
-done
-
-UNCHECKED_COUNT=$(echo -e "$UNCHECKED" | grep -c '\S' 2>/dev/null || echo "0")
-
-if [ "$UNCHECKED_COUNT" -gt 0 ]; then
-    NEXT=$(echo -e "$UNCHECKED" | grep '\S' | head -1)
-    echo "자기 팀 미완료 TASK ${UNCHECKED_COUNT}건. 다음: ${NEXT}"
-    exit 2
-fi
-
-# --- 3단계: 모든 TASK 완료 → idle 허용 ---
-echo "자기 팀 TASK 모두 완료. Leader에게 보고 후 종료하세요."
-exit 0
-```
-
-### 4-3. 엣지 케이스 처리
-
-| 케이스 | 처리 | exit code |
-|--------|------|-----------|
-| team-context.json 없음 | 프론트매터 파싱 → 전체 스캔 폴백 | — |
-| team-context.json 손상 (invalid JSON) | jq 실패 → 빈 값 → 프론트매터 폴백 | — |
-| TASK에 프론트매터 없음 (레거시) | team=빈값 → 모든 팀에 포함 | — |
-| team: unassigned | 어떤 팀에도 배정 안 됨 | 스캔 제외 |
-| status: completed/archived | 체크박스 무관하게 스킵 | 스캔 제외 |
-| 프론트매터 내 `- [ ]` 패턴 | awk로 --- 블록 외부만 스캔 | 무시됨 |
-| taskFiles에 삭제된 파일 | `[ -f "$f" ]` 체크로 안전 스킵 | 무시됨 |
+team-context.json은 작업 배정이 아닌, 다른 hook이 팀 컨텍스트를 참조하는 용도로만 사용:
+- `auto-team-cleanup.sh` — 팀 TASK 완료 여부 확인
+- `validate-pdca-before-teamdelete.sh` — TeamDelete 시 팀 정보 정리
+- `task-completed.sh` — BOARD.json 팀별 집계 갱신
 
 ---
 
@@ -555,7 +465,7 @@ exit 0
 | **추가** | PreToolUse(Bash) | `validate-pdca.sh`, `validate-task.sh`, `pdca-single-source.sh`, `pre-read-context.sh` — settings.json에만 있어서 실제 미실행 중이던 것 |
 | **추가** | TaskCompleted | `gap-analysis.sh` — TASK 항목 vs staged 파일 매칭 |
 | **추가** | TaskCompleted | `pdca-update.sh`, `auto-team-cleanup.sh` — settings.json에만 있어서 미실행 중이던 것 |
-| **개선** | TeammateIdle | `teammate-idle.sh` — 소유권 필터링 로직 적용 |
+| **비활성 유지** | TeammateIdle | `teammate-idle.sh` — 빈 배열 `[]` 유지. 작업 배정은 SendMessage |
 
 ### 5-4. Hook 실행 순서 원칙
 
@@ -588,10 +498,9 @@ PreToolUse(Bash) 실행 순서:
 
 | ID | 작업 | 파일 | 산출물 |
 |----|------|------|--------|
-| W2-1 | teammate-idle.sh 소유권 로직 구현 | `.claude/hooks/teammate-idle.sh` | 섹션 4 코드 적용 |
-| W2-2 | task-completed.sh에 BOARD.json 갱신 추가 | `.claude/hooks/task-completed.sh` | completedCount/totalCount 자동 갱신 |
-| W2-3 | validate-pdca-before-teamdelete.sh에 team-context.json 삭제 추가 | `.claude/hooks/validate-pdca-before-teamdelete.sh` | TeamDelete 시 자동 정리 |
-| W2-4 | settings.local.json 통합 정비 | `.claude/settings.local.json` | 섹션 5 구조 적용 |
+| W2-1 | task-completed.sh에 BOARD.json 갱신 추가 | `.claude/hooks/task-completed.sh` | completedCount/totalCount 자동 갱신 |
+| W2-2 | validate-pdca-before-teamdelete.sh에 team-context.json 삭제 추가 | `.claude/hooks/validate-pdca-before-teamdelete.sh` | TeamDelete 시 자동 정리 |
+| W2-3 | settings.local.json 통합 정비 (TeammateIdle 비활성 유지) | `.claude/settings.local.json` | 섹션 5 구조 적용 |
 
 ### Wave 3: 검증
 
@@ -611,17 +520,14 @@ PM 기획서의 UT-1~6, E-1~7을 기술 관점에서 구체화:
 
 | ID | 대상 | 입력 | 기대 결과 |
 |----|------|------|-----------|
-| UT-1 | teammate-idle.sh (팀 필터) | team-context: CTO-1, taskFiles: [TASK-CTO-RESUME.md]. TASK-PM-RESUME.md에 미완료 존재 | CTO TASK만 스캔. PM 무시 |
-| UT-2 | teammate-idle.sh (하위 호환) | team-context.json 없음. TASK-*.md 3개 | 전체 3개 스캔 |
-| UT-3 | teammate-idle.sh (전부 완료) | team-context CTO-1. 등록된 TASK 모두 체크 완료 | exit 0 |
-| UT-4 | task-completed.sh (BOARD 갱신) | TASK-CTO-RESUME.md 체크박스 1개 완료 | BOARD.json CTO-1.completedCount +1 |
+| UT-1 | task-completed.sh (BOARD 갱신) | TASK-CTO-RESUME.md 체크박스 1개 완료 | BOARD.json CTO-1.completedCount +1 |
 | UT-5 | parse_frontmatter_field | team: CTO-1 포함 TASK | "CTO-1" 반환 |
 
 ### Edge Cases
 
 | ID | 시나리오 | 기대 동작 |
 |----|----------|-----------|
-| E-1 | team-context.json 손상 (invalid JSON) | jq 실패 → 프론트매터 폴백 → 전체 스캔 |
+| E-1 | team-context.json 손상 (invalid JSON) | jq 실패 → 경고 출력. auto-team-cleanup 등 의존 hook은 안전하게 exit 0 |
 | E-2 | TASK에 프론트매터 없음 (레거시) | team=빈값 → 모든 팀에 포함 |
 | E-3 | BOARD.json의 TASK 파일 삭제됨 | 누락 경고, 갱신 시 제거 |
 | E-4 | 프론트매터 내 `- [ ]` | scan_unchecked의 awk가 --- 블록 이후만 스캔 → 오탐 없음 |
