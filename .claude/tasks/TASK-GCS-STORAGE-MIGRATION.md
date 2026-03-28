@@ -1,7 +1,7 @@
 ---
 team: unassigned
 created: 2026-03-28
-status: pending
+status: completed
 owner: leader
 ---
 # TASK: 미디어 Storage를 GCS(Google Cloud Storage)로 이관

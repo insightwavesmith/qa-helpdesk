@@ -1,7 +1,7 @@
 ---
 team: unassigned
 created: 2026-03-28
-status: pending
+status: completed
 owner: leader
 ---
 # TASK: LP 미디어 리소스 전체 다운로드

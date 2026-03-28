@@ -134,18 +134,51 @@
       "updatedAt": "2026-03-26",
       "notes": "Plan+목업 완료. 처방 통합 UX 리디자인."
     },
-    "agent-team-operations": {
+    "agent-ops-dashboard": {
+      "phase": "completed",
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/01-plan/features/agent-ops-dashboard.plan.md",
+        "at": "2026-03-28"
+      },
+      "design": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/02-design/features/agent-ops-dashboard.design.md",
+        "at": "2026-03-28"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": null,
+        "at": "2026-03-28"
+      },
+      "check": {
+        "team": "qa",
+        "done": true,
+        "doc": "docs/03-analysis/agent-ops-dashboard.analysis.md",
+        "matchRate": 95
+      },
+      "act": {
+        "done": true,
+        "commit": null
+      },
+      "updatedAt": "2026-03-28T20:30:00",
+      "notes": "W1~W3 구현 완료. 서버+UI+TDD 20건+Gap 분석 95%. Bun+Hono+Preact localhost:3847."
+    },
+    "video-permission-skip": {
       "phase": "implementing",
       "plan": {
         "team": "cto",
         "done": true,
-        "doc": "docs/01-plan/features/agent-team-operations.plan.md",
+        "doc": ".claude/tasks/TASK-VIDEO-PERMISSION-SKIP.md",
         "at": "2026-03-28"
       },
       "design": {
         "team": "cto",
         "done": true,
-        "doc": "docs/02-design/features/agent-team-operations.design.md",
+        "doc": "",
         "at": "2026-03-28"
       },
       "do": {
@@ -164,11 +197,44 @@
         "done": false,
         "commit": null
       },
-      "updatedAt": "2026-03-28",
-      "notes": "Plan+Design 완료. CC 제약 3건 워크어라운드 반영. 구현 대기."
+      "updatedAt": "2026-03-28T20:40:00",
+      "notes": "L1 fix: 권한 없는 계정 비디오 스킵"
+    },
+    "agent-team-operations": {
+      "phase": "completed",
+      "plan": {
+        "team": "cto",
+        "done": true,
+        "doc": "docs/01-plan/features/agent-team-operations.plan.md",
+        "at": "2026-03-28"
+      },
+      "design": {
+        "team": "cto",
+        "done": true,
+        "doc": "docs/02-design/features/agent-team-operations.design.md",
+        "at": "2026-03-28"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": null,
+        "at": "2026-03-28"
+      },
+      "check": {
+        "team": "qa",
+        "done": true,
+        "doc": "docs/03-analysis/agent-team-operations.analysis.md",
+        "matchRate": 97
+      },
+      "act": {
+        "done": true,
+        "commit": null
+      },
+      "updatedAt": "2026-03-28T22:10:00",
+      "notes": "Wave 0~4 완료. TDD 66/67 통과(1건 설계의도Red). peers 테스트 DB격리+API수정→12/12. force-team-kill %0 방어→E-4 Green. Match Rate 97%."
     }
   },
-  "updatedAt": "2026-03-28T19:35:52.963256",
-  "notes": "완료 22건 + archived 1건 정리. 활성 5건만 유지.",
-  "_autoSyncNote": "auto-synced at 2026-03-28 19:35:52, last commit: 73a9fc8"
+  "updatedAt": "2026-03-28T20:49:56.710199",
+  "notes": "활성 7건. video-permission-skip L1 fix 추가.",
+  "_autoSyncNote": "auto-synced at 2026-03-28 20:49:56, last commit: 82c1624"
 }
