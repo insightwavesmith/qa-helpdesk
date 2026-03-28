@@ -29,7 +29,7 @@ export async function expandQuery(query: string): Promise<string[]> {
     const prompt = EXPAND_PROMPT_TEMPLATE.replace("{query}", query);
     const response = await generateFlashText(prompt, {
       temperature: 0.3,
-      maxTokens: 256,
+      maxTokens: 1024,
     });
 
     if (!response) return [query];
