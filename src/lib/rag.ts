@@ -106,7 +106,7 @@ export async function createAIAnswerForQuestion(
       content: result.answer,
       is_ai: true,
       is_approved: false, // 관리자 승인 필요
-      source_refs: result.sourceRefs,
+      source_refs: JSON.stringify(result.sourceRefs),
     });
 
     if (error) {

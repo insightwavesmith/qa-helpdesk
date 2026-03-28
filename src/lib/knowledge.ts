@@ -207,8 +207,8 @@ const CONSUMER_CONFIGS: Record<ConsumerType, ConsumerConfig> = {
     enableReranking: true,
     enableExpansion: true,
     model: "gemini-3-pro-preview",
-    enableThinking: false,
-    thinkingBudget: 0,
+    enableThinking: true,
+    thinkingBudget: 8192,
     enableDomainAnalysis: true,
     enableHybridSearch: true,
     enableRelevanceEval: true,
@@ -743,12 +743,19 @@ export async function generate(
   userContent += `## 질문\n${query}`;
 
   // Gemini API 호출 — system instruction + user content
-  const geminiBody = {
+  if (config.enableThinking) {
+    console.log(`[KS] Thinking 활성화: budget=${config.thinkingBudget}, consumer=${request.consumerType}`);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const geminiBody: Record<string, any> = {
     contents: [{ role: "user", parts: [{ text: userContent }] }],
     systemInstruction: { parts: [{ text: systemPrompt }] },
     generationConfig: {
-      temperature,
+      temperature: config.enableThinking ? undefined : temperature,
       maxOutputTokens: 8192,
+      ...(config.enableThinking
+        ? { thinkingConfig: { thinkingBudget: config.thinkingBudget } }
+        : {}),
     },
   };
 
@@ -775,8 +782,18 @@ export async function generate(
 
     const data = await response.json();
 
-    // Gemini 응답 파싱
-    let content: string = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    // Gemini 응답 파싱 (Thinking 모드: thought parts 제외, text만 추출)
+    let content: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const parts: any[] = data.candidates?.[0]?.content?.parts || [];
+    if (config.enableThinking && parts.length > 1) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const textParts = parts.filter((p: any) => !p.thought);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      content = textParts.map((p: any) => p.text || "").join("");
+    } else {
+      content = parts[0]?.text || "";
+    }
 
     // B3: 물결표(~) → 하이픈(-) 치환 (마크다운 strikethrough 방지)
     // 숫자~숫자 패턴만 치환 (예: 30~40% → 30-40%)

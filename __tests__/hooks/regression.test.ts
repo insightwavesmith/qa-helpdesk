@@ -226,3 +226,189 @@ describe('REG-5: TASK 파일 — team 프론트매터 필드 필수', () => {
     ).toEqual([])
   })
 })
+
+// ─────────────────────────────────────────
+// REG-6: 삭제된 파일 참조 없음 검증
+// 사건: notify-openclaw.sh가 삭제됐는데 settings에 남아있어 hook 에러 발생
+// REG-1과 차이: REG-1은 파일 존재 여부, REG-6은 "알려진 삭제 파일이 참조 안 되는지"
+// ─────────────────────────────────────────
+const KNOWN_DELETED_HOOKS = [
+  'notify-openclaw.sh',
+  'notify-hook.sh',
+]
+
+describe('REG-6: settings.local.json — 삭제된 hook 파일 참조 금지', () => {
+  it('알려진 삭제 파일이 hook command에 등록되어 있으면 안 된다', () => {
+    const raw = readFileSync(SETTINGS_LOCAL, 'utf-8')
+    const settings = JSON.parse(raw) as Record<string, unknown>
+    const paths = extractHookFilePaths(settings)
+
+    const referenced: string[] = []
+    for (const p of paths) {
+      const filename = p.split('/').pop() ?? ''
+      if (KNOWN_DELETED_HOOKS.includes(filename)) {
+        referenced.push(`${filename} → ${p}`)
+      }
+    }
+
+    expect(
+      referenced,
+      `삭제된 hook 파일이 아직 settings에 등록됨:\n${referenced.join('\n')}`
+    ).toEqual([])
+  })
+})
+
+// ─────────────────────────────────────────
+// REG-7: TeammateIdle hook 빈 배열 아닌지
+// 사건: settings.local.json에 TeammateIdle hooks를 빈 배열 []로 만들어서 idle hook 무동작
+// ─────────────────────────────────────────
+describe('REG-7: settings.local.json — TeammateIdle hooks 비어있지 않아야 함', () => {
+  it('TeammateIdle 이벤트에 hook 엔트리가 1개 이상이어야 한다', () => {
+    const raw = readFileSync(SETTINGS_LOCAL, 'utf-8')
+    const settings = JSON.parse(raw) as Record<string, unknown>
+    const hooks = settings.hooks as Record<string, unknown[]> | undefined
+
+    expect(hooks, 'hooks 섹션이 없음').toBeDefined()
+    expect(hooks!.TeammateIdle, 'TeammateIdle 이벤트가 없음').toBeDefined()
+
+    const idleHooks = hooks!.TeammateIdle as Array<{ hooks?: unknown[] }>
+    expect(idleHooks.length, 'TeammateIdle 이벤트 배열이 비어있음').toBeGreaterThan(0)
+
+    // 내부 hooks 배열도 비어있지 않은 엔트리가 1개 이상
+    const hasActiveHook = idleHooks.some(
+      entry => Array.isArray(entry.hooks) && entry.hooks.length > 0
+    )
+    expect(hasActiveHook, 'TeammateIdle hooks 배열이 모두 비어있음 — idle hook 무동작').toBe(true)
+  })
+})
+
+// ─────────────────────────────────────────
+// REG-8: permissionMode bypassPermissions 양쪽 일치
+// 사건: permissionMode가 없거나 다른 값이면 팀원이 퍼미션 프롬프트에 막힘
+// ─────────────────────────────────────────
+describe('REG-8: permissionMode — settings.local.json + settings.json 양쪽 일치', () => {
+  it('settings.local.json permissionMode가 bypassPermissions여야 한다', () => {
+    const raw = readFileSync(SETTINGS_LOCAL, 'utf-8')
+    const settings = JSON.parse(raw) as Record<string, unknown>
+    expect(settings.permissionMode).toBe('bypassPermissions')
+  })
+
+  it('settings.json permissionMode가 bypassPermissions여야 한다', () => {
+    const raw = readFileSync(SETTINGS_JSON, 'utf-8')
+    const settings = JSON.parse(raw) as Record<string, unknown>
+    expect(settings.permissionMode).toBe('bypassPermissions')
+  })
+
+  it('양쪽 permissionMode 값이 동일해야 한다', () => {
+    const local = JSON.parse(readFileSync(SETTINGS_LOCAL, 'utf-8')) as Record<string, unknown>
+    const main = JSON.parse(readFileSync(SETTINGS_JSON, 'utf-8')) as Record<string, unknown>
+    expect(
+      local.permissionMode,
+      `settings.local(${local.permissionMode}) ≠ settings.json(${main.permissionMode})`
+    ).toBe(main.permissionMode)
+  })
+})
+
+// ─────────────────────────────────────────
+// REG-9: detect-process-level.sh PDCA 레벨 판단 분기 검증
+// 사건: L0~L3 판단이 잘못되면 Plan/Design 스킵 오류 발생
+// ─────────────────────────────────────────
+const HOOK_DETECT_LEVEL = join(PROJECT_DIR, '.claude/hooks/detect-process-level.sh')
+
+describe('REG-9: detect-process-level.sh — L0~L3 분기 정확성', () => {
+  let env: ReturnType<typeof createTestEnv>
+
+  beforeEach(() => {
+    env = createTestEnv()
+  })
+
+  afterEach(() => {
+    cleanupTestEnv(env.tmpDir)
+  })
+
+  /**
+   * detect-process-level.sh를 source한 후 함수를 호출하는 래퍼 스크립트 생성.
+   * PROJECT_DIR을 패치하고 결과를 echo로 출력.
+   */
+  function runDetectLevel(fnCall: string): string {
+    const content = readFileSync(HOOK_DETECT_LEVEL, 'utf-8')
+    // PROJECT_DIR 패치 (git diff --cached가 필요없는 테스트에서는 빈 결과 반환)
+    const patched = content.replace(
+      /PROJECT_DIR="[^"]*"/,
+      `PROJECT_DIR="${env.tmpDir}"`
+    )
+    const wrapperScript = join(env.hooksDir, 'detect-level-wrapper.sh')
+    writeFileSync(wrapperScript, `#!/bin/bash\n${patched}\n${fnCall}\necho "$PROCESS_LEVEL"`, { mode: 0o755 })
+
+    const result = runHook(wrapperScript)
+    return result.stdout.trim()
+  }
+
+  it('fix: 커밋 → L0', () => {
+    const level = runDetectLevel(`detect_level_from_commit "git commit -m 'fix: 긴급수정'"`)
+    expect(level).toBe('L0')
+  })
+
+  it('hotfix: 커밋 → L0', () => {
+    const level = runDetectLevel(`detect_level_from_commit "git commit -m 'hotfix: 장애대응'"`)
+    expect(level).toBe('L0')
+  })
+
+  it('staged에 src/ 없음 → L1 (git staged 비어있는 환경)', () => {
+    // tmpDir은 git repo가 아니므로 git diff --cached가 빈 결과 → src/ 없음 → L1
+    const level = runDetectLevel(`detect_level_from_commit "git commit -m 'chore: 문서 정리'"`)
+    expect(level).toBe('L1')
+  })
+
+  it('src/app/page.tsx → L2', () => {
+    const level = runDetectLevel(`detect_level_from_file "src/app/page.tsx"`)
+    expect(level).toBe('L2')
+  })
+
+  it('src/lib/supabase/client.ts → L3 (supabase 포함)', () => {
+    const level = runDetectLevel(`detect_level_from_file "src/lib/supabase/client.ts"`)
+    expect(level).toBe('L3')
+  })
+
+  it('src/middleware.ts → L3 (middleware.ts)', () => {
+    const level = runDetectLevel(`detect_level_from_file "src/middleware.ts"`)
+    expect(level).toBe('L3')
+  })
+
+  it('docs/plan.md → L1 (src/ 아님)', () => {
+    const level = runDetectLevel(`detect_level_from_file "docs/plan.md"`)
+    expect(level).toBe('L1')
+  })
+})
+
+// ─────────────────────────────────────────
+// REG-10: settings.json hooks 이벤트 내부 hooks 배열 비어있는지
+// 사건: settings.json 이벤트에 개별 hooks 배열이 채워지면 settings.local.json과 중복 실행
+// REG-3과 차이: REG-3은 "이벤트 배열 자체가 비어있는지", REG-10은 "이벤트 안 객체의 hooks 필드가 비어있는지"
+// ─────────────────────────────────────────
+describe('REG-10: settings.json — 이벤트 내부 hooks 배열 비어있어야 함', () => {
+  it('각 이벤트 객체의 hooks 필드가 전부 비어있어야 한다', () => {
+    const raw = readFileSync(SETTINGS_JSON, 'utf-8')
+    const settings = JSON.parse(raw) as Record<string, unknown>
+
+    if (!settings.hooks) return // hooks 섹션 없으면 통과
+
+    const hooks = settings.hooks as Record<string, unknown[]>
+    const nonEmpty: string[] = []
+
+    for (const [event, entries] of Object.entries(hooks)) {
+      if (!Array.isArray(entries)) continue
+      for (let i = 0; i < entries.length; i++) {
+        const entry = entries[i] as Record<string, unknown> | undefined
+        if (entry && Array.isArray(entry.hooks) && entry.hooks.length > 0) {
+          nonEmpty.push(`${event}[${i}].hooks (${entry.hooks.length}개)`)
+        }
+      }
+    }
+
+    expect(
+      nonEmpty,
+      `settings.json 이벤트 내부 hooks가 비어있지 않음:\n${nonEmpty.join('\n')}\n→ settings.local.json과 중복 실행 위험`
+    ).toEqual([])
+  })
+})
