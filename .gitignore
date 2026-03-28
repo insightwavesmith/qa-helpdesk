@@ -51,3 +51,11 @@ next-env.d.ts
 /extension/dist
 .env*.local
 gcp-service-key.json
+
+# bkit runtime (세션 임시 데이터)
+.bkit/snapshots/
+.bkit/runtime/
+.bkit/audit/
+
+# claude drafts
+.claude/drafts/
