@@ -103,7 +103,7 @@ import json, sys
 try:
     with open('$PDCA_ROOT') as f:
         data = json.load(f)
-    for key, val in data.items():
+    for key, val in data.get('features', {}).items():
         if isinstance(val, dict) and 'design' in val:
             d = val['design']
             if isinstance(d, dict) and d.get('done') == True:
