@@ -24,9 +24,9 @@
       "TaskOutput(*)",
       "SendMessage(*)"
     ],
-    "deny": [],
-    "defaultMode": "bypassPermissions"
+    "deny": []
   },
+  "permissionMode": "bypassPermissions",
   "model": "claude-opus-4-6",
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
