@@ -1,0 +1,16 @@
+{
+  "name": "agent-dashboard",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "bun --watch run server.ts",
+    "start": "bun run server.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "hono": "^4.7"
+  },
+  "devDependencies": {
+    "vitest": "^3.1",
+    "@types/bun": "latest"
+  }
+}

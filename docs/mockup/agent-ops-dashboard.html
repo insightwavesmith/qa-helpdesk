@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>에이전트 미션 컨트롤</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background: #FFFFFF; color: #111827; }
+
+    /* 펄스 애니메이션 (진행중) */
+    @keyframes pulse-ring {
+      0%   { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5); }
+      70%  { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+    .pulse-orange { animation: pulse-ring 1.6s ease-out infinite; }
+
+    @keyframes pulse-green {
+      0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.45); }
+      70%  { box-shadow: 0 0 0 7px rgba(34, 197, 94, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+    .pulse-green { animation: pulse-green 2s ease-out infinite; }
+
+    /* 점선 화살표 */
+    @keyframes dash-flow {
+      from { stroke-dashoffset: 24; }
+      to   { stroke-dashoffset: 0; }
+    }
+    .dash-animate { animation: dash-flow 1s linear infinite; }
+
+    /* 스크롤바 */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #F3F4F6; }
+    ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 4px; }
+
+    .card { background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; }
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; line-height: 1.6; }
+    .badge-opus   { background: #EDE9FE; color: #6D28D9; }
+    .badge-sonnet { background: #DBEAFE; color: #1D4ED8; }
+    .badge-pm     { background: #FFE4E6; color: #BE123C; }
+    .badge-cto    { background: #EDE9FE; color: #6D28D9; }
+  </style>
+</head>
+<body class="min-h-screen p-6" style="background:#F3F4F6;">
+
+<!-- ============================================================
+     헤더
+============================================================ -->
+<header class="flex items-center justify-between mb-5 bg-white px-6 py-3 rounded-lg border border-gray-200 shadow-sm">
+  <div class="flex items-center gap-3">
+    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold" style="background:#F75D5D;">M</div>
+    <h1 class="text-lg font-700 text-gray-900" style="font-weight:700;">에이전트 미션 컨트롤</h1>
+    <span class="text-xs text-gray-400 font-400">localhost:3847</span>
+  </div>
+  <div class="flex items-center gap-4">
+    <div class="flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-green-500 pulse-green"></div>
+      <span class="text-sm text-gray-600 font-500">연결됨</span>
+    </div>
+    <div class="text-xs text-gray-400">마지막 갱신: 19:35:42</div>
+    <button class="text-xs px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 font-500">새로고침</button>
+  </div>
+</header>
+
+<!-- ============================================================
+     패널 1: PDCA 파이프라인 (상단 전폭)
+============================================================ -->
+<section class="bg-white rounded-lg border border-gray-200 shadow-sm p-5 mb-5">
+  <div class="flex items-center gap-2 mb-4">
+    <div class="w-1 h-4 rounded-full" style="background:#F75D5D;"></div>
+    <h2 class="text-sm font-700 text-gray-800" style="font-weight:700;">PDCA 파이프라인</h2>
+    <span class="ml-auto text-xs text-gray-400">활성 피처 6개</span>
+  </div>
+
+  <div class="space-y-3">
+
+    <!-- 피처 행 컴포넌트 -->
+    <!-- agent-ops-dashboard -->
+    <div class="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors">
+      <div class="w-44 text-xs font-600 text-gray-700 truncate" style="font-weight:600;">agent-ops-dashboard</div>
+      <div class="flex items-center gap-1 flex-1">
+        <!-- Plan 완료 -->
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs" style="background:#22C55E;">✓</div>
+          <span class="text-xs text-gray-500">Plan</span>
+        </div>
+        <div class="flex-1 h-px" style="background:#22C55E; max-width:32px;"></div>
+        <!-- Design 완료 -->
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs" style="background:#22C55E;">✓</div>
+          <span class="text-xs text-gray-500">Design</span>
+        </div>
+        <div class="flex-1 h-px bg-gray-200" style="max-width:32px;"></div>
+        <!-- Do 대기 -->
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray-300 bg-white text-gray-300 text-xs">○</div>
+          <span class="text-xs text-gray-400">Do</span>
+        </div>
+        <div class="flex-1 h-px bg-gray-200" style="max-width:32px;"></div>
+        <!-- Check 대기 -->
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray-300 bg-white text-gray-300 text-xs">○</div>
+          <span class="text-xs text-gray-400">Check</span>
+        </div>
+        <div class="flex-1 h-px bg-gray-200" style="max-width:32px;"></div>
+        <!-- Act 대기 -->
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray-300 bg-white text-gray-300 text-xs">○</div>
+          <span class="text-xs text-gray-400">Act</span>
+        </div>
+      </div>
+      <div class="w-20 text-right">
+        <span class="text-xs px-2 py-0.5 rounded-md font-500" style="background:#FEF9C3; color:#713F12;">Plan 완료</span>
+      </div>
+    </div>
+
+    <!-- agent-team-operations -->
+    <div class="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors">
+      <div class="w-44 text-xs font-600 text-gray-700 truncate" style="font-weight:600;">agent-team-operations</div>
+      <div class="flex items-center gap-1 flex-1">
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs" style="background:#22C55E;">✓</div>
+          <span class="text-xs text-gray-500">Plan</span>
+        </div>
+        <div class="flex-1 h-px" style="background:#22C55E; max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs" style="background:#22C55E;">✓</div>
+          <span class="text-xs text-gray-500">Design</span>
+        </div>
+        <div class="flex-1 h-px" style="background:#F59E0B; max-width:32px;"></div>
+        <!-- Do 진행중 -->
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs pulse-orange" style="background:#F59E0B;">↻</div>
+          <span class="text-xs font-500" style="color:#B45309;">Do</span>
+        </div>
+        <div class="flex-1 h-px bg-gray-200" style="max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray-300 bg-white text-gray-300 text-xs">○</div>
+          <span class="text-xs text-gray-400">Check</span>
+        </div>
+        <div class="flex-1 h-px bg-gray-200" style="max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray-300 bg-white text-gray-300 text-xs">○</div>
+          <span class="text-xs text-gray-400">Act</span>
+        </div>
+      </div>
+      <div class="w-20 text-right">
+        <span class="text-xs px-2 py-0.5 rounded-md font-500" style="background:#FEF3C7; color:#92400E;">Do 진행중</span>
+      </div>
+    </div>
+
+    <!-- slack-notification -->
+    <div class="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors">
+      <div class="w-44 text-xs font-600 text-gray-700 truncate" style="font-weight:600;">slack-notification</div>
+      <div class="flex items-center gap-1 flex-1">
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray-300 bg-white text-gray-300 text-xs">○</div>
+          <span class="text-xs text-gray-400">Plan</span>
+        </div>
+        <div class="flex-1 h-px bg-gray-200" style="max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs" style="background:#22C55E;">✓</div>
+          <span class="text-xs text-gray-500">Design</span>
+        </div>
+        <div class="flex-1 h-px" style="background:#22C55E; max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs" style="background:#22C55E;">✓</div>
+          <span class="text-xs text-gray-500">Do</span>
+        </div>
+        <div class="flex-1 h-px bg-gray-200" style="max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray-300 bg-white text-gray-300 text-xs">○</div>
+          <span class="text-xs text-gray-400">Check</span>
+        </div>
+        <div class="flex-1 h-px bg-gray-200" style="max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray-300 bg-white text-gray-300 text-xs">○</div>
+          <span class="text-xs text-gray-400">Act</span>
+        </div>
+      </div>
+      <div class="w-20 text-right">
+        <span class="text-xs px-2 py-0.5 rounded-md font-500" style="background:#DCFCE7; color:#166534;">Do 완료</span>
+      </div>
+    </div>
+
+    <!-- organic-channel-phase2 -->
+    <div class="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors">
+      <div class="w-44 text-xs font-600 text-gray-700 truncate" style="font-weight:600;">organic-channel-phase2</div>
+      <div class="flex items-center gap-1 flex-1">
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs" style="background:#22C55E;">✓</div>
+          <span class="text-xs text-gray-500">Plan</span>
+        </div>
+        <div class="flex-1 h-px" style="background:#22C55E; max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs" style="background:#22C55E;">✓</div>
+          <span class="text-xs text-gray-500">Design</span>
+        </div>
+        <div class="flex-1 h-px" style="background:#F59E0B; max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs pulse-orange" style="background:#F59E0B;">↻</div>
+          <span class="text-xs font-500" style="color:#B45309;">Do</span>
+        </div>
+        <div class="flex-1 h-px bg-gray-200" style="max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray-300 bg-white text-gray-300 text-xs">○</div>
+          <span class="text-xs text-gray-400">Check</span>
+        </div>
+        <div class="flex-1 h-px bg-gray-200" style="max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray-300 bg-white text-gray-300 text-xs">○</div>
+          <span class="text-xs text-gray-400">Act</span>
+        </div>
+      </div>
+      <div class="w-20 text-right">
+        <span class="text-xs px-2 py-0.5 rounded-md font-500" style="background:#FEF3C7; color:#92400E;">Do 진행중</span>
+      </div>
+    </div>
+
+    <!-- lp-analysis-pipeline -->
+    <div class="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors">
+      <div class="w-44 text-xs font-600 text-gray-700 truncate" style="font-weight:600;">lp-analysis-pipeline</div>
+      <div class="flex items-center gap-1 flex-1">
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs" style="background:#22C55E;">✓</div>
+          <span class="text-xs text-gray-500">Plan</span>
+        </div>
+        <div class="flex-1 h-px bg-gray-200" style="max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray-300 bg-white text-gray-300 text-xs">○</div>
+          <span class="text-xs text-gray-400">Design</span>
+        </div>
+        <div class="flex-1 h-px bg-gray-200" style="max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray-300 bg-white text-gray-300 text-xs">○</div>
+          <span class="text-xs text-gray-400">Do</span>
+        </div>
+        <div class="flex-1 h-px bg-gray-200" style="max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray-300 bg-white text-gray-300 text-xs">○</div>
+          <span class="text-xs text-gray-400">Check</span>
+        </div>
+        <div class="flex-1 h-px bg-gray-200" style="max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray-300 bg-white text-gray-300 text-xs">○</div>
+          <span class="text-xs text-gray-400">Act</span>
+        </div>
+      </div>
+      <div class="w-20 text-right">
+        <span class="text-xs px-2 py-0.5 rounded-md font-500" style="background:#F3F4F6; color:#6B7280;">Plan만 완료</span>
+      </div>
+    </div>
+
+    <!-- protractor-ux-prescription -->
+    <div class="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors">
+      <div class="w-44 text-xs font-600 text-gray-700 truncate" style="font-weight:600;">protractor-ux-prescription</div>
+      <div class="flex items-center gap-1 flex-1">
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs" style="background:#22C55E;">✓</div>
+          <span class="text-xs text-gray-500">Plan</span>
+        </div>
+        <div class="flex-1 h-px bg-gray-200" style="max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray-300 bg-white text-gray-300 text-xs">○</div>
+          <span class="text-xs text-gray-400">Design</span>
+        </div>
+        <div class="flex-1 h-px bg-gray-200" style="max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray-300 bg-white text-gray-300 text-xs">○</div>
+          <span class="text-xs text-gray-400">Do</span>
+        </div>
+        <div class="flex-1 h-px bg-gray-200" style="max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray-300 bg-white text-gray-300 text-xs">○</div>
+          <span class="text-xs text-gray-400">Check</span>
+        </div>
+        <div class="flex-1 h-px bg-gray-200" style="max-width:32px;"></div>
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray-300 bg-white text-gray-300 text-xs">○</div>
+          <span class="text-xs text-gray-400">Act</span>
+        </div>
+      </div>
+      <div class="w-20 text-right">
+        <span class="text-xs px-2 py-0.5 rounded-md font-500" style="background:#F3F4F6; color:#6B7280;">Plan만 완료</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================
+     중단 좌우 레이아웃
+============================================================ -->
+<div class="grid gap-5 mb-5" style="grid-template-columns: 1fr 1fr;">
+
+  <!-- 패널 2: 팀 현황 -->
+  <section class="bg-white rounded-lg border border-gray-200 shadow-sm p-5">
+    <div class="flex items-center gap-2 mb-4">
+      <div class="w-1 h-4 rounded-full" style="background:#F75D5D;"></div>
+      <h2 class="text-sm font-700 text-gray-800" style="font-weight:700;">팀 현황</h2>
+      <span class="ml-auto text-xs text-gray-400">총 7명</span>
+    </div>
+
+    <!-- PM팀 -->
+    <div class="mb-4">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="badge badge-pm">PM팀</span>
+        <span class="text-xs text-gray-400">3명</span>
+      </div>
+      <div class="space-y-1.5 pl-1">
+
+        <div class="flex items-center gap-3 py-2 px-3 rounded-md" style="background:#FFF1F2;">
+          <div class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0 pulse-green"></div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-600 text-gray-800" style="font-weight:600;">PM 리더</span>
+              <span class="badge badge-opus">Opus 4.6</span>
+            </div>
+            <div class="text-xs text-gray-500 mt-0.5 truncate">기획 총괄</div>
+          </div>
+          <div class="w-2 h-2 rounded-full bg-green-400 flex-shrink-0"></div>
+        </div>
+
+        <div class="flex items-center gap-3 py-2 px-3 rounded-md hover:bg-gray-50">
+          <div class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0 pulse-green"></div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-600 text-gray-800" style="font-weight:600;">pm-researcher</span>
+              <span class="badge badge-sonnet">Sonnet 4.6</span>
+            </div>
+            <div class="text-xs text-gray-500 mt-0.5 truncate">시장 리서치 진행중</div>
+          </div>
+          <div class="w-2 h-2 rounded-full bg-green-400 flex-shrink-0"></div>
+        </div>
+
+        <div class="flex items-center gap-3 py-2 px-3 rounded-md hover:bg-gray-50">
+          <div class="w-2 h-2 rounded-full flex-shrink-0" style="background:#F59E0B;"></div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-600 text-gray-700" style="font-weight:600;">creative-analyst</span>
+              <span class="badge badge-sonnet">Sonnet 4.6</span>
+            </div>
+            <div class="text-xs mt-0.5" style="color:#B45309;">유휴 상태</div>
+          </div>
+          <div class="w-2 h-2 rounded-full flex-shrink-0" style="background:#F59E0B;"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 구분선 -->
+    <div class="border-t border-gray-100 mb-4"></div>
+
+    <!-- CTO팀 -->
+    <div>
+      <div class="flex items-center gap-2 mb-2">
+        <span class="badge badge-cto">CTO팀</span>
+        <span class="text-xs text-gray-400">4명</span>
+      </div>
+      <div class="space-y-1.5 pl-1">
+
+        <div class="flex items-center gap-3 py-2 px-3 rounded-md" style="background:#F5F3FF;">
+          <div class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0 pulse-green"></div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-600 text-gray-800" style="font-weight:600;">CTO 리더</span>
+              <span class="badge badge-opus">Opus 4.6</span>
+            </div>
+            <div class="text-xs text-gray-500 mt-0.5 truncate">Wave 1 구현 중</div>
+          </div>
+          <div class="w-2 h-2 rounded-full bg-green-400 flex-shrink-0"></div>
+        </div>
+
+        <div class="flex items-center gap-3 py-2 px-3 rounded-md hover:bg-gray-50">
+          <div class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0 pulse-green"></div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-600 text-gray-800" style="font-weight:600;">backend-dev</span>
+              <span class="badge badge-opus">Opus 4.6</span>
+            </div>
+            <div class="text-xs text-gray-500 mt-0.5 truncate">TASK-MCP-DESIGN-FIX</div>
+          </div>
+          <div class="w-2 h-2 rounded-full bg-green-400 flex-shrink-0"></div>
+        </div>
+
+        <div class="flex items-center gap-3 py-2 px-3 rounded-md hover:bg-gray-50">
+          <div class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0 pulse-green"></div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-600 text-gray-800" style="font-weight:600;">frontend-dev</span>
+              <span class="badge badge-opus">Opus 4.6</span>
+            </div>
+            <div class="text-xs text-gray-500 mt-0.5 truncate">TASK-AGENT-TEAM-OPS</div>
+          </div>
+          <div class="w-2 h-2 rounded-full bg-green-400 flex-shrink-0"></div>
+        </div>
+
+        <div class="flex items-center gap-3 py-2 px-3 rounded-md hover:bg-gray-50 opacity-50">
+          <div class="w-2 h-2 rounded-full flex-shrink-0 bg-gray-800"></div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-600 text-gray-500" style="font-weight:600;">qa-engineer</span>
+              <span class="badge badge-sonnet">Sonnet 4.6</span>
+            </div>
+            <div class="text-xs text-gray-400 mt-0.5">종료됨</div>
+          </div>
+          <div class="w-2 h-2 rounded-full bg-gray-800 flex-shrink-0"></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- 패널 3: 메시지 흐름 -->
+  <section class="bg-white rounded-lg border border-gray-200 shadow-sm p-5">
+    <div class="flex items-center gap-2 mb-4">
+      <div class="w-1 h-4 rounded-full" style="background:#F75D5D;"></div>
+      <h2 class="text-sm font-700 text-gray-800" style="font-weight:700;">메시지 흐름</h2>
+    </div>
+
+    <!-- 노드 시각화 -->
+    <div class="relative" style="height:160px;">
+      <svg width="100%" height="160" viewBox="0 0 520 160" xmlns="http://www.w3.org/2000/svg">
+
+        <!-- Smith 노드 -->
+        <rect x="10" y="55" width="90" height="50" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1.5"/>
+        <text x="55" y="76" text-anchor="middle" font-family="Pretendard" font-size="11" font-weight="600" fill="#374151">Smith</text>
+        <text x="55" y="94" text-anchor="middle" font-family="Pretendard" font-size="9.5" fill="#9CA3AF">운영자</text>
+
+        <!-- mozzi 노드 -->
+        <rect x="205" y="55" width="100" height="50" rx="8" fill="#FFF1F2" stroke="#F75D5D" stroke-width="1.5"/>
+        <text x="255" y="76" text-anchor="middle" font-family="Pretendard" font-size="11" font-weight="600" fill="#BE123C">mozzi / COO</text>
+        <text x="255" y="94" text-anchor="middle" font-family="Pretendard" font-size="9.5" fill="#F75D5D">중계 허브</text>
+
+        <!-- PM리더 노드 -->
+        <rect x="405" y="15" width="100" height="48" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1.5"/>
+        <text x="455" y="36" text-anchor="middle" font-family="Pretendard" font-size="10.5" font-weight="600" fill="#374151">PM 리더</text>
+        <text x="455" y="53" text-anchor="middle" font-family="Pretendard" font-size="9.5" fill="#9CA3AF">기획팀 총괄</text>
+
+        <!-- CTO리더 노드 -->
+        <rect x="405" y="98" width="100" height="48" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1.5"/>
+        <text x="455" y="119" text-anchor="middle" font-family="Pretendard" font-size="10.5" font-weight="600" fill="#374151">CTO 리더</text>
+        <text x="455" y="136" text-anchor="middle" font-family="Pretendard" font-size="9.5" fill="#9CA3AF">개발팀 총괄</text>
+
+        <!-- Smith → mozzi (초록 실선, 완료) -->
+        <line x1="102" y1="80" x2="203" y2="80" stroke="#22C55E" stroke-width="2"/>
+        <polygon points="199,76 208,80 199,84" fill="#22C55E"/>
+        <text x="152" y="72" text-anchor="middle" font-family="Pretendard" font-size="9" fill="#22C55E">전달 완료</text>
+
+        <!-- mozzi → PM (초록 실선) -->
+        <line x1="305" y1="72" x2="403" y2="39" stroke="#22C55E" stroke-width="2"/>
+        <polygon points="399,36 408,40 401,46" fill="#22C55E"/>
+
+        <!-- mozzi → CTO (점선 주황, ACK 대기) -->
+        <line x1="305" y1="88" x2="403" y2="122" stroke="#F59E0B" stroke-width="2" stroke-dasharray="5,4" class="dash-animate"/>
+        <polygon points="399,118 408,122 399,128" fill="#F59E0B"/>
+        <text x="362" y="116" text-anchor="middle" font-family="Pretendard" font-size="9" fill="#F59E0B">ACK 대기</text>
+
+      </svg>
+    </div>
+
+    <!-- 통계 요약 -->
+    <div class="grid grid-cols-3 gap-3 mt-2">
+      <div class="rounded-lg p-3 text-center" style="background:#F9FAFB; border:1px solid #E5E7EB;">
+        <div class="text-lg font-700 text-gray-800" style="font-weight:700;">0</div>
+        <div class="text-xs text-gray-500 mt-0.5">미배달</div>
+      </div>
+      <div class="rounded-lg p-3 text-center" style="background:#FEF3C7; border:1px solid #FDE68A;">
+        <div class="text-lg font-700" style="font-weight:700; color:#B45309;">1</div>
+        <div class="text-xs mt-0.5" style="color:#92400E;">ACK 대기</div>
+      </div>
+      <div class="rounded-lg p-3 text-center" style="background:#DCFCE7; border:1px solid #BBF7D0;">
+        <div class="text-lg font-700" style="font-weight:700; color:#166534;">23</div>
+        <div class="text-xs mt-0.5" style="color:#15803D;">오늘 전송</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============================================================
+     하단 좌우 레이아웃
+============================================================ -->
+<div class="grid gap-5" style="grid-template-columns: 1fr 1fr;">
+
+  <!-- 패널 4: TASK 보드 (칸반) -->
+  <section class="bg-white rounded-lg border border-gray-200 shadow-sm p-5">
+    <div class="flex items-center gap-2 mb-4">
+      <div class="w-1 h-4 rounded-full" style="background:#F75D5D;"></div>
+      <h2 class="text-sm font-700 text-gray-800" style="font-weight:700;">TASK 보드</h2>
+      <span class="ml-auto text-xs text-gray-400">총 7개</span>
+    </div>
+
+    <div class="grid grid-cols-3 gap-3">
+
+      <!-- 대기 열 -->
+      <div>
+        <div class="flex items-center gap-1.5 mb-2">
+          <div class="w-2 h-2 rounded-full bg-gray-400"></div>
+          <span class="text-xs font-600 text-gray-600" style="font-weight:600;">대기</span>
+          <span class="text-xs text-gray-400 ml-auto">3</span>
+        </div>
+        <div class="space-y-2">
+
+          <div class="p-3 rounded-lg border" style="background:#F9FAFB; border-color:#E5E7EB;">
+            <div class="text-xs font-600 text-gray-800 mb-1 truncate" style="font-weight:600;">TASK-AGENT-TEAM-OPS</div>
+            <div class="flex items-center gap-1 mb-2">
+              <span class="badge badge-pm">PM</span>
+            </div>
+            <div class="w-full rounded-full h-1.5" style="background:#E5E7EB;">
+              <div class="h-1.5 rounded-full" style="background:#F75D5D; width:60%;"></div>
+            </div>
+            <div class="text-xs text-right mt-0.5" style="color:#F75D5D;">60%</div>
+          </div>
+
+          <div class="p-3 rounded-lg border" style="background:#F9FAFB; border-color:#E5E7EB;">
+            <div class="text-xs font-600 text-gray-800 mb-1 truncate" style="font-weight:600;">TASK-MCP-REVIEW</div>
+            <div class="flex items-center gap-1 mb-2">
+              <span class="badge badge-pm">PM</span>
+            </div>
+            <div class="w-full rounded-full h-1.5" style="background:#E5E7EB;">
+              <div class="h-1.5 rounded-full" style="background:#22C55E; width:100%;"></div>
+            </div>
+            <div class="text-xs text-right mt-0.5 text-green-600">100%</div>
+          </div>
+
+          <div class="p-3 rounded-lg border" style="background:#F9FAFB; border-color:#E5E7EB;">
+            <div class="text-xs font-600 text-gray-800 mb-1 truncate" style="font-weight:600;">TASK-GIT-CLEANUP</div>
+            <div class="flex items-center gap-1 mb-2">
+              <span class="badge badge-cto">CTO</span>
+            </div>
+            <div class="w-full rounded-full h-1.5" style="background:#E5E7EB;">
+              <div class="h-1.5 rounded-full" style="background:#22C55E; width:100%;"></div>
+            </div>
+            <div class="text-xs text-right mt-0.5 text-green-600">100%</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 진행중 열 -->
+      <div>
+        <div class="flex items-center gap-1.5 mb-2">
+          <div class="w-2 h-2 rounded-full" style="background:#F59E0B;"></div>
+          <span class="text-xs font-600" style="font-weight:600; color:#B45309;">진행중</span>
+          <span class="text-xs text-gray-400 ml-auto">2</span>
+        </div>
+        <div class="space-y-2">
+
+          <div class="p-3 rounded-lg border" style="background:#FFFBEB; border-color:#FDE68A;">
+            <div class="text-xs font-600 text-gray-800 mb-1 truncate" style="font-weight:600;">TASK-MCP-DESIGN-FIX</div>
+            <div class="flex items-center gap-1 mb-2">
+              <span class="badge badge-pm">PM</span>
+            </div>
+            <div class="w-full rounded-full h-1.5" style="background:#E5E7EB;">
+              <div class="h-1.5 rounded-full pulse-orange" style="background:#F59E0B; width:80%;"></div>
+            </div>
+            <div class="text-xs text-right mt-0.5" style="color:#B45309;">80%</div>
+          </div>
+
+          <div class="p-3 rounded-lg border" style="background:#FFFBEB; border-color:#FDE68A;">
+            <div class="text-xs font-600 text-gray-800 mb-1 truncate" style="font-weight:600;">TASK-OPS-DASHBOARD</div>
+            <div class="flex items-center gap-1 mb-2">
+              <span class="badge badge-pm">PM</span>
+            </div>
+            <div class="w-full rounded-full h-1.5" style="background:#E5E7EB;">
+              <div class="h-1.5 rounded-full pulse-orange" style="background:#F59E0B; width:30%;"></div>
+            </div>
+            <div class="text-xs text-right mt-0.5" style="color:#B45309;">30%</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 완료 열 -->
+      <div>
+        <div class="flex items-center gap-1.5 mb-2">
+          <div class="w-2 h-2 rounded-full bg-green-500"></div>
+          <span class="text-xs font-600 text-green-700" style="font-weight:600;">완료</span>
+          <span class="text-xs text-gray-400 ml-auto">2</span>
+        </div>
+        <div class="space-y-2">
+
+          <div class="p-3 rounded-lg border opacity-80" style="background:#F0FDF4; border-color:#BBF7D0;">
+            <div class="text-xs font-600 text-gray-700 mb-1 truncate" style="font-weight:600;">TASK-CTO-CLEAN</div>
+            <div class="flex items-center gap-1 mb-2">
+              <span class="badge badge-cto">CTO</span>
+            </div>
+            <div class="w-full rounded-full h-1.5" style="background:#BBF7D0;">
+              <div class="h-1.5 rounded-full bg-green-500 w-full"></div>
+            </div>
+            <div class="text-xs text-right mt-0.5 text-green-600">완료 ✓</div>
+          </div>
+
+          <div class="p-3 rounded-lg border opacity-80" style="background:#F0FDF4; border-color:#BBF7D0;">
+            <div class="text-xs font-600 text-gray-700 mb-1 truncate" style="font-weight:600;">TASK-CTO-RESUME</div>
+            <div class="flex items-center gap-1 mb-2">
+              <span class="badge badge-cto">CTO</span>
+            </div>
+            <div class="w-full rounded-full h-1.5" style="background:#BBF7D0;">
+              <div class="h-1.5 rounded-full bg-green-500 w-full"></div>
+            </div>
+            <div class="text-xs text-right mt-0.5 text-green-600">완료 ✓</div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 패널 5: 통신 로그 -->
+  <section class="bg-white rounded-lg border border-gray-200 shadow-sm p-5">
+    <div class="flex items-center gap-2 mb-4">
+      <div class="w-1 h-4 rounded-full" style="background:#F75D5D;"></div>
+      <h2 class="text-sm font-700 text-gray-800" style="font-weight:700;">통신 로그</h2>
+      <span class="ml-auto text-xs text-gray-400">오늘 23건</span>
+    </div>
+
+    <div class="space-y-1.5 max-h-72 overflow-y-auto">
+
+      <!-- 로그 행 -->
+      <div class="flex items-start gap-3 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors">
+        <span class="text-xs text-gray-400 w-10 flex-shrink-0 mt-0.5">19:35</span>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <span class="text-xs font-500 text-gray-700">PM</span>
+          <span class="text-gray-300 text-xs">→</span>
+          <span class="text-xs font-500 text-gray-700">CTO</span>
+        </div>
+        <span class="badge flex-shrink-0" style="background:#FFE4E6; color:#BE123C;">TASK_HANDOFF</span>
+        <span class="text-xs text-gray-600 flex-1 min-w-0 truncate">"TASK-MCP-DESIGN-FIX 검토 완..."</span>
+        <span class="text-xs text-green-600 flex-shrink-0">✓ 배달</span>
+      </div>
+
+      <div class="flex items-start gap-3 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors">
+        <span class="text-xs text-gray-400 w-10 flex-shrink-0 mt-0.5">19:34</span>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <span class="text-xs font-500 text-gray-700">CTO</span>
+          <span class="text-gray-300 text-xs">→</span>
+          <span class="text-xs font-500 text-gray-700">PM</span>
+        </div>
+        <span class="badge flex-shrink-0" style="background:#DCFCE7; color:#166534;">COMPLETION</span>
+        <span class="text-xs text-gray-600 flex-1 min-w-0 truncate">"Wave 1 hooks 구현 완료"</span>
+        <span class="text-xs text-green-600 flex-shrink-0">✓ ACK</span>
+      </div>
+
+      <div class="flex items-start gap-3 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors">
+        <span class="text-xs text-gray-400 w-10 flex-shrink-0 mt-0.5">19:30</span>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <span class="text-xs font-500 text-gray-700">PM</span>
+          <span class="text-gray-300 text-xs">→</span>
+          <span class="text-xs font-500 text-gray-700">MOZ</span>
+        </div>
+        <span class="badge flex-shrink-0" style="background:#DBEAFE; color:#1D4ED8;">STATUS_UPDATE</span>
+        <span class="text-xs text-gray-600 flex-1 min-w-0 truncate">"Design 확정, CTO팀 Do 진행"</span>
+        <span class="text-xs text-green-600 flex-shrink-0">✓ 배달</span>
+      </div>
+
+      <div class="flex items-start gap-3 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors">
+        <span class="text-xs text-gray-400 w-10 flex-shrink-0 mt-0.5">19:28</span>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <span class="text-xs font-500 text-gray-700">MOZ</span>
+          <span class="text-gray-300 text-xs">→</span>
+          <span class="text-xs font-500 text-gray-700">PM</span>
+        </div>
+        <span class="badge flex-shrink-0" style="background:#F3F4F6; color:#6B7280;">FEEDBACK</span>
+        <span class="text-xs text-gray-600 flex-1 min-w-0 truncate">"T2 webhook wake 방안 B 추천"</span>
+        <span class="text-xs text-green-600 flex-shrink-0">✓ 배달</span>
+      </div>
+
+      <div class="flex items-start gap-3 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors" style="background:#FFFBEB;">
+        <span class="text-xs text-gray-400 w-10 flex-shrink-0 mt-0.5">19:25</span>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <span class="text-xs font-500 text-gray-700">CTO</span>
+          <span class="text-gray-300 text-xs">→</span>
+          <span class="text-xs font-500 text-gray-700">PM</span>
+        </div>
+        <span class="badge flex-shrink-0" style="background:#FEE2E2; color:#991B1B;">URGENT</span>
+        <span class="text-xs text-gray-600 flex-1 min-w-0 truncate">"broker DB 경로 확인 필요"</span>
+        <span class="text-xs flex-shrink-0" style="color:#F59E0B;">⏳ ACK대기</span>
+      </div>
+
+      <div class="flex items-start gap-3 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors">
+        <span class="text-xs text-gray-400 w-10 flex-shrink-0 mt-0.5">19:20</span>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <span class="text-xs font-500 text-gray-700">PM</span>
+          <span class="text-gray-300 text-xs">→</span>
+          <span class="text-xs font-500 text-gray-700">CTO</span>
+        </div>
+        <span class="badge flex-shrink-0" style="background:#FFE4E6; color:#BE123C;">TASK_HANDOFF</span>
+        <span class="text-xs text-gray-600 flex-1 min-w-0 truncate">"agent-team-ops Do 시작"</span>
+        <span class="text-xs text-green-600 flex-shrink-0">✓ ACK</span>
+      </div>
+
+      <div class="flex items-start gap-3 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors">
+        <span class="text-xs text-gray-400 w-10 flex-shrink-0 mt-0.5">19:15</span>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <span class="text-xs font-500 text-gray-700">MOZ</span>
+          <span class="text-gray-300 text-xs">→</span>
+          <span class="text-xs font-500 text-gray-700">CTO</span>
+        </div>
+        <span class="badge flex-shrink-0" style="background:#DCFCE7; color:#166534;">COMPLETION</span>
+        <span class="text-xs text-gray-600 flex-1 min-w-0 truncate">"Wave 0 완료 승인"</span>
+        <span class="text-xs text-green-600 flex-shrink-0">✓ 배달</span>
+      </div>
+
+      <div class="flex items-start gap-3 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors">
+        <span class="text-xs text-gray-400 w-10 flex-shrink-0 mt-0.5">19:10</span>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <span class="text-xs font-500 text-gray-700">CTO</span>
+          <span class="text-gray-300 text-xs">→</span>
+          <span class="text-xs font-500 text-gray-700">MOZ</span>
+        </div>
+        <span class="badge flex-shrink-0" style="background:#DBEAFE; color:#1D4ED8;">STATUS_UPDATE</span>
+        <span class="text-xs text-gray-600 flex-1 min-w-0 truncate">"hook 구현 3개 완료, 테스트 중"</span>
+        <span class="text-xs text-green-600 flex-shrink-0">✓ ACK</span>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+<!-- 하단 여백 -->
+<div class="h-6"></div>
+
+</body>
+</html>

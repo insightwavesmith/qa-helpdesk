@@ -1,0 +1,76 @@
+* { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; }
+body { background: #F3F4F6; color: #111827; }
+
+/* 펄스 애니메이션 (진행중) */
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5); }
+  70%  { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+.pulse-orange { animation: pulse-ring 1.6s ease-out infinite; }
+
+@keyframes pulse-green {
+  0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.45); }
+  70%  { box-shadow: 0 0 0 7px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+.pulse-green { animation: pulse-green 2s ease-out infinite; }
+
+/* 점선 화살표 애니메이션 */
+@keyframes dash-flow {
+  from { stroke-dashoffset: 24; }
+  to   { stroke-dashoffset: 0; }
+}
+.dash-animate { animation: dash-flow 1s linear infinite; }
+
+/* 스크롤바 */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #F3F4F6; }
+::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 4px; }
+
+.card { background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; }
+.badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; line-height: 1.6; }
+.badge-opus   { background: #EDE9FE; color: #6D28D9; }
+.badge-sonnet { background: #DBEAFE; color: #1D4ED8; }
+.badge-pm     { background: #FFE4E6; color: #BE123C; }
+.badge-cto    { background: #EDE9FE; color: #6D28D9; }
+
+/* Broker 경고 배너 */
+.broker-warning {
+  background: #FEF3C7;
+  border: 1px solid #F59E0B;
+  color: #92400E;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.badge-stale {
+  background: #FEF3C7;
+  color: #92400E;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-left: 6px;
+}
+
+/* 모바일 반응형 (768px 이하) */
+@media (max-width: 768px) {
+  body { padding: 12px !important; }
+
+  /* 2열 그리드 → 1열 */
+  .grid[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 헤더 세로 스택 */
+  header { flex-direction: column; gap: 8px; align-items: flex-start !important; }
+  header > div:last-child { width: 100%; justify-content: space-between; }
+
+  /* PDCA 파이프라인 가로 스크롤 */
+  .pdca-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* 카드 패딩 축소 */
+  .card { padding: 12px; }
+}

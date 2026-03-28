@@ -1,0 +1,139 @@
+{
+  "version": "3.0",
+  "lastUpdated": "2026-03-28T11:51:05.518Z",
+  "activeFeatures": [
+    "agent-dashboard",
+    "__tests__",
+    ".claude"
+  ],
+  "primaryFeature": "agent-dashboard",
+  "features": {
+    "agent-dashboard": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-28T11:15:18.179Z",
+        "lastUpdated": "2026-03-28T11:15:18.179Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/tools/agent-dashboard/vitest.config.ts"
+    },
+    "__tests__": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-28T11:15:35.121Z",
+        "lastUpdated": "2026-03-28T11:16:09.664Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/tools/agent-dashboard/__tests__/api-integration.test.ts"
+    },
+    ".claude": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-28T11:26:44.794Z",
+        "lastUpdated": "2026-03-28T11:51:05.518Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/.claude/hooks/force-team-kill.sh"
+    }
+  },
+  "pipeline": {
+    "currentPhase": 1,
+    "level": "Dynamic",
+    "phaseHistory": []
+  },
+  "session": {
+    "startedAt": "2026-03-28T11:14:13.879Z",
+    "onboardingCompleted": false,
+    "lastActivity": "2026-03-28T11:51:05.518Z"
+  },
+  "history": [
+    {
+      "timestamp": "2026-03-28T11:15:18.179Z",
+      "feature": "agent-dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-28T11:15:35.121Z",
+      "feature": "__tests__",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-28T11:15:44.770Z",
+      "feature": "__tests__",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-28T11:15:53.420Z",
+      "feature": "__tests__",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-28T11:16:02.539Z",
+      "feature": "__tests__",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-28T11:16:09.664Z",
+      "feature": "__tests__",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-28T11:26:44.794Z",
+      "feature": ".claude",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-28T11:44:35.547Z",
+      "feature": ".claude",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-28T11:47:05.015Z",
+      "feature": ".claude",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-28T11:51:05.518Z",
+      "feature": ".claude",
+      "phase": "do",
+      "action": "updated"
+    }
+  ],
+  "stateMachine": {
+    "defaultWorkflow": "default",
+    "activeWorkflows": {},
+    "totalTransitions": 0
+  },
+  "automation": {
+    "globalLevel": 2,
+    "trustScore": 40,
+    "pendingApprovals": 0,
+    "lastGateResult": null
+  },
+  "team": {
+    "enabled": true,
+    "stateFile": ".bkit/runtime/agent-state.json",
+    "eventsFile": ".bkit/runtime/agent-events.jsonl"
+  }
+}

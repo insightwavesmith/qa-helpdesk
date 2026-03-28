@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>에이전트 미션 컨트롤</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/styles.css" />
+  <script type="module">
+    import { h, render } from 'https://esm.sh/preact@10.25.4'
+    import { useState, useEffect, useRef } from 'https://esm.sh/preact@10.25.4/hooks'
+    import htm from 'https://esm.sh/htm@3.1.1'
+    const html = htm.bind(h)
+    window.h = h
+    window.html = html
+    window.render = render
+    window.useState = useState
+    window.useEffect = useEffect
+    window.useRef = useRef
+
+    // 컴포넌트 로드 후 앱 시작
+    const loadScript = (src) => new Promise((resolve, reject) => {
+      const s = document.createElement('script')
+      s.src = src
+      s.onload = resolve
+      s.onerror = reject
+      document.body.appendChild(s)
+    })
+
+    async function boot() {
+      await loadScript('/components/pdca-pipeline.js')
+      await loadScript('/components/team-status.js')
+      await loadScript('/components/message-flow.js')
+      await loadScript('/components/task-board.js')
+      await loadScript('/components/comm-log.js')
+      await loadScript('/app.js')
+    }
+
+    boot().catch(err => console.error('부트 실패:', err))
+  </script>
+</head>
+<body class="min-h-screen p-6" style="background:#F3F4F6;">
+  <div id="app">
+    <div class="flex items-center justify-center h-screen">
+      <p class="text-gray-500 text-sm">로딩 중...</p>
+    </div>
+  </div>
+</body>
+</html>

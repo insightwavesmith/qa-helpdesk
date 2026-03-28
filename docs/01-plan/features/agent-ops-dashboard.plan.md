@@ -29,9 +29,10 @@ Smith님은 비개발자로서 에이전트팀(PM, CTO)을 운영한다.
 |------|------------|
 | **PDCA 파이프라인** | 피처별 Plan→Design→Do→Check→Act 진행률 + Match Rate |
 | **팀 현황** | PM팀/CTO팀 멤버 상태 (active/idle/terminated) + 현재 작업 |
-| **메시지 흐름** | Smith→mozzi→팀 메시지 전달 현황 + ACK 상태 |
+| **메시지 흐름** | Smith→mozzi→팀 메시지 전달 현황 + ACK 상태 + broker 생존 상태 |
 | **TASK 보드** | 칸반 (대기/진행중/완료) + 소유팀 + 체크박스 진행률 |
 | **통신 로그** | 크로스팀 메시지 실시간 피드 (최근 50건) |
+| **Broker 상태** | broker 프로세스 alive/dead + 경고 배너 (dead 시 재시작 안내) |
 
 ---
 
@@ -44,6 +45,7 @@ Smith님은 비개발자로서 에이전트팀(PM, CTO)을 운영한다.
 | 팀원 레지스트리 | `.claude/runtime/teammate-registry.json` | 팀원 상태, 모델, 시작/종료 시간 |
 | 팀 컨텍스트 | `.claude/runtime/team-context.json` | 현재 활성 팀 |
 | MCP 브로커 DB | `~/claude-peers-mcp/peers.db` (SQLite) | 메시지 이력, 배달 상태, ACK |
+| MCP 브로커 Health | `http://localhost:7899/health` | 브로커 프로세스 생존 여부 |
 | 감사 로그 | `.bkit/audit/*.jsonl` | PDCA 이벤트, hook 실행 이력 |
 | 세션 이력 | `.bkit/state/session-history.json` | 세션 시작/종료, 팀 식별 |
 
@@ -57,15 +59,16 @@ Smith님은 비개발자로서 에이전트팀(PM, CTO)을 운영한다.
 - 로컬 웹 서버 (Bun + Hono)
 - 실시간 파일 감시 (fs.watch → WebSocket push)
 - 읽기 전용 대시보드 (수정 기능 없음)
-- `localhost:3847` 접속
+- `localhost:3847` 접속 (기본)
+- **Cloudflare Tunnel로 외부 접근** — 폰/다른 PC에서 대시보드 실시간 확인
+- **모바일 반응형** — 폰에서도 주요 패널 정상 표시
+- **Broker health 모니터링** — broker 프로세스 다운 시 경고 배너
 - 라이트 모드, 한국어 UI, Pretendard 폰트
 
 ### Out of Scope
-- 원격 접속 / 배포
 - TASK 생성/수정 기능 (읽기만)
 - 메시지 발송 기능 (모니터링만)
-- 인증 (로컬 전용이므로 불필요)
-- 모바일 반응형 (데스크탑 전용)
+- GCP 배포 (Cloudflare Tunnel로 충분)
 
 ---
 
@@ -96,6 +99,7 @@ Smith님은 비개발자로서 에이전트팀(PM, CTO)을 운영한다.
 
 ### Edge Cases (P0)
 - broker DB 파일 없음 (MCP 미설치) → 메시지 패널 "MCP 미설정" 표시, 나머지 정상
+- **broker 프로세스 다운 (DB는 존재)** → 경고 배너 "broker 중단" + stale 데이터 표시 + 재시작 안내
 - TASK 파일 0개 → 빈 칸반 + "TASK 없음" 표시
 - teammate-registry.json 없음 → 팀 현황 "팀 미생성" 표시
 - `.pdca-status.json` 파싱 실패 → 에러 표시, 크래시 안 함
@@ -104,6 +108,8 @@ Smith님은 비개발자로서 에이전트팀(PM, CTO)을 운영한다.
 - 동시 파일 변경 100건 → debounce로 묶어서 1회 갱신
 - WebSocket 끊김 → 자동 재연결 (3초 간격)
 - 브라우저 탭 비활성 → 재활성 시 전체 새로고침
+- **Cloudflare Tunnel 끊김** → localhost 접근은 정상, 터널 재시작 안내
+- **폰 접속 시 레이아웃** → 패널 세로 스택, 핵심 정보 우선 표시
 
 ### Mock Data
 - `tools/agent-dashboard/__tests__/fixtures/mock-pdca-status.json`
@@ -122,6 +128,7 @@ Smith님은 비개발자로서 에이전트팀(PM, CTO)을 운영한다.
 | Bun 런타임 | 미확인 | **필수** |
 | `.pdca-status.json` | 있음 | **필수** |
 | `.claude/tasks/` | 있음 | **필수** |
+| cloudflared | **설치됨** (`/opt/homebrew/bin/cloudflared`) | **선택** — 없으면 localhost만 |
 
 > 의존성이 없는 항목은 graceful degradation — 해당 패널만 비활성.
 
@@ -152,9 +159,15 @@ tools/agent-dashboard/
 │   ├── registry-reader.ts  ← teammate-registry.json 읽기
 │   └── broker-reader.ts    ← peers.db SQLite 쿼리
 ├── __tests__/
-│   ├── task-parser.test.ts
-│   ├── pdca-reader.test.ts
-│   ├── broker-reader.test.ts
+│   ├── task-parser.test.ts        ← 5건
+│   ├── pdca-reader.test.ts        ← 4건
+│   ├── broker-reader.test.ts      ← 4건
+│   ├── registry-reader.test.ts    ← 3건
+│   ├── file-watcher.test.ts       ← 3건
+│   ├── api-integration.test.ts    ← 4건
+│   ├── ws-integration.test.ts     ← 6건 (WS 실시간 push)
+│   ├── broker-polling.test.ts     ← 6건 (DB 폴링 + health check)
+│   ├── error-recovery.test.ts     ← 3건
 │   └── fixtures/
 ├── package.json
 └── README.md

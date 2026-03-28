@@ -132,6 +132,8 @@ interface DashboardState {
     recent: BrokerMessage[]      // 최근 50건
     undelivered: number          // 미배달 건수
     pendingAck: BrokerMessage[]  // ACK 대기 중
+    brokerStatus: 'alive' | 'dead' | 'not_installed'  // broker /health 체크 결과
+    brokerWarning?: string       // dead일 때 경고 메시지
   }
   lastUpdated: string
 }
@@ -164,6 +166,7 @@ type WsEvent =
   | { type: 'team:updated'; data: { team: string; registry: TeamRegistry } }
   | { type: 'message:new'; data: BrokerMessage }
   | { type: 'message:delivered'; data: { id: number } }
+  | { type: 'broker:status'; data: { status: 'alive' | 'dead' | 'not_installed'; warning?: string } }
   | { type: 'full:refresh'; data: DashboardState }  // 재연결 시
 ```
 
@@ -299,12 +302,15 @@ Props: { messages: BrokerMessage[] }
 | 상황 | 처리 |
 |------|------|
 | broker DB 없음 | 메시지 패널 "MCP 미설치 — 메시지 모니터링 비활성" |
+| broker 프로세스 다운 | DB 존재 + `/health` 실패 → 경고 배너 "⚠ broker 프로세스 중단 — 새 메시지 수신 불가. 재시작: `bun ~/claude-peers-mcp/broker.ts`" + 메시지 패널은 기존 DB 데이터 표시 (stale 뱃지) |
 | registry 없음 | 팀 현황 패널 "팀 미생성" |
 | TASK 파일 0개 | 빈 칸반 + "진행 중인 TASK 없음" |
 | pdca-status.json 파싱 실패 | PDCA 패널 에러 표시 |
 | WebSocket 끊김 | 헤더에 "연결 끊김 🔴" + 3초 자동 재연결 |
 | 파일 watcher 에러 | 10초 후 재시작, 실패 시 폴링 모드 전환 (5초 간격) |
 | 포트 3847 사용중 | 시작 시 에러 메시지 + 대안 포트 제시 |
+| Cloudflare Tunnel 끊김 | localhost 접속은 정상 유지 + 콘솔에 "터널 재연결 중..." 로그 |
+| 외부 접속 시 인증 실패 | 401 + Basic Auth 프롬프트 (TUNNEL_AUTH 설정 시) |
 
 ---
 
@@ -512,16 +518,303 @@ test('broker DB 없으면 messages 필드 null', async () => {
 })
 ```
 
+### 6-6. registry-reader.test.ts (3건)
+
+```typescript
+// RR-1: 정상 파싱
+test('teammate-registry.json 파싱 → TeamRegistry 타입', () => {
+  const registry = readTeamRegistry(MOCK_REGISTRY_PATH)
+  expect(registry!.teamName).toBe('CTO')
+  expect(registry!.members).toHaveLength(3)
+  expect(registry!.members[0]).toHaveProperty('state')
+  expect(registry!.members[0]).toHaveProperty('paneId')
+})
+
+// RR-2: 파일 없음
+test('registry 파일 없음 → null (크래시 아님)', () => {
+  const registry = readTeamRegistry('/nonexistent/registry.json')
+  expect(registry).toBeNull()
+})
+
+// RR-3: 팀원 state 분류 카운트
+test('active/terminated/shutting_down 상태별 카운트 정확', () => {
+  const registry = readTeamRegistry(MOCK_REGISTRY_MIXED_PATH)
+  const states = registry!.members.map(m => m.state)
+  expect(states.filter(s => s === 'active').length).toBe(2)
+  expect(states.filter(s => s === 'terminated').length).toBe(1)
+})
+```
+
+### 6-7. ws-integration.test.ts (6건) — WebSocket 실시간 push
+
+```typescript
+// WS-1: 연결 시 full:refresh 초기 데이터 수신
+test('WebSocket 연결 → full:refresh 이벤트 + DashboardState 구조', async () => {
+  const ws = new WebSocket('ws://localhost:3847/ws')
+  const msg = await waitForMessage(ws)
+  const event = JSON.parse(msg)
+  expect(event.type).toBe('full:refresh')
+  expect(event.data).toHaveProperty('pdca')
+  expect(event.data).toHaveProperty('tasks')
+  expect(event.data).toHaveProperty('teams')
+  expect(event.data).toHaveProperty('messages')
+  ws.close()
+})
+
+// WS-2: pdca-status.json 변경 → pdca:updated push
+test('pdca-status.json 수정 → WS pdca:updated 이벤트', async () => {
+  const ws = new WebSocket('ws://localhost:3847/ws')
+  await waitForMessage(ws) // full:refresh 소비
+
+  // 파일 변경 트리거
+  const pdca = JSON.parse(readFileSync(PDCA_PATH, 'utf-8'))
+  pdca.updatedAt = new Date().toISOString()
+  writeFileSync(PDCA_PATH, JSON.stringify(pdca, null, 2))
+
+  const msg = await waitForMessage(ws, 1000) // debounce 300ms + 여유
+  const event = JSON.parse(msg)
+  expect(event.type).toBe('pdca:updated')
+  expect(event.data).toHaveProperty('features')
+  ws.close()
+})
+
+// WS-3: TASK 파일 변경 → task:updated push
+test('TASK .md 파일 수정 → WS task:updated 이벤트', async () => {
+  const ws = new WebSocket('ws://localhost:3847/ws')
+  await waitForMessage(ws)
+
+  appendFileSync(MOCK_TASK_PATH, '\n- [ ] 추가 항목')
+
+  const msg = await waitForMessage(ws, 1000)
+  const event = JSON.parse(msg)
+  expect(event.type).toBe('task:updated')
+  expect(event.data).toHaveProperty('checkboxes')
+  ws.close()
+})
+
+// WS-4: registry 변경 → team:updated push
+test('teammate-registry.json 수정 → WS team:updated 이벤트', async () => {
+  const ws = new WebSocket('ws://localhost:3847/ws')
+  await waitForMessage(ws)
+
+  const reg = JSON.parse(readFileSync(REGISTRY_PATH, 'utf-8'))
+  reg.members[0].state = 'terminated'
+  writeFileSync(REGISTRY_PATH, JSON.stringify(reg, null, 2))
+
+  const msg = await waitForMessage(ws, 1000)
+  const event = JSON.parse(msg)
+  expect(event.type).toBe('team:updated')
+  ws.close()
+})
+
+// WS-5: debounce — 300ms 내 5회 변경 → WS event 1회
+test('300ms 내 파일 5회 변경 → WS push 1회만', async () => {
+  const ws = new WebSocket('ws://localhost:3847/ws')
+  await waitForMessage(ws)
+
+  const events: string[] = []
+  ws.onmessage = (e) => events.push(e.data)
+
+  for (let i = 0; i < 5; i++) {
+    const pdca = JSON.parse(readFileSync(PDCA_PATH, 'utf-8'))
+    pdca.notes = `change-${i}`
+    writeFileSync(PDCA_PATH, JSON.stringify(pdca, null, 2))
+  }
+
+  await sleep(800) // debounce 300ms + 여유
+  expect(events.length).toBe(1) // 5회 변경 → 1회 push
+  ws.close()
+})
+
+// WS-6: 연결 끊김 → 재연결 → full:refresh
+test('서버 재시작 후 클라이언트 재연결 → full:refresh', async () => {
+  const ws = new WebSocket('ws://localhost:3847/ws')
+  await waitForMessage(ws)
+
+  // 서버 측 연결 강제 종료 시뮬레이션
+  ws.close()
+  const ws2 = new WebSocket('ws://localhost:3847/ws')
+  const msg = await waitForMessage(ws2)
+  const event = JSON.parse(msg)
+  expect(event.type).toBe('full:refresh')
+  ws2.close()
+})
+```
+
+### 6-8. broker-polling.test.ts (4건) — 브로커 DB 폴링 → WS push 연동
+
+```typescript
+// BP-1: 브로커 DB에 새 메시지 → message:new WS event
+test('broker DB INSERT → WS message:new 이벤트', async () => {
+  const ws = new WebSocket('ws://localhost:3847/ws')
+  await waitForMessage(ws) // full:refresh 소비
+
+  // broker DB에 직접 INSERT (테스트용)
+  const db = new Database(BROKER_DB_PATH)
+  db.run(`INSERT INTO messages (from_id, to_id, channel, body, delivered, created_at)
+          VALUES ('PM-LEAD', 'CTO-LEAD', 'bscamp-team/v1',
+          '{"type":"TASK_HANDOFF","payload":{"task":"TASK-TEST"}}', 0, datetime('now'))`)
+  db.close()
+
+  const msg = await waitForMessage(ws, 2000) // 폴링 간격 1초 + 여유
+  const event = JSON.parse(msg)
+  expect(event.type).toBe('message:new')
+  expect(JSON.parse(event.data.body).type).toBe('TASK_HANDOFF')
+  ws.close()
+})
+
+// BP-2: 메시지 delivered 마킹 → message:delivered WS event
+test('broker DB delivered=1 마킹 → WS message:delivered 이벤트', async () => {
+  const ws = new WebSocket('ws://localhost:3847/ws')
+  await waitForMessage(ws)
+
+  const db = new Database(BROKER_DB_PATH)
+  db.run(`INSERT INTO messages (from_id, to_id, channel, body, delivered, created_at)
+          VALUES ('CTO-LEAD', 'PM-LEAD', 'bscamp-team/v1', '{"type":"ACK"}', 0, datetime('now'))`)
+  const { id } = db.prepare('SELECT last_insert_rowid() as id').get() as any
+  await sleep(1500)
+  await waitForMessage(ws, 500) // message:new 소비
+
+  db.run(`UPDATE messages SET delivered=1, delivered_at=datetime('now') WHERE id=?`, id)
+  db.close()
+
+  const msg = await waitForMessage(ws, 2000)
+  const event = JSON.parse(msg)
+  expect(event.type).toBe('message:delivered')
+  expect(event.data.id).toBe(id)
+  ws.close()
+})
+
+// BP-3: 폴링 중 DB 파일 삭제 → graceful 에러
+test('broker DB 삭제 → 메시지 패널 null (크래시 아님)', async () => {
+  const ws = new WebSocket('ws://localhost:3847/ws')
+  await waitForMessage(ws)
+
+  renameSync(BROKER_DB_PATH, BROKER_DB_PATH + '.bak')
+  await sleep(2000) // 폴링 1~2회
+
+  const res = await fetch('http://localhost:3847/api/messages')
+  const data = await res.json()
+  expect(data.recent).toBeNull()
+
+  renameSync(BROKER_DB_PATH + '.bak', BROKER_DB_PATH) // 복원
+  ws.close()
+})
+
+// BP-4: CC↔CC 메시지와 OpenClaw 메시지 구분
+test('from_id 기반 발신자 역할 표시 (PM/CTO/MOZZI)', async () => {
+  const db = new Database(BROKER_DB_PATH)
+  db.run(`INSERT INTO messages (from_id, to_id, channel, body, delivered, created_at)
+          VALUES ('MOZZI-abc', 'PM-LEAD', 'bscamp-team/v1',
+          '{"type":"FEEDBACK","payload":{"text":"검토완료"}}', 1, datetime('now'))`)
+  db.close()
+
+  const res = await fetch('http://localhost:3847/api/messages')
+  const data = await res.json()
+  const mozziMsg = data.recent.find((m: any) => m.from_id.startsWith('MOZZI'))
+  expect(mozziMsg).toBeDefined()
+})
+
+// BP-5: broker alive → 메시지 패널 정상 (brokerStatus: 'alive')
+test('broker /health 응답 정상 → brokerStatus alive + 경고 없음', async () => {
+  // broker가 localhost:7899에서 정상 응답하는 상태
+  const res = await fetch('http://localhost:3847/api/dashboard')
+  const data = await res.json()
+  expect(data.messages.brokerStatus).toBe('alive')
+  expect(data.messages.brokerWarning).toBeUndefined()
+  expect(data.messages.recent).not.toBeNull()
+})
+
+// BP-6: broker dead → 경고 배너 + stale 데이터 표시
+test('broker /health 실패 (프로세스 다운) → brokerStatus dead + 경고 메시지', async () => {
+  // broker 프로세스 종료 시뮬레이션 (DB 파일은 그대로 남아있음)
+  // 대시보드 서버가 localhost:7899/health fetch 실패 → dead 판정
+  const originalBrokerUrl = process.env.BROKER_HEALTH_URL
+  process.env.BROKER_HEALTH_URL = 'http://127.0.0.1:19999/health' // 존재하지 않는 포트
+
+  try {
+    const res = await fetch('http://localhost:3847/api/dashboard')
+    const data = await res.json()
+    expect(data.messages.brokerStatus).toBe('dead')
+    expect(data.messages.brokerWarning).toContain('broker')
+    // DB 데이터는 여전히 읽을 수 있어야 함 (stale)
+    expect(data.messages.recent === null || Array.isArray(data.messages.recent)).toBe(true)
+  } finally {
+    process.env.BROKER_HEALTH_URL = originalBrokerUrl
+  }
+})
+```
+
+### 6-9. error-recovery.test.ts (3건) — 에러 복구 (섹션 4 커버)
+
+```typescript
+// ER-1: file watcher 에러 → 폴링 모드 전환
+test('watcher 에러 발생 → 5초 폴링으로 폴백', async () => {
+  const onFallback = vi.fn()
+  const watcher = createFileWatcher(tmpDir, vi.fn(), {
+    debounce: 300,
+    onFallbackToPolling: onFallback,
+  })
+
+  // watcher 내부 에러 강제 발생 (권한 변경 등)
+  watcher!.emit('error', new Error('EPERM'))
+  await sleep(11000) // 10초 후 재시작 시도
+
+  expect(onFallback).toHaveBeenCalled()
+  watcher!.close()
+})
+
+// ER-2: partial JSON write → 마지막 유효값 유지
+test('pdca-status.json partial write → 이전 값 유지 (깨진 JSON 무시)', async () => {
+  const ws = new WebSocket('ws://localhost:3847/ws')
+  const initial = await waitForMessage(ws)
+  const initialData = JSON.parse(initial)
+
+  // 깨진 JSON 쓰기
+  writeFileSync(PDCA_PATH, '{"features": {')
+  await sleep(500)
+
+  // API가 마지막 유효값 반환하는지 확인
+  const res = await fetch('http://localhost:3847/api/pdca')
+  const data = await res.json()
+  expect(data).not.toBeNull()
+  expect(data.features).toBeDefined()
+
+  ws.close()
+})
+
+// ER-3: 포트 충돌 → 에러 메시지
+test('포트 3847 사용중 → EADDRINUSE 에러 + 대안 포트 메시지', async () => {
+  // 더미 서버로 포트 선점
+  const dummy = Bun.serve({ port: 3847, fetch: () => new Response('occupied') })
+
+  try {
+    const proc = Bun.spawn(['bun', 'tools/agent-dashboard/server.ts'], {
+      stderr: 'pipe',
+    })
+    const stderr = await new Response(proc.stderr).text()
+    expect(stderr).toContain('3847')
+    expect(stderr).toMatch(/대안|alternative|다른 포트/)
+  } finally {
+    dummy.stop()
+  }
+})
+```
+
 ### 커버리지 요약
 
-| 테스트 파일 | 건수 | Wave |
-|------------|:----:|:----:|
-| task-parser.test.ts | 5 | 1 |
-| pdca-reader.test.ts | 4 | 1 |
-| broker-reader.test.ts | 4 | 1 |
-| file-watcher.test.ts | 3 | 1 |
-| api-integration.test.ts | 4 | 2 |
-| **합계** | **20** | |
+| 테스트 파일 | 건수 | Wave | 비고 |
+|------------|:----:|:----:|------|
+| task-parser.test.ts | 5 | 1 | 기존 |
+| pdca-reader.test.ts | 4 | 1 | 기존 |
+| broker-reader.test.ts | 4 | 1 | 기존 |
+| file-watcher.test.ts | 3 | 1 | 기존 |
+| api-integration.test.ts | 4 | 2 | 기존 |
+| registry-reader.test.ts | 3 | 1 | **추가** |
+| ws-integration.test.ts | 6 | 3 | **추가 — 핵심** |
+| broker-polling.test.ts | 6 | 3 | **추가 — 핵심 (BP-5,6 broker health)** |
+| error-recovery.test.ts | 3 | 3 | **추가** |
+| **합계** | **38** | | +18건 |
 
 ---
 
@@ -563,9 +856,167 @@ bun --watch run server.ts
 DASHBOARD_PORT=3847                              # 기본 포트
 BSCAMP_ROOT=/Users/smith/projects/bscamp         # 프로젝트 루트
 BROKER_DB_PATH=~/claude-peers-mcp/peers.db       # MCP 브로커 DB
+BROKER_HEALTH_URL=http://localhost:7899/health    # 브로커 health 엔드포인트
 ```
 
 설정 안 하면 자동 감지 (cwd 기반).
+
+### 8-1. 외부 접근 (Cloudflare Tunnel)
+
+Smith님이 폰/다른 PC에서 대시보드를 실시간으로 보기 위한 구성.
+
+**방안 비교:**
+
+| 방안 | 장점 | 단점 | 우리 환경 |
+|------|------|------|----------|
+| **Cloudflare Tunnel** | 무료, HTTPS 자동, URL 고정 가능, WS 지원, 설치됨 | Cloudflare 계정 필요 | **cloudflared 이미 설치됨** |
+| Tailscale | 같은 네트워크, 속도 빠름 | 미설치, 양쪽 기기 모두 설치 필요 | 미설치 |
+| GCP Cloud Run | 어디서든 접근 | 인프라 추가, 비용, 로컬 파일 접근 불가 | **부적합** — 로컬 파일 의존 |
+| ngrok | 간단 | URL 변동(무료), 유료 필요 | 불필요 — cloudflared 있음 |
+
+**추천: Cloudflare Tunnel (Quick Tunnel)**
+
+이유:
+1. `/opt/homebrew/bin/cloudflared` **이미 설치됨** — 추가 설치 없음
+2. `cloudflared tunnel --url http://localhost:3847` 한 줄로 실행
+3. HTTPS 자동 적용 (폰 브라우저 호환)
+4. WebSocket 네이티브 지원 (wss:// 자동 변환)
+5. Quick Tunnel은 계정 없이도 동작 (임시 URL 발급)
+6. Named Tunnel 설정 시 URL 고정 가능
+
+**Quick Tunnel (즉시 사용):**
+```bash
+# 대시보드 서버 실행
+bun run tools/agent-dashboard/server.ts &
+
+# 터널 시작 — 임시 공개 URL 발급
+cloudflared tunnel --url http://localhost:3847
+# → https://xxxx-xxxx.trycloudflare.com (매번 변경)
+```
+
+**Named Tunnel (URL 고정 — 권장):**
+```bash
+# 1회 설정 (Cloudflare 계정 필요)
+cloudflared tunnel login
+cloudflared tunnel create agent-dashboard
+cloudflared tunnel route dns agent-dashboard dashboard.bscamp.app  # 또는 원하는 서브도메인
+
+# 실행
+cloudflared tunnel run --url http://localhost:3847 agent-dashboard
+# → https://dashboard.bscamp.app (고정)
+```
+
+**보안:**
+- Quick Tunnel: URL 알면 누구나 접근 가능 → URL 공유 주의
+- Named Tunnel: Cloudflare Access로 이메일 인증 추가 가능 (무료 50석)
+- 대시보드 자체에 기본 인증(Basic Auth) 추가 권장:
+
+```typescript
+// server.ts — 기본 인증 미들웨어 (터널 모드일 때만)
+app.use('*', async (c, next) => {
+  if (!process.env.TUNNEL_AUTH) return next()
+  const auth = c.req.header('Authorization')
+  const expected = `Basic ${btoa(process.env.TUNNEL_AUTH)}`
+  if (auth !== expected) {
+    return c.text('Unauthorized', 401, {
+      'WWW-Authenticate': 'Basic realm="Agent Dashboard"',
+    })
+  }
+  return next()
+})
+```
+
+```bash
+# 인증 활성화
+TUNNEL_AUTH=smith:비밀번호 bun run tools/agent-dashboard/server.ts
+```
+
+**WebSocket over Tunnel:**
+- Cloudflare Tunnel은 WS를 네이티브 지원
+- `ws://localhost:3847/ws` → `wss://dashboard.bscamp.app/ws` 자동 변환
+- 클라이언트 app.js에서 프로토콜 자동 감지:
+
+```javascript
+// public/app.js — WS 연결 (localhost + tunnel 자동 대응)
+const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:'
+const ws = new WebSocket(`${wsProto}//${location.host}/ws`)
+```
+
+**모바일 반응형:**
+- 768px 이하: 패널 세로 1열 스택
+- 우선순위: PDCA 파이프라인 > 팀 현황 > TASK 보드 > 메시지 > 로그
+- 통신 로그는 접힌 상태 (토글로 펼치기)
+
+**서버 시작 스크립트 (통합):**
+```bash
+# tools/agent-dashboard/start.sh
+#!/bin/bash
+bun run tools/agent-dashboard/server.ts &
+DASHBOARD_PID=$!
+
+if command -v cloudflared &>/dev/null && [ "${TUNNEL:-}" = "1" ]; then
+  echo "🌐 터널 시작..."
+  cloudflared tunnel --url http://localhost:3847
+fi
+
+wait $DASHBOARD_PID
+```
+
+```bash
+# 로컬만
+bun run tools/agent-dashboard/server.ts
+
+# 터널 포함
+TUNNEL=1 bash tools/agent-dashboard/start.sh
+```
+
+### 8-2. Broker Health 모니터링
+
+대시보드 서버가 broker 생존 여부를 주기적으로 확인.
+
+```typescript
+// lib/broker-health.ts
+const HEALTH_INTERVAL = 10_000  // 10초마다 체크
+const HEALTH_TIMEOUT = 3_000    // 3초 timeout
+
+let brokerStatus: 'alive' | 'dead' | 'not_installed' = 'not_installed'
+
+async function checkBrokerHealth(): Promise<'alive' | 'dead' | 'not_installed'> {
+  const dbExists = existsSync(BROKER_DB_PATH)
+  if (!dbExists) return 'not_installed'
+
+  try {
+    const res = await fetch(BROKER_HEALTH_URL, {
+      signal: AbortSignal.timeout(HEALTH_TIMEOUT),
+    })
+    return res.ok ? 'alive' : 'dead'
+  } catch {
+    return 'dead'  // DB 있지만 프로세스 다운
+  }
+}
+
+// 10초 간격 폴링 + 상태 변경 시 WS push
+setInterval(async () => {
+  const prev = brokerStatus
+  brokerStatus = await checkBrokerHealth()
+  if (prev !== brokerStatus) {
+    broadcastWs({
+      type: 'broker:status',
+      data: {
+        status: brokerStatus,
+        warning: brokerStatus === 'dead'
+          ? '⚠ broker 프로세스 중단 — 새 메시지 수신 불가. 재시작: bun ~/claude-peers-mcp/broker.ts'
+          : undefined,
+      },
+    })
+  }
+}, HEALTH_INTERVAL)
+```
+
+**UI 표시:**
+- alive: 메시지 패널 정상 표시
+- dead: 메시지 패널 상단에 경고 배너 (노란 배경 `#F59E0B`) + 기존 DB 데이터는 "(stale)" 뱃지로 표시
+- not_installed: "MCP 미설치 — 메시지 모니터링 비활성"
 
 ---
 
@@ -574,3 +1025,4 @@ BROKER_DB_PATH=~/claude-peers-mcp/peers.db       # MCP 브로커 DB
 | 일자 | 내용 |
 |------|------|
 | 2026-03-28 | 초안 작성 — Plan + Design 동시 |
+| 2026-03-28 | PM 검토 — TDD 18건 추가 (6-6~6-9), broker health (BP-5,6), 외부 접근 (8-1), broker health 모니터링 (8-2), 모바일 반응형, 데이터 모델 brokerStatus 필드 추가 |
