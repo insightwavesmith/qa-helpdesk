@@ -14,9 +14,11 @@
 | 항목 | 내용 |
 |------|------|
 | **기능** | 에이전트팀 운영 체계 (TASK 소유권 + 팀 상시 유지 + 3단계 종료 자동화) |
-| **작성일** | 2026-03-28 |
-| **파일 수** | 신규 3개 + 수정 3개 + 확인 1개 = 7개 |
+| **작성일** | 2026-03-28 (TDD 추가: 03-28) |
+| **파일 수** | 신규 3개 + 수정 3개 + 확인 1개 + 테스트 4개 = 11개 |
 | **핵심** | Hook이 팀 컨텍스트를 파일로 인지 + 리더 명시적 종료 + 팀 상시 유지 |
+| **팀 구조** | 2팀 — PM(기획+마케팅), CTO(개발). MKT 독립팀 폐지 |
+| **TDD** | 23건 시나리오 (10건 기구현, 13건 Red 작성 필요) |
 
 ### Value Delivered
 
@@ -26,6 +28,54 @@
 | **Solution** | TASK frontmatter 소유권 + teammate-registry 상태 공유 + 3단계 auto-shutdown |
 | **Function UX Effect** | 팀 1회 생성 → 세션 끝까지 유지. 종료는 auto-shutdown 1회 실행 |
 | **Core Value** | 팀 오버헤드 0 + 종료 자동화 + 토큰 낭비 제거 |
+
+---
+
+## 0. 팀 구성 (2팀 체제)
+
+### PM팀 (기획 + 마케팅)
+
+| 역할 | 모델 | 담당 |
+|------|------|------|
+| **PM 리더** | Opus 4.6 | 기획 총괄, Plan/Design 작성, 팀 조율 |
+| pm-researcher | Sonnet 4.6 | 시장 리서치, 경쟁사 분석, 데이터 수집 |
+| pm-strategist | Sonnet 4.6 | 전략 분석, JTBD, Lean Canvas |
+| pm-prd | Sonnet 4.6 | PRD 작성, 요구사항 종합 |
+| creative-analyst | Sonnet 4.6 | 소재 분석, 5축 분석, DeepGaze |
+| lp-analyst | Sonnet 4.6 | LP 크롤링, 구조 분석, 일관성 검증 |
+| marketing-strategist | Sonnet 4.6 | 메타 광고 전략, 벤치마크 해석 |
+
+### CTO팀 (개발)
+
+| 역할 | 모델 | 담당 |
+|------|------|------|
+| **CTO 리더** | Opus 4.6 | 개발 총괄, TASK 분배, 코드 리뷰 조율 |
+| backend-dev | **Opus 4.6** | API, DB, 서버 로직, hooks/scripts |
+| frontend-dev | **Opus 4.6** | UI, 컴포넌트, 페이지 구현 |
+| *(3번째 Opus)* | **Opus 4.6** | *TASK에 따라 유동 배치* |
+| qa-engineer | Sonnet 4.6 | tsc+build 검증, Gap 분석, 테스트 |
+
+> **CTO팀 Opus 3명 고정**: backend-dev, frontend-dev + 1명(TASK에 따라 frontend-architect / infra-architect / security-architect 중 선택).
+> qa-engineer만 Sonnet. 구현 품질이 핵심이므로 코드 작성 역할은 전원 Opus.
+
+### 팀별 spawn 권한
+
+| 팀 | spawn 가능 | spawn 금지 |
+|----|-----------|-----------|
+| **PM** | pm-*, researcher, creative-analyst, lp-analyst, marketing-strategist | backend-dev, frontend-dev, qa-engineer |
+| **CTO** | backend-dev, frontend-dev, qa-engineer, frontend-architect, infra-architect, security-architect | pm-*, creative-analyst, lp-analyst |
+
+### 팀 간 인수인계
+
+```
+PM팀 산출물 → CTO팀 입력
+─────────────────────────
+Plan 문서 (docs/01-plan/)
+Design 문서 (docs/02-design/)
+TASK 파일 (.claude/tasks/)
+```
+
+> PM↔CTO 직접 메시지 불가 (CC 제약). 문서가 유일한 인수인계 수단.
 
 ---
 
@@ -556,7 +606,358 @@ Stage 1의 shutdown_request를 에이전트가 무시해도 Stage 2에서 tmux k
 
 ---
 
-## 6. 구현 순서 체크리스트
+## 6. TDD 테스트 설계 (L2/L3 필수 — 2026-03-28 추가)
+
+> Plan 섹션 6의 23건 시나리오를 테스트 코드 수준으로 설계.
+> 각 테스트는 **describe/it 구조 + fixture + mock + assert** 명시.
+> CTO팀 Do 단계에서 Red(전부 실패) → Green(구현) → Refactor 순서.
+
+### 6-1. 공통 헬퍼 (helpers.ts 확장)
+
+```typescript
+// __tests__/hooks/helpers.ts — 기존 + 추가
+import { execSync } from 'child_process'
+import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'fs'
+import { join } from 'path'
+
+// 기존: createTestEnv, runHook, cleanupTestEnv, prepareHookScript
+
+// 추가: 레지스트리 fixture 로더
+export function loadFixture(name: string): Record<string, unknown> {
+  const path = join(__dirname, 'fixtures', name)
+  return JSON.parse(readFileSync(path, 'utf-8'))
+}
+
+// 추가: 임시 레지스트리 생성
+export function createTempRegistry(data: Record<string, unknown>): string {
+  const dir = mkdtempSync('/tmp/hook-test-')
+  const path = join(dir, 'teammate-registry.json')
+  writeFileSync(path, JSON.stringify(data, null, 2))
+  return path
+}
+
+// 추가: bash 함수 실행 래퍼
+export function runBashFunction(scriptPath: string, funcName: string, args: string[]): string {
+  const cmd = `source "${scriptPath}" && ${funcName} ${args.map(a => `"${a}"`).join(' ')}`
+  return execSync(`bash -c '${cmd}'`, { encoding: 'utf-8', timeout: 10000 }).trim()
+}
+```
+
+### 6-2. auto-shutdown.test.ts (Wave 2 — 미구현, 8건)
+
+```typescript
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { loadFixture, createTempRegistry, runBashFunction } from './helpers'
+
+const SCRIPT = '/Users/smith/projects/bscamp/.claude/hooks/auto-shutdown.sh'
+
+describe('auto-shutdown.sh — 3단계 Graceful Shutdown', () => {
+
+  // UT-1: 정상 종료
+  describe('Stage 1: 정상 종료 (shutdown_approved)', () => {
+    it('2명 모두 shutdown_approved → 레지스트리 terminated, pane 0개', () => {
+      // fixture: teammate_registry_active.json (2명 active)
+      // mock: tmux kill-pane → not called (정상 종료 시)
+      // assert: members.*.state === 'terminated'
+      // assert: members.*.terminatedBy === 'shutdown_approved'
+    })
+  })
+
+  // UT-2 + INC-4 + INC-5: 강제 종료
+  describe('Stage 2: 강제 종료 (shutdown 무시)', () => {
+    it('1명 shutdown 무시 → Stage 2에서 force-kill', () => {
+      // fixture: teammate_registry_shutdown.json (1명 shutdown_pending 유지)
+      // mock: tmux kill-pane -t %XX → exit 0
+      // assert: members[name].terminatedBy === 'force_kill'
+    })
+
+    it('INC-4: shutdown_approved 전송 후 idle 유지 → force-kill', () => {
+      // 사고 재현: doc-writer가 approved 보냈지만 프로세스 미종료
+      // assert: 10초 후 state === 'terminated'
+    })
+
+    it('INC-5: shutdown_pending에서 10초 후 미종료 → force_kill 전이', () => {
+      // assert: shutdownState === 'force_killing' 후 terminated
+    })
+  })
+
+  // E-1: pane 이미 죽음
+  describe('Stage 2: pane already dead', () => {
+    it('E-1: tmux kill-pane 실패(pane 없음) → pane_dead 기록', () => {
+      // mock: tmux kill-pane → exit 1 (pane not found)
+      // assert: members[name].terminatedBy === 'pane_dead'
+    })
+  })
+
+  // E-4: 리더 보호
+  describe('리더 보호', () => {
+    it('E-4: pane_index=0 → kill 절대 안 함', () => {
+      // mock: tmux display-message -p '#{pane_index}' → '0'
+      // assert: tmux kill-pane NOT called
+      // assert: stdout contains '[BLOCK]'
+    })
+  })
+
+  // INC-6: PDCA 갱신
+  describe('Stage 3: Cleanup', () => {
+    it('INC-6: PDCA updatedAt 자동 갱신 후 TeamDelete 가능', () => {
+      // fixture: pdca-status.json (updatedAt 30분 전)
+      // assert: 실행 후 updatedAt이 현재 시각 ±1분
+    })
+
+    it('INC-7: 실행 후 shutdownState === "done"', () => {
+      // assert: registry.shutdownState === 'done'
+    })
+  })
+
+  // E-2: 레지스트리 없음
+  describe('레지스트리 자동 생성', () => {
+    it('E-2: registry 없으면 config.json에서 자동 생성', () => {
+      // setup: registry 파일 삭제
+      // mock: ~/.claude/teams/*/config.json 존재
+      // assert: 실행 후 registry 파일 존재 + members 포함
+    })
+  })
+})
+```
+
+### 6-3. force-team-kill.test.ts (Wave 2 — 미구현, 3건)
+
+```typescript
+import { describe, it, expect } from 'vitest'
+
+const SCRIPT = '/Users/smith/projects/bscamp/.claude/hooks/force-team-kill.sh'
+
+describe('force-team-kill.sh — 강제 종료 + 레지스트리', () => {
+
+  // INC-3: 좀비 프로세스
+  it('INC-3: kill 후 레지스트리에 terminated + force_kill 기록', () => {
+    // fixture: teammate_registry_active.json
+    // mock: tmux kill-pane -t %10 → exit 0
+    // assert: registry.members['backend-dev'].state === 'terminated'
+    // assert: registry.members['backend-dev'].terminatedBy === 'force_kill'
+    // assert: registry.members['backend-dev'].terminatedAt !== null
+  })
+
+  // E-4: 리더 보호
+  it('E-4: pane_index=0 → [BLOCK] 출력, kill 안 함', () => {
+    // mock: tmux display-message → '0'
+    // assert: kill-pane NOT called
+  })
+
+  // E-6: isActive=false인데 pane 살아있음
+  it('E-6: config isActive=false + pane alive → tmux kill-pane 실행', () => {
+    // mock: config.json members[name].isActive === false
+    // mock: tmux has-session → exit 0 (pane 존재)
+    // assert: tmux kill-pane called
+  })
+})
+```
+
+### 6-4. teammate-registry.test.ts (Wave 1 — 미구현, 4건)
+
+```typescript
+import { describe, it, expect } from 'vitest'
+
+describe('teammate-registry.json — 상태 전이', () => {
+
+  // UT-3: 팀 상시 유지
+  it('UT-3: TASK 완료 후 state active 유지 (terminated 안 됨)', () => {
+    // setup: registry active 상태
+    // action: tasksCompleted++ 만 변경
+    // assert: state === 'active' (terminated 아님)
+  })
+
+  it('set_member_state: active → shutdown_pending 전이', () => {
+    // action: set_member_state('backend-dev', 'shutdown_pending')
+    // assert: members['backend-dev'].state === 'shutdown_pending'
+    // assert: updatedAt 갱신됨
+  })
+
+  it('set_member_terminated_by: force_kill 기록', () => {
+    // action: set_member_terminated_by('backend-dev', 'force_kill')
+    // assert: terminatedBy === 'force_kill'
+    // assert: terminatedAt !== null
+  })
+
+  it('build_registry_from_config: config.json → registry 변환', () => {
+    // fixture: team_config_sample.json
+    // assert: members 키가 config.members에서 team-lead 제외한 것과 일치
+    // assert: 각 member의 state === 'active'
+    // assert: shutdownState === 'running'
+  })
+})
+```
+
+### 6-5. auto-team-cleanup.test.ts (Wave 3 — 미구현, 2건)
+
+```typescript
+import { describe, it, expect } from 'vitest'
+
+describe('auto-team-cleanup.sh — 팀 소속 TASK만 스캔', () => {
+
+  // REG-4 방지: 크로스팀 스캔 차단
+  it('team-context CTO → PM TASK 스캔 안 함', () => {
+    // setup: team-context.json { team: 'CTO', taskFiles: ['TASK-CTO.md'] }
+    // setup: TASK-PM.md (미완료 체크박스 있음)
+    // assert: UNCHECKED_COUNT에 PM TASK 미포함
+  })
+
+  // INC-11: 알림만 (auto-shutdown 호출 안 함)
+  it('INC-11: 모든 TASK 완료 → 알림만, auto-shutdown 미호출', () => {
+    // setup: 모든 체크박스 완료
+    // assert: stdout contains '모든 TASK 완료'
+    // assert: auto-shutdown.sh NOT executed
+  })
+})
+```
+
+### 6-6. regression.test.ts 추가분 (기존 확장, 9건)
+
+```typescript
+// 기존 REG-1~10에 추가
+
+// REG-7 반전 (INC-8)
+describe('REG-7 (반전): TeammateIdle은 빈 배열이어야 함 — D-2', () => {
+  it('TeammateIdle이 빈 배열 []이어야 함', () => {
+    // 변경 전: expect(length).toBeGreaterThan(0)
+    // 변경 후:
+    // assert: hooks.TeammateIdle === [] 또는 length === 0
+  })
+})
+
+// INC-2: 팀 역할 경계
+describe('INC-2: PM 세션에서 CTO 팀원 spawn 차단', () => {
+  it('enforce-teamcreate.sh — PM 팀에서 backend-dev spawn 시 차단', () => {
+    // mock: team-context.json { team: 'PM' }
+    // input: Agent { subagent_type: 'backend-dev' }
+    // assert: exit 1 + 에러 메시지
+  })
+})
+
+// INC-9: 리더 코드 작성 차단
+describe('INC-9: validate-delegate — 리더 src/ 수정 차단', () => {
+  it('IS_TEAMMATE=false + file_path=src/ → exit 2', () => {
+    // mock: IS_TEAMMATE=false
+    // input: Edit { file_path: 'src/lib/test.ts' }
+    // assert: exit 2
+  })
+})
+
+// INC-10: 팀원 PDCA hook 통과
+describe('INC-10: 팀원은 모든 PDCA hook 즉시 통과', () => {
+  it('IS_TEAMMATE=true → pdca-update.sh exit 0', () => {
+    // mock: IS_TEAMMATE=true
+    // assert: exit 0 (차단 안 됨)
+  })
+})
+
+// INC-12: PM팀 커밋 경고
+describe('INC-12: PM팀 세션에서 git commit 시 역할 경고', () => {
+  it('team-context PM + git commit → 경고 출력', () => {
+    // mock: team-context.json { team: 'PM' }
+    // input: Bash { command: 'git commit -m "..."' }
+    // assert: stderr contains '역할' or 'CTO'
+  })
+})
+
+// INC-13: TASK 단일 팀 소속
+describe('INC-13: TASK 파일은 하나의 team만', () => {
+  it('team 필드에 슬래시(/) 포함 → 검증 실패', () => {
+    // fixture: task_cross_team.md (team: MKT/CTO)
+    // assert: parseFrontmatterField returns value without '/'
+  })
+})
+
+// INC-14: TeammateIdle 재활성화 차단
+describe('INC-14: TeammateIdle 재활성화 시도 차단', () => {
+  it('settings.local.json TeammateIdle에 hook 추가 시도 감지', () => {
+    // 이 테스트는 REG-7 반전과 동일한 검증
+    // assert: TeammateIdle === []
+  })
+})
+```
+
+### 6-7. Fixture 파일 설계
+
+```
+__tests__/hooks/fixtures/
+├── teammate_registry_active.json     ← 2명 active
+│   {
+│     "team": "CTO", "shutdownState": "running",
+│     "members": {
+│       "backend-dev": { "state": "active", "paneId": "%10" },
+│       "frontend-dev": { "state": "active", "paneId": "%11" }
+│     }
+│   }
+│
+├── teammate_registry_mixed.json      ← 1명 active + 1명 idle
+│   {
+│     "members": {
+│       "backend-dev": { "state": "active", "paneId": "%10" },
+│       "qa-engineer": { "state": "idle", "paneId": "%12" }
+│     }
+│   }
+│
+├── teammate_registry_shutdown.json   ← 1명 shutdown_pending (강제 종료 테스트용)
+│   {
+│     "shutdownState": "force_killing",
+│     "members": {
+│       "backend-dev": { "state": "shutdown_pending", "paneId": "%10" }
+│     }
+│   }
+│
+├── team_config_sample.json           ← CC config.json 구조 (build_registry 테스트)
+│   {
+│     "name": "CTO",
+│     "members": [
+│       { "name": "team-lead", "isActive": true },
+│       { "name": "backend-dev", "isActive": true, "tmuxPaneId": "%10", "model": "opus" },
+│       { "name": "qa-engineer", "isActive": true, "tmuxPaneId": "%12", "model": "sonnet" }
+│     ]
+│   }
+│
+├── task_with_frontmatter.md          ← 정상 TASK (team: CTO)
+│   ---
+│   team: CTO
+│   status: in-progress
+│   created: 2026-03-28
+│   owner: leader
+│   ---
+│   - [ ] W1-1: 작업 A
+│   - [x] W1-2: 작업 B
+│
+├── task_without_frontmatter.md       ← 레거시 TASK (프론트매터 없음)
+│   # TASK 제목
+│   - [ ] 작업 1
+│
+└── task_cross_team.md                ← 잘못된 TASK (팀 중복)
+    ---
+    team: MKT/CTO
+    status: pending
+    ---
+    - [ ] 양쪽 팀에 걸친 작업
+```
+
+### 6-8. 테스트 커버리지 매핑
+
+| Wave | 테스트 파일 | 건수 | 기구현 | Red 작성 |
+|:----:|-----------|:----:|:------:|:--------:|
+| 1 | frontmatter-parser.test.ts | 5 | 5 | 0 |
+| 1 | teammate-idle.test.ts | 7 | 7 | 0 |
+| 1 | teammate-registry.test.ts | 4 | 0 | **4** |
+| 2 | auto-shutdown.test.ts | 8 | 0 | **8** |
+| 2 | force-team-kill.test.ts | 3 | 0 | **3** |
+| 3 | auto-team-cleanup.test.ts | 2 | 0 | **2** |
+| - | regression.test.ts (추가분) | 9 | 3 | **6** |
+| | **합계** | **38** | **15** | **23** |
+
+> **TDD 순서**: Wave별로 Red(테스트 작성) → Green(구현) → Refactor.
+> 미구현 23건을 먼저 전부 Red로 작성한 뒤 구현 시작.
+
+---
+
+## 7. 구현 순서 체크리스트
 
 ### Wave 1: TASK 소유권 (의존성 없음, 병렬 가능)
 
@@ -621,7 +1022,7 @@ Stage 1의 shutdown_request를 에이전트가 무시해도 Stage 2에서 tmux k
 
 ---
 
-## 7. 파일 목록
+## 8. 파일 목록
 
 | 파일 | 상태 | 담당 | 변경 내용 |
 |------|------|------|----------|
@@ -634,10 +1035,16 @@ Stage 1의 shutdown_request를 에이전트가 무시해도 Stage 2에서 tmux k
 | `.claude/runtime/teammate-registry.json` | **신규** (런타임) | auto-shutdown | 팀원 생명주기 |
 | `CLAUDE.md` | 초안 | backend-dev | 팀 상시 유지 + 종료 프로세스 규칙 |
 | `.claude/hooks/teammate-idle.sh` | **변경 없음** | — | 비활성 유지 |
+| `__tests__/hooks/auto-shutdown.test.ts` | **신규** | qa-engineer | 8건 (UT-1,2 + INC-4,5,6,7 + E-1,2) |
+| `__tests__/hooks/force-team-kill.test.ts` | **신규** | qa-engineer | 3건 (INC-3 + E-4,6) |
+| `__tests__/hooks/teammate-registry.test.ts` | **신규** | qa-engineer | 4건 (UT-3 + 상태 전이 3건) |
+| `__tests__/hooks/auto-team-cleanup.test.ts` | **신규** | qa-engineer | 2건 (REG-4 방지 + INC-11) |
+| `__tests__/hooks/regression.test.ts` | 수정 | qa-engineer | +9건 (REG-7반전 + INC-2,9,10,12,13,14) |
+| `__tests__/hooks/fixtures/*.json` | **신규** | qa-engineer | 7개 fixture 파일 |
 
 ---
 
-## 8. 통합 이력
+## 9. 통합 이력
 
 이 설계서는 아래 2개 설계서를 통합한 것이다:
 

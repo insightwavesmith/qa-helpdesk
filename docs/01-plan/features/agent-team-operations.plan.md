@@ -18,6 +18,7 @@
 | **핵심 문제 3가지** | ① Hook이 팀 컨텍스트 모름 → 크로스팀 배정 ② 팀원 종료가 수동 ③ 매 TASK마다 팀 생성/삭제 반복 |
 | **핵심 해결** | TASK 프론트매터 소유권 + 팀 상시 유지 모델 + 3단계 종료 자동화 |
 | **PDCA 레벨** | L1 (src/ 미수정) |
+| **팀 구조** | 2팀 체제 — PM(기획+마케팅 흡수), CTO(개발) |
 
 ### Value Delivered
 
@@ -27,6 +28,35 @@
 | **Solution** | TASK 프론트매터로 소유권 명시 + 팀 상시 유지 + 리더 명령 시만 3단계 자동 종료 |
 | **Function UX Effect** | 팀 한 번 만들면 세션 끝까지 유지. 리더가 SendMessage로 연속 TASK 배정. 종료 시 한 마디면 자동 정리 |
 | **Core Value** | 팀 생성/삭제 오버헤드 제거 + 세션당 5~10분 종료 시간 절약 + 토큰 낭비 0 |
+| **팀 구조** | 2팀 체제 — **PM팀**(기획+마케팅 흡수), **CTO팀**(개발). MKT 독립팀 폐지 |
+
+---
+
+## 0. 팀 구성 (2팀 체제 — 2026-03-28 확정)
+
+### PM팀 (기획 + 마케팅)
+
+| 역할 | 모델 | 담당 |
+|------|------|------|
+| **PM 리더** | Opus 4.6 | 기획 총괄, Plan/Design 작성, 팀 조율 |
+| pm-researcher | Sonnet 4.6 | 시장 리서치, 경쟁사 분석 |
+| pm-strategist | Sonnet 4.6 | 전략 분석, JTBD, Lean Canvas |
+| pm-prd | Sonnet 4.6 | PRD 작성, 요구사항 종합 |
+| creative-analyst | Sonnet 4.6 | 소재 분석, 5축, DeepGaze |
+| lp-analyst | Sonnet 4.6 | LP 분석, 구조/일관성 검증 |
+| marketing-strategist | Sonnet 4.6 | 메타 광고 전략, 벤치마크 |
+
+### CTO팀 (개발)
+
+| 역할 | 모델 | 담당 |
+|------|------|------|
+| **CTO 리더** | Opus 4.6 | 개발 총괄, TASK 분배, 조율 |
+| backend-dev | **Opus 4.6** | API, DB, hooks/scripts |
+| frontend-dev | **Opus 4.6** | UI, 컴포넌트, 페이지 |
+| *(3번째 Opus)* | **Opus 4.6** | TASK별 유동 (architect/infra/security) |
+| qa-engineer | Sonnet 4.6 | 검증, Gap 분석, 테스트 |
+
+> CTO팀 코드 작성 역할 전원 Opus 4.6. qa-engineer만 Sonnet.
 
 ---
 
@@ -76,6 +106,18 @@ CTO팀 팀원 idle → teammate-idle.sh 실행
 | 03-28 | doc-writer shutdown 후 idle 유지 | shutdown_approved 전송했지만 프로세스 미종료 |
 | 03-28 | pm-researcher idle notification 반복 | 완료 보고 후 idle→available 반복 |
 | 03-28 | 기획팀이 개발 작업 시도 | 역할 분리 미흡 (기획팀 세션에서 backend-dev spawn) |
+| 03-28 | PM팀이 git commit/push 실행 | CTO 역할 침범 (PM 세션에서 코드 커밋) |
+
+### 1-5. 팀 구조 변경 (2026-03-28 확정)
+
+MKT팀을 PM팀에 흡수. **2팀 체제**로 운영:
+
+| 팀 | 역할 | spawn 가능 |
+|----|------|-----------|
+| **PM** | 기획 + 마케팅 + 리서치 + 분석 | pm-*, researcher, creative-analyst, lp-analyst, marketing-strategist |
+| **CTO** | 개발 + 구현 + 검증 | backend-dev, frontend-dev, qa-engineer |
+
+**이유**: MKT 독립팀의 업무(광고 분석, LP 분석, 크리에이티브)가 PM 기획 흐름과 밀접. 별도 팀 운영 시 오버헤드만 증가.
 
 ---
 
@@ -278,40 +320,136 @@ Hook이 현재 팀 정보를 참조하기 위한 런타임 파일:
 
 ---
 
-## 6. 테스트 시나리오
+## 6. 테스트 시나리오 (TDD — 전체 사고 이력 기반)
 
-### Happy Path
+> 03-25~03-28 에이전트팀 자동화 과정에서 겪은 **모든 사고**를 테스트로 문서화.
+> Wave 구현 시 **Red(실패) → Green(통과) → Refactor** 순서로 진행.
 
-| ID | 시나리오 | 기대 결과 |
-|----|----------|-----------|
-| UT-1 | auto-shutdown 정상 종료 (2명, 모두 shutdown_approved) | 레지스트리 2명 terminated, pane 0개 |
-| UT-2 | auto-shutdown 강제 종료 (1명 shutdown 무시) | Stage 2에서 force-kill, 레지스트리 force_kill |
-| UT-3 | 팀 상시 유지: TASK 완료 → 다음 TASK SendMessage | 팀 유지, 팀원 active 상태 지속 |
-| UT-4 | 세션 종료: auto-shutdown → TeamDelete | 전원 terminated, 팀 디렉토리 삭제 |
+### 6-1. Happy Path (정상 동작)
 
-### Edge Cases
+| ID | 시나리오 | 기대 결과 | 파일 |
+|----|----------|-----------|------|
+| UT-1 | auto-shutdown 정상 종료 (2명, 모두 shutdown_approved) | 레지스트리 2명 terminated, pane 0개 | auto-shutdown.test.ts |
+| UT-2 | auto-shutdown 강제 종료 (1명 shutdown 무시) | Stage 2에서 force-kill, 레지스트리 force_kill | auto-shutdown.test.ts |
+| UT-3 | 팀 상시 유지: TASK 완료 → 다음 TASK SendMessage | 팀 유지, 팀원 active 상태 지속 | teammate-registry.test.ts |
+| UT-4 | 세션 종료: auto-shutdown → TeamDelete | 전원 terminated, 팀 디렉토리 삭제 | auto-shutdown.test.ts |
+| UT-5 | 프론트매터 team: CTO인 TASK만 CTO팀에서 스캔 | 타 팀 TASK 무시 | frontmatter-parser.test.ts |
+| UT-6 | team-context.json 로드 → TEAM_NAME, TASK_FILES 변수 설정 | 정상 파싱 | frontmatter-parser.test.ts |
+| UT-7 | 프론트매터 내부 `- [ ]`는 체크박스로 오인 안 함 | scan_unchecked에서 제외 | frontmatter-parser.test.ts |
+
+### 6-2. 실제 사고 기반 회귀 테스트 (Regression)
+
+> **모든 항목은 실제 발생한 사고.** 날짜, 원인, 재발 방지 테스트를 명시.
+
+#### A. idle 루프 / 크로스팀 배정 사고
+
+| ID | 사고 (날짜) | 원인 | 테스트 | 파일 |
+|----|------------|------|--------|------|
+| REG-4 | pm-test-scenario idle 루프 30분 (03-25) | TeammateIdle hook이 팀 구분 없이 전체 TASK 스캔 → 크로스팀 배정 → 권한 없음 → 실패 → 재배정 무한루프 | CTO팀 팀원이 PM TASK를 배정받지 않아야 함 | regression.test.ts |
+| REG-5 | TASK 프론트매터 team 필드 누락 (03-25) | team 필드 없으면 소유권 필터링 불가 → 모든 팀에 노출 | 모든 TASK-*.md에 team 필드 존재해야 함 | regression.test.ts |
+| INC-1 | pm-researcher idle→available 무한반복 (03-28) | 완료 보고 후에도 idle notification 재발 → 다시 available → 같은 TASK 재배정 | 완료 보고된 TASK는 재배정 안 됨. status: completed인 TASK scan 제외 | teammate-idle.test.ts |
+| INC-2 | 기획팀에서 backend-dev spawn 시도 (03-28) | 팀 역할 경계 미강제. PM 세션에서 CTO 팀원 생성 가능 | 팀 정의에 없는 역할 spawn 시 차단 (enforce-teamcreate.sh) | regression.test.ts |
+
+#### B. 종료 실패 사고
+
+| ID | 사고 (날짜) | 원인 | 테스트 | 파일 |
+|----|------------|------|--------|------|
+| INC-3 | backend-dev 좀비 프로세스 (03-26) | TeamDelete 후 tmux pane 잔존. kill-pane 미실행 | TeamDelete 후 tmux list-panes에 해당 pane 없어야 함 | force-team-kill.test.ts |
+| INC-4 | doc-writer shutdown_approved 후 idle 유지 (03-28) | shutdown_approved 전송했지만 프로세스 미종료. CC가 강제 종료 미지원 | Stage 1(10초) 후 미종료 → Stage 2 force-kill 자동 실행 | auto-shutdown.test.ts |
+| INC-5 | shutdown_request 무시 반복 (03-25~28, 다수) | 팀원이 shutdown_request를 무시하고 idle 루프 재진입 | shutdown_pending 상태에서 10초 후 → force_kill로 전이 | auto-shutdown.test.ts |
+| INC-6 | TeamDelete PDCA hook 차단 (03-28) | docs/.pdca-status.json 미갱신 상태에서 TeamDelete → validate-pdca hook이 차단 | auto-shutdown Stage 3에서 PDCA updatedAt 자동 갱신 후 TeamDelete | auto-shutdown.test.ts |
+| INC-7 | 좀비 팀 디렉토리 누적 (03-26~28) | ~/.claude/teams/ 에 정리 안 된 폴더 남음 | TeamDelete 후 해당 팀 디렉토리 없어야 함 | auto-shutdown.test.ts |
+
+#### C. Hook 설정 사고
+
+| ID | 사고 (날짜) | 원인 | 테스트 | 파일 |
+|----|------------|------|--------|------|
+| REG-1 | settings에 등록된 hook 파일 미존재 (03-25) | notify-openclaw.sh 삭제했지만 settings에 경로 남음 → hook 실행 시 에러 | settings의 모든 bash 경로가 실제 파일로 존재 | regression.test.ts |
+| REG-2 | permissionMode 위치 오류 (03-25) | permissionMode가 hooks 내부에 중첩 → bypassPermissions 무효 → 팀원 퍼미션 프롬프트 차단 | permissionMode가 settings.local.json 최상위에 위치 | regression.test.ts |
+| REG-3 | settings.json/local.json hook 중복 실행 (03-26) | 양쪽에 같은 hook 등록 → 2회 실행 | settings.json hooks 섹션 비어있어야 함 | regression.test.ts |
+| REG-6 | 삭제된 파일 참조 잔존 (03-26) | notify-openclaw.sh, notify-hook.sh 삭제 후 settings에 참조 남음 | 삭제된 파일명이 settings에 없어야 함 | regression.test.ts |
+| REG-7→INC-8 | TeammateIdle 빈 배열 ↔ 비활성 충돌 (03-25~28) | 초기: 실수로 비워서 idle hook 무동작 → 이후: **의도적으로 비움** (D-2 결정). 테스트 방향 반전 필요 | **변경**: TeammateIdle이 빈 배열 `[]`이어야 함 (기존 REG-7 반전) | regression.test.ts |
+| REG-8 | permissionMode 양쪽 불일치 (03-26) | settings.json과 settings.local.json 값 다름 → 팀원 동작 불일치 | 양쪽 모두 bypassPermissions | regression.test.ts |
+| REG-10 | settings.json 내부 hooks 배열 비어있지 않음 (03-27) | 이벤트 객체 안 hooks[] 채워지면 settings.local.json과 중복 실행 | settings.json 이벤트 내부 hooks[] 비어있어야 함 | regression.test.ts |
+
+#### D. PDCA 프로세스 사고
+
+| ID | 사고 (날짜) | 원인 | 테스트 | 파일 |
+|----|------------|------|--------|------|
+| REG-9 | detect-process-level L0~L3 판단 오류 (03-27) | L0~L3 분기 조건 잘못되면 Plan/Design 스킵 또는 과도한 요구 | fix: → L0, src/ 없음 → L1, src/ 수정 → L2, migration/auth → L3 | regression.test.ts |
+| INC-9 | 리더가 직접 코드 작성 (03-25~26, 다수) | validate-delegate.sh 없었음 → 리더가 src/ 직접 수정 | 리더(IS_TEAMMATE=false)가 src/ Write/Edit 시 차단 | regression.test.ts |
+| INC-10 | 팀원이 PDCA hook 차단당함 (03-26) | pdca-update.sh가 팀원에게도 실행 → PDCA 갱신 권한 없어 차단 | IS_TEAMMATE=true이면 모든 PDCA hook 즉시 exit 0 통과 | regression.test.ts |
+| INC-11 | 토큰 낭비: idle 상태 방치 (03-25~28, 상시) | 팀원 완료 후 TeamDelete 안 하고 idle 방치 → 500토큰/분 소모 | auto-team-cleanup 알림 후 10분 내 리더 액션 없으면 경고 | auto-team-cleanup.test.ts |
+
+#### E. 팀 구조 / 역할 사고
+
+| ID | 사고 (날짜) | 원인 | 테스트 | 파일 |
+|----|------------|------|--------|------|
+| INC-12 | PM팀이 커밋+push 실행 (03-28) | PM팀 세션에서 git commit/push → CTO 역할 침범 | PM팀 세션에서 git commit 시도 시 역할 경고 | regression.test.ts |
+| INC-13 | TASK 파일에 팀 접두사 불일치 (03-26) | TASK-ORGANIC-PHASE2.md가 MKT/CTO 양쪽 소속 → 소유권 모호 | 하나의 TASK 파일은 하나의 team만 가져야 함 | frontmatter-parser.test.ts |
+| INC-14 | 비활성 기능 재활성화 제안 (03-28) | TeammateIdle을 "개선해서 다시 켜자" 제안 → D-2 위반 | TeammateIdle 재활성화 시도 시 차단 (설정 변경 감지) | regression.test.ts |
+
+### 6-3. Edge Cases (미발생이지만 위험)
 
 | ID | 시나리오 | 기대 동작 | 우선순위 |
 |----|----------|-----------|----------|
-| E-1 | 팀원 pane이 이미 죽은 상태 | force-kill skip, 레지스트리 pane_dead | P0 |
-| E-2 | teammate-registry.json 없는 상태 | 자동 생성 후 진행 | P0 |
-| E-3 | TeamDelete가 PDCA hook에 차단 | auto-shutdown이 PDCA 먼저 갱신 후 재시도 | P0 |
-| E-4 | 리더 pane도 실수로 kill | 리더(pane_index=0) 보호 로직 | P0 |
-| E-5 | 동시 2팀 종료 시도 | 각 팀 레지스트리 독립 (충돌 없음) | P1 |
+| E-1 | 팀원 pane이 이미 죽은 상태에서 force-kill 시도 | tmux kill-pane skip, 레지스트리 pane_dead로 기록 | P0 |
+| E-2 | teammate-registry.json 파일 손상 (invalid JSON) | 파일 삭제 → config.json에서 재생성 | P0 |
+| E-3 | team-context.json 없는 상태에서 hook 실행 | 프론트매터 직접 파싱으로 폴백 | P0 |
+| E-4 | 리더 pane(index=0)을 force-team-kill이 kill 시도 | 절대 kill 안 함 (skip + 경고) | P0 |
+| E-5 | 동시 2팀 종료 시도 | 각 팀 레지스트리 독립, 충돌 없음 | P1 |
+| E-6 | config.json isActive=false인데 pane은 살아있음 | tmux kill-pane으로 실제 종료 강제 | P0 |
+| E-7 | jq 미설치 환경 | grep/sed 폴백으로 레지스트리 파싱 | P1 |
+| E-8 | 프론트매터 없는 레거시 TASK 파일 | team: "" 간주, 모든 팀에서 접근 가능 (하위 호환) | P1 |
 
-### 테스트 파일 경로
+### 6-4. 테스트 파일 경로
 
 ```
 __tests__/hooks/
-├── auto-shutdown.test.ts
-├── force-team-kill.test.ts
-├── teammate-registry.test.ts
-├── frontmatter-parser.test.ts    (기구현, 5 테스트 통과)
+├── regression.test.ts              (기구현, REG-1~10 + INC-* 추가 필요)
+├── frontmatter-parser.test.ts      (기구현, 5 테스트 통과)
+├── teammate-idle.test.ts           (기구현, 7 테스트 통과)
+├── auto-shutdown.test.ts           (미구현 — Wave 2 TDD Red 단계)
+├── force-team-kill.test.ts         (미구현 — Wave 2 TDD Red 단계)
+├── teammate-registry.test.ts       (미구현 — Wave 1 TDD Red 단계)
+├── auto-team-cleanup.test.ts       (미구현 — Wave 3 TDD Red 단계)
 └── fixtures/
     ├── teammate_registry_active.json
     ├── teammate_registry_mixed.json
-    └── team_config_sample.json
+    ├── teammate_registry_shutdown.json
+    ├── team_config_sample.json
+    ├── task_with_frontmatter.md
+    ├── task_without_frontmatter.md
+    └── task_cross_team.md
 ```
+
+### 6-5. REG-7 반전 필수 (Breaking Change)
+
+**기존 REG-7**: "TeammateIdle hooks가 비어있지 않아야 함" (빈 배열 방지)
+**변경 REG-7**: "TeammateIdle이 빈 배열 `[]`이어야 함" (D-2 결정 반영)
+
+```typescript
+// 변경 전 (현재 코드):
+expect(idleHooks.length).toBeGreaterThan(0)
+
+// 변경 후:
+expect(idleHooks.length, 'TeammateIdle은 빈 배열이어야 함 — D-2 결정').toBe(0)
+```
+
+**이유**: 03-25 사고로 TeammateIdle을 영구 비활성화(D-2). REG-7은 원래 "실수로 비웠을 때"를 방지했지만, 지금은 "의도적 비활성"이 올바른 상태.
+
+### 6-6. 사고 통계 요약
+
+| 카테고리 | 건수 | 테스트 커버 | 미커버 |
+|----------|:----:|:-----------:|:------:|
+| idle 루프 / 크로스팀 | 4건 | REG-4, REG-5 통과 | INC-1, INC-2 미구현 |
+| 종료 실패 | 5건 | 0건 | INC-3~7 전부 미구현 |
+| Hook 설정 | 7건 | REG-1,2,3,6,7,8,10 통과 | REG-7 반전 필요 |
+| PDCA 프로세스 | 4건 | REG-9 통과 | INC-9,10,11 미구현 |
+| 팀 구조 / 역할 | 3건 | 0건 | INC-12,13,14 미구현 |
+| **합계** | **23건** | **10건 통과** | **13건 미구현** |
+
+> CTO팀 구현 시 미구현 13건을 Red 단계로 먼저 작성해야 함.
 
 ---
 

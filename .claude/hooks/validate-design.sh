@@ -84,6 +84,15 @@ except:
             echo "빈 껍데기 Design은 허용되지 않습니다. 내용을 채워주세요." >&2
             exit 2
         fi
+
+        # 2-1. L2/L3: TDD 테스트 설계 섹션 필수 (2026-03-28 추가)
+        if ! grep -q '## .*TDD\|## .*테스트 설계\|## .*Test Design' "$LATEST_DESIGN"; then
+            echo "❌ [PDCA 강제] Design 문서에 TDD 테스트 설계 섹션이 없습니다." >&2
+            echo "파일: $(basename "$LATEST_DESIGN")" >&2
+            echo "L2/L3 Design에는 '## 6. TDD 테스트 설계' 섹션이 필수입니다." >&2
+            echo "테스트 파일 경로, describe/it 구조, mock 데이터, assert 패턴을 포함하세요." >&2
+            exit 2
+        fi
     fi
 
     # 3. .pdca-status.json에서 design.done 확인 (있으면)

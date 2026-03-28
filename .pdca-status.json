@@ -940,7 +940,8 @@
     "updatedAt": "2026-03-28",
     "notes": "Stage 0 도메인 분석 Anthropic Sonnet → Gemini Flash 마이그레이션. API 비용 Gemini 단일로 통일."
   },
-  "updatedAt": "2026-03-28T07:37:54",
+  "updatedAt": "2026-03-28T17:55:21.707376",
   "_lastUpdated": "2026-03-28T07:37:54",
-  "_autoSyncNote": "vector-serialization-fix + domain-gemini-migration completed"
+  "_autoSyncNote": "vector-serialization-fix + domain-gemini-migration completed",
+  "notes": ""
 }
