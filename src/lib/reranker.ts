@@ -4,7 +4,7 @@
 import { generateFlashText } from "@/lib/gemini";
 import type { ChunkResult } from "@/lib/knowledge";
 
-const RERANK_TIMEOUT_MS = 15000;
+const RERANK_TIMEOUT_MS = 60000;
 
 const RERANK_PROMPT_TEMPLATE = `당신은 검색 결과의 관련성을 평가하는 전문가입니다.
 
