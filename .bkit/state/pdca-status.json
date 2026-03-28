@@ -1,4 +1,14 @@
 {
+  "version": "3.0",
+  "lastUpdated": "2026-03-28T13:39:33.530Z",
+  "activeFeatures": [
+    "slack-notification",
+    "organic-channel-distribution-phase2",
+    "lp-analysis-pipeline",
+    "protractor-ux-prescription",
+    "video-permission-skip"
+  ],
+  "primaryFeature": null,
   "features": {
     "slack-notification": {
       "phase": "implementing",
@@ -32,7 +42,30 @@
         "deployedAt": null
       },
       "notes": "통합 채널 + 재시도 + rate limit 큐 구현 완료, 체크 미진행",
-      "updatedAt": "2026-03-25"
+      "updatedAt": "2026-03-25",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-28T13:39:33.529Z",
+        "lastUpdated": "2026-03-25"
+      },
+      "stateMachine": {
+        "currentState": "implementing",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "organic-channel-distribution-phase2": {
       "phase": "implementing",
@@ -66,7 +99,30 @@
         "deployedAt": null
       },
       "notes": "Phase 2: AI 변환 엔진 + 5채널 배포. Wave 1(DB+타입) 시작",
-      "updatedAt": "2026-03-25"
+      "updatedAt": "2026-03-25",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-28T13:39:33.529Z",
+        "lastUpdated": "2026-03-25"
+      },
+      "stateMachine": {
+        "currentState": "implementing",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "lp-analysis-pipeline": {
       "phase": "plan",
@@ -99,7 +155,30 @@
         "commit": null
       },
       "updatedAt": "2026-03-25T21:38:47",
-      "notes": "Plan 완료"
+      "notes": "Plan 완료",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-28T13:39:33.529Z",
+        "lastUpdated": "2026-03-25T21:38:47"
+      },
+      "stateMachine": {
+        "currentState": "plan",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "protractor-ux-prescription": {
       "phase": "plan",
@@ -132,7 +211,30 @@
         "commit": null
       },
       "updatedAt": "2026-03-26",
-      "notes": "Plan+목업 완료. 처방 통합 UX 리디자인."
+      "notes": "Plan+목업 완료. 처방 통합 UX 리디자인.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-28T13:39:33.529Z",
+        "lastUpdated": "2026-03-26"
+      },
+      "stateMachine": {
+        "currentState": "plan",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "agent-ops-dashboard": {
       "phase": "completed",
@@ -165,7 +267,30 @@
         "commit": null
       },
       "updatedAt": "2026-03-28T20:30:00",
-      "notes": "W1~W3 구현 완료. 서버+UI+TDD 20건+Gap 분석 95%. Bun+Hono+Preact localhost:3847."
+      "notes": "W1~W3 구현 완료. 서버+UI+TDD 20건+Gap 분석 95%. Bun+Hono+Preact localhost:3847.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-28T13:39:33.529Z",
+        "lastUpdated": "2026-03-28T20:30:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "video-permission-skip": {
       "phase": "implementing",
@@ -198,7 +323,30 @@
         "commit": null
       },
       "updatedAt": "2026-03-28T20:40:00",
-      "notes": "L1 fix: 권한 없는 계정 비디오 스킵"
+      "notes": "L1 fix: 권한 없는 계정 비디오 스킵",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-28T13:39:33.529Z",
+        "lastUpdated": "2026-03-28T20:40:00"
+      },
+      "stateMachine": {
+        "currentState": "implementing",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "agent-team-operations": {
       "phase": "completed",
@@ -231,10 +379,57 @@
         "commit": null
       },
       "updatedAt": "2026-03-28T22:10:00",
-      "notes": "Wave 0~4 완료. TDD 66/67 통과(1건 설계의도Red). peers 테스트 DB격리+API수정→12/12. force-team-kill %0 방어→E-4 Green. Match Rate 97%."
+      "notes": "Wave 0~4 완료. TDD 66/67 통과(1건 설계의도Red). peers 테스트 DB격리+API수정→12/12. force-team-kill %0 방어→E-4 Green. Match Rate 97%.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-28T13:39:33.529Z",
+        "lastUpdated": "2026-03-28T22:10:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     }
   },
-  "updatedAt": "2026-03-28T20:49:56.710199",
-  "notes": "활성 7건. video-permission-skip L1 fix 추가.",
-  "_autoSyncNote": "auto-synced at 2026-03-28 20:49:56, last commit: 82c1624"
+  "pipeline": {
+    "currentPhase": 1,
+    "level": "Dynamic",
+    "phaseHistory": []
+  },
+  "session": {
+    "startedAt": "2026-03-28T13:39:33.530Z",
+    "onboardingCompleted": false,
+    "lastActivity": "2026-03-28T13:39:33.530Z"
+  },
+  "history": [],
+  "stateMachine": {
+    "defaultWorkflow": "default",
+    "activeWorkflows": {},
+    "totalTransitions": 0
+  },
+  "automation": {
+    "globalLevel": 2,
+    "trustScore": 40,
+    "pendingApprovals": 0,
+    "lastGateResult": null
+  },
+  "team": {
+    "enabled": true,
+    "stateFile": ".bkit/runtime/agent-state.json",
+    "eventsFile": ".bkit/runtime/agent-events.jsonl"
+  }
 }

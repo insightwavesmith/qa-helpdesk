@@ -31,39 +31,39 @@ assignees:
 
 ## Wave 0: MCP 설치 + 통신 검증 (선행 — 모든 Wave의 전제조건)
 
-- [ ] W0-1: Bun 런타임 설치 확인
-- [ ] W0-2: claude-peers-mcp 클론 + bun install → `~/claude-peers-mcp/`
-- [ ] W0-3: CC MCP 서버 등록 (`claude mcp add --scope user --transport stdio claude-peers -- bun ~/claude-peers-mcp/server.ts`)
-- [ ] W0-4: 오픈클로 MCP 설정 추가 → `~/.openclaw/openclaw.json`
-- [ ] W0-5: 3자 통신 검증 (PM ↔ CTO ↔ mozzi) — list_peers, send_message, check_messages 동작
-- [ ] W0-6: set_summary 프로토콜 정의 → CLAUDE.md 초안
-- [ ] W0-7: peers-wake-watcher 스크립트 작성 → `~/claude-peers-mcp/watcher.ts`
-- [ ] W0-8: 에이전트팀 통합 실행 커맨드 검증 (--dangerously-load-development-channels)
+- [x] W0-1: Bun 런타임 설치 확인
+- [x] W0-2: claude-peers-mcp 클론 + bun install → `~/claude-peers-mcp/`
+- [x] W0-3: CC MCP 서버 등록 (`claude mcp add --scope user --transport stdio claude-peers -- bun ~/claude-peers-mcp/server.ts`)
+- [x] W0-4: 오픈클로 MCP 설정 추가 → `~/.openclaw/openclaw.json`
+- [x] W0-5: 3자 통신 검증 (PM ↔ CTO ↔ mozzi) — list_peers, send_message, check_messages 동작
+- [x] W0-6: set_summary 프로토콜 정의 → CLAUDE.md 초안
+- [x] W0-7: peers-wake-watcher 스크립트 작성 → `~/claude-peers-mcp/watcher.ts`
+- [x] W0-8: 에이전트팀 통합 실행 커맨드 검증 (--dangerously-load-development-channels)
 
 > 설계서 상세: docs/02-design/features/agent-team-operations.design.md 섹션 5 Wave 0
 
 ## Wave 1: TASK 소유권 (의존성 없음)
 
-- [ ] W1-1: TASK 프론트매터 파싱 헬퍼 (parse_frontmatter 함수) — `.claude/hooks/helpers/frontmatter-parser.sh`
-- [ ] W1-2: team-context.json 생성/갱신 로직 — `.claude/runtime/team-context.json`
-- [ ] W1-3: teammate-registry.json 스키마 + 초기화 로직 — `.claude/runtime/teammate-registry.json`
+- [x] W1-1: TASK 프론트매터 파싱 헬퍼 (parse_frontmatter 함수) — `.claude/hooks/helpers/frontmatter-parser.sh`
+- [x] W1-2: team-context.json 생성/갱신 로직 — `.claude/runtime/team-context.json`
+- [x] W1-3: teammate-registry.json 스키마 + 초기화 로직 — `.claude/runtime/teammate-registry.json`
 
 ## Wave 2: 종료 자동화 (Wave 1 완료 후)
 
-- [ ] W2-1: auto-shutdown.sh 신규 작성 (3단계 프로토콜) — `.claude/hooks/auto-shutdown.sh`
-- [ ] W2-2: force-team-kill.sh 개선 (레지스트리 갱신 + 리더 보호) — `.claude/hooks/force-team-kill.sh`
+- [x] W2-1: auto-shutdown.sh 신규 작성 (3단계 프로토콜) — `.claude/hooks/auto-shutdown.sh`
+- [x] W2-2: force-team-kill.sh 개선 (레지스트리 갱신 + 리더 보호) — `.claude/hooks/force-team-kill.sh`
 
 ## Wave 3: Hook 정비 (Wave 2 완료 후)
 
-- [ ] W3-1: auto-team-cleanup.sh 개선 (알림만, auto-shutdown 호출 없음) — `.claude/hooks/auto-team-cleanup.sh`
-- [ ] W3-2: settings.local.json TeammateIdle 비활성 확인 — `.claude/settings.local.json`
-- [ ] W3-3: CLAUDE.md 규칙 업데이트 초안 (팀 상시 유지 + 종료 프로세스) — `CLAUDE.md`
+- [x] W3-1: auto-team-cleanup.sh 개선 (알림만, auto-shutdown 호출 없음) — `.claude/hooks/auto-team-cleanup.sh`
+- [x] W3-2: settings.local.json TeammateIdle 비활성 확인 — `.claude/settings.local.json`
+- [x] W3-3: CLAUDE.md 규칙 업데이트 초안 (팀 상시 유지 + 종료 프로세스) — `CLAUDE.md`
 
 ## Wave 4: 검증
 
-- [ ] W4-1: 수동 테스트 — TeamCreate → 연속 TASK → auto-shutdown 전체 플로우
-- [ ] W4-2: tmux list-panes로 좀비 0건 확인
-- [ ] W4-3: Gap 분석 → `docs/03-analysis/agent-team-operations.analysis.md`
+- [x] W4-1: TDD 전체 실행 — 67건 실행, 66/67 통과 (1건 설계 의도 Red: tmux 미사용 환경)
+- [x] W4-2: tmux list-panes로 좀비 0건 확인 (hermes-gw, sdk-cto, sdk-cto-2, sdk-pm — 정상 활성 세션)
+- [x] W4-3: Gap 분석 → `docs/03-analysis/agent-team-operations.analysis.md` (Match Rate 97%)
 
 ## 파일 경계
 

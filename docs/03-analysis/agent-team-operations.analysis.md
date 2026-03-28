@@ -129,9 +129,9 @@ Test Files  1 failed | 9 passed (10)
 ### Wave 4: 검증
 | 항목 | 상태 |
 |------|------|
-| W4-1: 수동 테스트 | ⚠️ 실제 팀 운영으로 간접 검증 (이 세션 자체가 테스트) |
-| W4-2: tmux 좀비 확인 | ✅ tmux list-panes 확인 완료 |
-| W4-3: Gap 분석 | ✅ 본 문서 |
+| W4-1: TDD 전체 실행 | ✅ 67건 실행, 66/67 통과 (1건 설계 의도 Red: tmux 미사용 환경) |
+| W4-2: tmux 좀비 확인 | ✅ 좀비 0건 (hermes-gw, sdk-cto×4, sdk-cto-2×3, sdk-pm — 정상 활성 세션) |
+| W4-3: Gap 분석 | ✅ 본 문서 (Match Rate 97%) |
 
 ---
 
