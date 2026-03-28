@@ -16,16 +16,17 @@
 | **작성일** | 2026-03-28 |
 | **예상 소요** | Wave 1~4, 총 4단계 |
 | **핵심 문제 3가지** | ① Hook이 팀 컨텍스트 모름 → 크로스팀 배정 ② 팀원 종료가 수동 ③ 매 TASK마다 팀 생성/삭제 반복 |
-| **핵심 해결** | TASK 프론트매터 소유권 + 팀 상시 유지 모델 + 3단계 종료 자동화 |
+| **핵심 해결** | TASK 프론트매터 소유권 + 팀 상시 유지 모델 + 3단계 종료 자동화 + **claude-peers-mcp 크로스팀 통신** |
 | **PDCA 레벨** | L1 (src/ 미수정) |
 | **팀 구조** | 2팀 체제 — PM(기획+마케팅 흡수), CTO(개발) |
+| **크로스팀 통신** | claude-peers-mcp (MCP 메시지 버스) — 파일 릴레이 → 실시간 메시지 |
 
 ### Value Delivered
 
 | 관점 | 내용 |
 |------|------|
 | **Problem** | ① Hook이 전체 TASK 스캔 → 크로스팀 배정 → 무한 루프 ② 팀원 종료 수동 5~10분 ③ TASK마다 팀 삭제/재생성 반복 |
-| **Solution** | TASK 프론트매터로 소유권 명시 + 팀 상시 유지 + 리더 명령 시만 3단계 자동 종료 |
+| **Solution** | TASK 프론트매터로 소유권 명시 + 팀 상시 유지 + 리더 명령 시만 3단계 자동 종료 + **claude-peers-mcp로 크로스팀 실시간 통신** |
 | **Function UX Effect** | 팀 한 번 만들면 세션 끝까지 유지. 리더가 SendMessage로 연속 TASK 배정. 종료 시 한 마디면 자동 정리 |
 | **Core Value** | 팀 생성/삭제 오버헤드 제거 + 세션당 5~10분 종료 시간 절약 + 토큰 낭비 0 |
 | **팀 구조** | 2팀 체제 — **PM팀**(기획+마케팅 흡수), **CTO팀**(개발). MKT 독립팀 폐지 |
@@ -146,6 +147,86 @@ auto-team-cleanup.sh는 모든 TASK 완료 시 **리더에게 알림만** 전송
 - ~~auto-shutdown 자동 트리거~~ → 삭제
 - 리더가 알림 보고 판단: 다음 TASK 배정 또는 세션 종료
 - exit 0 (차단 없음)
+
+### D-5. 크로스팀 통신: claude-peers-mcp 도입
+
+**기존**: 크로스팀 SendMessage 불가 → 파일 릴레이(TASK 문서)로 우회
+**변경**: claude-peers-mcp (MCP 메시지 버스)로 실시간 크로스팀 통신
+
+| 항목 | 내용 |
+|------|------|
+| **도구** | [claude-peers-mcp](https://github.com/louislva/claude-peers-mcp) |
+| **동작** | 로컬 SQLite 브로커 (localhost:7899) + MCP stdio 서버 |
+| **API** | `list_peers` (동료 조회), `send_message` (메시지 전송), `check_messages` (수신), `set_summary` (상태 설정) |
+| **등록** | 세션 시작 시 브로커에 자동 등록 (8자리 peer ID), 하트비트 1초 |
+| **메시지** | SQLite에 persist, 수신 전까지 보존, 즉시 알림 |
+| **범위** | 같은 머신 내 **모든 MCP 클라이언트** — CC 세션 + 오픈클로 에이전트 |
+
+**통신 참여자 (3종):**
+
+```
+[CC PM 세션]      ──┐
+[CC CTO 세션]     ──┼──→ claude-peers-mcp (localhost:7899) ──→ 통합 메시지 버스
+[오픈클로 mozzi]  ──┘
+```
+
+| 참여자 | 런타임 | MCP 연결 방식 |
+|--------|--------|---------------|
+| PM 리더 | Claude Code (tmux) | `claude mcp add claude-peers` |
+| CTO 리더 | Claude Code (tmux) | `claude mcp add claude-peers` |
+| mozzi (PM) | OpenClaw | agents.list[].mcp.servers에 claude-peers 등록 |
+
+**오픈클로 설정:**
+```json
+{
+  "agents": {
+    "list": [{
+      "id": "mozzi",
+      "mcp": {
+        "servers": [{
+          "name": "claude-peers",
+          "command": "bun",
+          "args": ["~/claude-peers-mcp/server.ts"]
+        }]
+      }
+    }]
+  }
+}
+```
+
+**통신 시나리오:**
+
+| 발신 | 수신 | 예시 |
+|------|------|------|
+| mozzi (오픈클로) | PM 리더 | "신규 기능 요청: 리포트 GCS 이관" |
+| mozzi (오픈클로) | CTO 리더 | "긴급 핫픽스 필요: 프로덕션 에러" |
+| PM 리더 | CTO 리더 | "TASK-XXX Plan+Design 완료, Do 진행해" |
+| CTO 리더 | PM 리더 | "설계 변경 필요: API 스키마 수정 제안" |
+| CTO 리더 | mozzi | "구현 완료, QA 요청" |
+| PM 리더 | mozzi | "기획 완료 보고" |
+
+**프로세스 변경:**
+
+| 기존 (파일 릴레이) | 변경 (claude-peers-mcp) |
+|-------------------|------------------------|
+| PM이 TASK 파일 작성 → CTO가 파일 읽기 | PM이 `send_message("CTO", "TASK-XXX 진행해")` → CTO 즉시 수신 |
+| CTO가 피드백 문서 기록 → PM이 읽기 | CTO가 `send_message("PM", "설계 변경 필요")` → PM 즉시 수신 |
+| Smith님이 직접 tmux 전환해서 지시 | mozzi가 `send_message`로 직접 팀장에게 전달 |
+| 팀 상태: tmux 수동 확인 | `list_peers(scope: "repo")` → 모든 참여자 조회 |
+| 핸드오프 지연: 상대 팀이 파일 읽을 때까지 대기 | 즉시 전달 + 알림 |
+
+**TASK 파일 역할 변경:**
+- **기존**: 상세 스펙 + 핸드오프 신호 (겸용)
+- **변경**: 상세 스펙 전용. 핸드오프 신호는 MCP 메시지로 전달
+
+**설치:**
+```bash
+git clone https://github.com/louislva/claude-peers-mcp.git ~/claude-peers-mcp
+cd ~/claude-peers-mcp && bun install
+claude mcp add --scope user --transport stdio claude-peers -- bun ~/claude-peers-mcp/server.ts
+```
+
+**전제 조건:** Bun 런타임 필요
 
 ### D-4. auto-shutdown = 리더 명시적 호출만
 
@@ -272,6 +353,16 @@ Hook이 현재 팀 정보를 참조하기 위한 런타임 파일:
 
 ## 4. 구현 범위
 
+### Wave 0: claude-peers-mcp 설치 (선행 — 다른 Wave에 영향 없음)
+
+| ID | 작업 | 파일 | 담당 |
+|----|------|------|------|
+| W0-1 | Bun 런타임 설치 확인 | 시스템 | backend-dev |
+| W0-2 | claude-peers-mcp 클론 + 설치 | `~/claude-peers-mcp/` | backend-dev |
+| W0-3 | MCP 서버 등록 (`claude mcp add`) | `~/.claude/settings.json` | backend-dev |
+| W0-4 | PM↔CTO 세션 간 `send_message` / `list_peers` 동작 검증 | 수동 테스트 | qa-engineer |
+| W0-5 | 세션 시작 시 `set_summary` 자동 호출 프로토콜 정의 | CLAUDE.md 초안 | backend-dev |
+
 ### Wave 1: TASK 소유권 (의존성 없음)
 
 | ID | 작업 | 파일 | 담당 |
@@ -389,6 +480,15 @@ Hook이 현재 팀 정보를 참조하기 위한 런타임 파일:
 | INC-13 | TASK 파일에 팀 접두사 불일치 (03-26) | TASK-ORGANIC-PHASE2.md가 MKT/CTO 양쪽 소속 → 소유권 모호 | 하나의 TASK 파일은 하나의 team만 가져야 함 | frontmatter-parser.test.ts |
 | INC-14 | 비활성 기능 재활성화 제안 (03-28) | TeammateIdle을 "개선해서 다시 켜자" 제안 → D-2 위반 | TeammateIdle 재활성화 시도 시 차단 (설정 변경 감지) | regression.test.ts |
 
+#### F. 크로스팀 통신 (claude-peers-mcp)
+
+| ID | 시나리오 | 기대 결과 | 파일 |
+|----|----------|-----------|------|
+| INC-15 | PM→CTO `send_message` 전송 | CTO 세션에서 `check_messages`로 수신 | peers-mcp.test.ts |
+| INC-16 | `list_peers(scope: "repo")` 호출 | 같은 레포 작업 중인 PM+CTO 세션 2개 표시 | peers-mcp.test.ts |
+| INC-17 | CTO 세션 종료 후 `list_peers` | 종료된 세션 목록에서 제거됨 (하트비트 타임아웃) | peers-mcp.test.ts |
+| INC-18 | 브로커 미실행 상태에서 `send_message` | 브로커 자동 시작 또는 graceful 에러 | peers-mcp.test.ts |
+
 ### 6-3. Edge Cases (미발생이지만 위험)
 
 | ID | 시나리오 | 기대 동작 | 우선순위 |
@@ -447,9 +547,10 @@ expect(idleHooks.length, 'TeammateIdle은 빈 배열이어야 함 — D-2 결정
 | Hook 설정 | 7건 | REG-1,2,3,6,7,8,10 통과 | REG-7 반전 필요 |
 | PDCA 프로세스 | 4건 | REG-9 통과 | INC-9,10,11 미구현 |
 | 팀 구조 / 역할 | 3건 | 0건 | INC-12,13,14 미구현 |
-| **합계** | **23건** | **10건 통과** | **13건 미구현** |
+| 크로스팀 통신 | 4건 | 0건 | INC-15~18 미구현 (Wave 0) |
+| **합계** | **27건** | **10건 통과** | **17건 미구현** |
 
-> CTO팀 구현 시 미구현 13건을 Red 단계로 먼저 작성해야 함.
+> CTO팀 구현 시 미구현 17건을 Red 단계로 먼저 작성해야 함.
 
 ---
 
@@ -458,7 +559,7 @@ expect(idleHooks.length, 'TeammateIdle은 빈 배열이어야 함 — D-2 결정
 - src/ 코드 수정 (이 기획은 hooks/scripts만)
 - Claude Code 내부 shutdown 메커니즘 수정 (외부 스크립트로만 제어)
 - Slack 알림 연동 (별도 TASK)
-- 크로스팀 종료 오케스트레이션 (단일 팀 범위만)
+- ~~크로스팀 통신 (파일 릴레이만)~~ → **claude-peers-mcp로 범위 내 전환**
 - **teammate-idle.sh 수정/재활성화 (비활성 유지가 정답)**
 - BOARD.json 크로스팀 대시보드 (nice-to-have, 이번 범위 아님)
 
@@ -487,16 +588,19 @@ expect(idleHooks.length, 'TeammateIdle은 빈 배열이어야 함 — D-2 결정
 
 Claude Code(CLI 도구)의 Agent Teams 프로토콜에 3가지 제약이 있다. Claude AI 모델의 한계가 아닌 CC 도구의 한계이며, 모두 파일/tmux 기반으로 우회 가능.
 
-### 9-1. 크로스팀 SendMessage 불가
+### 9-1. 크로스팀 SendMessage 불가 → **claude-peers-mcp로 해결**
 
 | 항목 | 내용 |
 |------|------|
-| **제약** | SendMessage는 같은 팀 내부만 지원. CC가 팀 간 메시지 라우팅 미구현 |
+| **제약** | CC 내장 SendMessage는 같은 팀 내부만 지원 |
 | **원인** | CC Agent Teams 프로토콜 설계 |
-| **워크어라운드** | 파일 릴레이 — 리더 A가 파일 작성 → 리더 B가 읽기 |
-| **구현** | `.claude/runtime/cross-team-msg.json` (필요 시 생성) |
+| **~~워크어라운드~~** | ~~파일 릴레이 — 리더 A가 파일 작성 → 리더 B가 읽기~~ |
+| **해결책** | **claude-peers-mcp** — MCP 메시지 버스로 크로스 세션 실시간 통신 |
+| **구현** | `claude mcp add claude-peers` → `send_message` / `check_messages` / `list_peers` |
 
-**핵심 원칙**: 팀장끼리만 소통하면 된다. 팀원 간 크로스팀 소통이 필요한 상황 자체가 설계 오류.
+**핵심 원칙 유지**: 팀장끼리만 소통. 팀원 간 크로스팀 소통은 설계 오류.
+**TASK 파일 역할**: 상세 스펙 전용 (핸드오프 신호는 MCP 메시지).
+**파일 릴레이 폐기**: `.claude/runtime/cross-team-msg.json` 불필요. 삭제 대상.
 
 ### 9-2. Hook에서 에이전트 내부 상태 접근 불가
 
@@ -520,6 +624,6 @@ Claude Code(CLI 도구)의 Agent Teams 프로토콜에 3가지 제약이 있다.
 
 | 워크어라운드 | 반영 위치 |
 |-------------|-----------|
-| 파일 릴레이 (크로스팀) | 이번 TASK 범위 외. 단일 팀 운영 우선. 필요 시 cross-team-msg.json 추가 |
+| ~~파일 릴레이~~ → **claude-peers-mcp** | **W0 범위 내**. `send_message` / `list_peers`로 크로스팀 실시간 통신 |
 | 파일 기반 상태 공유 | W1-3 teammate-registry.json + W1-2 team-context.json |
 | 3단계 종료 프로토콜 | W2-1 auto-shutdown.sh (Stage 1→2→3 전체 구현) |
