@@ -7,7 +7,7 @@
 import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/db";
-import { crawlV2 } from "@/lib/railway-crawler";
+import { crawlV2 } from "@/lib/cloud-run-crawler";
 import { downloadLpMedia, type MediaAsset } from "@/lib/lp-media-downloader";
 import { uploadToGcs } from "@/lib/gcs-storage";
 

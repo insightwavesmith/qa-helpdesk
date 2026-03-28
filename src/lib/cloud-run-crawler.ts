@@ -1,34 +1,34 @@
 /**
  * Playwright 크롤링 서버 클라이언트 (GCP Cloud Run)
  * POST /crawl (단건), POST /crawl/batch (배치)
- * 환경변수: RAILWAY_CRAWLER_URL, RAILWAY_API_SECRET
+ * 환경변수: CRAWLER_URL, CRAWLER_SECRET
  */
 
 const CRAWLER_URL =
-  process.env.RAILWAY_CRAWLER_URL ||
+  process.env.CRAWLER_URL ||
   "https://bscamp-crawler-906295665279.asia-northeast3.run.app";
-const CRAWLER_SECRET = process.env.RAILWAY_API_SECRET || "";
+const CRAWLER_SECRET = process.env.CRAWLER_SECRET || "";
 
 // ── 응답 타입 ──────────────────────────────────
 
-export interface RailwayCrawlText {
+export interface CloudRunCrawlText {
   headline: string | null;
   description: string | null;
   price: string | null;
 }
 
-export interface RailwayCrawlResult {
+export interface CloudRunCrawlResult {
   url: string;
   screenshot: string | null; // base64
   ctaScreenshot: string | null; // base64
-  text: RailwayCrawlText;
+  text: CloudRunCrawlText;
   ogImage: string | null;
   screenshotHash: string | null;
   ctaScreenshotHash: string | null;
 }
 
-export interface RailwayBatchResult {
-  results: (RailwayCrawlResult | null)[];
+export interface CloudRunBatchResult {
+  results: (CloudRunCrawlResult | null)[];
   errors: string[];
 }
 
@@ -36,7 +36,7 @@ export interface RailwayBatchResult {
 
 export async function crawlSingle(
   url: string,
-): Promise<RailwayCrawlResult | null> {
+): Promise<CloudRunCrawlResult | null> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 60_000);
@@ -56,20 +56,20 @@ export async function crawlSingle(
 
       if (!res.ok) {
         console.warn(
-          `[railway-crawler] Single crawl HTTP ${res.status} for ${url}`,
+          `[cloud-run-crawler] Single crawl HTTP ${res.status} for ${url}`,
         );
         return null;
       }
 
-      return (await res.json()) as RailwayCrawlResult;
+      return (await res.json()) as CloudRunCrawlResult;
     } finally {
       clearTimeout(timeout);
     }
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") {
-      console.warn(`[railway-crawler] Timeout (60s) for ${url}`);
+      console.warn(`[cloud-run-crawler] Timeout (60s) for ${url}`);
     } else {
-      console.warn(`[railway-crawler] Single crawl failed for ${url}:`, err);
+      console.warn(`[cloud-run-crawler] Single crawl failed for ${url}:`, err);
     }
     return null;
   }
@@ -124,12 +124,12 @@ export async function crawlV2(
 
       if (!res.ok) {
         console.warn(
-          `[railway-crawler] crawlV2 HTTP ${res.status} for ${url}`,
+          `[cloud-run-crawler] crawlV2 HTTP ${res.status} for ${url}`,
         );
         return null;
       }
 
-      const raw = (await res.json()) as RailwayCrawlResult;
+      const raw = (await res.json()) as CloudRunCrawlResult;
 
       return {
         url: raw.url,
@@ -148,9 +148,9 @@ export async function crawlV2(
     }
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") {
-      console.warn(`[railway-crawler] crawlV2 Timeout (60s) for ${url}`);
+      console.warn(`[cloud-run-crawler] crawlV2 Timeout (60s) for ${url}`);
     } else {
-      console.warn(`[railway-crawler] crawlV2 failed for ${url}:`, err);
+      console.warn(`[cloud-run-crawler] crawlV2 failed for ${url}:`, err);
     }
     return null;
   }
@@ -160,8 +160,8 @@ export async function crawlV2(
 
 export async function crawlBatch(
   urls: string[],
-): Promise<RailwayBatchResult> {
-  const empty: RailwayBatchResult = { results: [], errors: [] };
+): Promise<CloudRunBatchResult> {
+  const empty: CloudRunBatchResult = { results: [], errors: [] };
   if (urls.length === 0) return empty;
 
   try {
@@ -183,20 +183,20 @@ export async function crawlBatch(
 
       if (!res.ok) {
         console.warn(
-          `[railway-crawler] Batch crawl HTTP ${res.status}`,
+          `[cloud-run-crawler] Batch crawl HTTP ${res.status}`,
         );
         return { results: urls.map(() => null), errors: [`HTTP ${res.status}`] };
       }
 
-      return (await res.json()) as RailwayBatchResult;
+      return (await res.json()) as CloudRunBatchResult;
     } finally {
       clearTimeout(timeout);
     }
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") {
-      console.warn(`[railway-crawler] Batch timeout (300s)`);
+      console.warn(`[cloud-run-crawler] Batch timeout (300s)`);
     } else {
-      console.warn(`[railway-crawler] Batch crawl failed:`, err);
+      console.warn(`[cloud-run-crawler] Batch crawl failed:`, err);
     }
     return { results: urls.map(() => null), errors: [String(err)] };
   }
