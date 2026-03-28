@@ -176,17 +176,7 @@
         ]
       }
     ],
-    "TeammateIdle": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/teammate-idle.sh",
-            "timeout": 10000
-          }
-        ]
-      }
-    ]
+    "TeammateIdle": []
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "high"

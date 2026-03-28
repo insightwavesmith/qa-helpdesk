@@ -29,6 +29,19 @@ assignees:
 ## 통합 이력
 이 TASK는 기존 `TASK-TEAMMATE-LIFECYCLE.md`를 대체한다. 기존 3개 Plan + 2개 Design이 각 1개로 통합됨.
 
+## Wave 0: MCP 설치 + 통신 검증 (선행 — 모든 Wave의 전제조건)
+
+- [ ] W0-1: Bun 런타임 설치 확인
+- [ ] W0-2: claude-peers-mcp 클론 + bun install → `~/claude-peers-mcp/`
+- [ ] W0-3: CC MCP 서버 등록 (`claude mcp add --scope user --transport stdio claude-peers -- bun ~/claude-peers-mcp/server.ts`)
+- [ ] W0-4: 오픈클로 MCP 설정 추가 → `~/.openclaw/openclaw.json`
+- [ ] W0-5: 3자 통신 검증 (PM ↔ CTO ↔ mozzi) — list_peers, send_message, check_messages 동작
+- [ ] W0-6: set_summary 프로토콜 정의 → CLAUDE.md 초안
+- [ ] W0-7: peers-wake-watcher 스크립트 작성 → `~/claude-peers-mcp/watcher.ts`
+- [ ] W0-8: 에이전트팀 통합 실행 커맨드 검증 (--dangerously-load-development-channels)
+
+> 설계서 상세: docs/02-design/features/agent-team-operations.design.md 섹션 5 Wave 0
+
 ## Wave 1: TASK 소유권 (의존성 없음)
 
 - [ ] W1-1: TASK 프론트매터 파싱 헬퍼 (parse_frontmatter 함수) — `.claude/hooks/helpers/frontmatter-parser.sh`

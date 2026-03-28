@@ -1,0 +1,28 @@
+{
+  "team": "CTO",
+  "createdAt": "2026-03-28T13:00:00",
+  "updatedAt": "2026-03-28T13:10:00",
+  "shutdownState": "running",
+  "members": {
+    "backend-dev": {
+      "state": "active",
+      "paneId": "%10",
+      "spawnedAt": "2026-03-28T13:00:00",
+      "lastActiveAt": "2026-03-28T13:08:00",
+      "terminatedAt": null,
+      "terminatedBy": null,
+      "tasksCompleted": 3,
+      "model": "opus"
+    },
+    "qa-engineer": {
+      "state": "idle",
+      "paneId": "%12",
+      "spawnedAt": "2026-03-28T13:02:00",
+      "lastActiveAt": "2026-03-28T13:05:00",
+      "terminatedAt": null,
+      "terminatedBy": null,
+      "tasksCompleted": 1,
+      "model": "sonnet"
+    }
+  }
+}

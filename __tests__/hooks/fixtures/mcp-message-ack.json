@@ -1,0 +1,8 @@
+{
+  "protocol": "bscamp-team/v1",
+  "type": "FEEDBACK",
+  "from_role": "CTO_LEADER",
+  "to_role": "PM_LEADER",
+  "payload": { "issue": "API 스키마 변경 필요", "task_file": "TASK-XXX.md" },
+  "msg_id": "cto-20260328-001"
+}

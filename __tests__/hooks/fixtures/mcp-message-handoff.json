@@ -1,0 +1,9 @@
+{
+  "protocol": "bscamp-team/v1",
+  "type": "TASK_HANDOFF",
+  "from_role": "PM_LEADER",
+  "to_role": "CTO_LEADER",
+  "payload": { "task_file": "TASK-AGENT-TEAM-OPS.md", "action": "Do phase ready" },
+  "ts": "2026-03-28T14:30:00+09:00",
+  "msg_id": "pm-20260328-001"
+}

@@ -16,6 +16,7 @@
 
 set -euo pipefail
 
+PROJECT_DIR="/Users/smith/projects/bscamp"
 TEAMS_DIR="$HOME/.claude/teams"
 
 # 팀 이름 결정
@@ -43,6 +44,9 @@ echo "========================================="
 # 팀원 목록 추출 (리더 제외)
 MEMBERS=$(jq -r '.members[] | select(.name != "team-lead") | .name' "$CONFIG")
 
+# 리더 pane ID 추출 (pane 보호용)
+LEADER_PANE=$(jq -r '.members[] | select(.name == "team-lead") | .tmuxPaneId // ""' "$CONFIG")
+
 if [ -z "$MEMBERS" ]; then
     echo "[force-team-kill] 팀원 없음. 종료."
     exit 0
@@ -60,6 +64,18 @@ while IFS= read -r MEMBER_NAME; do
 
     echo ""
     echo "--- $MEMBER_NAME (pane: $PANE_ID, active: $IS_ACTIVE) ---"
+
+    # Step 0.5: 리더 pane 보호
+    # (1) paneId=%0 → tmux 첫 pane = 리더 pane. tmux 없어도 방어
+    if [ "$PANE_ID" = "%0" ]; then
+        echo "  [BLOCK] $MEMBER_NAME: paneId=%0 (리더 pane) — kill 금지"
+        continue
+    fi
+    # (2) 리더 pane ID 직접 비교
+    if [ -n "$PANE_ID" ] && [ "$PANE_ID" != "null" ] && [ -n "$LEADER_PANE" ] && [ "$LEADER_PANE" != "null" ] && [ "$PANE_ID" = "$LEADER_PANE" ]; then
+        echo "  [BLOCK] $MEMBER_NAME: 리더 pane ($LEADER_PANE) — kill 금지"
+        continue
+    fi
 
     # Step 1: tmux pane 종료
     if [ -n "$PANE_ID" ] && [ "$PANE_ID" != "null" ] && [ "$PANE_ID" != "" ]; then
@@ -81,6 +97,19 @@ while IFS= read -r MEMBER_NAME; do
         KILLED=$((KILLED + 1))
     else
         echo "  [SKIP] 이미 isActive=false"
+    fi
+
+    # Step 2.5: 레지스트리 갱신
+    REGISTRY="$PROJECT_DIR/.claude/runtime/teammate-registry.json"
+    if [ -f "$REGISTRY" ]; then
+        NOW=$(date -u +"%Y-%m-%dT%H:%M:%S")
+        jq --arg m "$MEMBER_NAME" --arg t "$NOW" \
+           '.members[$m].state = "terminated" |
+            .members[$m].terminatedBy = "force_kill" |
+            .members[$m].terminatedAt = $t |
+            .updatedAt = $t' \
+           "$REGISTRY" > "${REGISTRY}.tmp" && mv "${REGISTRY}.tmp" "$REGISTRY"
+        echo "  [OK] 레지스트리 갱신: $MEMBER_NAME → terminated"
     fi
 
 done <<< "$MEMBERS"

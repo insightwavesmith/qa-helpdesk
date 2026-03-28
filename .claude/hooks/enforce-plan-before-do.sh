@@ -86,8 +86,8 @@ import json, sys
 try:
     with open('$PDCA_ROOT') as f:
         data = json.load(f)
-    # 새 스키마: feature.plan.done 확인
-    for key, val in data.items():
+    # 새 스키마: features.{feature}.plan.done 확인
+    for key, val in data.get('features', {}).items():
         if isinstance(val, dict) and 'plan' in val:
             p = val['plan']
             if isinstance(p, dict) and p.get('done') == True:

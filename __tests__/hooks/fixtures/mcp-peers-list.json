@@ -1,0 +1,8 @@
+{
+  "protocol": "bscamp-team/v1",
+  "type": "URGENT",
+  "from_role": "MOZZI",
+  "to_role": "CTO_LEADER",
+  "payload": { "error": "프로덕션 500 에러", "endpoint": "/api/questions" },
+  "msg_id": "mozzi-20260328-001"
+}

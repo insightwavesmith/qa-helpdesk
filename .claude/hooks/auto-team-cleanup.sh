@@ -23,15 +23,28 @@ if [ -d "$HOME/.claude/tasks" ]; then
     TEAM_TASKS=$(ls -td "$HOME/.claude/tasks"/*/ 2>/dev/null | head -1)
 fi
 
-# .claude/tasks/TASK-*.md에서 미완료 체크
+# 프론트매터 파서 로드
+source "$(dirname "$0")/helpers/frontmatter-parser.sh" 2>/dev/null
+
+# .claude/tasks/TASK-*.md에서 미완료 체크 (팀 소속만)
 UNCHECKED_COUNT=0
 if [ -d "$TASKS_DIR" ]; then
-    for f in "$TASKS_DIR"/TASK-*.md; do
-        [ -f "$f" ] || continue
-        COUNT=$(grep -c '^\- \[ \]' "$f" 2>/dev/null || echo "0")
-        COUNT=$(echo "$COUNT" | tr -d '[:space:]')
-        UNCHECKED_COUNT=$((UNCHECKED_COUNT + ${COUNT:-0}))
-    done
+    if load_team_context; then
+        # team-context.json의 taskFiles만 스캔
+        for f in $TASK_FILES; do
+            FULL_PATH="$TASKS_DIR/$f"
+            [ -f "$FULL_PATH" ] || continue
+            COUNT=$(scan_unchecked "$FULL_PATH" | wc -l | tr -d '[:space:]')
+            UNCHECKED_COUNT=$((UNCHECKED_COUNT + ${COUNT:-0}))
+        done
+    else
+        # 폴백: 전체 TASK 파일 스캔
+        for f in "$TASKS_DIR"/TASK-*.md; do
+            [ -f "$f" ] || continue
+            COUNT=$(scan_unchecked "$f" | wc -l | tr -d '[:space:]')
+            UNCHECKED_COUNT=$((UNCHECKED_COUNT + ${COUNT:-0}))
+        done
+    fi
 fi
 
 # 모든 TASK 완료 → 알림 (차단하지 않음)

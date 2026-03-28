@@ -1,0 +1,18 @@
+{
+  "team": "CTO",
+  "createdAt": "2026-03-28T13:00:00",
+  "updatedAt": "2026-03-28T14:00:00",
+  "shutdownState": "force_killing",
+  "members": {
+    "backend-dev": {
+      "state": "shutdown_pending",
+      "paneId": "%10",
+      "spawnedAt": "2026-03-28T13:00:00",
+      "lastActiveAt": "2026-03-28T13:58:00",
+      "terminatedAt": null,
+      "terminatedBy": null,
+      "tasksCompleted": 6,
+      "model": "opus"
+    }
+  }
+}
