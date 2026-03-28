@@ -234,6 +234,7 @@ export async function fetchVideoThumbnails(
   const result = new Map<string, string>();
   if (videoIds.length === 0) return result;
 
+  let permissionErrorCount = 0;
   for (const videoId of videoIds) {
     try {
       const url = new URL(`${META_API_BASE}/${videoId}`);
@@ -245,7 +246,15 @@ export async function fetchVideoThumbnails(
       const data: any = await res.json();
 
       if (data.error) {
-        console.error(`[creative-fetcher] video ${videoId} error:`, data.error.message);
+        const msg: string = data.error.message ?? "";
+        if (msg.includes("(#10)") || msg.includes("(#283)")) {
+          permissionErrorCount++;
+          if (permissionErrorCount === 1) {
+            console.warn(`[creative-fetcher] 비디오 썸네일 권한 에러: ${msg.slice(0, 80)}`);
+          }
+          continue;
+        }
+        console.error(`[creative-fetcher] video ${videoId} error:`, msg);
         continue;
       }
 
@@ -266,6 +275,10 @@ export async function fetchVideoThumbnails(
 
     // Rate limit 대기
     await new Promise((r) => setTimeout(r, 100));
+  }
+
+  if (permissionErrorCount > 0) {
+    console.warn(`[creative-fetcher] 썸네일 권한 에러 총 ${permissionErrorCount}건 스킵 (${videoIds.length}건 중)`);
   }
 
   return result;
@@ -304,7 +317,13 @@ export async function fetchVideoSourceUrls(
       const data: any = await res.json();
 
       if (data.error) {
-        console.error(`[creative-fetcher] advideos error [${cleanId}]:`, data.error.message);
+        const msg: string = data.error.message ?? "";
+        const isPermissionError = msg.includes("(#10)") || msg.includes("(#283)");
+        if (isPermissionError) {
+          console.warn(`[creative-fetcher] 계정 ${cleanId} 비디오 접근 권한 없음 — ${videoIds.length}건 스킵`);
+          return result;
+        }
+        console.error(`[creative-fetcher] advideos error [${cleanId}]:`, msg);
         break;
       }
 
