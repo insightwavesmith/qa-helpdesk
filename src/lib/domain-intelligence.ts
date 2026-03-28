@@ -99,13 +99,15 @@ async function saveGlossaryToKnowledge(
 
       // 임베딩 생성 + insert
       const content = `${term}: ${definition}`;
-      const embedding = await generateEmbedding(content);
+      const embedding = await generateEmbedding(content, { taskType: "RETRIEVAL_DOCUMENT" });
 
       await svc.from("knowledge_chunks").insert({
         source_type: "glossary",
         lecture_name: "자동학습 용어집",
         content,
-        embedding: JSON.stringify(embedding),
+        embedding_v2: embedding,
+        embedding_model_v2: "gemini-embedding-2-preview",
+        priority: 3,
         chunk_index: 0,
         week: "glossary",
       });
