@@ -643,7 +643,258 @@
     "updatedAt": "2026-03-28",
     "notes": "Hook 컨텍스트 인식 부재 → TASK 소유권 메타데이터 + team-context.json + BOARD.json 중앙 보드 도입 기획"
   },
-  "updatedAt": "2026-03-28T12:24:26.394383",
-  "_lastUpdated": "2026-03-28T11:06:16",
-  "_autoSyncNote": "auto-synced at 2026-03-28 12:24:26, last commit: 614b696"
+  "hook-regression-test": {
+    "phase": "completed",
+    "plan": {
+      "team": "cto",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-28"
+    },
+    "design": {
+      "team": "cto",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-28"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-28"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "",
+      "matchRate": 100
+    },
+    "act": {
+      "done": true,
+      "commit": null
+    },
+    "updatedAt": "2026-03-28",
+    "notes": "Hook 회귀 테스트 REG-1~10 완료. 21/21 Green. 실제 겪은 버그 10건 커버."
+  },
+  "agent-process-report": {
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-28"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-28"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": "8a5ea635",
+      "at": "2026-03-28"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "",
+      "matchRate": 100
+    },
+    "act": {
+      "done": true,
+      "commit": null
+    },
+    "updatedAt": "2026-03-28",
+    "notes": "에이전트팀 업무 프로세스 아키텍처 보고서. 7섹션 957줄 HTML. mozzi-reports 배포 완료."
+  },
+  "qa-jsonb-hotfix": {
+    "phase": "completed",
+    "plan": {
+      "team": "cto",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-28"
+    },
+    "design": {
+      "team": "cto",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-28"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": "61871c3",
+      "at": "2026-03-28"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "",
+      "matchRate": 100
+    },
+    "act": {
+      "done": true,
+      "commit": "61871c3"
+    },
+    "updatedAt": "2026-03-28",
+    "notes": "image_urls+source_refs jsonb 직렬화 수정(6곳) + Gemini Thinking 활성화(8192) + hook 회귀 REG-6~10(21 Green). 5파일 +221/-15줄."
+  },
+  "glossary-v2-embedding": {
+    "phase": "completed",
+    "plan": {
+      "team": "cto",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-28"
+    },
+    "design": {
+      "team": "cto",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-28"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": "8cbd144",
+      "at": "2026-03-28"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "",
+      "matchRate": 100
+    },
+    "act": {
+      "done": true,
+      "commit": "8cbd144"
+    },
+    "updatedAt": "2026-03-28",
+    "notes": "glossary 임베딩 v1→v2(3072d) 수정. taskType RETRIEVAL_DOCUMENT, embedding_model_v2, priority 추가. 1파일 +4/-2줄."
+  },
+  "vercel-deploy-disable": {
+    "phase": "completed",
+    "plan": {
+      "team": "cto",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-28"
+    },
+    "design": {
+      "team": "cto",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-28"
+    },
+    "do": {
+      "team": "cto",
+      "done": true,
+      "commit": "8d4df85",
+      "at": "2026-03-28"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "",
+      "matchRate": 100
+    },
+    "act": {
+      "done": true,
+      "commit": "8d4df85"
+    },
+    "updatedAt": "2026-03-28",
+    "notes": "Vercel 자동 배포 비활성화 (GCP 이관 완료). vercel.json deploymentEnabled:false."
+  },
+  "teammate-lifecycle": {
+    "phase": "archived",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/teammate-lifecycle.plan.md",
+      "at": "2026-03-28"
+    },
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/02-design/features/teammate-lifecycle.design.md",
+      "at": "2026-03-28"
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null
+    },
+    "updatedAt": "2026-03-28",
+    "notes": "→ agent-team-operations로 통합됨. 이 항목은 이력 보존용."
+  },
+  "agent-team-operations": {
+    "phase": "planning",
+    "plan": {
+      "team": "cto",
+      "done": true,
+      "doc": "docs/01-plan/features/agent-team-operations.plan.md",
+      "at": "2026-03-28"
+    },
+    "design": {
+      "team": "cto",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null
+    },
+    "updatedAt": "2026-03-28",
+    "notes": "통합 기획서 작성 완료. TASK소유권+팀상시유지+생명주기자동화. 기존 3plan+2design 통합. 개발팀 핸드오프 대기."
+  },
+  "vector-serialization-fix": {
+    "phase": "completed",
+    "plan": { "team": "cto", "done": true, "doc": "", "at": "2026-03-28" },
+    "design": { "team": "cto", "done": true, "doc": "", "at": "2026-03-28" },
+    "do": { "team": "cto", "done": true, "commit": null, "at": "2026-03-28" },
+    "check": { "team": "qa", "done": true, "doc": "", "matchRate": 100 },
+    "act": { "done": true, "commit": null },
+    "updatedAt": "2026-03-28",
+    "notes": "query-builder embedding_v2 벡터 직렬화 수정 (INSERT/UPDATE/UPSERT 3곳 + RPC ::vector 캐스팅). AI 답변 34건 재생성 성공, source_refs 정상 포함."
+  },
+  "domain-gemini-migration": {
+    "phase": "completed",
+    "plan": { "team": "cto", "done": true, "doc": "", "at": "2026-03-28" },
+    "design": { "team": "cto", "done": true, "doc": "", "at": "2026-03-28" },
+    "do": { "team": "cto", "done": true, "commit": null, "at": "2026-03-28" },
+    "check": { "team": "qa", "done": true, "doc": "", "matchRate": 100 },
+    "act": { "done": true, "commit": null },
+    "updatedAt": "2026-03-28",
+    "notes": "Stage 0 도메인 분석 Anthropic Sonnet → Gemini Flash 마이그레이션. API 비용 Gemini 단일로 통일."
+  },
+  "updatedAt": "2026-03-28T16:45:00",
+  "_lastUpdated": "2026-03-28T16:45:00",
+  "_autoSyncNote": "vector-serialization-fix + domain-gemini-migration completed"
 }

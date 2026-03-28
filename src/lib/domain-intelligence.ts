@@ -1,12 +1,9 @@
 // Stage 0: 도메인 인텔리전스 — 질문 분석 및 도메인 용어 정규화
-// Sonnet으로 질문의 도메인 용어를 이해하고 검색 쿼리를 최적화
+// Gemini Flash로 질문의 도메인 용어를 이해하고 검색 쿼리를 최적화
 
 import { searchBrave } from "@/lib/brave-search";
-import { generateEmbedding } from "@/lib/gemini";
+import { generateEmbedding, generateFlashText } from "@/lib/gemini";
 import { createServiceClient } from "@/lib/db";
-
-const API_URL = "https://api.anthropic.com/v1/messages";
-const TIMEOUT_MS = 15_000;
 
 export interface NormalizedTerm {
   original: string;
@@ -127,9 +124,8 @@ export async function analyzeDomain(
   question: string,
   imageDescriptions?: string
 ): Promise<DomainAnalysis | null> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    console.warn("[DomainIntelligence] ANTHROPIC_API_KEY 미설정, 스킵");
+  if (!process.env.GEMINI_API_KEY) {
+    console.warn("[DomainIntelligence] GEMINI_API_KEY 미설정, 스킵");
     return null;
   }
 
@@ -138,43 +134,18 @@ export async function analyzeDomain(
     userPrompt += `\n\n첨부 이미지 설명: ${imageDescriptions}`;
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const fullPrompt = `${DOMAIN_ANALYSIS_PROMPT}\n\n${userPrompt}`;
 
   try {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 2000,
-        temperature: 0.2,
-        system: DOMAIN_ANALYSIS_PROMPT,
-        messages: [{ role: "user", content: userPrompt }],
-      }),
-      signal: controller.signal,
+    const text = await generateFlashText(fullPrompt, {
+      temperature: 0.2,
+      maxTokens: 2000,
     });
 
-    clearTimeout(timeout);
-
-    if (!response.ok) {
-      console.error(
-        "[DomainIntelligence] API error:",
-        response.status,
-        await response.text()
-      );
+    if (!text) {
+      console.error("[DomainIntelligence] Gemini Flash 빈 응답");
       return null;
     }
-
-    const data = await response.json();
-    const textBlock = data.content?.find(
-      (b: { type: string }) => b.type === "text"
-    );
-    const text = textBlock?.text || "";
 
     // JSON 파싱
     const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -274,12 +245,7 @@ export async function analyzeDomain(
       termDefinitions,
     };
   } catch (error) {
-    clearTimeout(timeout);
-    if (error instanceof Error && error.name === "AbortError") {
-      console.warn("[DomainIntelligence] 타임아웃 (15초)");
-    } else {
-      console.error("[DomainIntelligence] 실패:", error);
-    }
+    console.error("[DomainIntelligence] 실패:", error);
     return null;
   }
 }

@@ -399,7 +399,7 @@ export class PostgresQueryBuilder<T = any> {
           valueParts.push(`$${paramIdx++}::jsonb`);
           params.push(JSON.stringify(val));
         } else if (Array.isArray(val)) {
-          if (col === "embedding" || col.endsWith("_embedding")) {
+          if (col === "embedding" || col.startsWith("embedding_") || col.endsWith("_embedding")) {
             valueParts.push(`$${paramIdx++}::vector`);
             params.push(`[${(val as number[]).join(",")}]`);
           } else if (val.length === 0 || val.every((v: unknown) => typeof v !== "object" || v === null)) {
@@ -443,7 +443,7 @@ export class PostgresQueryBuilder<T = any> {
         setParts.push(`${this._quoteCol(col)} = $${paramIdx++}::jsonb`);
         params.push(JSON.stringify(val));
       } else if (Array.isArray(val)) {
-        if (col === "embedding" || col.endsWith("_embedding")) {
+        if (col === "embedding" || col.startsWith("embedding_") || col.endsWith("_embedding")) {
           setParts.push(`${this._quoteCol(col)} = $${paramIdx++}::vector`);
           params.push(`[${(val as number[]).join(",")}]`);
         } else if (val.length === 0 || val.every((v: unknown) => typeof v !== "object" || v === null)) {
@@ -505,7 +505,7 @@ export class PostgresQueryBuilder<T = any> {
           valueParts.push(`$${paramIdx++}::jsonb`);
           params.push(JSON.stringify(val));
         } else if (Array.isArray(val)) {
-          if (col === "embedding" || col.endsWith("_embedding")) {
+          if (col === "embedding" || col.startsWith("embedding_") || col.endsWith("_embedding")) {
             valueParts.push(`$${paramIdx++}::vector`);
             params.push(`[${(val as number[]).join(",")}]`);
           } else if (val.length === 0 || val.every((v: unknown) => typeof v !== "object" || v === null)) {
@@ -932,8 +932,15 @@ export class PostgresRpcBuilder<T = any> {
   private async _execute(): Promise<QueryResult<T>> {
     try {
       const paramNames = Object.keys(this.params);
-      const paramValues = Object.values(this.params);
-      const placeholders = paramNames.map((name, i) => `${name} := $${i + 1}`).join(", ");
+      const paramValues = Object.values(this.params) as unknown[];
+      const placeholders = paramNames.map((name, i) => {
+        const val = paramValues[i];
+        if (name.includes("embedding") && Array.isArray(val)) {
+          paramValues[i] = `[${(val as number[]).join(",")}]`;
+          return `${name} := $${i + 1}::vector`;
+        }
+        return `${name} := $${i + 1}`;
+      }).join(", ");
       const sql = `SELECT * FROM ${this.funcName}(${placeholders})`;
       const result = await this.pool.query(sql, paramValues);
       return { data: result.rows as T[], error: null };
