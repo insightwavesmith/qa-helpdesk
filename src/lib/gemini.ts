@@ -105,7 +105,7 @@ export async function generateFlashText(
   if (!GEMINI_API_KEY) return "";
 
   const temperature = options?.temperature ?? 0.1;
-  const maxTokens = options?.maxTokens ?? 1024;
+  const maxTokens = options?.maxTokens ?? 8192;
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {

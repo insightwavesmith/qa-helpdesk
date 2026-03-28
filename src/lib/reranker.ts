@@ -69,7 +69,7 @@ async function doRerank(
 
   const response = await generateFlashText(prompt, {
     temperature: 0.0,
-    maxTokens: 2048,
+    maxTokens: 8192,
   });
 
   if (!response) return chunks;
