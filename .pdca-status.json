@@ -509,76 +509,141 @@
       },
       "updatedAt": "2026-03-28",
       "notes": "PDCA 기록=리더 전용 구조 재설계. pdca-update/sync-monitor/auto-team-cleanup에 팀원 bypass, teammate-idle에서 PDCA 체크 제거, validate-pdca-before-teamdelete.sh 신규(TeamDelete 전 10분 갱신 강제), CLAUDE.md 리더 PDCA 의무 명시. 6파일 수정."
+    },
+    "task-ownership-process": {
+      "phase": "completed",
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/01-plan/features/task-ownership-process.plan.md",
+        "at": "2026-03-28"
+      },
+      "design": {
+        "team": "cto",
+        "done": true,
+        "doc": "docs/02-design/features/hook-task-ownership.design.md",
+        "at": "2026-03-28"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": null,
+        "at": "2026-03-28"
+      },
+      "check": {
+        "team": "qa",
+        "done": true,
+        "doc": "docs/03-analysis/hook-task-ownership.analysis.md",
+        "matchRate": 92.8
+      },
+      "act": {
+        "done": true,
+        "commit": null
+      },
+      "updatedAt": "2026-03-28",
+      "notes": "Hook+TASK 소유권 시스템 완료. teammate-idle v6(3단계 폴백), TASK 프론트매터 9파일, BOARD.json, vitest 12/12 통과, Match Rate 92.8%"
     }
   },
   "tdd-supplement": {
-      "phase": "completed",
-      "plan": {
-        "team": "pm",
-        "done": true,
-        "doc": "",
-        "at": "2026-03-28"
-      },
-      "design": {
-        "team": "pm",
-        "done": true,
-        "doc": "",
-        "at": "2026-03-28"
-      },
-      "do": {
-        "team": "pm",
-        "done": true,
-        "commit": null,
-        "at": "2026-03-28"
-      },
-      "check": {
-        "team": "qa",
-        "done": true,
-        "doc": "",
-        "matchRate": 100
-      },
-      "act": {
-        "done": true,
-        "commit": null
-      },
-      "updatedAt": "2026-03-28",
-      "notes": "기획서 TDD 보완. Plan 14개 + Design 11개 = 25개 문서에 T1(단위테스트)~T5(통합테스트) 섹션 추가."
+    "phase": "completed",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-28"
     },
-    "pdca-process-level": {
-      "phase": "completed",
-      "plan": {
-        "team": "cto",
-        "done": true,
-        "doc": "https://mozzi-reports.vercel.app/reports/plan/2026-03-28-pdca-flexible-process",
-        "at": "2026-03-28"
-      },
-      "design": {
-        "team": "cto",
-        "done": true,
-        "doc": "",
-        "at": "2026-03-28"
-      },
-      "do": {
-        "team": "cto",
-        "done": false,
-        "commit": null,
-        "at": "2026-03-28"
-      },
-      "check": {
-        "team": "qa",
-        "done": false,
-        "doc": "",
-        "matchRate": null
-      },
-      "act": {
-        "done": false,
-        "commit": null
-      },
-      "updatedAt": "2026-03-28",
-      "notes": "L0~L3 프로세스 레벨 시스템 + TDD(vitest) 워크플로우 완료. detect-process-level.sh 신규, 5개 hook 레벨 분기, CLAUDE.md L0~L3+TDD 규칙, vitest 4.1.2 설치+설정+샘플 통과."
-    }
+    "design": {
+      "team": "pm",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-28"
+    },
+    "do": {
+      "team": "pm",
+      "done": true,
+      "commit": null,
+      "at": "2026-03-28"
+    },
+    "check": {
+      "team": "qa",
+      "done": true,
+      "doc": "",
+      "matchRate": 100
+    },
+    "act": {
+      "done": true,
+      "commit": null
+    },
+    "updatedAt": "2026-03-28",
+    "notes": "기획서 TDD 보완. Plan 14개 + Design 11개 = 25개 문서에 T1(단위테스트)~T5(통합테스트) 섹션 추가."
   },
-  "updatedAt": "2026-03-28T23:35:00",
-  "_lastUpdated": "2026-03-28T23:35:00",
-  "_autoSyncNote": "pdca-process-level implementing"
+  "pdca-process-level": {
+    "phase": "completed",
+    "plan": {
+      "team": "cto",
+      "done": true,
+      "doc": "https://mozzi-reports.vercel.app/reports/plan/2026-03-28-pdca-flexible-process",
+      "at": "2026-03-28"
+    },
+    "design": {
+      "team": "cto",
+      "done": true,
+      "doc": "",
+      "at": "2026-03-28"
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": "2026-03-28"
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null
+    },
+    "updatedAt": "2026-03-28",
+    "notes": "L0~L3 프로세스 레벨 시스템 + TDD(vitest) 워크플로우 완료. detect-process-level.sh 신규, 5개 hook 레벨 분기, CLAUDE.md L0~L3+TDD 규칙, vitest 4.1.2 설치+설정+샘플 통과."
+  },
+  "task-ownership-process": {
+    "phase": "planning",
+    "plan": {
+      "team": "pm",
+      "done": true,
+      "doc": "docs/01-plan/features/task-ownership-process.plan.md",
+      "at": "2026-03-28"
+    },
+    "design": {
+      "team": "cto",
+      "done": false,
+      "doc": "",
+      "at": null
+    },
+    "do": {
+      "team": "cto",
+      "done": false,
+      "commit": null,
+      "at": null
+    },
+    "check": {
+      "team": "qa",
+      "done": false,
+      "doc": "",
+      "matchRate": null
+    },
+    "act": {
+      "done": false,
+      "commit": null
+    },
+    "updatedAt": "2026-03-28",
+    "notes": "Hook 컨텍스트 인식 부재 → TASK 소유권 메타데이터 + team-context.json + BOARD.json 중앙 보드 도입 기획"
+  },
+  "updatedAt": "2026-03-28T12:24:26.394383",
+  "_lastUpdated": "2026-03-28T11:06:16",
+  "_autoSyncNote": "auto-synced at 2026-03-28 12:24:26, last commit: 614b696"
 }

@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>총가치각도기 UX 리디자인 — AI 처방 통합 목업</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Pretendard', -apple-system, sans-serif; background: #f8f9fa; color: #1a1a1a; line-height: 1.6; }
+
+  /* Layout */
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+  .page-header { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 16px 0; margin-bottom: 0; }
+  .page-title { font-size: 20px; font-weight: 700; }
+  .page-subtitle { font-size: 13px; color: #6b7280; margin-top: 2px; }
+
+  /* Mockup selector */
+  .mockup-nav { background: #1a1a1a; padding: 12px 0; position: sticky; top: 0; z-index: 100; }
+  .mockup-nav .container { display: flex; gap: 8px; flex-wrap: wrap; }
+  .mockup-btn { padding: 8px 16px; border-radius: 8px; border: 1px solid #444; background: transparent; color: #ccc; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .mockup-btn.active { background: #F75D5D; border-color: #F75D5D; color: #fff; font-weight: 600; }
+  .mockup-btn:hover:not(.active) { background: #333; }
+
+  .mockup-section { display: none; padding: 24px 0; }
+  .mockup-section.active { display: block; }
+
+  /* Tabs */
+  .tab-nav { display: flex; gap: 4px; border-bottom: 1px solid #e5e7eb; margin-bottom: 24px; background: #fff; padding: 0 24px; }
+  .tab-item { padding: 12px 16px; font-size: 14px; font-weight: 500; color: #6b7280; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; white-space: nowrap; }
+  .tab-item.active { color: #F75D5D; border-bottom-color: #F75D5D; }
+  .tab-item:hover:not(.active) { color: #374151; }
+
+  /* Cards */
+  .card { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .card-subtitle { font-size: 13px; color: #6b7280; margin-bottom: 16px; }
+
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+  /* Journey */
+  .journey-container { display: flex; align-items: stretch; gap: 0; margin: 16px 0; }
+  .journey-step { flex: 1; padding: 16px; text-align: center; position: relative; border-radius: 12px; }
+  .journey-step:not(:last-child)::after {
+    content: ''; position: absolute; right: -12px; top: 50%; transform: translateY(-50%);
+    width: 0; height: 0; border-left: 10px solid; border-top: 8px solid transparent; border-bottom: 8px solid transparent;
+    z-index: 1;
+  }
+  .journey-step.ad-area { background: #fef3f2; }
+  .journey-step.ad-area::after { border-left-color: #fef3f2; }
+  .journey-step.lp-area { background: #eff6ff; }
+  .journey-step.lp-area::after { border-left-color: #eff6ff; }
+  .journey-emoji { font-size: 28px; margin-bottom: 4px; }
+  .journey-label { font-size: 12px; color: #6b7280; font-weight: 500; }
+  .journey-metric { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+  .journey-value { font-size: 20px; font-weight: 700; margin: 4px 0; }
+  .journey-status { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+  .journey-deviation { font-size: 11px; color: #6b7280; margin-top: 4px; }
+  .status-good { background: #dcfce7; color: #166534; }
+  .status-warn { background: #fef9c3; color: #854d0e; }
+  .status-bad { background: #fee2e2; color: #991b1b; }
+
+  /* Area label */
+  .area-label { display: flex; justify-content: center; gap: 24px; margin-bottom: 8px; }
+  .area-badge { font-size: 11px; font-weight: 600; padding: 3px 12px; border-radius: 99px; }
+  .area-badge.ad { background: #fef3f2; color: #dc2626; border: 1px solid #fecaca; }
+  .area-badge.lp { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+
+  /* Prescription cards */
+  .rx-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; margin-bottom: 12px; background: #fff; }
+  .rx-card.urgent { border-left: 4px solid #ef4444; }
+  .rx-card.moderate { border-left: 4px solid #f59e0b; }
+  .rx-card.good { border-left: 4px solid #22c55e; }
+  .rx-rank { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-size: 13px; font-weight: 700; color: #fff; }
+  .rx-rank.r1 { background: #ef4444; }
+  .rx-rank.r2 { background: #f59e0b; }
+  .rx-rank.r3 { background: #6b7280; }
+  .rx-title { font-size: 14px; font-weight: 600; margin-left: 8px; }
+  .rx-header { display: flex; align-items: center; margin-bottom: 8px; }
+  .rx-action { font-size: 13px; color: #374151; margin-bottom: 8px; padding-left: 36px; }
+  .rx-meta { display: flex; gap: 8px; padding-left: 36px; flex-wrap: wrap; }
+  .rx-badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+  .rx-badge.stage-sensation { background: #fce7f3; color: #9d174d; }
+  .rx-badge.stage-think { background: #e0e7ff; color: #3730a3; }
+  .rx-badge.stage-click { background: #d1fae5; color: #065f46; }
+  .rx-badge.stage-purchase { background: #fef3c7; color: #92400e; }
+  .rx-badge.easy { background: #dcfce7; color: #166534; }
+  .rx-badge.moderate { background: #fef9c3; color: #854d0e; }
+  .rx-badge.hard { background: #fee2e2; color: #991b1b; }
+  .rx-badge.perf { background: #fef3f2; color: #dc2626; border: 1px solid #fecaca; }
+  .rx-impact { font-size: 12px; color: #059669; background: #ecfdf5; padding: 6px 12px; border-radius: 6px; margin-top: 8px; margin-left: 36px; }
+
+  /* Evidence accordion */
+  .evidence-toggle { font-size: 12px; color: #6b7280; cursor: pointer; margin-left: 36px; margin-top: 8px; padding: 4px 0; }
+  .evidence-toggle:hover { color: #F75D5D; }
+  .evidence-content { display: none; margin-left: 36px; margin-top: 8px; padding: 12px; background: #f9fafb; border-radius: 8px; font-size: 12px; }
+  .evidence-content.open { display: block; }
+  .evidence-axis { margin-bottom: 8px; }
+  .evidence-axis-label { font-weight: 600; color: #374151; margin-bottom: 2px; }
+  .evidence-axis-text { color: #6b7280; }
+
+  /* Creative card in priority list */
+  .creative-rx-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .creative-rx-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .creative-name { font-size: 15px; font-weight: 700; }
+  .creative-type { font-size: 11px; color: #6b7280; background: #f3f4f6; padding: 2px 8px; border-radius: 4px; }
+  .creative-metric { font-size: 13px; color: #6b7280; margin-bottom: 12px; }
+  .creative-metric strong { color: #ef4444; }
+
+  /* Andromeda */
+  .andromeda-card { border: 1px solid #fbbf24; background: #fffbeb; border-radius: 12px; padding: 16px; }
+  .andromeda-score { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .score-circle { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: #fff; }
+  .score-circle.warn { background: #f59e0b; }
+  .score-circle.ok { background: #22c55e; }
+  .score-circle.bad { background: #ef4444; }
+  .similar-pair { font-size: 12px; color: #6b7280; padding: 4px 0; border-bottom: 1px solid #fef3c7; }
+  .diversity-tip { font-size: 13px; color: #854d0e; background: #fef9c3; padding: 10px 14px; border-radius: 8px; margin-top: 12px; }
+
+  /* T3 Gauge (simplified) */
+  .gauge-container { text-align: center; padding: 20px; }
+  .gauge-score { font-size: 48px; font-weight: 800; color: #1a1a1a; }
+  .gauge-grade { display: inline-block; padding: 4px 16px; border-radius: 99px; font-size: 14px; font-weight: 700; margin-top: 4px; }
+  .grade-a { background: #dcfce7; color: #166534; }
+  .grade-b { background: #d1fae5; color: #065f46; }
+  .grade-c { background: #fef9c3; color: #854d0e; }
+  .grade-d { background: #fed7aa; color: #9a3412; }
+  .grade-f { background: #fee2e2; color: #991b1b; }
+
+  /* Sub scores */
+  .sub-score { text-align: center; padding: 16px; border-radius: 8px; background: #f9fafb; }
+  .sub-score-value { font-size: 24px; font-weight: 700; }
+  .sub-score-label { font-size: 12px; color: #6b7280; margin-top: 2px; }
+  .sub-score-note { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+
+  /* Summary cards */
+  .summary-card { padding: 14px; border-radius: 8px; background: #fff; border: 1px solid #e5e7eb; }
+  .summary-label { font-size: 12px; color: #6b7280; }
+  .summary-value { font-size: 18px; font-weight: 700; margin-top: 4px; }
+  .summary-compare { font-size: 11px; margin-top: 2px; }
+  .compare-up { color: #059669; }
+  .compare-down { color: #dc2626; }
+
+  /* Urgent prescription highlight */
+  .urgent-card { background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%); border: 1px solid #fecaca; border-radius: 12px; padding: 20px; }
+  .urgent-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .urgent-icon { font-size: 20px; }
+  .urgent-title { font-size: 15px; font-weight: 700; color: #dc2626; }
+  .urgent-creative { font-size: 14px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; }
+  .urgent-metric { font-size: 13px; color: #6b7280; margin-bottom: 12px; }
+  .urgent-rx { font-size: 14px; color: #374151; padding: 12px; background: rgba(255,255,255,0.7); border-radius: 8px; margin-bottom: 12px; }
+  .urgent-rx strong { color: #dc2626; }
+  .urgent-actions { display: flex; gap: 8px; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; font-family: inherit; text-decoration: none; }
+  .btn-primary { background: #F75D5D; color: #fff; }
+  .btn-primary:hover { background: #E54949; }
+  .btn-outline { background: transparent; border: 1px solid #d1d5db; color: #374151; }
+  .btn-outline:hover { background: #f9fafb; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  /* Radar chart placeholder */
+  .radar-placeholder { width: 100%; height: 300px; display: flex; align-items: center; justify-content: center; background: #f9fafb; border-radius: 12px; color: #9ca3af; font-size: 14px; }
+
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .journey-container { flex-direction: column; gap: 8px; }
+    .journey-step:not(:last-child)::after { display: none; }
+    .mockup-nav .container { gap: 4px; }
+    .mockup-btn { padding: 6px 10px; font-size: 11px; }
+    .tab-nav { overflow-x: auto; }
+  }
+
+  /* Annotation */
+  .annotation { background: #fffbeb; border: 1px dashed #fbbf24; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 12px; color: #92400e; }
+  .annotation strong { color: #78350f; }
+
+  /* Participation note */
+  .participation-note { font-size: 11px; color: #6b7280; background: #f3f4f6; padding: 6px 10px; border-radius: 6px; display: inline-block; }
+
+  /* Section divider */
+  .section-divider { font-size: 14px; font-weight: 700; color: #374151; padding: 12px 0; border-bottom: 2px solid #e5e7eb; margin: 24px 0 16px; display: flex; align-items: center; gap: 8px; }
+</style>
+</head>
+<body>
+
+<!-- Mockup Navigation -->
+<div class="mockup-nav">
+  <div class="container">
+    <button class="mockup-btn active" onclick="showSection('dashboard')">1. 대시보드 (개선)</button>
+    <button class="mockup-btn" onclick="showSection('prescription')">2. AI 처방 탭 (신규)</button>
+    <button class="mockup-btn" onclick="showSection('creative-list')">3. 소재 목록 (개선)</button>
+    <button class="mockup-btn" onclick="showSection('creative-detail')">4. 소재 상세 처방</button>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SECTION 1: 대시보드 (개선) -->
+<!-- ============================================ -->
+<div id="section-dashboard" class="mockup-section active">
+  <div class="page-header">
+    <div class="container">
+      <div class="page-title">총가치각도기</div>
+      <div class="page-subtitle">내 Meta 광고 성과를 진단하고 AI가 처방합니다</div>
+    </div>
+  </div>
+
+  <div class="tab-nav">
+    <div class="tab-item active">대시보드</div>
+    <div class="tab-item" style="color:#F75D5D; font-weight:600;">AI 처방 ✨</div>
+    <div class="tab-item">소재 분석</div>
+    <div class="tab-item">경쟁사 분석</div>
+  </div>
+
+  <div class="container">
+    <div class="annotation">
+      <strong>PM 목업 노트:</strong> 기존 대시보드에 "긴급 처방" 섹션 + Andromeda 경고 배너 추가. T3 게이지/요약카드/타겟중복은 기존 유지.
+    </div>
+
+    <!-- Account selector + Period -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <select style="padding:8px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:13px; font-family:inherit;">
+          <option>에어무드 (act_1234567)</option>
+          <option>글로우빈 (act_2345678)</option>
+        </select>
+      </div>
+      <div style="display:flex; gap:4px;">
+        <button class="btn btn-sm btn-outline" style="background:#F75D5D;color:#fff;border-color:#F75D5D;">어제</button>
+        <button class="btn btn-sm btn-outline">이번주</button>
+        <button class="btn btn-sm btn-outline">지난주</button>
+        <button class="btn btn-sm btn-outline">지난달</button>
+      </div>
+    </div>
+
+    <!-- T3 Gauge + Sub scores -->
+    <div class="card">
+      <div class="grid-2">
+        <div class="gauge-container">
+          <div style="width:200px;height:100px;margin:0 auto;background:linear-gradient(90deg,#ef4444 0%,#fbbf24 50%,#22c55e 100%);border-radius:100px 100px 0 0;position:relative;overflow:hidden;">
+            <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:160px;height:80px;background:#fff;border-radius:80px 80px 0 0;"></div>
+          </div>
+          <div class="gauge-score">67</div>
+          <div class="gauge-grade grade-b">B 양호</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:8px;">어제 기준 | 광고비 ₩125,000</div>
+        </div>
+        <div>
+          <div class="grid-3" style="height:100%;align-content:center;">
+            <div class="sub-score">
+              <div class="sub-score-value" style="color:#22c55e;">72</div>
+              <div class="sub-score-label">기반점수</div>
+              <div class="sub-score-note">3초시청률 42.5%</div>
+            </div>
+            <div class="sub-score">
+              <div class="sub-score-value" style="color:#f59e0b;">58</div>
+              <div class="sub-score-label">참여율</div>
+              <div class="sub-score-note">
+                <span class="participation-note">진단만 (처방 없음)</span>
+              </div>
+            </div>
+            <div class="sub-score">
+              <div class="sub-score-value" style="color:#22c55e;">71</div>
+              <div class="sub-score-label">전환율</div>
+              <div class="sub-score-note">CTR 1.8%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Cards (6개, 기존 유지) -->
+    <div class="grid-3" style="margin-bottom:16px;">
+      <div class="summary-card">
+        <div class="summary-label">3초시청률</div>
+        <div class="summary-value">42.5%</div>
+        <div class="summary-compare compare-down">벤치마크 48% 대비 -11%</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">CTR</div>
+        <div class="summary-value">1.8%</div>
+        <div class="summary-compare compare-down">벤치마크 2.3% 대비 -22%</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">CPC</div>
+        <div class="summary-value">₩580</div>
+        <div class="summary-compare compare-up">벤치마크 ₩720 대비 -19% (좋음)</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">구매전환율</div>
+        <div class="summary-value">1.1%</div>
+        <div class="summary-compare compare-down">벤치마크 2.5% 대비 -56%</div>
+      </div>
+      <div class="summary-card" style="border-color:#F75D5D;">
+        <div class="summary-label" style="color:#F75D5D;font-weight:600;">노출당구매확률 (목적함수)</div>
+        <div class="summary-value" style="color:#dc2626;">0.02%</div>
+        <div class="summary-compare compare-down">벤치마크 0.07% 대비 -71%</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">ROAS</div>
+        <div class="summary-value">2.1x</div>
+        <div class="summary-compare compare-down">벤치마크 3.5x 대비 -40%</div>
+      </div>
+    </div>
+
+    <!-- ★ 긴급 처방 카드 (신규) -->
+    <div class="section-divider">🔥 긴급 처방</div>
+
+    <div class="urgent-card">
+      <div class="urgent-header">
+        <span class="urgent-icon">🔴</span>
+        <span class="urgent-title">가장 개선이 필요한 소재</span>
+      </div>
+      <div class="urgent-creative">"에어무드 3월 프로모션" (영상)</div>
+      <div class="urgent-metric">
+        노출당구매확률 <strong>0.02%</strong> — 벤치마크(0.07%) 대비 <strong>-71%</strong> | 계정 내 최저 성과
+      </div>
+      <div class="urgent-rx">
+        <strong>Top 처방:</strong> CTA를 혜택 명시형으로 변경 ("지금 구매" → "30% 할인 지금 보기")<br>
+        <span style="color:#059669;">→ CTR 15~20% 개선 예상 | 난이도: 쉬움</span>
+      </div>
+      <div class="urgent-actions">
+        <button class="btn btn-primary btn-sm">처방 상세 보기 →</button>
+        <button class="btn btn-outline btn-sm">다른 소재 처방 →</button>
+      </div>
+    </div>
+
+    <!-- Andromeda 경고 배너 (신규) -->
+    <div class="andromeda-card" style="margin-top:16px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="font-size:16px;">⚠️</span>
+        <strong style="font-size:14px;color:#92400e;">소재 다양성 경고</strong>
+      </div>
+      <div style="font-size:13px;color:#78350f;">
+        이 계정의 소재 <strong>3개가 70% 이상 유사</strong>합니다. 메타 알고리즘이 노출을 줄일 수 있습니다.
+      </div>
+      <div style="margin-top:8px;">
+        <button class="btn btn-sm btn-outline" style="border-color:#d97706;color:#92400e;">Andromeda 분석 보기 →</button>
+      </div>
+    </div>
+
+    <!-- 타겟 중복 (기존 유지) -->
+    <div class="section-divider">타겟 중복 분석</div>
+    <div class="card">
+      <div style="height:200px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:14px;">
+        (기존 OverlapAnalysis 컴포넌트 — 변경 없음)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SECTION 2: AI 처방 탭 (신규) -->
+<!-- ============================================ -->
+<div id="section-prescription" class="mockup-section">
+  <div class="page-header">
+    <div class="container">
+      <div class="page-title">총가치각도기</div>
+      <div class="page-subtitle">AI가 당신의 소재를 진단하고, 구체적 처방을 내립니다</div>
+    </div>
+  </div>
+
+  <div class="tab-nav">
+    <div class="tab-item">대시보드</div>
+    <div class="tab-item active" style="font-weight:600;">AI 처방 ✨</div>
+    <div class="tab-item">소재 분석</div>
+    <div class="tab-item">경쟁사 분석</div>
+  </div>
+
+  <div class="container">
+    <div class="annotation">
+      <strong>PM 목업 노트:</strong> 이 탭이 핵심 신규 화면. 계정 수준에서 "고객 여정 진단 → 소재별 처방 우선순위 → Andromeda → 글로벌 벤치마크"를 한 눈에.
+    </div>
+
+    <!-- 고객 여정 진단 (계정 수준) -->
+    <div class="card">
+      <div class="card-title">고객 여정 진단</div>
+      <div class="card-subtitle">계정 평균 기준, 고객이 어디서 이탈하는지 보여줍니다</div>
+
+      <div class="area-label">
+        <span class="area-badge ad">📱 광고 (소재 영역)</span>
+        <span class="area-badge lp">🛒 랜딩 (LP 영역)</span>
+      </div>
+
+      <div class="journey-container">
+        <div class="journey-step ad-area">
+          <div class="journey-emoji">😍</div>
+          <div class="journey-label">감각</div>
+          <div class="journey-metric">3초시청률</div>
+          <div class="journey-value">42.5%</div>
+          <div class="journey-status status-warn">🟡 보통</div>
+          <div class="journey-deviation">벤치마크 대비 -15%</div>
+        </div>
+        <div class="journey-step ad-area">
+          <div class="journey-emoji">🤔</div>
+          <div class="journey-label">사고</div>
+          <div class="journey-metric">헤드라인 공감도</div>
+          <div class="journey-value">양호</div>
+          <div class="journey-status status-good">🟢 양호</div>
+          <div class="journey-deviation">벤치마크 대비 +3%</div>
+        </div>
+        <div class="journey-step ad-area">
+          <div class="journey-emoji">👆</div>
+          <div class="journey-label">클릭</div>
+          <div class="journey-metric">CTR</div>
+          <div class="journey-value">1.8%</div>
+          <div class="journey-status status-warn">🟡 보통</div>
+          <div class="journey-deviation">벤치마크 대비 -22%</div>
+        </div>
+        <div class="journey-step lp-area">
+          <div class="journey-emoji">💰</div>
+          <div class="journey-label">구매</div>
+          <div class="journey-metric">구매전환율</div>
+          <div class="journey-value">1.1%</div>
+          <div class="journey-status status-bad">🔴 위험</div>
+          <div class="journey-deviation">벤치마크 대비 -56%</div>
+        </div>
+      </div>
+
+      <div style="background:#f9fafb;border-radius:8px;padding:14px;margin-top:12px;">
+        <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;">
+          📊 종합 진단: <span style="color:#dc2626;">구매 단계에서 대량 이탈</span>
+        </div>
+        <div style="font-size:12px;color:#6b7280;">
+          광고 클릭은 되지만 LP에서 구매로 전환되지 않는 패턴입니다.<br>
+          <strong>최종 성적:</strong> 노출당구매확률 <strong style="color:#dc2626;">0.02%</strong> (목표 0.07%) — <strong>소재 개선 + LP 점검 필요</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- 소재별 처방 우선순위 -->
+    <div class="section-divider">📋 소재별 처방 우선순위</div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">
+      노출당구매확률이 낮은 순서대로 정렬. 개선 효과가 가장 큰 소재부터 처방합니다.
+    </div>
+
+    <!-- 1순위 소재 -->
+    <div class="creative-rx-card" style="border-left:4px solid #ef4444;">
+      <div class="creative-rx-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="rx-rank r1">1</span>
+            <span class="creative-name">에어무드 3월 프로모션</span>
+          </div>
+        </div>
+        <span class="creative-type">VIDEO</span>
+      </div>
+      <div class="creative-metric">
+        노출당구매확률 <strong>0.02%</strong> | CTR 1.2% | 3초시청률 32.5% | ROAS 1.3x
+      </div>
+
+      <!-- Top 3 처방 -->
+      <div class="rx-card">
+        <div class="rx-header">
+          <span class="rx-rank r1">1</span>
+          <span class="rx-title">CTA 혜택 명시형으로 변경</span>
+        </div>
+        <div class="rx-action">"지금 구매" → "30% 할인 지금 보기"로 변경. CTA 텍스트에 구체적 혜택을 명시하세요.</div>
+        <div class="rx-meta">
+          <span class="rx-badge stage-click">행동(클릭)</span>
+          <span class="rx-badge easy">쉬움</span>
+          <span class="rx-badge perf">⚡ 성과기반</span>
+        </div>
+        <div class="rx-impact">→ CTR 15~20% 개선 예상</div>
+
+        <div class="evidence-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 3축 근거 보기</div>
+        <div class="evidence-content">
+          <div class="evidence-axis">
+            <div class="evidence-axis-label">축1. 레퍼런스 원론</div>
+            <div class="evidence-axis-text">혜택명시형 CTA는 일반 CTA 대비 2~3배 CTR 상승 (Meta 공식 가이드, Neurons Inc.)</div>
+          </div>
+          <div class="evidence-axis">
+            <div class="evidence-axis-label">축2. 내부 데이터 패턴</div>
+            <div class="evidence-axis-text">cta_text=혜택형 시 click_to_purchase +18.3% (N=156, confidence: high, lift CI: +12.1%)</div>
+          </div>
+          <div class="evidence-axis">
+            <div class="evidence-axis-label">축3. Motion 글로벌 벤치마크</div>
+            <div class="evidence-axis-text">$1.3B 글로벌 데이터 기준, CTA 혜택형 P75=2.8% vs P50=1.5% (격차 87%)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rx-card">
+        <div class="rx-header">
+          <span class="rx-rank r2">2</span>
+          <span class="rx-title">훅 0.5초 문제형으로 교체</span>
+        </div>
+        <div class="rx-action">현재 benefit형 훅 → "이 실수 때문에 광고비를 날리고 있습니다" 같은 problem형으로 교체. 첫 0.5초에 고통 공감 유도.</div>
+        <div class="rx-meta">
+          <span class="rx-badge stage-sensation">감각</span>
+          <span class="rx-badge moderate">보통</span>
+          <span class="rx-badge perf">⚡ 성과기반</span>
+        </div>
+        <div class="rx-impact">→ 3초시청률 +25% 개선 예상</div>
+      </div>
+
+      <div class="rx-card">
+        <div class="rx-header">
+          <span class="rx-rank r3">3</span>
+          <span class="rx-title">제품 노출 3초 이내로 앞당기기</span>
+        </div>
+        <div class="rx-action">현재 제품이 5초 이후 등장. 3초 내에 제품이 화면 중앙에 보이도록 편집.</div>
+        <div class="rx-meta">
+          <span class="rx-badge stage-sensation">감각</span>
+          <span class="rx-badge moderate">보통</span>
+        </div>
+        <div class="rx-impact">→ 구매전환율 +10% 개선 예상</div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <button class="btn btn-primary btn-sm">소재 상세 분석 보기 →</button>
+      </div>
+    </div>
+
+    <!-- 2순위 소재 -->
+    <div class="creative-rx-card" style="border-left:4px solid #f59e0b;">
+      <div class="creative-rx-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="rx-rank r2">2</span>
+            <span class="creative-name">글로우빈 리뷰 소재</span>
+          </div>
+        </div>
+        <span class="creative-type">IMAGE</span>
+      </div>
+      <div class="creative-metric">
+        노출당구매확률 <strong style="color:#f59e0b;">0.05%</strong> | CTR 1.5% | ROAS 2.1x
+      </div>
+
+      <div class="rx-card">
+        <div class="rx-header">
+          <span class="rx-rank r1">1</span>
+          <span class="rx-title">사회적 증거에 숫자 추가</span>
+        </div>
+        <div class="rx-action">"고객 후기" → "누적 판매 10만개, 고객 만족도 4.8/5" — 구체적 숫자가 신뢰감 2배 향상</div>
+        <div class="rx-meta">
+          <span class="rx-badge stage-think">사고</span>
+          <span class="rx-badge easy">쉬움</span>
+        </div>
+        <div class="rx-impact">→ 구매전환율 +12% 개선 예상</div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <button class="btn btn-outline btn-sm">처방 전체 보기 →</button>
+      </div>
+    </div>
+
+    <!-- 3순위 (축소) -->
+    <div class="creative-rx-card" style="border-left:4px solid #22c55e;">
+      <div class="creative-rx-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="rx-rank r3">3</span>
+            <span class="creative-name">에어무드 봄 시즌 (성과 양호)</span>
+          </div>
+        </div>
+        <span class="creative-type">VIDEO</span>
+      </div>
+      <div class="creative-metric" style="color:#059669;">
+        노출당구매확률 <strong style="color:#059669;">0.12%</strong> | CTR 2.1% | ROAS 4.2x — 🟢 계정 내 최고 성과
+      </div>
+      <div style="font-size:13px;color:#6b7280;padding:8px 0;">
+        현재 잘 작동하고 있습니다. 미세 조정만 필요합니다.
+      </div>
+    </div>
+
+    <!-- Andromeda 다양성 분석 -->
+    <div class="section-divider">🔮 Andromeda 소재 다양성</div>
+
+    <div class="andromeda-card">
+      <div class="andromeda-score">
+        <div class="score-circle warn">62</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#92400e;">다양성 점수: 62/100</div>
+          <div style="font-size:12px;color:#a16207;">⚠️ 보통 — 소재 포트폴리오 다양화 필요</div>
+        </div>
+      </div>
+
+      <div style="font-size:13px;font-weight:600;color:#78350f;margin-bottom:8px;">유사 소재 쌍</div>
+      <div class="similar-pair">• 에어무드 3월 프로모션 ↔ 에어무드 봄 시즌: <strong>78%</strong> 유사 (visual, hook 겹침)</div>
+      <div class="similar-pair">• 에어무드 3월 프로모션 ↔ 에어무드 리뷰: <strong>72%</strong> 유사 (text, psychology 겹침)</div>
+      <div class="similar-pair">• 글로우빈 리뷰 ↔ 글로우빈 할인: <strong>71%</strong> 유사 (visual, text 겹침)</div>
+
+      <div class="diversity-tip">
+        💡 <strong>다양화 제안:</strong> 현재 "30대 여성 + 품질 중시" 소재에 편중. "20-30대 직장여성 + 시간절약 각도" 소재를 추가하면 메타 알고리즘의 노출 다양성이 개선됩니다.
+      </div>
+    </div>
+
+    <!-- 글로벌 벤치마크 비교 -->
+    <div class="section-divider">🌍 글로벌 벤치마크 비교</div>
+
+    <div class="card">
+      <div class="card-subtitle">내 계정 vs Motion 글로벌 ($1.3B 광고비 데이터) — 14개 지표 백분위</div>
+      <div class="radar-placeholder">
+        레이더 차트 (Recharts)<br>
+        내 계정: 파란선 / 글로벌 P50: 회색 / 글로벌 P75: 점선
+      </div>
+      <div class="grid-3" style="margin-top:16px;">
+        <div style="text-align:center;padding:8px;">
+          <div style="font-size:11px;color:#6b7280;">3초시청률</div>
+          <div style="font-size:16px;font-weight:700;color:#f59e0b;">P42</div>
+          <div style="font-size:10px;color:#6b7280;">하위 42%</div>
+        </div>
+        <div style="text-align:center;padding:8px;">
+          <div style="font-size:11px;color:#6b7280;">CTR</div>
+          <div style="font-size:16px;font-weight:700;color:#f59e0b;">P38</div>
+          <div style="font-size:10px;color:#6b7280;">하위 38%</div>
+        </div>
+        <div style="text-align:center;padding:8px;">
+          <div style="font-size:11px;color:#6b7280;">노출당구매확률</div>
+          <div style="font-size:16px;font-weight:700;color:#ef4444;">P18</div>
+          <div style="font-size:10px;color:#dc2626;">하위 18% ⚠️</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SECTION 3: 소재 목록 (개선) -->
+<!-- ============================================ -->
+<div id="section-creative-list" class="mockup-section">
+  <div class="page-header">
+    <div class="container">
+      <div class="page-title">총가치각도기</div>
+    </div>
+  </div>
+
+  <div class="tab-nav">
+    <div class="tab-item">대시보드</div>
+    <div class="tab-item">AI 처방 ✨</div>
+    <div class="tab-item active">소재 분석</div>
+    <div class="tab-item">경쟁사 분석</div>
+  </div>
+
+  <div class="container">
+    <div class="annotation">
+      <strong>PM 목업 노트:</strong> 기존 소재 목록에 처방 배지 + "처방 보기" 버튼 추가. 소재 카드에 처방 필요 여부가 바로 보여야 함.
+    </div>
+
+    <!-- 소재 카드 1 -->
+    <div class="card" style="display:flex;gap:16px;align-items:flex-start;">
+      <div style="width:120px;height:90px;background:#f3f4f6;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span style="font-size:28px;">🎬</span>
+      </div>
+      <div style="flex:1;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div style="font-size:14px;font-weight:600;">에어무드 3월 프로모션</div>
+            <div style="font-size:12px;color:#6b7280;">VIDEO | 2026-03-15 | 에어무드</div>
+          </div>
+          <span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;">🔴 처방 3건</span>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:8px;font-size:12px;color:#6b7280;">
+          <span>visual <strong>75</strong></span>
+          <span>text <strong>68</strong></span>
+          <span>hook <strong>42</strong></span>
+          <span>psychology <strong>55</strong></span>
+          <span>quality <strong>80</strong></span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+          <span style="font-size:12px;color:#dc2626;font-weight:500;">최우선: "CTA 혜택형 변경"</span>
+          <button class="btn btn-primary btn-sm" style="margin-left:auto;">처방 보기 →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 소재 카드 2 -->
+    <div class="card" style="display:flex;gap:16px;align-items:flex-start;">
+      <div style="width:120px;height:90px;background:#f3f4f6;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span style="font-size:28px;">🖼️</span>
+      </div>
+      <div style="flex:1;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div style="font-size:14px;font-weight:600;">글로우빈 리뷰 소재</div>
+            <div style="font-size:12px;color:#6b7280;">IMAGE | 2026-03-18 | 글로우빈</div>
+          </div>
+          <span style="background:#fef9c3;color:#854d0e;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;">🟡 처방 2건</span>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:8px;font-size:12px;color:#6b7280;">
+          <span>visual <strong>82</strong></span>
+          <span>text <strong>65</strong></span>
+          <span>hook <strong>70</strong></span>
+          <span>psychology <strong>48</strong></span>
+          <span>quality <strong>85</strong></span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+          <span style="font-size:12px;color:#854d0e;font-weight:500;">최우선: "숫자 증거 추가"</span>
+          <button class="btn btn-outline btn-sm" style="margin-left:auto;">처방 보기 →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 소재 카드 3 (성과 양호) -->
+    <div class="card" style="display:flex;gap:16px;align-items:flex-start;">
+      <div style="width:120px;height:90px;background:#f3f4f6;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span style="font-size:28px;">🎬</span>
+      </div>
+      <div style="flex:1;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div style="font-size:14px;font-weight:600;">에어무드 봄 시즌</div>
+            <div style="font-size:12px;color:#6b7280;">VIDEO | 2026-03-10 | 에어무드</div>
+          </div>
+          <span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;">🟢 양호</span>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:8px;font-size:12px;color:#6b7280;">
+          <span>visual <strong>88</strong></span>
+          <span>text <strong>82</strong></span>
+          <span>hook <strong>90</strong></span>
+          <span>psychology <strong>76</strong></span>
+          <span>quality <strong>85</strong></span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+          <span style="font-size:12px;color:#059669;">성과 양호 — 미세 조정만 필요</span>
+          <button class="btn btn-outline btn-sm" style="margin-left:auto;">상세 보기 →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SECTION 4: 소재 상세 처방 -->
+<!-- ============================================ -->
+<div id="section-creative-detail" class="mockup-section">
+  <div class="page-header">
+    <div class="container">
+      <div class="page-title">← 에어무드 3월 프로모션 (VIDEO)</div>
+    </div>
+  </div>
+
+  <div class="container" style="padding-top:16px;">
+    <div class="annotation">
+      <strong>PM 목업 노트:</strong> 기존 소재 상세 + 처방 탭. 이미 구현된 PrescriptionPanel 8개 컴포넌트 그대로 사용. 레이아웃만 보여주는 목업.
+    </div>
+
+    <!-- 소재 기본 정보 -->
+    <div class="card" style="display:flex;gap:20px;">
+      <div style="width:200px;height:150px;background:#f3f4f6;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span style="font-size:48px;">🎬</span>
+      </div>
+      <div>
+        <div style="font-size:18px;font-weight:700;">에어무드 3월 프로모션</div>
+        <div style="font-size:13px;color:#6b7280;margin:4px 0 12px;">VIDEO | 에어무드 | 2026-03-15 생성</div>
+        <div class="grid-4">
+          <div style="text-align:center;">
+            <div style="font-size:11px;color:#6b7280;">노출당구매</div>
+            <div style="font-size:16px;font-weight:700;color:#dc2626;">0.02%</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:11px;color:#6b7280;">CTR</div>
+            <div style="font-size:16px;font-weight:700;">1.2%</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:11px;color:#6b7280;">3초시청률</div>
+            <div style="font-size:16px;font-weight:700;">32.5%</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:11px;color:#6b7280;">ROAS</div>
+            <div style="font-size:16px;font-weight:700;">1.3x</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 탭: 분석 | 성과 | AI 처방 -->
+    <div style="display:flex;gap:4px;border-bottom:1px solid #e5e7eb;margin-bottom:16px;">
+      <div style="padding:10px 16px;font-size:14px;color:#6b7280;cursor:pointer;">5축 분석</div>
+      <div style="padding:10px 16px;font-size:14px;color:#6b7280;cursor:pointer;">성과 데이터</div>
+      <div style="padding:10px 16px;font-size:14px;color:#F75D5D;font-weight:600;border-bottom:2px solid #F75D5D;margin-bottom:-1px;cursor:pointer;">AI 처방 ✨</div>
+      <div style="padding:10px 16px;font-size:14px;color:#6b7280;cursor:pointer;">DeepGaze 시선</div>
+    </div>
+
+    <!-- 5축 스코어카드 (FiveAxisScorecard) -->
+    <div class="card">
+      <div class="card-title">5축 점수</div>
+      <div class="grid-3" style="margin-bottom:12px;">
+        <div class="sub-score">
+          <div class="sub-score-value">75</div>
+          <div class="sub-score-label">시각 임팩트</div>
+        </div>
+        <div class="sub-score">
+          <div class="sub-score-value">68</div>
+          <div class="sub-score-label">메시지 명확성</div>
+        </div>
+        <div class="sub-score">
+          <div class="sub-score-value" style="color:#dc2626;">42</div>
+          <div class="sub-score-label">CTA 효과성</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="sub-score">
+          <div class="sub-score-value">55</div>
+          <div class="sub-score-label">사회적 증거</div>
+        </div>
+        <div class="sub-score">
+          <div class="sub-score-value" style="color:#f59e0b;">62</div>
+          <div class="sub-score-label">종합</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 고객 여정 분석 (CustomerJourneyBreakdown) -->
+    <div class="card">
+      <div class="card-title">고객 여정 분석 (이 소재)</div>
+      <div class="journey-container">
+        <div class="journey-step ad-area">
+          <div class="journey-emoji">😍</div>
+          <div class="journey-label">감각</div>
+          <div class="journey-status status-bad">⚠️ 약점</div>
+          <div class="journey-deviation">-32.3%</div>
+        </div>
+        <div class="journey-step ad-area">
+          <div class="journey-emoji">🤔</div>
+          <div class="journey-label">사고</div>
+          <div class="journey-status status-warn">보통</div>
+          <div class="journey-deviation">-8.2%</div>
+        </div>
+        <div class="journey-step ad-area">
+          <div class="journey-emoji">👆</div>
+          <div class="journey-label">클릭</div>
+          <div class="journey-status status-good">양호</div>
+          <div class="journey-deviation">+5.1%</div>
+        </div>
+        <div class="journey-step lp-area">
+          <div class="journey-emoji">💰</div>
+          <div class="journey-label">구매</div>
+          <div class="journey-status status-good">양호</div>
+          <div class="journey-deviation">+12.4%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top 3 처방 (PrescriptionList) -->
+    <div class="card">
+      <div class="card-title">🩺 Top 3 처방</div>
+
+      <div class="rx-card">
+        <div class="rx-header">
+          <span class="rx-rank r1">1</span>
+          <span class="rx-title">CTA 혜택 명시형으로 변경</span>
+        </div>
+        <div class="rx-action">"지금 구매" → "30% 할인 지금 보기"로 변경</div>
+        <div class="rx-meta">
+          <span class="rx-badge stage-click">행동(클릭)</span>
+          <span class="rx-badge easy">쉬움</span>
+          <span class="rx-badge perf">⚡ 성과기반</span>
+        </div>
+        <div class="rx-impact">→ CTR 15~20% 개선 예상</div>
+        <div class="evidence-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▶ 3축 근거 보기</div>
+        <div class="evidence-content">
+          <div class="evidence-axis">
+            <div class="evidence-axis-label">축1. 레퍼런스 원론</div>
+            <div class="evidence-axis-text">혜택명시형 CTA는 일반 CTA 대비 2~3배 CTR (Meta, Neurons)</div>
+          </div>
+          <div class="evidence-axis">
+            <div class="evidence-axis-label">축2. 내부 데이터</div>
+            <div class="evidence-axis-text">cta_text=혜택형 → click_to_purchase +18.3% (N=156, high)</div>
+          </div>
+          <div class="evidence-axis">
+            <div class="evidence-axis-label">축3. 글로벌 벤치마크</div>
+            <div class="evidence-axis-text">Motion: CTA 혜택형 P75=2.8% vs P50=1.5% (격차 87%)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rx-card">
+        <div class="rx-header">
+          <span class="rx-rank r2">2</span>
+          <span class="rx-title">훅 0.5초 문제형 교체</span>
+        </div>
+        <div class="rx-action">benefit형 → problem형 ("이 실수 때문에 광고비를 날리고 있습니다")</div>
+        <div class="rx-meta">
+          <span class="rx-badge stage-sensation">감각</span>
+          <span class="rx-badge moderate">보통</span>
+          <span class="rx-badge perf">⚡ 성과기반</span>
+        </div>
+        <div class="rx-impact">→ 3초시청률 +25% 개선 예상</div>
+      </div>
+
+      <div class="rx-card">
+        <div class="rx-header">
+          <span class="rx-rank r3">3</span>
+          <span class="rx-title">제품 노출 3초 이내 앞당기기</span>
+        </div>
+        <div class="rx-action">5초 → 3초 내 제품 중앙 배치</div>
+        <div class="rx-meta">
+          <span class="rx-badge stage-sensation">감각</span>
+          <span class="rx-badge moderate">보통</span>
+        </div>
+        <div class="rx-impact">→ 구매전환율 +10% 개선 예상</div>
+      </div>
+    </div>
+
+    <!-- 성과 역추적 (PerformanceBacktrack) -->
+    <div class="card">
+      <div class="card-title">📉 성과 역추적</div>
+      <div class="card-subtitle">벤치마크 대비 가장 부족한 지표 3개</div>
+
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+          <span>3초시청률</span>
+          <span style="color:#dc2626;">32.5% (벤치마크 48%, -32.3%)</span>
+        </div>
+        <div style="height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;">
+          <div style="height:100%;width:68%;background:#ef4444;border-radius:4px;"></div>
+        </div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+          <span>CTR</span>
+          <span style="color:#f59e0b;">1.2% (벤치마크 2.3%, -47.8%)</span>
+        </div>
+        <div style="height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;">
+          <div style="height:100%;width:52%;background:#f59e0b;border-radius:4px;"></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+          <span>구매전환율</span>
+          <span style="color:#f59e0b;">1.1% (벤치마크 2.5%, -56%)</span>
+        </div>
+        <div style="height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;">
+          <div style="height:100%;width:44%;background:#f59e0b;border-radius:4px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Andromeda (AndromedaAlert) -->
+    <div class="andromeda-card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="font-size:16px;">🔮</span>
+        <strong style="font-size:14px;color:#92400e;">Andromeda: 유사 소재 2개 발견</strong>
+      </div>
+      <div class="similar-pair">• 에어무드 봄 시즌과 78% 유사 (visual, hook 겹침)</div>
+      <div class="similar-pair">• 에어무드 리뷰와 72% 유사 (text, psychology 겹침)</div>
+      <div class="diversity-tip">
+        💡 새로운 페르소나(시간절약 직장여성) + 다른 훅(curiosity형)으로 다양화하세요.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showSection(id) {
+  document.querySelectorAll('.mockup-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.mockup-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>

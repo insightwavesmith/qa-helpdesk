@@ -1246,3 +1246,100 @@ Phase 2 (개선):
 | **업데이트 파일** | `src/lib/slack-notifier.ts` (재시도 + Rate Limit 로직 추가) |
 | **Phase 1 소요 예상** | 2~3시간 |
 | **Phase 2 소요 예상** | 1~2시간 |
+
+---
+
+## TDD 보완 (테스트 주도 개발 지원)
+
+### T1. 단위 테스트 시나리오
+
+| 함수 | 입력 | 기대 출력 | 검증 포인트 |
+|------|------|----------|------------|
+| `resolveChannels('task.started', 'cto', undefined)` | event='task.started', team='cto' | `['C07CTO5678']` | 발신 팀 채널만 반환 |
+| `resolveChannels('chain.handoff', 'pm', 'cto')` | event='chain.handoff', team='pm', targetTeam='cto' | `['C07PM1234', 'C07CTO5678']` | 발신+수신 양쪽 채널 |
+| `resolveChannels('deploy.completed', 'cto', undefined)` | event='deploy.completed', team='cto' | `['C07CTO5678']` | 배포 알림은 CTO 채널 |
+| `buildSlackBlocks('task.started', payload)` | 8개 이벤트 타입 중 task.started | `{ blocks: [{header}, {section}, {context}, {actions}] }` | Block Kit 구조 정합성 |
+| `buildSlackBlocks('error.critical', payload)` | error.critical 이벤트 | header 이모지 + 에러 상세 section 포함 | 긴급 이벤트 포맷 |
+| `detectChainHandoff(fromTeam, fromEvent)` | pm + plan.completed | `{ toTeam: 'cto', toAction: '구현 착수 필요' }` | 체인 규칙 매칭 |
+| `detectChainHandoff(fromTeam, fromEvent)` | 매칭 규칙 없는 조합 | `null` | 미매칭 시 null 반환 |
+| `sendSlackNotification(notification)` | 유효한 SlackNotification | `{ ok: true, channelsSent: [...] }` | Slack API 전송 성공 |
+| CEO_NOTIFY_EVENTS 체크 | event='chain.handoff' | `true` | CEO DM 대상 이벤트 |
+| CEO_NOTIFY_EVENTS 체크 | event='task.started' | `false` | CEO DM 비대상 이벤트 |
+
+### T2. 엣지 케이스 정의
+
+| # | 엣지 케이스 | 입력 조건 | 기대 동작 | 우선순위 |
+|---|-----------|---------|---------|---------|
+| E1 | SLACK_BOT_TOKEN 미설정 | 환경변수 없음 | 전송 실패 로그 + 500 반환 | P0 |
+| E2 | 잘못된 event 타입 | `event: "task.unknown"` | 400 + `INVALID_EVENT_TYPE` | P0 |
+| E3 | chain.handoff에 targetTeam 누락 | `event: "chain.handoff", targetTeam: undefined` | 400 + `MISSING_TARGET_TEAM` | P0 |
+| E4 | team과 targetTeam 동일 | `team: "pm", targetTeam: "pm"` | 400 + `MISSING_TARGET_TEAM` (자기 자신에게 handoff 불가) | P1 |
+| E5 | Slack API Rate Limit (429) | Slack이 429 반환 | Retry-After 대기 → 재시도 (최대 3회) | P0 |
+| E6 | Slack API 네트워크 오류 | fetch 타임아웃 | 3회 재시도 (exponential backoff: 1초, 3초) 후 실패 | P1 |
+| E7 | title 200자 초과 | title="A" * 201 | 400 + `INVALID_TITLE` | P1 |
+| E8 | message 3000자 초과 | 매우 긴 메시지 | 400 + `INVALID_MESSAGE` | P1 |
+| E9 | 인증 실패 (admin 아님) | member 역할 사용자 | 401 + `UNAUTHORIZED` | P0 |
+| E10 | 채널 ID 잘못됨 | 존재하지 않는 채널 | 해당 채널만 실패, 다른 채널은 정상 전송 | P1 |
+
+### T3. 모킹 데이터 (Fixture)
+
+```json
+// fixture: slack_notify_chain_handoff — 체인 전달 요청
+{
+  "event": "chain.handoff",
+  "team": "pm",
+  "targetTeam": "cto",
+  "title": "체인 전달: PM팀 → CTO팀",
+  "message": "PM팀이 [agent-dashboard] 기획을 완료했습니다. CTO팀 구현 착수가 필요합니다.",
+  "metadata": {
+    "feature": "agent-dashboard",
+    "dashboardUrl": "https://bscamp.app/admin/agent-dashboard"
+  }
+}
+```
+
+```json
+// fixture: slack_notify_error_critical — 빌드 실패 알림
+{
+  "event": "error.critical",
+  "team": "cto",
+  "title": "빌드 실패: CTO팀",
+  "message": "npm run build 실패: Type error in src/app/api/protractor/route.ts",
+  "metadata": {
+    "errorMessage": "Type 'string' is not assignable to type 'number'",
+    "taskId": "T3"
+  }
+}
+```
+
+```json
+// fixture: slack_notify_success_response — 성공 응답
+{
+  "ok": true,
+  "notificationId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "channelsSent": ["C07PM1234", "C07CTO5678"],
+  "ceoNotified": true,
+  "sentAt": "2026-03-25T14:30:00+09:00"
+}
+```
+
+### T4. 테스트 파일 경로 규약
+
+| 테스트 대상 | 테스트 파일 경로 | 테스트 프레임워크 |
+|-----------|---------------|----------------|
+| `slack-notifier.ts` (전송 + 재시도) | `__tests__/slack-notification/slack-notifier.test.ts` | vitest |
+| `chain-detector.ts` (체인 규칙) | `__tests__/slack-notification/chain-detector.test.ts` | vitest |
+| Block Kit 메시지 빌더 | `__tests__/slack-notification/block-kit-builder.test.ts` | vitest |
+| `resolveChannels` 함수 | `__tests__/slack-notification/resolve-channels.test.ts` | vitest |
+| API Route (`/api/agent-dashboard/slack/notify`) | `__tests__/slack-notification/notify-route.test.ts` | vitest |
+
+### T5. 통합 테스트 시나리오
+
+| 시나리오 | Method | Endpoint | 요청 Body | 기대 응답 | 상태 코드 |
+|---------|--------|----------|----------|---------|---------|
+| 체인 전달 알림 전송 | POST | `/api/agent-dashboard/slack/notify` | `{ event: "chain.handoff", team: "pm", targetTeam: "cto", title: "...", message: "..." }` | `{ ok: true, channelsSent: 2개, ceoNotified: true }` | 200 |
+| 작업 시작 알림 | POST | `/api/agent-dashboard/slack/notify` | `{ event: "task.started", team: "cto", title: "...", message: "..." }` | `{ ok: true, channelsSent: 1개, ceoNotified: false }` | 200 |
+| 빌드 실패 알림 (긴급) | POST | `/api/agent-dashboard/slack/notify` | `{ event: "error.critical", team: "cto", ... }` | `{ ok: true, ceoNotified: true }` | 200 |
+| 잘못된 이벤트 타입 | POST | `/api/agent-dashboard/slack/notify` | `{ event: "invalid", team: "pm", title: "...", message: "..." }` | `{ ok: false, error: "INVALID_EVENT_TYPE" }` | 400 |
+| targetTeam 누락 (handoff) | POST | `/api/agent-dashboard/slack/notify` | `{ event: "chain.handoff", team: "pm", title: "...", message: "..." }` | `{ ok: false, error: "MISSING_TARGET_TEAM" }` | 400 |
+| 인증 실패 | POST | `/api/agent-dashboard/slack/notify` | (admin 아닌 사용자) | `{ ok: false, error: "UNAUTHORIZED" }` | 401 |

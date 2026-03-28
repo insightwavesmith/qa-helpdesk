@@ -498,3 +498,96 @@ CREATE INDEX idx_prescription_patterns_category ON prescription_patterns(categor
 - **리스크**: 5축 배치 미완료가 최대 병목. STEP 1(테이블)은 선 준비 가능
 
 Smith님 비전의 "확률게임 이탈률 최소화"를 **광고(~CTR)와 LP(CTR~구매)**로 나눠서 병목을 특정하는 첫 번째 구체적 기능. 수강생이 점수만 보고 멈추는 게 아니라, **"이 소재는 CTR이 문제"** 혹은 **"소재는 괜찮은데 LP가 문제"**를 바로 알 수 있게 된다.
+
+---
+
+## TDD 보완 (테스트 주도 개발 지원)
+
+### T1. 단위 테스트 시나리오
+
+| 대상 함수/API | 입력 | 기대 출력 | 비고 |
+|---------------|------|-----------|------|
+| `POST /api/protractor/prescription` | `{ media_id, axis: "foundation" }` | `{ prescriptions: [{ rank, title, action, expected_impact }], axis_score, benchmark }` | 기반축 처방 Top 3 |
+| `POST /api/protractor/prescription` | `{ media_id, axis: "conversion" }` | `{ prescriptions: [...], axis_score, benchmark }` | 전환축(CTR) 처방 |
+| `POST /api/protractor/prescription` | `{ media_id, axis: "engagement" }` | `{ prescriptions: [], diagnosis_only: true }` | 참여축은 진단만, 처방 빈 배열 |
+| `generatePrescription(analysis, patterns)` | 5축 분석 결과 + prescription_patterns | `Prescription[]` (impact 내림차순) | Gemini 통합 처방 생성 |
+| `matchPatterns(category, axis, grade)` | `("beauty", "foundation", "POOR")` | 해당 카테고리+축+등급 패턴 배열 | 카테고리 N<10이면 ALL fallback |
+| `calculateImpact(prescription)` | 처방 항목 | `expected_impact: "+0.8%p"` 등 수치 | 벤치마크 대비 기대 개선치 |
+
+### T2. 엣지 케이스 정의
+
+| 시나리오 | 입력/상황 | 기대 동작 |
+|----------|-----------|-----------|
+| 5축 분석 미완료 소재 | `media_id`에 five_axis_analysis가 null | 에러 반환: "5축 분석이 완료되지 않은 소재입니다" |
+| 카테고리별 패턴 N<10 | category="furniture", 패턴 3건 | ALL 카테고리 패턴으로 fallback |
+| Gemini API 타임아웃 | 15초 초과 | retry 1회 → 실패 시 "잠시 후 다시 시도" 메시지 |
+| 모든 축 GOOD 이상 | 기반/전환 모두 양호 | "현재 소재 성과가 양호합니다" + 유지 팁 |
+| 참여축만 POOR | engagement만 낮음 | 진단 메시지만 표시, 처방 없음 ("기반/전환 개선 시 자연 상승") |
+| prescription_patterns 테이블 비어있음 | 0건 | 레퍼런스 원론 가이드(축1)만으로 처방 생성 |
+| media_id 존재하지 않음 | 삭제된 소재 | 404 에러 |
+| 동시 요청 (같은 소재) | 동일 media_id 병렬 요청 | 중복 생성 방지 또는 캐시 반환 |
+
+### T3. 모킹 데이터 (Fixture)
+
+```json
+// fixtures/prescription/five-axis-analysis.json
+{
+  "media_id": "cm_test_001",
+  "five_axis_analysis": {
+    "visual": { "score": 45, "grade": "POOR", "details": "색상 대비 부족, CTA 버튼 불명확" },
+    "text": { "score": 72, "grade": "GOOD", "details": "혜택 명확, 긴급성 부족" },
+    "psychology": { "score": 38, "grade": "POOR", "details": "사회적 증거 없음, 손실 회피 미활용" },
+    "quality": { "score": 85, "grade": "GREAT", "details": "해상도 양호, 브랜드 일관성" },
+    "hook": { "score": 55, "grade": "FAIR", "details": "첫 3초 시선 분산, 주목 요소 약함" }
+  },
+  "category": "beauty",
+  "creative_type": "IMAGE"
+}
+
+// fixtures/prescription/prescription-patterns.json
+[
+  {
+    "id": "pp_001",
+    "category": "beauty",
+    "axis": "foundation",
+    "grade": "POOR",
+    "sub_axis": "visual",
+    "pattern_text": "CTA 버튼을 고대비 색상(#FF0000)으로 변경 시 3초시청률 +12%",
+    "expected_impact": 0.12,
+    "sample_count": 45,
+    "created_at": "2026-03-20T00:00:00Z"
+  },
+  {
+    "id": "pp_002",
+    "category": "beauty",
+    "axis": "conversion",
+    "grade": "POOR",
+    "sub_axis": "text",
+    "pattern_text": "헤드라인을 호기심형으로 변경 시 CTR +0.8%p",
+    "expected_impact": 0.008,
+    "sample_count": 32,
+    "created_at": "2026-03-20T00:00:00Z"
+  },
+  {
+    "id": "pp_003",
+    "category": "ALL",
+    "axis": "foundation",
+    "grade": "POOR",
+    "sub_axis": "hook",
+    "pattern_text": "첫 프레임에 사람 얼굴 배치 시 3초시청률 +18%",
+    "expected_impact": 0.18,
+    "sample_count": 120,
+    "created_at": "2026-03-20T00:00:00Z"
+  }
+]
+```
+
+### T4. 테스트 파일 경로 규약
+
+| 테스트 파일 | 테스트 대상 | 프레임워크 |
+|-------------|-------------|------------|
+| `__tests__/prescription-mvp/generate-prescription.test.ts` | 처방 생성 로직 (Gemini 통합) | vitest |
+| `__tests__/prescription-mvp/match-patterns.test.ts` | 패턴 매칭 + 카테고리 fallback | vitest |
+| `__tests__/prescription-mvp/prescription-api.test.ts` | `/api/protractor/prescription` 엔드포인트 | vitest |
+| `__tests__/prescription-mvp/engagement-diagnosis.test.ts` | 참여축 진단만 모드 검증 | vitest |
+| `__tests__/prescription-mvp/fixtures/` | 위 JSON fixture 파일 저장 | - |

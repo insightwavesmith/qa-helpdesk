@@ -134,3 +134,84 @@ questions.ts (after())
 - `ANTHROPIC_API_KEY` 기존 존재
 - 기존 `knowledge_chunks` 테이블 (1,912개 청크)
 - Supabase full-text search 지원 확인 필요
+
+---
+
+## TDD 보완 (테스트 주도 개발 지원)
+
+### T1. 단위 테스트 시나리오
+
+| 대상 함수/API | 입력 | 기대 출력 | 비고 |
+|---------------|------|-----------|------|
+| `analyzeDomain(question)` | `"네이버 쇼핑 입점 방법"` | `{ terms: ["네이버 쇼핑", "입점"], intent: "플랫폼현황", complexity: "중간", type: "platform" }` | Stage 0 도메인 인텔리전스 |
+| `analyzeDomain(question)` | `"안녕하세요"` | `{ type: "non_technical", complexity: "단순", skip_stages: [1, 2] }` | 단순+비기술 → 스킵 |
+| `hybridSearch(query, options)` | 도메인 정규화된 쿼리 | `{ vector_results: [...], bm25_results: [...], merged: [...] }` | 벡터 + BM25 결합 |
+| `evaluateRelevance(question, chunks)` | 질문 + 검색 청크 | `"CORRECT" \| "AMBIGUOUS" \| "INCORRECT"` | Sonnet 관련성 평가 |
+| `searchBrave(query)` | 도메인 기반 검색 쿼리 | `{ results: [{ title, url, snippet }] }` | Brave Search API |
+| `generateRAGAnswer(question, context)` | 질문 + 도메인 + RAG + 웹서치 종합 | `{ answer, source_refs, web_sources }` | Stage 3 최종 답변 |
+
+### T2. 엣지 케이스 정의
+
+| 시나리오 | 입력/상황 | 기대 동작 |
+|----------|-----------|-----------|
+| 도메인 용어 없는 일반 질문 | `"강의 몇 주차까지 있나요?"` | 도메인 분석 스킵, 기존 RAG 직행 |
+| RAG 결과 INCORRECT | 검색 결과 무관련 | Stage 2 웹서치 실행 |
+| RAG 결과 AMBIGUOUS | 부분 관련 | Stage 2 웹서치 보충 |
+| Brave Search API 장애 | 500 에러 | graceful degradation → RAG만으로 답변 |
+| BRAVE_API_KEY 미설정 | env 없음 | 웹서치 스킵 + RAG만 사용 |
+| knowledge_chunks 0건 매칭 | 벡터 + BM25 모두 0건 | 웹서치 강제 실행 또는 "관련 강의를 찾지 못했습니다" |
+| 응답 시간 60초 초과 | Sonnet 3회 호출 지연 | 타임아웃 → 부분 결과로 답변 생성 |
+| 이미지 포함 질문 | `image_urls` 있는 질문 | Stage 0 Vision 전처리 유지 (기존 로직) |
+| 기존 QA 임베딩 플로우 | 답변 생성 후 | embedQAPair 호출 + is_approved=false 저장 유지 |
+
+### T3. 모킹 데이터 (Fixture)
+
+```json
+// fixtures/crag-adaptive-rag/domain-analysis.json
+{
+  "question": "네이버 쇼핑 입점 후 광고 세팅은 어떻게 하나요?",
+  "domain_analysis": {
+    "terms": [
+      { "original": "네이버 쇼핑", "normalized": "네이버 스마트스토어" },
+      { "original": "광고 세팅", "normalized": "메타 광고 캠페인 설정" }
+    ],
+    "intent": "플랫폼현황 + 트러블슈팅",
+    "type": "platform",
+    "complexity": "복잡",
+    "skip_stages": []
+  }
+}
+
+// fixtures/crag-adaptive-rag/hybrid-search-result.json
+{
+  "vector_results": [
+    { "chunk_id": "kc_001", "content": "메타 광고 관리자에서 캠페인을 생성합니다...", "similarity": 0.85, "source_type": "lecture" }
+  ],
+  "bm25_results": [
+    { "chunk_id": "kc_042", "content": "네이버 스마트스토어 입점 절차는...", "ts_rank": 0.72, "source_type": "lecture" }
+  ],
+  "merged": [
+    { "chunk_id": "kc_001", "combined_score": 0.82 },
+    { "chunk_id": "kc_042", "combined_score": 0.68 }
+  ]
+}
+
+// fixtures/crag-adaptive-rag/relevance-evaluation.json
+{
+  "question": "네이버 쇼핑 입점 후 광고 세팅은?",
+  "chunks_evaluated": 2,
+  "grade": "AMBIGUOUS",
+  "reason": "강의 내용에 메타 광고 설정은 있으나 네이버 스마트스토어 입점 절차는 부족"
+}
+```
+
+### T4. 테스트 파일 경로 규약
+
+| 테스트 파일 | 테스트 대상 | 프레임워크 |
+|-------------|-------------|------------|
+| `__tests__/crag-adaptive-rag/domain-intelligence.test.ts` | Stage 0 도메인 분석 + 용어 정규화 | vitest |
+| `__tests__/crag-adaptive-rag/hybrid-search.test.ts` | 벡터 + BM25 결합 검색 | vitest |
+| `__tests__/crag-adaptive-rag/relevance-evaluator.test.ts` | CORRECT/AMBIGUOUS/INCORRECT 판정 | vitest |
+| `__tests__/crag-adaptive-rag/brave-search.test.ts` | Brave Search API + 장애 fallback | vitest |
+| `__tests__/crag-adaptive-rag/pipeline-integration.test.ts` | 4단계 파이프라인 통합 (Stage 0→3) | vitest |
+| `__tests__/crag-adaptive-rag/fixtures/` | JSON fixture 파일 | - |

@@ -521,3 +521,113 @@ src/app/(main)/protractor/
 - 모든 환경변수는 런타임에서만 참조 (`process.env.META_AD_LIBRARY_TOKEN`)
 - 빌드 타임에 존재 여부 검사하지 않음
 - API Route 호출 시 없으면 명확한 에러 메시지 반환
+
+---
+
+## TDD 보완 (테스트 주도 개발 지원)
+
+### T1. 단위 테스트 시나리오
+
+| 함수 | 입력 | 기대 출력 | 검증 포인트 |
+|------|------|----------|------------|
+| `meta-ad-library.ts: searchAds(q, options)` | `q="올리브영", country="KR"` | `CompetitorSearchResponse { ads: CompetitorAd[], totalCount: number }` | Meta API 호출 + 응답 가공 정확성 |
+| `meta-ad-library.ts: 응답 가공` | `ad_delivery_stop_time=null` | `{ isActive: true, endDate: null }` | 게재중 광고 판별 |
+| `meta-ad-library.ts: durationDays 계산` | `startDate="2026-01-01", endDate=null (today=2026-03-06)` | `durationDays=65` | 운영기간 일수 계산 |
+| `meta-ad-library.ts: 정렬` | 광고 3건 (30일, 90일, 10일) | `[90일, 30일, 10일]` 순서 | durationDays DESC 정렬 |
+| `analyze-ads.ts: generateInsight(ads)` | 광고 50건 | `CompetitorInsight` 객체 | AI 분석 결과 구조 검증 |
+| `resolveChannels(event, team)` 패턴 참고: 모니터 등록 제한 | 이미 10개 등록된 사용자 | 에러 (MONITOR_LIMIT) | 사용자당 최대 10개 검증 |
+
+### T2. 엣지 케이스 정의
+
+| # | 엣지 케이스 | 입력 조건 | 기대 동작 | 우선순위 |
+|---|-----------|---------|---------|---------|
+| E1 | META_AD_LIBRARY_TOKEN 미설정 | 환경변수 없음 | 503 + `TOKEN_MISSING` 반환 | P0 |
+| E2 | 검색어 빈 값 | `q=""` | 400 + `INVALID_QUERY` 반환 | P0 |
+| E3 | Meta API Rate Limit | Meta API가 429 반환 | 429 + `RATE_LIMITED` 사용자 메시지 | P0 |
+| E4 | Meta API 네트워크 오류 | fetch 타임아웃 | 502 + `META_API_ERROR` | P1 |
+| E5 | 검색 결과 0건 | 존재하지 않는 브랜드 검색 | `{ ads: [], totalCount: 0 }` + 빈 상태 UI | P1 |
+| E6 | 모니터링 등록 한도 초과 | 이미 10개 등록 상태에서 11번째 시도 | 400 + `MONITOR_LIMIT` | P0 |
+| E7 | AI 인사이트 캐시 히트 | 24시간 내 동일 검색어 | `{ insight: ..., cached: true }` | P1 |
+| E8 | AI 인사이트 캐시 만료 | 24시간 초과 | 새로 AI 분석 실행 | P2 |
+| E9 | Cron 100개 초과 브랜드 | 모니터링 150개 등록 상태 | 100개만 처리, 나머지 다음 Cron에서 처리 (last_checked_at ASC) | P1 |
+| E10 | 인증 없이 모니터링 API 호출 | 미인증 사용자 | 401 + `UNAUTHORIZED` | P0 |
+| E11 | 이미지 URL 만료 (ad_snapshot_url) | Meta 스냅샷 URL 만료 | iframe 로드 실패 → 대체 UI 표시 | P2 |
+
+### T3. 모킹 데이터 (Fixture)
+
+```json
+// fixture: competitor_ad_active — 게재중 광고
+{
+  "id": "12345678901234",
+  "pageId": "109876543210",
+  "pageName": "올리브영",
+  "body": "봄맞이 전품목 20% 할인! 지금 바로 확인하세요 🌸",
+  "title": "봄 세일",
+  "caption": "oliveyoung.co.kr",
+  "startDate": "2025-12-15T00:00:00Z",
+  "endDate": null,
+  "durationDays": 82,
+  "isActive": true,
+  "platforms": ["facebook", "instagram"],
+  "snapshotUrl": "https://www.facebook.com/ads/archive/render_ad/?id=12345678901234"
+}
+```
+
+```json
+// fixture: competitor_monitor_with_alerts — 모니터링 브랜드 + 미읽음 알림
+{
+  "id": "550e8400-e29b-41d4-a716-446655440010",
+  "brandName": "올리브영",
+  "pageId": "109876543210",
+  "lastCheckedAt": "2026-03-06T09:00:00Z",
+  "lastAdCount": 42,
+  "createdAt": "2026-02-20T00:00:00Z",
+  "unreadAlertCount": 3
+}
+```
+
+```json
+// fixture: competitor_insight_cached — AI 인사이트 결과
+{
+  "longRunningAdCount": 8,
+  "totalAdCount": 42,
+  "videoRatio": 0.35,
+  "imageRatio": 0.65,
+  "platformDistribution": { "facebook": 38, "instagram": 35, "messenger": 5 },
+  "hookTypes": [
+    { "type": "할인형", "count": 15, "percentage": 35.7, "examples": ["봄맞이 전품목 20% 할인!", "오늘만 1+1"] },
+    { "type": "후기형", "count": 10, "percentage": 23.8, "examples": ["100만 리뷰 달성 기념", "실사용 후기"] }
+  ],
+  "seasonPattern": [
+    { "month": 1, "adCount": 30 }, { "month": 2, "adCount": 35 }, { "month": 3, "adCount": 42 }
+  ],
+  "keyProducts": ["쿠션 파운데이션", "립틴트", "선크림"],
+  "summary": "올리브영은 할인 프로모션 중심의 광고 전략을 사용하며, 이미지 소재가 65%로 우세합니다.",
+  "analyzedAt": "2026-03-06T12:00:00Z"
+}
+```
+
+### T4. 테스트 파일 경로 규약
+
+| 테스트 대상 | 테스트 파일 경로 | 테스트 프레임워크 |
+|-----------|---------------|----------------|
+| `meta-ad-library.ts` (Meta API 클라이언트) | `__tests__/competitor-analyzer/meta-ad-library.test.ts` | vitest |
+| `analyze-ads.ts` (AI 분석 로직) | `__tests__/competitor-analyzer/analyze-ads.test.ts` | vitest |
+| 검색 API Route | `__tests__/competitor-analyzer/search-route.test.ts` | vitest |
+| 모니터링 API Route | `__tests__/competitor-analyzer/monitors-route.test.ts` | vitest |
+| Cron 체크 로직 | `__tests__/competitor-analyzer/cron-check.test.ts` | vitest |
+
+### T5. 통합 테스트 시나리오
+
+| 시나리오 | Method | Endpoint | 요청 Body / 파라미터 | 기대 응답 | 상태 코드 |
+|---------|--------|----------|----------|---------|---------|
+| 광고 검색 정상 | GET | `/api/competitor/search?q=올리브영` | - | `{ ads: [...], totalCount: 42, query: "올리브영" }` | 200 |
+| 검색어 누락 | GET | `/api/competitor/search` | q 파라미터 없음 | `{ error: "검색어를 입력하세요", code: "INVALID_QUERY" }` | 400 |
+| 토큰 미설정 | GET | `/api/competitor/search?q=test` | META_AD_LIBRARY_TOKEN 없음 | `{ error: "META_AD_LIBRARY_TOKEN이 설정되지 않았습니다", code: "TOKEN_MISSING" }` | 503 |
+| 모니터링 목록 조회 | GET | `/api/competitor/monitors` | (인증 필수) | `{ monitors: [CompetitorMonitor[]] }` | 200 |
+| 모니터링 등록 | POST | `/api/competitor/monitors` | `{ "brandName": "올리브영" }` | `{ monitor: { id: "uuid", brandName: "올리브영" } }` | 201 |
+| 모니터링 등록 한도 초과 | POST | `/api/competitor/monitors` | 이미 10개 등록 상태 | `{ error: "모니터링은 최대 10개까지 등록할 수 있습니다.", code: "MONITOR_LIMIT" }` | 400 |
+| 모니터링 삭제 | DELETE | `/api/competitor/monitors/{id}` | - | `{ success: true }` | 200 |
+| AI 인사이트 생성 | POST | `/api/competitor/insights` | `{ "query": "올리브영", "ads": [50건] }` | `{ insight: CompetitorInsight, cached: false }` | 200 |
+| AI 인사이트 캐시 히트 | POST | `/api/competitor/insights` | 24시간 내 동일 query | `{ insight: CompetitorInsight, cached: true }` | 200 |
+| 인증 실패 | GET | `/api/competitor/monitors` | 토큰 없음 | `{ error: "로그인이 필요합니다" }` | 401 |

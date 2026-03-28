@@ -59,3 +59,77 @@
 - [ ] 생성된 AI 답변은 is_approved=false로 저장되어 관리자 검토를 거친다
 - [ ] 크론 작업이 정기적으로 미답변 질문에 대해 AI 답변을 생성한다
 - [ ] 벡터 인덱스 최적화로 검색 성능이 보장된다
+
+---
+
+## TDD 보완 (테스트 주도 개발 지원)
+
+### T1. 단위 테스트 시나리오
+
+| 대상 함수/API | 입력 | 기대 출력 | 비고 |
+|---------------|------|-----------|------|
+| `generateEmbedding(text)` | `"메타 광고 CTR 개선"` | `Float32Array(768)` | Gemini text-embedding-004 |
+| `searchChunksByEmbedding(embedding, limit)` | 768차원 벡터, limit=5 | `[{ chunk_id, content, similarity }]` 유사도 내림차순 | pgvector 코사인 유사도 |
+| `generateRAGAnswer(question, chunks)` | 질문 + 관련 청크 | `{ answer, source_refs: [{ lecture, week }] }` | AI 답변 + 출처 |
+| `chunkText(content, 700, 100)` | 긴 텍스트 | 700자 청크 배열 (100자 오버랩) | 콘텐츠 분할 |
+| `POST /api/cron/ai-answer` | Cron 자동 호출 | `{ processed: N, generated: M }` | 미답변 질문 자동 처리 |
+| `embedQAPair(question, answer)` | 질문-답변 쌍 | knowledge_chunks에 qa_question 타입 저장 | QA 임베딩 |
+
+### T2. 엣지 케이스 정의
+
+| 시나리오 | 입력/상황 | 기대 동작 |
+|----------|-----------|-----------|
+| knowledge_chunks 0건 | 임베딩 미완료 DB | 빈 검색 결과 + "관련 강의를 찾지 못했습니다" |
+| 벡터 검색 유사도 < 0.5 | 무관련 질문 | 낮은 신뢰도 표시 또는 답변 미생성 |
+| 질문 텍스트 빈 문자열 | `""` | 에러: 임베딩 생성 불가 |
+| 질문 텍스트 10,000자 초과 | 매우 긴 질문 | 앞 2,000자만 사용 |
+| Gemini Embedding API 장애 | 503 에러 | retry 1회 → 실패 시 답변 생성 스킵 |
+| 크론 중복 실행 | 동시 2개 크론 | 이미 처리 중인 질문 스킵 (is_ai_generated 체크) |
+| AI 답변 is_approved 초기값 | 생성 직후 | `is_approved: false` (관리자 검토 대기) |
+
+### T3. 모킹 데이터 (Fixture)
+
+```json
+// fixtures/rag-ai-answer/question.json
+{
+  "id": "q_001",
+  "title": "메타 광고에서 CTR이 낮을 때 어떻게 해야 하나요?",
+  "body": "광고를 돌리고 있는데 CTR이 0.8%밖에 안 됩니다. 평균이 2%라던데 어떻게 올릴 수 있나요?",
+  "user_id": "user_001",
+  "image_urls": null,
+  "created_at": "2026-03-28T10:00:00Z"
+}
+
+// fixtures/rag-ai-answer/knowledge-chunks.json
+[
+  {
+    "id": "kc_001",
+    "content": "CTR(클릭률)을 높이려면 헤드라인에 숫자와 혜택을 포함하세요. 예: '3일 만에 매출 2배' 같은 구체적 약속이 효과적입니다.",
+    "source_type": "lecture",
+    "source_id": "lec_03",
+    "metadata": { "lecture_name": "메타 광고 기초", "week": 3 },
+    "embedding": "[768차원 벡터]"
+  },
+  {
+    "id": "kc_002",
+    "content": "광고 소재의 첫 3초가 결정적입니다. 시선을 끄는 훅을 배치하면 ThruPlay율과 CTR이 동시에 상승합니다.",
+    "source_type": "lecture",
+    "source_id": "lec_05",
+    "metadata": { "lecture_name": "소재 제작 실전", "week": 5 },
+    "embedding": "[768차원 벡터]"
+  }
+]
+
+// fixtures/rag-ai-answer/ai-answer.json
+{
+  "id": "a_001",
+  "question_id": "q_001",
+  "body": "CTR이 0.8%로 낮은 상황이시군요. 평균 2%에 비해 개선 여지가 있습니다.\n\n**1. 헤드라인 개선**: 숫자와 구체적 혜택을 포함하세요...\n\n**2. 첫 3초 훅**: 시선을 끄는 요소를 배치하면...\n\n📚 참고: 메타 광고 기초 3주차, 소재 제작 실전 5주차",
+  "is_ai_generated": true,
+  "is_approved": false,
+  "source_refs": [
+    { "chunk_id": "kc_001", "lecture": "메타 광고 기초", "week": 3 },
+    { "chunk_id": "kc_002", "lecture": "소재 제작 실전", "week": 5 }
+  ],
+  "created_at": "2026-03-28T10:01:00Z"
+}

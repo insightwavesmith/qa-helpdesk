@@ -1527,3 +1527,150 @@ export class PrescriptionError extends Error {
 | `src/lib/db/index.ts` | createServiceClient, createDbClient 패턴 | 없음 |
 | `scripts/compute-andromeda-similarity.mjs` | 유사도 계산 로직 참조 | 없음 |
 | `src/app/api/protractor/benchmarks/collect/route.ts` | 벤치마크 시드 API 확장 | 확장 |
+
+---
+
+## TDD 보완 (테스트 주도 개발 지원)
+
+### T1. 단위 테스트 시나리오
+
+| 함수 | 입력 | 기대 출력 | 검증 포인트 |
+|------|------|----------|------------|
+| `determineConfidence(sampleCount)` | `150` | `'high'` | N≥100일 때 high 반환 |
+| `determineConfidence(sampleCount)` | `50` | `'medium'` | 30≤N<100일 때 medium 반환 |
+| `determineConfidence(sampleCount)` | `10` | `'low'` | N<30일 때 low 반환 |
+| `calculateGlobalPercentile(actual, benchmark)` | `actual=0.5, benchmark={p10:0.1, p25:0.3, p50:0.5, p75:0.8, p90:1.0}` | `50` | p50 정확 일치 시 50 반환 |
+| `calculateGlobalPercentile(actual, benchmark)` | `actual=0.05, benchmark={p10:0.1, p25:0.3, p50:0.5, p75:0.8, p90:1.0}` | `5` | p10 이하일 때 5 반환 |
+| `calculateGlobalPercentile(actual, benchmark)` | `actual=1.5, benchmark={p10:0.1, p25:0.3, p50:0.5, p75:0.8, p90:1.0}` | `95` | p90 초과 시 95 반환 |
+| `step1_fetchCreativeMedia(svc, id)` | 존재하는 creative_media_id | `{ media: {...}, creative: {...} }` | creative_media + creatives JOIN 성공 |
+| `step1_fetchCreativeMedia(svc, id)` | 존재하지 않는 UUID | `PrescriptionError(404)` | 소재 미존재 시 에러 |
+| `step3_fetchPerformanceData(svc, cid, type, cat)` | daily_ad_insights 0건인 소재 | `{ hasPerformanceData: false, metrics: null }` | 성과 데이터 없는 소재 처리 |
+| `generatePrescription(svc, cmId, accountId, false)` | analysis_json이 null인 소재 | 에러 응답 (422) | 5축 분석 미완료 소재 거부 |
+| `generatePrescription(svc, cmId, accountId, true)` | force_refresh=true | 캐시 무시하고 새 결과 | 강제 갱신 동작 확인 |
+
+### T2. 엣지 케이스 정의
+
+| # | 엣지 케이스 | 입력 조건 | 기대 동작 | 우선순위 |
+|---|-----------|---------|---------|---------|
+| E1 | creative_media 0건 (소재 없는 계정) | creative_media_id가 삭제된 소재 | 404 + `CREATIVE_NOT_FOUND` 반환 | P0 |
+| E2 | Gemini API 타임아웃 (15초 초과) | Gemini 응답 지연 | 504 + `처방 생성 시간 초과` 반환, 1회 retry 후 실패 | P0 |
+| E3 | prescription_patterns 비어있음 | 패턴 테이블 0건 | axis2_used=false, 축1(레퍼런스 원론)만으로 처방 생성 | P0 |
+| E4 | N<30 (통계적 유의성 부족) | 카테고리 패턴의 sample_count=5 | confidence='low' → ALL 패턴 fallback → 축3 보정 | P1 |
+| E5 | account_id 없는 요청 (RLS 위반) | body에 account_id 미포함 | 403 + `계정 접근 권한이 없습니다` | P0 |
+| E6 | prescription_benchmarks 0건 | 글로벌 벤치마크 미시딩 | axis3_used=false, 축1+축2만으로 처방 생성 | P1 |
+| E7 | analysis_json 파싱 오류 | analysis_json이 잘못된 JSON 구조 | 500 + `PARSE_ERROR` 반환 | P1 |
+| E8 | 동일 account_id 소재만 존재 (유사소재 0건) | 타 계정 소재 없음 | similar_count=0, 유사소재 비교 없이 처방 생성 | P2 |
+| E9 | 카테고리 fallback 체인 전체 실패 | category 패턴 없음 + ALL 패턴 없음 + 축3 없음 | 축1(레퍼런스 원론)만으로 처방 생성 | P1 |
+| E10 | Andromeda 유사도 100% (동일 소재 중복) | 동일 creative fingerprint | andromeda_warning.level='high' + 다양화 제안 | P2 |
+| E11 | 영상 소재 시선 데이터 없음 | VIDEO인데 video_saliency_frames 0건 | graceful fallback — 시선 데이터 없이 진행 | P1 |
+
+### T3. 모킹 데이터 (Fixture)
+
+```json
+// fixture: prescription_pattern_high_confidence — 높은 신뢰도 패턴
+{
+  "id": "550e8400-e29b-41d4-a716-446655440001",
+  "attribute": "hook.hook_type",
+  "value": "benefit",
+  "axis": "hook",
+  "metric": "ctr",
+  "avg_value": 2.8,
+  "median_value": 2.5,
+  "sample_count": 120,
+  "confidence": "high",
+  "lift_vs_average": 34.0,
+  "lift_ci_lower": 12.5,
+  "category": "beauty",
+  "source": "internal",
+  "calculated_at": "2026-03-25T04:00:00Z"
+}
+```
+
+```json
+// fixture: prescription_benchmark_motion — Motion 글로벌 벤치마크
+{
+  "id": "550e8400-e29b-41d4-a716-446655440002",
+  "source": "motion_global",
+  "media_type": "IMAGE",
+  "category": null,
+  "metric": "ctr",
+  "p10": 0.5,
+  "p25": 0.9,
+  "p50": 1.5,
+  "p75": 2.3,
+  "p90": 3.5,
+  "sample_count": 50000,
+  "period": "2026-Q1",
+  "updated_at": "2026-03-01T00:00:00Z"
+}
+```
+
+```json
+// fixture: creative_media_with_analysis — 5축 분석 완료된 소재
+{
+  "id": "660e8400-e29b-41d4-a716-446655440003",
+  "creative_id": "770e8400-e29b-41d4-a716-446655440004",
+  "media_type": "IMAGE",
+  "analysis_json": {
+    "visual": { "color_scheme": "warm", "product_visibility": "high", "color": { "contrast": "high" } },
+    "text": { "headline": "50% 할인", "headline_type": "benefit", "cta_text": "자세히 보기", "key_message": "봄 세일", "readability": "high", "social_proof": { "review_shown": false, "before_after": false, "testimonial": false, "numbers": false } },
+    "psychology": { "emotion": "joy", "social_proof_type": "none", "urgency": "none", "authority": "none" },
+    "quality": { "production_quality": "professional", "brand_consistency": "medium", "readability": "high" },
+    "hook": { "hook_type": "benefit", "visual_style": "professional", "composition": "center" },
+    "scores": { "visual_impact": 72, "message_clarity": 80, "cta_effectiveness": 45, "social_proof_score": 10, "overall": 52 }
+  },
+  "embedding": [0.1, 0.2, 0.3]
+}
+```
+
+```json
+// fixture: daily_ad_insights_sample — 성과 데이터
+{
+  "id": "880e8400-e29b-41d4-a716-446655440005",
+  "ad_id": "23841234567890",
+  "account_id": "act_123456789",
+  "date_start": "2026-03-20",
+  "spend": 50000,
+  "impressions": 25000,
+  "clicks": 500,
+  "ctr": 2.0,
+  "cpc": 100,
+  "purchases": 10,
+  "website_purchase_value": 500000,
+  "video_p3s": 0,
+  "video_view": 0,
+  "thruplay": 0,
+  "reactions": 120,
+  "comments": 15,
+  "shares": 8,
+  "saves": 22,
+  "initiate_checkout": 25
+}
+```
+
+### T4. 테스트 파일 경로 규약
+
+| 테스트 대상 | 테스트 파일 경로 | 테스트 프레임워크 |
+|-----------|---------------|----------------|
+| `prescription-engine.ts` (13단계 처방 엔진) | `__tests__/prescription-v2/prescription-engine.test.ts` | vitest |
+| `performance-backtracker.ts` (성과역추적) | `__tests__/prescription-v2/performance-backtracker.test.ts` | vitest |
+| `andromeda-analyzer.ts` (다양성 분석) | `__tests__/prescription-v2/andromeda-analyzer.test.ts` | vitest |
+| `ear-analyzer.ts` (GEM/EAR 분석) | `__tests__/prescription-v2/ear-analyzer.test.ts` | vitest |
+| `benchmark-lookup.ts` (축3 벤치마크 조회) | `__tests__/prescription-v2/benchmark-lookup.test.ts` | vitest |
+| `prescription-prompt.ts` (Gemini 프롬프트) | `__tests__/prescription-v2/prescription-prompt.test.ts` | vitest |
+| `calculateGlobalPercentile` | `__tests__/prescription-v2/percentile.test.ts` | vitest |
+| `determineConfidence` | `__tests__/prescription-v2/confidence.test.ts` | vitest |
+
+### T5. 통합 테스트 시나리오
+
+| 시나리오 | Method | Endpoint | 요청 Body | 기대 응답 | 상태 코드 |
+|---------|--------|----------|----------|---------|---------|
+| 정상 처방 생성 (이미지) | POST | `/api/protractor/prescription` | `{ "creative_media_id": "valid-uuid", "account_id": "act_123" }` | `{ top3_prescriptions: [...], performance_backtrack: {...}, meta: { axis2_used: true } }` | 200 |
+| 정상 처방 생성 (영상) | POST | `/api/protractor/prescription` | `{ "creative_media_id": "video-uuid", "account_id": "act_123" }` | 응답에 `retention_curve`, `scene_analysis` 포함 | 200 |
+| 인증 실패 | POST | `/api/protractor/prescription` | `{ "creative_media_id": "any" }` (토큰 없음) | `{ error: "인증이 필요합니다" }` | 401 |
+| 권한 부족 (역할 미달) | POST | `/api/protractor/prescription` | `{ "creative_media_id": "any" }` (alumni 역할) | `{ error: "접근 권한이 없습니다" }` | 403 |
+| 계정 소유권 불일치 | POST | `/api/protractor/prescription` | `{ "creative_media_id": "uuid", "account_id": "act_other" }` | `{ error: "계정 접근 권한이 없습니다" }` | 403 |
+| 소재 미존재 | POST | `/api/protractor/prescription` | `{ "creative_media_id": "nonexistent-uuid" }` | `{ error: "소재를 찾을 수 없습니다" }` | 404 |
+| 5축 분석 미완료 | POST | `/api/protractor/prescription` | `{ "creative_media_id": "no-analysis-uuid" }` | `{ error: "이 소재는 아직 AI 분석이 완료되지 않았습니다" }` | 422 |
+| 벤치마크 시드 (관리자) | POST | `/api/protractor/benchmarks/collect` | `{ "source": "motion_global", "period": "2026-Q1", "metrics": { "ctr": { "p10": 0.5, "p25": 0.9, "p50": 1.5, "p75": 2.3, "p90": 3.5, "sample_count": 50000 } } }` | `{ success: true }` | 200 |
+| 패턴 재계산 트리거 | POST | `/api/protractor/prescription/recalculate-patterns` | `{}` | `{ total_patterns: 168, by_confidence: { high: 42, medium: 78, low: 48 } }` | 200 |

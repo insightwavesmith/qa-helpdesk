@@ -93,3 +93,93 @@ Phase 2: T2 (모니터링) + T3 (AI 인사이트) — 병렬 가능
 - AI 분석: 장기 광고 비율, 영상/이미지 비율, 훅 유형 분류, 시즌 패턴
 - 24시간 캐시 (DB)
 - UI: 통계 카드 4개 + 텍스트 인사이트 섹션
+
+---
+
+## TDD 보완 (테스트 주도 개발 지원)
+
+### T1. 단위 테스트 시나리오
+
+| 대상 함수/API | 입력 | 기대 출력 | 비고 |
+|---------------|------|-----------|------|
+| `GET /api/competitor/search` | `{ search_terms: "올리브영", country: "KR" }` | `{ ads: [{ id, page_name, start_date, duration_days, snapshot_url }] }` | Meta Ad Library API 래핑 |
+| `GET /api/competitor/search` | `{ search_terms: "올리브영", sort: "duration" }` | 운영기간 내림차순 정렬된 배열 | 30일+ 필터 옵션 |
+| `POST /api/competitor/monitors` | `{ brand_name, search_terms }` | `{ id, brand_name, created_at }` | 모니터링 등록 |
+| `DELETE /api/competitor/monitors/:id` | monitor ID | 204 No Content | 모니터링 삭제 |
+| `POST /api/competitor/insights` | `{ ads: [...] }` | `{ long_running_ratio, video_ratio, hook_types, seasonal_patterns, text_insight }` | AI 분석 결과 |
+| `GET /api/cron/competitor-check` | Cron 자동 호출 | `{ checked: N, new_alerts: M }` | 신규 광고 감지 |
+| `calculateDurationDays(start_date)` | `"2026-01-15"` | `72` (오늘 기준) | 운영기간 계산 |
+
+### T2. 엣지 케이스 정의
+
+| 시나리오 | 입력/상황 | 기대 동작 |
+|----------|-----------|-----------|
+| META_AD_LIBRARY_TOKEN 미설정 | env 없음 | 에러 UI: "Meta API 토큰이 설정되지 않았습니다" |
+| Meta API Rate Limit (200/hour) | 429 응답 | Retry-After 헤더 존중 + "잠시 후 다시 검색해주세요" |
+| 검색 결과 0건 | 존재하지 않는 브랜드 | 빈 배열 + "검색 결과가 없습니다" 메시지 |
+| ad_snapshot_url iframe 차단 | 브라우저 보안 제한 | fallback 텍스트/이미지 표시 |
+| 모니터링 브랜드 100개 초과 | 대량 등록 시도 | 최대 50개 제한 + 에러 메시지 |
+| AI 인사이트 캐시 존재 (24시간 이내) | 동일 검색어 재요청 | DB 캐시 반환, API 호출 안 함 |
+| 검색어 빈 문자열 | `search_terms: ""` | 400 에러: "검색어를 입력해주세요" |
+
+### T3. 모킹 데이터 (Fixture)
+
+```json
+// fixtures/competitor-analyzer/search-result.json
+{
+  "ads": [
+    {
+      "id": "meta_ad_001",
+      "page_name": "올리브영",
+      "page_id": "123456789",
+      "start_date": "2026-01-15",
+      "duration_days": 72,
+      "ad_snapshot_url": "https://www.facebook.com/ads/archive/render_ad/?id=001",
+      "platforms": ["facebook", "instagram"],
+      "media_type": "IMAGE",
+      "is_active": true
+    },
+    {
+      "id": "meta_ad_002",
+      "page_name": "올리브영",
+      "page_id": "123456789",
+      "start_date": "2026-03-01",
+      "duration_days": 27,
+      "ad_snapshot_url": "https://www.facebook.com/ads/archive/render_ad/?id=002",
+      "platforms": ["instagram"],
+      "media_type": "VIDEO",
+      "is_active": true
+    }
+  ]
+}
+
+// fixtures/competitor-analyzer/monitor.json
+{
+  "id": "mon_001",
+  "brand_name": "올리브영",
+  "search_terms": "올리브영",
+  "last_checked_at": "2026-03-28T00:00:00Z",
+  "ad_count": 15,
+  "created_at": "2026-03-20T00:00:00Z"
+}
+
+// fixtures/competitor-analyzer/insights.json
+{
+  "long_running_ratio": 0.35,
+  "video_ratio": 0.60,
+  "hook_types": { "discount": 5, "curiosity": 3, "social_proof": 2 },
+  "seasonal_patterns": ["3월 봄 프로모션 집중"],
+  "text_insight": "올리브영은 영상 소재 비중이 60%로 높으며, 30일 이상 운영 광고가 35%입니다.",
+  "cached_at": "2026-03-28T12:00:00Z"
+}
+```
+
+### T4. 테스트 파일 경로 규약
+
+| 테스트 파일 | 테스트 대상 | 프레임워크 |
+|-------------|-------------|------------|
+| `__tests__/competitor-analyzer/search-api.test.ts` | 경쟁사 검색 API + 정렬/필터 | vitest |
+| `__tests__/competitor-analyzer/monitor-crud.test.ts` | 모니터링 등록/삭제/조회 | vitest |
+| `__tests__/competitor-analyzer/insights-api.test.ts` | AI 인사이트 + 캐시 로직 | vitest |
+| `__tests__/competitor-analyzer/cron-check.test.ts` | 신규 광고 감지 크론 | vitest |
+| `__tests__/competitor-analyzer/fixtures/` | JSON fixture 파일 | - |

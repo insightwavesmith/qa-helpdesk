@@ -1305,3 +1305,111 @@ function validatePrescriptionOutput(data: unknown): data is GeminiPrescriptionOu
 - [x] API: `verifyAccountOwnership()`으로 계정 소유권 검증
 - [x] 프론트: 기존 AccountSelector 연동 (creative-analysis.tsx 패턴 유지)
 - [x] 유사소재 검색: 동일 account_id 제외 (타 계정 벤치마크만 참조)
+
+---
+
+## TDD 보완 (테스트 주도 개발 지원)
+
+### T1. 단위 테스트 시나리오
+
+| 함수 | 입력 | 기대 출력 | 검증 포인트 |
+|------|------|----------|------------|
+| `calculatePercentile(svc, 'hook_strength.score', 0.75)` | attribute='hook_strength.score', score=0.75 | 0~100 사이 숫자 (예: 65) | 전체 소재 대비 백분위 계산 정확성 |
+| `calculatePercentile(svc, 'hook_strength.score', 0.01)` | 최하위 score | 5 이하 | 하위 극단값 처리 |
+| `step1: creative_media 조회` | analysis_json이 null인 소재 | 422 ANALYSIS_NOT_READY | 5축 분석 미완료 검증 |
+| `step2: 약점 축 식별` | 5축 score가 모두 80점 이상 | weakness_analysis 빈 배열 | 약점 없는 소재 처리 |
+| `step2: 약점 축 식별` | hook_score=0.2 (하위 10%) | weakness_analysis에 hook 축 포함 | 하위 30% 기준 정확 |
+| `step4: 패턴 조회` | category='beauty' + confidence='low'만 존재 | ALL 패턴 fallback | 카테고리 fallback 로직 |
+| `step4: 패턴 조회` | prescription_patterns 0건 | axis2_used=false | 패턴 없을 때 graceful |
+| `step5: 유사소재 검색` | embedding이 null인 소재 | similar_count=0 | 임베딩 없는 소재 처리 |
+| `step6: Gemini 프롬프트` | 약점 2개 + 패턴 5개 입력 | top3_prescriptions 배열 (3건) | JSON structured output 파싱 |
+| `step7: impact 정렬` | 3개 처방 반환 | rank 1,2,3 순서 | expected_impact 기반 정렬 |
+
+### T2. 엣지 케이스 정의
+
+| # | 엣지 케이스 | 입력 조건 | 기대 동작 | 우선순위 |
+|---|-----------|---------|---------|---------|
+| E1 | 소재 없음 | creative_media_id가 존재하지 않는 UUID | 404 CREATIVE_NOT_FOUND | P0 |
+| E2 | Gemini API 15초 타임아웃 | Gemini 응답 지연 | 1회 retry(2초 대기) → 실패 시 504 GEMINI_TIMEOUT | P0 |
+| E3 | prescription_patterns 비어있음 | 패턴 테이블 0건 | 500 PATTERNS_EMPTY 또는 축1만으로 처방 생성 | P0 |
+| E4 | N<10 (confidence='low' 전부) | 모든 패턴이 sample_count<10 | confidence='low' 제외 → 축2 미사용 | P1 |
+| E5 | account_id 소유권 불일치 | 타인 계정의 소재 요청 | 403 FORBIDDEN | P0 |
+| E6 | Gemini JSON 파싱 실패 | Gemini가 invalid JSON 반환 | 500 PARSE_ERROR, 로그 기록 | P1 |
+| E7 | creative_saliency 없는 소재 | 시선 분석 미완료 | analysis_json.deepgaze_context fallback | P1 |
+| E8 | 동일 account_id만 존재 (유사소재 0건) | 타 계정 소재 없음 | similar_count=0, 유사소재 비교 생략 | P2 |
+| E9 | analysis_json 속성 누락 | psychology 축 데이터 없음 | 존재하는 속성만으로 약점 분석 | P1 |
+| E10 | 벤치마크 데이터 0건 | benchmarks 테이블 비어있음 | hasBenchmarkData=false, 벤치마크 비교 생략 | P1 |
+
+### T3. 모킹 데이터 (Fixture)
+
+```json
+// fixture: prescription_pattern_mvp — MVP용 패턴 데이터
+{
+  "id": "aa0e8400-e29b-41d4-a716-446655440001",
+  "attribute": "text.cta_text",
+  "value": "benefit_explicit",
+  "axis": "text",
+  "metric": "ctr",
+  "avg_value": 2.8,
+  "median_value": 2.5,
+  "sample_count": 45,
+  "confidence": "high",
+  "lift_vs_average": 34.0,
+  "category": "beauty",
+  "source": "internal",
+  "calculated_at": "2026-03-20T04:00:00Z"
+}
+```
+
+```json
+// fixture: creative_media_mvp — 5축 분석 완료 소재 (약점 있는 케이스)
+{
+  "id": "bb0e8400-e29b-41d4-a716-446655440002",
+  "creative_id": "cc0e8400-e29b-41d4-a716-446655440003",
+  "media_type": "IMAGE",
+  "analysis_json": {
+    "hook_strength": { "score": 0.75, "hook_type": "benefit", "reason": "제품 클로즈업" },
+    "visual_impact": { "score": 0.7, "dominant_element": "제품 이미지", "contrast": "high" },
+    "message_clarity": { "score": 0.8, "core_message": "50% 할인", "complexity": "low" },
+    "cta_effectiveness": { "score": 0.3, "cta_text": "자세히 보기", "visibility": "medium" },
+    "overall_score": 0.52,
+    "style": "professional",
+    "deepgaze_context": { "cta_attention_score": 0.12, "dominant_region": "center", "top_fixation": { "x": 0.45, "y": 0.3, "ratio": 0.18 } }
+  },
+  "embedding": [0.1, 0.2, 0.3]
+}
+```
+
+```json
+// fixture: prescription_error_responses — 에러 응답 모음
+[
+  { "status": 401, "body": { "error": "인증이 필요합니다.", "code": "UNAUTHORIZED" } },
+  { "status": 403, "body": { "error": "해당 광고계정에 접근 권한이 없습니다.", "code": "FORBIDDEN" } },
+  { "status": 404, "body": { "error": "소재를 찾을 수 없습니다.", "code": "CREATIVE_NOT_FOUND" } },
+  { "status": 422, "body": { "error": "이 소재는 아직 AI 분석이 완료되지 않았습니다.", "code": "ANALYSIS_NOT_READY" } },
+  { "status": 504, "body": { "error": "AI 처방 생성에 시간이 걸리고 있습니다.", "code": "GEMINI_TIMEOUT" } }
+]
+```
+
+### T4. 테스트 파일 경로 규약
+
+| 테스트 대상 | 테스트 파일 경로 | 테스트 프레임워크 |
+|-----------|---------------|----------------|
+| 처방 엔진 7단계 파이프라인 | `__tests__/prescription-mvp/prescription-engine.test.ts` | vitest |
+| 백분위 계산 (calculatePercentile) | `__tests__/prescription-mvp/percentile.test.ts` | vitest |
+| 패턴 조회 + fallback 로직 | `__tests__/prescription-mvp/pattern-lookup.test.ts` | vitest |
+| 유사소재 검색 | `__tests__/prescription-mvp/similar-search.test.ts` | vitest |
+| Gemini 프롬프트 구성 + JSON 파싱 | `__tests__/prescription-mvp/prescription-prompt.test.ts` | vitest |
+| `scripts/extract-prescription-patterns.mjs` | `__tests__/prescription-mvp/extract-patterns.test.ts` | vitest |
+
+### T5. 통합 테스트 시나리오
+
+| 시나리오 | Method | Endpoint | 요청 Body | 기대 응답 | 상태 코드 |
+|---------|--------|----------|----------|---------|---------|
+| 정상 처방 생성 | POST | `/api/protractor/prescription` | `{ "creative_media_id": "valid-uuid" }` | `{ top3_prescriptions: [3건], weakness_analysis: [...], meta: { axis2_used: true } }` | 200 |
+| 인증 실패 | POST | `/api/protractor/prescription` | `{ "creative_media_id": "any" }` (토큰 없음) | `{ error: "인증이 필요합니다.", code: "UNAUTHORIZED" }` | 401 |
+| 계정 소유권 불일치 | POST | `/api/protractor/prescription` | `{ "creative_media_id": "other-account-uuid" }` | `{ error: "해당 광고계정에 접근 권한이 없습니다.", code: "FORBIDDEN" }` | 403 |
+| 소재 미존재 | POST | `/api/protractor/prescription` | `{ "creative_media_id": "nonexistent" }` | `{ error: "소재를 찾을 수 없습니다.", code: "CREATIVE_NOT_FOUND" }` | 404 |
+| 5축 분석 미완료 | POST | `/api/protractor/prescription` | `{ "creative_media_id": "no-analysis" }` | `{ error: "이 소재는 아직 AI 분석이 완료되지 않았습니다.", code: "ANALYSIS_NOT_READY" }` | 422 |
+| 패턴 테이블 비어있음 | POST | `/api/protractor/prescription` | `{ "creative_media_id": "valid" }` (patterns 0건) | `{ error: "처방 기준 데이터가 준비 중입니다.", code: "PATTERNS_EMPTY" }` | 500 |
+| Gemini 타임아웃 | POST | `/api/protractor/prescription` | `{ "creative_media_id": "valid" }` (Gemini 지연) | `{ error: "AI 처방 생성에 시간이 걸리고 있습니다.", code: "GEMINI_TIMEOUT" }` | 504 |

@@ -1,7 +1,7 @@
 ---
-team: unassigned
+team: CTO-1
 created: 2026-03-28
-status: pending
+status: in-progress
 owner: leader
 ---
 # TASK: 수집 갭 해소 — 미수집 계정 + 미분석 소재/LP 배치

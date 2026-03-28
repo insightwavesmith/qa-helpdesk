@@ -518,3 +518,106 @@ Stage 3 (LLM):           기존 280초
 - [ ] 16. graceful degradation 테스트 (각 Stage 실패 시)
 - [ ] 17. 응답 시간 측정 (60초 이내 확인)
 - [ ] 18. 기존 QA 임베딩/승인 플로우 무영향 확인
+
+---
+
+## TDD 보완 (테스트 주도 개발 지원)
+
+### T1. 단위 테스트 시나리오
+
+| 함수 | 입력 | 기대 출력 | 검증 포인트 |
+|------|------|----------|------------|
+| `analyzeDomain("ASC 설정 방법")` | 줄임말 포함 질문 | `{ normalizedTerms: [{ original: "ASC", normalized: "Advantage Shopping Campaign" }], questionType: "lecture" }` | 도메인 용어 정규화 |
+| `analyzeDomain("안녕하세요 감사합니다")` | 비기술 질문 | `{ skipRAG: true, directAnswer: "...", questionType: "non_technical" }` | skipRAG 판단 + 직접 답변 |
+| `analyzeDomain("메타 광고 라이브러리 정책 바뀌었나요?")` | 플랫폼 현황 질문 | `{ questionType: "platform", skipRAG: false }` | platform 유형 분류 |
+| `hybridSearch(options)` | queries 2개 + embedding | `{ chunks: [...], vectorCount: N, bm25Count: M, finalCount: K }` | 벡터+BM25 결합, 중복 제거 |
+| `hybridSearch(options)` — RRF 점수 | 동일 chunk가 벡터 1위 + BM25 3위 | RRF 점수 = 1/(60+1) + 1/(60+3) = 0.0164 + 0.0159 = 0.0323 | RRF 계산 정확성 |
+| `evaluateRelevance(q, domain, chunks)` | 정확 매칭 컨텍스트 | `{ grade: "CORRECT", confidence: 0.85 }` | 관련성 CORRECT 판정 |
+| `evaluateRelevance(q, domain, chunks)` | 무관한 컨텍스트 | `{ grade: "INCORRECT", confidence: 0.15 }` | 관련성 INCORRECT 판정 |
+| `searchBrave({ query: "메타 광고", count: 5 })` | 유효한 검색어 | `BraveSearchResult[]` (최대 5건) | Brave API 호출 + 결과 파싱 |
+| `search_knowledge_bm25('메타 광고', 10, null)` | SQL RPC 호출 | `[{ id, content, text_score }]` | BM25 전문검색 동작 |
+
+### T2. 엣지 케이스 정의
+
+| # | 엣지 케이스 | 입력 조건 | 기대 동작 | 우선순위 |
+|---|-----------|---------|---------|---------|
+| E1 | Stage 0 (도메인 분석) 타임아웃 | Sonnet API 15초 초과 | 로그 + 스킵 → 기존 파이프라인 실행 | P0 |
+| E2 | BM25 검색 실패 | content_tsv 인덱스 손상 | 로그 + 스킵 → 벡터 검색 결과만 사용 | P1 |
+| E3 | 관련성 평가 실패 | evaluateRelevance 타임아웃 (10초) | 기본값 `grade: "AMBIGUOUS"` → 안전하게 웹서치 실행 | P0 |
+| E4 | BRAVE_API_KEY 미설정 | 환경변수 없음 | 로그 경고 + 웹서치 비활성화, 기존 파이프라인만 | P0 |
+| E5 | Brave Search 타임아웃 | 10초 초과 | 로그 + 스킵 → RAG 결과만으로 답변 | P1 |
+| E6 | 검색 결과 0건 (벡터+BM25 모두) | 매우 특수한 질문 | 빈 컨텍스트 → LLM이 일반 지식으로 답변 시도 | P1 |
+| E7 | 이미지 설명 포함 질문 | imageDescriptions 전달 | Stage 0에 이미지 설명 포함하여 분석 | P2 |
+| E8 | 전체 파이프라인 최악 케이스 | 모든 Stage 최대 시간 소요 | 320초 이내 완료 또는 적절한 타임아웃 | P1 |
+| E9 | 기존 QA 임베딩/승인 플로우 | 신규 기능 비활성화 상태 | 기존 동작 100% 동일 (graceful degradation) | P0 |
+
+### T3. 모킹 데이터 (Fixture)
+
+```json
+// fixture: domain_analysis_lecture — 강의 관련 질문 분석 결과
+{
+  "normalizedTerms": [
+    { "original": "ASC", "normalized": "Advantage Shopping Campaign (어드밴티지 쇼핑 캠페인)", "definition": "메타 광고의 자동 최적화 쇼핑 캠페인" },
+    { "original": "CBO", "normalized": "Campaign Budget Optimization (캠페인 예산 최적화)", "definition": "캠페인 레벨에서 예산을 자동 분배" }
+  ],
+  "intent": "ASC 캠페인 설정 방법과 CBO와의 차이를 알고 싶어함",
+  "questionType": "lecture",
+  "complexity": "medium",
+  "suggestedSearchQueries": ["ASC 어드밴티지 쇼핑 캠페인 설정", "ASC CBO 차이점", "메타 광고 캠페인 자동 최적화"],
+  "skipRAG": false
+}
+```
+
+```json
+// fixture: brave_search_results — Brave 검색 결과
+[
+  {
+    "title": "메타 광고 라이브러리 2026 업데이트 가이드",
+    "url": "https://business.facebook.com/help/ad-library-update-2026",
+    "description": "2026년 3월부터 메타 광고 라이브러리의 검색 필터가 확장되었습니다...",
+    "age": "2 days ago"
+  },
+  {
+    "title": "메타 Advantage+ 쇼핑 캠페인 최신 변경사항",
+    "url": "https://www.facebook.com/business/help/advantage-shopping",
+    "description": "Advantage+ 쇼핑 캠페인의 자동 타겟팅 알고리즘이 업데이트되었습니다..."
+  }
+]
+```
+
+```json
+// fixture: knowledge_chunk_sample — 지식 청크
+{
+  "id": "kc-uuid-001",
+  "lecture_name": "3주차 메타 광고 캠페인 구조",
+  "week": "3주차",
+  "chunk_index": 5,
+  "content": "ASC(Advantage Shopping Campaign)는 메타의 자동 최적화 쇼핑 캠페인입니다. 기존 CBO와 달리 크리에이티브, 타겟, 배치를 모두 자동으로 최적화합니다.",
+  "source_type": "lecture",
+  "priority": 1,
+  "embedding": [0.1, 0.2, 0.3],
+  "metadata": {}
+}
+```
+
+### T4. 테스트 파일 경로 규약
+
+| 테스트 대상 | 테스트 파일 경로 | 테스트 프레임워크 |
+|-----------|---------------|----------------|
+| `domain-intelligence.ts` (Stage 0) | `__tests__/crag-adaptive-rag/domain-intelligence.test.ts` | vitest |
+| `hybrid-search.ts` (Stage 1 벡터+BM25) | `__tests__/crag-adaptive-rag/hybrid-search.test.ts` | vitest |
+| `relevance-evaluator.ts` (게이트) | `__tests__/crag-adaptive-rag/relevance-evaluator.test.ts` | vitest |
+| `brave-search.ts` (Stage 2 웹서치) | `__tests__/crag-adaptive-rag/brave-search.test.ts` | vitest |
+| `knowledge.ts` (오케스트레이터 확장) | `__tests__/crag-adaptive-rag/knowledge-pipeline.test.ts` | vitest |
+| `search_knowledge_bm25` SQL RPC | `__tests__/crag-adaptive-rag/bm25-rpc.test.ts` | vitest |
+
+### T5. 통합 테스트 시나리오
+
+| 시나리오 | Method | Endpoint | 요청 Body | 기대 응답 | 상태 코드 |
+|---------|--------|----------|----------|---------|---------|
+| 도메인 용어 질문 (RAG 파이프라인) | Server Action | `createAIAnswerForQuestion(qId)` | 질문: "ASC 설정 방법 알려주세요" | answer에 정규화된 용어 포함, source_refs에 강의 출처 | 200 |
+| 비기술 질문 (직접 답변) | Server Action | `createAIAnswerForQuestion(qId)` | 질문: "안녕하세요 감사합니다" | skipRAG=true, 직접 답변 반환 (RAG 스킵) | 200 |
+| 플랫폼 현황 질문 (웹서치 포함) | Server Action | `createAIAnswerForQuestion(qId)` | 질문: "메타 광고 정책 최근에 바뀐 거 있나요?" | web_search_used=true, 웹서치 결과 참조 답변 | 200 |
+| 검색 결과 부족 (AMBIGUOUS → 웹서치) | Server Action | `createAIAnswerForQuestion(qId)` | 매우 특수한 질문 | relevance_grade="AMBIGUOUS", web_search_used=true | 200 |
+| 기존 파이프라인 호환 (newsletter consumer) | 내부 | `generate({ consumerType: "newsletter" })` | enableDomainAnalysis=false | 기존 동작 100% 동일 | - |
+| Stage 0 실패 graceful degradation | Server Action | `createAIAnswerForQuestion(qId)` | Sonnet API 다운 | 기존 RAG 파이프라인으로 fallback 답변 | 200 |

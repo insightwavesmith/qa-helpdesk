@@ -165,3 +165,85 @@ POST /api/admin/email/send     -- 뉴스레터 일괄 발송 (배치 50건/초)
 - [ ] 이메일 성과 트래킹 (오픈/클릭)
 - [ ] 자동 저장 (현재 명시적 저장만)
 - [ ] 발송 대상 세분화 (현재 전체만)
+
+---
+
+## TDD 보완 (테스트 주도 개발 지원)
+
+### T1. 단위 테스트 시나리오
+
+| 함수 | 입력 | 기대 출력 | 검증 포인트 |
+|------|------|----------|------------|
+| `createContent({ title, body_md, ... })` | 유효한 콘텐츠 입력 | `{ id: "uuid", status: "draft" }` | 기본 상태 draft로 생성 |
+| `updateContent(id, { email_summary, email_subject })` | 이메일 관련 필드 업데이트 | 업데이트된 콘텐츠 | email_summary, email_subject 저장 확인 |
+| `publishContent(id)` | status="ready"인 콘텐츠 | `status: "published"` + distributions 레코드 생성 | 발행 상태 전환 + 배포 레코드 |
+| `generateEmailSummary(body_md)` | 긴 마크다운 본문 (5000자) | 1/5~1/3 분량 요약 | 요약 분량 적정성 |
+| `getContentAsEmailHtml(id)` | email_summary가 있는 콘텐츠 | HTML 문자열 (브랜드 헤더 + CTA + 푸터) | 이메일 템플릿 구조 |
+| `crawlUrl(url)` | 유효한 URL | `{ title, body_md }` (마크다운 변환) | cheerio + turndown 파이프라인 |
+| `getContents({ status: "published" })` | 필터 조건 | published 상태 콘텐츠 배열 | 상태 필터 동작 |
+
+### T2. 엣지 케이스 정의
+
+| # | 엣지 케이스 | 입력 조건 | 기대 동작 | 우선순위 |
+|---|-----------|---------|---------|---------|
+| E1 | email_summary 비어있을 때 발행 | email_summary=null + 이메일 발송 체크 | 이메일 발송 비활성화 (정보공유만 게시) | P0 |
+| E2 | body_md 비어있을 때 AI 요약 | body_md="" | 에러 반환 (요약 대상 없음) | P1 |
+| E3 | 이메일 일괄 발송 중 부분 실패 | 50건 배치 중 5건 실패 | 성공 건 정상 전송, 실패 건 로그 기록 | P0 |
+| E4 | URL 크롤링 실패 | 존재하지 않는 URL / 타임아웃 | 에러 메시지 반환 (크롤링 실패) | P1 |
+| E5 | 콘텐츠 동시 편집 | 2명이 동일 콘텐츠 동시 수정 | 마지막 저장 우선 (last-write-wins) | P2 |
+| E6 | email_design_json 파싱 실패 | 잘못된 Unlayer JSON | 기본 템플릿으로 fallback | P1 |
+| E7 | 이미지 URL 만료 (thumbnail_url) | GCS signed URL 만료 | 기본 썸네일 표시 또는 빈 상태 | P2 |
+
+### T3. 모킹 데이터 (Fixture)
+
+```json
+// fixture: content_full — 콘텐츠 전체 필드
+{
+  "id": "content-uuid-001",
+  "title": "메타 광고 A/B 테스트 완벽 가이드",
+  "body_md": "# A/B 테스트란?\n\nA/B 테스트는 두 가지 버전의 광고를 비교하여...\n\n## 설정 방법\n\n1. 캠페인 생성...",
+  "summary": "A/B 테스트 설정부터 결과 분석까지",
+  "category": "education",
+  "type": "education",
+  "status": "published",
+  "thumbnail_url": "https://storage.googleapis.com/bscamp/thumbnails/ab-test.jpg",
+  "view_count": 42,
+  "email_summary": "이번 주에는 A/B 테스트의 핵심 포인트를 정리했어요.\n\n1. **변수는 하나만** 변경하세요\n2. **최소 7일** 이상 운영하세요\n3. **통계적 유의성** 확인 후 결정하세요",
+  "email_subject": "[BS CAMP] A/B 테스트, 이것만 알면 됩니다",
+  "email_cta_text": "전문 읽기",
+  "email_cta_url": "https://bscamp.app/posts/content-uuid-001"
+}
+```
+
+```json
+// fixture: email_send_batch — 이메일 발송 배치
+{
+  "content_id": "content-uuid-001",
+  "recipients": [
+    { "email": "user1@example.com", "name": "김철수" },
+    { "email": "user2@example.com", "name": "이영희" }
+  ],
+  "batch_size": 50,
+  "subject": "[BS CAMP] A/B 테스트, 이것만 알면 됩니다"
+}
+```
+
+### T4. 테스트 파일 경로 규약
+
+| 테스트 대상 | 테스트 파일 경로 | 테스트 프레임워크 |
+|-----------|---------------|----------------|
+| `contents.ts` Server Actions | `__tests__/content-hub-v2/contents-actions.test.ts` | vitest |
+| 이메일 템플릿 렌더링 | `__tests__/content-hub-v2/email-template.test.ts` | vitest |
+| AI 요약 생성 | `__tests__/content-hub-v2/generate-email-summary.test.ts` | vitest |
+| URL 크롤링 | `__tests__/content-hub-v2/crawl-url.test.ts` | vitest |
+| 이메일 발송 API | `__tests__/content-hub-v2/email-send.test.ts` | vitest |
+
+### T5. 통합 테스트 시나리오
+
+| 시나리오 | Method | Endpoint | 요청 Body | 기대 응답 | 상태 코드 |
+|---------|--------|----------|----------|---------|---------|
+| 콘텐츠 생성 | Server Action | `createContent(input)` | `{ title: "테스트", body_md: "...", category: "education" }` | `{ id: "uuid", status: "draft" }` | 200 |
+| 콘텐츠 발행 | Server Action | `publishContent(id)` | `id="content-uuid-001"` | status="published" + distributions 생성 | 200 |
+| 이메일 요약 AI 생성 | Server Action | `generateEmailSummary(body_md)` | 5000자 마크다운 | 1000~1600자 요약 | 200 |
+| 이메일 일괄 발송 | POST | `/api/admin/email/send` | `{ contentId: "uuid", recipientIds: [...] }` | `{ sent: 50, failed: 0 }` | 200 |
+| URL 크롤링 | Server Action | `crawlUrl(url)` | `"https://example.com/article"` | `{ title: "...", body_md: "..." }` | 200 |

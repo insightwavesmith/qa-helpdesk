@@ -643,7 +643,7 @@
     "updatedAt": "2026-03-28",
     "notes": "Hook 컨텍스트 인식 부재 → TASK 소유권 메타데이터 + team-context.json + BOARD.json 중앙 보드 도입 기획"
   },
-  "updatedAt": "2026-03-28T11:06:16",
+  "updatedAt": "2026-03-28T12:24:26.394383",
   "_lastUpdated": "2026-03-28T11:06:16",
-  "_autoSyncNote": "hook-task-ownership completed"
+  "_autoSyncNote": "auto-synced at 2026-03-28 12:24:26, last commit: 614b696"
 }

@@ -1670,3 +1670,142 @@ WHERE source = 'motion_global'
 ---
 
 > 이 문서는 Smith님의 "메타 광고 = 확률 게임. 각 단계 이탈률 줄이기" 비전을 기술적으로 구현하기 위한 v2 처방 시스템의 전체 설계를 담고 있다. MVP의 2축 합산에서 3축 통합으로 확장하되, Andromeda/GEM/EAR이라는 메타 내부 메커니즘을 역추적하여 **"왜 이 소재가 메타 알고리즘에서 불리한지"**까지 설명할 수 있는 시스템을 목표로 한다.
+
+---
+
+## TDD 보완 (테스트 주도 개발 지원)
+
+### T1. 단위 테스트 시나리오
+
+| 함수 | 입력 | 기대 출력 | 검증 포인트 |
+|------|------|----------|------------|
+| `generatePrescription(mediaId, accountId)` | `mediaId: "cm_abc123"`, `accountId: "act_123"` | `PrescriptionResponse { top3_prescriptions: Prescription[], weakness_analysis: WeaknessAnalysis[], andromeda_warning, ear_analysis, meta }` | top3 길이 ≤3, 각 prescription에 evidence_axis1/axis2/axis3 존재, meta.latency_ms < 15000 |
+| `extractPatterns(attribute, category)` | `attribute: "hook.hook_type"`, `category: "beauty"` | `PrescriptionPattern[] { avg_value, sample_count, confidence, lift_vs_average, lift_ci_lower }` | confidence='high' → N≥100, confidence='medium' → N≥30, lift_ci_lower ≥ 0이면 통계적 유의 |
+| `computeScorePercentiles(accountId, category)` | `accountId: "act_123"`, `category: "beauty"` | `{ [metric]: { p25, p50, p75, percentile } }` | 모든 METRIC_GROUPS 지표에 대해 백분위 존재 |
+| `computeAndromedaSimilarity(accountId)` | `accountId: "act_123"` (소재 5건 이상) | `{ diversity_score: number, similar_pairs: SimilarPair[], warning_level: 'low'|'medium'|'high' }` | similarity 0.60+ → warning_level ≥ 'medium', 0.80+ → 'high' |
+| `analyzeEARImpact(performanceData, fiveAxisData)` | 성과 데이터 + 5축 분석 결과 | `{ primary_bottleneck: string, improvement_priority: string }` | bottleneck이 'foundation'|'engagement'|'conversion' 중 하나 |
+| `buildPrescriptionPrompt(mediaData, patterns, benchmarks)` | 소재 데이터 + 축2 패턴 + 축3 벤치마크 | Gemini 프롬프트 문자열 (~3,300 tokens) | 프롬프트에 축1/축2/축3 데이터 포함 확인, JSON 스키마 강제 지시 포함 |
+| `validatePrescriptionOutput(geminiResponse)` | Gemini JSON 응답 | `{ valid: boolean, errors: string[] }` | JSON 스키마 준수, 환각 감지 (입력 데이터 외 수치 인용 시 invalid) |
+
+### T2. 엣지 케이스 정의
+
+| # | 엣지 케이스 | 입력 조건 | 기대 동작 | 우선순위 |
+|---|-----------|---------|---------|---------|
+| E1 | 소재 없는 계정 | `creative_media` 0건인 account_id | 빈 처방 응답 + "분석할 소재가 없습니다" 메시지 | P0 |
+| E2 | Gemini API 타임아웃 | 응답 15초 초과 | retry 1회 → 실패 시 `{ error: "처방 생성 시간 초과", code: "TIMEOUT" }` | P0 |
+| E3 | prescription_patterns 0건 | 해당 카테고리 패턴 데이터 없음 | 축2 비활성 (`axis2_used: false`), 축1+축3만으로 처방 생성 | P1 |
+| E4 | prescription_benchmarks 0건 | Motion 벤치마크 미입력 상태 | 축3 비활성 (`axis3_used: false`), 축1+축2만으로 처방 생성 | P1 |
+| E5 | N<30 (통계적 유의성 부족) | sample_count < 30인 패턴만 존재 | `confidence: 'low'` 명시, UI에서 "⚠ 데이터 부족" 표시, 축3 보강 권장 | P1 |
+| E6 | 임베딩 null | `creative_media.embedding` IS NULL | 유사소재 검색(STEP 9) 건너뜀, `similar_count: 0` 반환 | P1 |
+| E7 | DeepGaze 시선 데이터 없음 | `creative_saliency` 미처리 소재 | 시선 기반 처방 제외, 5축+성과 데이터만으로 처방 | P1 |
+| E8 | 카테고리 불균형 | beauty만 N=200, 나머지 N<10 | 카테고리 fallback → 전체(ALL) 패턴 사용 + `category_fallback: true` | P2 |
+| E9 | Gemini 환각 응답 | 입력 데이터에 없는 수치 인용 | 후처리 검증에서 필터링 → 해당 처방 제거, 남은 처방으로 응답 | P1 |
+| E10 | 동일 소재 중복 요청 | 캐시된 처방이 있는 media_id | 캐시 반환 (24시간 TTL), Gemini 호출 건너뜀 | P2 |
+| E11 | 영상 소재 + 씬 데이터 없음 | `media_type: 'VIDEO'`, `video_scenes` 미처리 | 영상 전용 처방(재생 이탈 역추적) 제외, 이미지 처방 로직으로 fallback | P2 |
+
+### T3. 모킹 데이터 (Fixture)
+
+```json
+// fixture: prescription_pattern_sample — 축2 내부 데이터 패턴
+{
+  "id": "pp-001",
+  "attribute": "hook.hook_type",
+  "value": "problem",
+  "axis": "hook",
+  "metric": "ctr",
+  "avg_value": 2.8,
+  "median_value": 2.6,
+  "sample_count": 45,
+  "confidence": "high",
+  "lift_vs_average": 34.0,
+  "lift_ci_lower": 12.5,
+  "category": "beauty",
+  "source": "internal",
+  "calculated_at": "2026-03-25T00:00:00Z"
+}
+```
+
+```json
+// fixture: prescription_benchmark_sample — 축3 Motion 글로벌 벤치마크
+{
+  "id": "pb-001",
+  "metric": "ctr",
+  "category": "beauty",
+  "source": "motion",
+  "p25": 1.2,
+  "p50": 2.1,
+  "p75": 3.4,
+  "p90": 4.8,
+  "sample_size": 125000,
+  "period": "2026-Q1",
+  "updated_at": "2026-03-01T00:00:00Z"
+}
+```
+
+```json
+// fixture: prescription_response_sample — 처방 API 응답
+{
+  "top3_prescriptions": [
+    {
+      "rank": 1,
+      "title": "CTA 문구를 혜택 구체화형으로 변경",
+      "action": "'자세히 보기' → '50% 할인 지금 확인하기'",
+      "journey_stage": "행동(클릭)",
+      "expected_impact": "CTR +0.5~0.8%p",
+      "evidence_axis1": "Meta 가이드: 구체적 혜택 CTA > 모호 CTA, CTR 28% 차이",
+      "evidence_axis2": "내부 데이터: CTA='혜택명시' avg_ctr 2.8% vs 전체 2.1% (N=45, high)",
+      "evidence_axis3": "Motion 글로벌: 뷰티 상위 10% CTA 89%가 혜택 명시형",
+      "difficulty": "쉬움",
+      "difficulty_reason": "텍스트 수정만, 이미지 재제작 불필요",
+      "performance_driven": true
+    }
+  ],
+  "weakness_analysis": [
+    {
+      "axis": "text",
+      "attribute": "text.cta_text",
+      "attribute_label": "CTA 문구",
+      "current_percentile": 22,
+      "global_percentile": 18,
+      "issue": "CTA 문구 모호",
+      "affects_groups": ["conversion"],
+      "ear_impact": "CTR↓ → EAR 하락"
+    }
+  ],
+  "andromeda_warning": {
+    "level": "medium",
+    "diversity_score": 62,
+    "similar_pairs": [
+      { "creative_id": "cm_xyz", "similarity": 0.72, "overlap_axes": ["visual", "text"] }
+    ]
+  },
+  "ear_analysis": {
+    "primary_bottleneck": "foundation",
+    "bottleneck_detail": "3초시청률 하위 25%",
+    "improvement_priority": "hook 축 개선이 EAR에 가장 큰 양의 영향"
+  },
+  "meta": {
+    "model": "gemini-3-pro-preview",
+    "latency_ms": 4230,
+    "axis2_used": true,
+    "axis3_used": true,
+    "patterns_count": 12,
+    "benchmarks_count": 5,
+    "category_fallback": false,
+    "andromeda_analyzed": true
+  }
+}
+```
+
+### T4. 테스트 파일 경로 규약
+
+| 테스트 대상 | 테스트 파일 경로 | 테스트 프레임워크 |
+|-----------|---------------|----------------|
+| 처방 생성 API (route.ts) | `__tests__/prescription/prescription-api.test.ts` | vitest |
+| 패턴 추출 (extract-prescription-patterns) | `__tests__/prescription/pattern-extraction.test.ts` | vitest |
+| Andromeda 유사도 계산 | `__tests__/prescription/andromeda-similarity.test.ts` | vitest |
+| EAR 영향 분석 (ear-analyzer) | `__tests__/prescription/ear-analyzer.test.ts` | vitest |
+| 백분위 계산 (compute-score-percentiles) | `__tests__/prescription/score-percentiles.test.ts` | vitest |
+| Gemini 프롬프트 빌더 | `__tests__/prescription/prompt-builder.test.ts` | vitest |
+| 처방 출력 검증 (후처리) | `__tests__/prescription/output-validator.test.ts` | vitest |
+| confidence 결정 로직 | `__tests__/prescription/confidence-logic.test.ts` | vitest |

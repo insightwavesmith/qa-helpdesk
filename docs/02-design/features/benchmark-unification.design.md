@@ -78,3 +78,61 @@ async function fetchBenchmarks(svc: any): Promise<Record<string, BenchEntry>> {
 - [ ] T2: `t3-engine.ts`에서 getDominantCreativeType export는 유지 (다른 곳 사용 가능성)
 - [ ] T3: Supabase SQL로 `creative_type != 'ALL'` 행 삭제
 - [ ] 빌드 검증
+
+---
+
+## TDD 보완 (테스트 주도 개발 지원)
+
+### T1. 단위 테스트 시나리오
+
+| 함수 | 입력 | 기대 출력 | 검증 포인트 |
+|------|------|----------|------------|
+| `fetchBenchmarks(svc)` | benchmarks에 ALL 행 존재 | `Record<string, BenchEntry>` (각 메트릭별 값 매핑) | creative_type="ALL" 고정 조회 |
+| `fetchBenchmarks(svc)` | benchmarks 테이블 비어있음 | `{}` (빈 객체) | 벤치마크 없을 때 안전 반환 |
+| `fetchBenchmarks(svc)` | ALL 행만 존재 (VIDEO/IMAGE 행 없음) | 정상 결과 반환 | ALL만으로 동작 확인 |
+| `getDominantCreativeType(rows)` | (export 유지 확인) | 기존 반환값 | 다른 곳 사용 가능성 위해 export 유지 확인 |
+
+### T2. 엣지 케이스 정의
+
+| # | 엣지 케이스 | 입력 조건 | 기대 동작 | 우선순위 |
+|---|-----------|---------|---------|---------|
+| E1 | benchmarks 테이블 비어있음 | 벤치마크 데이터 0건 | 빈 benchMap 반환, hasBenchmarkData=false | P0 |
+| E2 | creative_type='ALL' 행만 존재 | VIDEO/IMAGE 행 삭제 후 | 정상 동작 (ALL만 조회) | P0 |
+| E3 | calculated_at 날짜 필터 | 여러 날짜의 벤치마크 존재 | 최신 calculated_at 날짜의 행만 조회 | P1 |
+| E4 | ranking_group 대소문자 | "ABOVE_AVERAGE" + "above_avg" 혼재 | 두 값 모두 in 필터로 매칭 | P1 |
+| E5 | 메트릭 값 null | 특정 메트릭 컬럼이 null | 해당 메트릭 스킵 (benchMap에 미포함) | P2 |
+
+### T3. 모킹 데이터 (Fixture)
+
+```json
+// fixture: benchmarks_all_type — ALL 타입 벤치마크 행
+{
+  "id": "bench-uuid-001",
+  "creative_type": "ALL",
+  "ranking_type": "metric",
+  "ranking_group": "ABOVE_AVERAGE",
+  "date": "2026-03-20",
+  "category": null,
+  "ctr": 2.1,
+  "video_p3s_rate": 45.0,
+  "engagement_per_10k": 85.0,
+  "click_to_purchase_rate": 3.5,
+  "roas": 4.2,
+  "calculated_at": "2026-03-20T04:00:00Z"
+}
+```
+
+### T4. 테스트 파일 경로 규약
+
+| 테스트 대상 | 테스트 파일 경로 | 테스트 프레임워크 |
+|-----------|---------------|----------------|
+| `fetchBenchmarks` 함수 | `__tests__/benchmark-unification/fetch-benchmarks.test.ts` | vitest |
+| `total-value/route.ts` 통합 | `__tests__/benchmark-unification/total-value-route.test.ts` | vitest |
+
+### T5. 통합 테스트 시나리오
+
+| 시나리오 | Method | Endpoint | 요청 Body | 기대 응답 | 상태 코드 |
+|---------|--------|----------|----------|---------|---------|
+| 벤치마크 조회 (ALL 타입) | GET | `/api/protractor/total-value` | (인증 + account_id) | 응답에 benchmarkData 포함, creative_type 분기 없음 | 200 |
+| 벤치마크 없음 | GET | `/api/protractor/total-value` | benchmarks 테이블 비어있음 | hasBenchmarkData=false, T3 점수 계산은 정상 | 200 |
+| creative_type != 'ALL' 삭제 확인 | SQL | `SELECT count(*) FROM benchmarks WHERE creative_type != 'ALL'` | - | 0건 | - |
