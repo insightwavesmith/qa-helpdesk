@@ -12,9 +12,20 @@
       "TodoRead(*)",
       "TodoWrite(*)",
       "WebSearch",
-      "Skill(bkit:pm-discovery)"
+      "Skill(bkit:pm-discovery)",
+      "Agent(*)",
+      "TeamCreate(*)",
+      "TeamDelete(*)",
+      "TaskCreate(*)",
+      "TaskUpdate(*)",
+      "TaskGet(*)",
+      "TaskList(*)",
+      "TaskStop(*)",
+      "TaskOutput(*)",
+      "SendMessage(*)"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "bypassPermissions"
   },
   "model": "claude-opus-4-6",
   "enableAllProjectMcpServers": true,
@@ -28,13 +39,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/pre-read-context.sh",
-            "timeout": 10000
-          },
-          {
-            "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-task.sh",
-            "timeout": 15000
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/destructive-detector.sh",
+            "timeout": 5000
           },
           {
             "type": "command",
@@ -48,22 +54,22 @@
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/destructive-detector.sh",
-            "timeout": 5000
-          },
-          {
-            "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-design.sh",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-task.sh",
             "timeout": 15000
           },
           {
             "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.claude/hooks/enforce-qa-before-merge.sh",
-            "timeout": 30000
+            "timeout": 120000
           },
           {
             "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.claude/hooks/pdca-single-source.sh",
+            "timeout": 10000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/pre-read-context.sh",
             "timeout": 10000
           }
         ]
@@ -94,6 +100,16 @@
         ]
       },
       {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/enforce-teamcreate.sh",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
         "matcher": "Task",
         "hooks": [
           {
@@ -116,13 +132,7 @@
     ],
     "Stop": [
       {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/notify-openclaw.sh",
-            "timeout": 10000
-          }
-        ]
+        "hooks": []
       }
     ],
     "TaskCompleted": [
@@ -140,13 +150,13 @@
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/pdca-update.sh",
-            "timeout": 30000
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/gap-analysis.sh",
+            "timeout": 15000
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/notify-completion.sh",
-            "timeout": 10000
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/pdca-update.sh",
+            "timeout": 30000
           },
           {
             "type": "command",
@@ -157,11 +167,26 @@
             "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.claude/hooks/auto-team-cleanup.sh",
             "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/notify-completion.sh",
+            "timeout": 10000
           }
         ]
       }
     ],
-    "TeammateIdle": []
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/teammate-idle.sh",
+            "timeout": 10000
+          }
+        ]
+      }
+    ]
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "high"

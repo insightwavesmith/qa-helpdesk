@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-03-28T10:00:00+09:00",
+  "teams": {
+    "CTO-1": {
+      "status": "active",
+      "taskFiles": ["TASK-CTO-RESUME.md", "TASK-CTO-CLEAN.md"],
+      "completedCount": 0,
+      "totalCount": 0
+    },
+    "PM-1": {
+      "status": "active",
+      "taskFiles": ["TASK-PM-RESUME.md"],
+      "completedCount": 0,
+      "totalCount": 0
+    },
+    "MKT-1": {
+      "status": "active",
+      "taskFiles": ["TASK-MKT-RESUME.md"],
+      "completedCount": 0,
+      "totalCount": 0
+    }
+  },
+  "unassigned": [
+    "TASK-LP-MEDIA-DOWNLOAD.md",
+    "TASK-COLLECTION-GAPS.md",
+    "TASK-COLLECT-AND-EMBED.md",
+    "TASK-DEEPGAZE-GEMINI-PIPELINE.md",
+    "TASK-GCS-STORAGE-MIGRATION.md"
+  ]
+}

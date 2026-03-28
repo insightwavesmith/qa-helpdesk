@@ -1,3 +1,9 @@
+---
+team: MKT-1
+created: 2026-03-28
+status: pending
+owner: leader
+---
 # TASK: 마케팅팀 — 오가닉 채널 배포 프로세스 Design 완성
 
 ## CLAUDE.md 읽고 delegate 모드로 팀원 만들어서 진행해라

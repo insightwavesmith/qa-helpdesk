@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-03-28T10:00:00+09:00",
+  "teams": {
+    "CTO-1": {
+      "status": "active",
+      "taskFiles": ["TASK-CTO-RESUME.md", "TASK-CTO-CLEAN.md"],
+      "completedCount": 3,
+      "totalCount": 8
+    },
+    "PM-1": {
+      "status": "active",
+      "taskFiles": ["TASK-PM-RESUME.md"],
+      "completedCount": 0,
+      "totalCount": 3
+    }
+  },
+  "unassigned": [
+    "TASK-LP-MEDIA-DOWNLOAD.md",
+    "TASK-COLLECTION-GAPS.md"
+  ]
+}

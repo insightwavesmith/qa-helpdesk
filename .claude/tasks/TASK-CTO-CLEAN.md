@@ -1,3 +1,9 @@
+---
+team: CTO-1
+created: 2026-03-28
+status: in-progress
+owner: leader
+---
 # TASK: CTO팀 정리된 작업 목록
 
 ## 현재 상황

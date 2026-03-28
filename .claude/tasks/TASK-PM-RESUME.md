@@ -1,3 +1,9 @@
+---
+team: PM-1
+created: 2026-03-28
+status: pending
+owner: leader
+---
 # TASK: PM팀 — 슬랙 알림 + 오케스트레이션 설계 마무리
 
 ## CLAUDE.md 읽고 delegate 모드로 팀원 만들어서 진행해라

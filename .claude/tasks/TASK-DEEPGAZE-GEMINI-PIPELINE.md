@@ -1,3 +1,9 @@
+---
+team: unassigned
+created: 2026-03-28
+status: pending
+owner: leader
+---
 # TASK: DeepGaze → Gemini 결합 분석 파이프라인
 
 ## CLAUDE.md 읽고 delegate 모드로 팀원 만들어서 진행해라

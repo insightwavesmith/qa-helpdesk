@@ -1,0 +1,14 @@
+{
+  "team": "CTO-1",
+  "session": "sdk-cto",
+  "created": "2026-03-28T10:00:00+09:00",
+  "taskFiles": [
+    "TASK-CTO-RESUME.md",
+    "TASK-CTO-CLEAN.md"
+  ],
+  "teammates": [
+    { "role": "backend-dev", "paneIndex": 1 },
+    { "role": "frontend-dev", "paneIndex": 2 },
+    { "role": "qa-engineer", "paneIndex": 3 }
+  ]
+}

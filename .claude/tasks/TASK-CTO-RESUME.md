@@ -1,3 +1,9 @@
+---
+team: CTO-1
+created: 2026-03-28
+status: in-progress
+owner: leader
+---
 # TASK: CTO팀 남은 작업 마무리
 
 ## CLAUDE.md 읽고 delegate 모드로 팀원 만들어서 진행해라

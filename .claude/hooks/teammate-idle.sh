@@ -1,43 +1,91 @@
 #!/bin/bash
-# teammate-idle.sh — 팀원 idle 시 자동 다음 TASK 배정 또는 종료
-# TeammateIdle hook: exit 0 = idle 허용 (종료 가능), exit 2 = 피드백 보내고 계속 작업
-#
-# v4 (2026-03-25):
-#   - 핵심 변경: 모든 TASK 완료 시 즉시 exit 0 (idle 허용 → 종료 가능)
-#   - QA 분석 문서 작성은 Leader가 별도 지시 (팀원이 무한 대기하지 않음)
-#   - 토큰 낭비 방지: 할 일 없으면 즉시 종료
+# teammate-idle.sh — 팀원 idle 시 자기 팀 TASK만 배정
+# TeammateIdle hook: exit 0 = idle 허용, exit 2 = 피드백 + 계속 작업
+# v6 (2026-03-28): 소유권 필터링 도입
 
 PROJECT_DIR="/Users/smith/projects/bscamp"
 TASKS_DIR="$PROJECT_DIR/.claude/tasks"
+CONTEXT_FILE="$PROJECT_DIR/.claude/runtime/team-context.json"
 
-# 1. TASK 파일에서 미완료 체크박스 찾기
-if [ -d "$TASKS_DIR" ]; then
-    UNCHECKED=""
-    for f in "$TASKS_DIR"/TASK-*.md; do
-        [ -f "$f" ] || continue
-        ITEMS=$(grep -n '^\- \[ \]' "$f" 2>/dev/null)
-        if [ -n "$ITEMS" ]; then
-            BASENAME=$(basename "$f")
-            UNCHECKED="${UNCHECKED}\n[${BASENAME}] $(echo "$ITEMS" | head -1 | sed 's/^[0-9]*://' | sed 's/^- \[ \] //')"
-        fi
-    done
+# --- 프론트매터 파싱 헬퍼 ---
+parse_frontmatter_field() {
+    local file="$1" key="$2"
+    awk '/^---$/{n++; next} n==1{print}' "$file" | grep "^${key}:" | sed "s/^${key}: *//"
+}
 
-    UNCHECKED_COUNT=$(echo -e "$UNCHECKED" | grep -c '\S' 2>/dev/null || echo "0")
+# 프론트매터 이후 영역에서만 체크박스 스캔
+scan_unchecked() {
+    local file="$1"
+    awk '/^---$/{n++; next} n>=2 || n==0{print NR": "$0}' "$file" | grep '^[0-9]*: *- \[ \]'
+}
 
-    if [ "$UNCHECKED_COUNT" -gt 0 ]; then
-        NEXT=$(echo -e "$UNCHECKED" | head -1)
-        echo "미완료 TASK ${UNCHECKED_COUNT}건. 다음: ${NEXT}"
-        exit 2
+# --- 1단계: 자기 팀 TASK 파일 목록 결정 ---
+FILTERED_FILES=""
+
+if [ -f "$CONTEXT_FILE" ]; then
+    # 방법 A: team-context.json에서 taskFiles 추출
+    TASK_LIST=$(jq -r '.taskFiles[]?' "$CONTEXT_FILE" 2>/dev/null)
+    if [ -n "$TASK_LIST" ]; then
+        while IFS= read -r fname; do
+            [ -f "$TASKS_DIR/$fname" ] && FILTERED_FILES="$FILTERED_FILES $TASKS_DIR/$fname"
+        done <<< "$TASK_LIST"
     fi
 fi
 
-# 2. PDCA 상태 갱신 체크 제거 (v5, 2026-03-28)
-# PDCA 기록은 리더 전용 책임. 팀원이 idle될 때 PDCA 미갱신으로 차단하면
-# 팀원이 PDCA 파일 관리 시도 → 권한/로직 충돌 → idle 루프 발생.
-# 리더에게는 validate-pdca-before-teamdelete.sh로 TeamDelete 전 강제.
+if [ -z "$FILTERED_FILES" ]; then
+    # 방법 B: TASK 프론트매터에서 team 필드로 필터링
+    CURRENT_TEAM=""
+    if [ -f "$CONTEXT_FILE" ]; then
+        CURRENT_TEAM=$(jq -r '.team // empty' "$CONTEXT_FILE" 2>/dev/null)
+    fi
 
-# 3. 모든 TASK 완료 → 즉시 idle 허용 (종료 가능)
-# 이전: QA 문서 없으면 exit 2로 계속 작업시킴 → 무한 idle 루프 발생
-# 수정: Leader가 TeamDelete로 팀원을 정리. 팀원은 할 일 없으면 바로 종료.
-echo "모든 TASK 완료. 작업을 종료하세요. Leader에게 완료 보고 후 shutdown하세요."
+    for f in "$TASKS_DIR"/TASK-*.md; do
+        [ -f "$f" ] || continue
+        TASK_TEAM=$(parse_frontmatter_field "$f" "team")
+        TASK_STATUS=$(parse_frontmatter_field "$f" "status")
+
+        # completed/archived는 스킵
+        [ "$TASK_STATUS" = "completed" ] || [ "$TASK_STATUS" = "archived" ] && continue
+        # unassigned는 스킵
+        [ "$TASK_TEAM" = "unassigned" ] && continue
+
+        if [ -z "$CURRENT_TEAM" ]; then
+            # 팀 컨텍스트 완전 부재 → 전체 스캔 (레거시 호환)
+            FILTERED_FILES="$FILTERED_FILES $f"
+        elif [ "$TASK_TEAM" = "$CURRENT_TEAM" ] || [ -z "$TASK_TEAM" ]; then
+            # 같은 팀이거나 프론트매터 없는 레거시 TASK
+            FILTERED_FILES="$FILTERED_FILES $f"
+        fi
+    done
+fi
+
+# --- 2단계: 필터된 TASK에서 미완료 체크박스 스캔 ---
+UNCHECKED=""
+for f in $FILTERED_FILES; do
+    [ -f "$f" ] || continue
+
+    # status: completed/archived인 TASK는 체크박스 무관하게 스킵
+    FILE_STATUS=$(parse_frontmatter_field "$f" "status")
+    [ "$FILE_STATUS" = "completed" ] || [ "$FILE_STATUS" = "archived" ] && continue
+
+    ITEMS=$(scan_unchecked "$f")
+    if [ -n "$ITEMS" ]; then
+        BASENAME=$(basename "$f")
+        FIRST=$(echo "$ITEMS" | head -1 | sed 's/^[0-9]*: *//' | sed 's/^- \[ \] //')
+        UNCHECKED="${UNCHECKED}\n[${BASENAME}] ${FIRST}"
+    fi
+done
+
+UNCHECKED_COUNT=$(echo -e "$UNCHECKED" | grep -c '\S' 2>/dev/null || true)
+UNCHECKED_COUNT=${UNCHECKED_COUNT:-0}
+UNCHECKED_COUNT=$(echo "$UNCHECKED_COUNT" | tr -d '[:space:]')
+
+if [ "$UNCHECKED_COUNT" -gt 0 ]; then
+    NEXT=$(echo -e "$UNCHECKED" | grep '\S' | head -1)
+    echo "자기 팀 미완료 TASK ${UNCHECKED_COUNT}건. 다음: ${NEXT}"
+    exit 2
+fi
+
+# --- 3단계: 모든 TASK 완료 → idle 허용 ---
+echo "자기 팀 TASK 모두 완료. Leader에게 보고 후 종료하세요."
 exit 0

@@ -1,3 +1,9 @@
+---
+team: unassigned
+created: 2026-03-28
+status: pending
+owner: leader
+---
 # TASK: 수집 갭 해소 — 미수집 계정 + 미분석 소재/LP 배치
 
 ## CLAUDE.md 읽고 delegate 모드로 팀원 만들어서 진행해라

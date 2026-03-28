@@ -39,4 +39,13 @@ if [ "$PDCA_AGE" -gt 600 ]; then
 fi
 
 echo "[PDCA 게이트] docs/.pdca-status.json ${PDCA_AGE}초 전 갱신 확인. TeamDelete 허용."
+
+# --- team-context.json 정리 (v1.1 추가) ---
+CONTEXT_FILE="$PROJECT_DIR/.claude/runtime/team-context.json"
+if [ -f "$CONTEXT_FILE" ]; then
+    DELETED_TEAM=$(jq -r '.team // "unknown"' "$CONTEXT_FILE" 2>/dev/null)
+    rm -f "$CONTEXT_FILE"
+    echo "[PDCA 게이트] team-context.json 삭제 완료 (팀: $DELETED_TEAM)"
+fi
+
 exit 0
