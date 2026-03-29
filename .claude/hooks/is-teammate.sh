@@ -12,11 +12,14 @@
 #   - tmux 환경 ($TMUX 존재)
 #   - pane_index 0 = 리더, 1+ = 팀원
 
-IS_TEAMMATE="false"
+# 이미 설정된 경우 존중 (테스트 환경에서 env로 주입 가능)
+if [ -z "${IS_TEAMMATE:-}" ]; then
+    IS_TEAMMATE="false"
 
-if [ -n "$TMUX" ] && [ "$CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" = "1" ]; then
-    _PANE_IDX=$(tmux display-message -p '#{pane_index}' 2>/dev/null)
-    if [ -n "$_PANE_IDX" ] && [ "$_PANE_IDX" -gt 0 ] 2>/dev/null; then
-        IS_TEAMMATE="true"
+    if [ -n "$TMUX" ] && [ "$CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" = "1" ]; then
+        _PANE_IDX=$(tmux display-message -p '#{pane_index}' 2>/dev/null)
+        if [ -n "$_PANE_IDX" ] && [ "$_PANE_IDX" -gt 0 ] 2>/dev/null; then
+            IS_TEAMMATE="true"
+        fi
     fi
 fi
