@@ -121,8 +121,15 @@ PAYLOAD=$(cat <<EOFPAYLOAD
 EOFPAYLOAD
 )
 
-# ── 8. Broker 전송 (curl 직접) ──
-BROKER_URL="http://localhost:7899"
+# ── 8. Broker 전송 (peer-resolver + chain-messenger 통합) ──
+BROKER_URL="${BROKER_URL:-http://localhost:7899}"
+
+# helpers 로드 (있으면 사용, 없으면 inline fallback)
+HELPERS_DIR="$(dirname "$0")/helpers"
+HAS_RESOLVER=false
+HAS_MESSENGER=false
+[ -f "$HELPERS_DIR/peer-resolver.sh" ] && { source "$HELPERS_DIR/peer-resolver.sh"; HAS_RESOLVER=true; }
+[ -f "$HELPERS_DIR/chain-messenger.sh" ] && { source "$HELPERS_DIR/chain-messenger.sh"; HAS_MESSENGER=true; }
 
 # 8-1. Health check
 if ! curl -sf "${BROKER_URL}/health" >/dev/null 2>&1; then
@@ -134,14 +141,25 @@ if ! curl -sf "${BROKER_URL}/health" >/dev/null 2>&1; then
     exit 0
 fi
 
-# 8-2. Peer 검색 (summary에서 역할 매칭)
-PEERS_JSON=$(curl -sf -X POST "${BROKER_URL}/list-peers" \
-    -H 'Content-Type: application/json' \
-    -d "{\"scope\":\"repo\",\"cwd\":\"${PROJECT_DIR}\",\"git_root\":\"${PROJECT_DIR}\"}" \
-    2>/dev/null || echo "[]")
+# 8-2. Peer 검색 (peer-resolver 우선, fallback: summary 매칭)
+TARGET_ID=""
+MY_ID=""
 
-TARGET_ID=$(echo "$PEERS_JSON" | jq -r "[.[] | select(.summary | test(\"${TO_ROLE}\"))][0].id // empty" 2>/dev/null)
-MY_ID=$(echo "$PEERS_JSON" | jq -r "[.[] | select(.summary | test(\"CTO\"))][0].id // empty" 2>/dev/null)
+if [ "$HAS_RESOLVER" = "true" ]; then
+    resolve_peer "$TO_ROLE" && TARGET_ID="$RESOLVED_PEER_ID"
+    resolve_self && MY_ID="$RESOLVED_SELF_ID"
+fi
+
+# fallback: inline summary matching
+if [ -z "$TARGET_ID" ] || [ -z "$MY_ID" ]; then
+    PEERS_JSON=$(curl -sf -X POST "${BROKER_URL}/list-peers" \
+        -H 'Content-Type: application/json' \
+        -d "{\"scope\":\"repo\",\"cwd\":\"${PROJECT_DIR}\",\"git_root\":\"${PROJECT_DIR}\"}" \
+        2>/dev/null || echo "[]")
+
+    [ -z "$TARGET_ID" ] && TARGET_ID=$(echo "$PEERS_JSON" | jq -r "[.[] | select(.summary | test(\"${TO_ROLE}\"))][0].id // empty" 2>/dev/null)
+    [ -z "$MY_ID" ] && MY_ID=$(echo "$PEERS_JSON" | jq -r "[.[] | select(.summary | test(\"CTO\"))][0].id // empty" 2>/dev/null)
+fi
 
 if [ -z "$TARGET_ID" ]; then
     echo "⚠ ${TO_ROLE} peer 미발견. 수동 핸드오프 필요."
@@ -159,14 +177,18 @@ if [ -z "$MY_ID" ]; then
     exit 0
 fi
 
-# 8-3. 메시지 전송
-ESCAPED_PAYLOAD=$(echo "$PAYLOAD" | jq -c '.' 2>/dev/null | sed 's/"/\\"/g')
-SEND_RESULT=$(curl -sf -X POST "${BROKER_URL}/send-message" \
-    -H 'Content-Type: application/json' \
-    -d "{\"from_id\":\"${MY_ID}\",\"to_id\":\"${TARGET_ID}\",\"text\":$(echo "$PAYLOAD" | jq -c '.')}" \
-    2>/dev/null || echo '{"ok":false}')
-
-SEND_OK=$(echo "$SEND_RESULT" | jq -r '.ok // false' 2>/dev/null)
+# 8-3. 메시지 전송 (chain-messenger 우선, fallback: direct curl)
+SEND_OK="false"
+if [ "$HAS_MESSENGER" = "true" ]; then
+    send_chain_message "$MY_ID" "$TARGET_ID" "$PAYLOAD"
+    [ "$SEND_STATUS" = "ok" ] && SEND_OK="true"
+else
+    SEND_RESULT=$(curl -sf -X POST "${BROKER_URL}/send-message" \
+        -H 'Content-Type: application/json' \
+        -d "{\"from_id\":\"${MY_ID}\",\"to_id\":\"${TARGET_ID}\",\"text\":$(echo "$PAYLOAD" | jq -c '.')}" \
+        2>/dev/null || echo '{"ok":false}')
+    SEND_OK=$(echo "$SEND_RESULT" | jq -r '.ok // false' 2>/dev/null)
+fi
 
 if [ "$SEND_OK" = "true" ]; then
     echo "✅ PDCA 체인 자동 전송 완료"
@@ -176,6 +198,8 @@ if [ "$SEND_OK" = "true" ]; then
     echo "  chain_step: ${CHAIN_STEP}"
     [ "$MANUAL_REVIEW" = "true" ] && echo "  ⚠ 수동 검수 필수 (고위험/L3)"
     [ -n "$AUTO_APPROVE" ] && echo "  ⏱ 30분 타임아웃 자동 승인"
+    # 보고서 저장 (PM이 검수용으로 사용)
+    echo "$PAYLOAD" | jq '.' > "$PROJECT_DIR/.claude/runtime/last-completion-report.json" 2>/dev/null
 else
     echo "⚠ 메시지 전송 실패. 수동 핸드오프 필요."
     [ "$MANUAL_REVIEW" = "true" ] && echo "  ⚠ 수동 검수 필수 (고위험/L3)"

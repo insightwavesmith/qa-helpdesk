@@ -315,6 +315,248 @@ export function prepareTaskQualityGate(
   return destPath;
 }
 
+/** peer-map.json 생성 */
+export function writePeerMap(tmpDir: string, map: Record<string, { peerId: string }>): void {
+  const dir = join(tmpDir, '.claude', 'runtime');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'peer-map.json'), JSON.stringify(map, null, 2));
+}
+
+/** PM verdict 파일 생성 */
+export function writePmVerdict(tmpDir: string, verdict: string, notes?: string, issues?: string[]): void {
+  const dir = join(tmpDir, '.claude', 'runtime');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'pm-verdict.json'), JSON.stringify({
+    verdict,
+    notes: notes || '',
+    issues: issues || [],
+    ts: new Date().toISOString(),
+  }));
+}
+
+/** last-completion-report.json 생성 (PM이 CTO로부터 받은 보고서) */
+export function writeCompletionReport(tmpDir: string, data?: Record<string, unknown>): void {
+  const dir = join(tmpDir, '.claude', 'runtime');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'last-completion-report.json'), JSON.stringify({
+    protocol: 'bscamp-team/v1',
+    type: 'COMPLETION_REPORT',
+    from_role: 'CTO_LEADER',
+    to_role: 'PM_LEADER',
+    payload: {
+      task_file: 'TASK-TEST.md',
+      match_rate: 97,
+      process_level: 'L2',
+      commit_hash: 'abc1234',
+      chain_step: 'cto_to_pm',
+      ...(data || {}),
+    },
+    ts: new Date().toISOString(),
+    msg_id: 'chain-cto-test-1',
+  }));
+}
+
+/** last-pm-report.json 생성 (COO가 PM으로부터 받은 보고서) */
+export function writePmReport(tmpDir: string, data?: Record<string, unknown>): void {
+  const dir = join(tmpDir, '.claude', 'runtime');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'last-pm-report.json'), JSON.stringify({
+    protocol: 'bscamp-team/v1',
+    type: 'COMPLETION_REPORT',
+    from_role: 'PM_LEADER',
+    to_role: 'MOZZI',
+    payload: {
+      task_file: 'TASK-TEST.md',
+      match_rate: 97,
+      process_level: 'L2',
+      commit_hash: 'abc1234',
+      chain_step: 'pm_to_coo',
+      pm_verdict: 'pass',
+      pm_notes: 'LGTM',
+      ...(data || {}),
+    },
+    ts: new Date().toISOString(),
+    msg_id: 'chain-pm-test-1',
+  }));
+}
+
+/** COO feedback 파일 생성 */
+export function writeCooFeedback(tmpDir: string, verdict: string, notes?: string, issues?: string[]): void {
+  const dir = join(tmpDir, '.claude', 'runtime');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'coo-feedback.json'), JSON.stringify({
+    verdict,
+    notes: notes || '',
+    issues: issues || [],
+  }));
+}
+
+/**
+ * pm-chain-forward.sh 준비.
+ * broker curl mock + PROJECT_DIR 치환.
+ */
+export function preparePmChainForward(
+  env: ReturnType<typeof createTestEnv>,
+  opts: {
+    mockBroker?: {
+      health: boolean;
+      peers?: Array<{ id: string; summary: string; pid?: number }>;
+      sendOk?: boolean;
+    };
+  }
+): string {
+  const originalPath = join(process.cwd(), '.claude/hooks/pm-chain-forward.sh');
+  let content = readFileSync(originalPath, 'utf-8');
+
+  content = content.replace(/PROJECT_DIR="[^"]*"/, `PROJECT_DIR="${env.tmpDir}"`);
+
+  if (opts.mockBroker) {
+    const mockScript = createMockCurl(env.tmpDir, opts.mockBroker);
+    content = content.replace(/curl /g, `${mockScript} `);
+  }
+
+  // is-teammate.sh mock
+  writeFileSync(
+    join(env.hooksDir, 'is-teammate.sh'),
+    '#!/bin/bash\nIS_TEAMMATE="${IS_TEAMMATE:-false}"\n',
+    { mode: 0o755 }
+  );
+
+  // helpers 복사
+  const helpersDir = join(env.hooksDir, 'helpers');
+  mkdirSync(helpersDir, { recursive: true });
+  const srcHelpers = join(process.cwd(), '.claude/hooks/helpers');
+  for (const f of ['peer-resolver.sh', 'chain-messenger.sh']) {
+    const src = join(srcHelpers, f);
+    if (existsSync(src)) {
+      let helperContent = readFileSync(src, 'utf-8');
+      helperContent = helperContent.replace(/PROJECT_DIR="[^"]*"/, `PROJECT_DIR="${env.tmpDir}"`);
+      if (opts.mockBroker) {
+        const mockScript = createMockCurl(env.tmpDir, opts.mockBroker);
+        helperContent = helperContent.replace(/curl /g, `${mockScript} `);
+      }
+      writeFileSync(join(helpersDir, f), helperContent, { mode: 0o755 });
+    }
+  }
+
+  const destPath = join(env.hooksDir, 'pm-chain-forward.sh');
+  writeFileSync(destPath, content, { mode: 0o755 });
+  return destPath;
+}
+
+/**
+ * coo-chain-report.sh 준비.
+ */
+export function prepareCooChainReport(
+  env: ReturnType<typeof createTestEnv>,
+  opts: {
+    mockBroker?: {
+      health: boolean;
+      peers?: Array<{ id: string; summary: string }>;
+      sendOk?: boolean;
+    };
+    webhookOk?: boolean;
+  }
+): string {
+  const originalPath = join(process.cwd(), '.claude/hooks/coo-chain-report.sh');
+  let content = readFileSync(originalPath, 'utf-8');
+
+  content = content.replace(/PROJECT_DIR="[^"]*"/, `PROJECT_DIR="${env.tmpDir}"`);
+
+  // webhook mock
+  if (opts.webhookOk !== undefined) {
+    const mockWebhook = join(env.tmpDir, 'mock-webhook.sh');
+    const script = opts.webhookOk
+      ? '#!/bin/bash\necho \'{"ok":true}\'; exit 0\n'
+      : '#!/bin/bash\nexit 22\n';
+    writeFileSync(mockWebhook, script, { mode: 0o755 });
+    // curl 치환 — webhook URL을 mock으로 교체하려면 curl 자체를 mock
+    if (opts.mockBroker) {
+      const mockScript = createMockCurlWithWebhook(env.tmpDir, opts.mockBroker, opts.webhookOk);
+      content = content.replace(/curl /g, `${mockScript} `);
+    } else {
+      const mockScript = createMockCurlWithWebhook(env.tmpDir, { health: false }, opts.webhookOk);
+      content = content.replace(/curl /g, `${mockScript} `);
+    }
+  } else if (opts.mockBroker) {
+    const mockScript = createMockCurl(env.tmpDir, opts.mockBroker);
+    content = content.replace(/curl /g, `${mockScript} `);
+  }
+
+  // helpers 복사 + curl mock 치환
+  const helpersDir = join(env.hooksDir, 'helpers');
+  mkdirSync(helpersDir, { recursive: true });
+  const srcHelpers = join(process.cwd(), '.claude/hooks/helpers');
+  // helpers용 mock curl 결정
+  let helperMockScript: string | null = null;
+  if (opts.webhookOk !== undefined) {
+    helperMockScript = createMockCurlWithWebhook(env.tmpDir, opts.mockBroker || { health: false }, opts.webhookOk);
+  } else if (opts.mockBroker) {
+    helperMockScript = createMockCurl(env.tmpDir, opts.mockBroker);
+  }
+  for (const f of ['peer-resolver.sh', 'chain-messenger.sh']) {
+    const src = join(srcHelpers, f);
+    if (existsSync(src)) {
+      let helperContent = readFileSync(src, 'utf-8');
+      helperContent = helperContent.replace(/_PR_PROJECT_DIR="\$\{PROJECT_DIR:-[^}]*\}"/, `_PR_PROJECT_DIR="${env.tmpDir}"`);
+      helperContent = helperContent.replace(/_CM_RETRY_DELAY="\$\{CHAIN_RETRY_DELAY:-2\}"/, '_CM_RETRY_DELAY="0"');
+      if (helperMockScript) {
+        helperContent = helperContent.replace(/curl /g, `${helperMockScript} `);
+      }
+      writeFileSync(join(helpersDir, f), helperContent, { mode: 0o755 });
+    }
+  }
+
+  const destPath = join(env.hooksDir, 'coo-chain-report.sh');
+  writeFileSync(destPath, content, { mode: 0o755 });
+  return destPath;
+}
+
+/**
+ * mock curl 스크립트 생성 (webhook 지원 포함).
+ */
+function createMockCurlWithWebhook(tmpDir: string, broker: {
+  health: boolean;
+  peers?: Array<{ id: string; summary: string }>;
+  sendOk?: boolean;
+}, webhookOk: boolean): string {
+  const peersJson = JSON.stringify(broker.peers || []);
+  const sendResult = JSON.stringify({ ok: broker.sendOk ?? false });
+
+  const script = `#!/bin/bash
+# mock-curl: broker + webhook 응답 시뮬레이션
+ARGS="$*"
+
+# webhook wake
+if echo "$ARGS" | grep -q "/hooks/wake"; then
+    ${webhookOk ? 'echo \'{"ok":true}\'; exit 0' : 'exit 22'}
+fi
+
+# health check
+if echo "$ARGS" | grep -q "/health"; then
+    ${broker.health ? 'echo \'{"peers":2}\'; exit 0' : 'exit 22'}
+fi
+
+# list-peers
+if echo "$ARGS" | grep -q "/list-peers"; then
+    echo '${peersJson.replace(/'/g, "'\\''")}'
+    exit 0
+fi
+
+# send-message
+if echo "$ARGS" | grep -q "/send-message"; then
+    echo '${sendResult.replace(/'/g, "'\\''")}'
+    exit 0
+fi
+
+exit 0
+`;
+
+  const mockPath = join(tmpDir, 'mock-curl-wh.sh');
+  writeFileSync(mockPath, script, { mode: 0o755 });
+  return mockPath;
+}
+
 /**
  * mock curl 스크립트 생성.
  * URL 파라미터에 따라 다른 응답 반환.
