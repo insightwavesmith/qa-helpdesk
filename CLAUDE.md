@@ -89,6 +89,13 @@ cto_qa → cto_to_pm → pm_review → pm_to_coo → coo_report → smith_ok
 - 리더가 stdout을 읽고 MCP `send_message` 도구로 PM에게 전송
 - broker 미기동 시 → 수동 fallback (차단하지 않음, exit 0)
 
+## 세션 시작 복구 프로토콜 (2026-03-29 추가)
+세션 시작 시 반드시 실행:
+```bash
+bash .claude/hooks/session-resume-check.sh
+```
+미완료 TASK/좀비 팀원이 감지되면 해당 항목부터 이어서 진행.
+
 ## PDCA 프로세스 레벨 시스템 (2026-03-28 적용)
 
 **모든 작업은 PDCA를 거치되, 산출물 깊이만 조절한다.**

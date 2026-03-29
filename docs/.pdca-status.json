@@ -298,9 +298,42 @@
       },
       "updatedAt": "2026-03-29T12:00:00",
       "notes": "Match Rate 96%. 203/203 테스트 Green (hooks 140 + dashboard 63). 미구현 12건(MCP-1~12, WK-6,7) P2/P3 다음 이터레이션."
+    },
+    "agent-ops-review-issues": {
+      "phase": "completed",
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/01-plan/features/agent-ops-review-issues.plan.md",
+        "at": "2026-03-29"
+      },
+      "design": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/02-design/features/agent-ops-review-issues.design.md",
+        "at": "2026-03-29"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": null,
+        "at": "2026-03-29"
+      },
+      "check": {
+        "team": "qa",
+        "done": true,
+        "doc": "docs/03-analysis/agent-ops-review-issues.analysis.md",
+        "matchRate": 97
+      },
+      "act": {
+        "done": true,
+        "commit": null
+      },
+      "updatedAt": "2026-03-29T16:10:00",
+      "notes": "W1~W3 완료. pdca-chain-handoff.sh v2(curl 직접+위험도 게이트) + session-resume-check.sh(신규). TDD 35건 Green. 기존 PC-1~25 호환. Match Rate 97%."
     }
   },
-  "updatedAt": "2026-03-29T12:05:00",
-  "notes": "활성 9건. pdca-chain-automation(97%) + agent-ops-platform-testing(96%) PDCA 완료. 203/203 Green.",
-  "_autoSyncNote": "auto-synced at 2026-03-29 12:05:00"
+  "updatedAt": "2026-03-29T16:10:00",
+  "notes": "활성 10건. agent-ops-review-issues 완료. Match Rate 97%.",
+  "_autoSyncNote": "auto-synced at 2026-03-29 16:10:00"
 }
