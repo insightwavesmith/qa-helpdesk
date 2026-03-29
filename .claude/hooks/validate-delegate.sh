@@ -33,6 +33,15 @@ fi
 # 절대 경로에서 프로젝트 경로 제거
 REL_FILE=$(echo "$FILE" | sed "s|${PROJECT_DIR}/||")
 
+# ── 팀원의 .claude/ 수정 차단 (D5: 승인 블로킹 방지) ──
+source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
+if [ "${IS_TEAMMATE:-}" = "true" ]; then
+    if echo "$REL_FILE" | grep -q '\.claude/'; then
+        echo "BLOCKED: 팀원은 .claude/ 직접 수정 불가. 리더에게 내용 보고 후 리더가 수정." >&2
+        exit 2
+    fi
+fi
+
 # src/ 파일이 아니면 패스
 if ! echo "$REL_FILE" | grep -q "^src/"; then
     exit 0

@@ -1,0 +1,15 @@
+{
+  "protocol": "bscamp-team/v1",
+  "type": "COO_REPORT",
+  "payload": {
+    "task_file": "TASK-AGENT-OPS.md",
+    "match_rate": 97,
+    "process_level": "L2",
+    "pm_verdict": "pass",
+    "pm_notes": "기획 의도 부합. Match Rate 97% 확인.",
+    "commit_hash": "abc1234",
+    "chain_step": "coo_report",
+    "action_required": "smith_approval"
+  },
+  "ts": "2026-03-30T01:00:00Z"
+}

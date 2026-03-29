@@ -1,0 +1,8 @@
+{
+  "protocol": "bscamp-team/v1",
+  "type": "COO_REPORT",
+  "payload": {
+    "match_rate": 97
+  },
+  "ts": "2026-03-30T01:00:00Z"
+}

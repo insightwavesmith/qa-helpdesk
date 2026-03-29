@@ -15,6 +15,9 @@ source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
 PROJECT_DIR="/Users/smith/projects/bscamp"
 cd "$PROJECT_DIR" || exit 0
 
+# Hook 출력 최소화 (D8-1)
+source "$(dirname "$0")/helpers/hook-output.sh" 2>/dev/null && hook_init
+
 # ── 2. 팀 컨텍스트 확인 (전팀 대상) ──
 CONTEXT_FILE="$PROJECT_DIR/.claude/runtime/team-context.json"
 if [ ! -f "$CONTEXT_FILE" ]; then

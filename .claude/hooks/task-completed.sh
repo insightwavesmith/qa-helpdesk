@@ -8,6 +8,10 @@
 #   - 마커 파일 생성 (모찌 하트비트용)
 
 PROJECT_DIR="/Users/smith/projects/bscamp"
+
+# Hook 출력 최소화 (D8-1)
+source "$(dirname "$0")/helpers/hook-output.sh" 2>/dev/null && hook_init
+
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 LAST_COMMIT=$(cd "$PROJECT_DIR" 2>/dev/null && git log --oneline -1 2>/dev/null || echo "unknown")
 CHANGED_FILES=$(cd "$PROJECT_DIR" 2>/dev/null && git diff HEAD~1 --name-only 2>/dev/null | wc -l | tr -d ' ')

@@ -14,13 +14,17 @@ source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
 PROJECT_DIR="/Users/smith/projects/bscamp"
 cd "$PROJECT_DIR" || exit 0
 
+# Hook 출력 최소화 (D8-1)
+source "$(dirname "$0")/helpers/hook-output.sh" 2>/dev/null && hook_init
+
 # ── 프로세스 레벨 판단 ──
 CHANGED_FILES=$(git diff HEAD~1 --name-only 2>/dev/null || echo "")
 LAST_MSG=$(git log --oneline -1 2>/dev/null || echo "")
 
 # L0: fix:/hotfix: 커밋
 if echo "$LAST_MSG" | grep -qE '^[a-f0-9]+ (fix|hotfix):'; then
-    echo "✅ [L0 응급] 품질 검증 스킵"
+    hook_log "L0 응급: 품질 검증 스킵" 2>/dev/null
+    hook_result "PASS: quality-gate L0 skip" 2>/dev/null || echo "✅ [L0 응급] 품질 검증 스킵"
     exit 0
 fi
 
@@ -34,9 +38,10 @@ if [ "$HAS_SRC" -eq 0 ]; then
     TOTAL_DELIVERABLES=$((DELIVERABLE_COUNT + TASK_COUNT))
 
     if [ "$TOTAL_DELIVERABLES" -gt 0 ]; then
-        echo "✅ [L1 경량] 산출물 ${TOTAL_DELIVERABLES}건 확인. 품질 검증 통과."
+        hook_log "L1: 산출물 ${TOTAL_DELIVERABLES}건 확인" 2>/dev/null
+        hook_result "PASS: quality-gate L1 deliverables=${TOTAL_DELIVERABLES}" 2>/dev/null || echo "✅ [L1 경량] 산출물 ${TOTAL_DELIVERABLES}건 확인."
     else
-        echo "⚠ [L1 경량] 산출물 없음 (docs/ 또는 tasks/ 60분 이내 변경 없음). 작업 결과를 확인하세요."
+        hook_result "WARN: quality-gate L1 no-deliverables" 2>/dev/null || echo "⚠ [L1 경량] 산출물 없음."
     fi
     exit 0
 fi
@@ -76,12 +81,12 @@ fi
 
 # 결과 출력
 if [ "$ERRORS" -gt 0 ]; then
-  echo "품질 검증 실패 (${ERRORS}개 항목):"
+  hook_log "L2/L3 실패: ${ERRORS}건 — ${MESSAGES}" 2>/dev/null
+  hook_result "FAIL: quality-gate L2 errors=${ERRORS}" 2>/dev/null || echo "품질 검증 실패 (${ERRORS}개 항목)"
   echo -e "$MESSAGES"
-  echo ""
-  echo "위 항목을 수정한 후 다시 완료 처리하세요."
   exit 2
 fi
 
-echo "품질 검증 통과: tsc + build + gap analysis + pdca-status 확인 완료"
+hook_log "L2/L3 통과: tsc+build+gap+pdca" 2>/dev/null
+hook_result "PASS: quality-gate L2 tsc=ok build=ok" 2>/dev/null || echo "품질 검증 통과"
 exit 0

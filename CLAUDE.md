@@ -429,6 +429,29 @@ docs/                                    ← iCloud 심볼릭 링크 (절대 삭
 - Leader는 TASK.md 받으면 **먼저 Plan Mode로 코드 탐색** → 계획 수립 → 승인 후 구현
 - Shift+Tab으로 Normal/Plan/Delegate 전환
 
+## 토큰 최적화: 서브에이전트 위임 (2026-03-30 적용)
+
+**리더는 탐색/조사 작업을 서브에이전트에 위임한다. 리더 컨텍스트에는 결과 요약만 유입.**
+
+### 위임 대상
+| 작업 | 도구 | 모델 |
+|------|------|------|
+| 코드 탐색 (파일 찾기, 패턴 검색) | Agent(Explore, sonnet) | Sonnet |
+| 기존 코드/테스트 패턴 조사 | Agent(Explore, sonnet) | Sonnet |
+| 문서 검색 + 요약 | Agent(general, sonnet) | Sonnet |
+| Gap 분석 | Agent(gap-detector, sonnet) | Sonnet |
+| 코드 품질 검토 | Agent(code-analyzer, sonnet) | Sonnet |
+
+### 리더가 직접 하는 것 (위임 금지)
+- 아키텍처 판단/결정
+- PDCA 상태 파일 업데이트
+- 팀원 조율/메시지
+- 최종 품질 판단 (Gap 분석 결과 해석)
+- 체인 메시지 전송
+
+### 팀원 spawn 금지 사항 (2026-03-30 추가)
+- **`.claude/` 디렉토리 직접 수정 금지** — hooks, settings, runtime 파일 변경 필요 시 리더에게 보고. validate-delegate.sh가 자동 차단.
+
 ## 브라우저 QA (Chrome 확장)
 - Claude Code Chrome 확장 설치됨. 에이전트팀이 직접 브라우저 QA 가능.
 - 구현 완료 후 Chrome으로 localhost:3000 열어서 스크린샷 찍고 UI 검증할 것.
