@@ -70,11 +70,13 @@ send_chain_message() {
 send_webhook_wake() {
     local WEBHOOK_URL="${1:-http://127.0.0.1:18789/hooks/wake}"
     local PAYLOAD="$2"
+    local WEBHOOK_TOKEN="${OPENCLAW_WEBHOOK_TOKEN:-mz-hook-Kx9mP4vR7nWqZj2026}"
     WEBHOOK_STATUS="fail"
 
     local RESULT
     RESULT=$(curl -sf -X POST "$WEBHOOK_URL" \
         -H 'Content-Type: application/json' \
+        -H "Authorization: Bearer ${WEBHOOK_TOKEN}" \
         -d "$PAYLOAD" \
         2>/dev/null)
 

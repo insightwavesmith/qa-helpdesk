@@ -333,7 +333,7 @@
       "notes": "W1~W3 완료. pdca-chain-handoff.sh v2(curl 직접+위험도 게이트) + session-resume-check.sh(신규). TDD 35건 Green. 기존 PC-1~25 호환. Match Rate 97%."
     },
     "video-pipeline-dedup-fix": {
-      "phase": "designing",
+      "phase": "implementing",
       "plan": {
         "team": "pm",
         "done": true,
@@ -362,8 +362,8 @@
         "done": false,
         "commit": null
       },
-      "updatedAt": "2026-03-29T18:30:00",
-      "notes": "Plan+Design 완료. 문제 3건 통합: ①Dedup 통일 ②embed chain 완화 ③L1 자동 보고. src/ 2파일 + hooks 2파일. TDD 31건. L2."
+      "updatedAt": "2026-03-29T23:30:00",
+      "notes": "Design v2 완료(문제 4건). ①Dedup 통일 ②embed chain ③L1 보고 ④fetchVideoSourceUrls 개별fallback+collect-daily thumbnail. src/ 2+lib 1+hooks 2. TDD 42건. L2."
     },
     "video-collection-audit": {
       "phase": "plan",
@@ -465,7 +465,7 @@
       "notes": "L1 리서치 완료. ACP 전환 시기상조, Plugin 점진 마이그레이션 권고."
     }
   },
-  "updatedAt": "2026-03-29T23:05:00",
-  "notes": "활성 14건. 체인 자동화 100% 완료. peer-resolver+chain-messenger+PM/COO 핸드오프.",
-  "_autoSyncNote": "auto-synced at 2026-03-29 23:05:00"
+  "updatedAt": "2026-03-30T00:48:00",
+  "notes": "좀비 pane 감지+정리 구현. webhook Bearer 인증 수정. TDD 322건 Green. 실전 체인 테스트 완료.",
+  "_autoSyncNote": "auto-synced at 2026-03-30 00:48:00"
 }

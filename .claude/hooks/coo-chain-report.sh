@@ -85,8 +85,10 @@ if type send_webhook_wake >/dev/null 2>&1; then
     fi
 else
     # direct curl
+    WEBHOOK_TOKEN="${OPENCLAW_WEBHOOK_TOKEN:-mz-hook-Kx9mP4vR7nWqZj2026}"
     if curl -sf -X POST "$WEBHOOK_URL" \
         -H 'Content-Type: application/json' \
+        -H "Authorization: Bearer ${WEBHOOK_TOKEN}" \
         -d "$WAKE_PAYLOAD" >/dev/null 2>&1; then
         echo "coo-chain-report: OpenClaw webhook wake 성공"
     else

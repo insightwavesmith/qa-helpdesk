@@ -84,7 +84,21 @@ if [ -f "$PDCA_FILE" ]; then
     fi
 fi
 
-# ── 5. 요약 ──
+# ── 5. 좀비 tmux pane 감지 ──
+ZOMBIE_DETECTOR="$(dirname "$0")/helpers/zombie-pane-detector.sh"
+if [ -f "$ZOMBIE_DETECTOR" ]; then
+    source "$ZOMBIE_DETECTOR"
+    detect_zombie_panes
+    if [ "${ZOMBIE_COUNT:-0}" -gt 0 ]; then
+        echo "⚠ 좀비 tmux pane ${ZOMBIE_COUNT}건 감지 (auto-shutdown 미실행):"
+        echo -e "$ZOMBIE_DETAILS"
+        echo "  → 자동 정리: bash $ZOMBIE_DETECTOR kill"
+        echo ""
+        FOUND_ISSUES=1
+    fi
+fi
+
+# ── 6. 요약 ──
 if [ "$FOUND_ISSUES" -eq 0 ]; then
     echo "✅ 이전 세션 잔여 이슈 없음. 깨끗한 상태입니다."
 fi
