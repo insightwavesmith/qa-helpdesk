@@ -33,11 +33,28 @@ fi
 # 절대 경로에서 프로젝트 경로 제거
 REL_FILE=$(echo "$FILE" | sed "s|${PROJECT_DIR}/||")
 
-# ── 팀원의 .claude/ 수정 차단 (D5: 승인 블로킹 방지) ──
+# ── 팀원의 위험 파일 수정: 승인 게이트 (B1 requireApproval) ──
 source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
+HELPERS_DIR="$(dirname "$0")/helpers"
+_APPROVAL_LOADED=false
+if [ -f "$HELPERS_DIR/approval-handler.sh" ]; then
+    source "$HELPERS_DIR/approval-handler.sh" 2>/dev/null && _APPROVAL_LOADED=true
+fi
+
 if [ "${IS_TEAMMATE:-}" = "true" ]; then
-    if echo "$REL_FILE" | grep -q '\.claude/'; then
-        echo "BLOCKED: 팀원은 .claude/ 직접 수정 불가. 리더에게 내용 보고 후 리더가 수정." >&2
+    if [ "$_APPROVAL_LOADED" = "true" ] && is_approval_required "$REL_FILE" 2>/dev/null; then
+        # 승인 파일 확인
+        if check_approval "$REL_FILE" 2>/dev/null; then
+            exit 0
+        fi
+        # 승인 요청 생성
+        request_approval "$REL_FILE" "Edit" 2>/dev/null
+        echo "BLOCKED: 승인 필요 — ${REL_FILE}. 리더 또는 Smith님 승인 후 재시도." >&2
+        exit 2
+    fi
+    # fallback: approval-handler 없어도 위험 파일 차단 유지
+    if echo "$REL_FILE" | grep -qE '\.claude/|migration|\.env'; then
+        echo "BLOCKED: 팀원은 위험 파일 직접 수정 불가. 리더에게 보고." >&2
         exit 2
     fi
 fi

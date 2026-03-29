@@ -565,7 +565,41 @@
       "notes": "완료. discover-accounts 미실행 원인=Cloud Scheduler 미등록(코드 정상). collect-daily 배치 동적화+is_member 동적화. TDD 18건 Green. Match Rate 92%."
     }
   },
-  "updatedAt": "2026-03-30T18:00:00",
-  "notes": "bm-full-account-sync 완료. collect-daily 배치 동적화+is_member 동적화. TDD 18건.",
+  "agent-ops-phase2": {
+      "phase": "plan",
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/01-plan/features/agent-ops-phase2.plan.md",
+        "at": "2026-03-30"
+      },
+      "design": {
+        "team": "pm",
+        "done": false,
+        "doc": "",
+        "at": null
+      },
+      "do": {
+        "team": "cto",
+        "done": false,
+        "commit": null,
+        "at": null
+      },
+      "check": {
+        "team": "qa",
+        "done": false,
+        "doc": "",
+        "matchRate": null
+      },
+      "act": {
+        "done": false,
+        "commit": null
+      },
+      "updatedAt": "2026-03-30T20:00:00",
+      "notes": "Plan 완료. 7건(B1 requireApproval P0, B2+B3 P1, A1+B4 P2, A2+A3 P3). Wave 4개. 총 5.5~6.5일."
+    }
+  },
+  "updatedAt": "2026-03-30T20:00:00",
+  "notes": "agent-ops-phase2 Plan 작성 완료. 7건(B1~B4+A1~A3). B1 requireApproval P0.",
   "_autoSyncNote": "auto-synced at 2026-03-30"
 }
