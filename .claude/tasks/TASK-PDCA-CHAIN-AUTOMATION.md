@@ -43,8 +43,8 @@ CTO 완료 → hook 자체 QA(95%) → [pass] MCP → PM 검수 → [pass] MCP+w
 ## Wave 2: 설정 + 규칙 (Wave 1 완료 후)
 
 - [x] W2-1: settings.local.json TaskCompleted 배열에 pdca-chain-handoff.sh 추가
-- [ ] W2-2: CLAUDE.md PM 검수 프로토콜 규칙 추가 (leader) — Smith님 승인 후 별도 커밋
-- [ ] W2-3: CLAUDE.md COO 보고 프로토콜 규칙 추가 (leader) — Smith님 승인 후 별도 커밋
+- [x] W2-2: CLAUDE.md PM 검수 프로토콜 규칙 추가 (leader) — Smith님 승인 완료
+- [x] W2-3: CLAUDE.md COO 보고 프로토콜 규칙 추가 (leader) — Smith님 승인 완료
 
 ## Wave 3: 통합 검증
 

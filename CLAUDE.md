@@ -35,6 +35,60 @@
 6. Match Rate ≥ 90% → 완료 보고서 생성 → 다음 기능으로 자동 이동.
 7. 각 단계 전환 시 Smith님에게 확인 묻지 않는다. 자동 진행이 기본값.
 
+## PDCA 체인 핸드오프 프로토콜 (2026-03-29 적용)
+
+**CTO 개발 완료 → PM 검수 → COO 보고 → Smith님 판단. 자동 체이닝.**
+
+### 체인 흐름
+```
+CTO 완료 → hook 자체 QA(95%) → [pass] → PM 검수 → [pass] → COO → Smith님 대화형 보고
+                                [fail] exit 2 → CTO 자체 수정
+                                                 PM [fail] → FEEDBACK → CTO 수정
+                                                 Smith님 반려 → COO → PM → CTO
+```
+
+### PM 검수 프로토콜 (W2-2)
+
+PM팀이 CTO로부터 `COMPLETION_REPORT` 수신 시:
+
+1. **Gap 분석 검증**: `docs/03-analysis/{기능}.analysis.md`를 열어 Match Rate + 불일치 항목 확인
+2. **설계서 대조**: Plan/Design 문서와 구현 결과가 기획 의도에 부합하는지 판단
+3. **판정**:
+   - **pass** → COO에게 `COMPLETION_REPORT` (chain_step: `pm_to_coo`) 전송. pm_verdict: "pass", pm_notes에 검수 의견 포함.
+   - **reject** → CTO에게 `FEEDBACK` (chain_step: `pm_to_cto`) 전송. issues 배열에 구체적 수정 사항 명시.
+4. **PM은 Match Rate를 재계산하지 않음** — CTO가 산출한 수치를 신뢰. 기획 적합성만 판단.
+
+### COO 보고 프로토콜 (W2-3)
+
+COO(mozzi)가 PM으로부터 `COMPLETION_REPORT` 수신 시:
+
+1. **COO는 Match Rate 검증 안 함** — PM 검수 완료 결과를 신뢰
+2. **Smith님 보고 생성**: task_file, match_rate, pm_notes를 종합하여 대화형 보고
+3. **Smith님 판단**:
+   - **승인** → chain_step: `smith_ok`. 배포 가능 상태.
+   - **반려** → COO가 `FEEDBACK` (chain_step: `coo_to_pm`)을 PM에게 전송. PM이 CTO에 재전달.
+4. **COO 역할**: Smith님에게 요약+맥락+대화형 보고 담당. Smith님 피드백을 팀에 전달하는 인터페이스.
+
+### 메시지 프로토콜 (`bscamp-team/v1`)
+
+| 타입 | 용도 | 방향 |
+|------|------|------|
+| `COMPLETION_REPORT` | 완료 보고 | CTO→PM, PM→COO |
+| `FEEDBACK` | 반려/수정 요청 | PM→CTO, COO→PM |
+| `ACK` | 수신 확인 | 양방향 |
+
+### chain_step 상태
+```
+cto_qa → cto_to_pm → pm_review → pm_to_coo → coo_report → smith_ok
+                                                           smith_reject → coo_to_pm → pm_to_cto
+```
+
+### Hook 동작 (`pdca-chain-handoff.sh`, TaskCompleted #8)
+- Match Rate < 95% → exit 2 (CTO 자체 수정, 메시지 발송 안 함)
+- Match Rate ≥ 95% → stdout에 `ACTION_REQUIRED: send_message(PM_LEADER, COMPLETION_REPORT)` 출력
+- 리더가 stdout을 읽고 MCP `send_message` 도구로 PM에게 전송
+- broker 미기동 시 → 수동 fallback (차단하지 않음, exit 0)
+
 ## PDCA 프로세스 레벨 시스템 (2026-03-28 적용)
 
 **모든 작업은 PDCA를 거치되, 산출물 깊이만 조절한다.**
