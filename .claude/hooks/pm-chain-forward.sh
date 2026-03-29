@@ -55,6 +55,43 @@ if [ -f "$HELPERS_DIR/chain-messenger.sh" ]; then
     source "$HELPERS_DIR/chain-messenger.sh"
 fi
 
+# ── 수신 측 dedup (D6) ──
+_RECEIVED_LOG="${PROJECT_DIR}/.claude/runtime/chain-received.log"
+
+_check_received() {
+    local MSG_ID="$1"
+    [ ! -f "$_RECEIVED_LOG" ] && return 1
+    local NOW
+    NOW=$(date +%s)
+    while IFS='|' read -r TS ID; do
+        [ -z "$TS" ] && continue
+        [ $((NOW - TS)) -lt 300 ] && [ "$ID" = "$MSG_ID" ] && return 0
+    done < "$_RECEIVED_LOG"
+    return 1
+}
+
+_record_received() {
+    local MSG_ID="$1"
+    mkdir -p "$(dirname "$_RECEIVED_LOG")" 2>/dev/null
+    echo "$(date +%s)|$MSG_ID" >> "$_RECEIVED_LOG"
+    local NOW TMP
+    NOW=$(date +%s)
+    TMP="${_RECEIVED_LOG}.tmp"
+    while IFS='|' read -r TS ID; do
+        [ -z "$TS" ] && continue
+        [ $((NOW - TS)) -lt 300 ] && echo "$TS|$ID"
+    done < "$_RECEIVED_LOG" > "$TMP" 2>/dev/null
+    mv "$TMP" "$_RECEIVED_LOG" 2>/dev/null
+}
+
+# msg_id 추출 + dedup
+INCOMING_MSG_ID=$(jq -r '.msg_id // empty' "$REPORT_FILE" 2>/dev/null)
+if [ -n "$INCOMING_MSG_ID" ] && _check_received "$INCOMING_MSG_ID"; then
+    echo "SKIP: dedup msg_id=$INCOMING_MSG_ID (이미 처리됨)"
+    exit 0
+fi
+[ -n "$INCOMING_MSG_ID" ] && _record_received "$INCOMING_MSG_ID"
+
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 MSG_ID="chain-pm-$(date +%s)-$$"
 
