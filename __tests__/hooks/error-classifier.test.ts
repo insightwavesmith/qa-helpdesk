@@ -4,7 +4,7 @@
 // 7개 에러 패턴 자동 분류 + 미분류 + 심각도 검증
 
 import { describe, it, expect, afterEach } from 'vitest';
-import { createTestEnv, runBashFunction, cleanupTestEnv } from './helpers';
+import { createTestEnv, cleanupTestEnv } from './helpers';
 import { join } from 'path';
 import { writeFileSync, mkdirSync, readFileSync } from 'fs';
 
@@ -24,13 +24,6 @@ function classifyError(errorText: string): { code: string; severity: string; act
   testEnv = createTestEnv();
   const classifierPath = join(PROJECT_DIR, '.claude/hooks/helpers/error-classifier.sh');
 
-  // classify_error 호출 + 결과를 JSON 형태로 출력하는 래퍼
-  const result = runBashFunction(classifierPath, 'classify_error', [errorText], {
-    PROJECT_DIR: testEnv.tmpDir,
-  });
-
-  // runBashFunction은 함수 호출 후 stdout에 출력하도록 wrapper를 만들어야 함
-  // 직접 bash 스크립트 실행
   const { execSync } = require('child_process');
   const script = `
     source "${classifierPath}"

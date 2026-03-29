@@ -1,0 +1,7 @@
+[
+  { "account_id": "111", "account_name": "수강생A", "active": true, "is_member": true },
+  { "account_id": "222", "account_name": "수강생B", "active": true, "is_member": true },
+  { "account_id": "333", "account_name": "비수강생C", "active": true, "is_member": false },
+  { "account_id": "444", "account_name": "비활성D", "active": false, "is_member": false },
+  { "account_id": "555", "account_name": "비수강생E", "active": true, "is_member": false }
+]

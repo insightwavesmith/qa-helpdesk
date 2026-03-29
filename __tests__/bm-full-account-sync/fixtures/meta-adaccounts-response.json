@@ -1,0 +1,12 @@
+{
+  "data": [
+    { "id": "act_111", "account_id": "111", "name": "수강생A", "account_status": 1, "currency": "KRW" },
+    { "id": "act_222", "account_id": "222", "name": "수강생B", "account_status": 1, "currency": "KRW" },
+    { "id": "act_333", "account_id": "333", "name": "비수강생C", "account_status": 1, "currency": "KRW" },
+    { "id": "act_444", "account_id": "444", "name": "비활성D", "account_status": 2, "currency": "KRW" },
+    { "id": "act_555", "account_id": "555", "name": "비수강생E", "account_status": 1, "currency": "USD" }
+  ],
+  "paging": {
+    "cursors": { "before": "abc", "after": "xyz" }
+  }
+}

@@ -532,7 +532,7 @@
     }
   },
   "bm-full-account-sync": {
-      "phase": "designing",
+      "phase": "completed",
       "plan": {
         "team": "pm",
         "done": true,
@@ -547,25 +547,25 @@
       },
       "do": {
         "team": "cto",
-        "done": false,
+        "done": true,
         "commit": null,
-        "at": null
+        "at": "2026-03-30"
       },
       "check": {
         "team": "qa",
-        "done": false,
-        "doc": "",
-        "matchRate": null
+        "done": true,
+        "doc": "docs/03-analysis/bm-full-account-sync.analysis.md",
+        "matchRate": 92
       },
       "act": {
-        "done": false,
+        "done": true,
         "commit": null
       },
-      "updatedAt": "2026-03-30T15:00:00",
-      "notes": "Plan+Design 완료. L2 표준. CTO팀 핸드오프 대기."
+      "updatedAt": "2026-03-30T18:00:00",
+      "notes": "완료. discover-accounts 미실행 원인=Cloud Scheduler 미등록(코드 정상). collect-daily 배치 동적화+is_member 동적화. TDD 18건 Green. Match Rate 92%."
     }
   },
-  "updatedAt": "2026-03-30T17:40:00",
-  "notes": "agent-ops-hardening P1 완료. D3+D6+D8-5. TDD 18건 Green.",
+  "updatedAt": "2026-03-30T18:00:00",
+  "notes": "bm-full-account-sync 완료. collect-daily 배치 동적화+is_member 동적화. TDD 18건.",
   "_autoSyncNote": "auto-synced at 2026-03-30"
 }

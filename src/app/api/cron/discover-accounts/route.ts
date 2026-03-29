@@ -30,6 +30,46 @@ function verifyCron(req: NextRequest): boolean {
   return authHeader === `Bearer ${process.env.CRON_SECRET}`;
 }
 
+// ── 순수 함수: UPSERT 로직 (테스트 가능) ────────────────────
+export function buildNewAccountRow(
+  account: { account_id: string; name: string; account_status: number; currency: string },
+  now: string,
+) {
+  return {
+    account_id: account.account_id,
+    account_name: account.name || null,
+    active: true,
+    account_status: account.account_status ?? null,
+    currency: account.currency ?? null,
+    is_member: false,
+    discovered_at: now,
+    last_checked_at: now,
+    updated_at: now,
+  };
+}
+
+export function buildUpdateFields(
+  account: { name: string; account_status: number; currency: string },
+  now: string,
+) {
+  return {
+    account_name: account.name || null,
+    active: true,
+    account_status: account.account_status ?? null,
+    currency: account.currency ?? null,
+    last_checked_at: now,
+    updated_at: now,
+  };
+}
+
+export function findAccountsToDeactivate(
+  dbActiveIds: string[],
+  apiProcessedIds: string[],
+): string[] {
+  const processedSet = new Set(apiProcessedIds);
+  return dbActiveIds.filter((id) => !processedSet.has(id));
+}
+
 // ── Meta API 응답 타입 ────────────────────────────────────────
 interface MetaAdAccount {
   id: string;           // "act_12345" 형식

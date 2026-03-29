@@ -50,6 +50,25 @@ export interface CollectDailyResult {
   results: Record<string, unknown>[];
 }
 
+// ── 배치 분할 유틸 (테스트 가능) ─────────────────────────────
+export function splitIntoBatches<T>(items: T[], batchSize: number): T[][] {
+  if (items.length === 0) return [];
+  const batches: T[][] = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    batches.push(items.slice(i, i + batchSize));
+  }
+  return batches;
+}
+
+// ── is_member 동적 판단 (테스트 가능) ────────────────────────
+export function getIsMember(memberMap: Map<string, boolean>, accountId: string): boolean {
+  return memberMap.get(accountId) ?? false;
+}
+
+export function getSource(memberMap: Map<string, boolean>, accountId: string): "member" | "discovered" {
+  return getIsMember(memberMap, accountId) ? "member" : "discovered";
+}
+
 // ── 병렬 처리 동시성 ──────────────────────────────────────────
 const CONCURRENCY = 5;
 
@@ -60,6 +79,7 @@ async function collectAccount(
   yesterday: string,
   dateParam: string | undefined,
   backfill: boolean,
+  isMemberMap?: Map<string, boolean>,
 ): Promise<Record<string, unknown>> {
   const accountResult: Record<string, unknown> = {
     account_id: account.account_id,
@@ -175,12 +195,13 @@ async function collectAccount(
             const norm = normalizeUrl(rawLpUrl);
             if (norm) lpId = canonicalToLpId.get(norm.canonical) ?? null;
           }
+          const isMember = isMemberMap ? getIsMember(isMemberMap, account.account_id) : true;
           return {
             ad_id: adId,
             account_id: account.account_id,
             creative_type: creativeType,
-            source: "member",
-            is_member: true,
+            source: isMember ? "member" : "discovered",
+            is_member: isMember,
             brand_name: account.account_name || null,
             is_active: true,
             lp_url: rawLpUrl || null,
@@ -353,21 +374,20 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
       account_name: a.account_name ?? "",
     }));
 
-    // 단일 계정 필터 (테스트/디버깅용)
+    // 단일 계정 필터 (테스트/디버깅용) 또는 배치 분할
+    const DYNAMIC_BATCH_SIZE = 20;
     let filteredAccounts = accounts;
     if (accountId) {
       filteredAccounts = accounts.filter((a: any) => a.account_id === accountId); // eslint-disable-line @typescript-eslint/no-explicit-any
       console.log(`[collect-daily] account filter: ${accountId} → ${filteredAccounts.length}건`);
-    } else if (batch != null && batch >= 1 && batch <= 4) {
-      const BATCH_SIZE = 10;
-      const offset = (batch - 1) * BATCH_SIZE;
-      if (batch === 4) {
-        // batch 4는 나머지 전부
-        filteredAccounts = accounts.slice(offset);
-      } else {
-        filteredAccounts = accounts.slice(offset, offset + BATCH_SIZE);
-      }
-      console.log(`[collect-daily] batch ${batch}: ${filteredAccounts.length}건 (전체 ${accounts.length}건 중 offset=${offset})`);
+    } else if (batch != null && batch >= 1) {
+      // 동적 배치: batch 파라미터로 특정 배치 실행 (하위 호환 유지)
+      const offset = (batch - 1) * DYNAMIC_BATCH_SIZE;
+      filteredAccounts = accounts.slice(offset, offset + DYNAMIC_BATCH_SIZE);
+      console.log(`[collect-daily] batch ${batch}: ${filteredAccounts.length}건 (전체 ${accounts.length}건 중 offset=${offset}, size=${DYNAMIC_BATCH_SIZE})`);
+    } else {
+      // batch 파라미터 없으면 전체 계정 처리
+      console.log(`[collect-daily] 전체 모드: ${accounts.length}건 처리`);
     }
 
     // ── Meta API 권한 사전 체크 ──
@@ -432,6 +452,17 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
       }
     }
 
+    // ── is_member 맵 조회 (creatives 동적 판단용) ──
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: memberRows } = await (svc as any)
+      .from("ad_accounts")
+      .select("account_id, is_member")
+      .eq("active", true);
+    const isMemberMap = new Map<string, boolean>(
+      (memberRows ?? []).map((a: { account_id: string; is_member: boolean }) => [a.account_id, a.is_member ?? false])
+    );
+    console.log(`[collect-daily] is_member 맵: ${isMemberMap.size}개 (member=${[...isMemberMap.values()].filter(Boolean).length})`);
+
     // ── 계정별 병렬 수집 (CONCURRENCY=5, Meta API rate limit 고려) ──
     const results: Record<string, unknown>[] = [];
 
@@ -440,7 +471,7 @@ export async function runCollectDaily(dateParam?: string, batch?: number, accoun
       console.log(`[collect-daily] 병렬 수집 chunk ${Math.floor(i / CONCURRENCY) + 1}: ${chunk.length}개 계정`);
 
       const chunkResults = await Promise.allSettled(
-        chunk.map((account: any) => collectAccount(svc, account, yesterday, dateParam, backfill)) // eslint-disable-line @typescript-eslint/no-explicit-any
+        chunk.map((account: any) => collectAccount(svc, account, yesterday, dateParam, backfill, isMemberMap)) // eslint-disable-line @typescript-eslint/no-explicit-any
       );
 
       for (const r of chunkResults) {
