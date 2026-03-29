@@ -465,7 +465,7 @@
       "notes": "L1 리서치 완료. ACP 전환 시기상조, Plugin 점진 마이그레이션 권고."
     },
     "agent-ops-hardening": {
-      "phase": "implementing",
+      "phase": "completed",
       "plan": {
         "team": "cto",
         "done": true,
@@ -481,24 +481,24 @@
       "do": {
         "team": "cto",
         "done": true,
-        "commit": null,
+        "commit": "faa1d80",
         "at": "2026-03-30"
       },
       "check": {
         "team": "qa",
-        "done": false,
-        "doc": "",
-        "matchRate": null
+        "done": true,
+        "doc": "docs/03-analysis/agent-ops-hardening.analysis.md",
+        "matchRate": 97
       },
       "act": {
-        "done": false,
-        "commit": null
+        "done": true,
+        "commit": "faa1d80"
       },
-      "updatedAt": "2026-03-30T02:00:00",
-      "notes": "P0 Do 완료. D5(승인블로킹차단)+D7(TDD 35건)+D8-1(hook출력최소화)+D8-4(서브에이전트위임). OFR-1~35 전부 Green. Check 진행 필요."
+      "updatedAt": "2026-03-30T02:02:00",
+      "notes": "P0 완료. D5+D7+D8-1+D8-4. OFR-1~35 Green. Match Rate 97% (34/35 일치, 1건 P3 경미). 커밋 faa1d80."
     }
   },
-  "updatedAt": "2026-03-30T02:00:00",
-  "notes": "agent-ops-hardening Do P0 완료. OFR-1~35 TDD Green. Check 진행 필요.",
+  "updatedAt": "2026-03-30T02:02:00",
+  "notes": "agent-ops-hardening P0 완료. Match Rate 97%. OFR-1~35 TDD Green.",
   "_autoSyncNote": "auto-synced at 2026-03-30"
 }
