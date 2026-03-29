@@ -19,24 +19,7 @@ TEAM=$(jq -r '.team // empty' "$CONTEXT_FILE" 2>/dev/null)
 # CTO, CTO-1, CTO-2 등 CTO 접두사 매칭
 [[ "$TEAM" != CTO* ]] && exit 0
 
-# ── 3. Match Rate 파싱 ──
-source "$(dirname "$0")/helpers/match-rate-parser.sh"
-RATE=$(parse_match_rate "$PROJECT_DIR/docs/03-analysis")
-if [ -z "$RATE" ] || [ "$RATE" -lt 0 ] 2>/dev/null; then
-    RATE=0
-fi
-
-# ── 4. 95% 미만 → 차단 ──
-THRESHOLD=95
-if [ "$RATE" -lt "$THRESHOLD" ]; then
-    echo "PDCA 체인 차단: Match Rate ${RATE}% (기준: ${THRESHOLD}%+)"
-    echo "Gap 분석 문서의 Match Rate를 ${THRESHOLD}% 이상으로 달성한 후 재시도하세요."
-    exit 2
-fi
-
-# ── 5. 위험도 판단 (detect-process-level.sh) ──
-source "$(dirname "$0")/detect-process-level.sh"
-# staged 파일 기반 레벨 판단
+# ── 3. 변경 파일 + 위험도 판단 ──
 CHANGED_FILES=$(git diff HEAD~1 --name-only 2>/dev/null || echo "")
 HAS_SRC=$(echo "$CHANGED_FILES" | grep -c "^src/" || true)
 
@@ -51,6 +34,25 @@ elif [ "$RISK_COUNT" -gt 0 ]; then
     PROCESS_LEVEL="L3"
 else
     PROCESS_LEVEL="L2"
+fi
+
+# ── 4. Match Rate 게이트 (L2/L3만 — L0/L1 bypass) ──
+if [ "$PROCESS_LEVEL" = "L2" ] || [ "$PROCESS_LEVEL" = "L3" ]; then
+    source "$(dirname "$0")/helpers/match-rate-parser.sh"
+    RATE=$(parse_match_rate "$PROJECT_DIR/docs/03-analysis")
+    if [ -z "$RATE" ] || [ "$RATE" -lt 0 ] 2>/dev/null; then
+        RATE=0
+    fi
+
+    THRESHOLD=95
+    if [ "$RATE" -lt "$THRESHOLD" ]; then
+        echo "PDCA 체인 차단: Match Rate ${RATE}% (기준: ${THRESHOLD}%+)"
+        echo "Gap 분석 문서의 Match Rate를 ${THRESHOLD}% 이상으로 달성한 후 재시도하세요."
+        exit 2
+    fi
+else
+    # L0/L1: Match Rate 불필요
+    RATE=0
 fi
 
 # ── 6. 분기 결정 ──

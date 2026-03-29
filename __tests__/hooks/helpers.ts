@@ -261,6 +261,61 @@ export function prepareSessionResumeCheck(
 }
 
 /**
+ * task-quality-gate.sh 준비.
+ * tsc/build/git 명령을 mock하여 격리 테스트 가능하게 함.
+ */
+export function prepareTaskQualityGate(
+  env: ReturnType<typeof createTestEnv>,
+  opts: {
+    changedFiles?: string[];
+    tscPass?: boolean;
+    buildPass?: boolean;
+  }
+): string {
+  const originalPath = join(process.cwd(), '.claude/hooks/task-quality-gate.sh');
+  let content = readFileSync(originalPath, 'utf-8');
+
+  // PROJECT_DIR 치환
+  content = content.replace(/PROJECT_DIR="[^"]*"/, `PROJECT_DIR="${env.tmpDir}"`);
+
+  // git diff mock (L1 판단용)
+  const files = (opts.changedFiles || []).join('\\n');
+  content = content.replace(
+    /git diff HEAD --name-only 2>\/dev\/null/g,
+    `echo -e "${files}"`
+  );
+  content = content.replace(
+    /git diff HEAD~1 --name-only 2>\/dev\/null/g,
+    `echo -e "${files}"`
+  );
+
+  // tsc mock
+  if (opts.tscPass !== false) {
+    content = content.replace(/npx tsc --noEmit 2>\/dev\/null/, 'true');
+  } else {
+    content = content.replace(/npx tsc --noEmit 2>\/dev\/null/, 'false');
+  }
+
+  // build mock
+  if (opts.buildPass !== false) {
+    content = content.replace(/npm run build 2>\/dev\/null 1>\/dev\/null/, 'true');
+  } else {
+    content = content.replace(/npm run build 2>\/dev\/null 1>\/dev\/null/, 'false');
+  }
+
+  // Mock is-teammate.sh — 테스트에서 IS_TEAMMATE env로 제어 가능하게
+  writeFileSync(
+    join(env.hooksDir, 'is-teammate.sh'),
+    '#!/bin/bash\nIS_TEAMMATE="${IS_TEAMMATE:-false}"\n',
+    { mode: 0o755 }
+  );
+
+  const destPath = join(env.hooksDir, 'task-quality-gate.sh');
+  writeFileSync(destPath, content, { mode: 0o755 });
+  return destPath;
+}
+
+/**
  * mock curl 스크립트 생성.
  * URL 파라미터에 따라 다른 응답 반환.
  */

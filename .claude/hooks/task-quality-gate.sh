@@ -15,6 +15,17 @@ source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
 PROJECT_DIR="/Users/smith/projects/bscamp"
 cd "$PROJECT_DIR" || exit 0
 
+# L0/L1 bypass — src/ 변경 없으면 품질 검증 불필요
+CHANGED_FILES=$(git diff HEAD --name-only 2>/dev/null || echo "")
+if [ -z "$CHANGED_FILES" ]; then
+    CHANGED_FILES=$(git diff HEAD~1 --name-only 2>/dev/null || echo "")
+fi
+HAS_SRC=$(echo "$CHANGED_FILES" | grep -c "^src/" || true)
+if [ "$HAS_SRC" -eq 0 ]; then
+    echo "L1 작업 (src/ 변경 없음) — 품질 검증 스킵"
+    exit 0
+fi
+
 ERRORS=0
 MESSAGES=""
 

@@ -242,7 +242,9 @@ describe('기존 동작 호환', () => {
     testEnv = createTestEnv();
     writeAnalysisFile(testEnv.tmpDir, 94);
     writeTeamContext(testEnv.tmpDir, 'CTO');
-    const hookPath = prepareChainHandoffV2(testEnv, {});
+    const hookPath = prepareChainHandoffV2(testEnv, {
+      changedFiles: ['src/app/page.tsx'],
+    });
     const result = runHook(hookPath, {});
     expect(result.exitCode).toBe(2);
     expect(result.stdout).toContain('차단');
