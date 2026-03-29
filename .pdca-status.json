@@ -333,7 +333,7 @@
       "notes": "W1~W3 완료. pdca-chain-handoff.sh v2(curl 직접+위험도 게이트) + session-resume-check.sh(신규). TDD 35건 Green. 기존 PC-1~25 호환. Match Rate 97%."
     },
     "video-pipeline-dedup-fix": {
-      "phase": "implementing",
+      "phase": "completed",
       "plan": {
         "team": "pm",
         "done": true,
@@ -348,22 +348,22 @@
       },
       "do": {
         "team": "cto",
-        "done": false,
+        "done": true,
         "commit": null,
-        "at": null
+        "at": "2026-03-30"
       },
       "check": {
         "team": "qa",
-        "done": false,
-        "doc": "",
-        "matchRate": null
+        "done": true,
+        "doc": "docs/03-analysis/video-pipeline-dedup-fix.analysis.md",
+        "matchRate": 97
       },
       "act": {
-        "done": false,
+        "done": true,
         "commit": null
       },
-      "updatedAt": "2026-03-29T23:30:00",
-      "notes": "Design v2 완료(문제 4건). ①Dedup 통일 ②embed chain ③L1 보고 ④fetchVideoSourceUrls 개별fallback+collect-daily thumbnail. src/ 2+lib 1+hooks 2. TDD 42건. L2."
+      "updatedAt": "2026-03-30T01:00:00",
+      "notes": "W1~W4 완료. ①Dedup 사전조회+동기화 ②embed chain dedup>0 ③task-quality-gate+pdca-chain-handoff v3 ④fetchVideoSourceUrls 개별fallback+thumbnail. TDD 64건 Green. Match Rate 97%."
     },
     "video-collection-audit": {
       "phase": "plan",
@@ -463,9 +463,42 @@
       },
       "updatedAt": "2026-03-29T19:00:00",
       "notes": "L1 리서치 완료. ACP 전환 시기상조, Plugin 점진 마이그레이션 권고."
+    },
+    "agent-ops-hardening": {
+      "phase": "plan",
+      "plan": {
+        "team": "cto",
+        "done": true,
+        "doc": "docs/01-plan/features/agent-ops-hardening.plan.md",
+        "at": "2026-03-30"
+      },
+      "design": {
+        "team": "cto",
+        "done": false,
+        "doc": "",
+        "at": null
+      },
+      "do": {
+        "team": "cto",
+        "done": false,
+        "commit": null,
+        "at": null
+      },
+      "check": {
+        "team": "qa",
+        "done": false,
+        "doc": "",
+        "matchRate": null
+      },
+      "act": {
+        "done": false,
+        "commit": null
+      },
+      "updatedAt": "2026-03-30",
+      "notes": "8건 Plan 완료. D1~D7 + D8(토큰최적화 5방안). P0: D5+D7+D8-1,2,4. P1: D3+D6+D8-5. 세션수명 30% 연장 추정."
     }
   },
-  "updatedAt": "2026-03-30T00:48:00",
-  "notes": "좀비 pane 감지+정리 구현. webhook Bearer 인증 수정. TDD 322건 Green. 실전 체인 테스트 완료.",
-  "_autoSyncNote": "auto-synced at 2026-03-30 00:48:00"
+  "updatedAt": "2026-03-30T01:00:00",
+  "notes": "video-pipeline-dedup-fix 완료(Match Rate 97%, TDD 64건). agent-ops-hardening Plan 7건.",
+  "_autoSyncNote": "auto-synced at 2026-03-30"
 }

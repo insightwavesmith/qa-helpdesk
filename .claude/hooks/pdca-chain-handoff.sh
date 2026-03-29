@@ -1,6 +1,11 @@
 #!/bin/bash
-# pdca-chain-handoff.sh v2 — Match Rate 게이트 + 위험도 분기 + curl 직접 전송
+# pdca-chain-handoff.sh v3 — Match Rate 게이트 + 위험도 분기 + curl 직접 전송
 # TaskCompleted hook 체인의 마지막 (8번째)
+#
+# v3 (2026-03-29):
+#   변경1: CTO-only 필터 → 전팀 대상 + FROM_ROLE 변수
+#   변경2: L0/L1 → Match Rate 스킵 → MOZZI 직접 ANALYSIS_REPORT
+#   변경3: 기존 L2/L3 from_role 하드코딩 → FROM_ROLE 변수
 set -uo pipefail
 
 # ── 1. 팀원 bypass ──
@@ -10,14 +15,19 @@ source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
 PROJECT_DIR="/Users/smith/projects/bscamp"
 cd "$PROJECT_DIR" || exit 0
 
-# ── 2. CTO 팀만 대상 ──
+# ── 2. 팀 컨텍스트 확인 (전팀 대상) ──
 CONTEXT_FILE="$PROJECT_DIR/.claude/runtime/team-context.json"
 if [ ! -f "$CONTEXT_FILE" ]; then
-    exit 0
+    exit 0  # 팀 컨텍스트 없음 → 비대상
 fi
 TEAM=$(jq -r '.team // empty' "$CONTEXT_FILE" 2>/dev/null)
-# CTO, CTO-1, CTO-2 등 CTO 접두사 매칭
-[[ "$TEAM" != CTO* ]] && exit 0
+[ -z "$TEAM" ] && exit 0
+# 팀명을 from_role로 변환 (CTO → CTO_LEADER, PM → PM_LEADER, 기타 → 그대로)
+case "$TEAM" in
+    CTO*) FROM_ROLE="CTO_LEADER" ;;
+    PM*)  FROM_ROLE="PM_LEADER" ;;
+    *)    FROM_ROLE="${TEAM}_LEADER" ;;
+esac
 
 # ── 3. 변경 파일 + 위험도 판단 ──
 CHANGED_FILES=$(git diff HEAD~1 --name-only 2>/dev/null || echo "")
@@ -27,6 +37,85 @@ HAS_SRC=$(echo "$CHANGED_FILES" | grep -c "^src/" || true)
 HIGH_RISK_PATTERN="(auth|middleware\.ts|migration|\.sql|payment|\.env|firebase|supabase)"
 RISK_COUNT=$(echo "$CHANGED_FILES" | grep -cE "$HIGH_RISK_PATTERN" || true)
 RISK_FLAGS=$(echo "$CHANGED_FILES" | grep -oE "$HIGH_RISK_PATTERN" | sort -u | tr '\n' ',' | sed 's/,$//')
+
+# ── 3-B. L0/L1 → Match Rate 스킵 → ANALYSIS_REPORT 직접 전송 ──
+LAST_MSG=$(git log --oneline -1 2>/dev/null || echo "")
+IS_FIX=$(echo "$LAST_MSG" | grep -cE '^[a-f0-9]+ (fix|hotfix):' || true)
+
+if [ "$IS_FIX" -gt 0 ]; then
+    EARLY_LEVEL="L0"
+elif [ "$HAS_SRC" -eq 0 ]; then
+    EARLY_LEVEL="L1"
+else
+    EARLY_LEVEL=""
+fi
+
+if [ "$EARLY_LEVEL" = "L0" ] || [ "$EARLY_LEVEL" = "L1" ]; then
+    # L0/L1: Match Rate 게이트 스킵 → MOZZI 직접 ANALYSIS_REPORT
+    TASK_FILE=$(jq -r '.taskFiles[0] // empty' "$CONTEXT_FILE" 2>/dev/null)
+    TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    MSG_ID="chain-l1-$(date +%s)-$$"
+
+    # 산출물 목록 수집 (최근 60분 이내 변경된 docs/ 파일)
+    DELIVERABLES=$(find "$PROJECT_DIR/docs" -name "*.md" -mmin -60 2>/dev/null | head -10 | while read -r f; do
+        echo "\"$(echo "$f" | sed "s|${PROJECT_DIR}/||")\""
+    done | paste -sd',' -)
+    [ -z "$DELIVERABLES" ] && DELIVERABLES='"(없음)"'
+
+    PAYLOAD=$(cat <<EOFPAYLOAD
+{
+  "protocol": "bscamp-team/v1",
+  "type": "ANALYSIS_REPORT",
+  "from_role": "${FROM_ROLE}",
+  "to_role": "MOZZI",
+  "payload": {
+    "task_file": "${TASK_FILE}",
+    "deliverables": [${DELIVERABLES}],
+    "process_level": "${EARLY_LEVEL}",
+    "summary": "조사/분석 완료 (${EARLY_LEVEL}). 산출물 확인 필요.",
+    "chain_step": "l1_to_coo"
+  },
+  "ts": "${TIMESTAMP}",
+  "msg_id": "${MSG_ID}"
+}
+EOFPAYLOAD
+    )
+
+    # Broker 전송 시도
+    BROKER_URL="http://localhost:7899"
+    if curl -sf "${BROKER_URL}/health" >/dev/null 2>&1; then
+        PEERS_JSON=$(curl -sf -X POST "${BROKER_URL}/list-peers" \
+            -H 'Content-Type: application/json' \
+            -d "{\"scope\":\"repo\",\"cwd\":\"${PROJECT_DIR}\",\"git_root\":\"${PROJECT_DIR}\"}" \
+            2>/dev/null || echo "[]")
+
+        TARGET_ID=$(echo "$PEERS_JSON" | jq -r '[.[] | select(.summary | test("MOZZI"))][0].id // empty' 2>/dev/null)
+        MY_ID=$(echo "$PEERS_JSON" | jq -r "[.[] | select(.summary | test(\"${FROM_ROLE}\"))][0].id // empty" 2>/dev/null)
+
+        if [ -n "$TARGET_ID" ] && [ -n "$MY_ID" ]; then
+            SEND_RESULT=$(curl -sf -X POST "${BROKER_URL}/send-message" \
+                -H 'Content-Type: application/json' \
+                -d "{\"from_id\":\"${MY_ID}\",\"to_id\":\"${TARGET_ID}\",\"text\":$(echo "$PAYLOAD" | jq -c '.')}" \
+                2>/dev/null || echo '{"ok":false}')
+
+            SEND_OK=$(echo "$SEND_RESULT" | jq -r '.ok // false' 2>/dev/null)
+            if [ "$SEND_OK" = "true" ]; then
+                echo "✅ [${EARLY_LEVEL}] ANALYSIS_REPORT → MOZZI 자동 전송 완료"
+                echo "  팀: ${FROM_ROLE}"
+                echo "  산출물: ${DELIVERABLES}"
+                exit 0
+            fi
+        fi
+    fi
+
+    # Fallback
+    echo "⚠ [${EARLY_LEVEL}] broker/peer 미발견. 수동 보고 필요."
+    echo "ACTION_REQUIRED: send_message(MOZZI, ANALYSIS_REPORT)"
+    echo "PAYLOAD: ${PAYLOAD}"
+    exit 0
+fi
+
+# ── 이하 기존 L2/L3 로직 (Match Rate 게이트 + COMPLETION_REPORT) ──
 
 if [ "$HAS_SRC" -eq 0 ]; then
     PROCESS_LEVEL="L1"
@@ -100,7 +189,7 @@ PAYLOAD=$(cat <<EOFPAYLOAD
 {
   "protocol": "bscamp-team/v1",
   "type": "COMPLETION_REPORT",
-  "from_role": "CTO_LEADER",
+  "from_role": "${FROM_ROLE}",
   "to_role": "${TO_ROLE}",
   "payload": {
     "task_file": "${TASK_FILE}",
@@ -158,7 +247,7 @@ if [ -z "$TARGET_ID" ] || [ -z "$MY_ID" ]; then
         2>/dev/null || echo "[]")
 
     [ -z "$TARGET_ID" ] && TARGET_ID=$(echo "$PEERS_JSON" | jq -r "[.[] | select(.summary | test(\"${TO_ROLE}\"))][0].id // empty" 2>/dev/null)
-    [ -z "$MY_ID" ] && MY_ID=$(echo "$PEERS_JSON" | jq -r "[.[] | select(.summary | test(\"CTO\"))][0].id // empty" 2>/dev/null)
+    [ -z "$MY_ID" ] && MY_ID=$(echo "$PEERS_JSON" | jq -r "[.[] | select(.summary | test(\"${FROM_ROLE}\"))][0].id // empty" 2>/dev/null)
 fi
 
 if [ -z "$TARGET_ID" ]; then

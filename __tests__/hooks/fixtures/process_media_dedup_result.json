@@ -1,0 +1,10 @@
+{
+  "processed": 0,
+  "uploaded": 0,
+  "dedup": 5,
+  "errors": 0,
+  "byType": {
+    "IMAGE": { "processed": 0, "uploaded": 0, "errors": 0 },
+    "VIDEO": { "processed": 0, "uploaded": 0, "errors": 0 }
+  }
+}

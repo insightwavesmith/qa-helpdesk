@@ -1,0 +1,4 @@
+[
+  { "ad_id": "ad_001", "target_type": "video", "cta_attention_score": 0.72, "cognitive_load": "medium", "attention_map_url": "gs://bucket/ad001.json" },
+  { "ad_id": "ad_002", "target_type": "video", "cta_attention_score": 0.85, "cognitive_load": "low", "attention_map_url": "gs://bucket/ad002.json" }
+]

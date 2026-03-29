@@ -1,0 +1,7 @@
+{
+  "data": [
+    { "id": "vid_001", "source": "https://video.xx.fbcdn.net/v/vid_001.mp4" },
+    { "id": "vid_002", "source": "https://video.xx.fbcdn.net/v/vid_002.mp4" }
+  ],
+  "paging": { "cursors": { "before": "abc", "after": null } }
+}

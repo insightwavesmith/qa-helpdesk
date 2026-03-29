@@ -343,10 +343,55 @@ export async function fetchVideoSourceUrls(
     }
   } while (after);
 
+  // ━━━ 개별 video fallback (계정 리스팅에서 미발견 건) ━━━
   if (needed.size > 0) {
-    console.warn(
-      `[creative-fetcher] ${needed.size}개 video source 미발견 [${cleanId}]: ${[...needed].slice(0, 5).join(",")}`,
+    console.log(
+      `[creative-fetcher] 계정 리스팅 미발견 ${needed.size}건 → 개별 조회 시작 [${cleanId}]`
     );
+
+    const individualIds = [...needed];
+    // 병렬 처리 (5개씩 배치)
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < individualIds.length; i += BATCH_SIZE) {
+      const batch = individualIds.slice(i, i + BATCH_SIZE);
+      const promises = batch.map(async (vid) => {
+        try {
+          const vidUrl = new URL(`${META_API_BASE}/${vid}`);
+          vidUrl.searchParams.set("access_token", token);
+          vidUrl.searchParams.set("fields", "id,source");
+          const vidRes = await fetchMetaWithRetry(vidUrl.toString());
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const vidData: any = await vidRes.json();
+
+          if (vidData.error) {
+            const errMsg: string = vidData.error.message ?? "";
+            const isPermErr = errMsg.includes("(#10)") || errMsg.includes("(#283)");
+            if (isPermErr) {
+              console.warn(`[creative-fetcher] 개별 조회 권한 에러: ${vid}`);
+            } else {
+              console.warn(`[creative-fetcher] 개별 조회 에러 ${vid}: ${errMsg}`);
+            }
+            return;
+          }
+
+          if (vidData.source) {
+            result.set(vid, vidData.source);
+            needed.delete(vid);
+          }
+        } catch (e) {
+          console.warn(`[creative-fetcher] 개별 조회 실패 ${vid}:`, e);
+        }
+      });
+      await Promise.all(promises);
+    }
+
+    if (needed.size > 0) {
+      console.warn(
+        `[creative-fetcher] 최종 미발견 ${needed.size}건 [${cleanId}]: ${[...needed].slice(0, 5).join(",")}`
+      );
+    } else {
+      console.log(`[creative-fetcher] 개별 조회로 전체 해소 [${cleanId}]`);
+    }
   }
 
   return result;

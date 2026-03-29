@@ -19,7 +19,7 @@ afterEach(() => {
 });
 
 describe('위험도 게이트 분기', () => {
-  it('RV-1: 변경 파일에 src/ 없음 → L1 → COO 직접', () => {
+  it('RV-1: 변경 파일에 src/ 없음 → L1 → MOZZI 직접 (v3: l1_to_coo)', () => {
     testEnv = createTestEnv();
     writeAnalysisFile(testEnv.tmpDir, 97);
     writeTeamContext(testEnv.tmpDir, 'CTO');
@@ -28,7 +28,7 @@ describe('위험도 게이트 분기', () => {
       mockBroker: { health: false }
     });
     const result = runHook(hookPath, {});
-    expect(result.stdout).toContain('cto_to_coo');
+    expect(result.stdout).toContain('l1_to_coo');
     expect(result.stdout).toContain('MOZZI');
   });
 
@@ -223,12 +223,16 @@ describe('기존 동작 호환', () => {
     expect(result.stdout).not.toContain('ACTION_REQUIRED');
   });
 
-  it('RV-17: PM 팀 → 비대상 통과', () => {
+  it('RV-17: PM 팀 → v3 전팀 대상, L1 ANALYSIS_REPORT', () => {
     testEnv = createTestEnv();
     writeTeamContext(testEnv.tmpDir, 'PM');
-    const hookPath = prepareChainHandoffV2(testEnv, {});
+    const hookPath = prepareChainHandoffV2(testEnv, {
+      mockBroker: { health: false },
+    });
     const result = runHook(hookPath, {});
     expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain('ANALYSIS_REPORT');
+    expect(result.stdout).toContain('PM_LEADER');
   });
 
   it('RV-18: team-context 없음 → 비대상 통과', () => {
@@ -289,12 +293,15 @@ describe('CTO 팀 변형 매칭', () => {
     expect(result.exitCode).toBe(0);
   });
 
-  it('RV-23: MKT 팀 → 비대상', () => {
+  it('RV-23: MKT 팀 → v3 전팀 대상, L1 ANALYSIS_REPORT', () => {
     testEnv = createTestEnv();
     writeTeamContext(testEnv.tmpDir, 'MKT');
-    const hookPath = prepareChainHandoffV2(testEnv, {});
+    const hookPath = prepareChainHandoffV2(testEnv, {
+      mockBroker: { health: false },
+    });
     const result = runHook(hookPath, {});
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toBe('');
+    expect(result.stdout).toContain('ANALYSIS_REPORT');
+    expect(result.stdout).toContain('MKT_LEADER');
   });
 });

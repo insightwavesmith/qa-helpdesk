@@ -130,10 +130,93 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // ━━━ 2. 계정별 그룹핑 ━━━
+    // ━━━ 1-B. creative_saliency 사전 체크 — 이미 분석된 건 분리 ━━━
+    const allAdIds = rows
+      .map((r) => r.creatives?.ad_id)
+      .filter(Boolean) as string[];
+
+    let alreadyAnalyzedAdIds = new Set<string>();
+    if (allAdIds.length > 0) {
+      const { data: existingSaliency } = await svc
+        .from("creative_saliency")
+        .select("ad_id")
+        .in("ad_id", allAdIds)
+        .eq("target_type", "video");
+
+      if (existingSaliency && existingSaliency.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        alreadyAnalyzedAdIds = new Set(existingSaliency.map((s: any) => s.ad_id as string));
+        console.log(
+          `[video-saliency] creative_saliency 이미 존재: ${alreadyAnalyzedAdIds.size}건 → 동기화만 실행`
+        );
+      }
+    }
+
+    // 분리: 동기화만 필요 vs Cloud Run 호출 필요
+    const syncOnlyRows = rows.filter(
+      (r) => r.creatives?.ad_id && alreadyAnalyzedAdIds.has(r.creatives.ad_id)
+    );
+    const needsCloudRun = rows.filter(
+      (r) => !r.creatives?.ad_id || !alreadyAnalyzedAdIds.has(r.creatives.ad_id)
+    );
+
+    console.log(
+      `[video-saliency] 분류: 동기화만=${syncOnlyRows.length}건, Cloud Run=${needsCloudRun.length}건`
+    );
+
+    // ━━━ 1-C. 이미 분석된 건 즉시 동기화 ━━━
+    let preSynced = 0;
+    if (syncOnlyRows.length > 0) {
+      const syncAdIds = syncOnlyRows
+        .map((r) => r.creatives?.ad_id)
+        .filter(Boolean) as string[];
+
+      const { data: saliencyRows } = await svc
+        .from("creative_saliency")
+        .select("ad_id, cta_attention_score, cognitive_load, top_fixations, attention_map_url")
+        .in("ad_id", syncAdIds)
+        .eq("target_type", "video");
+
+      if (saliencyRows && saliencyRows.length > 0) {
+        const summaryMap = new Map<string, Record<string, unknown>>();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        for (const s of saliencyRows as any[]) {
+          summaryMap.set(s.ad_id as string, {
+            cta_attention_score: s.cta_attention_score,
+            cognitive_load: s.cognitive_load,
+            attention_map_url: s.attention_map_url,
+            synced_at: new Date().toISOString(),
+            model_version: "deepgaze-iie",
+          });
+        }
+
+        for (const row of syncOnlyRows) {
+          const adId = row.creatives?.ad_id;
+          if (!adId) continue;
+          const summary = summaryMap.get(adId);
+          if (!summary) continue;
+
+          const { error: updateErr } = await svc
+            .from("creative_media")
+            .update({ video_analysis: summary })
+            .eq("id", row.id);
+
+          if (!updateErr) {
+            preSynced++;
+          } else {
+            console.error(
+              `[video-saliency] 사전동기화 실패 id=${row.id}: ${updateErr.message}`
+            );
+          }
+        }
+        console.log(`[video-saliency] 사전동기화 완료: ${preSynced}건`);
+      }
+    }
+
+    // ━━━ 2. 계정별 그룹핑 (Cloud Run 필요한 건만) ━━━
     const accountMap = new Map<string, AccountGroup>();
 
-    for (const row of rows) {
+    for (const row of needsCloudRun) {
       const creative = row.creatives;
       if (!creative) continue;
 
@@ -260,6 +343,8 @@ export async function GET(req: NextRequest) {
       message: "video-saliency 완료",
       elapsed: `${elapsed}s`,
       totalVideos,
+      preSynced,
+      cloudRunProcessed: needsCloudRun.length,
       accounts: accountList.length,
       results,
       synced,

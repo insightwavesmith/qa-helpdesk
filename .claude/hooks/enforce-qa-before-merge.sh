@@ -149,14 +149,16 @@ import json, sys
 try:
     with open('$PDCA_ROOT') as f:
         data = json.load(f)
-    for key, val in data.items():
+    # 신 스키마: features 키 안에 feature 객체들이 있음
+    features = data.get('features', data) if isinstance(data.get('features'), dict) else data
+    for key, val in features.items():
         if isinstance(val, dict) and 'check' in val:
             c = val['check']
             if isinstance(c, dict) and c.get('done') == True:
                 print('true')
                 sys.exit(0)
     # 구 스키마: analysis 필드가 있으면 check done으로 간주
-    for key, val in data.items():
+    for key, val in features.items():
         if isinstance(val, dict) and 'analysis' in val:
             print('true')
             sys.exit(0)

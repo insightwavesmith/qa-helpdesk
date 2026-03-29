@@ -247,7 +247,7 @@ async function collectAccount(
                   mediaRows.push({
                     creative_id: creativeId,
                     media_type: card.videoId ? "VIDEO" : "IMAGE",
-                    media_url: existing?.media_url || card.imageUrl || null,
+                    media_url: existing?.media_url || card.imageUrl || (card.videoId ? creative?.thumbnail_url : null) || null,
                     media_hash: card.imageHash || null,
                     content_hash: card.imageHash || card.videoId || null,
                     storage_url: existing?.storage_url || null,
@@ -264,7 +264,7 @@ async function collectAccount(
                 mediaRows.push({
                   creative_id: creativeId,
                   media_type: videoId ? "VIDEO" : "IMAGE",
-                  media_url: existing?.media_url || null,
+                  media_url: existing?.media_url || (videoId ? creative?.thumbnail_url : null) || null,
                   media_hash: imageHash || null,
                   content_hash: imageHash || videoId || null,
                   storage_url: existing?.storage_url || null,
@@ -281,7 +281,7 @@ async function collectAccount(
               mediaRows.push({
                 creative_id: creativeId,
                 media_type: videoId ? "VIDEO" : "IMAGE",
-                media_url: existing?.media_url || null,
+                media_url: existing?.media_url || (videoId ? creative?.thumbnail_url : null) || null,
                 media_hash: imageHash || null,
                 content_hash: imageHash || videoId || null,
                 storage_url: existing?.storage_url || null,

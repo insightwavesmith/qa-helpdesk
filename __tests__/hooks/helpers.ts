@@ -213,9 +213,9 @@ export function prepareChainHandoffV2(
     `echo -e "${files}"`
   );
 
-  // git log mock
+  // git log mock (g flag: L0/L1 path + L2/L3 path 두 곳 모두 치환)
   content = content.replace(
-    /git log --oneline -1 2>\/dev\/null/,
+    /git log --oneline -1 2>\/dev\/null/g,
     'echo "abc1234 test commit"'
   );
 
@@ -236,10 +236,11 @@ export function prepareChainHandoffV2(
     join(helpersDir, 'match-rate-parser.sh')
   );
 
-  // is-teammate.sh 복사
-  copyFileSync(
-    join(process.cwd(), '.claude/hooks/is-teammate.sh'),
-    join(env.hooksDir, 'is-teammate.sh')
+  // is-teammate.sh mock (실제 파일은 tmux pane_index 감지로 agent-teams 환경에서 오탐)
+  writeFileSync(
+    join(env.hooksDir, 'is-teammate.sh'),
+    '#!/bin/bash\nIS_TEAMMATE="${IS_TEAMMATE:-false}"\n',
+    { mode: 0o755 }
   );
 
   // detect-process-level.sh — 빈 파일로 stub (source해도 에러 안 나게)
