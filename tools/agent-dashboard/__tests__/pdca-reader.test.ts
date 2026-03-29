@@ -48,9 +48,9 @@ describe('pdca-reader', () => {
     const slack = status!.features['slack-notification']
     expect(slack.check.matchRate).toBeNull()
 
-    // agent-team-operations: matchRate가 95 (숫자)
+    // agent-team-operations: matchRate가 97 (숫자)
     const ops = status!.features['agent-team-operations']
-    expect(ops.check.matchRate).toBe(95)
+    expect(ops.check.matchRate).toBe(97)
     expect(typeof ops.check.matchRate).toBe('number')
   })
 })

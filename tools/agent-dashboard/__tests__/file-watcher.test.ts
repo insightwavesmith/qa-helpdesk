@@ -18,6 +18,9 @@ describe('file-watcher', () => {
     const watcher = createFileWatcher([tmpDir], onChange, { debounce: 100 })
     expect(watcher).not.toBeNull()
 
+    // watcher 초기화 대기
+    await sleep(50)
+
     // 파일 변경
     writeFileSync(testFile, '{"updated": true}', 'utf-8')
     await sleep(300)

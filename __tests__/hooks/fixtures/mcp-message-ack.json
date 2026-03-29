@@ -1,8 +1,9 @@
 {
   "protocol": "bscamp-team/v1",
-  "type": "FEEDBACK",
+  "type": "ACK",
   "from_role": "CTO_LEADER",
   "to_role": "PM_LEADER",
-  "payload": { "issue": "API 스키마 변경 필요", "task_file": "TASK-XXX.md" },
-  "msg_id": "cto-20260328-001"
+  "payload": { "ack_msg_id": "pm-20260328-001", "status": "received" },
+  "ts": "2026-03-28T14:30:05+09:00",
+  "msg_id": "cto-ack-20260328-001"
 }

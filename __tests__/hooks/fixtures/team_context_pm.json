@@ -1,0 +1,12 @@
+{
+  "team": "PM",
+  "session": "sdk-pm",
+  "created": "2026-03-28T10:00:00+09:00",
+  "taskFiles": [
+    "TASK-PM-REVIEW.md"
+  ],
+  "teammates": [
+    { "role": "pm-researcher", "paneIndex": 1 },
+    { "role": "pm-strategist", "paneIndex": 2 }
+  ]
+}

@@ -1,7 +1,7 @@
 ---
 team: CTO
 created: 2026-03-28
-status: pending
+status: completed
 owner: leader
 assignees:
   - role: backend-dev
@@ -36,20 +36,20 @@ CTO 완료 → hook 자체 QA(95%) → [pass] MCP → PM 검수 → [pass] MCP+w
 
 ## Wave 1: 핵심 스크립트 (의존성 없음)
 
-- [ ] W1-1: match-rate-parser.sh 헬퍼 — `.claude/hooks/helpers/match-rate-parser.sh`
-- [ ] W1-2: pdca-chain-handoff.sh 신규 작성 — `.claude/hooks/pdca-chain-handoff.sh`
-- [ ] W1-3: TDD 작성 + 실행 (11건: H-1~H-4, E-1~E-7)
+- [x] W1-1: match-rate-parser.sh 헬퍼 — `.claude/hooks/helpers/match-rate-parser.sh`
+- [x] W1-2: pdca-chain-handoff.sh 신규 작성 — `.claude/hooks/pdca-chain-handoff.sh`
+- [x] W1-3: TDD 작성 + 실행 (25건: PC-1~PC-25 전부 Green)
 
 ## Wave 2: 설정 + 규칙 (Wave 1 완료 후)
 
-- [ ] W2-1: settings.local.json TaskCompleted 배열에 pdca-chain-handoff.sh 추가
-- [ ] W2-2: CLAUDE.md PM 검수 프로토콜 규칙 추가 (leader)
-- [ ] W2-3: CLAUDE.md COO 보고 프로토콜 규칙 추가 (leader)
+- [x] W2-1: settings.local.json TaskCompleted 배열에 pdca-chain-handoff.sh 추가
+- [ ] W2-2: CLAUDE.md PM 검수 프로토콜 규칙 추가 (leader) — Smith님 승인 후 별도 커밋
+- [ ] W2-3: CLAUDE.md COO 보고 프로토콜 규칙 추가 (leader) — Smith님 승인 후 별도 커밋
 
 ## Wave 3: 통합 검증
 
-- [ ] W3-1: 3자 통신 체인 테스트 (CTO→PM→COO)
-- [ ] W3-2: Gap 분석 → `docs/03-analysis/pdca-chain-automation.analysis.md` (95%+)
+- [x] W3-1: 3자 통신 체인 테스트 (CTO→PM→COO)
+- [x] W3-2: Gap 분석 → `docs/03-analysis/pdca-chain-automation.analysis.md` (95%+)
 
 ## 파일 경계
 

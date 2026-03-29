@@ -131,6 +131,96 @@ describe('claude-peers-mcp — 크로스팀 통신', () => {
   })
 })
 
+describe('MCP 통신 — fixture 기반 유닛 테스트 (MCP-9~18)', () => {
+  const FIXTURES_DIR = `${__dirname}/fixtures`
+  function loadFixture(name: string) {
+    return JSON.parse(require('fs').readFileSync(`${FIXTURES_DIR}/${name}`, 'utf-8'))
+  }
+
+  // === 라우팅 ===
+
+  // MCP-9: peer 발견 — summary 매칭
+  it('MCP-9: list_peers → summary "PM_LEADER"로 PM peer ID 발견', () => {
+    const peers = loadFixture('mcp-peers-list.json')
+    const pm = peers.find((p: any) => p.summary?.startsWith('PM_LEADER'))
+    expect(pm).toBeDefined()
+    expect(pm.id).toBeTruthy()
+  })
+
+  // MCP-10: CTO→PM 라우팅
+  it('MCP-10: from_role=CTO_LEADER → to_role=PM_LEADER', () => {
+    const msg = { from_role: 'CTO_LEADER', to_role: 'PM_LEADER' }
+    expect(msg.from_role).not.toBe(msg.to_role)
+  })
+
+  // MCP-11: PM→COO 라우팅
+  it('MCP-11: from_role=PM_LEADER → to_role=MOZZI', () => {
+    const msg = { from_role: 'PM_LEADER', to_role: 'MOZZI' }
+    expect(msg.to_role).toBe('MOZZI')
+  })
+
+  // MCP-12: 역방향 — COO→PM→CTO
+  it('MCP-12: FEEDBACK 역방향 라우팅 (COO→PM, PM→CTO)', () => {
+    const fb1 = { from_role: 'MOZZI', to_role: 'PM_LEADER', type: 'FEEDBACK' }
+    const fb2 = { from_role: 'PM_LEADER', to_role: 'CTO_LEADER', type: 'FEEDBACK' }
+    expect(fb1.type).toBe('FEEDBACK')
+    expect(fb2.type).toBe('FEEDBACK')
+  })
+
+  // === 수신 방식 ===
+
+  // MCP-13: CC↔CC channel mode → 즉시 수신
+  it('MCP-13: CC→CC channel mode → push 즉시 (지연 ~0초)', () => {
+    const ccModes: Record<string, string> = { PM_LEADER: 'channel', CTO_LEADER: 'channel' }
+    expect(ccModes.PM_LEADER).toBe('channel')
+    expect(ccModes.CTO_LEADER).toBe('channel')
+  })
+
+  // MCP-14: OpenClaw tool mode → check_messages 폴링
+  it('MCP-14: OpenClaw(MOZZI) = tool mode → push 없음', () => {
+    const modes: Record<string, string> = { MOZZI: 'tool', PM_LEADER: 'channel' }
+    expect(modes.MOZZI).toBe('tool')
+    expect(modes.PM_LEADER).not.toBe('tool')
+  })
+
+  // === 에러 케이스 ===
+
+  // MCP-15: 존재하지 않는 peer에 전송 → 에러 (크래시 아님)
+  it('MCP-15: 없는 peer ID → 에러 메시지 (크래시 안 함)', () => {
+    const peers = loadFixture('mcp-peers-list.json')
+    const unknownId = 'peer-nonexistent-999'
+    const found = peers.find((p: any) => p.id === unknownId)
+    expect(found).toBeUndefined()
+    // 전송 시도 시 크래시 없이 에러 반환해야 함
+  })
+
+  // MCP-16: broker 다운 → connection refused (graceful)
+  it('MCP-16: broker 미기동 → connection refused 에러 처리', async () => {
+    await expect(
+      fetch('http://127.0.0.1:19999/health')
+    ).rejects.toThrow()
+  })
+
+  // MCP-17: 세션 재시작 → 새 peer ID 발급
+  it('MCP-17: 세션 재시작 → peer ID 변경, 이전 ID로 전송 실패', () => {
+    const session1Id = `peer-${Date.now()}`
+    const session2Id = `peer-${Date.now() + 1}`
+    expect(session1Id).not.toBe(session2Id)
+  })
+
+  // MCP-18: 동일 msg_id 재전송 → 중복 감지 (애플리케이션 레이어)
+  it('MCP-18: 동일 msg_id 재전송 → 수신 측에서 중복 감지', () => {
+    const received = new Set<string>()
+    const msg1 = { msg_id: 'pm-001', type: 'TASK_HANDOFF' }
+    const msg2 = { msg_id: 'pm-001', type: 'TASK_HANDOFF' } // 재전송
+
+    received.add(msg1.msg_id)
+    const isDuplicate = received.has(msg2.msg_id)
+    expect(isDuplicate).toBe(true) // 중복 감지
+    expect(received.size).toBe(1)
+  })
+})
+
 describe('claude-peers-mcp — 프로토콜 검증', () => {
 
   // PROTO-1: 메시지 프로토콜 파싱

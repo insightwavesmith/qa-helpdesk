@@ -1,8 +1,23 @@
-{
-  "protocol": "bscamp-team/v1",
-  "type": "URGENT",
-  "from_role": "MOZZI",
-  "to_role": "CTO_LEADER",
-  "payload": { "error": "프로덕션 500 에러", "endpoint": "/api/questions" },
-  "msg_id": "mozzi-20260328-001"
-}
+[
+  {
+    "id": "peer-pm-001",
+    "pid": 12345,
+    "cwd": "/Users/smith/projects/bscamp",
+    "git_root": "/Users/smith/projects/bscamp",
+    "summary": "PM_LEADER | bscamp | 기획 총괄"
+  },
+  {
+    "id": "peer-cto-002",
+    "pid": 12346,
+    "cwd": "/Users/smith/projects/bscamp",
+    "git_root": "/Users/smith/projects/bscamp",
+    "summary": "CTO_LEADER | bscamp | 개발 총괄"
+  },
+  {
+    "id": "peer-mozzi-003",
+    "pid": 12347,
+    "cwd": "/Users/smith/projects/bscamp",
+    "git_root": "/Users/smith/projects/bscamp",
+    "summary": "MOZZI | bscamp | COO"
+  }
+]

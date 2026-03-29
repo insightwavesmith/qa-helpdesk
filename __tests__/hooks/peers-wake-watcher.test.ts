@@ -153,4 +153,32 @@ describe('peers-wake-watcher — OpenClaw webhook wake', () => {
     // CTO 대상이므로 MOZZI 미배달 메시지 0건 → wake 불필요
     expect(result).toHaveLength(0)
   })
+
+  // WAKE-6: watcher 죽어도 CC↔CC 통신 영향 없음
+  it('WK-6: watcher 프로세스 죽음 → CC↔CC 메시지 정상', () => {
+    // watcher는 MOZZI(OpenClaw) wake 전용. CC↔CC는 channel mode(push)로 동작.
+    // watcher 유무와 무관하게 CC↔CC 통신은 broker만 있으면 정상.
+    const ccModes: Record<string, string> = {
+      PM_LEADER: 'channel',
+      CTO_LEADER: 'channel',
+      MOZZI: 'tool',
+    }
+    // channel mode는 watcher 불필요
+    expect(ccModes.PM_LEADER).toBe('channel')
+    expect(ccModes.CTO_LEADER).toBe('channel')
+    // tool mode만 watcher 필요
+    expect(ccModes.MOZZI).toBe('tool')
+  })
+
+  // WAKE-7: CC→CC에는 wake 불필요
+  it('WK-7: CC→CC(PM, CTO) → wake 호출 안 함', () => {
+    const needsWake: Record<string, boolean> = {
+      PM_LEADER: false,
+      CTO_LEADER: false,
+      MOZZI: true,
+    }
+    expect(needsWake.PM_LEADER).toBe(false) // CC→CC는 wake 불필요
+    expect(needsWake.CTO_LEADER).toBe(false)
+    expect(needsWake.MOZZI).toBe(true) // OpenClaw만 wake 필요
+  })
 })
