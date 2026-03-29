@@ -81,7 +81,16 @@ resolve_self() {
 
     # Strategy 1: peer-map.json
     local MAP_FILE="$_PR_PROJECT_DIR/.claude/runtime/peer-map.json"
-    local CONTEXT_FILE="$_PR_PROJECT_DIR/.claude/runtime/team-context.json"
+    # team-context resolver (팀별 파일 분리)
+    local _PR_RESOLVER="$_PR_PROJECT_DIR/.claude/hooks/helpers/team-context-resolver.sh"
+    if [ -f "$_PR_RESOLVER" ]; then
+        local _OLD_PD="${PROJECT_DIR:-}"
+        PROJECT_DIR="$_PR_PROJECT_DIR"
+        source "$_PR_RESOLVER"
+        resolve_team_context 2>/dev/null
+        PROJECT_DIR="${_OLD_PD:-}"
+    fi
+    local CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$_PR_PROJECT_DIR/.claude/runtime/team-context.json}"
     if [ -f "$MAP_FILE" ] && [ -f "$CONTEXT_FILE" ]; then
         local MY_TEAM=$(jq -r '.team // empty' "$CONTEXT_FILE" 2>/dev/null)
         if [ -n "$MY_TEAM" ]; then

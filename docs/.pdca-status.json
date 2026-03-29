@@ -599,7 +599,41 @@
       "notes": "Plan 완료. 7건(B1 requireApproval P0, B2+B3 P1, A1+B4 P2, A2+A3 P3). Wave 4개. 총 5.5~6.5일."
     }
   },
-  "updatedAt": "2026-03-30T20:00:00",
-  "notes": "agent-ops-phase2 Plan 작성 완료. 7건(B1~B4+A1~A3). B1 requireApproval P0.",
+  "chain-context-fix": {
+      "phase": "plan",
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/01-plan/features/chain-context-fix.plan.md",
+        "at": "2026-03-30"
+      },
+      "design": {
+        "team": "pm",
+        "done": false,
+        "doc": "",
+        "at": null
+      },
+      "do": {
+        "team": "cto",
+        "done": false,
+        "commit": null,
+        "at": null
+      },
+      "check": {
+        "team": "qa",
+        "done": false,
+        "doc": "",
+        "matchRate": null
+      },
+      "act": {
+        "done": false,
+        "commit": null
+      },
+      "updatedAt": "2026-03-30T20:30:00",
+      "notes": "P0-URGENT Plan 완료. team-context 팀별 분리 + 아카이빙. hook 9개 수정. TDD 12건+회귀 53건=65건. 공수 1일."
+    }
+  },
+  "updatedAt": "2026-03-30T20:30:00",
+  "notes": "chain-context-fix P0-URGENT Plan 완료. 체인 0% 동작 근본 수정.",
   "_autoSyncNote": "auto-synced at 2026-03-30"
 }

@@ -8,7 +8,16 @@ _CKP_PROJECT_DIR="${PROJECT_DIR:-/Users/smith/projects/bscamp}"
 
 save_checkpoint() {
     local STATE_FILE="$_CKP_PROJECT_DIR/.claude/runtime/SESSION-STATE.md"
-    local CONTEXT_FILE="$_CKP_PROJECT_DIR/.claude/runtime/team-context.json"
+    # team-context resolver (팀별 파일 분리 — 없으면 레거시 경로 사용)
+    local _CKP_RESOLVER="$_CKP_PROJECT_DIR/.claude/hooks/helpers/team-context-resolver.sh"
+    if [ -f "$_CKP_RESOLVER" ]; then
+        local _OLD_PD="${PROJECT_DIR:-}"
+        PROJECT_DIR="$_CKP_PROJECT_DIR"
+        source "$_CKP_RESOLVER"
+        resolve_team_context 2>/dev/null
+        PROJECT_DIR="${_OLD_PD:-}"
+    fi
+    local CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$_CKP_PROJECT_DIR/.claude/runtime/team-context.json}"
     local TIMESTAMP
     TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 

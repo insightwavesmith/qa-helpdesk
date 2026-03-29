@@ -19,7 +19,9 @@ cd "$PROJECT_DIR" || exit 0
 source "$(dirname "$0")/helpers/hook-output.sh" 2>/dev/null && hook_init
 
 # ── 2. 팀 컨텍스트 확인 (전팀 대상) ──
-CONTEXT_FILE="$PROJECT_DIR/.claude/runtime/team-context.json"
+source "$(dirname "$0")/helpers/team-context-resolver.sh" 2>/dev/null
+resolve_team_context 2>/dev/null
+CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$PROJECT_DIR/.claude/runtime/team-context.json}"
 if [ ! -f "$CONTEXT_FILE" ]; then
     exit 0  # 팀 컨텍스트 없음 → 비대상
 fi

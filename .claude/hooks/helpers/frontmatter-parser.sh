@@ -8,7 +8,11 @@
 # v1.0 (2026-03-28)
 
 PROJECT_DIR="/Users/smith/projects/bscamp"
-CONTEXT_FILE="$PROJECT_DIR/.claude/runtime/team-context.json"
+
+# team-context resolver (팀별 파일 분리)
+source "$(dirname "${BASH_SOURCE[0]}")/team-context-resolver.sh" 2>/dev/null
+resolve_team_context 2>/dev/null
+CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$PROJECT_DIR/.claude/runtime/team-context.json}"
 
 # parse_frontmatter_field(file, key)
 # TASK 파일의 YAML 프론트매터에서 특정 키의 값을 추출.

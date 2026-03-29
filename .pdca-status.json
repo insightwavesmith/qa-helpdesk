@@ -565,18 +565,51 @@
       "notes": "완료. discover-accounts 미실행 원인=Cloud Scheduler 미등록(코드 정상). collect-daily 배치 동적화+is_member 동적화. TDD 18건 Green. Match Rate 92%."
     }
   },
-  "agent-ops-phase2-wave1": {
-      "phase": "completed",
+  "agent-ops-phase2": {
+      "phase": "plan",
       "plan": {
-        "team": "cto",
+        "team": "pm",
         "done": true,
         "doc": "docs/01-plan/features/agent-ops-phase2.plan.md",
         "at": "2026-03-30"
       },
       "design": {
+        "team": "pm",
+        "done": false,
+        "doc": "",
+        "at": null
+      },
+      "do": {
+        "team": "cto",
+        "done": false,
+        "commit": null,
+        "at": null
+      },
+      "check": {
+        "team": "qa",
+        "done": false,
+        "doc": "",
+        "matchRate": null
+      },
+      "act": {
+        "done": false,
+        "commit": null
+      },
+      "updatedAt": "2026-03-30T20:00:00",
+      "notes": "Plan 완료. 7건(B1 requireApproval P0, B2+B3 P1, A1+B4 P2, A2+A3 P3). Wave 4개. 총 5.5~6.5일."
+    },
+  "chain-context-fix": {
+      "phase": "completed",
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/01-plan/features/chain-context-fix.plan.md",
+        "at": "2026-03-30"
+      },
+      "design": {
         "team": "cto",
         "done": true,
-        "doc": "docs/02-design/features/agent-ops-phase2.design.md",
+        "doc": "docs/02-design/features/chain-context-fix.design.md",
         "at": "2026-03-30"
       },
       "do": {
@@ -588,18 +621,18 @@
       "check": {
         "team": "qa",
         "done": true,
-        "doc": "docs/03-analysis/agent-ops-phase2-wave1.analysis.md",
+        "doc": "docs/03-analysis/chain-context-fix.analysis.md",
         "matchRate": 100
       },
       "act": {
         "done": true,
         "commit": null
       },
-      "updatedAt": "2026-03-30T21:40:00",
-      "notes": "Wave 1 B1 requireApproval 완료. exit 2 → 승인 파일 게이트. TDD 9건 Green. OFR 35건 회귀 없음. Match Rate 100%."
+      "updatedAt": "2026-03-30T22:00:00",
+      "notes": "P0-URGENT 완료. resolver+아카이빙+hook 9개 마이그레이션. TDD 12건+회귀 62건=74건 all Green. Match Rate 100%."
     }
   },
-  "updatedAt": "2026-03-30T21:40:00",
-  "notes": "agent-ops-phase2 Wave 1(B1 requireApproval) 완료. Match Rate 100%.",
+  "updatedAt": "2026-03-30T22:00:00",
+  "notes": "chain-context-fix P0-URGENT 완료. 체인 자동 발동률 0%→100%.",
   "_autoSyncNote": "auto-synced at 2026-03-30"
 }

@@ -18,7 +18,9 @@ PROJECT_DIR="/Users/smith/projects/bscamp"
 cd "$PROJECT_DIR" || exit 0
 
 # PM 팀만 대상
-CONTEXT_FILE="$PROJECT_DIR/.claude/runtime/team-context.json"
+source "$(dirname "$0")/helpers/team-context-resolver.sh" 2>/dev/null
+resolve_team_context 2>/dev/null
+CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$PROJECT_DIR/.claude/runtime/team-context.json}"
 if [ ! -f "$CONTEXT_FILE" ]; then
     exit 0
 fi

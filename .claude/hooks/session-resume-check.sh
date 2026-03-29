@@ -11,6 +11,10 @@ BOARD="$PROJECT_DIR/.claude/tasks/BOARD.json"
 
 FOUND_ISSUES=0
 
+# ── 0. 아카이브 자동 정리 (1시간+ 된 team-context 아카이브 삭제) ──
+RUNTIME_DIR="$PROJECT_DIR/.claude/runtime"
+find "$RUNTIME_DIR" -name 'team-context-*.archived.json' -mmin +60 -delete 2>/dev/null
+
 # ── 1. 미완료 피처 감지 ──
 if [ -f "$PDCA_FILE" ]; then
     INCOMPLETE=$(jq -r '

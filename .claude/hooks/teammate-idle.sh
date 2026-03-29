@@ -5,7 +5,9 @@
 
 PROJECT_DIR="/Users/smith/projects/bscamp"
 TASKS_DIR="$PROJECT_DIR/.claude/tasks"
-CONTEXT_FILE="$PROJECT_DIR/.claude/runtime/team-context.json"
+source "$(dirname "$0")/helpers/team-context-resolver.sh" 2>/dev/null
+resolve_team_context 2>/dev/null
+CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$PROJECT_DIR/.claude/runtime/team-context.json}"
 
 # --- 프론트매터 파싱 헬퍼 ---
 parse_frontmatter_field() {

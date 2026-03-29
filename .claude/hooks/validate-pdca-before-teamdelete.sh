@@ -40,12 +40,15 @@ fi
 
 echo "[PDCA 게이트] docs/.pdca-status.json ${PDCA_AGE}초 전 갱신 확인. TeamDelete 허용."
 
-# --- team-context.json 정리 (v1.1 추가) ---
-CONTEXT_FILE="$PROJECT_DIR/.claude/runtime/team-context.json"
+# --- team-context 아카이빙 (v1.2: rm → mv 아카이빙 — 체인 핸드오프용) ---
+source "$(dirname "$0")/helpers/team-context-resolver.sh" 2>/dev/null
+resolve_team_context 2>/dev/null
+CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$PROJECT_DIR/.claude/runtime/team-context.json}"
 if [ -f "$CONTEXT_FILE" ]; then
     DELETED_TEAM=$(jq -r '.team // "unknown"' "$CONTEXT_FILE" 2>/dev/null)
-    rm -f "$CONTEXT_FILE"
-    echo "[PDCA 게이트] team-context.json 삭제 완료 (팀: $DELETED_TEAM)"
+    ARCHIVED="${CONTEXT_FILE%.json}.archived.json"
+    mv "$CONTEXT_FILE" "$ARCHIVED"
+    echo "[PDCA 게이트] team-context 아카이빙 완료 (팀: $DELETED_TEAM)"
 fi
 
 exit 0
