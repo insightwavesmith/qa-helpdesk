@@ -6,7 +6,7 @@
 #   check_approval "$REL_FILE"  → return 0 (승인) / return 1 (미승인)
 #   request_approval "$REL_FILE" "$TOOL_NAME"  → 요청 파일 생성
 
-_APPROVAL_DIR="${PROJECT_DIR:-.}/.claude/runtime/approvals"
+_APPROVAL_DIR="${PROJECT_DIR:-.}/.bkit/runtime/approvals"
 
 # 승인 대상 파일 판별
 is_approval_required() {

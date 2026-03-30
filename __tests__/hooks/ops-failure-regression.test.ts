@@ -47,7 +47,7 @@ describe.skip('OFR-1~3: COO-3 PM 건너뛰기 — V2에서 coo-chain-report.sh �
     // pm-report 파일을 만들지 않음
     const result = runHook(hookPath);
     expect(result.exitCode).toBe(0);
-    const reportPath = join(testEnv.tmpDir, '.claude/runtime/coo-smith-report.json');
+    const reportPath = join(testEnv.tmpDir, '.bkit/runtime/coo-smith-report.json');
     expect(existsSync(reportPath)).toBe(false);
   });
 
@@ -59,7 +59,7 @@ describe.skip('OFR-1~3: COO-3 PM 건너뛰기 — V2에서 coo-chain-report.sh �
     });
     writePmReport(testEnv.tmpDir);
     runHook(hookPath);
-    const reportPath = join(testEnv.tmpDir, '.claude/runtime/coo-smith-report.json');
+    const reportPath = join(testEnv.tmpDir, '.bkit/runtime/coo-smith-report.json');
     if (existsSync(reportPath)) {
       const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
       expect(report.payload).toHaveProperty('pm_verdict');
@@ -75,7 +75,7 @@ describe.skip('OFR-1~3: COO-3 PM 건너뛰기 — V2에서 coo-chain-report.sh �
     });
     writePmReport(testEnv.tmpDir);
     runHook(hookPath);
-    const reportPath = join(testEnv.tmpDir, '.claude/runtime/coo-smith-report.json');
+    const reportPath = join(testEnv.tmpDir, '.bkit/runtime/coo-smith-report.json');
     if (existsSync(reportPath)) {
       const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
       expect(report.payload.chain_step).toBe('coo_report');
@@ -95,7 +95,7 @@ describe.skip('OFR-4~6: COO-4 숫자만 전달 — V2에서 coo-chain-report.sh 
     });
     writePmReport(testEnv.tmpDir);
     runHook(hookPath);
-    const reportPath = join(testEnv.tmpDir, '.claude/runtime/coo-smith-report.json');
+    const reportPath = join(testEnv.tmpDir, '.bkit/runtime/coo-smith-report.json');
     if (existsSync(reportPath)) {
       const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
       const p = report.payload;
@@ -114,7 +114,7 @@ describe.skip('OFR-4~6: COO-4 숫자만 전달 — V2에서 coo-chain-report.sh 
     });
     writePmReport(testEnv.tmpDir);
     runHook(hookPath);
-    const reportPath = join(testEnv.tmpDir, '.claude/runtime/coo-smith-report.json');
+    const reportPath = join(testEnv.tmpDir, '.bkit/runtime/coo-smith-report.json');
     if (existsSync(reportPath)) {
       const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
       const rate = report.payload.match_rate;
@@ -132,7 +132,7 @@ describe.skip('OFR-4~6: COO-4 숫자만 전달 — V2에서 coo-chain-report.sh 
     });
     writePmReport(testEnv.tmpDir);
     runHook(hookPath);
-    const reportPath = join(testEnv.tmpDir, '.claude/runtime/coo-smith-report.json');
+    const reportPath = join(testEnv.tmpDir, '.bkit/runtime/coo-smith-report.json');
     if (existsSync(reportPath)) {
       const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
       expect(report.payload.pm_notes?.length).toBeGreaterThan(0);
@@ -194,7 +194,7 @@ exit 0
   it('OFR-9: sent-log에 5분 지난 항목은 정리됨', () => {
     testEnv = createTestEnv();
     const messengerPath = prepareMessenger(testEnv);
-    const logDir = join(testEnv.tmpDir, '.claude/runtime');
+    const logDir = join(testEnv.tmpDir, '.bkit/runtime');
     mkdirSync(logDir, { recursive: true });
     const logFile = join(logDir, 'chain-sent.log');
     // 10분 전 항목 수동 기록
@@ -361,7 +361,7 @@ describe('OFR-15~17: TF-3 좀비 pane — kill 후 상태 검증', () => {
       },
     });
     // force-team-kill 시뮬레이션: registry의 모든 멤버를 terminated로 변경
-    const registryPath = join(testEnv.tmpDir, '.claude/runtime/teammate-registry.json');
+    const registryPath = join(testEnv.tmpDir, '.bkit/runtime/teammate-registry.json');
     const registry = JSON.parse(readFileSync(registryPath, 'utf-8'));
     for (const name of Object.keys(registry.members || {})) {
       registry.members[name].state = 'terminated';
@@ -381,7 +381,7 @@ describe('OFR-15~17: TF-3 좀비 pane — kill 후 상태 검증', () => {
       team: 'CTO', shutdownState: 'running',
       members: { 'dev': { state: 'active' } },
     });
-    const registryPath = join(testEnv.tmpDir, '.claude/runtime/teammate-registry.json');
+    const registryPath = join(testEnv.tmpDir, '.bkit/runtime/teammate-registry.json');
     const registry = JSON.parse(readFileSync(registryPath, 'utf-8'));
     registry.shutdownState = 'done';
     writeFileSync(registryPath, JSON.stringify(registry));
@@ -410,11 +410,11 @@ describe('OFR-18~19: TF-4 TASK 미전달 — team-context taskFiles 검증', () 
     // 비어있는 taskFiles
     const ctx = { team: 'CTO', taskFiles: [], teammates: [] };
     writeFileSync(
-      join(testEnv.tmpDir, '.claude/runtime/team-context.json'),
+      join(testEnv.tmpDir, '.bkit/runtime/team-context.json'),
       JSON.stringify(ctx)
     );
     const content = JSON.parse(readFileSync(
-      join(testEnv.tmpDir, '.claude/runtime/team-context.json'), 'utf-8'
+      join(testEnv.tmpDir, '.bkit/runtime/team-context.json'), 'utf-8'
     ));
     // taskFiles가 비어있으면 팀원이 뭘 해야 하는지 모름 → 검증 실패
     expect(content.taskFiles.length).toBe(0); // 현재 상태 확인
@@ -426,11 +426,11 @@ describe('OFR-18~19: TF-4 TASK 미전달 — team-context taskFiles 검증', () 
     writeTaskFile(testEnv.tmpDir, 'TASK-OPS-TEST.md', 'ready');
     const ctx = { team: 'CTO', taskFiles: ['TASK-OPS-TEST.md', 'TASK-MISSING.md'], teammates: [] };
     writeFileSync(
-      join(testEnv.tmpDir, '.claude/runtime/team-context.json'),
+      join(testEnv.tmpDir, '.bkit/runtime/team-context.json'),
       JSON.stringify(ctx)
     );
     const content = JSON.parse(readFileSync(
-      join(testEnv.tmpDir, '.claude/runtime/team-context.json'), 'utf-8'
+      join(testEnv.tmpDir, '.bkit/runtime/team-context.json'), 'utf-8'
     ));
     const missing: string[] = [];
     for (const tf of content.taskFiles) {
@@ -467,13 +467,13 @@ describe('OFR-20~22: TF-5 compaction — context-checkpoint.sh', () => {
     writeTeamContext(testEnv.tmpDir, 'CTO');
     writeTaskFile(testEnv.tmpDir, 'TASK-TEST.md', 'ready');
     // team-context에 taskFiles 추가
-    const ctxPath = join(testEnv.tmpDir, '.claude/runtime/team-context.json');
+    const ctxPath = join(testEnv.tmpDir, '.bkit/runtime/team-context.json');
     const ctx = JSON.parse(readFileSync(ctxPath, 'utf-8'));
     ctx.taskFiles = ['TASK-TEST.md'];
     writeFileSync(ctxPath, JSON.stringify(ctx));
 
     const result = runBashFunction(ckpPath, 'save_checkpoint || true');
-    const statePath = join(testEnv.tmpDir, '.claude/runtime/SESSION-STATE.md');
+    const statePath = join(testEnv.tmpDir, '.bkit/runtime/SESSION-STATE.md');
     expect(existsSync(statePath)).toBe(true);
   });
 
@@ -482,7 +482,7 @@ describe('OFR-20~22: TF-5 compaction — context-checkpoint.sh', () => {
     const ckpPath = prepareCheckpoint(testEnv);
     writeTeamContext(testEnv.tmpDir, 'CTO');
     runBashFunction(ckpPath, 'save_checkpoint || true');
-    const statePath = join(testEnv.tmpDir, '.claude/runtime/SESSION-STATE.md');
+    const statePath = join(testEnv.tmpDir, '.bkit/runtime/SESSION-STATE.md');
     if (existsSync(statePath)) {
       const content = readFileSync(statePath, 'utf-8');
       expect(content).toContain('Team:');
@@ -496,7 +496,7 @@ describe('OFR-20~22: TF-5 compaction — context-checkpoint.sh', () => {
     const ckpPath = prepareCheckpoint(testEnv);
     writeTeamContext(testEnv.tmpDir, 'CTO');
     runBashFunction(ckpPath, 'save_checkpoint || true');
-    const statePath = join(testEnv.tmpDir, '.claude/runtime/SESSION-STATE.md');
+    const statePath = join(testEnv.tmpDir, '.bkit/runtime/SESSION-STATE.md');
     if (existsSync(statePath)) {
       const content = readFileSync(statePath, 'utf-8');
       expect(content).toContain('Timestamp:');
@@ -659,7 +659,7 @@ describe.skip('OFR-30~32: CF-3 PM→COO 미도착 — V2에서 pm-chain-forward.
     writeTeamContext(testEnv.tmpDir, 'PM');
     writeCompletionReport(testEnv.tmpDir);
     writeFileSync(
-      join(testEnv.tmpDir, '.claude/runtime/pm-verdict.json'),
+      join(testEnv.tmpDir, '.bkit/runtime/pm-verdict.json'),
       JSON.stringify({ verdict: 'pass', notes: 'test', issues: [] })
     );
     const result = runHook(hookPath, { IS_TEAMMATE: 'false' });
@@ -674,7 +674,7 @@ describe.skip('OFR-30~32: CF-3 PM→COO 미도착 — V2에서 pm-chain-forward.
     writeTeamContext(testEnv.tmpDir, 'PM');
     writeCompletionReport(testEnv.tmpDir);
     writeFileSync(
-      join(testEnv.tmpDir, '.claude/runtime/pm-verdict.json'),
+      join(testEnv.tmpDir, '.bkit/runtime/pm-verdict.json'),
       JSON.stringify({ verdict: 'pass', notes: 'test', issues: [] })
     );
     const result = runHook(hookPath, { IS_TEAMMATE: 'false' });
@@ -689,7 +689,7 @@ describe.skip('OFR-30~32: CF-3 PM→COO 미도착 — V2에서 pm-chain-forward.
     writeTeamContext(testEnv.tmpDir, 'PM');
     writeCompletionReport(testEnv.tmpDir);
     writeFileSync(
-      join(testEnv.tmpDir, '.claude/runtime/pm-verdict.json'),
+      join(testEnv.tmpDir, '.bkit/runtime/pm-verdict.json'),
       JSON.stringify({ verdict: 'pass', notes: 'test', issues: [] })
     );
     const result = runHook(hookPath, { IS_TEAMMATE: 'false' });

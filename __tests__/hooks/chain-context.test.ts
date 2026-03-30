@@ -34,7 +34,7 @@ function writeSessionTeamContext(
   team: string,
   opts?: { taskFiles?: string[]; teammates?: string[] }
 ): string {
-  const dir = join(tmpDir, '.claude', 'runtime');
+  const dir = join(tmpDir, '.bkit', 'runtime');
   mkdirSync(dir, { recursive: true });
   const filePath = join(dir, `team-context-${sessionName}.json`);
   writeFileSync(filePath, JSON.stringify({

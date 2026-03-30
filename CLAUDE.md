@@ -9,7 +9,7 @@
 3. docs/adr/ADR-001-account-ownership.md — 설계 원칙
 4. docs/postmortem/index.json — 과거 사고 교훈 (같은 실수 반복 방지)
 5. .claude/tasks/ 폴더 — 현재 TASK 확인
-6. [V2] set_summary 호출 — 역할 식별자 등록:
+6. [V3] set_summary 호출 (권장, 미호출 시 hook이 자동 등록):
    CTO: "CTO_LEADER | bscamp | {TASK명}"
    PM:  "PM_LEADER | bscamp | {TASK명}"
    COO: "MOZZI | bscamp | reporting"
@@ -53,6 +53,15 @@
 - broker 미기동 시 → peer-roles.json fallback → 수동 보고 (exit 0)
 
 > 상세: `CLAUDE-DETAIL.md` → "PDCA 체인 핸드오프 상세 프로토콜"
+
+## 런타임 경로 (V3)
+
+V3부터 hook 런타임 파일은 `.bkit/runtime/`에 저장한다. `.claude/` 경로의 승인 프롬프트 문제 해결.
+- `peer-map.json` — PID 역추적 자동 등록 결과 (peer 식별 핵심)
+- `team-context-*.json` — 팀별 컨텍스트
+- `state.json` — 대시보드 상태 (broker + peer-map 병합)
+- `hook-logs/` — hook 실행 로그
+- `.claude/hooks/` 스크립트 위치는 변경 없음 (읽기 전용)
 
 ## 세션 시작 복구 프로토콜
 세션 시작 시 반드시 실행:

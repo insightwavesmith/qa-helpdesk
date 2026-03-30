@@ -22,11 +22,11 @@
       "TaskList(*)",
       "TaskStop(*)",
       "TaskOutput(*)",
-      "SendMessage(*)"
+      "SendMessage(*)",
+      "mcp__claude-peers__check_messages"
     ],
     "deny": []
   },
-  "permissionMode": "bypassPermissions",
   "model": "claude-opus-4-6",
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
@@ -160,6 +160,11 @@
           },
           {
             "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/deploy-verify.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.claude/hooks/pdca-chain-handoff.sh",
             "timeout": 15000
           }
@@ -180,5 +185,6 @@
     ]
   },
   "alwaysThinkingEnabled": true,
-  "effortLevel": "high"
+  "effortLevel": "high",
+  "permissionMode": "bypassPermissions"
 }

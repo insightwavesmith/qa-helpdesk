@@ -39,7 +39,7 @@ function prepareTeammateIdle(
 
   // team-context 파일
   if (opts?.teamContext) {
-    const runtimeDir = join(env.tmpDir, '.claude', 'runtime');
+    const runtimeDir = join(env.tmpDir, '.bkit', 'runtime');
     mkdirSync(runtimeDir, { recursive: true });
     writeFileSync(join(runtimeDir, 'team-context.json'), JSON.stringify({
       team: opts.teamContext.team,
@@ -120,7 +120,7 @@ describe('P5-1~6: heartbeat 검증', () => {
     const r = runHook(hookPath);
 
     // heartbeat.log 확인
-    const logPath = join(testEnv.tmpDir, '.claude', 'runtime', 'heartbeat.log');
+    const logPath = join(testEnv.tmpDir, '.bkit', 'runtime', 'heartbeat.log');
     expect(existsSync(logPath)).toBe(true);
     const log = readFileSync(logPath, 'utf-8');
     expect(log).toContain('heartbeat fired');
@@ -135,7 +135,7 @@ describe('P5-1~6: heartbeat 검증', () => {
     });
     const r = runHook(hookPath);
 
-    const logPath = join(testEnv.tmpDir, '.claude', 'runtime', 'heartbeat.log');
+    const logPath = join(testEnv.tmpDir, '.bkit', 'runtime', 'heartbeat.log');
     expect(existsSync(logPath)).toBe(true);
     const log = readFileSync(logPath, 'utf-8');
     expect(log).toContain('ZOMBIE 2건');
@@ -146,7 +146,7 @@ describe('P5-1~6: heartbeat 검증', () => {
     const watchdogPath = prepareWatchdog(testEnv);
 
     // 최근 heartbeat 기록 (로컬 시간)
-    const runtimeDir = join(testEnv.tmpDir, '.claude', 'runtime');
+    const runtimeDir = join(testEnv.tmpDir, '.bkit', 'runtime');
     mkdirSync(runtimeDir, { recursive: true });
     const now = new Date();
     const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
@@ -162,7 +162,7 @@ describe('P5-1~6: heartbeat 검증', () => {
     const watchdogPath = prepareWatchdog(testEnv);
 
     // 20분 전 기록
-    const runtimeDir = join(testEnv.tmpDir, '.claude', 'runtime');
+    const runtimeDir = join(testEnv.tmpDir, '.bkit', 'runtime');
     mkdirSync(runtimeDir, { recursive: true });
     const past = new Date(Date.now() - 20 * 60 * 1000);
     const ts = `${past.getFullYear()}-${String(past.getMonth() + 1).padStart(2, '0')}-${String(past.getDate()).padStart(2, '0')} ${String(past.getHours()).padStart(2, '0')}:${String(past.getMinutes()).padStart(2, '0')}:${String(past.getSeconds()).padStart(2, '0')}`;
@@ -191,7 +191,7 @@ describe('P5-1~6: heartbeat 검증', () => {
     });
     const r = runHook(hookPath);
 
-    const logPath = join(testEnv.tmpDir, '.claude', 'runtime', 'heartbeat.log');
+    const logPath = join(testEnv.tmpDir, '.bkit', 'runtime', 'heartbeat.log');
     expect(existsSync(logPath)).toBe(true);
     const log = readFileSync(logPath, 'utf-8');
     expect(log).toContain('team=CTO');

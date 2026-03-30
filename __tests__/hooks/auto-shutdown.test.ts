@@ -239,7 +239,7 @@ describe('auto-shutdown.sh (설계서 6-2)', () => {
       expect(result.stdout.trim()).toContain('created');
 
       // registry 파일이 실제로 디스크에 존재
-      const registryPath = join(env.tmpDir, '.claude', 'runtime', 'teammate-registry.json');
+      const registryPath = join(env.tmpDir, '.bkit', 'runtime', 'teammate-registry.json');
       expect(existsSync(registryPath)).toBe(true);
     });
   });

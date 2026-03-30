@@ -35,8 +35,8 @@ RECENT_FILES=$(git -C "$PROJECT_DIR" diff --name-only HEAD~3..HEAD 2>/dev/null |
 
 # 자동 수집: 최근 에러 (hook 로그)
 RECENT_ERRORS=""
-if [ -f "$PROJECT_DIR/.claude/runtime/hook-errors.log" ]; then
-    RECENT_ERRORS=$(tail -5 "$PROJECT_DIR/.claude/runtime/hook-errors.log" 2>/dev/null)
+if [ -f "$PROJECT_DIR/.bkit/runtime/hook-errors.log" ]; then
+    RECENT_ERRORS=$(tail -5 "$PROJECT_DIR/.bkit/runtime/hook-errors.log" 2>/dev/null)
 fi
 
 # 템플릿 생성

@@ -1,13 +1,15 @@
 #!/bin/bash
-# peer-resolver.sh — 역할명으로 broker peer ID 찾기
+# peer-resolver.sh V3 — 역할명으로 broker peer ID 찾기
 # source해서 사용: resolve_peer "PM_LEADER" → RESOLVED_PEER_ID 설정
 #
-# 3단계 전략:
-#   1. peer-map.json (명시적 등록)
-#   2. tmux 세션명 → PID 트리 → broker peer 매칭
-#   3. broker summary 텍스트 매칭 (레거시)
+# V3 4단계 전략:
+#   1. peer-map.json (자동 등록 결과)          ← 가장 빠르고 확실
+#   2. PID 역추적 → broker peer 매칭           ← resolve_self에서만
+#   3. tmux 세션명 → PID 트리 → broker peer    ← TMUX 환경변수 불필요
+#   4. broker summary 텍스트 매칭              ← 레거시 fallback
 
 _PR_PROJECT_DIR="${PROJECT_DIR:-/Users/smith/projects/bscamp}"
+_PR_RUNTIME_DIR="$_PR_PROJECT_DIR/.bkit/runtime"
 _PR_BROKER_URL="${BROKER_URL:-http://localhost:7899}"
 
 _role_to_session_pattern() {
@@ -35,22 +37,30 @@ resolve_peer() {
     local ROLE="$1"
     RESOLVED_PEER_ID=""
 
-    # Strategy 1: peer-map.json
-    local MAP_FILE="$_PR_PROJECT_DIR/.claude/runtime/peer-map.json"
+    # Strategy 1: peer-map.json (자동 등록 결과)
+    local MAP_FILE="$_PR_RUNTIME_DIR/peer-map.json"
     if [ -f "$MAP_FILE" ]; then
         local MAPPED_ID=$(jq -r ".\"$ROLE\".peerId // empty" "$MAP_FILE" 2>/dev/null)
         if [ -n "$MAPPED_ID" ]; then
+            # broker에 아직 살아있는지 확인
             local PEERS=$(_fetch_peers)
             if echo "$PEERS" | jq -e ".[] | select(.id == \"$MAPPED_ID\")" >/dev/null 2>&1; then
                 RESOLVED_PEER_ID="$MAPPED_ID"
                 return 0
             fi
+            # 등록은 있는데 broker에 없음 → stale entry 삭제
+            jq "del(.\"$ROLE\")" "$MAP_FILE" > "${MAP_FILE}.tmp" && \
+            mv "${MAP_FILE}.tmp" "$MAP_FILE" 2>/dev/null
         fi
     fi
 
-    # Strategy 2: tmux 세션명 → PID 트리 → broker peer
+    # Strategy 2: PID 역추적 — target의 PID를 알 수 없으므로 self에만 적용
+    # target은 Strategy 3, 4로 fallback
+
+    # Strategy 3: tmux 세션명 → PID 트리 → broker peer
     local PATTERN=$(_role_to_session_pattern "$ROLE")
-    if [ -n "$PATTERN" ] && command -v tmux >/dev/null 2>&1 && [ -n "${TMUX:-}" ]; then
+    if [ -n "$PATTERN" ] && command -v tmux >/dev/null 2>&1; then
+        # TMUX 환경변수 체크 제거 — tmux server가 있으면 시도
         local PEERS=$(_fetch_peers)
         local PANE_PIDS=$(tmux list-panes -a -F '#{session_name} #{pane_pid}' 2>/dev/null | \
             grep "^${PATTERN}" | awk '{print $2}')
@@ -67,7 +77,7 @@ resolve_peer() {
         done
     fi
 
-    # Strategy 3: summary 텍스트 매칭 (레거시)
+    # Strategy 4: summary 텍스트 매칭 (레거시)
     local PEERS=$(_fetch_peers)
     RESOLVED_PEER_ID=$(echo "$PEERS" | jq -r "[.[] | select(.summary | test(\"$ROLE\"))][0].id // empty" 2>/dev/null)
     [ -n "$RESOLVED_PEER_ID" ] && return 0
@@ -77,26 +87,14 @@ resolve_peer() {
 
 resolve_self() {
     RESOLVED_SELF_ID=""
-    local PEERS=$(_fetch_peers)
 
     # Strategy 1: peer-map.json
-    local MAP_FILE="$_PR_PROJECT_DIR/.claude/runtime/peer-map.json"
-    # team-context resolver (팀별 파일 분리)
-    local _PR_RESOLVER="$_PR_PROJECT_DIR/.claude/hooks/helpers/team-context-resolver.sh"
-    if [ -f "$_PR_RESOLVER" ]; then
-        local _OLD_PD="${PROJECT_DIR:-}"
-        PROJECT_DIR="$_PR_PROJECT_DIR"
-        source "$_PR_RESOLVER"
-        resolve_team_context 2>/dev/null
-        PROJECT_DIR="${_OLD_PD:-}"
-    fi
-    local CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$_PR_PROJECT_DIR/.claude/runtime/team-context.json}"
-    if [ -f "$MAP_FILE" ] && [ -f "$CONTEXT_FILE" ]; then
-        local MY_TEAM=$(jq -r '.team // empty' "$CONTEXT_FILE" 2>/dev/null)
-        if [ -n "$MY_TEAM" ]; then
-            # CTO-2 → CTO 접두사로 매핑
-            local BASE_TEAM=$(echo "$MY_TEAM" | sed 's/-[0-9]*//')
-            local MAPPED_ID=$(jq -r ".\"${BASE_TEAM}_LEADER\".peerId // empty" "$MAP_FILE" 2>/dev/null)
+    local ROLE
+    ROLE=$(get_my_role 2>/dev/null)
+    if [ -n "$ROLE" ]; then
+        local MAP_FILE="$_PR_RUNTIME_DIR/peer-map.json"
+        if [ -f "$MAP_FILE" ]; then
+            local MAPPED_ID=$(jq -r ".\"$ROLE\".peerId // empty" "$MAP_FILE" 2>/dev/null)
             if [ -n "$MAPPED_ID" ]; then
                 RESOLVED_SELF_ID="$MAPPED_ID"
                 return 0
@@ -104,8 +102,13 @@ resolve_self() {
         fi
     fi
 
-    # Strategy 2: 현재 tmux 세션 PID 트리
-    if command -v tmux >/dev/null 2>&1 && [ -n "${TMUX:-}" ]; then
+    # Strategy 2: PID 역추적 (핵심 개선)
+    RESOLVED_SELF_ID=$(find_my_peer_id 2>/dev/null)
+    [ -n "$RESOLVED_SELF_ID" ] && return 0
+
+    # Strategy 3: 현재 tmux 세션 PID 트리
+    if command -v tmux >/dev/null 2>&1; then
+        local PEERS=$(_fetch_peers)
         local MY_PANE_PID=$(tmux display-message -p '#{pane_pid}' 2>/dev/null)
         if [ -n "$MY_PANE_PID" ]; then
             for CPID in $(pgrep -P "$MY_PANE_PID" 2>/dev/null); do
@@ -119,7 +122,8 @@ resolve_self() {
         fi
     fi
 
-    # Strategy 3: CTO summary 매칭
+    # Strategy 4: CTO summary 매칭 (레거시)
+    local PEERS=$(_fetch_peers)
     RESOLVED_SELF_ID=$(echo "$PEERS" | jq -r "[.[] | select(.summary | test(\"CTO\"))][0].id // empty" 2>/dev/null)
     [ -n "$RESOLVED_SELF_ID" ] && return 0
 

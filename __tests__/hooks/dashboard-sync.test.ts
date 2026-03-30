@@ -2,7 +2,7 @@
 // P4-1~P4-5: dashboard-sync.sh GCS 업로드 TDD
 
 import { describe, it, expect, afterEach } from 'vitest';
-import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'fs';
+import { writeFileSync, readFileSync, mkdirSync, existsSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { execSync } from 'child_process';
 import { createTestEnv, cleanupTestEnv, runHook } from './helpers';
@@ -47,7 +47,7 @@ describe('P4-1~5: dashboard-sync GCS 업로드', () => {
     const { scriptPath, gcloudLog } = prepareDashboardSync(testEnv);
 
     // state.json 생성
-    const runtimeDir = join(testEnv.tmpDir, '.claude', 'runtime');
+    const runtimeDir = join(testEnv.tmpDir, '.bkit', 'runtime');
     mkdirSync(runtimeDir, { recursive: true });
     writeFileSync(join(runtimeDir, 'state.json'), JSON.stringify({ status: 'test' }));
 
@@ -70,20 +70,20 @@ describe('P4-1~5: dashboard-sync GCS 업로드', () => {
     testEnv = createTestEnv();
     const { scriptPath, gcloudLog } = prepareDashboardSync(testEnv);
 
-    // state.json + hash 생성 (동일 hash)
-    const runtimeDir = join(testEnv.tmpDir, '.claude', 'runtime');
+    const runtimeDir = join(testEnv.tmpDir, '.bkit', 'runtime');
     mkdirSync(runtimeDir, { recursive: true });
-    const stateContent = JSON.stringify({ status: 'test' });
-    writeFileSync(join(runtimeDir, 'state.json'), stateContent);
 
-    // md5 hash 계산 후 hash 파일에 기록
-    const hash = execSync(`md5 -q "${join(runtimeDir, 'state.json')}" 2>/dev/null || md5sum "${join(runtimeDir, 'state.json')}" | awk '{print $1}'`, {
-      encoding: 'utf-8',
-    }).trim();
-    writeFileSync(join(runtimeDir, '.state-hash'), hash);
+    // 1회 실행 → hash 생성 + 업로드
+    const r1 = runHook(scriptPath);
+    expect(r1.exitCode).toBe(0);
+    expect(existsSync(gcloudLog)).toBe(true);
 
-    const r = runHook(scriptPath);
-    expect(r.exitCode).toBe(0);
+    // gcloud log 삭제 (2회차 미호출 확인용)
+    unlinkSync(gcloudLog);
+
+    // 2회 실행 → 동일 데이터 → 스킵
+    const r2 = runHook(scriptPath);
+    expect(r2.exitCode).toBe(0);
 
     // gcloud 미호출 확인
     expect(existsSync(gcloudLog)).toBe(false);
@@ -103,7 +103,7 @@ describe('P4-1~5: dashboard-sync GCS 업로드', () => {
     const { scriptPath } = prepareDashboardSync(testEnv, { gcloudFail: true });
 
     // state.json 생성
-    const runtimeDir = join(testEnv.tmpDir, '.claude', 'runtime');
+    const runtimeDir = join(testEnv.tmpDir, '.bkit', 'runtime');
     mkdirSync(runtimeDir, { recursive: true });
     writeFileSync(join(runtimeDir, 'state.json'), JSON.stringify({ status: 'test' }));
 

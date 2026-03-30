@@ -15,7 +15,7 @@ interface HookResult {
 export function createTestEnv() {
   const tmpDir = mkdtempSync(join(tmpdir(), 'hook-test-'));
   const tasksDir = join(tmpDir, '.claude', 'tasks');
-  const runtimeDir = join(tmpDir, '.claude', 'runtime');
+  const runtimeDir = join(tmpDir, '.bkit', 'runtime');
   const hooksDir = join(tmpDir, '.claude', 'hooks');
   mkdirSync(tasksDir, { recursive: true });
   mkdirSync(runtimeDir, { recursive: true });
@@ -82,10 +82,10 @@ export function loadFixtureText(name: string): string {
 }
 
 /**
- * tmpDir/.claude/runtime/teammate-registry.json에 레지스트리를 생성한다.
+ * tmpDir/.bkit/runtime/teammate-registry.json에 레지스트리를 생성한다.
  */
 export function createTempRegistry(tmpDir: string, data: Record<string, unknown>): string {
-  const registryPath = join(tmpDir, '.claude', 'runtime', 'teammate-registry.json');
+  const registryPath = join(tmpDir, '.bkit', 'runtime', 'teammate-registry.json');
   mkdirSync(dirname(registryPath), { recursive: true });
   writeFileSync(registryPath, JSON.stringify(data, null, 2));
   return registryPath;
@@ -146,7 +146,7 @@ export function writeAnalysisFile(tmpDir: string, rate: number): void {
 
 /** team-context.json 생성 */
 export function writeTeamContext(tmpDir: string, team: string): void {
-  const dir = join(tmpDir, '.claude', 'runtime');
+  const dir = join(tmpDir, '.bkit', 'runtime');
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'team-context.json'), JSON.stringify({
     team, session: 'test', created: new Date().toISOString(),
@@ -172,7 +172,7 @@ export function writeTaskFile(tmpDir: string, name: string, status: string): voi
 
 /** registry 생성 */
 export function writeRegistry(tmpDir: string, data: Record<string, unknown>): void {
-  const dir = join(tmpDir, '.claude', 'runtime');
+  const dir = join(tmpDir, '.bkit', 'runtime');
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'teammate-registry.json'), JSON.stringify({
     ...data, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
@@ -318,14 +318,14 @@ export function prepareTaskQualityGate(
 
 /** peer-map.json 생성 */
 export function writePeerMap(tmpDir: string, map: Record<string, { peerId: string }>): void {
-  const dir = join(tmpDir, '.claude', 'runtime');
+  const dir = join(tmpDir, '.bkit', 'runtime');
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'peer-map.json'), JSON.stringify(map, null, 2));
 }
 
 /** PM verdict 파일 생성 */
 export function writePmVerdict(tmpDir: string, verdict: string, notes?: string, issues?: string[]): void {
-  const dir = join(tmpDir, '.claude', 'runtime');
+  const dir = join(tmpDir, '.bkit', 'runtime');
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'pm-verdict.json'), JSON.stringify({
     verdict,
@@ -337,7 +337,7 @@ export function writePmVerdict(tmpDir: string, verdict: string, notes?: string, 
 
 /** last-completion-report.json 생성 (PM이 CTO로부터 받은 보고서) */
 export function writeCompletionReport(tmpDir: string, data?: Record<string, unknown>): void {
-  const dir = join(tmpDir, '.claude', 'runtime');
+  const dir = join(tmpDir, '.bkit', 'runtime');
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'last-completion-report.json'), JSON.stringify({
     protocol: 'bscamp-team/v1',
@@ -359,7 +359,7 @@ export function writeCompletionReport(tmpDir: string, data?: Record<string, unkn
 
 /** last-pm-report.json 생성 (COO가 PM으로부터 받은 보고서) */
 export function writePmReport(tmpDir: string, data?: Record<string, unknown>): void {
-  const dir = join(tmpDir, '.claude', 'runtime');
+  const dir = join(tmpDir, '.bkit', 'runtime');
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'last-pm-report.json'), JSON.stringify({
     protocol: 'bscamp-team/v1',
@@ -383,7 +383,7 @@ export function writePmReport(tmpDir: string, data?: Record<string, unknown>): v
 
 /** COO feedback 파일 생성 */
 export function writeCooFeedback(tmpDir: string, verdict: string, notes?: string, issues?: string[]): void {
-  const dir = join(tmpDir, '.claude', 'runtime');
+  const dir = join(tmpDir, '.bkit', 'runtime');
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'coo-feedback.json'), JSON.stringify({
     verdict,

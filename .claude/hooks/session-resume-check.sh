@@ -6,13 +6,13 @@ set -uo pipefail
 PROJECT_DIR="/Users/smith/projects/bscamp"
 
 PDCA_FILE="$PROJECT_DIR/.bkit/state/pdca-status.json"
-REGISTRY="$PROJECT_DIR/.claude/runtime/teammate-registry.json"
+REGISTRY="$PROJECT_DIR/.bkit/runtime/teammate-registry.json"
 BOARD="$PROJECT_DIR/.claude/tasks/BOARD.json"
 
 FOUND_ISSUES=0
 
 # ── 0. 아카이브 자동 정리 (1시간+ 된 team-context 아카이브 삭제) ──
-RUNTIME_DIR="$PROJECT_DIR/.claude/runtime"
+RUNTIME_DIR="$PROJECT_DIR/.bkit/runtime"
 find "$RUNTIME_DIR" -name 'team-context-*.archived.json' -mmin +60 -delete 2>/dev/null
 
 # ── 1. 미완료 피처 감지 ──

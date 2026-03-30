@@ -224,7 +224,7 @@ describe('teammate-registry.json — 팀원 관리 (설계서 영역 3)', () => 
   // TR-14: registry 손상 → config에서 재생성
   it('TR-14: registry JSON 손상 → build_registry_from_config 자동 실행', () => {
     // 깨진 JSON을 registry에 쓰기
-    const registryPath = join(env.tmpDir, '.claude', 'runtime', 'teammate-registry.json');
+    const registryPath = join(env.tmpDir, '.bkit', 'runtime', 'teammate-registry.json');
     writeFileSync(registryPath, '{ this is broken json !!!');
 
     const configFixture = loadFixture<Record<string, unknown>>('team_config_sample.json');

@@ -112,7 +112,7 @@ describe('frontmatter-parser.sh — TASK 소유권 파싱', () => {
   // FP-10: team-context.json 정상 로드
   it('FP-10: team-context.json 존재 → TEAM_NAME, TASK_FILES 변수 설정', () => {
     // frontmatter-parser.sh를 source해서 load_team_context 함수 실행
-    const runtimeDir = join(tmpDir, '.claude', 'runtime');
+    const runtimeDir = join(tmpDir, '.bkit', 'runtime');
     mkdirSync(runtimeDir, { recursive: true });
     const ctxData = JSON.parse(readFileSync(join(FIXTURES_DIR, 'team_context_cto.json'), 'utf-8'));
     writeFileSync(join(runtimeDir, 'team-context.json'), JSON.stringify(ctxData));

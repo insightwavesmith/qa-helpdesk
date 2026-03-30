@@ -38,7 +38,7 @@ osascript -e "display notification \"${LAST_COMMIT}\" with title \"에이전트�
 BOARD_FILE="$PROJECT_DIR/.claude/tasks/BOARD.json"
 source "$(dirname "$0")/helpers/team-context-resolver.sh" 2>/dev/null
 resolve_team_context 2>/dev/null
-CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$PROJECT_DIR/.claude/runtime/team-context.json}"
+CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$PROJECT_DIR/.bkit/runtime/team-context.json}"
 
 # 프론트매터 제외 체크박스 집계 함수
 count_checkboxes() {

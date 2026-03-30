@@ -100,7 +100,7 @@ while IFS= read -r MEMBER_NAME; do
     fi
 
     # Step 2.5: 레지스트리 갱신
-    REGISTRY="$PROJECT_DIR/.claude/runtime/teammate-registry.json"
+    REGISTRY="$PROJECT_DIR/.bkit/runtime/teammate-registry.json"
     if [ -f "$REGISTRY" ]; then
         NOW=$(date -u +"%Y-%m-%dT%H:%M:%S")
         jq --arg m "$MEMBER_NAME" --arg t "$NOW" \

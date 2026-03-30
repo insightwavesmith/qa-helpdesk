@@ -117,7 +117,7 @@ describe('V2 실전 조건 테스트', () => {
       });
     } catch { /* exit code 상관없음 */ }
 
-    const registryPath = join(testEnv.tmpDir, '.claude', 'runtime', 'teammate-registry.json');
+    const registryPath = join(testEnv.tmpDir, '.bkit', 'runtime', 'teammate-registry.json');
     expect(existsSync(registryPath)).toBe(true);
 
     const registry = JSON.parse(readFileSync(registryPath, 'utf-8'));
@@ -128,7 +128,7 @@ describe('V2 실전 조건 테스트', () => {
   });
 
   it('R5: pending 파일 디렉토리 구조 존재 확인', () => {
-    // approval-gate가 pending 파일을 생성하는 경로가 .claude/runtime/approvals/pending
+    // approval-gate가 pending 파일을 생성하는 경로가 .bkit/runtime/approvals/pending
     // notify-completion이 이 경로를 확인 — 경로 패턴 검증
     const notifyPath = join(process.cwd(), '.claude/hooks/notify-completion.sh');
     if (existsSync(notifyPath)) {

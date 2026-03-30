@@ -18,10 +18,14 @@ source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
 PROJECT_DIR="/Users/smith/projects/bscamp"
 cd "$PROJECT_DIR" || exit 0
 
+# ── 1.5 PID 역추적 자동 등록 ──
+source "$(dirname "$0")/helpers/hook-self-register.sh" 2>/dev/null
+auto_register_peer 2>/dev/null
+
 # D2: jq 존재 확인
 command -v jq >/dev/null 2>&1 || { echo "jq not found, skipping chain hook"; exit 0; }
 # D5: runtime 디렉토리 보장
-mkdir -p "$PROJECT_DIR/.claude/runtime" 2>/dev/null
+mkdir -p "$PROJECT_DIR/.bkit/runtime" 2>/dev/null
 
 # Hook 출력 최소화 (D8-1)
 source "$(dirname "$0")/helpers/hook-output.sh" 2>/dev/null && hook_init
@@ -29,7 +33,7 @@ source "$(dirname "$0")/helpers/hook-output.sh" 2>/dev/null && hook_init
 # ── 2. 팀 컨텍스트 확인 (전팀 대상) ──
 source "$(dirname "$0")/helpers/team-context-resolver.sh" 2>/dev/null
 resolve_team_context 2>/dev/null
-CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$PROJECT_DIR/.claude/runtime/team-context.json}"
+CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$PROJECT_DIR/.bkit/runtime/team-context.json}"
 if [ ! -f "$CONTEXT_FILE" ]; then
     exit 0  # 팀 컨텍스트 없음 → 비대상
 fi
@@ -260,7 +264,7 @@ fi
 
 if [ -z "$TARGET_ID" ]; then
     # v4: peer-roles.json fallback
-    PEER_ROLES="$PROJECT_DIR/.claude/runtime/peer-roles.json"
+    PEER_ROLES="$PROJECT_DIR/.bkit/runtime/peer-roles.json"
     if [ -f "$PEER_ROLES" ]; then
         FALLBACK_SESSION=$(jq -r ".${TO_ROLE}.session // empty" "$PEER_ROLES" 2>/dev/null)
         if [ -n "$FALLBACK_SESSION" ]; then
@@ -309,7 +313,7 @@ if [ "$SEND_OK" = "true" ]; then
     [ "$MANUAL_REVIEW" = "true" ] && echo "  ⚠ 수동 검수 필수 (고위험/L3)"
     [ -n "$AUTO_APPROVE" ] && echo "  ⏱ 30분 타임아웃 자동 승인"
     # 보고서 저장 (PM이 검수용으로 사용)
-    echo "$PAYLOAD" | jq '.' > "$PROJECT_DIR/.claude/runtime/last-completion-report.json" 2>/dev/null
+    echo "$PAYLOAD" | jq '.' > "$PROJECT_DIR/.bkit/runtime/last-completion-report.json" 2>/dev/null
 else
     echo "⚠ 메시지 전송 실패. 수동 핸드오프 필요."
     [ "$MANUAL_REVIEW" = "true" ] && echo "  ⚠ 수동 검수 필수 (고위험/L3)"

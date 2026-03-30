@@ -15,7 +15,7 @@
 # 5. 아카이브 파일 존재 → 아카이브 (TeamDelete 후 체인 참조)
 resolve_team_context() {
     local _RTC_PROJECT_DIR="${PROJECT_DIR:-/Users/smith/projects/bscamp}"
-    local _RTC_RUNTIME_DIR="$_RTC_PROJECT_DIR/.claude/runtime"
+    local _RTC_RUNTIME_DIR="$_RTC_PROJECT_DIR/.bkit/runtime"
 
     # 1. 환경변수 override (테스트 환경)
     if [ -n "${TEAM_CONTEXT_FILE:-}" ] && [ -f "$TEAM_CONTEXT_FILE" ]; then
@@ -57,6 +57,6 @@ resolve_team_context() {
 
 # list_all_team_contexts() — 모든 활성 team-context 파일 목록
 list_all_team_contexts() {
-    local _RTC_RUNTIME_DIR="${PROJECT_DIR:-/Users/smith/projects/bscamp}/.claude/runtime"
+    local _RTC_RUNTIME_DIR="${PROJECT_DIR:-/Users/smith/projects/bscamp}/.bkit/runtime"
     ls "$_RTC_RUNTIME_DIR"/team-context-*.json 2>/dev/null | grep -v '.archived.'
 }

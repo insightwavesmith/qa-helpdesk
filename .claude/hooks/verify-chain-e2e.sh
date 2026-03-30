@@ -3,7 +3,7 @@
 # 사용: bash verify-chain-e2e.sh [e2e-1|e2e-2|e2e-3]
 
 PROJECT_DIR="/Users/smith/projects/bscamp"
-RUNTIME="$PROJECT_DIR/.claude/runtime"
+RUNTIME="$PROJECT_DIR/.bkit/runtime"
 PASS=0; FAIL=0
 
 check() {

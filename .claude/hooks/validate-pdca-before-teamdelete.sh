@@ -19,7 +19,7 @@ PROJECT_DIR="/Users/smith/projects/bscamp"
 # D2: jq 존재 확인
 command -v jq >/dev/null 2>&1 || { echo "jq not found, skipping pdca gate"; exit 0; }
 # D5: runtime 디렉토리 보장
-mkdir -p "$PROJECT_DIR/.claude/runtime" 2>/dev/null
+mkdir -p "$PROJECT_DIR/.bkit/runtime" 2>/dev/null
 PDCA_FILE="$PROJECT_DIR/docs/.pdca-status.json"
 
 # PDCA 파일 없으면 → 경고만 (최초 상태일 수 있음)
@@ -48,7 +48,7 @@ echo "[PDCA 게이트] docs/.pdca-status.json ${PDCA_AGE}초 전 갱신 확인. 
 # --- team-context 아카이빙 (v1.2: rm → mv 아카이빙 — 체인 핸드오프용) ---
 source "$(dirname "$0")/helpers/team-context-resolver.sh" 2>/dev/null
 resolve_team_context 2>/dev/null
-CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$PROJECT_DIR/.claude/runtime/team-context.json}"
+CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$PROJECT_DIR/.bkit/runtime/team-context.json}"
 if [ -f "$CONTEXT_FILE" ]; then
     DELETED_TEAM=$(jq -r '.team // "unknown"' "$CONTEXT_FILE" 2>/dev/null)
     ARCHIVED="${CONTEXT_FILE%.json}.archived.json"

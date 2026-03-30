@@ -4,7 +4,7 @@
 # V2 (2026-03-30): P4 해결
 
 PROJECT_DIR="/Users/smith/projects/bscamp"
-REGISTRY="$PROJECT_DIR/.claude/runtime/teammate-registry.json"
+REGISTRY="$PROJECT_DIR/.bkit/runtime/teammate-registry.json"
 mkdir -p "$(dirname "$REGISTRY")" 2>/dev/null
 
 INPUT=$(cat)

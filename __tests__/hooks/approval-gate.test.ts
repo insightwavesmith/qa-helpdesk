@@ -86,7 +86,7 @@ function approvalKey(relFile: string): string {
 
 /** 승인 granted 파일 생성 */
 function grantApproval(tmpDir: string, relFile: string, tsOverride?: number): void {
-  const dir = join(tmpDir, '.claude', 'runtime', 'approvals', 'granted');
+  const dir = join(tmpDir, '.bkit', 'runtime', 'approvals', 'granted');
   mkdirSync(dir, { recursive: true });
   const ts = tsOverride ?? Math.floor(Date.now() / 1000);
   writeFileSync(join(dir, approvalKey(relFile)), String(ts));
@@ -109,7 +109,7 @@ describe('APR-1~9: validate-delegate 승인 게이트', () => {
     expect(r.stderr).toContain('BLOCKED');
 
     // pending 요청 파일 생성 확인
-    const pendingDir = join(testEnv.tmpDir, '.claude', 'runtime', 'approvals', 'pending');
+    const pendingDir = join(testEnv.tmpDir, '.bkit', 'runtime', 'approvals', 'pending');
     const key = approvalKey(relFile);
     expect(existsSync(join(pendingDir, `${key}.json`))).toBe(true);
   });
@@ -124,7 +124,7 @@ describe('APR-1~9: validate-delegate 승인 게이트', () => {
     });
 
     expect(r.exitCode).toBe(2);
-    const pendingDir = join(testEnv.tmpDir, '.claude', 'runtime', 'approvals', 'pending');
+    const pendingDir = join(testEnv.tmpDir, '.bkit', 'runtime', 'approvals', 'pending');
     expect(existsSync(join(pendingDir, `${approvalKey(relFile)}.json`))).toBe(true);
   });
 
@@ -149,7 +149,7 @@ describe('APR-1~9: validate-delegate 승인 게이트', () => {
     const relFile = '.claude/hooks/test.sh';
 
     // 거부 파일 생성 (granted 파일에 "rejected" 기록)
-    const dir = join(testEnv.tmpDir, '.claude', 'runtime', 'approvals', 'granted');
+    const dir = join(testEnv.tmpDir, '.bkit', 'runtime', 'approvals', 'granted');
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, approvalKey(relFile)), 'rejected');
 
@@ -234,7 +234,7 @@ describe('APR-1~9: validate-delegate 승인 게이트', () => {
     });
 
     expect(r.exitCode).toBe(2);
-    const pendingDir = join(testEnv.tmpDir, '.claude', 'runtime', 'approvals', 'pending');
+    const pendingDir = join(testEnv.tmpDir, '.bkit', 'runtime', 'approvals', 'pending');
     expect(existsSync(join(pendingDir, `${approvalKey(relFile)}.json`))).toBe(true);
   });
 });
@@ -309,7 +309,7 @@ describe('P1-1~6: 승인 자동 감지 notify_leader_approval', () => {
 
     // pending 파일 확인
     const key = approvalKey('.claude/hooks/test.sh');
-    const pendingPath = join(testEnv.tmpDir, '.claude', 'runtime', 'approvals', 'pending', `${key}.json`);
+    const pendingPath = join(testEnv.tmpDir, '.bkit', 'runtime', 'approvals', 'pending', `${key}.json`);
     expect(existsSync(pendingPath)).toBe(true);
 
     // send-keys 호출 확인
@@ -329,7 +329,7 @@ describe('P1-1~6: 승인 자동 감지 notify_leader_approval', () => {
 
     // pending 파일 생성됨
     const key = approvalKey('.claude/hooks/test.sh');
-    const pendingPath = join(testEnv.tmpDir, '.claude', 'runtime', 'approvals', 'pending', `${key}.json`);
+    const pendingPath = join(testEnv.tmpDir, '.bkit', 'runtime', 'approvals', 'pending', `${key}.json`);
     expect(existsSync(pendingPath)).toBe(true);
 
     // send-keys 미호출 (TMUX 없으므로)
@@ -354,7 +354,7 @@ describe('P1-1~6: 승인 자동 감지 notify_leader_approval', () => {
     const relFile = '.claude/hooks/test.sh';
 
     // 거부 파일 생성
-    const dir = join(testEnv.tmpDir, '.claude', 'runtime', 'approvals', 'granted');
+    const dir = join(testEnv.tmpDir, '.bkit', 'runtime', 'approvals', 'granted');
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, approvalKey(relFile)), 'rejected');
 
@@ -401,7 +401,7 @@ describe('P1-1~6: 승인 자동 감지 notify_leader_approval', () => {
     });
 
     // 각각 별도 pending
-    const pendingDir = join(testEnv.tmpDir, '.claude', 'runtime', 'approvals', 'pending');
+    const pendingDir = join(testEnv.tmpDir, '.bkit', 'runtime', 'approvals', 'pending');
     expect(existsSync(join(pendingDir, `${approvalKey(file1)}.json`))).toBe(true);
     expect(existsSync(join(pendingDir, `${approvalKey(file2)}.json`))).toBe(true);
 

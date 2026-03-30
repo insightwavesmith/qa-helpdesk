@@ -40,7 +40,7 @@ describe('pdca-chain-handoff.sh v4 — PM 우회', () => {
     expect(result.stdout).toContain('자동 전송 완료');
 
     // last-completion-report 확인
-    const reportPath = join(testEnv.tmpDir, '.claude', 'runtime', 'last-completion-report.json');
+    const reportPath = join(testEnv.tmpDir, '.bkit', 'runtime', 'last-completion-report.json');
     if (existsSync(reportPath)) {
       const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
       expect(report.to_role).toBe('MOZZI');

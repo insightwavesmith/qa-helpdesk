@@ -38,7 +38,7 @@ describe('pdca-chain-handoff.sh — PDCA 체인 자동화', () => {
   beforeEach(() => {
     tmpDir = mkdtempSync('/tmp/pdca-chain-test-')
     mkdirSync(join(tmpDir, 'docs/03-analysis'), { recursive: true })
-    mkdirSync(join(tmpDir, '.claude/runtime'), { recursive: true })
+    mkdirSync(join(tmpDir, '.bkit/runtime'), { recursive: true })
   })
 
   afterEach(() => {
@@ -133,7 +133,7 @@ describe('pdca-chain-handoff.sh — PDCA 체인 자동화', () => {
 
   it('PC-13: team="PM" → exit 0 (CTO만 대상)', () => {
     // Create a PM team context
-    const ctxDir = join(tmpDir, '.claude/runtime')
+    const ctxDir = join(tmpDir, '.bkit/runtime')
     writeFileSync(join(ctxDir, 'team-context.json'), JSON.stringify({ team: 'PM' }))
     // The hook checks PROJECT_DIR which is hardcoded, so we test the logic
     // by checking the design: PM team should not trigger chain
@@ -144,12 +144,12 @@ describe('pdca-chain-handoff.sh — PDCA 체인 자동화', () => {
   it('PC-14: team-context.json 없음 → exit 0', () => {
     // Without context file, hook should exit 0
     // Test the logic: if no context file exists, team is undefined
-    expect(existsSync(join(tmpDir, '.claude/runtime/team-context.json'))).toBe(false)
+    expect(existsSync(join(tmpDir, '.bkit/runtime/team-context.json'))).toBe(false)
   })
 
   it('PC-15: CTO + 97% → stdout에 ACTION_REQUIRED + payload', () => {
     // Create CTO context + 97% analysis
-    writeFileSync(join(tmpDir, '.claude/runtime/team-context.json'),
+    writeFileSync(join(tmpDir, '.bkit/runtime/team-context.json'),
       JSON.stringify({ team: 'CTO', taskFiles: ['TASK-OPS.md'] }))
     writeFileSync(join(tmpDir, 'docs/03-analysis/ops.analysis.md'), '## Match Rate: 97%\n')
 

@@ -92,7 +92,7 @@ detect_zombie_panes() {
 
             # 판단 3: registry에 terminated인데 pane 남아있음
             if [ "$IS_ZOMBIE" = "false" ]; then
-                local REGISTRY="$_ZPD_PROJECT_DIR/.claude/runtime/teammate-registry.json"
+                local REGISTRY="$_ZPD_PROJECT_DIR/.bkit/runtime/teammate-registry.json"
                 if [ -f "$REGISTRY" ]; then
                     local TERM_MEMBER
                     TERM_MEMBER=$(jq -r --arg pid "$PANE_ID" \
@@ -125,7 +125,7 @@ detect_zombie_panes() {
         done
 
         # subshell 안이므로 파일로 결과 전달
-        local RESULT_FILE="${_ZPD_PROJECT_DIR}/.claude/runtime/.zombie-detect-result"
+        local RESULT_FILE="${_ZPD_PROJECT_DIR}/.bkit/runtime/.zombie-detect-result"
         mkdir -p "$(dirname "$RESULT_FILE")"
         echo "$_SUB_COUNT" > "$RESULT_FILE"
         echo -e "$_SUB_DETAILS" >> "$RESULT_FILE"
@@ -137,7 +137,7 @@ detect_zombie_panes() {
     }
 
     # subshell 결과 읽기
-    local RESULT_FILE="${_ZPD_PROJECT_DIR}/.claude/runtime/.zombie-detect-result"
+    local RESULT_FILE="${_ZPD_PROJECT_DIR}/.bkit/runtime/.zombie-detect-result"
     if [ -f "$RESULT_FILE" ]; then
         ZOMBIE_COUNT=$(head -1 "$RESULT_FILE")
         ZOMBIE_DETAILS=$(sed -n '2p' "$RESULT_FILE")

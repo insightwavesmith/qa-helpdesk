@@ -8,7 +8,7 @@ source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
 [ "$IS_TEAMMATE" = "true" ] && exit 0
 
 PROJECT_DIR="/Users/smith/projects/bscamp"
-REGISTRY="$PROJECT_DIR/.claude/runtime/teammate-registry.json"
+REGISTRY="$PROJECT_DIR/.bkit/runtime/teammate-registry.json"
 
 # --- 헬퍼 함수 ---
 

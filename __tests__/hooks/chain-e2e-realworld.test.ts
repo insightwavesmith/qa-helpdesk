@@ -41,7 +41,7 @@ afterEach(() => {
 
 /** 세션별 team-context 파일 생성 */
 function writeSessionContext(tmpDir: string, session: string, team: string): string {
-  const dir = join(tmpDir, '.claude', 'runtime');
+  const dir = join(tmpDir, '.bkit', 'runtime');
   mkdirSync(dir, { recursive: true });
   const filePath = join(dir, `team-context-${session}.json`);
   writeFileSync(filePath, JSON.stringify({
@@ -146,7 +146,7 @@ function approvalKey(relFile: string): string {
 }
 
 function grantApproval(tmpDir: string, relFile: string, tsOverride?: number): void {
-  const dir = join(tmpDir, '.claude', 'runtime', 'approvals', 'granted');
+  const dir = join(tmpDir, '.bkit', 'runtime', 'approvals', 'granted');
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, approvalKey(relFile)), String(tsOverride ?? Math.floor(Date.now() / 1000)));
 }
@@ -402,7 +402,7 @@ describe('RW-11~15: requireApproval 통합', () => {
     // requireApproval 경로: pending 파일 생성 + 승인 필요 메시지
     expect(r.exitCode).toBe(2);
     expect(r.stderr).toContain('승인 필요');
-    const pendingDir = join(testEnv.tmpDir, '.claude', 'runtime', 'approvals', 'pending');
+    const pendingDir = join(testEnv.tmpDir, '.bkit', 'runtime', 'approvals', 'pending');
     expect(existsSync(join(pendingDir, `${approvalKey(relFile)}.json`))).toBe(true);
   });
 
@@ -414,7 +414,7 @@ describe('RW-11~15: requireApproval 통합', () => {
       IS_TEAMMATE: 'true',
     });
     expect(r.exitCode).toBe(2);
-    const pendingDir = join(testEnv.tmpDir, '.claude', 'runtime', 'approvals', 'pending');
+    const pendingDir = join(testEnv.tmpDir, '.bkit', 'runtime', 'approvals', 'pending');
     expect(existsSync(join(pendingDir, `${approvalKey(relFile)}.json`))).toBe(true);
   });
 
@@ -433,7 +433,7 @@ describe('RW-11~15: requireApproval 통합', () => {
     testEnv = createTestEnv();
     const hookPath = prepareValidateDelegate(testEnv);
     const relFile = '.claude/hooks/custom-hook.sh';
-    const dir = join(testEnv.tmpDir, '.claude', 'runtime', 'approvals', 'granted');
+    const dir = join(testEnv.tmpDir, '.bkit', 'runtime', 'approvals', 'granted');
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, approvalKey(relFile)), 'rejected');
     const r = runDelegateHook(hookPath, `${testEnv.tmpDir}/${relFile}`, {
@@ -605,7 +605,7 @@ describe('P2-1~4: 체인 실전 e2e 시뮬레이션', () => {
     expect(r.stdout).toContain('자동 전송 완료');
 
     // last-completion-report.json 생성 확인
-    const reportPath = join(testEnv.tmpDir, '.claude', 'runtime', 'last-completion-report.json');
+    const reportPath = join(testEnv.tmpDir, '.bkit', 'runtime', 'last-completion-report.json');
     expect(existsSync(reportPath)).toBe(true);
   });
 
@@ -643,7 +643,7 @@ describe('P2-1~4: 체인 실전 e2e 시뮬레이션', () => {
     writeSessionContext(testEnv.tmpDir, 'sdk-cto', 'CTO');
     writeSessionContext(testEnv.tmpDir, 'sdk-cto-2', 'CTO-2');
 
-    const runtimeDir = join(testEnv.tmpDir, '.claude', 'runtime');
+    const runtimeDir = join(testEnv.tmpDir, '.bkit', 'runtime');
     const ctx1 = join(runtimeDir, 'team-context-sdk-cto.json');
     const ctx2 = join(runtimeDir, 'team-context-sdk-cto-2.json');
 

@@ -44,7 +44,7 @@ afterEach(() => {
 
 /** 세션별 team-context 파일 생성 */
 function writeSessionContext(tmpDir: string, session: string, team: string, opts?: { taskFiles?: string[] }): string {
-  const dir = join(tmpDir, '.claude', 'runtime');
+  const dir = join(tmpDir, '.bkit', 'runtime');
   mkdirSync(dir, { recursive: true });
   const filePath = join(dir, `team-context-${session}.json`);
   writeFileSync(filePath, JSON.stringify({
@@ -166,7 +166,7 @@ function approvalKey(relFile: string): string {
 }
 
 function grantApproval(tmpDir: string, relFile: string, tsOverride?: number): void {
-  const dir = join(tmpDir, '.claude', 'runtime', 'approvals', 'granted');
+  const dir = join(tmpDir, '.bkit', 'runtime', 'approvals', 'granted');
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, approvalKey(relFile)), String(tsOverride ?? Math.floor(Date.now() / 1000)));
 }
@@ -671,7 +671,7 @@ describe('E. Approval Integration', () => {
     expect(r.exitCode).toBe(2);
     expect(r.stderr).toContain('승인 필요');
 
-    const pendingDir = join(testEnv.tmpDir, '.claude', 'runtime', 'approvals', 'pending');
+    const pendingDir = join(testEnv.tmpDir, '.bkit', 'runtime', 'approvals', 'pending');
     expect(existsSync(join(pendingDir, `${approvalKey(relFile)}.json`))).toBe(true);
   });
 
@@ -693,7 +693,7 @@ describe('E. Approval Integration', () => {
     const relFile = '.claude/hooks/custom-hook.sh';
 
     // "rejected" 문자열을 granted 파일에 기록
-    const dir = join(testEnv.tmpDir, '.claude', 'runtime', 'approvals', 'granted');
+    const dir = join(testEnv.tmpDir, '.bkit', 'runtime', 'approvals', 'granted');
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, approvalKey(relFile)), 'rejected');
 

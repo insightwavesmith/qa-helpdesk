@@ -357,7 +357,7 @@ describe('chain-handoff + peer-resolver 통합', () => {
     });
     const result = runHook(hookPath, {});
     expect(result.exitCode).toBe(0);
-    const reportPath = join(testEnv.tmpDir, '.claude', 'runtime', 'last-completion-report.json');
+    const reportPath = join(testEnv.tmpDir, '.bkit', 'runtime', 'last-completion-report.json');
     expect(existsSync(reportPath)).toBe(true);
     const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
     expect(report.payload.match_rate).toBe(97);
@@ -524,7 +524,7 @@ describe.skip('pm-chain-forward — V2에서 삭제됨 (CTO→MOZZI 직접)', ()
     });
     const result = runHook(hookPath, {});
     expect(result.stdout).toContain('자동 전송 완료');
-    const verdictPath = join(testEnv.tmpDir, '.claude', 'runtime', 'pm-verdict.json');
+    const verdictPath = join(testEnv.tmpDir, '.bkit', 'runtime', 'pm-verdict.json');
     expect(existsSync(verdictPath)).toBe(false);
   });
 });
@@ -539,7 +539,7 @@ describe.skip('coo-chain-report — V2에서 삭제됨 (CTO→MOZZI 직접)', ()
     const result = runHook(hookPath, {});
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('보고서 생성 완료');
-    const reportPath = join(testEnv.tmpDir, '.claude', 'runtime', 'coo-smith-report.json');
+    const reportPath = join(testEnv.tmpDir, '.bkit', 'runtime', 'coo-smith-report.json');
     expect(existsSync(reportPath)).toBe(true);
   });
 
@@ -575,7 +575,7 @@ describe.skip('coo-chain-report — V2에서 삭제됨 (CTO→MOZZI 직접)', ()
     writePmReport(testEnv.tmpDir, { match_rate: 98, pm_verdict: 'pass', pm_notes: 'Perfect' });
     const hookPath = prepareCooChainReport(testEnv, { webhookOk: true });
     runHook(hookPath, {});
-    const reportPath = join(testEnv.tmpDir, '.claude', 'runtime', 'coo-smith-report.json');
+    const reportPath = join(testEnv.tmpDir, '.bkit', 'runtime', 'coo-smith-report.json');
     const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
     expect(report.payload.match_rate).toBe(98);
     expect(report.payload.pm_verdict).toBe('pass');

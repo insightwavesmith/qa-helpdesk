@@ -10,7 +10,7 @@
 _CM_BROKER_URL="${BROKER_URL:-http://localhost:7899}"
 _CM_MAX_RETRY="${CHAIN_MAX_RETRY:-3}"
 _CM_RETRY_DELAY="${CHAIN_RETRY_DELAY:-2}"
-_CM_SENT_LOG="${PROJECT_DIR:-.}/.claude/runtime/chain-sent.log"
+_CM_SENT_LOG="${PROJECT_DIR:-.}/.bkit/runtime/chain-sent.log"
 
 # dedup check — 5분 이내 동일 msg_id 있으면 중복 (return 0=중복, 1=신규)
 _check_dedup() {

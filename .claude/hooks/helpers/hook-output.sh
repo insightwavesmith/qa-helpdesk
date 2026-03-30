@@ -5,7 +5,7 @@
 # 원칙: stdout에는 1줄 요약만 → 리더 컨텍스트 소모 최소화
 # 상세 로그는 파일로 → 필요 시 조회
 
-_HOOK_LOG_DIR="${PROJECT_DIR:-.}/.claude/runtime/hook-logs"
+_HOOK_LOG_DIR="${PROJECT_DIR:-.}/.bkit/runtime/hook-logs"
 _HOOK_NAME="${HOOK_NAME:-$(basename "${BASH_SOURCE[1]:-$0}" .sh)}"
 _HOOK_LOG_FILE=""
 

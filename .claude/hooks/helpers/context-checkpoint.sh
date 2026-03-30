@@ -7,7 +7,7 @@
 _CKP_PROJECT_DIR="${PROJECT_DIR:-/Users/smith/projects/bscamp}"
 
 save_checkpoint() {
-    local STATE_FILE="$_CKP_PROJECT_DIR/.claude/runtime/SESSION-STATE.md"
+    local STATE_FILE="$_CKP_PROJECT_DIR/.bkit/runtime/SESSION-STATE.md"
     # team-context resolver (팀별 파일 분리 — 없으면 레거시 경로 사용)
     local _CKP_RESOLVER="$_CKP_PROJECT_DIR/.claude/hooks/helpers/team-context-resolver.sh"
     if [ -f "$_CKP_RESOLVER" ]; then
@@ -17,7 +17,7 @@ save_checkpoint() {
         resolve_team_context 2>/dev/null
         PROJECT_DIR="${_OLD_PD:-}"
     fi
-    local CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$_CKP_PROJECT_DIR/.claude/runtime/team-context.json}"
+    local CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$_CKP_PROJECT_DIR/.bkit/runtime/team-context.json}"
     local TIMESTAMP
     TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
@@ -45,7 +45,7 @@ save_checkpoint() {
     done
 
     # 팀원 상태 (registry)
-    local REGISTRY="$_CKP_PROJECT_DIR/.claude/runtime/teammate-registry.json"
+    local REGISTRY="$_CKP_PROJECT_DIR/.bkit/runtime/teammate-registry.json"
     local TEAMMATES="none"
     if [ -f "$REGISTRY" ]; then
         TEAMMATES=$(jq -r '.members // {} | to_entries[] | "\(.key): \(.value.state)"' "$REGISTRY" 2>/dev/null || echo "no registry")

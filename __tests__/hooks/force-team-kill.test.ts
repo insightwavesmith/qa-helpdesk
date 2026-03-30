@@ -77,7 +77,7 @@ describe('force-team-kill.sh — 강제 종료 (설계서 영역 5)', () => {
     const result = runHook(hookPath, { HOME: tmpHome });
     expect(result.exitCode).toBe(0);
 
-    const registryPath = join(env.tmpDir, '.claude', 'runtime', 'teammate-registry.json');
+    const registryPath = join(env.tmpDir, '.bkit', 'runtime', 'teammate-registry.json');
     const updated = JSON.parse(readFileSync(registryPath, 'utf-8'));
 
     expect(updated.members['backend-dev'].state).toBe('terminated');
@@ -144,7 +144,7 @@ describe('force-team-kill.sh — 강제 종료 (설계서 영역 5)', () => {
     });
 
     // registry에서 paneId 값이 %0인지 확인 — 리더 pane으로 간주
-    const registryPath = join(env.tmpDir, '.claude', 'runtime', 'teammate-registry.json');
+    const registryPath = join(env.tmpDir, '.bkit', 'runtime', 'teammate-registry.json');
     const reg = JSON.parse(readFileSync(registryPath, 'utf-8'));
     expect(reg.members['backend-dev'].paneId).toBe('%0');
   });
@@ -172,7 +172,7 @@ describe('force-team-kill.sh — 강제 종료 (설계서 영역 5)', () => {
     const result = runHook(hookPath, { HOME: tmpHome });
     expect(result.exitCode).toBe(0);
 
-    const registryPath = join(env.tmpDir, '.claude', 'runtime', 'teammate-registry.json');
+    const registryPath = join(env.tmpDir, '.bkit', 'runtime', 'teammate-registry.json');
     const updated = JSON.parse(readFileSync(registryPath, 'utf-8'));
     expect(updated.members['backend-dev'].terminatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
@@ -265,7 +265,7 @@ describe('force-team-kill.sh — 강제 종료 (설계서 영역 5)', () => {
     expect(result.stdout).toContain('이미 isActive=false');
     expect(result.stdout).toMatch(/\[OK\]|\[SKIP\]/);
 
-    const registryPath = join(env.tmpDir, '.claude', 'runtime', 'teammate-registry.json');
+    const registryPath = join(env.tmpDir, '.bkit', 'runtime', 'teammate-registry.json');
     const updated = JSON.parse(readFileSync(registryPath, 'utf-8'));
     expect(updated.members['backend-dev'].state).toBe('terminated');
     expect(updated.members['backend-dev'].terminatedBy).toBe('force_kill');

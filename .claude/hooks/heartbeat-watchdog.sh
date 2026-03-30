@@ -4,7 +4,7 @@
 # heartbeat.log의 마지막 기록이 15분 이상 전이면 경고
 
 PROJECT_DIR="/Users/smith/projects/bscamp"
-HEARTBEAT_LOG="$PROJECT_DIR/.claude/runtime/heartbeat.log"
+HEARTBEAT_LOG="$PROJECT_DIR/.bkit/runtime/heartbeat.log"
 
 [ ! -f "$HEARTBEAT_LOG" ] && { echo "heartbeat.log 미존재 — heartbeat 미설정 의심" >&2; exit 1; }
 
