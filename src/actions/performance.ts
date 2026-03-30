@@ -387,8 +387,12 @@ export async function getOwnerAdSummaries(): Promise<OwnerSummaryResult> {
   }
 
   // 최신 period 기준으로만 보여주기
-  const latestEnd = data[0].period_end;
-  const latestRows = data.filter((d: any) => d.period_end === latestEnd); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const safeData = Array.isArray(data) ? data : [];
+  if (safeData.length === 0) {
+    return { rows: [], totalAccounts: 0, totalSpend: 0, avgRoas: 0 };
+  }
+  const latestEnd = safeData[0].period_end;
+  const latestRows = safeData.filter((d: any) => d.period_end === latestEnd); // eslint-disable-line @typescript-eslint/no-explicit-any
 
   const rows: OwnerAdSummaryRow[] = latestRows.map((d: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
     id: d.id,

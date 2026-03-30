@@ -38,7 +38,8 @@ async function fetchBenchmarks(svc: any, dominantCreativeType: string): Promise<
     if (!rows || rows.length === 0) return benchMap;
 
     // 최신 calculated_at 기준으로 필터 (1회 쿼리에서 최신 데이터만 사용)
-    const typedRows = rows as Record<string, unknown>[];
+    const typedRows = Array.isArray(rows) ? rows as Record<string, unknown>[] : [];
+    if (typedRows.length === 0) return benchMap;
     const latestAt = typedRows[0]?.calculated_at as string | undefined;
     const latestDate = latestAt?.slice(0, 10);
     const filteredRows = latestDate

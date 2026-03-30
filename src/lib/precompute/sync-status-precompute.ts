@@ -44,7 +44,21 @@ export async function precomputeSyncStatus(
       }
     }
 
-    // 3) Mixpanel 데이터 존재 여부
+    // 3) service_secrets 유무 체크 (status/route.ts 실시간 경로와 동일)
+    const secretKeyNames = accountIds.map((id: string) => `secret_${id}`);
+    const { data: secrets } = await supabase
+      .from("service_secrets" as never)
+      .select("key_name" as never)
+      .eq("service" as never, "mixpanel")
+      .in("key_name" as never, secretKeyNames);
+
+    const secretSet = new Set(
+      ((secrets || []) as unknown as { key_name: string }[]).map((s) =>
+        s.key_name.replace("secret_", "")
+      )
+    );
+
+    // 3b) Mixpanel 데이터 존재 여부
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const sevenDaysAgoStr = sevenDaysAgo.toISOString().split("T")[0];
@@ -64,17 +78,18 @@ export async function precomputeSyncStatus(
       const meta = metaStatusMap.get(acc.account_id);
       const metaOk = !!meta;
 
+      const hasSecret = secretSet.has(acc.account_id);
       const hasProjectId = !!acc.mixpanel_project_id;
-      const hasBoardId = !!acc.mixpanel_board_id;
       const hasData = mixpanelDataSet.has(acc.account_id);
+      const isConfigured = hasSecret || hasProjectId;
 
       let mixpanelState: string;
       let mixpanelOk: boolean;
 
-      if (hasProjectId && hasData && hasBoardId) {
+      if (isConfigured && hasData) {
         mixpanelState = "ok";
         mixpanelOk = true;
-      } else if (hasProjectId && hasData && !hasBoardId) {
+      } else if (isConfigured && !hasData) {
         mixpanelState = "no_board";
         mixpanelOk = false;
       } else {

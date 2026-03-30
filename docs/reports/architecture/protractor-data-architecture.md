@@ -1,6 +1,7 @@
 # 총가치각도기 데이터 아키텍처 검수 보고서
 
 > 작성일: 2026-03-30 | L0 핫픽스 병행 검수
+> 갱신일: 2026-03-30 | 2차 검수 — sync-status-precompute 캐시 라이터 근본 원인 추가
 
 ---
 
@@ -22,6 +23,8 @@ service_secrets (서비스 시크릿 저장소)
      (ad_accounts와 account_id로 느슨하게 연결)
 
 account_sync_status (관리자 상태 캐시, 1시간 TTL)
+  └─ 기록자: sync-status-precompute.ts (크론)
+     ⚠ 이 캐시 라이터가 service_secrets 미참조 → 전부 "not_configured" 기록
 ```
 
 ## 2. 수강생별 데이터 분류/관리 아키텍처
@@ -179,12 +182,31 @@ ORDER BY date LIMIT 5000;
 
 ## 5. 발견된 데이터 누락/불일치 지점
 
-### 5.1 [핫픽스 적용] Mixpanel 상태 판정 — secretSet 미사용 (심각도: HIGH)
+### 5.1 [핫픽스 적용] Mixpanel 상태 판정 — 실시간 경로 secretSet 미사용 (심각도: HIGH)
 
 - **위치**: `/api/admin/protractor/status/route.ts` line 118~168
 - **증상**: 관리자 페이지에서 모든 계정 Mixpanel '미설정'
 - **원인**: `secretSet` 구축 후 미참조. `hasProjectId`만 체크 → ad_accounts에 project_id 없으면 전부 not_configured
 - **수정**: `secretSet.has(account_id)` 를 Mixpanel 설정 여부 판정에 포함
+- **상태**: 1차 핫픽스 커밋 2d6ee36에서 수정 완료
+
+### 5.1b [2차 핫픽스] sync-status-precompute 캐시 라이터 — 동일 버그 (심각도: **CRITICAL**)
+
+- **위치**: `src/lib/precompute/sync-status-precompute.ts` line 62~83
+- **증상**: 5.1 핫픽스 후에도 캐시 TTL(1시간) 내에는 여전히 전부 '미설정'
+- **근본 원인**: `account_sync_status` 테이블에 Mixpanel 상태를 기록하는 **캐시 라이터**가 `service_secrets` 테이블을 전혀 조회하지 않음
+  - `status/route.ts`(실시간 경로): `isConfigured = hasSecret || hasProjectId` ✅
+  - `sync-status-precompute.ts`(캐시 라이터): `hasProjectId && hasBoardId` ❌
+  - 캐시 라이터가 `hasBoardId` 까지 요구 → 대부분 계정은 board_id 미설정 → 캐시에 전부 "not_configured" 기록
+  - 관리자 페이지가 캐시 우선 조회(1시간 TTL) → 잘못된 캐시 데이터 반환
+- **수정**: precompute에서 `service_secrets` 조회 추가, 판정 로직을 실시간 경로와 동일하게 정렬:
+  ```
+  isConfigured = hasSecret || hasProjectId
+  if (isConfigured && hasData) → "ok"
+  else if (isConfigured && !hasData) → "no_board"
+  else → "not_configured"
+  ```
+- **영향**: 이 수정으로 크론 실행 시 캐시에 정확한 Mixpanel 상태가 기록되어 관리자 페이지 상시 정상 표시
 
 ### 5.2 [핫픽스 적용] pairs JSONB 파싱 안전성 (심각도: HIGH)
 
@@ -227,10 +249,45 @@ ORDER BY date LIMIT 5000;
 
 ## 6. 요약 및 권장 사항
 
-| 구분 | 내용 | 긴급도 |
-|------|------|--------|
-| ✅ 핫픽스 | Mixpanel secretSet 매칭 수정 | 즉시 |
-| ✅ 핫픽스 | pairs/metrics JSON 파싱 안전성 | 즉시 |
-| ⚠️ 후속 | 크론 수집 필터 service_secrets 연동 | 이번 주 |
-| ⚠️ 후속 | save-secret → ad_accounts.mixpanel_project_id 동기화 | 이번 주 |
-| 📝 개선 | Mixpanel 설정 single source of truth 통합 | 다음 스프린트 |
+| 구분 | 내용 | 긴급도 | 상태 |
+|------|------|--------|------|
+| ✅ 1차 핫픽스 | status/route.ts — secretSet 매칭 수정 | 즉시 | 완료 (2d6ee36) |
+| ✅ 1차 핫픽스 | pairs/metrics JSON 파싱 안전성 | 즉시 | 완료 (2d6ee36) |
+| ✅ 2차 핫픽스 | sync-status-precompute.ts — 캐시 라이터 동일 버그 수정 | 즉시 | 수정 중 |
+| ✅ 2차 핫픽스 | filter 타입 안전성 전수 점검 | 즉시 | 수정 중 |
+| ⚠️ 후속 | 크론 수집 필터 service_secrets 연동 | 이번 주 | 미착수 |
+| ⚠️ 후속 | save-secret → ad_accounts.mixpanel_project_id 동기화 | 이번 주 | 미착수 |
+| 📝 개선 | Mixpanel 설정 single source of truth 통합 | 다음 스프린트 | 미착수 |
+
+## 7. 데이터 구조 정규화 평가
+
+### 7.1 비정규화 수준 판정: 적정 (NoSQL-like 의도적 설계)
+
+총가치각도기의 데이터 구조는 **완전 정규화(3NF)와 완전 비정규화(NoSQL) 사이의 실용적 중간 지점**:
+
+| 항목 | 정규화 여부 | 판정 |
+|------|------------|------|
+| profiles ↔ ad_accounts | FK 정규화 (user_id) | ✅ 적정 |
+| ad_accounts ↔ daily_ad_insights | account_id 소프트 참조 (FK 없음) | ⚠️ 의도적 — Supabase 서버리스 환경에서 CASCADE 회피 |
+| daily_ad_insights 파생 지표 14개 | 동일 행에 비정규화 저장 | ✅ 적정 — 조회 성능 우선 |
+| daily_overlap_insights.pairs | JSONB 배열 (비정규화) | ✅ 적정 — 조합 데이터를 별도 테이블로 분리하면 JOIN 비용 증가 |
+| t3_scores_precomputed (캐시) | 계산 결과 스냅샷 | ✅ 적정 — CQRS 패턴 |
+| account_sync_status (캐시) | 관리자 상태 스냅샷 | ⚠️ 캐시 라이터 로직 동기화 필수 (5.1b 참조) |
+
+### 7.2 테이블 간 관계 무결성
+
+```
+ad_accounts.account_id (UNIQUE, 실질적 PK)
+  ├── daily_ad_insights.account_id     — 소프트 참조, RLS로 보호
+  ├── daily_mixpanel_insights.account_id — 소프트 참조
+  ├── daily_overlap_insights.account_id  — 소프트 참조
+  ├── service_secrets.key_name          — "secret_{account_id}" 패턴 (느슨)
+  └── account_sync_status.account_id   — 캐시 테이블
+
+creatives.account_id                   — 소프트 참조 (경쟁사 소재는 ad_accounts에 없음)
+  ├── creative_media.creative_id       — FK CASCADE ✅
+  ├── creative_performance.creative_id — FK CASCADE ✅
+  └── creative_lp_map.creative_id      — FK CASCADE ✅
+```
+
+**결론**: 핵심 테이블(creatives 하위)은 FK CASCADE로 정규화됨. 성과 데이터(daily_*)는 의도적 소프트 참조로 서버리스 환경에 적합. 캐시 테이블의 로직 동기화가 유일한 구조적 위험.

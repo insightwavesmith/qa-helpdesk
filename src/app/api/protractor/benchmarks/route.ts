@@ -89,7 +89,8 @@ export async function GET() {
       .gte("calculated_at", earliestDate);
 
     // creative_type별 최신 날짜에 해당하는 행만 필터
-    const data = (rawData as Record<string, unknown>[] ?? []).filter((row) => {
+    const safeRawData = Array.isArray(rawData) ? rawData as Record<string, unknown>[] : [];
+    const data = safeRawData.filter((row) => {
       const ct = row.creative_type as string;
       const dateStr = (row.calculated_at as string).slice(0, 10);
       const latestDate = latestByType.get(ct);
@@ -104,7 +105,7 @@ export async function GET() {
       );
     }
 
-    const rows = (data as Record<string, unknown>[] ?? []).map(toFrontendRow);
+    const rows = data.map(toFrontendRow);
     return NextResponse.json({ data: rows });
   } catch {
     return NextResponse.json(

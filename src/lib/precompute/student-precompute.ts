@@ -40,7 +40,8 @@ async function fetchBenchmarkMap(
 
     if (!rows || rows.length === 0) return benchMap;
 
-    const typedRows = rows as unknown as Record<string, unknown>[];
+    const typedRows = Array.isArray(rows) ? rows as unknown as Record<string, unknown>[] : [];
+    if (typedRows.length === 0) return benchMap;
     const latestAt = typedRows[0]?.calculated_at as string | undefined;
     const latestDate = latestAt?.slice(0, 10);
     const latestRows = latestDate
