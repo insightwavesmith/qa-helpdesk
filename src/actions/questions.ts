@@ -123,12 +123,9 @@ export async function createQuestion(formData: {
       content: formData.content,
       category_id: formData.categoryId,
       author_id: user.uid,
-      // JSONB 컬럼 → JSON.stringify 필수 (쿼리빌더가 string[]을 pg 네이티브 배열로 보내면 JSONB 파싱 실패)
-      image_urls: JSON.stringify(
-        formData.imageUrls && formData.imageUrls.length > 0
-          ? formData.imageUrls
-          : []
-      ),
+      image_urls: formData.imageUrls && formData.imageUrls.length > 0
+        ? formData.imageUrls
+        : [],
       ...(formData.parentQuestionId
         ? { parent_question_id: formData.parentQuestionId }
         : {}),
@@ -279,12 +276,9 @@ export async function updateQuestion(formData: {
       title: formData.title,
       content: formData.content,
       category_id: formData.categoryId,
-      // JSONB 컬럼 → JSON.stringify 필수
-      image_urls: JSON.stringify(
-        formData.imageUrls && formData.imageUrls.length > 0
-          ? formData.imageUrls
-          : []
-      ),
+      image_urls: formData.imageUrls && formData.imageUrls.length > 0
+        ? formData.imageUrls
+        : [],
     })
     .eq("id", formData.id)
     .select()

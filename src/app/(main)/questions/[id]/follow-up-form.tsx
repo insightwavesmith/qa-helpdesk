@@ -87,20 +87,22 @@ export function FollowUpForm({
 
   const uploadImages = async (): Promise<string[]> => {
     if (images.length === 0) return [];
-    const urls: string[] = [];
-    for (const img of images) {
-      const ext = img.file.name.split(".").pop() || "jpg";
-      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const filePath = `questions/followup/${fileName}`;
-      try {
-        const publicUrl = await uploadFile(img.file, "question-images", filePath);
-        urls.push(publicUrl);
-      } catch (err) {
-        console.error("Image upload error:", err);
-        toast.error(`이미지 업로드 실패: ${img.file.name}`);
-      }
-    }
-    return urls;
+
+    const results = await Promise.allSettled(
+      images.map((img) => {
+        const ext = img.file.name.split(".").pop() || "jpg";
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const filePath = `questions/followup/${fileName}`;
+        return uploadFile(img.file, "question-images", filePath);
+      })
+    );
+
+    return results.flatMap((r, i) => {
+      if (r.status === "fulfilled") return [r.value];
+      console.error("Image upload error:", r.reason);
+      toast.error(`이미지 업로드 실패: ${images[i].file.name}`);
+      return [];
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

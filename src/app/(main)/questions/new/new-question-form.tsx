@@ -154,18 +154,14 @@ export function NewQuestionForm({ categories, mode = "create", initialData }: Ne
   const uploadImages = async (): Promise<string[]> => {
     if (images.length === 0) return [];
 
-    const urls: string[] = [];
-
-    for (const img of images) {
-      const ext = img.file.name.split(".").pop() || "jpg";
-      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const filePath = `questions/${fileName}`;
-
-      const publicUrl = await uploadFile(img.file, "question-images", filePath);
-      urls.push(publicUrl);
-    }
-
-    return urls;
+    return Promise.all(
+      images.map((img) => {
+        const ext = img.file.name.split(".").pop() || "jpg";
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const filePath = `questions/${fileName}`;
+        return uploadFile(img.file, "question-images", filePath);
+      })
+    );
   };
 
   const onSubmit = async (values: QuestionFormValues) => {
