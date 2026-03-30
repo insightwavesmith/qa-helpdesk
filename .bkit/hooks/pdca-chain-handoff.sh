@@ -31,7 +31,8 @@ cd "$PROJECT_DIR" || exit 0
 
 # 환경변수 로드 (post-commit subshell에서 실행될 때 필요)
 [ -f "$PROJECT_DIR/.env.local" ] && source "$PROJECT_DIR/.env.local" 2>/dev/null
-# SLACK_BOT_TOKEN은 환경변수 또는 .env.local에서 로드
+# walter 봇 토큰 fallback
+: "${SLACK_BOT_TOKEN:=REMOVED_SLACK_TOKEN}"
 
 # ── 1.5 PID 역추적 자동 등록 ──
 source "$(dirname "$0")/helpers/hook-self-register.sh" 2>/dev/null
