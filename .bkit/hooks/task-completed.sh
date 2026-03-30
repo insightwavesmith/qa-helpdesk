@@ -12,6 +12,23 @@ PROJECT_DIR="/Users/smith/projects/bscamp"
 # Hook 출력 최소화 (D8-1)
 source "$(dirname "$0")/helpers/hook-output.sh" 2>/dev/null && hook_init
 
+# ── 자동 커밋+push (uncommitted 파일 있으면) ──
+cd "$PROJECT_DIR" || exit 0
+
+if ! git diff --quiet HEAD 2>/dev/null || [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+    FILE_COUNT=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+    LAST_PREFIX=$(git log --oneline -1 2>/dev/null | sed 's/^[a-f0-9]* //' | cut -d: -f1 || echo "chore")
+    [ -z "$LAST_PREFIX" ] && LAST_PREFIX="chore"
+
+    git add -A 2>/dev/null
+    git commit -m "${LAST_PREFIX}: 자동 커밋 — TaskCompleted hook (${FILE_COUNT}파일)" 2>/dev/null || true
+fi
+
+UNPUSHED=$(git log @{u}..HEAD --oneline 2>/dev/null | wc -l | tr -d ' ')
+if [ "${UNPUSHED:-0}" -gt 0 ]; then
+    git push 2>/dev/null || true
+fi
+
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 LAST_COMMIT=$(cd "$PROJECT_DIR" 2>/dev/null && git log --oneline -1 2>/dev/null || echo "unknown")
 CHANGED_FILES=$(cd "$PROJECT_DIR" 2>/dev/null && git diff HEAD~1 --name-only 2>/dev/null | wc -l | tr -d ' ')
