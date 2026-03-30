@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     // creative_media에서 analysis_json, account_id 조회
     const { data: media, error: mediaErr } = await svc
       .from('creative_media')
-      .select('analysis_json, account_id, creative_id')
+      .select('analysis_json, creative_id')
       .eq('id', creativeMediaId)
       .single();
 
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
     const m = media as any;
 
     // account_id 결정 (creative_media에 없으면 creatives에서 조회)
-    let accountId: string = m.account_id;
+    let accountId: string = '';
     if (!accountId && m.creative_id) {
       const { data: creative } = await svc
         .from('creatives')

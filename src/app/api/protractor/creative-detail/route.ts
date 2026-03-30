@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   const { data: media, error: mediaErr } = await svc
     .from("creative_media")
     .select(
-      "id, creative_id, media_url, storage_url, ad_copy, media_type, analysis_json, saliency_url, video_analysis, thumbnail_url, duration_seconds, account_id",
+      "id, creative_id, media_url, storage_url, ad_copy, media_type, analysis_json, saliency_url, video_analysis, thumbnail_url, duration_seconds",
     )
     .eq("id", id)
     .single();
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const c = creative as any;
   const adId: string | null = c?.ad_id ?? null;
-  const accountId: string | null = m.account_id ?? c?.account_id ?? null;
+  const accountId: string | null = c?.account_id ?? null;
 
   // 4. creative_saliency 조회
   const { data: saliency } = await svc
@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 6. daily_ad_insights 성과 집계 (최근 30일, creative_id 기준)
+  // 6. daily_ad_insights 성과 집계 (최근 30일, ad_id 기준)
   let performance: {
     impressions: number;
     reach: number;
@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
     reach_to_purchase_rate: number;
   } | null = null;
 
-  if (m.creative_id) {
+  if (adId) {
     const sinceDate = new Date();
     sinceDate.setDate(sinceDate.getDate() - 30);
     const sinceDateStr = sinceDate.toISOString().split("T")[0];
@@ -119,7 +119,7 @@ export async function GET(req: NextRequest) {
       .select(
         "impressions, reach, spend, clicks, website_purchase_value, purchases, video_p3s_rate, thruplay_rate, roas, ctr, reach_to_purchase_rate",
       )
-      .eq("creative_id", m.creative_id)
+      .eq("ad_id", adId)
       .gte("date_start", sinceDateStr);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
