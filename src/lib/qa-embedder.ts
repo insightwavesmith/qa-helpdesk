@@ -4,6 +4,7 @@
 import { createServiceClient } from "@/lib/db";
 import { generateEmbedding, generateVisionText } from "@/lib/gemini";
 import { chunkText } from "@/lib/chunk-utils";
+import { parseImageUrls } from "@/lib/parse-image-urls";
 
 const VISION_PROMPT = `이 이미지는 메타(Facebook) 광고 관련 Q&A에 첨부된 이미지입니다.
 이미지에 보이는 내용을 한국어로 설명하세요. 200~300자로 작성하세요.`;
@@ -244,10 +245,6 @@ export async function embedQAThread(rootQuestionId: string): Promise<void> {
   }
 }
 
-function parseImageUrls(value: unknown): string[] {
-  if (Array.isArray(value)) return value.filter((v) => typeof v === "string");
-  return [];
-}
 
 async function getImageDescription(imageUrl: string): Promise<string> {
   try {
