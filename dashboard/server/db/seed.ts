@@ -211,5 +211,129 @@ export function seed() {
     db.insert(routines).values(routine).onConflictDoNothing().run();
   }
 
-  console.log('[seed] 실제 팀 에이전트 7명 + 반복작업 5개 + PDCA 체인 생성 완료');
+  // ── 체인 매트릭스 (11개 유형×레벨 조합) ──
+  const chainMatrix: Array<{
+    id: string;
+    name: string;
+    description: string;
+    steps: Array<{ id: string; teamRole: string; phase: string; label: string; condition: string }>;
+  }> = [
+    {
+      id: 'DEV-L0', name: 'DEV-L0 핫픽스', description: '프로덕션 긴급 수정',
+      steps: [
+        { id: 'dev-l0-1', teamRole: 'cto', phase: 'do', label: '커밋', condition: '{"type":"commit_exists"}' },
+        { id: 'dev-l0-2', teamRole: 'cto', phase: 'deploy', label: '배포', condition: '{"type":"build_success"}' },
+        { id: 'dev-l0-3', teamRole: 'coo', phase: 'check', label: '보고', condition: '{"type":"manual"}' },
+      ],
+    },
+    {
+      id: 'DEV-L1', name: 'DEV-L1 조사/리서치', description: '코드 변경 없는 문서 작업',
+      steps: [
+        { id: 'dev-l1-1', teamRole: 'coo', phase: 'check', label: '보고', condition: '{"type":"manual"}' },
+      ],
+    },
+    {
+      id: 'DEV-L2', name: 'DEV-L2 일반 개발', description: '표준 기능 개발',
+      steps: [
+        { id: 'dev-l2-1', teamRole: 'pm', phase: 'plan', label: 'Plan', condition: '{"type":"checklist_all_done"}' },
+        { id: 'dev-l2-2', teamRole: 'pm', phase: 'design', label: 'Design', condition: '{"type":"checklist_all_done"}' },
+        { id: 'dev-l2-3', teamRole: 'cto', phase: 'do', label: '구현', condition: '{"type":"all","conditions":[{"type":"commit_exists"},{"type":"push_verified"}]}' },
+        { id: 'dev-l2-4', teamRole: 'cto', phase: 'check', label: 'QA', condition: '{"type":"match_rate","min":95}' },
+        { id: 'dev-l2-5', teamRole: 'cto', phase: 'deploy', label: '배포', condition: '{"type":"build_success"}' },
+      ],
+    },
+    {
+      id: 'DEV-L3', name: 'DEV-L3 고위험', description: 'DB/Auth/마이그레이션',
+      steps: [
+        { id: 'dev-l3-1', teamRole: 'pm', phase: 'plan', label: 'Plan', condition: '{"type":"checklist_all_done"}' },
+        { id: 'dev-l3-2', teamRole: 'pm', phase: 'design', label: 'Design', condition: '{"type":"checklist_all_done"}' },
+        { id: 'dev-l3-3', teamRole: 'cto', phase: 'do', label: '구현', condition: '{"type":"all","conditions":[{"type":"commit_exists"},{"type":"push_verified"}]}' },
+        { id: 'dev-l3-4', teamRole: 'cto', phase: 'check', label: 'QA', condition: '{"type":"match_rate","min":95}' },
+        { id: 'dev-l3-5', teamRole: 'cto', phase: 'act', label: '수동검수', condition: '{"type":"manual"}' },
+        { id: 'dev-l3-6', teamRole: 'cto', phase: 'deploy', label: '배포', condition: '{"type":"build_success"}' },
+      ],
+    },
+    {
+      id: 'OPS-L0', name: 'OPS-L0 설정변경', description: '크론/설정 1줄 수정',
+      steps: [
+        { id: 'ops-l0-1', teamRole: 'cto', phase: 'deploy', label: '배포', condition: '{"type":"build_success"}' },
+        { id: 'ops-l0-2', teamRole: 'coo', phase: 'check', label: '보고', condition: '{"type":"manual"}' },
+      ],
+    },
+    {
+      id: 'OPS-L1', name: 'OPS-L1 인프라작업', description: '환경변수/스케줄러',
+      steps: [
+        { id: 'ops-l1-1', teamRole: 'cto', phase: 'do', label: '커밋', condition: '{"type":"commit_exists"}' },
+        { id: 'ops-l1-2', teamRole: 'cto', phase: 'deploy', label: '배포', condition: '{"type":"build_success"}' },
+        { id: 'ops-l1-3', teamRole: 'coo', phase: 'check', label: '보고', condition: '{"type":"manual"}' },
+      ],
+    },
+    {
+      id: 'OPS-L2', name: 'OPS-L2 구조변경', description: 'DB스키마/서비스분리',
+      steps: [
+        { id: 'ops-l2-1', teamRole: 'pm', phase: 'plan', label: 'Plan', condition: '{"type":"checklist_all_done"}' },
+        { id: 'ops-l2-2', teamRole: 'pm', phase: 'design', label: 'Design', condition: '{"type":"checklist_all_done"}' },
+        { id: 'ops-l2-3', teamRole: 'cto', phase: 'do', label: '구현', condition: '{"type":"all","conditions":[{"type":"commit_exists"},{"type":"push_verified"}]}' },
+        { id: 'ops-l2-4', teamRole: 'cto', phase: 'check', label: 'QA', condition: '{"type":"match_rate","min":95}' },
+        { id: 'ops-l2-5', teamRole: 'cto', phase: 'deploy', label: '배포', condition: '{"type":"build_success"}' },
+      ],
+    },
+    {
+      id: 'MKT-L1', name: 'MKT-L1 단일콘텐츠', description: '블로그/SNS 1편',
+      steps: [
+        { id: 'mkt-l1-1', teamRole: 'coo', phase: 'check', label: '검수', condition: '{"type":"manual"}' },
+        { id: 'mkt-l1-2', teamRole: 'cto', phase: 'deploy', label: '발행', condition: '{"type":"manual"}' },
+        { id: 'mkt-l1-3', teamRole: 'coo', phase: 'act', label: '보고', condition: '{"type":"manual"}' },
+      ],
+    },
+    {
+      id: 'MKT-L2', name: 'MKT-L2 캠페인', description: '시리즈/다회성 콘텐츠',
+      steps: [
+        { id: 'mkt-l2-1', teamRole: 'pm', phase: 'plan', label: 'Plan', condition: '{"type":"checklist_all_done"}' },
+        { id: 'mkt-l2-2', teamRole: 'coo', phase: 'check', label: '검수', condition: '{"type":"manual"}' },
+        { id: 'mkt-l2-3', teamRole: 'cto', phase: 'deploy', label: '발행', condition: '{"type":"manual"}' },
+        { id: 'mkt-l2-4', teamRole: 'coo', phase: 'act', label: '보고', condition: '{"type":"manual"}' },
+      ],
+    },
+    {
+      id: 'BIZ-L1', name: 'BIZ-L1 단순결정', description: '용어변경/우선순위조정',
+      steps: [
+        { id: 'biz-l1-1', teamRole: 'cto', phase: 'act', label: 'Smith님 확인', condition: '{"type":"manual"}' },
+        { id: 'biz-l1-2', teamRole: 'coo', phase: 'check', label: '보고', condition: '{"type":"manual"}' },
+      ],
+    },
+    {
+      id: 'BIZ-L2', name: 'BIZ-L2 전략수립', description: '가격/파트너십/서비스방향',
+      steps: [
+        { id: 'biz-l2-1', teamRole: 'pm', phase: 'plan', label: 'Plan', condition: '{"type":"checklist_all_done"}' },
+        { id: 'biz-l2-2', teamRole: 'cto', phase: 'act', label: 'Smith님 결정', condition: '{"type":"manual"}' },
+        { id: 'biz-l2-3', teamRole: 'coo', phase: 'check', label: '보고', condition: '{"type":"manual"}' },
+      ],
+    },
+  ];
+
+  for (const chain of chainMatrix) {
+    db.insert(workflowChains).values({
+      id: chain.id,
+      name: chain.name,
+      description: chain.description,
+      active: 1,
+    }).onConflictDoNothing().run();
+
+    for (let i = 0; i < chain.steps.length; i++) {
+      const step = chain.steps[i];
+      db.insert(workflowSteps).values({
+        id: step.id,
+        chainId: chain.id,
+        stepOrder: i + 1,
+        teamRole: step.teamRole,
+        phase: step.phase,
+        label: step.label,
+        completionCondition: step.condition,
+        autoTriggerNext: 1,
+      }).onConflictDoNothing().run();
+    }
+  }
+
+  console.log('[seed] 실제 팀 에이전트 7명 + 반복작업 5개 + PDCA 체인 12개 생성 완료');
 }

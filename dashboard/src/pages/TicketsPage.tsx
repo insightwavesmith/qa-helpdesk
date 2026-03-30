@@ -1,6 +1,10 @@
 import { useState, useMemo } from 'react';
 import { StatusBadge } from '../components/StatusBadge';
+import { EmptyState } from '../components/EmptyState';
+import { PageSkeleton } from '../components/PageSkeleton';
 import { useTickets, type Ticket } from '../hooks/useApi';
+import { cn, timeAgo } from '../lib/utils';
+import { ClipboardList, FolderOpen, Users, Bot, Ruler } from 'lucide-react';
 
 const STATUS_FILTERS = [
   { value: 'all', label: '전체' },
@@ -16,14 +20,77 @@ function ChecklistBar({ checklist }: { checklist: string }) {
     const items: { done: boolean }[] = JSON.parse(checklist);
     if (items.length === 0) return null;
     const done = items.filter((i) => i.done).length;
+    const pct = Math.round((done / items.length) * 100);
     return (
-      <span className="text-xs text-gray-400">
-        ☑ {done}/{items.length}
-      </span>
+      <div className="flex items-center gap-2">
+        <div className="w-16 bg-gray-100 rounded-full h-1.5">
+          <div
+            className={cn(
+              'h-1.5 rounded-full transition-all',
+              pct === 100 ? 'bg-emerald-500' : 'bg-primary',
+            )}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <span className="text-xs text-gray-400 tabular-nums">{done}/{items.length}</span>
+      </div>
     );
   } catch {
     return null;
   }
+}
+
+function TicketCard({ ticket: t }: { ticket: Ticket }) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <StatusBadge value={t.status} />
+            <StatusBadge value={t.priority} />
+            {t.pdcaPhase && <StatusBadge value={t.pdcaPhase} />}
+          </div>
+          <h3 className="font-medium text-gray-900 overflow-hidden whitespace-nowrap text-ellipsis">{t.title}</h3>
+          <div className="flex items-center gap-3 mt-2 text-xs text-gray-400 flex-wrap">
+            <span className="flex items-center gap-1">
+              <FolderOpen className="h-3 w-3" /> {t.feature}
+            </span>
+            {t.assigneeTeam && (
+              <span className="flex items-center gap-1">
+                <Users className="h-3 w-3" /> {t.assigneeTeam}
+              </span>
+            )}
+            {t.assigneeAgent && (
+              <span className="flex items-center gap-1">
+                <Bot className="h-3 w-3" /> {t.assigneeAgent}
+              </span>
+            )}
+            {t.processLevel && (
+              <span className="flex items-center gap-1">
+                <Ruler className="h-3 w-3" /> {t.processLevel}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <ChecklistBar checklist={t.checklist} />
+          {t.commitHash && (
+            <span className="text-xs font-mono text-gray-400 flex items-center gap-1">
+              {t.pushVerified ? (
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              ) : (
+                <span className="w-2 h-2 rounded-full bg-amber-400" />
+              )}
+              {t.commitHash.slice(0, 7)}
+            </span>
+          )}
+          {t.startedAt && (
+            <span className="text-[10px] text-gray-300">{timeAgo(t.startedAt)}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function TicketsPage() {
@@ -48,14 +115,13 @@ export function TicketsPage() {
     );
   }, [tickets, search]);
 
-  // 팀 목록 추출
   const teams = useMemo(() => {
     if (!tickets) return [];
     return [...new Set(tickets.map((t) => t.assigneeTeam).filter(Boolean))] as string[];
   }, [tickets]);
 
   if (isLoading) {
-    return <div className="text-gray-400 text-sm">불러오는 중...</div>;
+    return <PageSkeleton variant="list" />;
   }
 
   return (
@@ -64,24 +130,23 @@ export function TicketsPage() {
 
       {/* 필터 바 */}
       <div className="flex flex-wrap items-center gap-3">
-        {/* 상태 필터 */}
         <div className="flex gap-1">
           {STATUS_FILTERS.map((f) => (
             <button
               key={f.value}
               onClick={() => setStatusFilter(f.value)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              className={cn(
+                'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                 statusFilter === f.value
                   ? 'bg-primary text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+              )}
             >
               {f.label}
             </button>
           ))}
         </div>
 
-        {/* 팀 필터 */}
         {teams.length > 0 && (
           <select
             value={teamFilter}
@@ -95,7 +160,6 @@ export function TicketsPage() {
           </select>
         )}
 
-        {/* 검색 */}
         <input
           type="text"
           placeholder="검색..."
@@ -113,39 +177,8 @@ export function TicketsPage() {
           <TicketCard key={t.id} ticket={t} />
         ))}
         {filtered.length === 0 && (
-          <div className="text-center py-12 text-gray-400 text-sm">태스크 없음</div>
+          <EmptyState icon={ClipboardList} message="태스크 없음" />
         )}
-      </div>
-    </div>
-  );
-}
-
-function TicketCard({ ticket: t }: { ticket: Ticket }) {
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <StatusBadge value={t.status} />
-            <StatusBadge value={t.priority} />
-            {t.pdcaPhase && <StatusBadge value={t.pdcaPhase} />}
-          </div>
-          <h3 className="font-medium text-gray-900 truncate">{t.title}</h3>
-          <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
-            <span>📁 {t.feature}</span>
-            {t.assigneeTeam && <span>👥 {t.assigneeTeam}</span>}
-            {t.assigneeAgent && <span>🤖 {t.assigneeAgent}</span>}
-            {t.processLevel && <span>📐 {t.processLevel}</span>}
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          <ChecklistBar checklist={t.checklist} />
-          {t.commitHash && (
-            <span className="text-xs font-mono text-gray-400">
-              {t.pushVerified ? '✅' : '⏳'} {t.commitHash.slice(0, 7)}
-            </span>
-          )}
-        </div>
       </div>
     </div>
   );

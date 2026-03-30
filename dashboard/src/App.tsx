@@ -8,6 +8,8 @@ import { CostsPage } from './pages/CostsPage';
 import { OrgChartPage } from './pages/OrgChartPage';
 import { ChainsPage } from './pages/ChainsPage';
 import { AgentsPage } from './pages/AgentsPage';
+import { RoutinesPage } from './pages/RoutinesPage';
+import { useLiveUpdates } from './hooks/useLiveUpdates';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,9 +20,15 @@ const queryClient = new QueryClient({
   },
 });
 
+function LiveUpdatesInit() {
+  useLiveUpdates();
+  return null;
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <LiveUpdatesInit />
       <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
@@ -31,6 +39,7 @@ export default function App() {
             <Route path="org" element={<OrgChartPage />} />
             <Route path="chains" element={<ChainsPage />} />
             <Route path="agents" element={<AgentsPage />} />
+            <Route path="routines" element={<RoutinesPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

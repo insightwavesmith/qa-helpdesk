@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MetricCard } from '../components/MetricCard';
+import { PageSkeleton } from '../components/PageSkeleton';
 import {
   useCostsSummary,
   useCostsByModel,
@@ -7,6 +8,8 @@ import {
   useBudgetPolicies,
   useBudgetIncidents,
 } from '../hooks/useApi';
+import { cn, formatCents, formatTokens } from '../lib/utils';
+import { DollarSign, Hash, BarChart3, Bot } from 'lucide-react';
 
 type Tab = 'model' | 'agent' | 'budget';
 
@@ -16,24 +19,15 @@ const TABS: { value: Tab; label: string }[] = [
   { value: 'budget', label: '예산' },
 ];
 
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
-
-function formatTokens(tokens: number): string {
-  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`;
-  if (tokens >= 1_000) return `${(tokens / 1_000).toFixed(1)}K`;
-  return String(tokens);
-}
-
 function ProgressBar({ value, max, warn }: { value: number; max: number; warn?: boolean }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
     <div className="w-full bg-gray-100 rounded-full h-2">
       <div
-        className={`h-2 rounded-full transition-all ${
-          pct >= 100 ? 'bg-red-500' : warn ? 'bg-amber-400' : 'bg-primary'
-        }`}
+        className={cn(
+          'h-2 rounded-full transition-all',
+          pct >= 100 ? 'bg-red-500' : warn ? 'bg-amber-400' : 'bg-primary',
+        )}
         style={{ width: `${pct}%` }}
       />
     </div>
@@ -43,7 +37,7 @@ function ProgressBar({ value, max, warn }: { value: number; max: number; warn?: 
 function ModelTab() {
   const { data: models, isLoading } = useCostsByModel();
 
-  if (isLoading) return <div className="text-gray-400 text-sm py-8 text-center">불러오는 중...</div>;
+  if (isLoading) return <PageSkeleton />;
 
   return (
     <div className="overflow-x-auto">
@@ -58,11 +52,11 @@ function ModelTab() {
         </thead>
         <tbody className="divide-y divide-gray-100">
           {models?.map((m) => (
-            <tr key={m.model} className="hover:bg-gray-50">
+            <tr key={m.model} className="hover:bg-gray-50 transition-colors">
               <td className="px-5 py-3 font-mono text-xs">{m.model}</td>
-              <td className="px-5 py-3 text-right font-medium">{formatCents(m.totalCents)}</td>
-              <td className="px-5 py-3 text-right text-gray-500">{formatTokens(m.totalTokens)}</td>
-              <td className="px-5 py-3 text-right text-gray-400">{m.eventCount}</td>
+              <td className="px-5 py-3 text-right font-medium tabular-nums">{formatCents(m.totalCents)}</td>
+              <td className="px-5 py-3 text-right text-gray-500 tabular-nums">{formatTokens(m.totalTokens)}</td>
+              <td className="px-5 py-3 text-right text-gray-400 tabular-nums">{m.eventCount}</td>
             </tr>
           ))}
           {(!models || models.length === 0) && (
@@ -79,7 +73,7 @@ function ModelTab() {
 function AgentTab() {
   const { data: agents, isLoading } = useCostsByAgent();
 
-  if (isLoading) return <div className="text-gray-400 text-sm py-8 text-center">불러오는 중...</div>;
+  if (isLoading) return <PageSkeleton />;
 
   return (
     <div className="overflow-x-auto">
@@ -94,14 +88,16 @@ function AgentTab() {
         </thead>
         <tbody className="divide-y divide-gray-100">
           {agents?.map((a) => (
-            <tr key={a.agentId} className="hover:bg-gray-50">
+            <tr key={a.agentId} className="hover:bg-gray-50 transition-colors">
               <td className="px-5 py-3">
-                <span className="mr-1">🤖</span>
-                {a.displayName ?? a.agentName ?? a.agentId}
+                <div className="flex items-center gap-2">
+                  <Bot className="h-4 w-4 text-gray-400 shrink-0" />
+                  {a.displayName ?? a.agentName ?? a.agentId}
+                </div>
               </td>
-              <td className="px-5 py-3 text-right font-medium">{formatCents(a.totalCents)}</td>
-              <td className="px-5 py-3 text-right text-gray-500">{formatTokens(a.totalTokens)}</td>
-              <td className="px-5 py-3 text-right text-gray-400">{a.eventCount}</td>
+              <td className="px-5 py-3 text-right font-medium tabular-nums">{formatCents(a.totalCents)}</td>
+              <td className="px-5 py-3 text-right text-gray-500 tabular-nums">{formatTokens(a.totalTokens)}</td>
+              <td className="px-5 py-3 text-right text-gray-400 tabular-nums">{a.eventCount}</td>
             </tr>
           ))}
           {(!agents || agents.length === 0) && (
@@ -119,9 +115,7 @@ function BudgetTab() {
   const { data: policies, isLoading: pLoading } = useBudgetPolicies();
   const { data: incidents, isLoading: iLoading } = useBudgetIncidents(false);
 
-  if (pLoading || iLoading) {
-    return <div className="text-gray-400 text-sm py-8 text-center">불러오는 중...</div>;
-  }
+  if (pLoading || iLoading) return <PageSkeleton />;
 
   const SCOPE_LABELS: Record<string, string> = {
     global: '전체',
@@ -154,7 +148,7 @@ function BudgetTab() {
                     <span className="text-xs text-gray-500">{p.scopeId}</span>
                   )}
                 </div>
-                <span className="font-medium">{formatCents(p.amountCents)}</span>
+                <span className="font-medium tabular-nums">{formatCents(p.amountCents)}</span>
               </div>
               <div className="flex items-center gap-3 text-xs text-gray-400">
                 <span>경고: {p.warnPercent}%</span>
@@ -178,24 +172,35 @@ function BudgetTab() {
           {incidents?.map((inc) => (
             <div
               key={inc.id}
-              className={`border-l-4 ${
-                inc.kind === 'hard_stop' ? 'border-l-red-400' : 'border-l-amber-400'
-              } bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3`}
+              className={cn(
+                'border-l-4 bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3',
+                inc.kind === 'hard_stop' ? 'border-l-red-400' : 'border-l-amber-400',
+              )}
             >
-              <span>{inc.kind === 'hard_stop' ? '🛑' : '⚠️'}</span>
+              <div className={cn(
+                'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
+                inc.kind === 'hard_stop' ? 'bg-red-50' : 'bg-amber-50',
+              )}>
+                <DollarSign className={cn(
+                  'h-4 w-4',
+                  inc.kind === 'hard_stop' ? 'text-red-500' : 'text-amber-500',
+                )} />
+              </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900">
                   {inc.kind === 'hard_stop' ? '강제 중지' : '예산 경고'}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 tabular-nums">
                   {formatCents(inc.amountAtTrigger)} / {formatCents(inc.thresholdAmount)}
                 </p>
               </div>
-              <ProgressBar
-                value={inc.amountAtTrigger}
-                max={inc.thresholdAmount}
-                warn={inc.kind === 'warn'}
-              />
+              <div className="w-24">
+                <ProgressBar
+                  value={inc.amountAtTrigger}
+                  max={inc.thresholdAmount}
+                  warn={inc.kind === 'warn'}
+                />
+              </div>
             </div>
           ))}
           {(!incidents || incidents.length === 0) && (
@@ -218,22 +223,22 @@ export function CostsPage() {
       {/* 상단 메트릭 */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <MetricCard
-          icon="💰"
+          icon={DollarSign}
           label="총 비용"
           value={formatCents(summary?.totalCents ?? 0)}
-          sub={`${summary?.eventCount ?? 0}건 이벤트`}
+          description={<span>{summary?.eventCount ?? 0}건 이벤트</span>}
         />
         <MetricCard
-          icon="🔢"
+          icon={Hash}
           label="총 토큰"
           value={formatTokens(summary?.totalTokens ?? 0)}
-          sub="입출력 합계"
+          description={<span>입출력 합계</span>}
         />
         <MetricCard
-          icon="📊"
+          icon={BarChart3}
           label="이벤트"
           value={summary?.eventCount ?? 0}
-          sub="비용 기록 건수"
+          description={<span>비용 기록 건수</span>}
         />
       </div>
 
@@ -244,11 +249,12 @@ export function CostsPage() {
             <button
               key={t.value}
               onClick={() => setTab(t.value)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={cn(
+                'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
                 tab === t.value
                   ? 'bg-primary text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+                  : 'text-gray-600 hover:bg-gray-100',
+              )}
             >
               {t.label}
             </button>

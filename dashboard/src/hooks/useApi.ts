@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const BASE = '/api';
 
-async function fetchJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`);
+async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, init);
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(body.error ?? `HTTP ${res.status}`);
@@ -230,5 +230,56 @@ export function useChains() {
     queryKey: ['chains'],
     queryFn: () => fetchJson('/chains'),
     refetchInterval: 10000,
+  });
+}
+
+// ─── 루틴 ─────────────────────────────────────
+
+export interface Routine {
+  id: string;
+  name: string;
+  description: string | null;
+  cronExpression: string;
+  command: string;
+  enabled: number;
+  lastRunAt: string | null;
+  nextRunAt: string | null;
+  lastRunStatus: 'success' | 'failed' | 'running' | null;
+  lastRunOutput: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function useRoutines() {
+  return useQuery<Routine[]>({
+    queryKey: ['routines'],
+    queryFn: () => fetchJson('/routines'),
+    refetchInterval: 10000,
+  });
+}
+
+export function useToggleRoutine() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      fetchJson<Routine>(`/routines/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: enabled ? 1 : 0 }),
+      }),
+    onMutate: async ({ id, enabled }) => {
+      await queryClient.cancelQueries({ queryKey: ['routines'] });
+      const prev = queryClient.getQueryData<Routine[]>(['routines']);
+      queryClient.setQueryData<Routine[]>(['routines'], (old) =>
+        old?.map((r) => (r.id === id ? { ...r, enabled: enabled ? 1 : 0 } : r)),
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(['routines'], ctx.prev);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['routines'] });
+    },
   });
 }

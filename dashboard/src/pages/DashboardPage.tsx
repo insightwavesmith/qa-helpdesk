@@ -1,20 +1,9 @@
 import { MetricCard } from '../components/MetricCard';
 import { StatusBadge } from '../components/StatusBadge';
+import { PageSkeleton } from '../components/PageSkeleton';
 import { useDashboardSummary, useAgents, useNotifications } from '../hooks/useApi';
-
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return '방금 전';
-  if (mins < 60) return `${mins}분 전`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}시간 전`;
-  return `${Math.floor(hours / 24)}일 전`;
-}
+import { formatCents, timeAgo, cn } from '../lib/utils';
+import { Bot, CircleDot, DollarSign, Layers } from 'lucide-react';
 
 export function DashboardPage() {
   const { data: summary, isLoading: summaryLoading } = useDashboardSummary();
@@ -22,7 +11,7 @@ export function DashboardPage() {
   const { data: notifications } = useNotifications(5);
 
   if (summaryLoading) {
-    return <div className="text-gray-400 text-sm">불러오는 중...</div>;
+    return <PageSkeleton variant="dashboard" />;
   }
 
   const ticketCount = (status: string) =>
@@ -37,30 +26,42 @@ export function DashboardPage() {
       <h2 className="text-xl font-bold text-gray-900">대시보드</h2>
 
       {/* 상단 메트릭 카드 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          icon="🤖"
+          icon={Bot}
           label="에이전트"
           value={`${activeAgents}/${totalAgents}`}
-          sub={`실행중 ${agentCount('running')}`}
+          description={
+            <span>
+              실행중 {agentCount('running')}, 일시정지 {agentCount('paused')}, 오류 {agentCount('error')}
+            </span>
+          }
         />
         <MetricCard
-          icon="📋"
+          icon={CircleDot}
           label="진행중 태스크"
           value={ticketCount('in_progress')}
-          sub={`전체 ${summary?.tickets.reduce((s, t) => s + t.count, 0) ?? 0}`}
+          description={
+            <span>전체 {summary?.tickets.reduce((s, t) => s + t.count, 0) ?? 0}건</span>
+          }
         />
         <MetricCard
-          icon="💰"
+          icon={DollarSign}
           label="총 비용"
           value={formatCents(summary?.totalCostCents ?? 0)}
-          sub={`미해결 예산 ${summary?.openBudgetIncidents ?? 0}건`}
+          description={
+            <span>미해결 예산 {summary?.openBudgetIncidents ?? 0}건</span>
+          }
         />
         <MetricCard
-          icon="🔄"
+          icon={Layers}
           label="PDCA 피처"
           value={summary?.pdcaFeatures.reduce((s, p) => s + p.count, 0) ?? 0}
-          sub={summary?.pdcaFeatures.map((p) => `${p.phase} ${p.count}`).join(', ') || '없음'}
+          description={
+            <span>
+              {summary?.pdcaFeatures.map((p) => `${p.phase} ${p.count}`).join(', ') || '없음'}
+            </span>
+          }
         />
       </div>
 
@@ -83,31 +84,41 @@ export function DashboardPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {agents?.map((agent) => (
-                <tr key={agent.id} className="hover:bg-gray-50">
+                <tr key={agent.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-5 py-3">
-                    <span className="mr-1">{agent.icon ?? '🤖'}</span>
-                    {agent.displayName ?? agent.name}
+                    <div className="flex items-center gap-2">
+                      <Bot className="h-4 w-4 text-gray-400 shrink-0" />
+                      <span className="font-medium text-gray-900">
+                        {agent.displayName ?? agent.name}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-5 py-3">
                     <StatusBadge value={agent.status} />
                   </td>
                   <td className="px-5 py-3 text-gray-600">{agent.role}</td>
                   <td className="px-5 py-3 text-gray-500 text-xs font-mono">{agent.model ?? '-'}</td>
-                  <td className="px-5 py-3 text-right text-gray-700">{formatCents(agent.spentMonthlyCents ?? 0)}</td>
+                  <td className="px-5 py-3 text-right text-gray-700 tabular-nums">
+                    {formatCents(agent.spentMonthlyCents ?? 0)}
+                  </td>
                   <td className="px-5 py-3 text-gray-400 text-xs">
                     {agent.lastHeartbeatAt ? timeAgo(agent.lastHeartbeatAt) : '-'}
                   </td>
                 </tr>
               ))}
               {(!agents || agents.length === 0) && (
-                <tr><td colSpan={6} className="px-5 py-8 text-center text-gray-400">등록된 에이전트 없음</td></tr>
+                <tr>
+                  <td colSpan={6} className="px-5 py-8 text-center text-gray-400">
+                    등록된 에이전트 없음
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* 최근 이벤트 */}
+      {/* 최근 알림 */}
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
         <div className="px-5 py-3 border-b border-gray-100">
           <h3 className="font-semibold text-gray-900">최근 알림</h3>
@@ -115,14 +126,17 @@ export function DashboardPage() {
         <div className="divide-y divide-gray-100">
           {notifications?.map((n) => (
             <div key={n.id} className="px-5 py-3 flex items-start gap-3">
-              <span className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${
-                n.type === 'error' ? 'bg-red-500' :
-                n.type === 'warning' ? 'bg-amber-400' :
-                n.type === 'success' ? 'bg-emerald-500' : 'bg-blue-400'
-              }`} />
+              <span
+                className={cn(
+                  'mt-1.5 w-2 h-2 rounded-full flex-shrink-0',
+                  n.type === 'error' ? 'bg-red-500' :
+                  n.type === 'warning' ? 'bg-amber-400' :
+                  n.type === 'success' ? 'bg-emerald-500' : 'bg-blue-400',
+                )}
+              />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900">{n.title}</p>
-                <p className="text-xs text-gray-500 truncate">{n.message}</p>
+                <p className="text-xs text-gray-500 overflow-hidden whitespace-nowrap text-ellipsis">{n.message}</p>
               </div>
               <span className="text-xs text-gray-400 flex-shrink-0">{timeAgo(n.createdAt)}</span>
             </div>
