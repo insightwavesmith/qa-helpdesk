@@ -1,12 +1,35 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Layout } from './components/Layout';
+import { DashboardPage } from './pages/DashboardPage';
+import { TicketsPage } from './pages/TicketsPage';
+import { ActivityPage } from './pages/ActivityPage';
+import { PlaceholderPage } from './pages/PlaceholderPage';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5000,
+      retry: 1,
+    },
+  },
+});
+
 export default function App() {
   return (
-    <div className="min-h-screen bg-white font-sans">
-      <header className="border-b px-6 py-4">
-        <h1 className="text-xl font-bold text-primary">bkit 대시보드</h1>
-      </header>
-      <main className="p-6">
-        <p className="text-gray-600">준비 중...</p>
-      </main>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="tickets" element={<TicketsPage />} />
+            <Route path="activity" element={<ActivityPage />} />
+            <Route path="costs" element={<PlaceholderPage title="비용 추적" />} />
+            <Route path="org" element={<PlaceholderPage title="조직도" />} />
+            <Route path="chains" element={<PlaceholderPage title="체인 편집기" />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
