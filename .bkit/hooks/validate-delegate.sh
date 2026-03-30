@@ -61,7 +61,7 @@ fi
 
 # ── 리더 허용 경로 (allowlist) ──
 # 허용 목록에 매칭되면 패스, 아니면 차단 대상
-if echo "$REL_FILE" | grep -qE '^docs/|^TASK|^CLAUDE|^\.claude/|^\.bkit/(state|logs)/|\.md$|^package\.json$|^tsconfig\.json$'; then
+if echo "$REL_FILE" | grep -qE '^docs/|^TASK|^CLAUDE|^\.claude/settings|^\.bkit/(state|logs)/|\.md$|^package\.json$|^tsconfig\.json$'; then
     exit 0
 fi
 
@@ -91,7 +91,7 @@ fi
 
 # ─── 리더 (pane_index == 0) → 차단 ───
 echo "❌ [delegate 강제] 리더는 허용 목록 외 파일을 직접 수정할 수 없습니다." >&2
-echo "허용: docs/, TASK*, CLAUDE*, .claude/, .bkit/state|logs/, *.md, package.json, tsconfig.json" >&2
+echo "허용: docs/, TASK*, CLAUDE*, .claude/settings*, .bkit/state|logs/, *.md, package.json, tsconfig.json" >&2
 echo "팀원(frontend-dev, backend-dev)에게 작업을 위임하세요." >&2
 source "$PROJECT_DIR/.bkit/hooks/notify-hook.sh" 2>/dev/null && \
     notify_hook "🚫 [게이트] 리더가 허용 외 파일 직접 수정 시도: $REL_FILE" "validate-delegate"
