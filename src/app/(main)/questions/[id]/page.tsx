@@ -15,6 +15,7 @@ import { FollowUpForm } from "./follow-up-form";
 import { FollowUpActions } from "./follow-up-actions";
 import { PageViewTracker } from "@/components/tracking/page-view-tracker";
 import { mdToHtml } from "@/lib/markdown";
+import { parseImageUrls } from "@/lib/parse-image-urls";
 
 const categoryColorMap: Record<string, string> = {
   "광고소재": "bg-blue-50 text-blue-700 border-blue-200",
@@ -188,11 +189,14 @@ export default async function QuestionDetailPage({
         </div>
 
         {/* Images */}
-        {Array.isArray(question.image_urls) && question.image_urls.length > 0 && (
-          <div className="mb-5">
-            <ImageGallery imageUrls={question.image_urls as string[]} />
-          </div>
-        )}
+        {(() => {
+          const qImgs = parseImageUrls(question.image_urls);
+          return qImgs.length > 0 ? (
+            <div className="mb-5">
+              <ImageGallery imageUrls={qImgs} />
+            </div>
+          ) : null;
+        })()}
 
         {/* Author info */}
         <div className="flex items-center justify-between pt-4 border-t">
@@ -281,14 +285,14 @@ export default async function QuestionDetailPage({
                   />
 
                   {/* 답변 이미지 */}
-                  {Array.isArray((answer as Record<string, unknown>).image_urls) &&
-                    ((answer as Record<string, unknown>).image_urls as string[]).length > 0 && (
+                  {(() => {
+                    const aImgs = parseImageUrls((answer as Record<string, unknown>).image_urls);
+                    return aImgs.length > 0 ? (
                       <div className="pl-[42px] mt-2">
-                        <ImageGallery
-                          imageUrls={(answer as Record<string, unknown>).image_urls as string[]}
-                        />
+                        <ImageGallery imageUrls={aImgs} />
                       </div>
-                    )}
+                    ) : null;
+                  })()}
 
                   {/* Source references for AI answers — 관리자만 표시 */}
                   {isAI && isAdmin && (
@@ -305,7 +309,7 @@ export default async function QuestionDetailPage({
                       <AnswerEditButton
                         answerId={answer.id}
                         initialContent={answer.content}
-                        initialImageUrls={(answer as Record<string, unknown>).image_urls as string[] | undefined}
+                        initialImageUrls={parseImageUrls((answer as Record<string, unknown>).image_urls)}
                       />
                     </div>
                   )}
@@ -338,11 +342,14 @@ export default async function QuestionDetailPage({
                     {fu.question.content}
                   </div>
                   {/* 꼬리질문 이미지 */}
-                  {Array.isArray(fu.question.image_urls) && fu.question.image_urls.length > 0 && (
-                    <div className="pl-9 mt-2">
-                      <ImageGallery imageUrls={fu.question.image_urls as string[]} />
-                    </div>
-                  )}
+                  {(() => {
+                    const fqImgs = parseImageUrls(fu.question.image_urls);
+                    return fqImgs.length > 0 ? (
+                      <div className="pl-9 mt-2">
+                        <ImageGallery imageUrls={fqImgs} />
+                      </div>
+                    ) : null;
+                  })()}
                 </article>
 
                 {/* 꼬리질문의 답변 */}

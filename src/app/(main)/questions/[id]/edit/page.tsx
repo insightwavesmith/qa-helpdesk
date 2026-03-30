@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/db";
 import { getQuestionById, getCategories } from "@/actions/questions";
+import { parseImageUrls } from "@/lib/parse-image-urls";
 import { NewQuestionForm } from "../../new/new-question-form";
 
 export default async function EditQuestionPage({
@@ -46,9 +47,7 @@ export default async function EditQuestionPage({
         title: question.title,
         content: question.content,
         categoryId: question.category?.id ? String(question.category.id) : "",
-        imageUrls: Array.isArray(question.image_urls)
-          ? (question.image_urls as string[])
-          : [],
+        imageUrls: parseImageUrls(question.image_urls),
       }}
     />
   );

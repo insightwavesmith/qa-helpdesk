@@ -13,6 +13,7 @@ import { approveAnswer, deleteAnswer, updateAnswer } from "@/actions/answers";
 import { uploadFile } from "@/lib/upload-client";
 import { toast } from "sonner";
 import { mp } from "@/lib/mixpanel";
+import { parseImageUrls } from "@/lib/parse-image-urls";
 import {
   Bot,
   User,
@@ -109,7 +110,7 @@ export function AnswersReviewClient({
   const handleEdit = (answer: Answer) => {
     setEditingId(answer.id);
     setEditContent(answer.content);
-    setEditImageUrls(Array.isArray(answer.image_urls) ? (answer.image_urls as string[]) : []);
+    setEditImageUrls(parseImageUrls(answer.image_urls));
   };
 
   const handleImageUpload = async (files: FileList) => {
@@ -241,20 +242,16 @@ export function AnswersReviewClient({
                           >
                             {answer.question.content}
                           </div>
-                          {Array.isArray(answer.question.image_urls) && answer.question.image_urls.length > 0 && (
-                            <div className="flex gap-2 mt-2 flex-wrap">
-                              {(answer.question.image_urls as string[]).map((url, idx) => (
-                                <Image
-                                  key={idx}
-                                  src={url}
-                                  alt={`질문 이미지 ${idx + 1}`}
-                                  width={80}
-                                  height={80}
-                                  className="h-16 w-16 md:h-20 md:w-20 object-cover rounded-lg border border-gray-200"
-                                />
-                              ))}
-                            </div>
-                          )}
+                          {(() => {
+                            const qImgs = parseImageUrls(answer.question.image_urls);
+                            return qImgs.length > 0 ? (
+                              <div className="flex gap-2 mt-2 flex-wrap">
+                                {qImgs.map((url, idx) => (
+                                  <Image key={idx} src={url} alt={`질문 이미지 ${idx + 1}`} width={80} height={80} className="h-16 w-16 md:h-20 md:w-20 object-cover rounded-lg border border-gray-200" />
+                                ))}
+                              </div>
+                            ) : null;
+                          })()}
                         </div>
                       )}
                     </div>
@@ -345,20 +342,16 @@ export function AnswersReviewClient({
                       <div className="prose prose-sm max-w-none whitespace-pre-wrap mb-4 text-gray-700">
                         {answer.content}
                       </div>
-                      {Array.isArray(answer.image_urls) && answer.image_urls.length > 0 && (
-                        <div className="flex gap-2 mb-4 flex-wrap">
-                          {(answer.image_urls as string[]).map((url, idx) => (
-                            <Image
-                              key={idx}
-                              src={url}
-                              alt={`답변 이미지 ${idx + 1}`}
-                              width={120}
-                              height={120}
-                              className="h-20 w-20 md:h-24 md:w-24 object-cover rounded-lg border border-gray-200"
-                            />
-                          ))}
-                        </div>
-                      )}
+                      {(() => {
+                        const aImgs = parseImageUrls(answer.image_urls);
+                        return aImgs.length > 0 ? (
+                          <div className="flex gap-2 mb-4 flex-wrap">
+                            {aImgs.map((url, idx) => (
+                              <Image key={idx} src={url} alt={`답변 이미지 ${idx + 1}`} width={120} height={120} className="h-20 w-20 md:h-24 md:w-24 object-cover rounded-lg border border-gray-200" />
+                            ))}
+                          </div>
+                        ) : null;
+                      })()}
                       {answer.is_ai && !!answer.source_refs && (
                         <div className="mb-4">
                           <SourceReferences rawSourceRefs={answer.source_refs} />
