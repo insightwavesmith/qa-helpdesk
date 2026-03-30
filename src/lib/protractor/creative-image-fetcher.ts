@@ -309,7 +309,7 @@ export async function fetchVideoSourceUrls(
     const url = new URL(`${META_API_BASE}/act_${cleanId}/advideos`);
     url.searchParams.set("access_token", token);
     url.searchParams.set("fields", "id,source");
-    url.searchParams.set("limit", "500");
+    url.searchParams.set("limit", "100");
     if (after) url.searchParams.set("after", after);
 
     try {
