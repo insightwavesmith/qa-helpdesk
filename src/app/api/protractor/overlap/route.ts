@@ -72,12 +72,16 @@ export async function GET(request: NextRequest) {
 
       if (dbData && (dbData as Record<string, unknown>[]).length > 0) {
         const row = (dbData as Record<string, unknown>[])[0];
+        const rawPairs = row.pairs;
+        const parsedPairs: OverlapPair[] = Array.isArray(rawPairs)
+          ? rawPairs
+          : typeof rawPairs === "string" ? JSON.parse(rawPairs) : [];
         return NextResponse.json({
           overall_rate: Number(row.overall_rate) || 0,
           total_unique: Number(row.total_unique_reach) || 0,
           individual_sum: Number(row.individual_sum) || 0,
           cached_at: (row.collected_at as string) || new Date().toISOString(),
-          pairs: (row.pairs || []) as OverlapPair[],
+          pairs: parsedPairs,
         } satisfies OverlapResponse, {
           headers: {
             "Cache-Control": "private, no-store, must-revalidate",

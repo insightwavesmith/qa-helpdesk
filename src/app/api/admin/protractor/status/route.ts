@@ -150,17 +150,20 @@ export async function GET() {
 
       const metaOk = !!meta;
 
+      const hasSecret = secretSet.has(acc.account_id);
       const hasProjectId = !!acc.mixpanel_project_id;
-      const hasBoardId = !!acc.mixpanel_board_id;
       const hasData = mixpanelDataSet.has(acc.account_id);
+
+      // Mixpanel 설정 = service_secrets 시크릿 OR ad_accounts.mixpanel_project_id
+      const isConfigured = hasSecret || hasProjectId;
 
       let mixpanelState: "ok" | "no_board" | "not_configured";
       let mixpanelOk: boolean;
 
-      if (hasProjectId && hasData && hasBoardId) {
+      if (isConfigured && hasData) {
         mixpanelState = "ok";
         mixpanelOk = true;
-      } else if (hasProjectId && hasData && !hasBoardId) {
+      } else if (isConfigured && !hasData) {
         mixpanelState = "no_board";
         mixpanelOk = false;
       } else {

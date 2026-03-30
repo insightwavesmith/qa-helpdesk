@@ -162,8 +162,11 @@ export function OverlapAnalysis({
     );
   }
 
-  const { overall_rate, total_unique, individual_sum, cached_at, pairs, truncated } =
+  const { overall_rate, total_unique, individual_sum, cached_at, pairs: rawPairs, truncated } =
     overlapData;
+  const pairs: OverlapPair[] = Array.isArray(rawPairs)
+    ? rawPairs
+    : typeof rawPairs === "string" ? JSON.parse(rawPairs) : [];
   const wastedReach = individual_sum - total_unique;
   const dangerPairs = pairs.filter((p) => p.overlap_rate >= 60);
 

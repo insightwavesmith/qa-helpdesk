@@ -123,15 +123,18 @@ export async function GET(request: NextRequest) {
 
       const cached = cachedRows?.[0];
       if (cached) {
+        const metricsRaw = cached.metrics_json;
+        const diagnosticsRaw = cached.diagnostics_json;
+        const summaryRaw = cached.summary_json;
         return NextResponse.json({
           score: cached.score,
           period,
           dataAvailableDays: cached.data_available_days,
           grade: cached.grade ? { grade: cached.grade, label: cached.grade_label } : null,
-          diagnostics: cached.diagnostics_json,
-          metrics: cached.metrics_json,
+          diagnostics: typeof diagnosticsRaw === "string" ? JSON.parse(diagnosticsRaw) : diagnosticsRaw ?? null,
+          metrics: Array.isArray(metricsRaw) ? metricsRaw : typeof metricsRaw === "string" ? JSON.parse(metricsRaw) : [],
           hasBenchmarkData: cached.has_benchmark_data,
-          summary: cached.summary_json,
+          summary: typeof summaryRaw === "string" ? JSON.parse(summaryRaw) : summaryRaw ?? null,
           computed_at: cached.computed_at,
           source: "precomputed",
         });
