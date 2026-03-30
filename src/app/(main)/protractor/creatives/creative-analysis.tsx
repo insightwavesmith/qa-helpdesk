@@ -64,21 +64,6 @@ interface BenchmarkResponse {
   benchmarks: Record<string, BenchmarkRow[]>;
 }
 
-interface LpConsistencyRow {
-  ad_id: string;
-  visual_score: number | null;
-  semantic_score: number | null;
-  cross_score: number | null;
-  total_score: number | null;
-}
-
-interface LpConsistencyResponse {
-  account_id: string;
-  total: number;
-  avg_score: number | null;
-  results: LpConsistencyRow[];
-}
-
 interface IntelligenceResponse {
   account_id: string;
   total: number;
@@ -169,13 +154,6 @@ export default function CreativeAnalysis({
 
   const { data: benchmarkData } = useSWR<BenchmarkResponse>(
     `/api/admin/creative-benchmark`,
-    jsonFetcher
-  );
-
-  const { data: consistencyData } = useSWR<LpConsistencyResponse>(
-    selectedAccountId
-      ? `/api/admin/creative-lp-consistency?account_id=${selectedAccountId}`
-      : null,
     jsonFetcher
   );
 
