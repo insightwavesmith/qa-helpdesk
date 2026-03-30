@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-30T12:47:00.000Z",
+  "lastUpdated": "2026-03-30T13:50:42.707076+00:00",
   "activeFeatures": [
     "slack-notification",
     "organic-channel-distribution-phase2",
@@ -946,7 +946,7 @@
   "session": {
     "startedAt": "2026-03-30T05:20:31.424Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-30T08:37:19.000Z"
+    "lastActivity": "2026-03-30T14:50:20.000Z"
   },
   "history": [
     {
@@ -984,6 +984,6 @@
     "stateFile": ".bkit/runtime/agent-state.json",
     "eventsFile": ".bkit/runtime/agent-events.jsonl"
   },
-  "updatedAt": "2026-03-30T12:30:00.000Z",
-  "_autoSyncNote": "video-fix 팀 해산, bscamp-cron-00029 배포 완료, process-media+saliency 트리거 중"
+  "updatedAt": "2026-03-30T14:50:20.000Z",
+  "_autoSyncNote": "auto-synced at 2026-03-30 23:16:00, last commit: 79814ae"
 }

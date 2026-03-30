@@ -58,8 +58,13 @@ function detectDisplayFormat(snapshot?: SearchApiSnapshot): DisplayFormat {
   if (fmt === "CAROUSEL" || fmt === "DCO" || fmt === "MULTI_IMAGES")
     return "CAROUSEL";
   if (fmt === "IMAGE" || (snapshot?.images?.length ?? 0) > 0) return "IMAGE";
-  // display_format 필드가 없더라도 cards가 있으면 CAROUSEL로 판단
-  if ((snapshot?.cards?.length ?? 0) > 0) return "CAROUSEL";
+  // cards만 있고 display_format 미지정: Advantage+ 영상 소재일 수 있으므로 CAROUSEL 단정 금지
+  if ((snapshot?.cards?.length ?? 0) > 0) {
+    const hasVideoCard = snapshot!.cards!.some(
+      (c) => c.video_preview_image_url
+    );
+    return hasVideoCard ? "VIDEO" : "CAROUSEL";
+  }
   return "UNKNOWN";
 }
 
