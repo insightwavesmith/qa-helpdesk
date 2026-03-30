@@ -416,6 +416,29 @@ function CostBarChart() {
 
 ---
 
+## 6. TDD 테스트 설계
+
+> CSS-only 변경이므로 시각적 회귀 확인 중심.
+
+### 테스트 파일
+- `dashboard/src/__tests__/dashboard-design/visual-regression.test.ts`
+
+### describe/it 구조
+```ts
+describe('대시보드 디자인 개선', () => {
+  it('MetricCard 수치 크기가 28px로 렌더링된다', () => { /* tsc 타입 검증 */ });
+  it('사이드바 active 상태에 border-left가 적용된다', () => { /* tsc 타입 검증 */ });
+  it('CostBarChart가 models 데이터로 렌더링된다', () => { /* tsc 타입 검증 */ });
+});
+```
+
+### 검증 기준
+- `npx tsc --noEmit --quiet` 통과
+- `npm run build` 성공
+- 기존 레이아웃 깨짐 없음
+
+---
+
 ## 10. 하지 말 것
 
 - API 호출 추가/변경 금지

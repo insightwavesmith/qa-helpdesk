@@ -101,9 +101,6 @@ export function PortfolioTabV2({
   const styleBenchmarks: BenchmarkRow[] = benchmarkData?.benchmarks?.style ?? [];
   const maxHookRoas = Math.max(...hookBenchmarks.map((b) => b.avg_roas ?? 0), 1);
   const maxStyleRoas = Math.max(...styleBenchmarks.map((b) => b.avg_roas ?? 0), 1);
-  const topHook = hookBenchmarks[0];
-  const topStyle = styleBenchmarks[0];
-
   const highScoreCount = scoreBuckets[4].count;
 
   if (intelligenceLoading) {
@@ -222,30 +219,6 @@ export function PortfolioTabV2({
         </div>
       )}
 
-      {/* 벤치마크 인사이트 */}
-      {(topHook || topStyle) && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
-          <h3 className="font-semibold text-amber-800 mb-3">
-            벤치마크 인사이트
-          </h3>
-          <div className="space-y-2 text-sm text-amber-700">
-            {topHook && (
-              <p>
-                최고 성과 훅 유형:{" "}
-                <strong>{topHook.element_value}</strong> (평균 ROAS{" "}
-                {topHook.avg_roas?.toFixed(1)})
-              </p>
-            )}
-            {topStyle && (
-              <p>
-                최고 성과 스타일:{" "}
-                <strong>{topStyle.element_value}</strong> (평균 ROAS{" "}
-                {topStyle.avg_roas?.toFixed(1)})
-              </p>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
