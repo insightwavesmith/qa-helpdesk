@@ -38,9 +38,21 @@ source "$(dirname "$0")/helpers/team-context-resolver.sh" 2>/dev/null
 resolve_team_context 2>/dev/null
 CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$PROJECT_DIR/.bkit/runtime/team-context.json}"
 if [ ! -f "$CONTEXT_FILE" ]; then
-    exit 0  # 팀 컨텍스트 없음 → 비대상
+    # team-context 없어도 tmux 세션명으로 팀 추론
+    if [ -n "${TMUX:-}" ]; then
+        _SESSION=$(tmux display-message -p '#S' 2>/dev/null || true)
+        case "$_SESSION" in
+            sdk-cto*) TEAM="CTO" ;;
+            sdk-pm*)  TEAM="PM"  ;;
+            sdk-mkt*) TEAM="MKT" ;;
+            *)        exit 0 ;;  # 알 수 없는 세션
+        esac
+    else
+        exit 0  # tmux도 없고 team-context도 없음
+    fi
+else
+    TEAM=$(jq -r '.team // empty' "$CONTEXT_FILE" 2>/dev/null || true)
 fi
-TEAM=$(jq -r '.team // empty' "$CONTEXT_FILE" 2>/dev/null || true)
 [ -z "$TEAM" ] && exit 0
 # 팀명을 from_role로 변환 (CTO → CTO_LEADER, PM → PM_LEADER, 기타 → 그대로)
 case "$TEAM" in
