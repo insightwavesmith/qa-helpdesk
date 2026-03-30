@@ -278,6 +278,7 @@ export async function GET(req: NextRequest) {
       ad_copy: m.ad_copy ?? null,
       duration_seconds: m.duration_seconds ?? null,
       analysis_json: (m.analysis_json as AnalysisJsonV3) ?? null,
+      video_analysis: m.video_analysis ?? null,
     },
     performance,
     saliency: sal
