@@ -328,7 +328,7 @@ def main():
         offset = 0
         PAGE = 1000
         while True:
-            batch = sb_get(f"/creative_saliency?select=ad_id&target_type=eq.video&limit={PAGE}&offset={offset}")
+            batch = sb_get(f"/creative_saliency?select=ad_id&target_type=eq.video&attention_map_url=not.is.null&limit={PAGE}&offset={offset}")
             if not batch:
                 break
             existing_set.update(r["ad_id"] for r in batch)

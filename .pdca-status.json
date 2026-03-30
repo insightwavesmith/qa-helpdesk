@@ -9,10 +9,9 @@
     "video-permission-skip",
     "video-collection-audit",
     "helpers",
-    ".claude",
-    "paperclip-bkit-integration-v2"
+    ".claude"
   ],
-  "primaryFeature": "paperclip-bkit-integration-v2",
+  "primaryFeature": "helpers",
   "features": {
     "slack-notification": {
       "phase": "implementing",
@@ -937,62 +936,6 @@
         "lastUpdated": "2026-03-30T06:01:45.065Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/.claude/hooks/pdca-chain-handoff.sh"
-    },
-    "paperclip-bkit-integration-v2": {
-      "phase": "design",
-      "plan": {
-        "team": "pm",
-        "done": true,
-        "doc": "docs/01-plan/features/paperclip-dashboard-adoption.plan.md",
-        "at": "2026-03-30"
-      },
-      "design": {
-        "team": "cto",
-        "done": true,
-        "doc": "docs/02-design/features/paperclip-bkit-integration-v2.design.md",
-        "at": "2026-03-30"
-      },
-      "do": {
-        "team": "cto",
-        "done": false,
-        "commit": null,
-        "at": null
-      },
-      "check": {
-        "team": "qa",
-        "done": false,
-        "doc": "",
-        "matchRate": null
-      },
-      "act": {
-        "done": false,
-        "commit": null
-      },
-      "updatedAt": "2026-03-30T09:50:00",
-      "notes": "Design v2 완료. COO 피드백 5건 + 10대 문제 매핑. 단일 컷오버, 11 DB 테이블, 56 TDD 케이스.",
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-03-30T10:50:01.000Z",
-        "lastUpdated": "2026-03-30T10:50:01.000Z"
-      },
-      "stateMachine": {
-        "currentState": "design",
-        "previousState": null,
-        "stateHistory": [],
-        "retryCount": 0,
-        "maxRetries": 5,
-        "circuitBreakerOpen": false
-      },
-      "metrics": {
-        "qualityScore": null,
-        "conventionCompliance": null,
-        "apiCompliance": null,
-        "cycleTimeMs": null,
-        "iterationEfficiency": null
-      },
-      "phaseTimestamps": {},
-      "automationLevel": 2
     }
   },
   "pipeline": {
@@ -1003,7 +946,7 @@
   "session": {
     "startedAt": "2026-03-30T05:20:31.424Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-30T10:50:01.000Z"
+    "lastActivity": "2026-03-30T08:37:19.000Z"
   },
   "history": [
     {
@@ -1041,6 +984,6 @@
     "stateFile": ".bkit/runtime/agent-state.json",
     "eventsFile": ".bkit/runtime/agent-events.jsonl"
   },
-  "updatedAt": "2026-03-30T10:50:01.000Z",
-  "_autoSyncNote": "auto-synced at 2026-03-30 18:58:52, last commit: ab7e578"
+  "updatedAt": "2026-03-30T12:47:00.000Z",
+  "_autoSyncNote": "auto-synced at 2026-03-30 19:50:29, last commit: 09e9703"
 }
