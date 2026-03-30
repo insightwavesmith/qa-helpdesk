@@ -102,6 +102,11 @@ export function extractExpiresAt(url: string | null): Date | null {
   }
 }
 
+/** 텍스트가 DCO 템플릿 변수({{...}})인지 확인 */
+function isDcoTemplate(text: string): boolean {
+  return /\{\{.+\}\}/.test(text);
+}
+
 /** SearchAPI.io raw 데이터 → CompetitorAd 변환 */
 export function transformSearchApiAd(raw: SearchApiAdRaw): CompetitorAd {
   const endDate = raw.end_date ?? null;
@@ -110,12 +115,19 @@ export function transformSearchApiAd(raw: SearchApiAdRaw): CompetitorAd {
     extractMediaUrls(snapshot);
   const carouselCards = extractCarouselCards(snapshot);
 
+  // DCO 광고: body/title이 {{product.brand}} 같은 템플릿이면 cards[0]에서 실제 텍스트 가져오기
+  const firstCard = snapshot?.cards?.[0];
+  let body = extractBodyText(snapshot?.body);
+  let title = snapshot?.title ?? "";
+  if (isDcoTemplate(body) && firstCard?.body) body = firstCard.body;
+  if (isDcoTemplate(title) && firstCard?.title) title = firstCard.title;
+
   return {
     id: raw.ad_archive_id,
     pageId: raw.page_id,
     pageName: raw.page_name,
-    body: extractBodyText(snapshot?.body),
-    title: snapshot?.title ?? "",
+    body,
+    title,
     caption: snapshot?.caption ?? "",
     startDate: raw.start_date,
     endDate,
