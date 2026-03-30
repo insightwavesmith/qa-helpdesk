@@ -2,12 +2,23 @@
 import type { Application, Request, Response } from 'express';
 import { AgentService } from '../services/agents.js';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { agents } from '../db/schema.js';
 import type * as schema from '../db/schema.js';
 
 type DB = BetterSQLite3Database<typeof schema>;
 
 export function registerAgentRoutes(app: Application, db: DB) {
   const svc = new AgentService(db);
+
+  // GET /api/agents — 전체 목록
+  app.get('/api/agents', (_req: Request, res: Response) => {
+    try {
+      const all = db.select().from(agents).all();
+      res.json(all);
+    } catch (e) {
+      res.status(500).json({ error: String(e) });
+    }
+  });
 
   // GET /api/agents/tree — Org Chart
   app.get('/api/agents/tree', async (_req: Request, res: Response) => {

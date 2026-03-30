@@ -80,68 +80,136 @@ export function seed() {
     db.insert(workflowSteps).values(step).onConflictDoNothing().run();
   }
 
-  // 기본 에이전트 5명
+  // 실제 팀 에이전트 7명
   const defaultAgents = [
     {
-      id: 'agent-cto',
-      name: 'cto-leader',
-      displayName: 'CTO 리더',
+      id: 'mozzi-coo',
+      name: 'mozzi',
+      displayName: '모찌',
+      role: 'coo' as const,
+      team: null,
+      icon: '🍡',
+      model: 'claude-opus-4-6',
+      reportsTo: null,
+    },
+    {
+      id: 'tendon-leader',
+      name: 'tendon',
+      displayName: '모찌 텐동',
+      role: 'leader' as const,
+      team: 'dev',
+      icon: '🍤',
+      model: 'claude-opus-4-6',
+      reportsTo: 'mozzi-coo',
+    },
+    {
+      id: 'sdk-cto',
+      name: 'sdk-cto',
+      displayName: 'CTO',
       role: 'leader' as const,
       team: 'cto',
       icon: '👨‍💻',
       model: 'claude-opus-4-6',
+      tmuxSession: 'sdk-cto',
+      reportsTo: 'tendon-leader',
     },
     {
-      id: 'agent-frontend',
-      name: 'frontend-dev',
-      displayName: '프론트엔드 개발자',
-      role: 'developer' as const,
-      team: 'cto',
-      icon: '🎨',
-      model: 'claude-opus-4-6',
-    },
-    {
-      id: 'agent-backend',
-      name: 'backend-dev',
-      displayName: '백엔드 개발자',
+      id: 'sdk-cto-2',
+      name: 'sdk-cto-2',
+      displayName: 'CTO-2',
       role: 'developer' as const,
       team: 'cto',
       icon: '⚙️',
       model: 'claude-opus-4-6',
+      tmuxSession: 'sdk-cto-2',
+      reportsTo: 'sdk-cto',
     },
     {
-      id: 'agent-qa',
-      name: 'qa-engineer',
-      displayName: 'QA 엔지니어',
-      role: 'qa' as const,
+      id: 'sdk-cto-3',
+      name: 'sdk-cto-3',
+      displayName: 'CTO-3',
+      role: 'developer' as const,
       team: 'cto',
-      icon: '🔍',
+      icon: '🔧',
       model: 'claude-opus-4-6',
+      tmuxSession: 'sdk-cto-3',
+      reportsTo: 'sdk-cto',
     },
     {
-      id: 'agent-pm',
-      name: 'pm-leader',
-      displayName: 'PM 리더',
+      id: 'sdk-pm',
+      name: 'sdk-pm',
+      displayName: 'PM',
       role: 'pm' as const,
       team: 'pm',
       icon: '📋',
       model: 'claude-opus-4-6',
+      tmuxSession: 'sdk-pm',
+      reportsTo: 'tendon-leader',
+    },
+    {
+      id: 'cron-worker',
+      name: 'cron-worker',
+      displayName: '크론 워커',
+      role: 'developer' as const,
+      team: 'infra',
+      icon: '⏰',
+      model: null,
+      reportsTo: null,
     },
   ];
 
+  // reportsTo FK 순서 보장: 자기참조이므로 순서대로 삽입
   for (const agent of defaultAgents) {
     db.insert(agents).values(agent).onConflictDoNothing().run();
   }
 
-  // 기본 반복 작업 1개
-  db.insert(routines).values({
-    id: 'routine-daily-collect',
-    name: 'daily-collect',
-    description: '일일 데이터 수집',
-    cronExpression: '0 2 * * *',
-    command: 'bash scripts/collect-daily.sh',
-    enabled: 1,
-  }).onConflictDoNothing().run();
+  // 반복 작업 5개
+  const defaultRoutines = [
+    {
+      id: 'routine-daily-collect',
+      name: 'daily-collect',
+      description: '일일 데이터 수집',
+      cronExpression: '0 2 * * *',
+      command: 'bash scripts/collect-daily.sh',
+      enabled: 1,
+    },
+    {
+      id: 'routine-embed-creatives',
+      name: 'embed-creatives',
+      description: '크리에이티브 임베딩 (Cloud Run Job)',
+      cronExpression: '0 */4 * * *',
+      command: 'Cloud Run Job',
+      enabled: 1,
+    },
+    {
+      id: 'routine-creative-saliency',
+      name: 'creative-saliency',
+      description: '크리에이티브 시선 분석 (Cloud Scheduler)',
+      cronExpression: '30 */6 * * *',
+      command: 'Cloud Scheduler',
+      enabled: 1,
+    },
+    {
+      id: 'routine-video-saliency',
+      name: 'video-saliency',
+      description: '비디오 시선 분석 (Cloud Scheduler)',
+      cronExpression: '0 8 * * *',
+      command: 'Cloud Scheduler',
+      enabled: 1,
+    },
+    {
+      id: 'routine-video-scene-analysis',
+      name: 'video-scene-analysis',
+      description: '비디오 장면 분석 (Cloud Scheduler)',
+      cronExpression: '0 14 * * *',
+      command: 'Cloud Scheduler',
+      enabled: 1,
+    },
+  ];
 
-  console.log('[seed] 기본 PDCA 체인 + 4단계 + 에이전트 5명 + 반복작업 1개 생성 완료');
+  for (const routine of defaultRoutines) {
+    db.insert(routines).values(routine).onConflictDoNothing().run();
+  }
+
+  console.log('[seed] 실제 팀 에이전트 7명 + 반복작업 5개 + PDCA 체인 생성 완료');
 }
