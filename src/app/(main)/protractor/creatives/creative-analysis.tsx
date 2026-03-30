@@ -3,6 +3,8 @@
 import { useState, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import useSWR from "swr";
+import { CreativeDetailPanel } from "./components/individual/creative-detail-panel";
+import { PortfolioTabV2 } from "./components/portfolio/portfolio-tab-v2";
 import {
   Select,
   SelectContent,
@@ -19,13 +21,6 @@ import {
   X,
   Filter,
 } from "lucide-react";
-import {
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  Radar,
-  ResponsiveContainer,
-} from "recharts";
 import { jsonFetcher } from "@/lib/swr/config";
 
 // ── 타입 ──────────────────────────────────────────────────────────
@@ -117,43 +112,11 @@ interface CreativeSearchResult {
 
 // ── 상수 ──────────────────────────────────────────────────────────
 
-const RADAR_LABELS: Record<string, string> = {
-  visual_impact: "시각 효과",
-  message_clarity: "메시지 명확성",
-  cta_effectiveness: "CTA 효과",
-  social_proof: "사회적 증거",
-  lp_consistency: "LP 일관성",
-};
-
 const SCORE_COLORS = (score: number) => {
   if (score >= 80) return "bg-emerald-100 text-emerald-700";
   if (score >= 50) return "bg-amber-100 text-amber-700";
   return "bg-red-100 text-red-700";
 };
-
-const PRIORITY_STYLES: Record<string, string> = {
-  high: "border-red-200 bg-red-50 text-red-800",
-  medium: "border-amber-200 bg-amber-50 text-amber-800",
-  low: "border-emerald-200 bg-emerald-50 text-emerald-800",
-};
-
-const PRIORITY_LABELS: Record<string, string> = {
-  high: "높음",
-  medium: "중간",
-  low: "낮음",
-};
-
-// ── 유틸 ──────────────────────────────────────────────────────────
-
-function scoreToBarWidth(value: number | null): string {
-  if (value == null) return "0%";
-  return `${Math.min(100, Math.max(0, value))}%`;
-}
-
-function pctToBarWidth(value: number | null): string {
-  if (value == null) return "0%";
-  return `${Math.min(100, Math.max(0, value * 100))}%`;
-}
 
 // ── 메인 컴포넌트 ──────────────────────────────────────────────────
 
@@ -258,12 +221,13 @@ export default function CreativeAnalysis({
           />
         </TabsContent>
 
-        {/* ── 포트폴리오 탭 ─────────────────────────────────── */}
+        {/* ── 포트폴리오 탭 (v2) ────────────────────────────── */}
         <TabsContent value="portfolio">
-          <PortfolioTab
+          <PortfolioTabV2
             intelligenceData={intelligenceData}
             intelligenceLoading={intelligenceLoading}
             benchmarkData={benchmarkData}
+            accountId={selectedAccountId}
           />
         </TabsContent>
 
@@ -281,14 +245,12 @@ export default function CreativeAnalysis({
 function IndividualTab({
   intelligenceData,
   intelligenceLoading,
-  benchmarkData,
-  consistencyData,
 }: {
   intelligenceData: IntelligenceResponse | undefined;
   intelligenceLoading: boolean;
-  benchmarkData: BenchmarkResponse | undefined;
-  consistencyData: LpConsistencyResponse | undefined;
-  accountName: string;
+  benchmarkData?: BenchmarkResponse | undefined;
+  consistencyData?: LpConsistencyResponse | undefined;
+  accountName?: string;
 }) {
   const [selectedCreativeId, setSelectedCreativeId] = useState<string | null>(
     null
@@ -349,46 +311,6 @@ function IndividualTab({
 
   const selectedCreative =
     baseResults.find((r) => r.ad_id === selectedCreativeId) ?? null;
-  const consistencyForSelected = consistencyData?.results.find(
-    (r) => r.ad_id === selectedCreativeId
-  );
-
-  // 레이더 차트 데이터
-  const radarData = selectedCreative
-    ? [
-        {
-          subject: "시각 효과",
-          value: selectedCreative.visual_impact ?? 0,
-        },
-        {
-          subject: "메시지",
-          value: selectedCreative.message_clarity ?? 0,
-        },
-        {
-          subject: "CTA",
-          value: selectedCreative.cta_effectiveness ?? 0,
-        },
-        {
-          subject: "사회 증거",
-          value: selectedCreative.social_proof ?? 0,
-        },
-        {
-          subject: "LP 일관성",
-          value: selectedCreative.lp_consistency ?? 0,
-        },
-      ]
-    : [];
-
-  // 벤치마크: hook_type별 ROAS
-  const hookBenchmarks: BenchmarkRow[] =
-    benchmarkData?.benchmarks?.hook_type ?? [];
-  const selectedHookBenchmark = hookBenchmarks.find(
-    (b) => b.element_value === selectedCreative?.hook_type
-  );
-  const maxBenchRoas = Math.max(
-    ...hookBenchmarks.map((b) => b.avg_roas ?? 0),
-    1
-  );
 
   return (
     <div className="space-y-4">
@@ -499,274 +421,14 @@ function IndividualTab({
           )}
         </div>
 
-        {/* 우측: 상세 패널 */}
+        {/* 우측: 풀분석 패널 (v2) */}
         {selectedCreative && (
           <div className="flex-1 min-w-0">
-            <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-6 sticky top-4">
-              {/* 패널 헤더 */}
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">소재 상세 분석</h3>
-                <button
-                  onClick={() => setSelectedCreativeId(null)}
-                  className="p-1 hover:bg-gray-100 rounded-lg"
-                >
-                  <X className="h-4 w-4 text-gray-500" />
-                </button>
-              </div>
-
-              {/* 1. 소재 이미지 + 카피 */}
-              <div className="flex gap-4">
-                <div className="w-28 h-28 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-                  {selectedCreative.media_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={selectedCreative.media_url}
-                      alt="소재"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300">
-                      <ImageIcon className="h-8 w-8" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-700 line-clamp-4">
-                    {selectedCreative.ad_copy || "카피 없음"}
-                  </p>
-                  <div className="flex gap-3 mt-2 text-xs text-gray-500">
-                    {selectedCreative.roas != null && (
-                      <span>
-                        ROAS{" "}
-                        <strong className="text-gray-900">
-                          {selectedCreative.roas.toFixed(1)}
-                        </strong>
-                      </span>
-                    )}
-                    {selectedCreative.ctr != null && (
-                      <span>
-                        CTR{" "}
-                        <strong className="text-gray-900">
-                          {(selectedCreative.ctr * 100).toFixed(1)}%
-                        </strong>
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* 2. L4 레이더 차트 */}
-              <div>
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                  L4 영역별 점수
-                </h4>
-                <div className="h-52">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={radarData}>
-                      <PolarGrid />
-                      <PolarAngleAxis
-                        dataKey="subject"
-                        tick={{ fontSize: 11, fill: "#6b7280" }}
-                      />
-                      <Radar
-                        dataKey="value"
-                        stroke="#F75D5D"
-                        fill="#F75D5D"
-                        fillOpacity={0.25}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-                {/* 5개 지표 수치 */}
-                <div className="grid grid-cols-2 gap-1.5 mt-2">
-                  {Object.entries(RADAR_LABELS).map(([key, label]) => {
-                    const val =
-                      selectedCreative[key as keyof IntelligenceScore] as
-                        | number
-                        | null;
-                    return (
-                      <div key={key} className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500 flex-1">
-                          {label}
-                        </span>
-                        <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-[#F75D5D] rounded-full"
-                            style={{ width: scoreToBarWidth(val) }}
-                          />
-                        </div>
-                        <span className="text-xs font-medium text-gray-700 w-6 text-right">
-                          {val ?? "-"}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 3. L1 태그 칩 */}
-              <div>
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                  소재 요소 태그
-                </h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedCreative.hook_type ? (
-                    <span className="px-2.5 py-1 text-xs rounded-full bg-blue-50 text-blue-700">
-                      훅: {selectedCreative.hook_type}
-                    </span>
-                  ) : null}
-                  {selectedCreative.style ? (
-                    <span className="px-2.5 py-1 text-xs rounded-full bg-purple-50 text-purple-700">
-                      스타일: {selectedCreative.style}
-                    </span>
-                  ) : null}
-                  {!selectedCreative.hook_type && !selectedCreative.style && (
-                    <span className="text-xs text-gray-400">
-                      L1 태그 미분석
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* 4. 벤치마크 비교 */}
-              {hookBenchmarks.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                    벤치마크 비교 (hook 유형별 ROAS)
-                  </h4>
-                  <div className="space-y-2">
-                    {hookBenchmarks.slice(0, 5).map((b) => {
-                      const isMyType =
-                        b.element_value === selectedCreative.hook_type;
-                      return (
-                        <div key={b.element_value}>
-                          <div className="flex items-center justify-between text-xs mb-0.5">
-                            <span
-                              className={
-                                isMyType
-                                  ? "font-semibold text-[#F75D5D]"
-                                  : "text-gray-600"
-                              }
-                            >
-                              {b.element_value}
-                              {isMyType && " (내 소재)"}
-                            </span>
-                            <span className="text-gray-500">
-                              ROAS {b.avg_roas?.toFixed(1) ?? "-"}
-                            </span>
-                          </div>
-                          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${isMyType ? "bg-[#F75D5D]" : "bg-gray-300"}`}
-                              style={{
-                                width: `${((b.avg_roas ?? 0) / maxBenchRoas) * 100}%`,
-                              }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {selectedCreative.hook_type &&
-                      !selectedHookBenchmark &&
-                      selectedCreative.roas != null && (
-                        <div>
-                          <div className="flex items-center justify-between text-xs mb-0.5">
-                            <span className="font-semibold text-[#F75D5D]">
-                              {selectedCreative.hook_type} (내 소재)
-                            </span>
-                            <span className="text-gray-500">
-                              ROAS {selectedCreative.roas.toFixed(1)}
-                            </span>
-                          </div>
-                          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-[#F75D5D]"
-                              style={{
-                                width: `${(selectedCreative.roas / maxBenchRoas) * 100}%`,
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                  </div>
-                </div>
-              )}
-
-              {/* 5. LP 일관성 */}
-              {consistencyForSelected && (
-                <div>
-                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                    LP 일관성
-                  </h4>
-                  <div className="space-y-2">
-                    {[
-                      {
-                        label: "시각적 일관성",
-                        value: consistencyForSelected.visual_score,
-                      },
-                      {
-                        label: "메시지 일관성",
-                        value: consistencyForSelected.semantic_score,
-                      },
-                      {
-                        label: "교차 일관성",
-                        value: consistencyForSelected.cross_score,
-                      },
-                      {
-                        label: "총점",
-                        value: consistencyForSelected.total_score,
-                      },
-                    ].map(({ label, value }) => (
-                      <div key={label}>
-                        <div className="flex items-center justify-between text-xs mb-0.5">
-                          <span className="text-gray-600">{label}</span>
-                          <span className="text-gray-700 font-medium">
-                            {value != null
-                              ? `${(value * 100).toFixed(0)}%`
-                              : "-"}
-                          </span>
-                        </div>
-                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-[#F75D5D] rounded-full"
-                            style={{ width: pctToBarWidth(value) }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* 6. 개선 제안 */}
-              {selectedCreative.suggestions &&
-                selectedCreative.suggestions.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                      개선 제안
-                    </h4>
-                    <div className="space-y-2">
-                      {selectedCreative.suggestions.map((s, i) => (
-                        <div
-                          key={i}
-                          className={`p-3 rounded-lg border text-xs ${PRIORITY_STYLES[s.priority] ?? "border-gray-200 bg-gray-50 text-gray-700"}`}
-                        >
-                          <div className="flex items-center gap-1.5 mb-1">
-                            <span className="font-semibold">
-                              [{PRIORITY_LABELS[s.priority] ?? s.priority}]{" "}
-                              {s.area}
-                            </span>
-                          </div>
-                          <p className="text-[11px] opacity-75 mb-1">
-                            현재: {s.current}
-                          </p>
-                          <p>{s.suggestion}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-            </div>
+            <CreativeDetailPanel
+              creativeId={selectedCreative.id}
+              accountId={selectedCreative.account_id}
+              onClose={() => setSelectedCreativeId(null)}
+            />
           </div>
         )}
       </div>

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>포트폴리오 탭 v2 — 소재 다양성 진단</title>
+<style>
+:root{--bg:#ffffff;--bg2:#f8fafc;--bg3:#e2e8f0;--bd:#e2e8f0;--ac:#F75D5D;--ac2:#E54949;--t:#1e293b;--t2:#475569;--t3:#64748b;--g:#10b981;--a:#f59e0b;--r:#ef4444;--p:#8b5cf6;--cy:#06b6d4;--b:#3b82f6}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard Variable',-apple-system,sans-serif;background:var(--bg);color:var(--t);line-height:1.7;font-size:14px}
+.c{max-width:1200px;margin:0 auto;padding:2rem}
+.s{background:var(--bg2);border-radius:12px;padding:1.5rem;margin-bottom:1.2rem;border:1px solid var(--bd)}
+.s h2{color:var(--ac);font-size:1.15rem;font-weight:700;margin-bottom:.8rem;display:flex;align-items:center;gap:8px}
+.tag{display:inline-flex;padding:3px 10px;border-radius:16px;font-size:.7rem;font-weight:600;margin:2px}
+</style>
+</head>
+<body>
+<div class="c">
+
+<!-- ═══ 요약 카드 4개 (기존 PortfolioTab 그대로) ═══ -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.2rem">
+  <div style="background:var(--bg2);border-radius:12px;padding:1.2rem;border:1px solid var(--bd);text-align:center">
+    <div style="font-size:.72rem;color:var(--t3)">평균 L4 점수</div>
+    <div style="font-size:1.8rem;font-weight:800;color:var(--t)">54<span style="font-size:.9rem;font-weight:600">점</span></div>
+  </div>
+  <div style="background:var(--bg2);border-radius:12px;padding:1.2rem;border:1px solid var(--bd);text-align:center">
+    <div style="font-size:.72rem;color:var(--t3)">총 소재 수</div>
+    <div style="font-size:1.8rem;font-weight:800;color:var(--t)">47<span style="font-size:.9rem;font-weight:600">개</span></div>
+  </div>
+  <div style="background:var(--bg2);border-radius:12px;padding:1.2rem;border:1px solid var(--bd);text-align:center">
+    <div style="font-size:.72rem;color:var(--t3)">평균 ROAS</div>
+    <div style="font-size:1.8rem;font-weight:800;color:var(--t)">1.24</div>
+  </div>
+  <div style="background:var(--bg2);border-radius:12px;padding:1.2rem;border:1px solid var(--bd);text-align:center">
+    <div style="font-size:.72rem;color:var(--t3)">80점 이상 소재</div>
+    <div style="font-size:1.8rem;font-weight:800;color:var(--ac)">3<span style="font-size:.9rem;font-weight:600">개</span></div>
+  </div>
+</div>
+
+<!-- ═══ Andromeda 다양성 경고 (핵심 신규) ═══ -->
+<div class="s" style="border:2px solid rgba(239,68,68,.3);border-left:4px solid var(--r)">
+  <h2 style="color:var(--r)">🚨 Andromeda 다양성 경고</h2>
+
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:1rem">
+    <div style="flex:1">
+      <div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:4px">
+        <span style="color:var(--t3)">다양성 점수</span>
+        <span style="color:var(--r);font-weight:700">32점 / 100</span>
+      </div>
+      <div style="height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
+        <div style="width:32%;height:100%;background:var(--r);border-radius:4px"></div>
+      </div>
+    </div>
+    <div style="background:rgba(239,68,68,.1);padding:4px 12px;border-radius:20px;font-size:.72rem;font-weight:700;color:var(--r)">위험도 높음</div>
+  </div>
+
+  <div style="font-size:.82rem;color:var(--t2);margin-bottom:1rem;line-height:1.8">
+    계정 소재 47개 중 <b style="color:var(--r)">68%</b>가 동일한 클러스터(UGC·셀프촬영·문제제기)에 집중되어 있습니다.<br>
+    동일 타겟에 유사한 광고가 반복 노출되면 <b>광고 피로도</b>가 급상승하고 CPM이 올라갑니다.
+  </div>
+
+  <!-- 유사 소재 쌍 Top 5 -->
+  <div style="margin-bottom:1rem">
+    <div style="font-size:.78rem;font-weight:700;color:var(--r);margin-bottom:6px">유사 소재 (5건)</div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);padding:8px 12px;border-radius:8px;border:1px solid var(--bd)">
+        <span style="font-size:.72rem;color:var(--t2);font-family:monospace">김선영_31s ↔ 승무원수정_22s</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:.72rem;color:var(--r);font-weight:600">유사도 89%</span>
+          <span style="font-size:.6rem;color:var(--t3)">[visual, hook, text]</span>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);padding:8px 12px;border-radius:8px;border:1px solid var(--bd)">
+        <span style="font-size:.72rem;color:var(--t2);font-family:monospace">속건조해결_15s ↔ 수분폭탄_18s</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:.72rem;color:var(--r);font-weight:600">유사도 84%</span>
+          <span style="font-size:.6rem;color:var(--t3)">[visual, psychology]</span>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);padding:8px 12px;border-radius:8px;border:1px solid var(--bd)">
+        <span style="font-size:.72rem;color:var(--t2);font-family:monospace">물광크림후기_20s ↔ 데일리루틴_25s</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:.72rem;color:var(--a);font-weight:600">유사도 72%</span>
+          <span style="font-size:.6rem;color:var(--t3)">[text, hook]</span>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);padding:8px 12px;border-radius:8px;border:1px solid var(--bd)">
+        <span style="font-size:.72rem;color:var(--t2);font-family:monospace">피부고민_12s ↔ 건조탈출_16s</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:.72rem;color:var(--a);font-weight:600">유사도 68%</span>
+          <span style="font-size:.6rem;color:var(--t3)">[psychology, hook]</span>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);padding:8px 12px;border-radius:8px;border:1px solid var(--bd)">
+        <span style="font-size:.72rem;color:var(--t2);font-family:monospace">승무원비결_28s ↔ 비행생존템_19s</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:.72rem;color:var(--a);font-weight:600">유사도 65%</span>
+          <span style="font-size:.6rem;color:var(--t3)">[visual, text]</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDA 다양화 제안 -->
+  <div style="background:var(--bg);border-radius:10px;padding:1.2rem;border:1px solid var(--bd)">
+    <div style="font-size:.82rem;font-weight:700;color:var(--t);margin-bottom:.8rem">💡 PDA 다양화 방향 제안</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      <div style="background:var(--bg2);border-radius:8px;padding:1rem;border-top:3px solid var(--cy)">
+        <div style="font-size:.68rem;color:var(--cy);font-weight:700;margin-bottom:4px">P — 페르소나</div>
+        <div style="font-size:.78rem;color:var(--t2);line-height:1.6">
+          현재 <b>"직장인 여성"</b> 집중.<br>
+          → <span style="color:var(--g)">육아맘, 대학생, 40대+</span> 추가 시 새 세그먼트 공략 가능
+        </div>
+      </div>
+      <div style="background:var(--bg2);border-radius:8px;padding:1rem;border-top:3px solid var(--p)">
+        <div style="font-size:.68rem;color:var(--p);font-weight:700;margin-bottom:4px">D — 욕구</div>
+        <div style="font-size:.78rem;color:var(--t2);line-height:1.6">
+          현재 <b>"수분/보습"</b> 집중.<br>
+          → <span style="color:var(--g)">안티에이징, 민감진정, 톤업</span> 욕구 다각화 필요
+        </div>
+      </div>
+      <div style="background:var(--bg2);border-radius:8px;padding:1rem;border-top:3px solid var(--a)">
+        <div style="font-size:.68rem;color:var(--a);font-weight:700;margin-bottom:4px">A — 인식 수준</div>
+        <div style="font-size:.78rem;color:var(--t2);line-height:1.6">
+          현재 <b>"solution_aware"</b> 집중.<br>
+          → <span style="color:var(--g)">unaware(문제 인식 전), product_aware(비교 단계)</span> 추가
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 소재 클러스터 시각화 ═══ -->
+<div class="s" style="border-left:4px solid var(--ac)">
+  <h2>🔬 소재 클러스터 (임베딩 유사도 기반)</h2>
+  <div style="font-size:.75rem;color:var(--t3);margin-bottom:1rem">768차원 임베딩 + 4축 가중 Jaccard (visual 0.3, text 0.3, psychology 0.2, hook 0.2) · 클러스터 임계값 ≥ 0.60</div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1rem">
+    <!-- 클러스터 1 (대형) -->
+    <div style="background:var(--bg);border-radius:10px;padding:1rem;border:2px solid rgba(239,68,68,.3)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:.82rem;font-weight:700;color:var(--r)">클러스터 A</span>
+        <span style="font-size:.68rem;background:rgba(239,68,68,.1);color:var(--r);padding:2px 8px;border-radius:10px;font-weight:600">32개 · 과밀</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
+        <span class="tag" style="background:rgba(239,68,68,.08);color:var(--r);border:1px solid rgba(239,68,68,.2)">UGC</span>
+        <span class="tag" style="background:rgba(99,102,241,.08);color:var(--p);border:1px solid rgba(139,92,246,.2)">문제제기 훅</span>
+        <span class="tag" style="background:rgba(6,182,212,.08);color:var(--cy);border:1px solid rgba(6,182,212,.2)">직장인 여성</span>
+      </div>
+      <div style="font-size:.72rem;color:var(--t3);line-height:1.6">
+        평균 ROAS <b>0.87</b> · CTR <b>1.2%</b><br>
+        <span style="color:var(--r)">⚠️ 소재 68%가 여기 집중 → 피로도 위험</span>
+      </div>
+      <!-- 미니 소재 점들 -->
+      <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:3px">
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--r);opacity:.7"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--r);opacity:.7"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--r);opacity:.7"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--r);opacity:.6"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--r);opacity:.6"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--r);opacity:.5"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--r);opacity:.5"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--r);opacity:.4"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--r);opacity:.4"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--r);opacity:.3"></div>
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--r);opacity:.3"></div>
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--r);opacity:.25"></div>
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--r);opacity:.2"></div>
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--r);opacity:.2"></div>
+        <span style="font-size:.6rem;color:var(--t3);margin-left:4px">+18개</span>
+      </div>
+    </div>
+
+    <!-- 클러스터 2 -->
+    <div style="background:var(--bg);border-radius:10px;padding:1rem;border:1px solid var(--bd)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:.82rem;font-weight:700;color:var(--b)">클러스터 B</span>
+        <span style="font-size:.68rem;background:rgba(59,130,246,.1);color:var(--b);padding:2px 8px;border-radius:10px;font-weight:600">9개</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
+        <span class="tag" style="background:rgba(59,130,246,.08);color:var(--b);border:1px solid rgba(59,130,246,.2)">제품 클로즈업</span>
+        <span class="tag" style="background:rgba(245,158,11,.08);color:var(--a);border:1px solid rgba(245,158,11,.2)">데모형</span>
+      </div>
+      <div style="font-size:.72rem;color:var(--t3);line-height:1.6">
+        평균 ROAS <b style="color:var(--g)">1.89</b> · CTR <b style="color:var(--g)">2.8%</b><br>
+        <span style="color:var(--g)">✅ 성과 우수 클러스터</span>
+      </div>
+      <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:3px">
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--b);opacity:.7"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--b);opacity:.6"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--b);opacity:.5"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--b);opacity:.4"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--b);opacity:.3"></div>
+        <span style="font-size:.6rem;color:var(--t3);margin-left:4px">+4개</span>
+      </div>
+    </div>
+
+    <!-- 클러스터 3 -->
+    <div style="background:var(--bg);border-radius:10px;padding:1rem;border:1px solid var(--bd)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:.82rem;font-weight:700;color:var(--g)">클러스터 C</span>
+        <span style="font-size:.68rem;background:rgba(16,185,129,.1);color:var(--g);padding:2px 8px;border-radius:10px;font-weight:600">6개</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
+        <span class="tag" style="background:rgba(16,185,129,.08);color:var(--g);border:1px solid rgba(16,185,129,.2)">인플루언서</span>
+        <span class="tag" style="background:rgba(139,92,246,.08);color:var(--p);border:1px solid rgba(139,92,246,.2)">권위형 훅</span>
+      </div>
+      <div style="font-size:.72rem;color:var(--t3);line-height:1.6">
+        평균 ROAS <b style="color:var(--g)">2.34</b> · CTR <b style="color:var(--g)">3.1%</b><br>
+        <span style="color:var(--g)">✅ 최고 성과 — 확장 필요</span>
+      </div>
+      <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:3px">
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--g);opacity:.7"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--g);opacity:.6"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--g);opacity:.5"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--g);opacity:.4"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--g);opacity:.3"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--g);opacity:.2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 클러스터 처방 요약 -->
+  <div style="background:var(--bg);border-radius:10px;padding:1rem;border-left:3px solid var(--a)">
+    <div style="font-size:.8rem;color:var(--t2);line-height:1.8">
+      <b>💊 처방:</b> 클러스터 A(UGC·문제제기)에 <b style="color:var(--r)">68%</b> 과밀집 — 피로도 위험.
+      클러스터 C(인플루언서·권위형)가 ROAS <b style="color:var(--g)">2.34</b>로 최고 성과이나 소재 수 부족.
+      <b style="color:var(--ac)">권위형 훅 + 데모형 포맷</b>의 신규 소재를 3-5개 추가 제작하여 클러스터 분산 권장.
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 5축 분포 시각화 ═══ -->
+<div class="s" style="border-left:4px solid var(--p)">
+  <h2 style="color:var(--p)">📊 5축별 소재 분포</h2>
+
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">
+    <!-- 포맷 -->
+    <div style="background:var(--bg);border-radius:8px;padding:1rem;text-align:center">
+      <div style="font-size:.7rem;color:var(--t3);margin-bottom:6px">🎬 포맷</div>
+      <div style="display:flex;flex-direction:column;gap:4px;font-size:.7rem">
+        <div><div style="display:flex;justify-content:space-between"><span>UGC</span><span style="font-weight:700">32</span></div><div style="height:4px;background:var(--bg3);border-radius:2px"><div style="width:68%;height:100%;background:var(--r);border-radius:2px"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between"><span>제품컷</span><span style="font-weight:700">9</span></div><div style="height:4px;background:var(--bg3);border-radius:2px"><div style="width:19%;height:100%;background:var(--b);border-radius:2px"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between"><span>인플루언서</span><span style="font-weight:700">6</span></div><div style="height:4px;background:var(--bg3);border-radius:2px"><div style="width:13%;height:100%;background:var(--g);border-radius:2px"></div></div></div>
+      </div>
+    </div>
+
+    <!-- 훅 -->
+    <div style="background:var(--bg);border-radius:8px;padding:1rem;text-align:center">
+      <div style="font-size:.7rem;color:var(--t3);margin-bottom:6px">🪝 훅</div>
+      <div style="display:flex;flex-direction:column;gap:4px;font-size:.7rem">
+        <div><div style="display:flex;justify-content:space-between"><span>문제제기</span><span style="font-weight:700">28</span></div><div style="height:4px;background:var(--bg3);border-radius:2px"><div style="width:60%;height:100%;background:var(--r);border-radius:2px"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between"><span>권위</span><span style="font-weight:700">12</span></div><div style="height:4px;background:var(--bg3);border-radius:2px"><div style="width:26%;height:100%;background:var(--b);border-radius:2px"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between"><span>호기심</span><span style="font-weight:700">7</span></div><div style="height:4px;background:var(--bg3);border-radius:2px"><div style="width:15%;height:100%;background:var(--g);border-radius:2px"></div></div></div>
+      </div>
+    </div>
+
+    <!-- 메시징 -->
+    <div style="background:var(--bg);border-radius:8px;padding:1rem;text-align:center">
+      <div style="font-size:.7rem;color:var(--t3);margin-bottom:6px">💬 메시징</div>
+      <div style="display:flex;flex-direction:column;gap:4px;font-size:.7rem">
+        <div><div style="display:flex;justify-content:space-between"><span>혜택</span><span style="font-weight:700">20</span></div><div style="height:4px;background:var(--bg3);border-radius:2px"><div style="width:43%;height:100%;background:var(--a);border-radius:2px"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between"><span>권위+혜택</span><span style="font-weight:700">15</span></div><div style="height:4px;background:var(--bg3);border-radius:2px"><div style="width:32%;height:100%;background:var(--p);border-radius:2px"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between"><span>사회적증거</span><span style="font-weight:700">12</span></div><div style="height:4px;background:var(--bg3);border-radius:2px"><div style="width:26%;height:100%;background:var(--b);border-radius:2px"></div></div></div>
+      </div>
+    </div>
+
+    <!-- 타겟 -->
+    <div style="background:var(--bg);border-radius:8px;padding:1rem;text-align:center">
+      <div style="font-size:.7rem;color:var(--t3);margin-bottom:6px">👤 타겟</div>
+      <div style="display:flex;flex-direction:column;gap:4px;font-size:.7rem">
+        <div><div style="display:flex;justify-content:space-between"><span>직장인여성</span><span style="font-weight:700">35</span></div><div style="height:4px;background:var(--bg3);border-radius:2px"><div style="width:74%;height:100%;background:var(--r);border-radius:2px"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between"><span>20대</span><span style="font-weight:700">8</span></div><div style="height:4px;background:var(--bg3);border-radius:2px"><div style="width:17%;height:100%;background:var(--b);border-radius:2px"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between"><span>주부</span><span style="font-weight:700">4</span></div><div style="height:4px;background:var(--bg3);border-radius:2px"><div style="width:9%;height:100%;background:var(--g);border-radius:2px"></div></div></div>
+      </div>
+    </div>
+
+    <!-- 카테고리 -->
+    <div style="background:var(--bg);border-radius:8px;padding:1rem;text-align:center">
+      <div style="font-size:.7rem;color:var(--t3);margin-bottom:6px">🏷️ 카테고리</div>
+      <div style="display:flex;flex-direction:column;gap:4px;font-size:.7rem">
+        <div><div style="display:flex;justify-content:space-between"><span>skincare</span><span style="font-weight:700">40</span></div><div style="height:4px;background:var(--bg3);border-radius:2px"><div style="width:85%;height:100%;background:var(--r);border-radius:2px"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between"><span>makeup</span><span style="font-weight:700">5</span></div><div style="height:4px;background:var(--bg3);border-radius:2px"><div style="width:11%;height:100%;background:var(--b);border-radius:2px"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between"><span>beauty</span><span style="font-weight:700">2</span></div><div style="height:4px;background:var(--bg3);border-radius:2px"><div style="width:4%;height:100%;background:var(--g);border-radius:2px"></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ L4 점수 분포 히스토그램 (기존) ═══ -->
+<div class="s">
+  <h2>📈 L4 점수 분포</h2>
+  <div style="display:flex;align-items:flex-end;gap:8px;height:120px;padding:0 1rem">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <span style="font-size:.7rem;color:var(--t3)">8</span>
+      <div style="width:100%;background:var(--ac);opacity:.8;border-radius:4px 4px 0 0;height:48px"></div>
+      <span style="font-size:.65rem;color:var(--t3)">0-20</span>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <span style="font-size:.7rem;color:var(--t3)">15</span>
+      <div style="width:100%;background:var(--ac);opacity:.8;border-radius:4px 4px 0 0;height:90px"></div>
+      <span style="font-size:.65rem;color:var(--t3)">20-40</span>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <span style="font-size:.7rem;color:var(--t3)">13</span>
+      <div style="width:100%;background:var(--ac);opacity:.8;border-radius:4px 4px 0 0;height:78px"></div>
+      <span style="font-size:.65rem;color:var(--t3)">40-60</span>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <span style="font-size:.7rem;color:var(--t3)">8</span>
+      <div style="width:100%;background:var(--ac);opacity:.8;border-radius:4px 4px 0 0;height:48px"></div>
+      <span style="font-size:.65rem;color:var(--t3)">60-80</span>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <span style="font-size:.7rem;color:var(--t3)">3</span>
+      <div style="width:100%;background:var(--g);opacity:.8;border-radius:4px 4px 0 0;height:18px"></div>
+      <span style="font-size:.65rem;color:var(--t3)">80-100</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 훅 유형별 / 스타일별 ROAS (기존) ═══ -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+  <div class="s">
+    <h2>🪝 훅 유형별 평균 ROAS</h2>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:2px"><span>권위 (authority)</span><span style="color:var(--t3)">ROAS 2.34 (n=12)</span></div>
+        <div style="height:6px;background:var(--bg3);border-radius:3px"><div style="width:100%;height:100%;background:var(--ac);border-radius:3px"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:2px"><span>호기심 (curiosity)</span><span style="color:var(--t3)">ROAS 1.67 (n=7)</span></div>
+        <div style="height:6px;background:var(--bg3);border-radius:3px"><div style="width:71%;height:100%;background:var(--ac);border-radius:3px"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:2px"><span>문제제기 (problem)</span><span style="color:var(--t3)">ROAS 0.87 (n=28)</span></div>
+        <div style="height:6px;background:var(--bg3);border-radius:3px"><div style="width:37%;height:100%;background:var(--ac);border-radius:3px"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="s">
+    <h2>🎨 스타일별 평균 ROAS</h2>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:2px"><span>인플루언서 리뷰</span><span style="color:var(--t3)">ROAS 2.34 (n=6)</span></div>
+        <div style="height:6px;background:var(--bg3);border-radius:3px"><div style="width:100%;height:100%;background:var(--ac);border-radius:3px"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:2px"><span>제품 데모</span><span style="color:var(--t3)">ROAS 1.89 (n=9)</span></div>
+        <div style="height:6px;background:var(--bg3);border-radius:3px"><div style="width:81%;height:100%;background:var(--ac);border-radius:3px"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:2px"><span>셀프촬영 UGC</span><span style="color:var(--t3)">ROAS 0.87 (n=32)</span></div>
+        <div style="height:6px;background:var(--bg3);border-radius:3px"><div style="width:37%;height:100%;background:var(--ac);border-radius:3px"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 벤치마크 인사이트 (기존) ═══ -->
+<div class="s" style="background:rgba(245,158,11,.04);border:1px solid rgba(245,158,11,.2)">
+  <h2 style="color:var(--a)">💡 벤치마크 인사이트</h2>
+  <div style="font-size:.82rem;color:var(--t2);line-height:1.8">
+    <p>최고 성과 훅 유형: <b>권위 (authority)</b> (평균 ROAS 2.34)</p>
+    <p>최고 성과 스타일: <b>인플루언서 리뷰</b> (평균 ROAS 2.34)</p>
+    <p style="margin-top:.5rem;color:var(--a)">⚠️ 가장 많은 소재(28개)를 가진 <b>문제제기 훅</b>의 ROAS가 0.87로 가장 낮습니다. 소재 비중을 <b>권위 훅</b>으로 전환하면 계정 전체 ROAS 개선이 기대됩니다.</p>
+  </div>
+</div>
+
+<!-- ═══ 계정 수준 처방 요약 ═══ -->
+<div class="s" style="border:2px solid rgba(245,158,11,.4);border-left:4px solid var(--a)">
+  <h2 style="color:var(--a)">🏆 계정 처방 요약</h2>
+
+  <div style="background:var(--bg);border-radius:10px;padding:1rem;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start">
+    <div style="width:32px;height:32px;border-radius:50%;background:rgba(239,68,68,.15);display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;color:var(--r);flex-shrink:0">1</div>
+    <div>
+      <div style="font-size:.88rem;font-weight:700;color:var(--t)">소재 다양성 확보 — UGC 과밀 해소</div>
+      <div style="font-size:.75rem;color:var(--t2);margin-top:.2rem">클러스터 A에 68% 집중 → 인플루언서 리뷰(ROAS 2.34) 소재를 3-5개 추가 제작하여 클러스터 분산</div>
+      <div style="display:flex;gap:6px;margin-top:.4rem">
+        <span style="font-size:.6rem;background:rgba(239,68,68,.12);color:var(--r);padding:2px 6px;border-radius:8px">긴급</span>
+        <span style="font-size:.6rem;background:rgba(16,185,129,.12);color:var(--g);padding:2px 6px;border-radius:8px">난이도: 보통</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:var(--bg);border-radius:10px;padding:1rem;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start">
+    <div style="width:32px;height:32px;border-radius:50%;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;color:var(--a);flex-shrink:0">2</div>
+    <div>
+      <div style="font-size:.88rem;font-weight:700;color:var(--t)">CTA 일괄 강화 — 결과+혜택 결합형</div>
+      <div style="font-size:.75rem;color:var(--t2);margin-top:.2rem">47개 소재 중 명확한 CTA가 있는 건 12개(26%)뿐. 전체적으로 "결과(물광 피부) + 혜택(할인)" 결합형 CTA 적용</div>
+      <div style="display:flex;gap:6px;margin-top:.4rem">
+        <span style="font-size:.6rem;background:rgba(245,158,11,.12);color:var(--a);padding:2px 6px;border-radius:8px">🖱 행동</span>
+        <span style="font-size:.6rem;background:rgba(16,185,129,.12);color:var(--g);padding:2px 6px;border-radius:8px">난이도: 쉬움</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:var(--bg);border-radius:10px;padding:1rem;display:flex;gap:12px;align-items:flex-start">
+    <div style="width:32px;height:32px;border-radius:50%;background:rgba(59,130,246,.15);display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;color:var(--b);flex-shrink:0">3</div>
+    <div>
+      <div style="font-size:.88rem;font-weight:700;color:var(--t)">타겟 다각화 — PDA 프레임 적용</div>
+      <div style="font-size:.75rem;color:var(--t2);margin-top:.2rem">직장인 여성(74%) 편중 → 육아맘·대학생 페르소나 + 안티에이징·톤업 욕구 + unaware·product_aware 인식 수준 추가</div>
+      <div style="display:flex;gap:6px;margin-top:.4rem">
+        <span style="font-size:.6rem;background:rgba(139,92,246,.12);color:var(--p);padding:2px 6px;border-radius:8px">PDA</span>
+        <span style="font-size:.6rem;background:rgba(245,158,11,.12);color:var(--a);padding:2px 6px;border-radius:8px">난이도: 보통</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;padding:1.5rem;color:var(--t3);font-size:.75rem;margin-top:1rem">
+  🍡 Andromeda 다양성 분석 (768차원 임베딩 + 4축 가중 Jaccard + PDA 프레임)<br>
+  2026-03-31 · "같은 광고만 반복하면 고객이 먼저 지친다"
+</div>
+
+</div>
+</body>
+</html>
