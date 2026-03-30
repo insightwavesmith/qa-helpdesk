@@ -1,4 +1,17 @@
 {
+  "version": "3.0",
+  "lastUpdated": "2026-03-30T08:37:19.000Z",
+  "activeFeatures": [
+    "slack-notification",
+    "organic-channel-distribution-phase2",
+    "lp-analysis-pipeline",
+    "protractor-ux-prescription",
+    "video-permission-skip",
+    "video-collection-audit",
+    "helpers",
+    ".claude"
+  ],
+  "primaryFeature": "helpers",
   "features": {
     "slack-notification": {
       "phase": "implementing",
@@ -32,7 +45,30 @@
         "deployedAt": null
       },
       "notes": "통합 채널 + 재시도 + rate limit 큐 구현 완료, 체크 미진행",
-      "updatedAt": "2026-03-25"
+      "updatedAt": "2026-03-25",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-25"
+      },
+      "stateMachine": {
+        "currentState": "implementing",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "organic-channel-distribution-phase2": {
       "phase": "implementing",
@@ -66,7 +102,30 @@
         "deployedAt": null
       },
       "notes": "Phase 2: AI 변환 엔진 + 5채널 배포. Wave 1(DB+타입) 시작",
-      "updatedAt": "2026-03-25"
+      "updatedAt": "2026-03-25",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-25"
+      },
+      "stateMachine": {
+        "currentState": "implementing",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "lp-analysis-pipeline": {
       "phase": "plan",
@@ -99,7 +158,30 @@
         "commit": null
       },
       "updatedAt": "2026-03-25T21:38:47",
-      "notes": "Plan 완료"
+      "notes": "Plan 완료",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-25T21:38:47"
+      },
+      "stateMachine": {
+        "currentState": "plan",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "protractor-ux-prescription": {
       "phase": "plan",
@@ -132,7 +214,30 @@
         "commit": null
       },
       "updatedAt": "2026-03-26",
-      "notes": "Plan+목업 완료. 처방 통합 UX 리디자인."
+      "notes": "Plan+목업 완료. 처방 통합 UX 리디자인.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-26"
+      },
+      "stateMachine": {
+        "currentState": "plan",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "agent-ops-dashboard": {
       "phase": "completed",
@@ -165,7 +270,30 @@
         "commit": null
       },
       "updatedAt": "2026-03-28T20:30:00",
-      "notes": "W1~W3 구현 완료. 서버+UI+TDD 20건+Gap 분석 95%. Bun+Hono+Preact localhost:3847."
+      "notes": "W1~W3 구현 완료. 서버+UI+TDD 20건+Gap 분석 95%. Bun+Hono+Preact localhost:3847.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-28T20:30:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "video-permission-skip": {
       "phase": "implementing",
@@ -198,7 +326,30 @@
         "commit": null
       },
       "updatedAt": "2026-03-28T20:40:00",
-      "notes": "L1 fix: 권한 없는 계정 비디오 스킵"
+      "notes": "L1 fix: 권한 없는 계정 비디오 스킵",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-28T20:40:00"
+      },
+      "stateMachine": {
+        "currentState": "implementing",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "agent-team-operations": {
       "phase": "completed",
@@ -231,7 +382,30 @@
         "commit": null
       },
       "updatedAt": "2026-03-28T22:27:00",
-      "notes": "Wave 0~4 최종 검증 완료. TDD 67건 실행, 66/67 통과(1건 설계의도Red). 좀비 pane 0건. Match Rate 97% 유지. TASK 체크박스 W4-1~W4-3 완료 처리."
+      "notes": "Wave 0~4 최종 검증 완료. TDD 67건 실행, 66/67 통과(1건 설계의도Red). 좀비 pane 0건. Match Rate 97% 유지. TASK 체크박스 W4-1~W4-3 완료 처리.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-28T22:27:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "pdca-chain-automation": {
       "phase": "completed",
@@ -264,7 +438,30 @@
         "commit": "cc7fa8a"
       },
       "updatedAt": "2026-03-29T12:00:00",
-      "notes": "Match Rate 97%. match-rate-parser.sh + pdca-chain-handoff.sh 구현 완료. TDD 25건 Green. 불일치 1건(CTO 팀명 정확일치) 경미."
+      "notes": "Match Rate 97%. match-rate-parser.sh + pdca-chain-handoff.sh 구현 완료. TDD 25건 Green. 불일치 1건(CTO 팀명 정확일치) 경미.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-29T12:00:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "agent-ops-platform-testing": {
       "phase": "completed",
@@ -297,7 +494,30 @@
         "commit": "cc7fa8a"
       },
       "updatedAt": "2026-03-29T12:00:00",
-      "notes": "Match Rate 96%. 203/203 테스트 Green (hooks 140 + dashboard 63). 미구현 12건(MCP-1~12, WK-6,7) P2/P3 다음 이터레이션."
+      "notes": "Match Rate 96%. 203/203 테스트 Green (hooks 140 + dashboard 63). 미구현 12건(MCP-1~12, WK-6,7) P2/P3 다음 이터레이션.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-29T12:00:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "agent-ops-review-issues": {
       "phase": "completed",
@@ -330,7 +550,30 @@
         "commit": null
       },
       "updatedAt": "2026-03-29T16:10:00",
-      "notes": "W1~W3 완료. pdca-chain-handoff.sh v2(curl 직접+위험도 게이트) + session-resume-check.sh(신규). TDD 35건 Green. 기존 PC-1~25 호환. Match Rate 97%."
+      "notes": "W1~W3 완료. pdca-chain-handoff.sh v2(curl 직접+위험도 게이트) + session-resume-check.sh(신규). TDD 35건 Green. 기존 PC-1~25 호환. Match Rate 97%.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-29T16:10:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "video-pipeline-dedup-fix": {
       "phase": "completed",
@@ -363,7 +606,30 @@
         "commit": null
       },
       "updatedAt": "2026-03-30T01:00:00",
-      "notes": "W1~W4 완료. ①Dedup 사전조회+동기화 ②embed chain dedup>0 ③task-quality-gate+pdca-chain-handoff v3 ④fetchVideoSourceUrls 개별fallback+thumbnail. TDD 64건 Green. Match Rate 97%."
+      "notes": "W1~W4 완료. ①Dedup 사전조회+동기화 ②embed chain dedup>0 ③task-quality-gate+pdca-chain-handoff v3 ④fetchVideoSourceUrls 개별fallback+thumbnail. TDD 64건 Green. Match Rate 97%.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-30T01:00:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "video-collection-audit": {
       "phase": "plan",
@@ -396,7 +662,30 @@
         "commit": null
       },
       "updatedAt": "2026-03-29T17:00:00",
-      "notes": "Plan 완료. 38계정/157영상 누락 점검. L1 분석 → 수정 필요 시 L2 전환."
+      "notes": "Plan 완료. 38계정/157영상 누락 점검. L1 분석 → 수정 필요 시 L2 전환.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-29T17:00:00"
+      },
+      "stateMachine": {
+        "currentState": "plan",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "chain-automation-100": {
       "phase": "completed",
@@ -429,7 +718,30 @@
         "commit": null
       },
       "updatedAt": "2026-03-29T23:05:00",
-      "notes": "체인 자동화 100%. peer-resolver(3전략)+chain-messenger(retry)+PM/COO 핸드오프. TDD 38건 all Green. L2."
+      "notes": "체인 자동화 100%. peer-resolver(3전략)+chain-messenger(retry)+PM/COO 핸드오프. TDD 38건 all Green. L2.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-29T23:05:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "acp-plugin-sdk-research": {
       "phase": "completed",
@@ -462,7 +774,30 @@
         "commit": null
       },
       "updatedAt": "2026-03-29T19:00:00",
-      "notes": "L1 리서치 완료. ACP 전환 시기상조, Plugin 점진 마이그레이션 권고."
+      "notes": "L1 리서치 완료. ACP 전환 시기상조, Plugin 점진 마이그레이션 권고.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-29T19:00:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "agent-ops-hardening": {
       "phase": "completed",
@@ -495,7 +830,30 @@
         "commit": "faa1d80"
       },
       "updatedAt": "2026-03-30T02:02:00",
-      "notes": "P0 완료. D5+D7+D8-1+D8-4. OFR-1~35 Green. Match Rate 97% (34/35 일치, 1건 P3 경미). 커밋 faa1d80."
+      "notes": "P0 완료. D5+D7+D8-1+D8-4. OFR-1~35 Green. Match Rate 97% (34/35 일치, 1건 P3 경미). 커밋 faa1d80.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-30T02:02:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     },
     "agent-ops-hardening-p1": {
       "phase": "completed",
@@ -528,41 +886,104 @@
         "commit": null
       },
       "updatedAt": "2026-03-30T17:40:00",
-      "notes": "P1 완료. D3(에러분류룰북)+D6(수신측dedup)+D8-5(CLAUDE.md 741→175줄). TDD 18건 Green. P0 35건 회귀 없음. Match Rate 100%."
+      "notes": "P1 완료. D3(에러분류룰북)+D6(수신측dedup)+D8-5(CLAUDE.md 741→175줄). TDD 18건 Green. P0 35건 회귀 없음. Match Rate 100%.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-30T17:40:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
+    },
+    "helpers": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:29:49.589Z",
+        "lastUpdated": "2026-03-30T05:29:49.589Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/.claude/hooks/helpers/migrate-runtime.sh"
+    },
+    ".claude": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:29:56.347Z",
+        "lastUpdated": "2026-03-30T06:01:45.065Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/.claude/hooks/pdca-chain-handoff.sh"
     }
   },
-  "bm-full-account-sync": {
-    "phase": "completed",
-    "plan": {
-      "team": "pm",
-      "done": true,
-      "doc": "docs/01-plan/features/bm-full-account-sync.plan.md",
-      "at": "2026-03-30"
-    },
-    "design": {
-      "team": "pm",
-      "done": true,
-      "doc": "docs/02-design/features/bm-full-account-sync.design.md",
-      "at": "2026-03-30"
-    },
-    "do": {
-      "team": "cto",
-      "done": true,
-      "commit": null,
-      "at": "2026-03-30"
-    },
-    "check": {
-      "team": "qa",
-      "done": true,
-      "doc": "docs/03-analysis/bm-full-account-sync.analysis.md",
-      "matchRate": 92
-    },
-    "act": {
-      "done": true,
-      "commit": null
-    },
-    "updatedAt": "2026-03-30T18:00:00",
-    "notes": "완료. discover-accounts 미실행 원인=Cloud Scheduler 미등록(코드 정상). collect-daily 배치 동적화+is_member 동적화. TDD 18건 Green. Match Rate 92%."
+  "pipeline": {
+    "currentPhase": 1,
+    "level": "Dynamic",
+    "phaseHistory": []
   },
-  "updatedAt": "2026-03-30T03:36:07Z"
+  "session": {
+    "startedAt": "2026-03-30T05:20:31.424Z",
+    "onboardingCompleted": false,
+    "lastActivity": "2026-03-30T08:37:19.000Z"
+  },
+  "history": [
+    {
+      "timestamp": "2026-03-30T05:29:49.589Z",
+      "feature": "helpers",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T05:29:56.347Z",
+      "feature": ".claude",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T06:01:45.065Z",
+      "feature": ".claude",
+      "phase": "do",
+      "action": "updated"
+    }
+  ],
+  "stateMachine": {
+    "defaultWorkflow": "default",
+    "activeWorkflows": {},
+    "totalTransitions": 0
+  },
+  "automation": {
+    "globalLevel": 2,
+    "trustScore": 40,
+    "pendingApprovals": 0,
+    "lastGateResult": null
+  },
+  "team": {
+    "enabled": true,
+    "stateFile": ".bkit/runtime/agent-state.json",
+    "eventsFile": ".bkit/runtime/agent-events.jsonl"
+  },
+  "updatedAt": "2026-03-30T18:58:52.350953",
+  "_autoSyncNote": "auto-synced at 2026-03-30 18:58:52, last commit: ab7e578"
 }

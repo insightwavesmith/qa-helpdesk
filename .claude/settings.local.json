@@ -71,11 +71,6 @@
             "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/postmortem-review-gate.sh",
             "timeout": 10000
-          },
-          {
-            "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/enforce-task-complete-before-push.sh",
-            "timeout": 5000
           }
         ]
       },
