@@ -1,5 +1,5 @@
 #!/bin/bash
-# pdca-chain-handoff.sh v4 — Match Rate 게이트 + 위험도 분기 + PM 우회 COO 직통
+# pdca-chain-handoff.sh v5 — Match Rate 게이트 + 위험도 분기 + PM 우회 COO 직통
 # TaskCompleted hook 체인의 마지막 (6번째)
 #
 # v3 (2026-03-29):
@@ -9,6 +9,9 @@
 # v4 (2026-03-30):
 #   변경1: L2/L3 PM_LEADER → MOZZI 직통 (PM 검수 제거, Smith님 확정)
 #   변경2: chain_step cto_to_pm → cto_to_coo
+# v5 (2026-03-30):
+#   변경1: broker MCP → webhook wake (MOZZI는 OpenClaw 에이전트, broker peer 아님)
+#   변경2: L0/L1 + L2/L3 모두 http://127.0.0.1:18789/hooks/wake 경유
 set -uo pipefail
 
 # ── 1. 팀원 bypass ──
@@ -98,35 +101,22 @@ if [ "$EARLY_LEVEL" = "L0" ] || [ "$EARLY_LEVEL" = "L1" ]; then
 EOFPAYLOAD
     )
 
-    # Broker 전송 시도
-    BROKER_URL="http://localhost:7899"
-    if curl -sf "${BROKER_URL}/health" >/dev/null 2>&1; then
-        PEERS_JSON=$(curl -sf -X POST "${BROKER_URL}/list-peers" \
-            -H 'Content-Type: application/json' \
-            -d "{\"scope\":\"repo\",\"cwd\":\"${PROJECT_DIR}\",\"git_root\":\"${PROJECT_DIR}\"}" \
-            2>/dev/null || echo "[]")
+    # Webhook wake → MOZZI (OpenClaw 에이전트, broker peer 아님)
+    WAKE_URL="http://127.0.0.1:18789/hooks/wake"
+    WAKE_HTTP=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$WAKE_URL" \
+        -H 'Content-Type: application/json' \
+        -d "{\"source\":\"chain\",\"team\":\"${TEAM}\",\"event\":\"ANALYSIS_REPORT\",\"message\":$(echo "$PAYLOAD" | jq -c '.')}" \
+        2>/dev/null || echo "000")
 
-        TARGET_ID=$(echo "$PEERS_JSON" | jq -r '[.[] | select(.summary | test("MOZZI"))][0].id // empty' 2>/dev/null)
-        MY_ID=$(echo "$PEERS_JSON" | jq -r "[.[] | select(.summary | test(\"${FROM_ROLE}\"))][0].id // empty" 2>/dev/null)
-
-        if [ -n "$TARGET_ID" ] && [ -n "$MY_ID" ]; then
-            SEND_RESULT=$(curl -sf -X POST "${BROKER_URL}/send-message" \
-                -H 'Content-Type: application/json' \
-                -d "{\"from_id\":\"${MY_ID}\",\"to_id\":\"${TARGET_ID}\",\"text\":$(echo "$PAYLOAD" | jq -c '.')}" \
-                2>/dev/null || echo '{"ok":false}')
-
-            SEND_OK=$(echo "$SEND_RESULT" | jq -r '.ok // false' 2>/dev/null)
-            if [ "$SEND_OK" = "true" ]; then
-                echo "✅ [${EARLY_LEVEL}] ANALYSIS_REPORT → MOZZI 자동 전송 완료"
-                echo "  팀: ${FROM_ROLE}"
-                echo "  산출물: ${DELIVERABLES}"
-                exit 0
-            fi
-        fi
+    if [ "$WAKE_HTTP" -ge 200 ] && [ "$WAKE_HTTP" -lt 300 ] 2>/dev/null; then
+        echo "✅ [${EARLY_LEVEL}] ANALYSIS_REPORT → MOZZI webhook 전송 완료"
+        echo "  팀: ${FROM_ROLE}"
+        echo "  산출물: ${DELIVERABLES}"
+        exit 0
     fi
 
     # Fallback
-    echo "⚠ [${EARLY_LEVEL}] broker/peer 미발견. 수동 보고 필요."
+    echo "⚠ [${EARLY_LEVEL}] webhook 미응답 (HTTP ${WAKE_HTTP}). 수동 보고 필요."
     echo "ACTION_REQUIRED: send_message(MOZZI, ANALYSIS_REPORT)"
     echo "PAYLOAD: ${PAYLOAD}"
     exit 0
@@ -222,7 +212,29 @@ PAYLOAD=$(cat <<EOFPAYLOAD
 EOFPAYLOAD
 )
 
-# ── 8. Broker 전송 (peer-resolver + chain-messenger 통합) ──
+# ── 8. MOZZI(COO)는 항상 webhook wake (OpenClaw 에이전트, broker peer 아님) ──
+if [ "$TO_ROLE" = "MOZZI" ]; then
+    WAKE_URL="http://127.0.0.1:18789/hooks/wake"
+    WAKE_HTTP=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$WAKE_URL" \
+        -H 'Content-Type: application/json' \
+        -d "{\"source\":\"chain\",\"team\":\"${TEAM}\",\"event\":\"COMPLETION_REPORT\",\"level\":\"${PROCESS_LEVEL}\",\"chain_step\":\"${CHAIN_STEP}\",\"match_rate\":\"${RATE}\",\"manual_review\":\"${MANUAL_REVIEW}\",\"message\":$(echo "$PAYLOAD" | jq -c '.')}" \
+        --max-time 5 2>/dev/null || echo "000")
+    if [ "$WAKE_HTTP" = "200" ] || [ "$WAKE_HTTP" = "204" ]; then
+        echo "✅ COMPLETION_REPORT → MOZZI webhook 전송 완료"
+        echo "  Level: ${PROCESS_LEVEL}, Match Rate: ${RATE}%"
+        echo "  chain_step: ${CHAIN_STEP}"
+        [ "$MANUAL_REVIEW" = "true" ] && echo "  ⚠ 수동 검수 필수 (고위험/L3)"
+        echo "$PAYLOAD" | jq '.' > "$PROJECT_DIR/.bkit/runtime/last-completion-report.json" 2>/dev/null
+        exit 0
+    else
+        echo "⚠ webhook 미응답 (HTTP ${WAKE_HTTP}). 수동 보고 필요."
+        echo "ACTION_REQUIRED: send_message(MOZZI, COMPLETION_REPORT)"
+        echo "PAYLOAD: ${PAYLOAD}"
+        exit 0
+    fi
+fi
+
+# ── 8-old. Broker 전송 (팀간 통신용, MOZZI 제외) ──
 BROKER_URL="${BROKER_URL:-http://localhost:7899}"
 
 # helpers 로드 (있으면 사용, 없으면 inline fallback)
