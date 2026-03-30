@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-30T20:38:18.365Z",
+  "lastUpdated": "2026-03-30T18:04:44.000000+00:00",
   "activeFeatures": [
     "slack-notification",
     "organic-channel-distribution-phase2",
@@ -9,12 +9,7 @@
     "video-permission-skip",
     "video-collection-audit",
     "helpers",
-    ".claude",
-    ".bkit",
-    "creatives",
-    "video-scene-analysis",
-    "run-prescription",
-    "portfolio"
+    ".claude"
   ],
   "primaryFeature": "helpers",
   "features": {
@@ -942,71 +937,6 @@
         "lastUpdated": "2026-03-30T06:01:45.065Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/.claude/hooks/pdca-chain-handoff.sh"
-    },
-    ".bkit": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-03-30T18:28:33.081Z",
-        "lastUpdated": "2026-03-30T18:28:33.081Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/.bkit/hooks/pdca-chain-handoff.sh"
-    },
-    "creatives": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-03-30T18:46:30.071Z",
-        "lastUpdated": "2026-03-30T20:23:51.300Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/src/app/(main)/protractor/creatives/creative-analysis.tsx"
-    },
-    "video-scene-analysis": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-03-30T19:06:01.189Z",
-        "lastUpdated": "2026-03-30T19:44:45.515Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/video-scene-analysis/route.ts"
-    },
-    "run-prescription": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-03-30T19:53:04.032Z",
-        "lastUpdated": "2026-03-30T19:53:04.032Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/run-prescription/route.ts"
-    },
-    "portfolio": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-03-30T20:22:44.533Z",
-        "lastUpdated": "2026-03-30T20:38:18.365Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/src/app/(main)/protractor/creatives/components/portfolio/portfolio-tab-v2.tsx"
     }
   },
   "pipeline": {
@@ -1017,7 +947,7 @@
   "session": {
     "startedAt": "2026-03-30T05:20:31.424Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-30T20:38:18.365Z"
+    "lastActivity": "2026-03-30T14:50:20.000Z"
   },
   "history": [
     {
@@ -1035,114 +965,6 @@
     {
       "timestamp": "2026-03-30T06:01:45.065Z",
       "feature": ".claude",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T18:28:33.081Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T18:46:30.071Z",
-      "feature": "creatives",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T19:06:01.189Z",
-      "feature": "video-scene-analysis",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T19:06:09.314Z",
-      "feature": "video-scene-analysis",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T19:08:24.934Z",
-      "feature": "video-scene-analysis",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T19:44:45.515Z",
-      "feature": "video-scene-analysis",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T19:53:04.032Z",
-      "feature": "run-prescription",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T20:21:12.747Z",
-      "feature": "creatives",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T20:21:24.688Z",
-      "feature": "creatives",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T20:21:48.056Z",
-      "feature": "creatives",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T20:22:31.596Z",
-      "feature": "creatives",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T20:22:44.533Z",
-      "feature": "portfolio",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T20:22:50.915Z",
-      "feature": "portfolio",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T20:23:46.068Z",
-      "feature": "creatives",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T20:23:51.300Z",
-      "feature": "creatives",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T20:37:04.651Z",
-      "feature": "portfolio",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T20:38:05.518Z",
-      "feature": "portfolio",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T20:38:18.365Z",
-      "feature": "portfolio",
       "phase": "do",
       "action": "updated"
     }
@@ -1163,6 +985,7 @@
     "stateFile": ".bkit/runtime/agent-state.json",
     "eventsFile": ".bkit/runtime/agent-events.jsonl"
   },
-  "updatedAt": "2026-03-31T03:27:46.759950",
-  "_autoSyncNote": "auto-synced at 2026-03-31 03:27:46, last commit: 7d2379f"
+  "updatedAt": "2026-03-31T05:49:53.558722",
+  "_autoSyncNote": "auto-synced at 2026-03-31 05:49:53, last commit: 4601e62",
+  "last_updated": "2026-03-30T19:07:31Z"
 }
