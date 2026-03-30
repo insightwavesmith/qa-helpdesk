@@ -123,11 +123,11 @@ export function calculateMetrics(insight: Record<string, any>) {
     getActionValue(actions, "initiate_checkout") ||
     getActionValue(actions, "omni_initiated_checkout");
   const purchases =
-    getActionValue(actions, "purchase") ||
-    getActionValue(actions, "omni_purchase");
+    getActionValue(actions, "omni_purchase") ||
+    getActionValue(actions, "purchase");
   const purchaseValue =
-    getActionValue(actionValues, "purchase") ||
-    getActionValue(actionValues, "omni_purchase");
+    getActionValue(actionValues, "omni_purchase") ||
+    getActionValue(actionValues, "purchase");
 
   const ctr = safeFloat(insight.ctr);
   const roas = spend > 0 ? purchaseValue / spend : 0;
