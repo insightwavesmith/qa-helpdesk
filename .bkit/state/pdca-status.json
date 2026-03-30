@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-30T21:07:45.770Z",
+  "lastUpdated": "2026-03-30T21:08:03.952Z",
   "activeFeatures": [
     "slack-notification",
     "organic-channel-distribution-phase2",
@@ -11,7 +11,8 @@
     "helpers",
     ".claude",
     "creative-detail",
-    "bscamp"
+    "bscamp",
+    "individual"
   ],
   "primaryFeature": "helpers",
   "features": {
@@ -965,6 +966,19 @@
         "lastUpdated": "2026-03-30T21:07:34.582Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/src/types/prescription.ts"
+    },
+    "individual": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T21:08:03.952Z",
+        "lastUpdated": "2026-03-30T21:08:03.952Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/(main)/protractor/creatives/components/individual/journey-summary.tsx"
     }
   },
   "pipeline": {
@@ -975,7 +989,7 @@
   "session": {
     "startedAt": "2026-03-30T05:20:31.424Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-30T21:07:45.770Z"
+    "lastActivity": "2026-03-30T21:08:03.952Z"
   },
   "history": [
     {
@@ -1011,6 +1025,12 @@
     {
       "timestamp": "2026-03-30T21:07:45.770Z",
       "feature": "creative-detail",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T21:08:03.952Z",
+      "feature": "individual",
       "phase": "do",
       "action": "updated"
     }
