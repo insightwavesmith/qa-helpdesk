@@ -1,7 +1,7 @@
 #!/bin/bash
-# deploy-trigger.sh — Gap 통과 후 배포 안내
+# deploy-trigger.sh — Gap 통과 후 자동 배포
 # TaskCompleted hook 체인 5번 (gap-analysis 후, chain-handoff 전)
-# V2 (2026-03-30): P3 해결
+# V3 (2026-03-30): echo → gcloud run deploy 직접 실행 + revision 로깅
 
 set -uo pipefail
 
@@ -29,14 +29,31 @@ fi
 GCMD="gcloud run"
 DEPLOY_CMD="$GCMD deploy bscamp-web --source . --region asia-northeast3 --project modified-shape-477110-h8"
 
-if [ "$LEVEL" = "L0" ]; then
+run_deploy() {
+    local LABEL="$1"
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "🚀 [L0 핫픽스] 즉시 배포 필요"
+    echo "🚀 ${LABEL}"
     echo "  커밋: $(git log --oneline -1)"
-    echo "  명령: $DEPLOY_CMD"
+    echo "  실행: $DEPLOY_CMD"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    DEPLOY_OUTPUT=$($DEPLOY_CMD 2>&1)
+    DEPLOY_EXIT=$?
+
+    if [ $DEPLOY_EXIT -eq 0 ]; then
+        REVISION=$(echo "$DEPLOY_OUTPUT" | grep -oE 'Revision \[[^]]+\]' | sed 's/Revision \[//;s/\]//' || echo "unknown")
+        [ -z "$REVISION" ] && REVISION=$(echo "$DEPLOY_OUTPUT" | grep -oE 'bscamp-web-[0-9a-z-]+' | tail -1 || echo "unknown")
+        echo "✅ 배포 완료: $REVISION"
+    else
+        echo "❌ 배포 실패"
+        echo "$DEPLOY_OUTPUT" | tail -5
+    fi
     echo ""
+}
+
+if [ "$LEVEL" = "L0" ]; then
+    run_deploy "[L0 핫픽스] 즉시 배포"
     exit 0
 fi
 
@@ -44,13 +61,7 @@ source "$(dirname "$0")/helpers/match-rate-parser.sh" 2>/dev/null
 RATE=$(parse_match_rate "$PROJECT_DIR/docs/03-analysis" 2>/dev/null || echo "0")
 
 if [ "${RATE:-0}" -ge 95 ] 2>/dev/null; then
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "🚀 [${LEVEL}] Gap ${RATE}% 통과 — 배포 진행"
-    echo "  커밋: $(git log --oneline -1)"
-    echo "  명령: $DEPLOY_CMD"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
+    run_deploy "[${LEVEL}] Gap ${RATE}% 통과 — 배포 진행"
 fi
 
 exit 0
