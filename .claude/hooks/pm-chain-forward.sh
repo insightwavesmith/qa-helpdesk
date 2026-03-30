@@ -17,6 +17,11 @@ source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
 PROJECT_DIR="/Users/smith/projects/bscamp"
 cd "$PROJECT_DIR" || exit 0
 
+# D2: jq 존재 확인
+command -v jq >/dev/null 2>&1 || { echo "jq not found, skipping chain hook"; exit 0; }
+# D5: runtime 디렉토리 보장
+mkdir -p "$PROJECT_DIR/.claude/runtime" 2>/dev/null
+
 # PM 팀만 대상
 source "$(dirname "$0")/helpers/team-context-resolver.sh" 2>/dev/null
 resolve_team_context 2>/dev/null

@@ -50,7 +50,7 @@ _record_sent() {
 
 # Health check — 0=OK, 1=DOWN
 check_broker_health() {
-    curl -sf "${_CM_BROKER_URL}/health" >/dev/null 2>&1
+    curl -sf --connect-timeout 2 --max-time 3 "${_CM_BROKER_URL}/health" >/dev/null 2>&1
     return $?
 }
 
@@ -85,7 +85,7 @@ send_chain_message() {
         ATTEMPT=$((ATTEMPT + 1))
 
         local RESULT
-        RESULT=$(curl -sf -X POST "${_CM_BROKER_URL}/send-message" \
+        RESULT=$(curl -sf --connect-timeout 2 --max-time 3 -X POST "${_CM_BROKER_URL}/send-message" \
             -H 'Content-Type: application/json' \
             -d "{\"from_id\":\"${FROM_ID}\",\"to_id\":\"${TO_ID}\",\"text\":$(echo "$PAYLOAD" | jq -c '.' 2>/dev/null || echo "\"$PAYLOAD\"")}" \
             2>/dev/null || echo '{"ok":false}')

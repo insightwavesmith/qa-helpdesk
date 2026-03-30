@@ -13,6 +13,11 @@ set -uo pipefail
 PROJECT_DIR="/Users/smith/projects/bscamp"
 cd "$PROJECT_DIR" || exit 0
 
+# D2: jq 존재 확인
+command -v jq >/dev/null 2>&1 || { echo "jq not found, skipping chain hook"; exit 0; }
+# D5: runtime 디렉토리 보장
+mkdir -p "$PROJECT_DIR/.claude/runtime" 2>/dev/null
+
 # helpers 로드
 HELPERS_DIR="$(dirname "$0")/helpers"
 [ -f "$HELPERS_DIR/chain-messenger.sh" ] && source "$HELPERS_DIR/chain-messenger.sh"

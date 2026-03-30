@@ -54,7 +54,10 @@ request_approval() {
     local KEY
     KEY=$(_approval_key "$REL_FILE")
 
-    mkdir -p "${_APPROVAL_DIR}/pending" 2>/dev/null
+    if ! mkdir -p "${_APPROVAL_DIR}/pending" 2>/dev/null; then
+        echo "approval-handler: pending 디렉토리 생성 실패" >&2
+        return 1
+    fi
     cat > "${_APPROVAL_DIR}/pending/${KEY}.json" <<EOFREQ
 {"file":"${REL_FILE}","tool":"${TOOL_NAME}","ts":$(date +%s)}
 EOFREQ

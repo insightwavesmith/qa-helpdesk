@@ -15,6 +15,11 @@ source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
 [ "$IS_TEAMMATE" = "true" ] && exit 0
 
 PROJECT_DIR="/Users/smith/projects/bscamp"
+
+# D2: jq 존재 확인
+command -v jq >/dev/null 2>&1 || { echo "jq not found, skipping pdca gate"; exit 0; }
+# D5: runtime 디렉토리 보장
+mkdir -p "$PROJECT_DIR/.claude/runtime" 2>/dev/null
 PDCA_FILE="$PROJECT_DIR/docs/.pdca-status.json"
 
 # PDCA 파일 없으면 → 경고만 (최초 상태일 수 있음)

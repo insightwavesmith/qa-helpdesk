@@ -15,6 +15,11 @@ source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
 PROJECT_DIR="/Users/smith/projects/bscamp"
 cd "$PROJECT_DIR" || exit 0
 
+# D2: jq 존재 확인
+command -v jq >/dev/null 2>&1 || { echo "jq not found, skipping chain hook"; exit 0; }
+# D5: runtime 디렉토리 보장
+mkdir -p "$PROJECT_DIR/.claude/runtime" 2>/dev/null
+
 # Hook 출력 최소화 (D8-1)
 source "$(dirname "$0")/helpers/hook-output.sh" 2>/dev/null && hook_init
 
@@ -25,7 +30,7 @@ CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$PROJECT_DIR/.claude/runtime/team-context.jso
 if [ ! -f "$CONTEXT_FILE" ]; then
     exit 0  # 팀 컨텍스트 없음 → 비대상
 fi
-TEAM=$(jq -r '.team // empty' "$CONTEXT_FILE" 2>/dev/null)
+TEAM=$(jq -r '.team // empty' "$CONTEXT_FILE" 2>/dev/null || true)
 [ -z "$TEAM" ] && exit 0
 # 팀명을 from_role로 변환 (CTO → CTO_LEADER, PM → PM_LEADER, 기타 → 그대로)
 case "$TEAM" in
@@ -57,7 +62,7 @@ fi
 
 if [ "$EARLY_LEVEL" = "L0" ] || [ "$EARLY_LEVEL" = "L1" ]; then
     # L0/L1: Match Rate 게이트 스킵 → MOZZI 직접 ANALYSIS_REPORT
-    TASK_FILE=$(jq -r '.taskFiles[0] // empty' "$CONTEXT_FILE" 2>/dev/null)
+    TASK_FILE=$(jq -r '.taskFiles[0] // empty' "$CONTEXT_FILE" 2>/dev/null || true)
     TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     MSG_ID="chain-l1-$(date +%s)-$$"
 
@@ -186,7 +191,7 @@ esac
 LAST_COMMIT=$(git log --oneline -1 2>/dev/null | cut -d' ' -f1)
 CHANGED_COUNT=$(echo "$CHANGED_FILES" | grep -c '.' || true)
 ANALYSIS_FILE=$(ls -t "$PROJECT_DIR/docs/03-analysis/"*.analysis.md 2>/dev/null | head -1)
-TASK_FILE=$(jq -r '.taskFiles[0] // empty' "$CONTEXT_FILE" 2>/dev/null)
+TASK_FILE=$(jq -r '.taskFiles[0] // empty' "$CONTEXT_FILE" 2>/dev/null || true)
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 MSG_ID="chain-cto-$(date +%s)-$$"
 
