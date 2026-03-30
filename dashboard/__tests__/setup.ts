@@ -199,6 +199,35 @@ const createTableStatements = [
     read INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
+
+  // T12: routines
+  `CREATE TABLE IF NOT EXISTS routines (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    cron_expression TEXT NOT NULL,
+    command TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    last_run_at TEXT,
+    next_run_at TEXT,
+    last_run_status TEXT CHECK(last_run_status IN ('success','failed','running')),
+    last_run_output TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
+
+  // T13: knowledge_entries
+  `CREATE TABLE IF NOT EXISTS knowledge_entries (
+    id TEXT PRIMARY KEY,
+    agent_id TEXT NOT NULL REFERENCES agents(id),
+    category TEXT NOT NULL DEFAULT 'general' CHECK(category IN ('general','pattern','mistake','convention','architecture','performance')),
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    source_ticket_id TEXT REFERENCES tickets(id),
+    tags TEXT DEFAULT '[]',
+    learned_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
 ];
 
 // 인덱스
@@ -213,6 +242,8 @@ const createIndexStatements = [
   `CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type, created_at)`,
   `CREATE INDEX IF NOT EXISTS idx_events_target ON events(target_type, target_id)`,
   `CREATE INDEX IF NOT EXISTS idx_notif_unread ON notifications(read, created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_knowledge_agent ON knowledge_entries(agent_id, category)`,
+  `CREATE INDEX IF NOT EXISTS idx_knowledge_category ON knowledge_entries(category, learned_at)`,
 ];
 
 export function createSchema() {
@@ -226,6 +257,7 @@ export function createSchema() {
 
 export function cleanDb() {
   const tables = [
+    'knowledge_entries', 'routines',
     'notifications', 'events', 'pdca_features', 'workflow_steps',
     'budget_incidents', 'budget_policies', 'cost_events',
     'heartbeat_runs', 'tickets', 'agents', 'workflow_chains',

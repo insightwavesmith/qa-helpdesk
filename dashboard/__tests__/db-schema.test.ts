@@ -4,7 +4,7 @@ import { testDb } from './setup';
 import * as schema from '../server/db/schema';
 
 describe('DB 스키마', () => {
-  it('11개 테이블이 모두 생성됨', () => {
+  it('13개 테이블이 모두 생성됨', () => {
     const result = testDb.all<{ name: string }>(
       sql`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`,
     );
@@ -16,8 +16,10 @@ describe('DB 스키마', () => {
       'cost_events',
       'events',
       'heartbeat_runs',
+      'knowledge_entries',
       'notifications',
       'pdca_features',
+      'routines',
       'tickets',
       'workflow_chains',
       'workflow_steps',
@@ -164,5 +166,40 @@ describe('DB 스키마', () => {
     const result = testDb.select().from(schema.budgetIncidents).all();
     expect(result).toHaveLength(1);
     expect(result[0].resolved).toBe(0);
+  });
+
+  it('routines 테이블 기본값', () => {
+    testDb.insert(schema.routines).values({
+      id: 'routine-1',
+      name: 'daily-collect',
+      cronExpression: '0 2 * * *',
+      command: 'bash scripts/collect-daily.sh',
+    }).run();
+
+    const result = testDb.select().from(schema.routines).all();
+    expect(result).toHaveLength(1);
+    expect(result[0].enabled).toBe(1);
+    expect(result[0].lastRunStatus).toBeNull();
+  });
+
+  it('knowledge_entries 테이블 + agents FK', () => {
+    testDb.insert(schema.agents).values({
+      id: 'knowledge-agent',
+      name: 'knowledge-test-agent',
+      role: 'developer',
+    }).run();
+
+    testDb.insert(schema.knowledgeEntries).values({
+      id: 'knowledge-1',
+      agentId: 'knowledge-agent',
+      category: 'pattern',
+      title: 'Drizzle 인덱스 패턴',
+      content: '객체 반환 방식 사용',
+    }).run();
+
+    const result = testDb.select().from(schema.knowledgeEntries).all();
+    expect(result).toHaveLength(1);
+    expect(result[0].category).toBe('pattern');
+    expect(result[0].tags).toBe('[]');
   });
 });
