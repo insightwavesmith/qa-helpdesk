@@ -15,6 +15,7 @@ import {
   getRecentPosts,
 } from "@/actions/admin";
 import { decodeHtmlEntities } from "@/lib/utils/decode-entities";
+import { ChainStatusBadge } from "@/components/dashboard/ChainStatusBadge";
 
 export async function AdminDashboard() {
   let stats = {
@@ -56,6 +57,8 @@ export async function AdminDashboard() {
       <h1 className="text-[32px] font-bold tracking-tight text-foreground">
         대시보드
       </h1>
+
+      <ChainStatusBadge />
 
       {/* Stats — Notion-style inline metrics */}
       <section>
