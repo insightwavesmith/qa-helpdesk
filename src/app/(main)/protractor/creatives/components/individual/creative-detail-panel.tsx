@@ -10,6 +10,8 @@ import { FiveAxisCard } from "./five-axis-card";
 import { CustomerJourney } from "./customer-journey";
 import { GazeAnalysis } from "./gaze-analysis";
 import { PrescriptionCards } from "./prescription-cards";
+import { SceneDetailAnalysis } from "./scene-detail-analysis";
+import { AudioAnalysis } from "./audio-analysis";
 
 // ── API 응답 타입 ─────────────────────────────────────────────────
 
@@ -24,6 +26,7 @@ interface CreativeDetailResponse {
     ad_copy: string | null;
     duration_seconds: number | null;
     analysis_json: AnalysisJsonV3 | null;
+    video_analysis: Record<string, unknown> | null;
   };
   performance: {
     impressions: number;
@@ -190,10 +193,26 @@ export function CreativeDetailPanel({
           <CustomerJourney
             analysisJson={analysisJson}
             durationSeconds={creative.duration_seconds}
+            customerJourneySummary={
+              prescription?.customer_journey_summary ?? null
+            }
           />
         )}
 
-        {/* 4. 시선 분석 */}
+        {/* 4. 씬별 시선 분석 + 처방 (VIDEO만) */}
+        {isVideo && analysisJson && (
+          <SceneDetailAnalysis
+            analysisJson={analysisJson}
+            saliencyFrames={detail.saliency_frames ?? null}
+          />
+        )}
+
+        {/* 5. 오디오 분석 (VIDEO만) */}
+        {isVideo && analysisJson && (
+          <AudioAnalysis analysisJson={analysisJson} />
+        )}
+
+        {/* 6. 시선 분석 */}
         {detail.saliency && (
           <GazeAnalysis
             saliency={detail.saliency}
@@ -203,7 +222,7 @@ export function CreativeDetailPanel({
           />
         )}
 
-        {/* 5. 처방 Top 3 */}
+        {/* 7. 처방 Top 3 */}
         <PrescriptionCards
           prescriptions={
             prescription?.top3_prescriptions ??
@@ -213,7 +232,7 @@ export function CreativeDetailPanel({
           isLoading={prescriptionLoading}
         />
 
-        {/* 6. Top 소재 비교 */}
+        {/* 8. Top 소재 비교 */}
         {detail.top_creative && performance && (
           <TopCompare current={performance} top={detail.top_creative} />
         )}
