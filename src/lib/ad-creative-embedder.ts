@@ -44,7 +44,7 @@ export interface EmbedResult {
  * 임베딩 실패해도 나머지 필드는 저장 (다음 크론에서 재시도)
  */
 export async function embedCreative(input: CreativeEmbedInput): Promise<EmbedResult> {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
   const result: EmbedResult = {
     adId: input.adId,
     embeddingDone: false,
@@ -54,7 +54,7 @@ export async function embedCreative(input: CreativeEmbedInput): Promise<EmbedRes
 
   // ad_id → creatives.id 매핑
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: creative } = await (supabase as any)
+  const { data: creative } = await (db as any)
     .from("creatives")
     .select("id")
     .eq("ad_id", input.adId)
@@ -104,7 +104,7 @@ export async function embedCreative(input: CreativeEmbedInput): Promise<EmbedRes
     const position = input.position ?? 0;
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      const { error } = await (db as any)
         .from("creative_media")
         .update(updates)
         .eq("creative_id", creative.id)
@@ -131,11 +131,11 @@ export async function embedMissingCreatives(
   batchSize = 50,
   delayMs = 500,
 ): Promise<{ processed: number; embedded: number; errors: number }> {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
   // creative_media에서 임베딩 없는 행 조회
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rows, error } = await (supabase as any)
+  const { data: rows, error } = await (db as any)
     .from("creative_media")
     .select("id, creative_id, media_url, ad_copy, embedding, text_embedding")
     .or("embedding.is.null,text_embedding.is.null")
@@ -186,7 +186,7 @@ export async function embedMissingCreatives(
       updates.embedded_at = new Date().toISOString();
       updates.updated_at = new Date().toISOString();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: updateErr } = await (supabase as any)
+      const { error: updateErr } = await (db as any)
         .from("creative_media")
         .update(updates)
         .eq("id", row.id);

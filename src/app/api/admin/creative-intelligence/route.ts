@@ -21,72 +21,98 @@ export async function GET(req: NextRequest) {
   }
 
   const period = parseInt(req.nextUrl.searchParams.get("period") || "30", 10);
+  const limit = parseInt(req.nextUrl.searchParams.get("limit") || "5", 10);
 
-  // 1. creative_media + creatives JOIN으로 소재 정보 + 분석 결과 조회
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: mediaRows, error: mediaErr } = await (svc as any)
+  // 1. creatives에서 active ad_id 조회
+  const { data: creativeRows, error: crErr } = await svc
+    .from("creatives")
+    .select("id, ad_id, lp_url")
+    .eq("account_id", accountId)
+    .eq("is_active", true);
+
+  if (crErr) {
+    return NextResponse.json({ error: crErr.message }, { status: 500 });
+  }
+  if (!creativeRows || creativeRows.length === 0) {
+    return NextResponse.json({ account_id: accountId, total: 0, results: [] });
+  }
+
+  const creativeIds = creativeRows.map((r: Record<string, unknown>) => r.id as string);
+
+  // 2. creative_media 조회
+  const { data: mediaRows, error: mediaErr } = await svc
     .from("creative_media")
-    .select("id, media_url, ad_copy, media_type, storage_url, analysis_json, creatives!inner(ad_id, account_id, lp_url, is_active)")
-    .eq("creatives.account_id", accountId)
-    .eq("creatives.is_active", true);
+    .select("id, creative_id, media_url, ad_copy, media_type, storage_url, analysis_json")
+    .in("creative_id", creativeIds);
 
   if (mediaErr) {
     return NextResponse.json({ error: mediaErr.message }, { status: 500 });
   }
 
-  if (!mediaRows || mediaRows.length === 0) {
-    return NextResponse.json({ account_id: accountId, total: 0, results: [] });
+  // creative_id → creative 매핑
+  const creativeMap = new Map<string, Record<string, unknown>>();
+  for (const c of creativeRows) {
+    creativeMap.set(c.id as string, c as Record<string, unknown>);
   }
 
-  const adIds = mediaRows.map((r: Record<string, unknown>) => (r.creatives as Record<string, unknown>).ad_id as string);
-
-  // 2. daily_ad_insights에서 기간 평균 ROAS 조회
+  // 3. daily_ad_insights에서 기간 평균 ROAS 조회
   const sinceDate = new Date();
   sinceDate.setDate(sinceDate.getDate() - period);
   const sinceDateStr = sinceDate.toISOString().split("T")[0];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: insights } = await (svc as any)
+  const adIds = creativeRows.map((r: Record<string, unknown>) => r.ad_id as string);
+  const { data: insights } = await svc
     .from("daily_ad_insights")
     .select("ad_id, spend, website_purchase_value")
     .eq("account_id", accountId)
+    .in("ad_id", adIds)
     .gte("date_start", sinceDateStr);
 
-  // ad_id별 ROAS 집계 (가중평균: SUM(revenue) / SUM(spend))
+  // ad_id별 ROAS 집계
   const roasMap = new Map<string, { totalSpend: number; totalRevenue: number }>();
-  for (const row of insights || []) {
-    const existing = roasMap.get(row.ad_id) || { totalSpend: 0, totalRevenue: 0 };
+  for (const row of (insights || []) as Record<string, unknown>[]) {
+    const existing = roasMap.get(row.ad_id as string) || { totalSpend: 0, totalRevenue: 0 };
     existing.totalSpend += Number(row.spend) || 0;
     existing.totalRevenue += Number(row.website_purchase_value) || 0;
-    roasMap.set(row.ad_id, existing);
+    roasMap.set(row.ad_id as string, existing);
   }
 
-  // 3. 결과 병합
-  const results = mediaRows.map((media: Record<string, unknown>) => {
-    const creative = media.creatives as Record<string, unknown>;
-    const adId = creative.ad_id as string;
+  // 4. 결과 병합 — 분석 데이터 있는 것 우선 정렬
+  const results = (mediaRows || []).map((media: Record<string, unknown>) => {
+    const creative = creativeMap.get(media.creative_id as string);
+    const adId = (creative?.ad_id as string) || "";
     const analysisJson = media.analysis_json as Record<string, unknown> | null;
     const perf = roasMap.get(adId);
     const roas = perf && perf.totalSpend > 0
       ? Math.round((perf.totalRevenue / perf.totalSpend) * 100) / 100
       : null;
 
+    const hasAnalysis = analysisJson && (
+      analysisJson.scene_analysis ||
+      analysisJson.visual_impact ||
+      analysisJson.hook_type
+    );
+
     return {
+      id: media.id as string,
       ad_id: adId,
-      // analysis_json 점수 (5축 분석 결과)
       analysis_json: analysisJson,
-      // creative_media 필드
       media_url: (media.storage_url as string) || (media.media_url as string) || null,
       ad_copy: (media.ad_copy as string) || null,
       media_type: (media.media_type as string) || null,
-      lp_url: (creative.lp_url as string) || null,
-      // 성과 지표
+      lp_url: (creative?.lp_url as string) || null,
       roas,
       spend: perf?.totalSpend ?? null,
       revenue: perf?.totalRevenue ?? null,
+      has_analysis: !!hasAnalysis,
       period,
     };
-  });
+  })
+    .sort((a: { has_analysis: boolean; roas: number | null }, b: { has_analysis: boolean; roas: number | null }) => {
+      if (a.has_analysis !== b.has_analysis) return a.has_analysis ? -1 : 1;
+      return (b.roas ?? 0) - (a.roas ?? 0);
+    })
+    .slice(0, limit);
 
   return NextResponse.json({
     account_id: accountId,

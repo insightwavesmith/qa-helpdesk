@@ -70,10 +70,10 @@ function getRisk(similarity: number): SimilarityPair["risk"] {
 export async function computeSimilarityPairs(
   accountId: string,
 ): Promise<SimilarityPair[]> {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rows, error } = await (supabase as any)
+  const { data: rows, error } = await (db as any)
     .from("creative_media")
     .select("id, creative_id, embedding, creatives!inner(ad_id, account_id)")
     .eq("creatives.account_id", accountId)
@@ -119,11 +119,11 @@ export async function generateClusters(accountId: string): Promise<{
   clusters_created: number;
   clusters: CreativeCluster[];
 }> {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
   // 1. creative_media.embedding 가져오기 (creatives JOIN)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rows, error } = await (supabase as any)
+  const { data: rows, error } = await (db as any)
     .from("creative_media")
     .select("id, creative_id, embedding, creatives!inner(ad_id, account_id)")
     .eq("creatives.account_id", accountId)
@@ -217,13 +217,13 @@ export async function generateClusters(accountId: string): Promise<{
   if (clusterRows.length > 0) {
     // 기존 클러스터 삭제 후 재삽입
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    await (db as any)
       .from("creative_clusters")
       .delete()
       .eq("account_id", accountId);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    await (db as any)
       .from("creative_clusters")
       .insert(clusterRows);
   }

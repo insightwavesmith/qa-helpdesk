@@ -10,7 +10,7 @@ import type {
 } from "@/types/organic";
 
 // organic_posts / organic_analytics / keyword_stats 테이블은 database.ts에 아직 미등록
-// (Supabase migration 실행 전 상태) — supabase 클라이언트를 any로 우회
+// (Supabase migration 실행 전 상태) — db 클라이언트를 any로 우회
 // TODO: migration 실행 후 database.ts 업데이트 → as any 제거
 
 // ─── 목록 조회 ────────────────────────────────────────────────────────────────
@@ -25,12 +25,12 @@ export async function getOrganicPosts(
 ): Promise<{ data: OrganicPost[]; count: number; error: string | null }> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabase = (await requireAdmin()) as any;
+    const db = (await requireAdmin()) as any;
     const { channel, status, page = 1, limit = 20 } = filters;
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    let query = supabase
+    let query = db
       .from("organic_posts")
       .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
@@ -64,9 +64,9 @@ export async function getOrganicPost(
 ): Promise<{ data: OrganicPost | null; error: string | null }> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabase = (await requireAdmin()) as any;
+    const db = (await requireAdmin()) as any;
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("organic_posts")
       .select("*")
       .eq("id", id)
@@ -91,7 +91,7 @@ export async function createOrganicPost(
 ): Promise<{ data: OrganicPost | null; error: string | null }> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabase = (await requireAdmin()) as any;
+    const db = (await requireAdmin()) as any;
 
     const insertPayload = {
       title: input.title,
@@ -102,7 +102,7 @@ export async function createOrganicPost(
       status: "draft",
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("organic_posts")
       .insert(insertPayload)
       .select()
@@ -128,9 +128,9 @@ export async function updateOrganicPost(
 ): Promise<{ data: OrganicPost | null; error: string | null }> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabase = (await requireAdmin()) as any;
+    const db = (await requireAdmin()) as any;
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("organic_posts")
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq("id", id)
@@ -156,10 +156,10 @@ export async function publishOrganicPost(
 ): Promise<{ data: OrganicPost | null; error: string | null }> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabase = (await requireAdmin()) as any;
+    const db = (await requireAdmin()) as any;
     const now = new Date().toISOString();
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("organic_posts")
       .update({
         status: "published",
@@ -189,9 +189,9 @@ export async function deleteOrganicPost(
 ): Promise<{ error: string | null }> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabase = (await requireAdmin()) as any;
+    const db = (await requireAdmin()) as any;
 
-    const { error } = await supabase
+    const { error } = await db
       .from("organic_posts")
       .delete()
       .eq("id", id);
@@ -216,10 +216,10 @@ export async function getOrganicStats(): Promise<{
 }> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabase = (await requireAdmin()) as any;
+    const db = (await requireAdmin()) as any;
 
     // organic_posts status별 카운트
-    const { data: postRows, error: postsError } = await supabase
+    const { data: postRows, error: postsError } = await db
       .from("organic_posts")
       .select("status");
 
@@ -235,7 +235,7 @@ export async function getOrganicStats(): Promise<{
     const reviewPosts = rows.filter((r) => r.status === "review").length;
 
     // organic_analytics views 합계
-    const { data: analyticsRows, error: analyticsError } = await supabase
+    const { data: analyticsRows, error: analyticsError } = await db
       .from("organic_analytics")
       .select("views");
 
@@ -250,7 +250,7 @@ export async function getOrganicStats(): Promise<{
     );
 
     // keyword_stats 개수
-    const { count: keywordCount, error: keywordError } = await supabase
+    const { count: keywordCount, error: keywordError } = await db
       .from("keyword_stats")
       .select("*", { count: "exact", head: true });
 
@@ -285,12 +285,12 @@ export async function getKeywordStats(
 ): Promise<{ data: KeywordStat[]; count: number; error: string | null }> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabase = (await requireAdmin()) as any;
+    const db = (await requireAdmin()) as any;
     const { channel, page = 1, limit = 50 } = filters;
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    let query = supabase
+    let query = db
       .from("keyword_stats")
       .select(
         "id, keyword, channel, pc_search, mobile_search, total_search, competition, fetched_at",

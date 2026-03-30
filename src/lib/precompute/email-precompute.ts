@@ -11,13 +11,13 @@ function maskEmail(email: string): string {
 }
 
 export async function precomputeEmailCampaigns(
-  supabase: DbClient
+  db: DbClient
 ): Promise<{ computed: number; errors: string[] }> {
   const errors: string[] = [];
   let computed = 0;
 
   try {
-    const { data: sends, error } = await supabase
+    const { data: sends, error } = await db
       .from("email_sends")
       .select("id, subject, recipient_email, recipient_type, status, sent_at, opened_at, clicked_at, content_id")
       .eq("status", "sent")
@@ -71,7 +71,7 @@ export async function precomputeEmailCampaigns(
       const openRate = g.recipients > 0 ? Math.round((g.opens / g.recipients) * 1000) / 10 : 0;
       const clickRate = g.recipients > 0 ? Math.round((g.clicks / g.recipients) * 1000) / 10 : 0;
 
-      await supabase
+      await db
         .from("email_campaign_stats" as never)
         .upsert(
           {

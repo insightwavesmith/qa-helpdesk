@@ -4,7 +4,7 @@
 import type { DbClient } from "@/lib/db";
 
 export async function precomputeDashboardStats(
-  supabase: DbClient
+  db: DbClient
 ): Promise<{ computed: number; errors: string[] }> {
   const errors: string[] = [];
   let computed = 0;
@@ -16,24 +16,24 @@ export async function precomputeDashboardStats(
 
     const [questionsResult, weeklyResult, openResult, pendingAnswersResult, postsResult, membersResult] =
       await Promise.all([
-        supabase.from("questions").select("id", { count: "exact", head: true }),
-        supabase
+        db.from("questions").select("id", { count: "exact", head: true }),
+        db
           .from("questions")
           .select("id", { count: "exact", head: true })
           .gte("created_at", oneWeekAgo.toISOString()),
-        supabase
+        db
           .from("questions")
           .select("id", { count: "exact", head: true })
           .eq("status", "open"),
-        supabase
+        db
           .from("answers")
           .select("id", { count: "exact", head: true })
           .eq("is_approved", false),
-        supabase
+        db
           .from("contents")
           .select("id", { count: "exact", head: true })
           .eq("status", "published"),
-        supabase
+        db
           .from("profiles")
           .select("id", { count: "exact", head: true })
           .in("role", ["member", "student"]),
@@ -48,7 +48,7 @@ export async function precomputeDashboardStats(
       activeMembers: membersResult.count || 0,
     };
 
-    await supabase
+    await db
       .from("dashboard_stats_cache" as never)
       .upsert(
         { stat_key: "counts", stat_value: counts, updated_at: new Date().toISOString() } as never,
@@ -60,7 +60,7 @@ export async function precomputeDashboardStats(
     const fourWeeksAgo = new Date();
     fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
 
-    const { data } = await supabase
+    const { data } = await db
       .from("questions")
       .select("created_at")
       .gte("created_at", fourWeeksAgo.toISOString())
@@ -87,7 +87,7 @@ export async function precomputeDashboardStats(
       질문수: count,
     }));
 
-    await supabase
+    await db
       .from("dashboard_stats_cache" as never)
       .upsert(
         { stat_key: "weekly_questions", stat_value: weeklyQuestions, updated_at: new Date().toISOString() } as never,

@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-30T08:37:19.000Z",
+  "lastUpdated": "2026-03-30T18:19:44.903Z",
   "activeFeatures": [
     "slack-notification",
     "organic-channel-distribution-phase2",
@@ -9,7 +9,15 @@
     "video-permission-skip",
     "video-collection-audit",
     "helpers",
-    ".claude"
+    ".claude",
+    "video-scene-analysis",
+    ".bkit",
+    "dashboard",
+    "server",
+    "db",
+    "scripts",
+    "routes",
+    "creative-intelligence"
   ],
   "primaryFeature": "helpers",
   "features": {
@@ -936,6 +944,110 @@
         "lastUpdated": "2026-03-30T06:01:45.065Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/.claude/hooks/pdca-chain-handoff.sh"
+    },
+    "video-scene-analysis": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T17:36:48.701Z",
+        "lastUpdated": "2026-03-30T17:37:04.290Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/video-scene-analysis/route.ts"
+    },
+    ".bkit": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T17:43:34.078Z",
+        "lastUpdated": "2026-03-30T17:51:46.860Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/.bkit/hooks/validate-deploy-authority.sh"
+    },
+    "dashboard": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T17:44:51.036Z",
+        "lastUpdated": "2026-03-30T18:02:39.738Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/dashboard/src/pages/RoutinesPage.tsx"
+    },
+    "server": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T17:45:04.656Z",
+        "lastUpdated": "2026-03-30T17:45:04.656Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/dashboard/server/index.ts"
+    },
+    "db": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T17:45:47.573Z",
+        "lastUpdated": "2026-03-30T17:45:47.573Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/dashboard/server/db/seed.ts"
+    },
+    "scripts": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T17:57:29.978Z",
+        "lastUpdated": "2026-03-30T17:57:29.978Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/scripts/top5-video-sync.py"
+    },
+    "routes": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T18:01:56.998Z",
+        "lastUpdated": "2026-03-30T18:02:05.946Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/dashboard/server/routes/hooks.ts"
+    },
+    "creative-intelligence": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T18:17:26.400Z",
+        "lastUpdated": "2026-03-30T18:19:44.903Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/admin/creative-intelligence/route.ts"
     }
   },
   "pipeline": {
@@ -946,7 +1058,7 @@
   "session": {
     "startedAt": "2026-03-30T05:20:31.424Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-30T08:37:19.000Z"
+    "lastActivity": "2026-03-30T18:19:44.903Z"
   },
   "history": [
     {
@@ -964,6 +1076,126 @@
     {
       "timestamp": "2026-03-30T06:01:45.065Z",
       "feature": ".claude",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T17:36:48.701Z",
+      "feature": "video-scene-analysis",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T17:37:04.290Z",
+      "feature": "video-scene-analysis",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T17:43:34.078Z",
+      "feature": ".bkit",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T17:44:05.736Z",
+      "feature": ".bkit",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T17:44:28.315Z",
+      "feature": ".bkit",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T17:44:51.036Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T17:45:04.656Z",
+      "feature": "server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T17:45:06.714Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T17:45:47.573Z",
+      "feature": "db",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T17:51:46.860Z",
+      "feature": ".bkit",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T17:57:29.978Z",
+      "feature": "scripts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T18:01:56.998Z",
+      "feature": "routes",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T18:02:04.989Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T18:02:05.946Z",
+      "feature": "routes",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T18:02:14.209Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T18:02:19.626Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T18:02:24.219Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T18:02:39.738Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T18:17:26.400Z",
+      "feature": "creative-intelligence",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T18:19:44.903Z",
+      "feature": "creative-intelligence",
       "phase": "do",
       "action": "updated"
     }
@@ -984,6 +1216,6 @@
     "stateFile": ".bkit/runtime/agent-state.json",
     "eventsFile": ".bkit/runtime/agent-events.jsonl"
   },
-  "updatedAt": "2026-03-30T18:58:52.350953",
-  "_autoSyncNote": "auto-synced at 2026-03-30 18:58:52, last commit: ab7e578"
+  "updatedAt": "2026-03-31T02:35:52.244475",
+  "_autoSyncNote": "auto-synced at 2026-03-31 02:35:52, last commit: c130695"
 }

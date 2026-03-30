@@ -58,7 +58,7 @@ async function handleCrawl(req: NextRequest) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = createServiceClient() as any;
+  const db = createServiceClient() as any;
 
   const stats = {
     crawled: 0,
@@ -79,7 +79,7 @@ async function handleCrawl(req: NextRequest) {
       Date.now() - 7 * 24 * 60 * 60 * 1000,
     ).toISOString();
 
-    let lpQuery = supabase
+    let lpQuery = db
       .from("landing_pages")
       .select("id, account_id, canonical_url, content_hash, last_crawled_at, media_assets")
       .eq("is_active", true);
@@ -117,7 +117,7 @@ async function handleCrawl(req: NextRequest) {
     }>) {
       // 차단 URL 감지 → is_active = false
       if (isBlockedUrl(lp.canonical_url)) {
-        await supabase
+        await db
           .from("landing_pages")
           .update({ is_active: false, updated_at: new Date().toISOString() })
           .eq("id", lp.id);
@@ -209,7 +209,7 @@ async function handleCrawl(req: NextRequest) {
           sectionScreenshots.html_path = htmlStoragePath;
         }
 
-        const { error: upsertError } = await supabase
+        const { error: upsertError } = await db
           .from("lp_snapshots")
           .upsert(
             {
@@ -246,7 +246,7 @@ async function handleCrawl(req: NextRequest) {
           new Map(mergedAssets.map((a) => [a.hash, a])).values(),
         );
 
-        await supabase
+        await db
           .from("landing_pages")
           .update({
             content_hash: newHash,
@@ -257,7 +257,7 @@ async function handleCrawl(req: NextRequest) {
           .eq("id", lp.id);
 
         // change_log에 LP 변경 기록 (순환 학습)
-        await supabase.from("change_log").insert({
+        await db.from("change_log").insert({
           entity_type: "lp",
           entity_id: lp.id,
           account_id: lp.account_id,
@@ -270,7 +270,7 @@ async function handleCrawl(req: NextRequest) {
         });
 
         // lp_analysis 재분석 트리거: analyzed_at NULL로 리셋
-        await supabase
+        await db
           .from("lp_analysis")
           .update({ analyzed_at: null })
           .eq("lp_id", lp.id);
@@ -279,7 +279,7 @@ async function handleCrawl(req: NextRequest) {
         stats.crawled++;
       } else {
         // 동일 hash → last_crawled_at만 갱신 (스크린샷 재업로드 안 함)
-        await supabase
+        await db
           .from("landing_pages")
           .update({
             last_crawled_at: new Date().toISOString(),

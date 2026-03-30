@@ -23,7 +23,7 @@ export async function getQuestions({
   tab?: string;
   authorId?: string;
 } = {}) {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -31,7 +31,7 @@ export async function getQuestions({
     "*, author:profiles!questions_author_id_fkey(id, name, shop_name), category:qa_categories!questions_category_id_fkey(id, name, slug), answers(count)";
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase.from("questions") as any)
+  let query = (db.from("questions") as any)
     .select(selectStr, { count: "exact" })
     .is("parent_question_id", null)
     .order("created_at", { ascending: false })
@@ -63,9 +63,9 @@ export async function getQuestions({
 }
 
 export async function getQuestionById(id: string) {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("questions")
     .select(
       "*, author:profiles!questions_author_id_fkey(id, name, shop_name), category:qa_categories!questions_category_id_fkey(id, name, slug)"
@@ -80,7 +80,7 @@ export async function getQuestionById(id: string) {
 
   // view_count 비동기 (응답 반환 후 실행)
   after(async () => {
-    await supabase
+    await db
       .from("questions")
       .update({ view_count: (data.view_count || 0) + 1 })
       .eq("id", id);
@@ -294,10 +294,10 @@ export async function updateQuestion(formData: {
  * 꼬리질문 조회 — parent_question_id로 연결된 꼬리질문 목록 반환
  */
 export async function getFollowUpQuestions(parentQuestionId: string) {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase.from("questions") as any)
+  const { data, error } = await (db.from("questions") as any)
     .select("*, author:profiles!questions_author_id_fkey(id, name, shop_name)")
     .eq("parent_question_id", parentQuestionId)
     .order("created_at", { ascending: true });
@@ -314,10 +314,10 @@ export async function getFollowUpQuestions(parentQuestionId: string) {
  * 질문의 parent_question_id 조회 (스레드 임베딩용)
  */
 export async function getParentQuestionId(questionId: string): Promise<string | null> {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase.from("questions") as any)
+  const { data } = await (db.from("questions") as any)
     .select("parent_question_id")
     .eq("id", questionId)
     .single();
@@ -326,9 +326,9 @@ export async function getParentQuestionId(questionId: string): Promise<string | 
 }
 
 export async function getCategories() {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("qa_categories")
     .select("*")
     .order("sort_order", { ascending: true });

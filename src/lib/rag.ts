@@ -65,7 +65,7 @@ export async function createAIAnswerForQuestion(
   questionContent: string,
   imageUrls?: string[]
 ): Promise<boolean> {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
   const startTime = Date.now();
 
   try {
@@ -100,7 +100,7 @@ export async function createAIAnswerForQuestion(
 
     // AI 답변 저장 (승인 대기 상태)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from("answers") as any).insert({
+    const { error } = await (db.from("answers") as any).insert({
       question_id: questionId,
       author_id: null, // AI 답변
       content: result.answer,

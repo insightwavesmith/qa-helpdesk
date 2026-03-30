@@ -14,11 +14,11 @@ const DEFAULT_PERIOD = 30;
 
 /** performance.ts의 fetchBenchmarksForT3과 동일한 로직 */
 async function fetchBenchmarksForT3(
-  supabase: DbClient,
+  db: DbClient,
 ): Promise<Map<string, Record<string, BenchEntry>>> {
   const byType = new Map<string, Record<string, BenchEntry>>();
 
-  const { data: latestBench } = await supabase
+  const { data: latestBench } = await db
     .from("benchmarks")
     .select("calculated_at")
     .order("calculated_at", { ascending: false })
@@ -27,7 +27,7 @@ async function fetchBenchmarksForT3(
   if (!latestBench || latestBench.length === 0) return byType;
   const latestAt = (latestBench[0].calculated_at as string).slice(0, 10);
 
-  const { data: benchRows } = await supabase
+  const { data: benchRows } = await db
     .from("benchmarks")
     .select("*")
     .eq("ranking_group", "ABOVE_AVERAGE")
@@ -66,14 +66,14 @@ function resolveBenchmarks(
 }
 
 export async function precomputeStudentPerformance(
-  supabase: DbClient,
+  db: DbClient,
 ): Promise<{ computed: number; errors: string[] }> {
   const errors: string[] = [];
   let computed = 0;
 
   try {
     // 1. student 프로필
-    const { data: students } = await supabase
+    const { data: students } = await db
       .from("profiles")
       .select("id, name, email, cohort")
       .eq("role", "student");
@@ -82,7 +82,7 @@ export async function precomputeStudentPerformance(
 
     // 2. ad_accounts (active)
     const studentIds = students.map((s: any) => s.id); // eslint-disable-line @typescript-eslint/no-explicit-any
-    const { data: adAccounts } = await supabase
+    const { data: adAccounts } = await db
       .from("ad_accounts")
       .select("account_id, user_id, mixpanel_project_id")
       .in("user_id", studentIds)
@@ -91,7 +91,7 @@ export async function precomputeStudentPerformance(
     if (!adAccounts || adAccounts.length === 0) {
       // 광고 계정 없는 학생들도 빈 데이터로 UPSERT
       for (const s of students) {
-        const { error } = await supabase
+        const { error } = await db
           .from("student_performance_daily" as never)
           .upsert(
             {
@@ -121,7 +121,7 @@ export async function precomputeStudentPerformance(
     const periodStart = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}-${String(startDate.getDate()).padStart(2, "0")}`;
 
     const accountIds = adAccounts.map((a: any) => a.account_id); // eslint-disable-line @typescript-eslint/no-explicit-any
-    const { data: insights } = await supabase
+    const { data: insights } = await db
       .from("daily_ad_insights")
       .select("*")
       .in("account_id", accountIds)
@@ -162,7 +162,7 @@ export async function precomputeStudentPerformance(
     }
 
     // 6. 벤치마크
-    const benchMap = await fetchBenchmarksForT3(supabase);
+    const benchMap = await fetchBenchmarksForT3(db);
 
     // 7. Mixpanel
     const projectIds = adAccounts
@@ -171,7 +171,7 @@ export async function precomputeStudentPerformance(
 
     const userMixpanel = new Map<string, { revenue: number; purchases: number }>();
     if (projectIds.length > 0) {
-      const { data: mixpanelRows } = await supabase
+      const { data: mixpanelRows } = await db
         .from("daily_mixpanel_insights" as never)
         .select("project_id, total_revenue, purchase_count")
         .in("project_id" as never, projectIds)
@@ -205,7 +205,7 @@ export async function precomputeStudentPerformance(
 
         const mixpanel = userMixpanel.get(s.id);
 
-        const { error } = await supabase
+        const { error } = await db
           .from("student_performance_daily" as never)
           .upsert(
             {

@@ -33,11 +33,11 @@ async function searchBM25(
   matchCount: number,
   filterSourceTypes: string[] | null
 ): Promise<ChunkResult[]> {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.rpc as any)(
+    const { data, error } = await (db.rpc as any)(
       "search_knowledge_bm25",
       {
         query_text: queryText,

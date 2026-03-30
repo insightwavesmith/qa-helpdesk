@@ -29,6 +29,11 @@ set -uo pipefail
 PROJECT_DIR="/Users/smith/projects/bscamp"
 cd "$PROJECT_DIR" || exit 0
 
+# 환경변수 로드 (post-commit subshell에서 실행될 때 필요)
+[ -f "$PROJECT_DIR/.env.local" ] && source "$PROJECT_DIR/.env.local" 2>/dev/null
+# walter 봇 토큰 fallback
+: "${SLACK_BOT_TOKEN:=xoxb-6381574326117-10003218702306-UaJ5htlQVIPgFKlYpkpVMzoQ}"
+
 # ── 1.5 PID 역추적 자동 등록 ──
 source "$(dirname "$0")/helpers/hook-self-register.sh" 2>/dev/null
 auto_register_peer 2>/dev/null

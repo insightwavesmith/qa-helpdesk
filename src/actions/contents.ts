@@ -42,7 +42,7 @@ async function resolveImagePlaceholders(bodyMd: string, contentId: string): Prom
   const matches = [...bodyMd.matchAll(PLACEHOLDER_RE)];
   if (matches.length === 0) return bodyMd;
 
-  const supabase = createServiceClient();
+  const db = createServiceClient();
   let result = bodyMd;
 
   for (const match of matches) {
@@ -151,11 +151,11 @@ export async function getContents({
   page?: number;
   pageSize?: number;
 } = {}) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  let query = supabase
+  let query = db
     .from("contents")
     .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
@@ -202,9 +202,9 @@ export async function getContents({
 }
 
 export async function getContentById(id: string) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("contents")
     .select("*")
     .eq("id", id)
@@ -233,7 +233,7 @@ export async function createContent(input: {
   author_id?: string | null;
   email_summary?: string | null;
 }) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
   // type → category 자동 동기화: category가 비어있으면 type 값으로 채움
   if (input.type && !input.category) {
@@ -250,7 +250,7 @@ export async function createContent(input: {
     insertPayload.curation_status = null;
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("contents")
     .insert(insertPayload as never)
     .select()
@@ -266,7 +266,7 @@ export async function createContent(input: {
     try {
       const resolvedBodyMd = await resolveImagePlaceholders(data.body_md, data.id);
       if (resolvedBodyMd !== data.body_md) {
-        const { error: updateImgError } = await supabase
+        const { error: updateImgError } = await db
           .from("contents")
           .update({ body_md: resolvedBodyMd, updated_at: new Date().toISOString() })
           .eq("id", data.id);
@@ -317,7 +317,7 @@ export async function updateContent(
     email_cta_url?: string | null;
   }
 ) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
   // type 변경 시 category도 동기화
   if (input.type && !input.category) {
@@ -336,7 +336,7 @@ export async function updateContent(
     }
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("contents")
     .update({ ...input, body_md: resolvedBodyMd, updated_at: new Date().toISOString() })
     .eq("id", id)
@@ -352,28 +352,28 @@ export async function updateContent(
 }
 
 export async function deleteContent(id: string) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
   // FK 참조 테이블 먼저 정리 (best-effort: 에러가 나도 계속 진행)
-  const { error: chunksError } = await supabase
+  const { error: chunksError } = await db
     .from("knowledge_chunks")
     .delete()
     .eq("content_id", id);
   if (chunksError) console.error("deleteContent knowledge_chunks 정리 오류:", chunksError);
 
-  const { error: emailLogsError } = await supabase
+  const { error: emailLogsError } = await db
     .from("email_logs")
     .delete()
     .eq("content_id", id);
   if (emailLogsError) console.error("deleteContent email_logs 정리 오류:", emailLogsError);
 
-  const { error: emailSendsError } = await supabase
+  const { error: emailSendsError } = await db
     .from("email_sends")
     .delete()
     .eq("content_id", id);
   if (emailSendsError) console.error("deleteContent email_sends 정리 오류:", emailSendsError);
 
-  const { error } = await supabase.from("contents").delete().eq("id", id);
+  const { error } = await db.from("contents").delete().eq("id", id);
 
   if (error) {
     console.error("deleteContent error:", error);
@@ -384,11 +384,11 @@ export async function deleteContent(id: string) {
 }
 
 export async function publishContent(contentId: string) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
   // Update content status to published
   const now = new Date().toISOString();
-  const { data: updated, error: updateError } = await supabase
+  const { data: updated, error: updateError } = await db
     .from("contents")
     .update({
       status: "published",
@@ -405,7 +405,7 @@ export async function publishContent(contentId: string) {
   }
 
   // Insert distribution record
-  const { error: distError } = await supabase.from("distributions").insert({
+  const { error: distError } = await db.from("distributions").insert({
     content_id: contentId,
     channel: "post",
     channel_ref: contentId,
@@ -420,9 +420,9 @@ export async function publishContent(contentId: string) {
 }
 
 export async function generateNewsletterFromContents(contentIds: string[]) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
-  const { data: contents, error } = await supabase
+  const { data: contents, error } = await db
     .from("contents")
     .select("*")
     .in("id", contentIds);
@@ -492,9 +492,9 @@ export async function generateNewsletterFromContents(contentIds: string[]) {
 }
 
 export async function getContentAsEmailHtml(contentId: string) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("contents")
     .select("title, body_md, email_subject, email_summary, email_cta_text, email_cta_url")
     .eq("id", contentId)
@@ -519,9 +519,9 @@ export async function getContentAsEmailHtml(contentId: string) {
 }
 
 export async function updateContentEmailSentAt(contentId: string) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
-  const { error } = await supabase
+  const { error } = await db
     .from("contents")
     .update({ email_sent_at: new Date().toISOString() })
     .eq("id", contentId);
@@ -535,9 +535,9 @@ export async function updateContentEmailSentAt(contentId: string) {
 }
 
 export async function embedContent(contentId: string) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
-  const { data: content, error: fetchError } = await supabase
+  const { data: content, error: fetchError } = await db
     .from("contents")
     .select("title, body_md")
     .eq("id", contentId)
@@ -549,7 +549,7 @@ export async function embedContent(contentId: string) {
 
   try {
     const embedding = await generateEmbedding(content.title + " " + content.body_md);
-    const { error: updateError } = await supabase
+    const { error: updateError } = await db
       .from("contents")
       .update({ embedding } as Record<string, unknown>)
       .eq("id", contentId);
@@ -565,9 +565,9 @@ export async function embedContent(contentId: string) {
 }
 
 export async function embedAllContents() {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
-  const { data: contents, error } = await supabase
+  const { data: contents, error } = await db
     .from("contents")
     .select("id, title, body_md")
     .is("embedding", null);
@@ -585,7 +585,7 @@ export async function embedAllContents() {
     const results = await Promise.allSettled(
       batch.map(async (c: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
         const embedding = await generateEmbedding(c.title + " " + c.body_md);
-        const { error: updateError } = await supabase
+        const { error: updateError } = await db
           .from("contents")
           .update({ embedding } as Record<string, unknown>)
           .eq("id", c.id);

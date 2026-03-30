@@ -57,10 +57,10 @@ export async function embedImage(
   }
 
   // 3. knowledge_chunks INSERT (embedding_v2 컬럼에 저장)
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await (db as any)
     .from("knowledge_chunks")
     .insert({
       lecture_name: context.lectureName,

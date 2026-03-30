@@ -31,14 +31,15 @@ from PIL import Image
 SB_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
 SB_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
-if not SB_URL or not SB_KEY:
-    print("ERROR: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 필요", file=sys.stderr)
-    sys.exit(1)
+# import 전용 사용 시(predict_video_frames.py 등) Supabase 없이도 분석 함수 사용 가능
+_SB_AVAILABLE = bool(SB_URL and SB_KEY)
 
-HEADERS = {
-    "apikey": SB_KEY,
-    "Authorization": f"Bearer {SB_KEY}",
-}
+HEADERS = {}
+if _SB_AVAILABLE:
+    HEADERS = {
+        "apikey": SB_KEY,
+        "Authorization": f"Bearer {SB_KEY}",
+    }
 
 # ━━━ Supabase REST 헬퍼 ━━━
 def sb_get(path: str) -> list:
@@ -278,6 +279,10 @@ def main():
     parser.add_argument("--limit", type=int, default=9999)
     parser.add_argument("--account-id", type=str, default=None)
     args = parser.parse_args()
+
+    if not _SB_AVAILABLE:
+        print("ERROR: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 필요", file=sys.stderr)
+        sys.exit(1)
 
     print("시선 예측 시작 (DeepGaze IIE)", file=sys.stderr)
     print(f"  limit: {args.limit}, account-id: {args.account_id or '전체'}", file=sys.stderr)

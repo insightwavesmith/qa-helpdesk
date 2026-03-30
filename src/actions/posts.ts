@@ -28,11 +28,11 @@ export async function getPosts({
   search?: string;
   type?: string;
 } = {}) {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  let query = supabase
+  let query = db
     .from("contents")
     .select(
       "id, title, body_md, category, thumbnail_url, type, is_pinned, view_count, like_count, created_at, published_at, status, author:profiles(id, name, shop_name)",
@@ -71,9 +71,9 @@ export async function getPosts({
 }
 
 export async function getPostById(id: string) {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("contents")
     .select(
       "*, author:profiles(id, name, shop_name)"
@@ -88,7 +88,7 @@ export async function getPostById(id: string) {
 
   // view_count 비동기 (응답 반환 후 실행)
   after(async () => {
-    await supabase
+    await db
       .from("contents")
       .update({ view_count: (data.view_count || 0) + 1 })
       .eq("id", id);
@@ -101,11 +101,11 @@ export async function getNotices({
   page = 1,
   pageSize = 20,
 }: { page?: number; pageSize?: number } = {}) {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  const { data, count, error } = await supabase
+  const { data, count, error } = await db
     .from("contents")
     .select("id, title, summary, body_md, published_at, created_at, view_count", { count: "exact" })
     .eq("category", "notice")
@@ -122,9 +122,9 @@ export async function getNotices({
 }
 
 export async function getNoticeById(id: string) {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("contents")
     .select("id, title, body_md, summary, published_at, created_at, view_count, author_id")
     .eq("id", id)
@@ -137,7 +137,7 @@ export async function getNoticeById(id: string) {
 
   // view_count 비동기 (응답 반환 후 실행)
   after(async () => {
-    await supabase
+    await db
       .from("contents")
       .update({ view_count: (data.view_count || 0) + 1 })
       .eq("id", id);
@@ -231,9 +231,9 @@ export async function updatePostInline(
 }
 
 export async function getCommentsByQuestionId(questionId: string) {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("comments")
     .select(
       "*, author:profiles!comments_author_id_fkey(id, name, shop_name)"

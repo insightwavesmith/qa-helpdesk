@@ -16,10 +16,10 @@ for (const partConfig of Object.values(PART_METRICS)) {
 }
 
 /** diagnose route와 동일한 벤치마크 조회 */
-async function fetchGCPBenchmarks(supabase: DbClient): Promise<GCPBenchmarks> {
+async function fetchGCPBenchmarks(db: DbClient): Promise<GCPBenchmarks> {
   const gcpBenchmarks: GCPBenchmarks = {};
 
-  const { data: latestBench } = await supabase
+  const { data: latestBench } = await db
     .from("benchmarks")
     .select("calculated_at")
     .order("calculated_at", { ascending: false })
@@ -28,7 +28,7 @@ async function fetchGCPBenchmarks(supabase: DbClient): Promise<GCPBenchmarks> {
   if (!latestBench || latestBench.length === 0) return gcpBenchmarks;
   const latestAt = (latestBench[0].calculated_at as string).slice(0, 10);
 
-  const { data: benchRows } = await supabase
+  const { data: benchRows } = await db
     .from("benchmarks")
     .select("*")
     .eq("ranking_group", "ABOVE_AVERAGE")
@@ -67,17 +67,17 @@ async function fetchGCPBenchmarks(supabase: DbClient): Promise<GCPBenchmarks> {
 }
 
 export async function precomputeDiagnosis(
-  supabase: DbClient,
+  db: DbClient,
 ): Promise<{ computed: number; errors: string[] }> {
   const errors: string[] = [];
   let computed = 0;
 
   try {
     // 1. 벤치마크 한 번만 로드
-    const gcpBenchmarks = await fetchGCPBenchmarks(supabase);
+    const gcpBenchmarks = await fetchGCPBenchmarks(db);
 
     // 2. 활성 계정 목록
-    const { data: accounts } = await supabase
+    const { data: accounts } = await db
       .from("ad_accounts")
       .select("account_id")
       .eq("active", true);
@@ -96,7 +96,7 @@ export async function precomputeDiagnosis(
         startDate.setDate(startDate.getDate() - 29); // 30일간
         const periodStart = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}-${String(startDate.getDate()).padStart(2, "0")}`;
 
-        const { data: rawData } = await supabase
+        const { data: rawData } = await db
           .from("daily_ad_insights")
           .select("*")
           .eq("account_id", accountId)
@@ -169,7 +169,7 @@ export async function precomputeDiagnosis(
               })),
           }));
 
-          const { error: upsertErr } = await supabase
+          const { error: upsertErr } = await db
             .from("ad_diagnosis_cache" as never)
             .upsert(
               {

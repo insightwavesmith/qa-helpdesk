@@ -7,7 +7,7 @@ const COST_PER_1K_INPUT = 0.015;
 const COST_PER_1K_OUTPUT = 0.075;
 
 export async function precomputeKnowledgeStats(
-  supabase: DbClient
+  db: DbClient
 ): Promise<{ computed: number; errors: string[] }> {
   const errors: string[] = [];
   let computed = 0;
@@ -16,7 +16,7 @@ export async function precomputeKnowledgeStats(
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const { data: usage, error } = await supabase
+    const { data: usage, error } = await db
       .from("knowledge_usage")
       .select("consumer_type, total_tokens, duration_ms, created_at")
       .gte("created_at", thirtyDaysAgo.toISOString())
@@ -51,7 +51,7 @@ export async function precomputeKnowledgeStats(
 
     // UPSERT each day
     for (const [date, d] of dailyMap) {
-      await supabase
+      await db
         .from("knowledge_daily_stats" as never)
         .upsert(
           {

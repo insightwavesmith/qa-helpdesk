@@ -7,7 +7,7 @@ const DEFAULT_BATCH_SIZE = 100;
 const DEFAULT_DELAY_MS = 500;
 
 export async function POST(request: NextRequest) {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
   // 인증 확인
   const user = await getCurrentUser();
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   }
 
   // admin 역할 확인
-  const { data: profile } = await supabase
+  const { data: profile } = await db
     .from("profiles")
     .select("role")
     .eq("id", user.uid)
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
   // embedding_v2가 NULL인 청크 조회
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: chunks, error: queryErr } = await (supabase as any)
+  const { data: chunks, error: queryErr } = await (db as any)
     .from("knowledge_chunks")
     .select("id, content")
     .is("embedding_v2", null)
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
   if (!chunks || chunks.length === 0) {
     // 남은 청크 수 확인
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { count } = await (supabase as any)
+    const { count } = await (db as any)
       .from("knowledge_chunks")
       .select("id", { count: "exact", head: true })
       .is("embedding_v2", null);
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: updateErr } = await (supabase as any)
+      const { error: updateErr } = await (db as any)
         .from("knowledge_chunks")
         .update({
           embedding_v2: embedding,
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
 
   // 남은 청크 수 확인
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { count: remaining } = await (supabase as any)
+  const { count: remaining } = await (db as any)
     .from("knowledge_chunks")
     .select("id", { count: "exact", head: true })
     .is("embedding_v2", null);

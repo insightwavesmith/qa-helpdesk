@@ -107,13 +107,18 @@ async function phaseBatchEmbed() {
   const stats = { processed: 0, embedded: 0, errors: 0, iterations: 0 };
 
   for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
-    // 배치 조회: embedding 또는 text_embedding이 NULL인 row
+    // 배치 조회: 실제 처리 가능한 row만 선택
+    // - 이미지 임베딩 필요 (embedding IS NULL)
+    // - 또는 텍스트 임베딩 가능 (text_embedding IS NULL + ad_copy 존재)
     const batch = await query(`
       SELECT id, media_url, ad_copy, embedding, text_embedding
       FROM creative_media
-      WHERE (embedding IS NULL OR text_embedding IS NULL)
-        AND is_active = true
+      WHERE is_active = true
         AND media_url IS NOT NULL
+        AND (
+          embedding IS NULL
+          OR (text_embedding IS NULL AND ad_copy IS NOT NULL AND length(trim(ad_copy)) > 5)
+        )
       LIMIT $1
     `, [BATCH_SIZE]);
 
@@ -198,9 +203,12 @@ async function countRemaining() {
   const result = await query(`
     SELECT COUNT(*) as cnt
     FROM creative_media
-    WHERE (embedding IS NULL OR text_embedding IS NULL)
-      AND is_active = true
+    WHERE is_active = true
       AND media_url IS NOT NULL
+      AND (
+        embedding IS NULL
+        OR (text_embedding IS NULL AND ad_copy IS NOT NULL AND length(trim(ad_copy)) > 5)
+      )
   `);
   return parseInt(result[0]?.cnt || "0", 10);
 }

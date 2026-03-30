@@ -144,13 +144,13 @@ async function handleTrack(req: NextRequest) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = createServiceClient() as any;
+  const db = createServiceClient() as any;
 
   const stats = { processed: 0, skipped: 0, errors: 0, noData: 0 };
 
   try {
     // 1. change_log에서 performance_before가 NULL인 항목 (미처리)
-    const { data: pendingLogs, error: fetchErr } = await supabase
+    const { data: pendingLogs, error: fetchErr } = await db
       .from("change_log")
       .select("id, entity_type, entity_id, account_id, change_detected_at")
       .is("performance_before", null)
@@ -185,7 +185,7 @@ async function handleTrack(req: NextRequest) {
 
         if (log.entity_type === "creative") {
           // creatives 테이블에서 ad_id 가져오기
-          const { data: creative } = await supabase
+          const { data: creative } = await db
             .from("creatives")
             .select("ad_id")
             .eq("id", log.entity_id)
@@ -194,14 +194,14 @@ async function handleTrack(req: NextRequest) {
           adId = creative?.ad_id ?? null;
         } else if (log.entity_type === "lp") {
           // LP는 직접 ad_id가 없음 → creative_lp_map에서 연결된 소재들 조회
-          const { data: mappings } = await supabase
+          const { data: mappings } = await db
             .from("creative_lp_map")
             .select("creative_id")
             .eq("lp_id", log.entity_id)
             .limit(1);
 
           if (mappings && mappings.length > 0) {
-            const { data: creative } = await supabase
+            const { data: creative } = await db
               .from("creatives")
               .select("ad_id")
               .eq("id", mappings[0].creative_id)
@@ -213,7 +213,7 @@ async function handleTrack(req: NextRequest) {
 
         if (!adId) {
           // ad_id 없으면 성과 추적 불가 → 빈 값으로 마킹 (재시도 방지)
-          await supabase
+          await db
             .from("change_log")
             .update({
               performance_before: {},
@@ -241,7 +241,7 @@ async function handleTrack(req: NextRequest) {
         const afterEndStr = afterEnd.toISOString().split("T")[0];
 
         // before 기간: change_detected_at - 7일 ~ change_detected_at
-        const { data: beforeRows } = await supabase
+        const { data: beforeRows } = await db
           .from("daily_ad_insights")
           .select(
             "spend, impressions, clicks, purchases, purchase_value, roas, ctr",
@@ -251,7 +251,7 @@ async function handleTrack(req: NextRequest) {
           .lt("date", changeDateStr);
 
         // after 기간: change_detected_at ~ change_detected_at + 7일
-        const { data: afterRows } = await supabase
+        const { data: afterRows } = await db
           .from("daily_ad_insights")
           .select(
             "spend, impressions, clicks, purchases, purchase_value, roas, ctr",
@@ -269,7 +269,7 @@ async function handleTrack(req: NextRequest) {
         const confidence = computeConfidence(beforeAvg, afterAvg);
 
         // 4. change_log 업데이트
-        const { error: updateErr } = await supabase
+        const { error: updateErr } = await db
           .from("change_log")
           .update({
             performance_before: beforeAvg ?? {},

@@ -3,8 +3,8 @@ import { createServiceClient } from "@/lib/db";
 
 export async function startCronRun(cronName: string): Promise<string | null> {
   try {
-    const supabase = createServiceClient();
-    const { data, error } = await supabase
+    const db = createServiceClient();
+    const { data, error } = await db
       .from("cron_runs")
       .insert({ cron_name: cronName, status: "running" })
       .select("id")
@@ -23,8 +23,8 @@ export async function completeCronRun(
 ): Promise<void> {
   if (!id) return;
   try {
-    const supabase = createServiceClient();
-    await supabase.from("cron_runs").update({
+    const db = createServiceClient();
+    await db.from("cron_runs").update({
       status,
       records_count: recordsCount,
       finished_at: new Date().toISOString(),

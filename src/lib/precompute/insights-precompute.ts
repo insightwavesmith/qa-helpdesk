@@ -9,13 +9,13 @@ import type { DbClient } from "@/lib/db";
 const LOOKBACK_DAYS = 90;
 
 export async function precomputeInsights(
-  supabase: DbClient,
+  db: DbClient,
 ): Promise<{ computed: number; errors: string[] }> {
   const errors: string[] = [];
   let computed = 0;
 
   // 1. 활성 계정 목록
-  const { data: accounts } = await supabase
+  const { data: accounts } = await db
     .from("ad_accounts")
     .select("account_id")
     .eq("active", true);
@@ -36,7 +36,7 @@ export async function precomputeInsights(
 
     try {
       // raw insights 조회
-      const { data: rawRows, error: queryErr } = await supabase
+      const { data: rawRows, error: queryErr } = await db
         .from("daily_ad_insights")
         .select(
           "date,impressions,reach,clicks,spend,purchases,purchase_value," +
@@ -108,7 +108,7 @@ export async function precomputeInsights(
       const BATCH = 50;
       for (let i = 0; i < upsertRows.length; i += BATCH) {
         const batch = upsertRows.slice(i, i + BATCH);
-        const { error: upsertErr } = await supabase
+        const { error: upsertErr } = await db
           .from("insights_aggregated_daily" as never)
           .upsert(batch as never[], { onConflict: "account_id,date" });
 

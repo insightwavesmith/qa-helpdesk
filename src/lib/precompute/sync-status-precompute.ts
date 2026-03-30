@@ -4,14 +4,14 @@
 import type { DbClient } from "@/lib/db";
 
 export async function precomputeSyncStatus(
-  supabase: DbClient
+  db: DbClient
 ): Promise<{ computed: number; errors: string[] }> {
   const errors: string[] = [];
   let computed = 0;
 
   try {
     // 1) 전체 계정
-    const { data: accounts, error: accountsError } = await supabase
+    const { data: accounts, error: accountsError } = await db
       .from("ad_accounts")
       .select("account_id, account_name, mixpanel_project_id, mixpanel_board_id")
       .order("created_at", { ascending: false });
@@ -26,7 +26,7 @@ export async function precomputeSyncStatus(
     threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
     const threeDaysAgoStr = threeDaysAgo.toISOString().split("T")[0];
 
-    const { data: metaData } = await supabase
+    const { data: metaData } = await db
       .from("daily_ad_insights")
       .select("account_id, date, ad_id")
       .in("account_id", accountIds)
@@ -46,7 +46,7 @@ export async function precomputeSyncStatus(
 
     // 3) service_secrets 유무 체크 (status/route.ts 실시간 경로와 동일)
     const secretKeyNames = accountIds.map((id: string) => `secret_${id}`);
-    const { data: secrets } = await supabase
+    const { data: secrets } = await db
       .from("service_secrets" as never)
       .select("key_name" as never)
       .eq("service" as never, "mixpanel")
@@ -63,7 +63,7 @@ export async function precomputeSyncStatus(
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const sevenDaysAgoStr = sevenDaysAgo.toISOString().split("T")[0];
 
-    const { data: mixpanelData } = await supabase
+    const { data: mixpanelData } = await db
       .from("daily_mixpanel_insights" as never)
       .select("account_id" as never)
       .in("account_id" as never, accountIds)
@@ -97,7 +97,7 @@ export async function precomputeSyncStatus(
         mixpanelOk = false;
       }
 
-      await supabase
+      await db
         .from("account_sync_status" as never)
         .upsert(
           {

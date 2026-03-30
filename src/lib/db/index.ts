@@ -1,7 +1,7 @@
 /**
  * Cloud SQL 클라이언트 팩토리
  *
- * Supabase 호환 인터페이스를 제공하여 기존 코드 최소 변경으로 전환.
+ * Cloud SQL 직접 연결 클라이언트.
  * 사용법: const db = createDbClient();
  *         const { data, error } = await db.from("profiles").select("*").eq("id", userId).single();
  *
@@ -22,7 +22,7 @@ let cachedClient: DbClient | null = null;
 
 /**
  * Cloud SQL 직접 연결 클라이언트 생성
- * Supabase의 .from().select().eq() 패턴 호환
+ * .from().select().eq() 체이닝 패턴 지원
  */
 export function createDbClient(): DbClient {
   if (cachedClient) return cachedClient;

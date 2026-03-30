@@ -8,10 +8,10 @@ export async function GET(request: Request) {
   }
 
   // 2. 30일 지난 삭제 콘텐츠 영구 삭제
-  const supabase = createServiceClient();
+  const db = createServiceClient();
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("contents")
     .delete()
     .lt("deleted_at", thirtyDaysAgo)

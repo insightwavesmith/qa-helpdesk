@@ -19,7 +19,7 @@ import { createServiceClient } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 async function getStats() {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
   const [
     questionsResult,
@@ -29,18 +29,18 @@ async function getStats() {
     postsResult,
     weeklyQuestionsResult,
   ] = await Promise.all([
-    supabase.from("questions").select("*", { count: "exact", head: true }),
-    supabase.from("answers").select("*", { count: "exact", head: true }),
-    supabase
+    db.from("questions").select("*", { count: "exact", head: true }),
+    db.from("answers").select("*", { count: "exact", head: true }),
+    db
       .from("answers")
       .select("*", { count: "exact", head: true })
       .eq("status", "approved"),
-    supabase
+    db
       .from("profiles")
       .select("*", { count: "exact", head: true })
       .in("role", ["member", "student", "admin"]),
-    supabase.from("contents").select("*", { count: "exact", head: true }).eq("status", "published"),
-    supabase
+    db.from("contents").select("*", { count: "exact", head: true }).eq("status", "published"),
+    db
       .from("questions")
       .select("*", { count: "exact", head: true })
       .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),

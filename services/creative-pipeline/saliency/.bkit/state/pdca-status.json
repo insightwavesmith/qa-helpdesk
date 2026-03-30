@@ -1,0 +1,63 @@
+{
+  "version": "3.0",
+  "lastUpdated": "2026-03-30T13:54:17.825Z",
+  "activeFeatures": [
+    "creative-pipeline"
+  ],
+  "primaryFeature": "creative-pipeline",
+  "features": {
+    "creative-pipeline": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T13:54:03.703Z",
+        "lastUpdated": "2026-03-30T13:54:17.825Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/services/creative-pipeline/saliency/predict.py"
+    }
+  },
+  "pipeline": {
+    "currentPhase": 1,
+    "level": "Dynamic",
+    "phaseHistory": []
+  },
+  "session": {
+    "startedAt": "2026-03-30T13:53:38.208Z",
+    "onboardingCompleted": false,
+    "lastActivity": "2026-03-30T13:54:17.825Z"
+  },
+  "history": [
+    {
+      "timestamp": "2026-03-30T13:54:03.703Z",
+      "feature": "creative-pipeline",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-30T13:54:17.825Z",
+      "feature": "creative-pipeline",
+      "phase": "do",
+      "action": "updated"
+    }
+  ],
+  "stateMachine": {
+    "defaultWorkflow": "default",
+    "activeWorkflows": {},
+    "totalTransitions": 0
+  },
+  "automation": {
+    "globalLevel": 2,
+    "trustScore": 40,
+    "pendingApprovals": 0,
+    "lastGateResult": null
+  },
+  "team": {
+    "enabled": true,
+    "stateFile": ".bkit/runtime/agent-state.json",
+    "eventsFile": ".bkit/runtime/agent-events.jsonl"
+  }
+}

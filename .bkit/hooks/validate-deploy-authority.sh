@@ -47,6 +47,11 @@ done
 [ "${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}" != "1" ] && exit 0
 
 # 리더/팀원 판별
+# 활성 팀이 있는지 확인 — 팀 없으면 리더(허용)
+TEAM_DIR="$HOME/.claude/teams"
+ACTIVE_TEAM=$(find "$TEAM_DIR" -name "config.json" -newer /tmp/.claude-boot 2>/dev/null | head -1)
+[ -z "$ACTIVE_TEAM" ] && exit 0
+
 PANE_INDEX=$(tmux display-message -p '#{pane_index}' 2>/dev/null)
 [ -z "$PANE_INDEX" ] && exit 0
 

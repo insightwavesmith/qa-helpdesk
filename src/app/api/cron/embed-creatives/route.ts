@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const supabase = createServiceClient();
+  const db = createServiceClient();
   const stats = {
     accounts: 0,
     adsCollected: 0,
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
 
   try {
     // 1. active 광고 계정 조회
-    let accountQuery = supabase
+    let accountQuery = db
       .from("ad_accounts")
       .select("account_id, account_name")
       .eq("active", true);

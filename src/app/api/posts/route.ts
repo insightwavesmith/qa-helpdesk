@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createServiceClient();
-    const { data, error } = await supabase
+    const db = createServiceClient();
+    const { data, error } = await db
       .from("contents")
       .insert({
         title,
@@ -53,8 +53,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  const supabase = createServiceClient();
-  const { data, error } = await supabase
+  const db = createServiceClient();
+  const { data, error } = await db
     .from("contents")
     .select("id, title, category, status, created_at")
     .eq("status", "published")

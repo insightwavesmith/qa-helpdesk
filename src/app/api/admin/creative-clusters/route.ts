@@ -23,11 +23,11 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: clusters, error } = await (supabase as any)
+    const { data: clusters, error } = await (db as any)
       .from("creative_clusters")
       .select("*")
       .eq("account_id", accountId)

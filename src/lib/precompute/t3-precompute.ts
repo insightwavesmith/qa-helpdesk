@@ -69,13 +69,13 @@ async function fetchBenchmarks(
 }
 
 export async function precomputeT3Scores(
-  supabase: DbClient,
+  db: DbClient,
 ): Promise<{ computed: number; errors: string[] }> {
   const errors: string[] = [];
   let computed = 0;
 
   // 1. 활성 계정 목록
-  const { data: accounts } = await supabase
+  const { data: accounts } = await db
     .from("ad_accounts")
     .select("account_id")
     .eq("active", true);
@@ -91,7 +91,7 @@ export async function precomputeT3Scores(
         const range = periodToDateRange(period);
 
         // daily_ad_insights 조회 (total-value route와 동일한 컬럼)
-        const { data: rawData } = await supabase
+        const { data: rawData } = await db
           .from("daily_ad_insights")
           .select("spend,impressions,reach,clicks,purchases,purchase_value,date,ad_id,adset_id,initiate_checkout,video_p3s_rate,thruplay_rate,retention_rate,reactions_per_10k,comments_per_10k,shares_per_10k,saves_per_10k,creative_type")
           .eq("account_id", accountId)
@@ -123,7 +123,7 @@ export async function precomputeT3Scores(
 
         // 벤치마크 + T3 점수
         const dominantCT = getDominantCreativeType(rows);
-        const benchMap = await fetchBenchmarks(supabase, dominantCT);
+        const benchMap = await fetchBenchmarks(db, dominantCT);
         const hasBenchmarkData = Object.keys(benchMap).length > 0;
         const t3Result = calculateT3Score(metricValues, benchMap);
 
@@ -164,7 +164,7 @@ export async function precomputeT3Scores(
         };
 
         // UPSERT
-        const { error: upsertErr } = await supabase
+        const { error: upsertErr } = await db
           .from("t3_scores_precomputed" as never)
           .upsert(
             {

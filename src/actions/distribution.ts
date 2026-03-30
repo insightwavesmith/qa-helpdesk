@@ -47,11 +47,11 @@ export async function transformToChannels(input: {
 }): Promise<{ results: TransformResultItem[]; error: string | null }> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabase = (await requireAdmin()) as any;
+    const db = (await requireAdmin()) as any;
     const { sourcePostId, channels, forceRetransform = false } = input;
 
     // 1) 원본 포스트 조회
-    const { data: postData, error: postError } = await supabase
+    const { data: postData, error: postError } = await db
       .from("organic_posts")
       .select("title, content, keywords")
       .eq("id", sourcePostId)
@@ -72,7 +72,7 @@ export async function transformToChannels(input: {
     }
 
     // 2) 이미 존재하는 channel_distributions 조회
-    const { data: existingRows } = await supabase
+    const { data: existingRows } = await db
       .from("channel_distributions")
       .select("id, channel, status")
       .eq("source_post_id", sourcePostId)
@@ -143,7 +143,7 @@ export async function transformToChannels(input: {
         updated_at: now,
       };
 
-      const { data: upsertData, error: upsertError } = await supabase
+      const { data: upsertData, error: upsertError } = await db
         .from("channel_distributions")
         .upsert(upsertPayload, {
           onConflict: "source_post_id,channel",
@@ -171,7 +171,7 @@ export async function transformToChannels(input: {
 
     // 6) organic_posts.ai_transform_status 업데이트
     const allDone = upsertResults.every((r) => r.status !== "failed");
-    await supabase
+    await db
       .from("organic_posts")
       .update({
         ai_transform_status: allDone ? "done" : "failed",
@@ -203,9 +203,9 @@ export async function approveDistribution(input: {
 }): Promise<{ error: string | null }> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabase = (await requireAdmin()) as any;
+    const db = (await requireAdmin()) as any;
 
-    const { error } = await supabase
+    const { error } = await db
       .from("channel_distributions")
       .update({
         status: "approved",
@@ -241,10 +241,10 @@ export async function scheduleDistribution(input: {
 }): Promise<{ error: string | null }> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabase = (await requireAdmin()) as any;
+    const db = (await requireAdmin()) as any;
 
     // 현재 상태 확인 — approved 상태에서만 예약 허용
-    const { data: distData, error: fetchError } = await supabase
+    const { data: distData, error: fetchError } = await db
       .from("channel_distributions")
       .select("status")
       .eq("id", input.distributionId)
@@ -261,7 +261,7 @@ export async function scheduleDistribution(input: {
       };
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("channel_distributions")
       .update({
         scheduled_at: input.scheduledAt,
@@ -301,11 +301,11 @@ export async function publishDistribution(input: {
 }): Promise<{ externalId: string | null; externalUrl: string | null; error: string | null }> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabase = (await requireAdmin()) as any;
+    const db = (await requireAdmin()) as any;
     const now = new Date().toISOString();
 
     // 1) 배포 건 조회
-    const { data: distData, error: fetchError } = await supabase
+    const { data: distData, error: fetchError } = await db
       .from("channel_distributions")
       .select(
         "id, channel, transformed_title, transformed_body, transformed_metadata, status, retry_count"
@@ -341,7 +341,7 @@ export async function publishDistribution(input: {
     }
 
     // 2) status → 'publishing'
-    await supabase
+    await db
       .from("channel_distributions")
       .update({ status: "publishing", updated_at: now })
       .eq("id", input.distributionId);
@@ -352,7 +352,7 @@ export async function publishDistribution(input: {
     // Phase 3 미구현 채널 (youtube, instagram, google_seo)
     if (!client) {
       // DB에 저장만 하고 review 상태 유지 (Phase 3 구현 전)
-      await supabase
+      await db
         .from("channel_distributions")
         .update({
           status: "review",
@@ -381,7 +381,7 @@ export async function publishDistribution(input: {
         dist.channel === "naver_blog" ? "review" : "published";
 
       // 5) 성공 업데이트
-      await supabase
+      await db
         .from("channel_distributions")
         .update({
           status: finalStatus,
@@ -403,7 +403,7 @@ export async function publishDistribution(input: {
       const errMsg =
         publishError instanceof Error ? publishError.message : "발행 중 오류가 발생했습니다.";
 
-      await supabase
+      await db
         .from("channel_distributions")
         .update({
           status: "failed",
@@ -445,12 +445,12 @@ export async function getDistributions(filters: {
 }): Promise<{ data: ChannelDistribution[]; count: number; error: string | null }> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabase = (await requireAdmin()) as any;
+    const db = (await requireAdmin()) as any;
     const { sourcePostId, channel, status, page = 1, limit = 20 } = filters;
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    let query = supabase
+    let query = db
       .from("channel_distributions")
       .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
@@ -504,7 +504,7 @@ export async function updateTransformedContent(input: {
 }): Promise<{ error: string | null }> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabase = (await requireAdmin()) as any;
+    const db = (await requireAdmin()) as any;
 
     const updatePayload: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -523,7 +523,7 @@ export async function updateTransformedContent(input: {
       updatePayload.reviewer_note = input.note;
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("channel_distributions")
       .update(updatePayload)
       .eq("id", input.distributionId);

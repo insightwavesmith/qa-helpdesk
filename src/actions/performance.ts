@@ -63,14 +63,14 @@ export async function getStudentPerformance(
   cohortFilter?: string,
   period: number = 30,
 ): Promise<StudentPerformanceResult> {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
   const validPeriod = [7, 14, 30].includes(period) ? period : 30;
 
   // ── 사전계산 캐시 조회 (24시간 이내) ──
   try {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const cacheSvc = supabase as any;
+    const cacheSvc = db as any;
 
     let cacheQuery = cacheSvc
       .from("student_performance_daily")
@@ -85,7 +85,7 @@ export async function getStudentPerformance(
     const { data: cachedRows } = await cacheQuery;
 
     if (cachedRows && cachedRows.length > 0) {
-      const { data: cohorts } = await supabase
+      const { data: cohorts } = await db
         .from("cohorts")
         .select("id, name")
         .order("name", { ascending: false });
@@ -123,13 +123,13 @@ export async function getStudentPerformance(
   }
 
   // 1. 기수 목록
-  const { data: cohorts } = await supabase
+  const { data: cohorts } = await db
     .from("cohorts")
     .select("id, name")
     .order("name", { ascending: false });
 
   // 2. student 프로필 + ad_accounts join
-  let profileQuery = supabase
+  let profileQuery = db
     .from("profiles")
     .select("id, name, email, cohort")
     .eq("role", "student");
@@ -150,7 +150,7 @@ export async function getStudentPerformance(
 
   // 3. 학생별 ad_accounts 조회 (mixpanel_project_id 포함)
   const studentIds = students.map((s: any) => s.id); // eslint-disable-line @typescript-eslint/no-explicit-any
-  const { data: adAccounts } = await supabase
+  const { data: adAccounts } = await db
     .from("ad_accounts")
     .select("account_id, user_id, mixpanel_project_id")
     .in("user_id", studentIds)
@@ -187,7 +187,7 @@ export async function getStudentPerformance(
 
   const accountIds = adAccounts.map((a: any) => a.account_id); // eslint-disable-line @typescript-eslint/no-explicit-any
   // T4: 전체 컬럼 조회 (T3 계산에 필요)
-  const { data: insights } = await supabase
+  const { data: insights } = await db
     .from("daily_ad_insights")
     .select("*")
     .in("account_id", accountIds)
@@ -233,7 +233,7 @@ export async function getStudentPerformance(
   }
 
   // T4: 벤치마크 한 번만 조회
-  const benchMap = await fetchBenchmarksForT3(supabase);
+  const benchMap = await fetchBenchmarksForT3(db);
 
   // Mixpanel 데이터 조회 (daily_mixpanel_insights)
   const projectIds = adAccounts
@@ -242,7 +242,7 @@ export async function getStudentPerformance(
 
   const userMixpanel = new Map<string, { revenue: number; purchases: number }>();
   if (projectIds.length > 0) {
-    const { data: mixpanelRows } = await supabase
+    const { data: mixpanelRows } = await db
       .from("daily_mixpanel_insights" as never)
       .select("project_id, total_revenue, purchase_count")
       .in("project_id" as never, projectIds)
@@ -318,11 +318,11 @@ type BenchByType = Map<string, Record<string, BenchEntry>>;
 
 async function fetchBenchmarksForT3(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
+  db: any,
 ): Promise<BenchByType> {
   const byType: BenchByType = new Map();
 
-  const { data: latestBench } = await supabase
+  const { data: latestBench } = await db
     .from("benchmarks")
     .select("calculated_at")
     .order("calculated_at", { ascending: false })
@@ -333,7 +333,7 @@ async function fetchBenchmarksForT3(
   const latestAt = (latestBench[0].calculated_at as string).slice(0, 10);
 
   // wide format: ranking_group=ABOVE_AVERAGE 행만 조회
-  const { data: benchRows } = await supabase
+  const { data: benchRows } = await db
     .from("benchmarks")
     .select("*")
     .eq("ranking_group", "ABOVE_AVERAGE")
@@ -375,9 +375,9 @@ function resolveBenchmarks(
 
 // ─── T3: 관리자 광고계정 성과 ──────────────────────────────
 export async function getOwnerAdSummaries(): Promise<OwnerSummaryResult> {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
-  const { data } = await supabase
+  const { data } = await db
     .from("owner_ad_summaries")
     .select("*")
     .order("period_end", { ascending: false });

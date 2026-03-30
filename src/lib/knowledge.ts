@@ -345,10 +345,10 @@ export async function searchChunksByEmbedding(
   threshold: number,
   sourceTypes?: string[] | null
 ): Promise<ChunkResult[]> {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase.rpc as any)("search_knowledge", {
+  const { data, error } = await (db.rpc as any)("search_knowledge", {
     query_embedding_v2: embedding,
     query_embedding_v1: null,
     match_threshold: threshold,
@@ -391,9 +391,9 @@ async function searchSimilarQuestions(
   if (questionIds.length === 0) return [];
 
   // 해당 question_id의 qa_answer chunks 조회
-  const supabase = createServiceClient();
+  const db = createServiceClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: answerChunks } = await (supabase as any)
+  const { data: answerChunks } = await (db as any)
     .from("knowledge_chunks")
     .select("id, lecture_name, week, chunk_index, content, source_type, priority, image_url, metadata")
     .eq("source_type", "qa_answer")

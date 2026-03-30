@@ -56,9 +56,9 @@ export async function ensureProfile(
 }
 
 export async function updateBusinessCertUrl(userId: string, url: string) {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
-  const { error } = await supabase
+  const { error } = await db
     .from("profiles")
     .update({ business_cert_url: url } as never)
     .eq("id", userId);
@@ -122,9 +122,9 @@ export async function updateProfile(userId: string, updates: Record<string, unkn
 }
 
 export async function savePrivacyConsent(userId: string) {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
-  const { error } = await supabase
+  const { error } = await db
     .from("profiles")
     .update({ privacy_agreed_at: new Date().toISOString() } as never)
     .eq("id", userId);

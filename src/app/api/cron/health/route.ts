@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = createServiceClient();
+  const db = createServiceClient();
   const now = new Date();
 
   const cronNames = ["collect-daily", "collect-mixpanel", "collect-benchmarks"];
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const hoursThreshold = name === "collect-benchmarks" ? 168 : 25;
     const since = new Date(now.getTime() - hoursThreshold * 60 * 60 * 1000).toISOString();
 
-    const { data } = await supabase
+    const { data } = await db
       .from("cron_runs")
       .select("started_at, status")
       .eq("cron_name", name)

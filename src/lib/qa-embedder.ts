@@ -18,18 +18,18 @@ export async function embedQAPair(
   answerId: string
 ): Promise<void> {
   try {
-    const supabase = createServiceClient();
+    const db = createServiceClient();
 
     // 1. 질문 + 답변 조회
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: question } = await (supabase as any)
+    const { data: question } = await (db as any)
       .from("questions")
       .select("id, title, content, image_urls, category:qa_categories(slug)")
       .eq("id", questionId)
       .single();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: answer } = await (supabase as any)
+    const { data: answer } = await (db as any)
       .from("answers")
       .select("id, content, image_urls, is_ai")
       .eq("id", answerId)
@@ -42,7 +42,7 @@ export async function embedQAPair(
 
     // 2. F-02: 기존 chunks DELETE (재승인 대비)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    await (db as any)
       .from("knowledge_chunks")
       .delete()
       .in("source_type", ["qa_question", "qa_answer"])
@@ -74,7 +74,7 @@ export async function embedQAPair(
       try {
         const embedding = await generateEmbedding(qChunks[i], { taskType: "RETRIEVAL_DOCUMENT" });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from("knowledge_chunks").insert({
+        await (db as any).from("knowledge_chunks").insert({
           lecture_name: lectureName,
           week: "qa_question",
           chunk_index: i,
@@ -100,7 +100,7 @@ export async function embedQAPair(
       try {
         const embedding = await generateEmbedding(aChunks[i], { taskType: "RETRIEVAL_DOCUMENT" });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from("knowledge_chunks").insert({
+        await (db as any).from("knowledge_chunks").insert({
           lecture_name: lectureName,
           week: "qa_answer",
           chunk_index: i,
@@ -132,11 +132,11 @@ export async function embedQAPair(
  */
 export async function embedQAThread(rootQuestionId: string): Promise<void> {
   try {
-    const supabase = createServiceClient();
+    const db = createServiceClient();
 
     // 1. 원본 질문 조회
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rootQuestion } = await (supabase as any)
+    const { data: rootQuestion } = await (db as any)
       .from("questions")
       .select("id, title, content, image_urls, category:qa_categories(slug)")
       .eq("id", rootQuestionId)
@@ -148,7 +148,7 @@ export async function embedQAThread(rootQuestionId: string): Promise<void> {
     }
 
     // 2. 원본 질문의 승인된 답변
-    const { data: rootAnswers } = await supabase
+    const { data: rootAnswers } = await db
       .from("answers")
       .select("id, content, is_ai")
       .eq("question_id", rootQuestionId)
@@ -158,7 +158,7 @@ export async function embedQAThread(rootQuestionId: string): Promise<void> {
     // 3. 꼬리질문들 조회 (parent_question_id 컬럼 없으면 빈 배열)
     let followUps: { id: string; content: string; title: string }[] = [];
     try {
-      const { data: fqs } = await supabase
+      const { data: fqs } = await db
         .from("questions")
         .select("id, title, content")
         .eq("parent_question_id", rootQuestionId)
@@ -184,7 +184,7 @@ export async function embedQAThread(rootQuestionId: string): Promise<void> {
     for (const fq of followUps) {
       threadParts.push(`[추가 질문] ${fq.content || ""}`);
 
-      const { data: fqAnswers } = await supabase
+      const { data: fqAnswers } = await db
         .from("answers")
         .select("id, content, is_ai")
         .eq("question_id", fq.id)
@@ -201,7 +201,7 @@ export async function embedQAThread(rootQuestionId: string): Promise<void> {
 
     // 5. 기존 qa_thread chunks 삭제 (이 rootQuestion에 대한 것만)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    await (db as any)
       .from("knowledge_chunks")
       .delete()
       .eq("source_type", "qa_thread")
@@ -217,7 +217,7 @@ export async function embedQAThread(rootQuestionId: string): Promise<void> {
       try {
         const embedding = await generateEmbedding(chunks[i], { taskType: "RETRIEVAL_DOCUMENT" });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from("knowledge_chunks").insert({
+        await (db as any).from("knowledge_chunks").insert({
           lecture_name: lectureName,
           week: "qa_thread",
           chunk_index: i,

@@ -15,11 +15,11 @@ export async function getMembers({
   role,
   cohort,
 }: { page?: number; pageSize?: number; role?: string; cohort?: string } = {}) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  let query = supabase
+  let query = db
     .from("profiles")
     .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
@@ -44,7 +44,7 @@ export async function getMembers({
   const memberIds = (data || []).map((m: any) => m.id); // eslint-disable-line @typescript-eslint/no-explicit-any
   const accountMap: Record<string, string> = {};
   if (memberIds.length > 0) {
-    const { data: accounts } = await supabase
+    const { data: accounts } = await db
       .from("ad_accounts")
       .select("user_id, account_id")
       .in("user_id", memberIds)
@@ -68,8 +68,8 @@ export async function getMembers({
 }
 
 export async function getDistinctCohorts(): Promise<string[]> {
-  const supabase = createServiceClient();
-  const { data } = await supabase
+  const db = createServiceClient();
+  const { data } = await db
     .from("profiles")
     .select("cohort")
     .not("cohort", "is", null)
@@ -92,13 +92,13 @@ export async function approveMember(
     account_name?: string;
   }
 ) {
-  const supabase = await requireAdmin();
+  const db = await requireAdmin();
 
   const update: ProfileUpdate = { role: newRole };
   if (extra?.cohort) update.cohort = extra.cohort;
   if (extra?.meta_account_id) update.meta_account_id = extra.meta_account_id;
 
-  const { error } = await supabase
+  const { error } = await db
     .from("profiles")
     .update(update)
     .eq("id", userId);
@@ -152,7 +152,7 @@ export async function approveMember(
   revalidatePath("/admin/members");
 
   // T2: 승인 완료 메일 발송 (fire-and-forget)
-  sendApprovalEmail(userId, supabase).catch((err) =>
+  sendApprovalEmail(userId, db).catch((err) =>
     console.error("승인 메일 발송 실패 (무시됨):", err)
   );
 
@@ -163,11 +163,11 @@ export async function approveMember(
 async function sendApprovalEmail(
   userId: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any
+  db: any
 ) {
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return;
 
-  const { data } = await supabase
+  const { data } = await db
     .from("profiles")
     .select("email, name")
     .eq("id", userId)
@@ -208,12 +208,12 @@ async function sendApprovalEmail(
 }
 
 export async function rejectMember(userId: string, reason?: string) {
-  const supabase = await requireAdmin();
+  const db = await requireAdmin();
 
   const update: ProfileUpdate = { role: "lead" };
   if (reason) update.reject_reason = reason;
 
-  const { error } = await supabase
+  const { error } = await db
     .from("profiles")
     .update(update)
     .eq("id", userId);
@@ -228,12 +228,12 @@ export async function rejectMember(userId: string, reason?: string) {
 }
 
 export async function getDashboardStats() {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
   // 캐시 우선 조회 (Phase 2)
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: cached } = await (supabase as any)
+    const { data: cached } = await (db as any)
       .from("dashboard_stats_cache")
       .select("stat_value, updated_at")
       .eq("stat_key", "counts")
@@ -258,24 +258,24 @@ export async function getDashboardStats() {
 
   const [questionsResult, weeklyResult, openResult, pendingAnswersResult, postsResult, membersResult] =
     await Promise.all([
-      supabase.from("questions").select("id", { count: "exact", head: true }),
-      supabase
+      db.from("questions").select("id", { count: "exact", head: true }),
+      db
         .from("questions")
         .select("id", { count: "exact", head: true })
         .gte("created_at", oneWeekAgo.toISOString()),
-      supabase
+      db
         .from("questions")
         .select("id", { count: "exact", head: true })
         .eq("status", "open"),
-      supabase
+      db
         .from("answers")
         .select("id", { count: "exact", head: true })
         .eq("is_approved", false),
-      supabase
+      db
         .from("contents")
         .select("id", { count: "exact", head: true })
         .eq("status", "published"),
-      supabase
+      db
         .from("profiles")
         .select("id", { count: "exact", head: true })
         .in("role", ["member", "student"]),
@@ -292,12 +292,12 @@ export async function getDashboardStats() {
 }
 
 export async function getWeeklyQuestionStats() {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
   // 캐시 우선 조회 (Phase 2)
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: cached } = await (supabase as any)
+    const { data: cached } = await (db as any)
       .from("dashboard_stats_cache")
       .select("stat_value, updated_at")
       .eq("stat_key", "weekly_questions")
@@ -317,7 +317,7 @@ export async function getWeeklyQuestionStats() {
   const fourWeeksAgo = new Date();
   fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("questions")
     .select("created_at")
     .gte("created_at", fourWeeksAgo.toISOString())
@@ -352,9 +352,9 @@ export async function getWeeklyQuestionStats() {
 }
 
 export async function getRecentQuestions(limit = 5) {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("questions")
     .select(
       "*, author:profiles!questions_author_id_fkey(name), category:qa_categories!questions_category_id_fkey(name)"
@@ -371,9 +371,9 @@ export async function getRecentQuestions(limit = 5) {
 }
 
 export async function getRecentPosts(limit = 5) {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("contents")
     .select("id, title, category, status, created_at, thumbnail_url")
     .eq("status", "published")

@@ -396,7 +396,7 @@ def main():
     existing_set = set()
     try:
         rows = db_query(
-            "SELECT ad_id FROM creative_saliency WHERE target_type = 'video' AND attention_map_url IS NOT NULL"
+            "SELECT ad_id FROM creative_saliency WHERE target_type = 'video'"
         )
         existing_set = {r["ad_id"] for r in rows}
     except Exception as e:

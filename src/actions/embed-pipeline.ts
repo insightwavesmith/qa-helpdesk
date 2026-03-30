@@ -88,10 +88,10 @@ async function delay(ms: number) {
 export async function embedContentToChunks(
   contentId: string
 ): Promise<EmbedResult> {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
   // 1. contents 조회
-  const { data: content, error: fetchErr } = await supabase
+  const { data: content, error: fetchErr } = await db
     .from("contents")
     .select("id, title, body_md, source_type, source_ref")
     .eq("id", contentId)
@@ -114,7 +114,7 @@ export async function embedContentToChunks(
 
   // 2. body_md가 비어있으면 실패 처리
   if (!bodyMd.trim()) {
-    await supabase
+    await db
       .from("contents")
       .update({ embedding_status: "failed" } as Record<string, unknown>)
       .eq("id", contentId);
@@ -129,19 +129,19 @@ export async function embedContentToChunks(
 
   // 3. Blueprint 특수 처리: 기존 chunks에 content_id 연결만
   if (sourceType === "blueprint") {
-    return linkBlueprintChunks(supabase, contentId, title);
+    return linkBlueprintChunks(db, contentId, title);
   }
 
   // 4. 재임베딩: 기존 chunks 삭제
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any).from("knowledge_chunks")
+  await (db as any).from("knowledge_chunks")
     .delete()
     .eq("content_id", contentId);
 
   // 5. Chunk 분할
   const chunks = chunkText(bodyMd);
   if (chunks.length === 0) {
-    await supabase
+    await db
       .from("contents")
       .update({ embedding_status: "failed" } as Record<string, unknown>)
       .eq("id", contentId);
@@ -155,7 +155,7 @@ export async function embedContentToChunks(
   }
 
   // 6. 임베딩 → INSERT (batch 처리)
-  await supabase
+  await db
     .from("contents")
     .update({ embedding_status: "processing" } as Record<string, unknown>)
     .eq("id", contentId);
@@ -173,7 +173,7 @@ export async function embedContentToChunks(
         const embedding = await generateEmbedding(chunkContent, { taskType: "RETRIEVAL_DOCUMENT" });
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: insertErr } = await (supabase as any)
+        const { error: insertErr } = await (db as any)
           .from("knowledge_chunks")
           .insert({
           lecture_name: title,
@@ -217,7 +217,7 @@ export async function embedContentToChunks(
 
   // 7. contents 상태 갱신
   const status = insertedCount > 0 ? "completed" : "failed";
-  await supabase
+  await db
     .from("contents")
     .update({
       embedding_status: status,
@@ -238,7 +238,7 @@ export async function embedContentToChunks(
 
 async function linkBlueprintChunks(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
+  db: any,
   contentId: string,
   title: string
 ): Promise<EmbedResult> {
@@ -246,7 +246,7 @@ async function linkBlueprintChunks(
   const lectureName = toLectureName(certName);
 
   // 기존 chunks 찾기
-  const { data: existing, error: findErr } = await supabase
+  const { data: existing, error: findErr } = await db
     .from("knowledge_chunks")
     .select("id")
     .eq("lecture_name", lectureName)
@@ -257,7 +257,7 @@ async function linkBlueprintChunks(
       `[embed] Blueprint 매칭 실패: "${title}" → "${lectureName}". 기존 chunks 없음.`
     );
     // 매칭 실패 시 일반 임베딩으로 폴백하지 않음 (데이터 중복 방지)
-    await supabase
+    await db
       .from("contents")
       .update({ embedding_status: "failed" } as Record<string, unknown>)
       .eq("id", contentId);
@@ -271,14 +271,14 @@ async function linkBlueprintChunks(
   }
 
   // content_id 연결
-  await supabase
+  await db
     .from("knowledge_chunks")
     .update({ content_id: contentId })
     .eq("lecture_name", lectureName)
     .eq("source_type", "blueprint");
 
   // contents 상태 갱신
-  await supabase
+  await db
     .from("contents")
     .update({
       embedding_status: "completed",
@@ -298,9 +298,9 @@ async function linkBlueprintChunks(
 // ─── 전체 임베딩 ─────────────────────────────────────────────
 
 export async function embedAllPending(): Promise<EmbedAllResult> {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
-  const { data: pending, error: queryErr } = await supabase
+  const { data: pending, error: queryErr } = await db
     .from("contents")
     .select("id, title, source_type")
     .eq("embedding_status", "pending")

@@ -14,9 +14,9 @@ export async function getAnswersByQuestionId(
   questionId: string,
   { includeUnapproved = false }: { includeUnapproved?: boolean } = {}
 ) {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
-  let query = supabase
+  let query = db
     .from("answers")
     .select(
       "*, author:profiles!answers_author_id_fkey(id, name, shop_name)"
@@ -40,9 +40,9 @@ export async function getAnswersByQuestionId(
 }
 
 export async function getPendingAnswersCount() {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
-  const { count, error } = await supabase
+  const { count, error } = await db
     .from("answers")
     .select("*", { count: "exact", head: true })
     .eq("is_approved", false);
@@ -123,11 +123,11 @@ export async function getPendingAnswers({
   page = 1,
   pageSize = 20,
 }: { page?: number; pageSize?: number } = {}) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  const { data, count, error } = await supabase
+  const { data, count, error } = await db
     .from("answers")
     .select(
       "*, author:profiles!answers_author_id_fkey(id, name), question:questions!answers_question_id_fkey(id, title, content, image_urls)",
@@ -146,10 +146,10 @@ export async function getPendingAnswers({
 }
 
 export async function approveAnswer(answerId: string) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
   // 답변 승인
-  const { data: answer, error } = await supabase
+  const { data: answer, error } = await db
     .from("answers")
     .update({
       is_approved: true,
@@ -166,7 +166,7 @@ export async function approveAnswer(answerId: string) {
 
   // 답변 승인 시 질문 상태를 "answered"로 변경
   if (answer?.question_id) {
-    await supabase
+    await db
       .from("questions")
       .update({ status: "answered" })
       .eq("id", answer.question_id);
@@ -247,9 +247,9 @@ export async function approveAnswer(answerId: string) {
 }
 
 export async function deleteAnswer(answerId: string) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
-  const { error } = await supabase
+  const { error } = await db
     .from("answers")
     .delete()
     .eq("id", answerId);
@@ -264,14 +264,14 @@ export async function deleteAnswer(answerId: string) {
 }
 
 export async function updateAnswer(answerId: string, content: string, imageUrls?: string[]) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
   const updateData: Record<string, unknown> = { content };
   if (imageUrls !== undefined) {
     updateData.image_urls = JSON.stringify(imageUrls || []);
   }
 
-  const { error } = await supabase
+  const { error } = await db
     .from("answers")
     .update(updateData)
     .eq("id", answerId);

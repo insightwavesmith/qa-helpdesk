@@ -19,13 +19,13 @@ const CONCURRENCY = 5;
 const PAIR_TIMEOUT_MS = 50_000;
 
 export async function precomputeOverlap(
-  supabase: DbClient,
+  db: DbClient,
 ): Promise<{ computed: number; errors: string[] }> {
   const errors: string[] = [];
   let computed = 0;
 
   // 1. 활성 계정 목록
-  const { data: accounts } = await supabase
+  const { data: accounts } = await db
     .from("ad_accounts")
     .select("account_id")
     .eq("active", true);
@@ -41,7 +41,7 @@ export async function precomputeOverlap(
         const range = periodToDateRange(period);
 
         // 이미 최신 데이터가 있으면 스킵 (24시간 이내)
-        const { data: existing } = await supabase
+        const { data: existing } = await db
           .from("daily_overlap_insights" as never)
           .select("collected_at")
           .eq("account_id", accountId)
@@ -71,7 +71,7 @@ export async function precomputeOverlap(
           );
         } catch {
           // Meta API 실패 시 DB fallback
-          const { data: reachRows } = await supabase
+          const { data: reachRows } = await db
             .from("daily_ad_insights")
             .select("adset_id, reach")
             .eq("account_id", accountId)
@@ -93,7 +93,7 @@ export async function precomputeOverlap(
         const activeAdsets = adsets.filter((a) => (reachByAdset[a.id] ?? 0) > 0);
         if (activeAdsets.length === 0) {
           // 활성 adset 없음 → 중복률 0으로 저장
-          await upsertOverlapResult(supabase, accountId, range.end, 0, 0, 0, []);
+          await upsertOverlapResult(db, accountId, range.end, 0, 0, 0, []);
           computed++;
           continue;
         }
@@ -177,7 +177,7 @@ export async function precomputeOverlap(
                 });
 
                 // pair별 캐시도 저장
-                await supabase.from("adset_overlap_cache" as never).upsert(
+                await db.from("adset_overlap_cache" as never).upsert(
                   {
                     account_id: accountId,
                     adset_pair: makePairKey(a.id, b.id),
@@ -210,7 +210,7 @@ export async function precomputeOverlap(
 
         // __overall__ 캐시
         try {
-          await supabase.from("adset_overlap_cache" as never).upsert(
+          await db.from("adset_overlap_cache" as never).upsert(
             {
               account_id: accountId,
               adset_pair: "__overall__",
@@ -233,7 +233,7 @@ export async function precomputeOverlap(
         const roundedRate = Math.round(overallRate * 10) / 10;
 
         await upsertOverlapResult(
-          supabase,
+          db,
           accountId,
           range.end,
           roundedRate,
@@ -258,7 +258,7 @@ export async function precomputeOverlap(
 }
 
 async function upsertOverlapResult(
-  supabase: DbClient,
+  db: DbClient,
   accountId: string,
   dateEnd: string,
   overallRate: number,
@@ -266,7 +266,7 @@ async function upsertOverlapResult(
   individualSum: number,
   pairs: OverlapPair[],
 ) {
-  await supabase.from("daily_overlap_insights" as never).upsert(
+  await db.from("daily_overlap_insights" as never).upsert(
     {
       account_id: accountId,
       date: dateEnd,

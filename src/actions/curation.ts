@@ -24,12 +24,12 @@ export async function getCurationContents({
   page?: number;
   pageSize?: number;
 } = {}): Promise<{ data: CurationContentWithLinks[]; count: number; error: string | null }> {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
   // deleted_at은 새 컬럼이라 Supabase 타입에 없음 — filter로 우회
-  let query = (supabase
+  let query = (db
     .from("contents")
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .select("*", { count: "exact" }) as any)
@@ -83,7 +83,7 @@ export async function getCurationContents({
 
   // content_relations JOIN으로 생성물 연결 조회
   const contentIds = contents.map((c: { id: string }) => c.id);
-  const linkMap = await getLinkedInfoSharesMap(supabase, contentIds);
+  const linkMap = await getLinkedInfoSharesMap(db, contentIds);
 
   const enriched: CurationContentWithLinks[] = contents.map((c: { id: string }) => ({
     ...c,
@@ -95,7 +95,7 @@ export async function getCurationContents({
 
 /** content_relations 테이블을 이용해 소스→생성물 연결 조회 */
 async function getLinkedInfoSharesMap(
-  supabase: Awaited<ReturnType<typeof requireStaff>>,
+  db: Awaited<ReturnType<typeof requireStaff>>,
   contentIds: string[]
 ): Promise<Map<string, LinkedInfoShare[]>> {
   const linkMap = new Map<string, LinkedInfoShare[]>();
@@ -104,7 +104,7 @@ async function getLinkedInfoSharesMap(
 
   // content_relations는 새 테이블이라 아직 Supabase 타입에 없음
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: relations } = await (supabase as any)
+  const { data: relations } = await (db as any)
 
     .from("content_relations")
     .select("source_id, generated_id")
@@ -115,7 +115,7 @@ async function getLinkedInfoSharesMap(
   // 생성물 id 목록
   const generatedIds = [...new Set(relations.map((r) => r.generated_id))];
 
-  const { data: generatedContents } = await supabase
+  const { data: generatedContents } = await db
     .from("contents")
     .select("id, title, status")
     .in("id", generatedIds);
@@ -139,10 +139,10 @@ async function getLinkedInfoSharesMap(
 }
 
 export async function getCurationCount() {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { count, error } = await (supabase as any)
+  const { count, error } = await (db as any)
     .from("contents")
     .select("id", { count: "exact", head: true })
     .in("curation_status", ["new", "selected"])
@@ -170,10 +170,10 @@ export interface CurationStatusCounts {
 export async function getCurationStatusCounts(
   source?: string
 ): Promise<CurationStatusCounts> {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
   const buildQuery = (status?: string) => {
-    let q = (supabase
+    let q = (db
       .from("contents")
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .select("id", { count: "exact", head: true }) as any)
@@ -213,9 +213,9 @@ export async function updateCurationStatus(
   id: string,
   status: "new" | "selected" | "dismissed" | "published"
 ) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
-  const { error } = await supabase
+  const { error } = await db
     .from("contents")
     .update({
       curation_status: status,
@@ -236,9 +236,9 @@ export async function batchUpdateCurationStatus(
   ids: string[],
   status: "new" | "selected" | "dismissed" | "published"
 ) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
-  const { error } = await supabase
+  const { error } = await db
     .from("contents")
     .update({
       curation_status: status,
@@ -268,11 +268,11 @@ export async function createInfoShareDraft({
   sourceContentIds: string[];
   thumbnailUrl?: string | null;
 }) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
   const now = new Date().toISOString();
 
   // 1. 새 contents 행 INSERT (draft — 콘텐츠 탭에서 편집/게시)
-  const { data: newContent, error: insertError } = await supabase
+  const { data: newContent, error: insertError } = await db
     .from("contents")
     .insert({
       title,
@@ -300,7 +300,7 @@ export async function createInfoShareDraft({
       generated_id: newContent.id,
     }));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: relError } = await (supabase as any)
+    const { error: relError } = await (db as any)
       .from("content_relations")
       .insert(relations);
     if (relError) {
@@ -325,11 +325,11 @@ export async function getInfoShareContents({
   page = 1,
   pageSize = 50,
 }: { page?: number; pageSize?: number } = {}) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  const { data, count, error } = await supabase
+  const { data, count, error } = await db
     .from("contents")
     .select("*", { count: "exact" })
     .eq("source_type", "info_share")
@@ -367,15 +367,15 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 export async function getPipelineStats(): Promise<PipelineStat[]> {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
   const dayAgo = new Date(Date.now() - 86400000).toISOString();
 
   // 3개 쿼리 병렬 실행
-  const s = supabase;
+  const s = db;
   const [contentsRes, chunksRes, newRes] = await Promise.all([
-    supabase.from("contents").select("source_type").neq("source_type", "info_share"),
+    db.from("contents").select("source_type").neq("source_type", "info_share"),
     s.from("knowledge_chunks").select("source_type"),
-    supabase.from("contents").select("source_type").gte("created_at", dayAgo).neq("source_type", "info_share"),
+    db.from("contents").select("source_type").gte("created_at", dayAgo).neq("source_type", "info_share"),
   ]);
 
   // 집계
@@ -415,9 +415,9 @@ export async function getPipelineStats(): Promise<PipelineStat[]> {
 // ─── 커리큘럼 콘텐츠 조회 ─────────────────────────────────
 
 export async function getCurriculumContents(sourceType: string) {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("contents")
     .select("*")
     .eq("source_type", sourceType)
@@ -439,11 +439,11 @@ export async function getCurationSummaryStats(): Promise<{
   withSummary: number;
   withoutSummary: number;
 }> {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
   const [totalRes, withSummaryRes] = await Promise.all([
-    supabase.from("contents").select("id", { count: "exact", head: true }).neq("source_type", "info_share").neq("status", "archived"),
-    supabase.from("contents").select("id", { count: "exact", head: true }).neq("source_type", "info_share").neq("status", "archived").not("ai_summary", "is", null),
+    db.from("contents").select("id", { count: "exact", head: true }).neq("source_type", "info_share").neq("status", "archived"),
+    db.from("contents").select("id", { count: "exact", head: true }).neq("source_type", "info_share").neq("status", "archived").not("ai_summary", "is", null),
   ]);
 
   const total = totalRes.count || 0;
@@ -461,10 +461,10 @@ export async function getCurationSummaryStats(): Promise<{
 export async function softDeleteContents(
   ids: string[]
 ): Promise<{ error: string | null }> {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await (db as any)
     .from("contents")
     .update({ deleted_at: new Date().toISOString() })
     .in("id", ids);
@@ -481,10 +481,10 @@ export async function softDeleteContents(
 export async function restoreContents(
   ids: string[]
 ): Promise<{ error: string | null }> {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await (db as any)
     .from("contents")
     .update({ deleted_at: null })
     .in("id", ids);
@@ -501,10 +501,10 @@ export async function restoreContents(
 export async function getDeletedContents(
   source?: string
 ): Promise<{ data: Array<Record<string, unknown>>; count: number; error: string | null }> {
-  const supabase = await requireStaff();
+  const db = await requireStaff();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase as any)
+  let query = (db as any)
     .from("contents")
     .select("id, title, source_type, deleted_at, created_at", { count: "exact" })
     .not("deleted_at", "is", null)
@@ -537,9 +537,9 @@ export async function backfillAiSummary(): Promise<{
   failed: number;
   errors: string[];
 }> {
-  const supabase = await requireAdmin();
+  const db = await requireAdmin();
 
-  const { data: rows, error } = await supabase
+  const { data: rows, error } = await db
     .from("contents")
     .select("id, title, body_md")
     .is("ai_summary", null)
@@ -581,7 +581,7 @@ ${text}
         continue;
       }
 
-      const { error: updateErr } = await supabase
+      const { error: updateErr } = await db
         .from("contents")
         .update({ ai_summary: summary.trim(), updated_at: new Date().toISOString() })
         .eq("id", row.id);
@@ -609,12 +609,12 @@ export async function backfillImportanceScore(): Promise<{
   failed: number;
   errors: string[];
 }> {
-  const supabase = await requireAdmin();
+  const db = await requireAdmin();
 
   // importance_score가 0이거나 null인 레코드 조회
   const [nullRes, zeroRes] = await Promise.all([
-    supabase.from("contents").select("id, title, body_md, source_type").is("importance_score", null).neq("status", "archived"),
-    supabase.from("contents").select("id, title, body_md, source_type").eq("importance_score", 0).neq("status", "archived"),
+    db.from("contents").select("id, title, body_md, source_type").is("importance_score", null).neq("status", "archived"),
+    db.from("contents").select("id, title, body_md, source_type").eq("importance_score", 0).neq("status", "archived"),
   ]);
 
   const rows = [
@@ -674,7 +674,7 @@ ${text}
         await delay(1000);
       }
 
-      const { error: updateErr } = await supabase
+      const { error: updateErr } = await db
         .from("contents")
         .update({ importance_score: score, updated_at: new Date().toISOString() })
         .eq("id", row.id);

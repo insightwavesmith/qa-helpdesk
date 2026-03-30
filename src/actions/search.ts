@@ -7,9 +7,9 @@ export async function searchQuestions(query: string, limit = 5) {
     return { data: [], error: null };
   }
 
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("questions")
     .select(
       "id, title, status, category:qa_categories!questions_category_id_fkey(name, slug)"
@@ -27,9 +27,9 @@ export async function searchQuestions(query: string, limit = 5) {
 }
 
 export async function getPopularQuestions(limit = 5) {
-  const supabase = createServiceClient();
+  const db = createServiceClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("questions")
     .select(
       "id, title, status, view_count, answers_count:answers(count), category:qa_categories!questions_category_id_fkey(name, slug)"
