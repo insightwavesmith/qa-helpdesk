@@ -117,6 +117,11 @@ export interface AnalysisJsonV3 {
     }>;
   };
 
+  // ── v3 확장: 씬 여정 + 오디오 상세 + 고객여정 상세 ──
+  scene_journey?: SceneJourneyItem[];
+  audio_analysis_detail?: AudioAnalysisDetail;
+  customer_journey_detail?: CustomerJourneyDetail;
+
   // ── 점수 ──
   scores?: {
     visual_impact: number;
@@ -267,6 +272,10 @@ export interface PrescriptionResponse {
     affects_groups: string[];
     ear_impact: string;
   }>;
+  // ── v3 확장: 씬 여정 + 오디오 + 고객여정 상세 ──
+  scene_journey?: SceneJourneyItem[];
+  audio_analysis?: AudioAnalysisDetail;
+  customer_journey_detail?: CustomerJourneyDetail;
   meta: {
     model: string;
     latency_ms: number;
@@ -417,6 +426,41 @@ export interface EarAnalysis {
   improvementPriority: string;
 }
 
+// ── 씬 여정 (scene_journey) ──────────────────────────────────────────
+
+export interface SceneJourneyItem {
+  time: string;                    // "0-3초"
+  type: string;                    // "hook" | "demo" | "result" | "tip" | "cta"
+  watched: string;                 // 👁 봤다 (구체적 시각 묘사)
+  heard: string;                   // 👂 들었다 (나레이션/오디오)
+  felt: string;                    // 🧠 느꼈다 (심리적 반응)
+  gaze_point: string;              // 📍 시선 집중 포인트
+  subtitle_text: string;           // 📝 자막 원문
+  prescription: {                  // 💊 씬별 처방
+    target: string;                // 👁감각/🧠사고/🖱행동
+    action: string;                // 구체적 개선방법
+    reasoning: string;             // 근거
+  };
+}
+
+// ── 오디오 분석 (audio_analysis) ─────────────────────────────────────
+
+export interface AudioAnalysisDetail {
+  narration_tone: string;          // "친한 친구가 꿀팁 알려주듯..."
+  bgm_genre: string;               // "밝고 경쾌한 팝"
+  emotion_flow: string;            // "공감→신뢰→감탄"
+}
+
+// ── 고객 여정 상세 (customer_journey_detail) ─────────────────────────
+
+export interface CustomerJourneyDetail {
+  sensation: { summary: string; detail: string };
+  thinking: { summary: string; detail: string };
+  action_click: { summary: string; metric: string };
+  action_purchase: { summary: string; metric: string };
+  core_insight: string;
+}
+
 export interface GeminiPrescriptionOutput {
   five_axis: AnalysisJsonV3;
   scores: {
@@ -469,6 +513,10 @@ export interface GeminiPrescriptionOutput {
     issue: string;
     benchmark_comparison: string;
   }>;
+  // ── v3 확장: 씬 여정 + 오디오 + 고객여정 상세 ──
+  scene_journey?: SceneJourneyItem[];
+  audio_analysis?: AudioAnalysisDetail;
+  customer_journey_detail?: CustomerJourneyDetail;
 }
 
 export interface GeminiPromptParts {

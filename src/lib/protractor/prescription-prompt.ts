@@ -29,6 +29,12 @@ export const PRESCRIPTION_SYSTEM_PROMPT = `
 5. 입력 데이터에 없는 수치 인용 금지
 6. 광고비/예산 관련 처방 금지
 
+추가 분석 지시:
+1. scene_journey: 영상 소재는 3초 단위로 씬을 나눠 시청자가 "봤다/들었다/느꼈다"를 1인칭 묘사하세요. 이미지 소재는 전체를 1개 씬으로.
+2. audio_analysis: 나레이션 톤은 비유로 묘사하고, BGM 장르와 감정 흐름을 화살표(→)로 연결하세요.
+3. customer_journey_detail: 감각→사고→클릭→구매 4단계를 각각 summary(한줄) + detail/metric으로 분석하고, core_insight에 가장 중요한 발견 1줄을 쓰세요.
+4. 씬별 prescription.target은 반드시 "👁감각", "🧠사고", "🖱행동" 중 하나로 지정하세요.
+
 출력은 반드시 지정된 JSON 스키마를 따르세요.
 `.trim();
 
@@ -113,8 +119,85 @@ export const PRESCRIPTION_OUTPUT_SCHEMA = {
         },
       },
     },
+    scene_journey: {
+      type: 'array',
+      description: '씬별 시청자 여정 분석 (영상 소재만 해당, 이미지는 빈 배열)',
+      items: {
+        type: 'object',
+        properties: {
+          time: { type: 'string', description: '시간 구간 (예: "0-3초")' },
+          type: { type: 'string', enum: ['hook', 'demo', 'result', 'tip', 'cta'], description: '씬 유형' },
+          watched: { type: 'string', description: '👁 봤다 — 시청자가 본 구체적 시각 요소' },
+          heard: { type: 'string', description: '👂 들었다 — 나레이션, BGM, 효과음 등' },
+          felt: { type: 'string', description: '🧠 느꼈다 — 시청자의 심리적 반응/감정' },
+          gaze_point: { type: 'string', description: '📍 시선 집중 포인트 (화면 위치/요소)' },
+          subtitle_text: { type: 'string', description: '📝 자막 원문 (없으면 빈 문자열)' },
+          prescription: {
+            type: 'object',
+            properties: {
+              target: { type: 'string', description: '처방 대상: 👁감각 / 🧠사고 / 🖱행동' },
+              action: { type: 'string', description: '구체적 개선 방법' },
+              reasoning: { type: 'string', description: '이 처방의 근거' },
+            },
+            required: ['target', 'action', 'reasoning'],
+          },
+        },
+        required: ['time', 'type', 'watched', 'heard', 'felt', 'gaze_point', 'subtitle_text', 'prescription'],
+      },
+    },
+    audio_analysis: {
+      type: 'object',
+      description: '오디오 분석 (나레이션 톤, BGM, 감정 흐름)',
+      properties: {
+        narration_tone: { type: 'string', description: '나레이션 톤 묘사 (예: "친한 친구가 꿀팁 알려주듯 편안하고 밝은 톤")' },
+        bgm_genre: { type: 'string', description: 'BGM 장르/분위기 (예: "밝고 경쾌한 팝")' },
+        emotion_flow: { type: 'string', description: '감정 흐름 (예: "공감→신뢰→감탄→행동")' },
+      },
+      required: ['narration_tone', 'bgm_genre', 'emotion_flow'],
+    },
+    customer_journey_detail: {
+      type: 'object',
+      description: '고객 여정 4단계 상세 분석 (감각→사고→클릭→구매)',
+      properties: {
+        sensation: {
+          type: 'object',
+          properties: {
+            summary: { type: 'string', description: '감각 단계 한줄 요약' },
+            detail: { type: 'string', description: '감각 단계 상세 분석 (시각+청각 자극이 주의를 끄는 방식)' },
+          },
+          required: ['summary', 'detail'],
+        },
+        thinking: {
+          type: 'object',
+          properties: {
+            summary: { type: 'string', description: '사고 단계 한줄 요약' },
+            detail: { type: 'string', description: '사고 단계 상세 분석 (메시지가 공감/신뢰를 만드는 방식)' },
+          },
+          required: ['summary', 'detail'],
+        },
+        action_click: {
+          type: 'object',
+          properties: {
+            summary: { type: 'string', description: '클릭 행동 한줄 요약' },
+            metric: { type: 'string', description: '관련 지표 언급 (CTR 등)' },
+          },
+          required: ['summary', 'metric'],
+        },
+        action_purchase: {
+          type: 'object',
+          properties: {
+            summary: { type: 'string', description: '구매 행동 한줄 요약' },
+            metric: { type: 'string', description: '관련 지표 언급 (전환율 등)' },
+          },
+          required: ['summary', 'metric'],
+        },
+        core_insight: { type: 'string', description: '핵심 인사이트 한줄 (이 소재의 여정에서 가장 중요한 발견)' },
+      },
+      required: ['sensation', 'thinking', 'action_click', 'action_purchase', 'core_insight'],
+    },
   },
-  required: ['five_axis', 'scores', 'top3_prescriptions', 'customer_journey_summary'],
+  required: ['five_axis', 'scores', 'top3_prescriptions', 'customer_journey_summary',
+    'scene_journey', 'audio_analysis', 'customer_journey_detail'],
 };
 
 // ── 섹션 빌더 ────────────────────────────────────────────────────────
