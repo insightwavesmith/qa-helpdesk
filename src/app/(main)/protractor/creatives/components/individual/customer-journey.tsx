@@ -1,10 +1,17 @@
 "use client";
 
 import type { AnalysisJsonV3 } from "@/types/prescription";
+import { JourneySummary } from "./journey-summary";
 
 interface CustomerJourneyProps {
   analysisJson: AnalysisJsonV3;
   durationSeconds: number;
+  customerJourneySummary?: {
+    sensation: string;
+    thinking: string;
+    action_click: string;
+    action_purchase: string;
+  } | null;
 }
 
 // ── 씬 타입별 색상 ───────────────────────────────────────────────
@@ -40,12 +47,22 @@ interface SceneData {
 }
 
 function extractScenes(analysisJson: AnalysisJsonV3, durationSeconds: number): SceneData[] {
-  // analysis_json에 customer_journey_summary가 있으면 간단 요약 모드
-  // structure에 scenes가 없으면 기본 구조 생성
+  // scene_analysis가 있으면 실제 씬 데이터 사용
+  const sceneAnalysis = analysisJson.scene_analysis;
+  if (sceneAnalysis?.scenes && sceneAnalysis.scenes.length > 0) {
+    return sceneAnalysis.scenes.map((scene) => ({
+      timeRange: scene.time,
+      type: scene.type,
+      saw: scene.desc || "-",
+      heard: "-",
+      felt: scene.analysis.viewer_action || "-",
+    }));
+  }
+
+  // fallback: structure에서 기본 구조 생성
   const structure = analysisJson.structure;
 
   if (!structure || !structure.scene_count) {
-    // 기본 3-씬 구조 생성
     const third = Math.round(durationSeconds / 3);
     return [
       {
@@ -72,11 +89,9 @@ function extractScenes(analysisJson: AnalysisJsonV3, durationSeconds: number): S
     ];
   }
 
-  // scene_count만 있고 scenes 배열이 없으면 균등 분할
   const sceneCount = structure.scene_count;
   const avgDuration = structure.avg_scene_duration || Math.round(durationSeconds / sceneCount);
   const scenes: SceneData[] = [];
-
   const defaultTypes = ["훅", "데모", "결과", "CTA"];
 
   for (let i = 0; i < sceneCount; i++) {
@@ -96,10 +111,25 @@ function extractScenes(analysisJson: AnalysisJsonV3, durationSeconds: number): S
 
 // ── 컴포넌트 ──────────────────────────────────────────────────────
 
-export function CustomerJourney({ analysisJson, durationSeconds }: CustomerJourneyProps) {
+export function CustomerJourney({
+  analysisJson,
+  durationSeconds,
+  customerJourneySummary,
+}: CustomerJourneyProps) {
   const scenes = extractScenes(analysisJson, durationSeconds);
 
   if (scenes.length === 0) return null;
+
+  // ear_analysis에서 핵심 인사이트 추출
+  const coreInsight = analysisJson.ear_analysis
+    ? `고객은 ${
+        analysisJson.ear_analysis.primary_bottleneck === "foundation"
+          ? "기반(인지)"
+          : analysisJson.ear_analysis.primary_bottleneck === "engagement"
+            ? "참여"
+            : "전환"
+      } 단계에서 병목. ${analysisJson.ear_analysis.bottleneck_detail}`
+    : undefined;
 
   return (
     <div
@@ -125,7 +155,7 @@ export function CustomerJourney({ analysisJson, durationSeconds }: CustomerJourn
       </div>
 
       {/* 타임라인 */}
-      <div className="space-y-0.5">
+      <div className="space-y-0.5 max-h-[400px] overflow-y-auto">
         {scenes.map((scene, idx) => {
           const sceneStyle = SCENE_COLORS[scene.type] ?? DEFAULT_SCENE_COLOR;
 
@@ -183,27 +213,11 @@ export function CustomerJourney({ analysisJson, durationSeconds }: CustomerJourn
         })}
       </div>
 
-      {/* 고객 여정 요약 (ear_analysis) */}
-      {analysisJson.ear_analysis && (
-        <div className="mt-3 bg-white rounded-lg p-3 border border-slate-200">
-          <div className="text-xs font-bold text-gray-800 mb-1">📊 여정 병목 분석</div>
-          <div className="text-xs text-gray-600 leading-relaxed">
-            <strong>핵심 병목:</strong>{" "}
-            {analysisJson.ear_analysis.primary_bottleneck === "foundation"
-              ? "기반 (인지)"
-              : analysisJson.ear_analysis.primary_bottleneck === "engagement"
-                ? "참여"
-                : "전환"}
-            {" — "}
-            {analysisJson.ear_analysis.bottleneck_detail}
-          </div>
-          {analysisJson.ear_analysis.improvement_priority && (
-            <div className="text-xs text-gray-500 mt-1">
-              개선 우선순위: {analysisJson.ear_analysis.improvement_priority}
-            </div>
-          )}
-        </div>
-      )}
+      {/* 고객 여정 요약 4단계 */}
+      <JourneySummary
+        summary={customerJourneySummary ?? analysisJson.customer_journey_summary ?? null}
+        coreInsight={coreInsight}
+      />
     </div>
   );
 }
