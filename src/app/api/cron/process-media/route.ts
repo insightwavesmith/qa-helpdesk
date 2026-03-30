@@ -172,10 +172,43 @@ export async function GET(req: NextRequest) {
       byAccount.get(cleanId)!.push(row);
     }
 
+    // ━━━ VIDEO 소스 URL 전체 계정 사전 조회 (교차 계정 폴백) ━━━
+    const allVideoRows = filteredRows.filter((r) => r.media_type === "VIDEO");
+    const allVideoIdSet = new Set<string>();
+    for (const row of allVideoRows) {
+      const videoId = extractVideoId(row);
+      if (videoId) allVideoIdSet.add(videoId);
+    }
+
+    let globalVideoSources = new Map<string, string>();
+    if (allVideoIdSet.size > 0) {
+      const allVids = [...allVideoIdSet];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: activeAccounts } = await (svc as any)
+        .from("ad_accounts")
+        .select("account_id")
+        .eq("active", true);
+
+      for (const acc of (activeAccounts ?? []) as { account_id: string }[]) {
+        const remaining = allVids.filter((vid) => !globalVideoSources.has(vid));
+        if (remaining.length === 0) break;
+        try {
+          const found = await fetchVideoSourceUrls(acc.account_id, remaining, true);
+          for (const [vid, url] of found) globalVideoSources.set(vid, url);
+        } catch {
+          // 계정 에러 무시, 다음 계정 시도
+        }
+      }
+
+      console.log(
+        `[process-media] VIDEO 소스 URL 사전 조회: ${globalVideoSources.size}/${allVideoIdSet.size}건 발견 (${(activeAccounts ?? []).length}개 계정 탐색)`
+      );
+    }
+
     // 3. 계정별 독립 처리
     for (const [cleanAccountId, accountRows] of byAccount) {
       try {
-        await processAccountMedia(cleanAccountId, accountRows, svc, result);
+        await processAccountMedia(cleanAccountId, accountRows, svc, result, globalVideoSources);
       } catch (err) {
         const msg = `account ${cleanAccountId}: ${err instanceof Error ? err.message : String(err)}`;
         console.error(`[process-media] ${msg}`);
@@ -223,6 +256,7 @@ async function processAccountMedia(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   svc: any,
   result: ProcessResult,
+  globalVideoSources?: Map<string, string>,
 ): Promise<void> {
   // IMAGE / VIDEO 분리
   const imageRows = rows.filter((r) => (r.media_type ?? "IMAGE") === "IMAGE");
@@ -235,7 +269,7 @@ async function processAccountMedia(
 
   // 4b. VIDEO 처리
   if (videoRows.length > 0) {
-    await processVideoRows(cleanAccountId, videoRows, svc, result);
+    await processVideoRows(cleanAccountId, videoRows, svc, result, globalVideoSources);
   }
 }
 
@@ -429,6 +463,7 @@ async function processVideoRows(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   svc: any,
   result: ProcessResult,
+  globalVideoSources?: Map<string, string>,
 ): Promise<void> {
   // video_id 수집 (4단계 폴백 적용)
   const videoIds: string[] = [];
@@ -458,12 +493,28 @@ async function processVideoRows(
     return;
   }
 
-  // 소스 URL 조회
+  // 소스 URL 조회 (주 계정 페이지네이션)
   let sourceUrlMap = new Map<string, string>();
   try {
     sourceUrlMap = await fetchVideoSourceUrls(cleanAccountId, videoIds);
   } catch (err) {
     console.warn(`[process-media] VIDEO fetchVideoSourceUrls 실패 [${cleanAccountId}]:`, err);
+  }
+
+  // 글로벌 소스맵 병합 (교차 계정 사전 조회 결과)
+  if (globalVideoSources && globalVideoSources.size > 0) {
+    let merged = 0;
+    for (const vid of videoIds) {
+      if (!sourceUrlMap.has(vid) && globalVideoSources.has(vid)) {
+        sourceUrlMap.set(vid, globalVideoSources.get(vid)!);
+        merged++;
+      }
+    }
+    if (merged > 0) {
+      console.log(
+        `[process-media] VIDEO 교차 계정 소스맵 병합: ${merged}건 추가 [${cleanAccountId}]`
+      );
+    }
   }
 
   // 썸네일 조회
@@ -521,6 +572,34 @@ async function processVideoRows(
         const sourceUrl = sourceUrlMap.get(videoId) || null;
 
         if (!sourceUrl) {
+          // 최종 폴백: content_hash 기반 storage_url 재사용 (이전 배치에서 다운로드된 경우)
+          if (row.content_hash) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: lateDonor } = await (svc as any)
+              .from("creative_media")
+              .select("storage_url, thumbnail_url")
+              .eq("content_hash", row.content_hash)
+              .not("storage_url", "is", null)
+              .neq("id", row.id)
+              .limit(1)
+              .maybeSingle();
+
+            if (lateDonor?.storage_url) {
+              await svc
+                .from("creative_media")
+                .update({
+                  storage_url: lateDonor.storage_url,
+                  thumbnail_url: lateDonor.thumbnail_url || thumbnailUrl || null,
+                })
+                .eq("id", row.id);
+              console.log(
+                `[process-media] VIDEO content_hash 최종폴백: ${row.content_hash} → ${lateDonor.storage_url.slice(-40)}`
+              );
+              result.dedup++;
+              continue;
+            }
+          }
+
           skipReasons.noSourceUrl++;
           // 썸네일만 있으면 thumbnail_url 업데이트
           if (thumbnailUrl) {

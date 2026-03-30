@@ -292,6 +292,7 @@ export async function fetchVideoThumbnails(
 export async function fetchVideoSourceUrls(
   accountId: string,
   videoIds: string[],
+  skipIndividualFallback = false,
 ): Promise<Map<string, string>> {
   const token = process.env.META_ACCESS_TOKEN;
   if (!token) throw new Error("META_ACCESS_TOKEN not set");
@@ -344,7 +345,7 @@ export async function fetchVideoSourceUrls(
   } while (after);
 
   // ━━━ 개별 video fallback (계정 리스팅에서 미발견 건) ━━━
-  if (needed.size > 0) {
+  if (needed.size > 0 && !skipIndividualFallback) {
     console.log(
       `[creative-fetcher] 계정 리스팅 미발견 ${needed.size}건 → 개별 조회 시작 [${cleanId}]`
     );
