@@ -66,6 +66,45 @@ export interface AnalysisJsonV3 {
     dominant_region: string;
     top_fixation: { x: number; y: number; ratio: number };
   };
+  scene_analysis?: {
+    scenes: Array<{
+      time: string;
+      type: string;
+      desc: string;
+      deepgaze: {
+        avg_fixation_x: number | null;
+        avg_fixation_y: number | null;
+        dominant_region: string;
+        cta_visible: boolean;
+        fixation_count: number;
+        avg_intensity: number | null;
+      };
+      analysis: {
+        hook_strength: number;
+        attention_quality: 'high' | 'medium' | 'low';
+        message_clarity: 'high' | 'medium' | 'low';
+        viewer_action: string;
+        improvement?: string;
+      };
+      element_attention?: Array<{
+        type: string;
+        attention_pct: number;
+      }>;
+    }>;
+    overall: {
+      total_scenes: number;
+      hook_effective: boolean;
+      cta_reached: boolean;
+      analyzed_at: string;
+      model: string;
+    };
+  };
+  customer_journey_summary?: {
+    sensation: string;
+    thinking: string;
+    action_click: string;
+    action_purchase: string;
+  };
   andromeda_signals?: {
     visual_fingerprint: string;
     text_fingerprint: string;
