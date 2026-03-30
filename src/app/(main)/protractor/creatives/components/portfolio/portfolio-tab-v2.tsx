@@ -6,13 +6,17 @@ import { DiversityAlert } from "./diversity-alert";
 
 // ── 타입 ──────────────────────────────────────────────────────────
 
-interface IntelligenceScoreBase {
+/** 부모에서 analysis_json 기반으로 추출된 flat 데이터 */
+export interface PortfolioCreativeItem {
   id: string;
   overall_score: number | null;
-  roas?: number | null;
-  ctr?: number | null;
-  hook_type?: string | null;
-  style?: string | null;
+  roas: number | null;
+  hook_type: string | null;
+  style: string | null;
+  visual_impact: number | null;
+  message_clarity: number | null;
+  cta_effectiveness: number | null;
+  social_proof: number | null;
 }
 
 interface BenchmarkRow {
@@ -23,7 +27,7 @@ interface BenchmarkRow {
 }
 
 interface PortfolioTabV2Props {
-  intelligenceData: { results: IntelligenceScoreBase[] } | undefined;
+  portfolioItems: PortfolioCreativeItem[];
   intelligenceLoading: boolean;
   benchmarkData: { benchmarks: Record<string, BenchmarkRow[]> } | undefined;
   accountId: string;
@@ -55,12 +59,12 @@ function SummaryCard({
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────
 
 export function PortfolioTabV2({
-  intelligenceData,
+  portfolioItems,
   intelligenceLoading,
   benchmarkData,
   accountId,
 }: PortfolioTabV2Props) {
-  const results = intelligenceData?.results ?? [];
+  const results = portfolioItems;
 
   // 집계
   const totalCount = results.length;

@@ -44,7 +44,7 @@ const MAX_RETRIES = 1;
 async function step1_fetchCreativeMedia(svc: DbClient, creativeMediaId: string) {
   const { data, error } = await (svc as DbClient)
     .from('creative_media')
-    .select('id, creative_id, media_url, storage_url, ad_copy, media_type, analysis_json, saliency_url, video_analysis, embedding, account_id')
+    .select('id, creative_id, media_url, storage_url, ad_copy, media_type, analysis_json, saliency_url, video_analysis, embedding')
     .eq('id', creativeMediaId)
     .single();
 

@@ -471,6 +471,10 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  // account_id 필터 (특정 계정만 처리)
+  const { searchParams } = new URL(req.url);
+  const accountFilter = searchParams.get("account_id");
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const svc = createServiceClient() as any;
@@ -478,6 +482,7 @@ export async function GET(req: NextRequest) {
     // ━━━ 1. 미분석 VIDEO 조회 ━━━
     // analysis_json에 scene_analysis 키 없는 것 조회
     // → JS에서 필터링 (JSONB 조건은 서버사이드 적용 어려움)
+    // 전체 조회 후 JS 필터 — VIDEO mp4 300건 수준이라 부담 없음
     const { data: rawMedia, error: queryErr } = await svc
       .from("creative_media")
       .select(
@@ -486,8 +491,8 @@ export async function GET(req: NextRequest) {
       .eq("media_type", "VIDEO")
       .not("storage_url", "is", null)
       .like("storage_url", "%.mp4")
-      .order("created_at", { ascending: true })
-      .limit(BATCH_LIMIT * 3); // 여유롭게 조회 후 필터링
+      .order("created_at", { ascending: false })
+      .limit(1000);
 
     if (queryErr) {
       console.error(
@@ -548,7 +553,7 @@ export async function GET(req: NextRequest) {
     );
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows: VideoMediaRow[] = pendingRaw
+    let rows: VideoMediaRow[] = pendingRaw
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .map((r: any) => {
         const creative = creativeMap.get(r.creative_id);
@@ -556,6 +561,12 @@ export async function GET(req: NextRequest) {
         return { ...r, creatives: creative } as VideoMediaRow;
       })
       .filter(Boolean) as VideoMediaRow[];
+
+    // account_id 필터 적용
+    if (accountFilter) {
+      rows = rows.filter((r) => r.creatives?.account_id === accountFilter);
+      console.log(`[video-scene-analysis] account_id=${accountFilter} 필터 적용: ${rows.length}건`);
+    }
 
     console.log(
       `[video-scene-analysis] 씬 분석 대상: ${rows.length}건`,
@@ -581,9 +592,15 @@ export async function GET(req: NextRequest) {
         );
 
         // ━━━ 3-1. 영상 다운로드 ━━━
+        // gs:// → HTTPS 변환 (GCS public URL)
+        let videoUrl = row.storage_url;
+        if (videoUrl.startsWith("gs://")) {
+          videoUrl = videoUrl.replace("gs://", "https://storage.googleapis.com/");
+        }
+
         let videoBuf: ArrayBuffer;
         try {
-          const vidRes = await fetch(row.storage_url, {
+          const vidRes = await fetch(videoUrl, {
             signal: AbortSignal.timeout(60_000),
           });
           if (!vidRes.ok) {

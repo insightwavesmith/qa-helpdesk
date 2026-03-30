@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { createServiceClient } from '@/lib/db';
 import { requireProtractorAccess, verifyAccountOwnership } from '../_shared';
 import { generatePrescription } from '@/lib/protractor/prescription-engine';
 import { PrescriptionError } from '@/types/prescription';
@@ -14,9 +15,19 @@ import { PrescriptionError } from '@/types/prescription';
  * 처방 조회 (캐시 우선) — creative-detail-panel.tsx에서 lazy 호출
  */
 export async function GET(req: NextRequest) {
-  const auth = await requireProtractorAccess();
-  if ('response' in auth) return auth.response;
-  const { svc } = auth;
+  // CRON 인증 (CRON_SECRET 헤더) 또는 일반 사용자 인증
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = req.headers.get('authorization');
+  const isCronAuth = cronSecret && authHeader === `Bearer ${cronSecret}`;
+  
+  let svc: ReturnType<typeof createServiceClient>;
+  if (isCronAuth) {
+    svc = createServiceClient();
+  } else {
+    const auth = await requireProtractorAccess();
+    if ('response' in auth) return auth.response;
+    svc = auth.svc;
+  }
 
   const creativeMediaId = req.nextUrl.searchParams.get('id');
   if (!creativeMediaId) {
