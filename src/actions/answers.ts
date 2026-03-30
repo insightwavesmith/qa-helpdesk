@@ -87,7 +87,8 @@ export async function createAnswer(formData: {
       author_id: user.uid,
       is_ai: false,
       is_approved: false,
-      image_urls: formData.imageUrls || [],
+      // JSONB 컬럼 → JSON.stringify 필수 (쿼리빌더가 string[]을 pg 네이티브 배열로 보내면 JSONB 파싱 실패)
+      image_urls: JSON.stringify(formData.imageUrls || []),
     })
     .select("*, question:questions!answers_question_id_fkey(id, title)")
     .single();
@@ -268,7 +269,8 @@ export async function updateAnswer(answerId: string, content: string, imageUrls?
 
   const updateData: Record<string, unknown> = { content };
   if (imageUrls !== undefined) {
-    updateData.image_urls = imageUrls;
+    // JSONB 컬럼 → JSON.stringify 필수
+    updateData.image_urls = JSON.stringify(imageUrls);
   }
 
   const { error } = await supabase
@@ -321,7 +323,8 @@ export async function updateAnswerByAuthor(answerId: string, content: string, im
 
   const updateData: Record<string, unknown> = { content, updated_at: new Date().toISOString() };
   if (imageUrls !== undefined) {
-    updateData.image_urls = imageUrls;
+    // JSONB 컬럼 → JSON.stringify 필수
+    updateData.image_urls = JSON.stringify(imageUrls);
   }
 
   const { error } = await svc
