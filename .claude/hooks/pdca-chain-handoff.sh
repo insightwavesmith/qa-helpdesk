@@ -103,10 +103,13 @@ EOFPAYLOAD
 
     # Webhook wake → MOZZI (OpenClaw 에이전트, broker peer 아님)
     WAKE_URL="http://127.0.0.1:18789/hooks/wake"
+    WAKE_TOKEN="mz-hook-Kx9mP4vR7nWqZj2026"
+    WAKE_TEXT="[CHAIN] ${FROM_ROLE} ${EARLY_LEVEL} 완료. 산출물: ${DELIVERABLES}"
     WAKE_HTTP=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$WAKE_URL" \
         -H 'Content-Type: application/json' \
-        -d "{\"source\":\"chain\",\"team\":\"${TEAM}\",\"event\":\"ANALYSIS_REPORT\",\"message\":$(echo "$PAYLOAD" | jq -c '.')}" \
-        2>/dev/null || echo "000")
+        -H "Authorization: Bearer ${WAKE_TOKEN}" \
+        -d "{\"text\":\"${WAKE_TEXT}\"}" \
+        --max-time 5 2>/dev/null || echo "000")
 
     if [ "$WAKE_HTTP" -ge 200 ] && [ "$WAKE_HTTP" -lt 300 ] 2>/dev/null; then
         echo "✅ [${EARLY_LEVEL}] ANALYSIS_REPORT → MOZZI webhook 전송 완료"
@@ -215,9 +218,13 @@ EOFPAYLOAD
 # ── 8. MOZZI(COO)는 항상 webhook wake (OpenClaw 에이전트, broker peer 아님) ──
 if [ "$TO_ROLE" = "MOZZI" ]; then
     WAKE_URL="http://127.0.0.1:18789/hooks/wake"
+    WAKE_TOKEN="mz-hook-Kx9mP4vR7nWqZj2026"
+    WAKE_TEXT="[CHAIN] ${TEAM} ${CHAIN_STEP} 완료. Level: ${PROCESS_LEVEL}, Match Rate: ${RATE}%"
+    [ "$MANUAL_REVIEW" = "true" ] && WAKE_TEXT="${WAKE_TEXT} ⚠ 수동 검수 필수"
     WAKE_HTTP=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$WAKE_URL" \
         -H 'Content-Type: application/json' \
-        -d "{\"source\":\"chain\",\"team\":\"${TEAM}\",\"event\":\"COMPLETION_REPORT\",\"level\":\"${PROCESS_LEVEL}\",\"chain_step\":\"${CHAIN_STEP}\",\"match_rate\":\"${RATE}\",\"manual_review\":\"${MANUAL_REVIEW}\",\"message\":$(echo "$PAYLOAD" | jq -c '.')}" \
+        -H "Authorization: Bearer ${WAKE_TOKEN}" \
+        -d "{\"text\":\"${WAKE_TEXT}\"}" \
         --max-time 5 2>/dev/null || echo "000")
     if [ "$WAKE_HTTP" = "200" ] || [ "$WAKE_HTTP" = "204" ]; then
         echo "✅ COMPLETION_REPORT → MOZZI webhook 전송 완료"
