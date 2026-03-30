@@ -26,32 +26,119 @@ os.environ.setdefault("MKL_NUM_THREADS", "1")
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 
 import numpy as np
+import psycopg2
+import psycopg2.extras
 import requests
+from google.cloud import storage as gcs_storage
 from PIL import Image
 
-# predict.py에서 공용 함수 임포트
+# predict.py에서 DeepGaze 관련 함수만 임포트
 from predict import (
-    SB_URL,
-    SB_KEY,
-    HEADERS,
-    sb_get,
-    sb_storage_upload,
     predict_saliency,
     create_heatmap,
     extract_fixations,
     compute_cognitive_load,
     compute_cta_score,
+    get_model,
 )
+
+# ━━━ DB 설정 (Cloud SQL) ━━━
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql://postgres:BsCamp2026Gcp@34.50.5.237:5432/bscamp",
+)
+
+# ━━━ GCS 설정 ━━━
+GCS_BUCKET = "bscamp-storage"
+
+
+def get_db_conn():
+    """Cloud SQL 연결."""
+    return psycopg2.connect(DATABASE_URL)
+
+
+def db_query(sql, params=None):
+    """SELECT 쿼리 실행 → dict 리스트 반환."""
+    conn = get_db_conn()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(sql, params)
+            return [dict(r) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+def db_upsert(table, row, conflict_col="ad_id"):
+    """INSERT ... ON CONFLICT DO UPDATE."""
+    conn = get_db_conn()
+    try:
+        cols = list(row.keys())
+        vals = [row[c] for c in cols]
+        placeholders = ", ".join(["%s"] * len(cols))
+        col_names = ", ".join(cols)
+        update_set = ", ".join(f"{c} = EXCLUDED.{c}" for c in cols if c != conflict_col)
+
+        sql = (
+            f"INSERT INTO {table} ({col_names}) VALUES ({placeholders}) "
+            f"ON CONFLICT ({conflict_col}) DO UPDATE SET {update_set}"
+        )
+        with conn.cursor() as cur:
+            cur.execute(sql, vals)
+        conn.commit()
+        return True
+    except Exception as e:
+        conn.rollback()
+        print(f"  db_upsert 에러 ({table}): {e}", file=sys.stderr)
+        return False
+    finally:
+        conn.close()
+
+
+def db_update(table, set_clause, where_clause):
+    """UPDATE table SET ... WHERE ..."""
+    conn = get_db_conn()
+    try:
+        set_parts = []
+        vals = []
+        for k, v in set_clause.items():
+            set_parts.append(f"{k} = %s")
+            vals.append(v)
+        where_parts = []
+        for k, v in where_clause.items():
+            where_parts.append(f"{k} = %s")
+            vals.append(v)
+
+        sql = f"UPDATE {table} SET {', '.join(set_parts)} WHERE {' AND '.join(where_parts)}"
+        with conn.cursor() as cur:
+            cur.execute(sql, vals)
+            affected = cur.rowcount
+        conn.commit()
+        return affected > 0
+    except Exception as e:
+        conn.rollback()
+        print(f"  db_update 에러 ({table}): {e}", file=sys.stderr)
+        return False
+    finally:
+        conn.close()
+
+
+def gcs_upload(path, data, content_type="image/png"):
+    """GCS에 파일 업로드 → public URL 반환."""
+    client = gcs_storage.Client()
+    bucket = client.bucket(GCS_BUCKET)
+    blob = bucket.blob(path)
+    blob.upload_from_string(data, content_type=content_type)
+    return f"https://storage.googleapis.com/{GCS_BUCKET}/{path}"
 
 
 # ━━━ 영상 다운로드 ━━━
-def download_video(url: str, dest_path: str) -> bool:
+def download_video(url, dest_path):
     """Storage URL에서 영상 다운로드."""
     try:
         if url.startswith("http"):
             full_url = url
         else:
-            full_url = f"{SB_URL}/storage/v1/object/public/{url}"
+            full_url = f"https://storage.googleapis.com/{GCS_BUCKET}/{url}"
 
         res = requests.get(full_url, timeout=120, stream=True)
         if not res.ok:
@@ -69,7 +156,7 @@ def download_video(url: str, dest_path: str) -> bool:
 
 
 # ━━━ ffmpeg 프레임 추출 ━━━
-def extract_frames(video_path: str, output_dir: str, fps: int = 1) -> list:
+def extract_frames(video_path, output_dir, fps=1):
     """ffmpeg로 영상에서 프레임을 추출 (기본 1fps)."""
     try:
         output_pattern = os.path.join(output_dir, "frame_%04d.png")
@@ -79,7 +166,7 @@ def extract_frames(video_path: str, output_dir: str, fps: int = 1) -> list:
             "-vf", f"fps={fps}",
             "-q:v", "2",
             output_pattern,
-            "-y",  # 덮어쓰기
+            "-y",
             "-loglevel", "error",
         ]
 
@@ -88,7 +175,6 @@ def extract_frames(video_path: str, output_dir: str, fps: int = 1) -> list:
             print(f"    ffmpeg 에러: {result.stderr[:300]}", file=sys.stderr)
             return []
 
-        # 추출된 프레임 파일 목록
         frames = sorted([
             os.path.join(output_dir, f)
             for f in os.listdir(output_dir)
@@ -108,7 +194,7 @@ def extract_frames(video_path: str, output_dir: str, fps: int = 1) -> list:
 
 
 # ━━━ 영상 길이 (초) 추출 ━━━
-def get_video_duration(video_path: str) -> float:
+def get_video_duration(video_path):
     """ffprobe로 영상 길이 확인."""
     try:
         cmd = [
@@ -127,18 +213,14 @@ def get_video_duration(video_path: str) -> float:
 
 
 # ━━━ 프레임별 saliency 분석 ━━━
-def analyze_frame(frame_path: str, frame_idx: int, total_frames: int):
+def analyze_frame(frame_path, frame_idx, total_frames):
     """단일 프레임에 대한 saliency 분석."""
     img = Image.open(frame_path)
     saliency = predict_saliency(img)
 
-    # fixation 추출
     fixations = extract_fixations(saliency, top_k=3)
-
-    # 인지 부하
     cog_load = compute_cognitive_load(saliency)
 
-    # 이미지 전체 대비 attention 분포 (상/중/하 3등분)
     h, w = saliency.shape
     prob = np.exp(saliency)
     total = prob.sum()
@@ -147,12 +229,11 @@ def analyze_frame(frame_path: str, frame_idx: int, total_frames: int):
     mid_region = float(prob[int(h * 0.33):int(h * 0.66), :].sum() / total) if total > 0 else 0
     bot_region = float(prob[int(h * 0.66):, :].sum() / total) if total > 0 else 0
 
-    # CTA 주목도 (하단 20%)
     cta_score = compute_cta_score(saliency, "bottom")
 
     return {
         "frame_index": frame_idx,
-        "timestamp_sec": frame_idx,  # 1fps이므로 index = 초
+        "timestamp_sec": frame_idx,
         "fixations": fixations,
         "cognitive_load": cog_load,
         "attention_distribution": {
@@ -165,12 +246,11 @@ def analyze_frame(frame_path: str, frame_idx: int, total_frames: int):
 
 
 # ━━━ 프레임별 결과를 종합 ━━━
-def summarize_video_analysis(frame_results: list, duration: float):
+def summarize_video_analysis(frame_results, duration):
     """프레임별 결과를 종합 요약."""
     if not frame_results:
         return {}
 
-    # 인지 부하 분포
     load_counts = {"low": 0, "medium": 0, "high": 0}
     for fr in frame_results:
         load = fr.get("cognitive_load", "medium")
@@ -179,7 +259,6 @@ def summarize_video_analysis(frame_results: list, duration: float):
     total = len(frame_results)
     dominant_load = max(load_counts, key=load_counts.get)
 
-    # attention 이동 패턴 (시간에 따른 주목 영역 변화)
     attention_timeline = []
     for fr in frame_results:
         dist = fr.get("attention_distribution", {})
@@ -189,11 +268,9 @@ def summarize_video_analysis(frame_results: list, duration: float):
             "dominant_region": dominant_region,
         })
 
-    # CTA 주목도 평균 (하단 CTA가 보이는 프레임만)
     cta_scores = [fr["cta_attention"] for fr in frame_results if fr.get("cta_attention") is not None]
     avg_cta = round(sum(cta_scores) / len(cta_scores), 3) if cta_scores else None
 
-    # 주목 전환 횟수 (dominant_region 변경 횟수)
     transitions = 0
     for i in range(1, len(attention_timeline)):
         if attention_timeline[i]["dominant_region"] != attention_timeline[i - 1]["dominant_region"]:
@@ -211,7 +288,7 @@ def summarize_video_analysis(frame_results: list, duration: float):
 
 
 # ━━━ DB 저장 (creative_saliency) ━━━
-def save_frame_result(ad_id: str, account_id: str, frame_result: dict, heatmap_url: str):
+def save_frame_result(ad_id, account_id, frame_result, heatmap_url):
     """프레임별 결과를 creative_saliency 테이블에 저장."""
     frame_idx = frame_result["frame_index"]
 
@@ -219,24 +296,18 @@ def save_frame_result(ad_id: str, account_id: str, frame_result: dict, heatmap_u
         "ad_id": f"{ad_id}__frame_{frame_idx:04d}",
         "account_id": account_id,
         "target_type": "video_frame",
-        "top_fixations": frame_result.get("fixations"),
+        "top_fixations": json.dumps(frame_result.get("fixations")),
         "cta_attention_score": frame_result.get("cta_attention"),
         "cognitive_load": frame_result.get("cognitive_load"),
         "attention_map_url": heatmap_url,
         "model_version": "deepgaze-iie",
     }
 
-    url = f"{SB_URL}/rest/v1/creative_saliency?on_conflict=ad_id"
-    headers = {
-        **HEADERS,
-        "Content-Type": "application/json",
-        "Prefer": "resolution=merge-duplicates,return=minimal",
-    }
-    res = requests.post(url, headers=headers, json=row, timeout=30)
-    return res.ok, res.status_code
+    ok = db_upsert("creative_saliency", row, conflict_col="ad_id")
+    return ok, 200 if ok else 500
 
 
-def save_video_summary(ad_id: str, account_id: str, summary: dict, frame_results: list):
+def save_video_summary(ad_id, account_id, summary, frame_results):
     """영상 전체 요약을 creative_saliency에 저장 (target_type='video')."""
     row = {
         "ad_id": ad_id,
@@ -248,17 +319,11 @@ def save_video_summary(ad_id: str, account_id: str, summary: dict, frame_results
         "model_version": "deepgaze-iie",
     }
 
-    url = f"{SB_URL}/rest/v1/creative_saliency?on_conflict=ad_id"
-    headers = {
-        **HEADERS,
-        "Content-Type": "application/json",
-        "Prefer": "resolution=merge-duplicates,return=minimal",
-    }
-    res = requests.post(url, headers=headers, json=row, timeout=30)
-    return res.ok, res.status_code
+    ok = db_upsert("creative_saliency", row, conflict_col="ad_id")
+    return ok, 200 if ok else 500
 
 
-def update_creative_media_analysis(ad_id: str, summary: dict):
+def update_creative_media_analysis(ad_id, summary):
     """creative_media.video_analysis JSONB에 시계열 요약 저장."""
     payload = {
         **summary,
@@ -266,38 +331,33 @@ def update_creative_media_analysis(ad_id: str, summary: dict):
         "model_version": "deepgaze-iie",
     }
 
-    # creatives 테이블에서 ad_id로 creative_id 조회 → creative_media 업데이트
     try:
-        creatives = sb_get(f"/creatives?select=id&ad_id=eq.{ad_id}&limit=1")
+        creatives = db_query(
+            "SELECT id FROM creatives WHERE ad_id = %s LIMIT 1", (ad_id,)
+        )
         if not creatives:
             print(f"  creative_media 동기화 스킵: creatives에서 ad_id={ad_id} 없음", file=sys.stderr)
             return
 
         creative_id = creatives[0]["id"]
-        media_rows = sb_get(
-            f"/creative_media?select=id&creative_id=eq.{creative_id}&media_type=eq.VIDEO&limit=1"
+        media_rows = db_query(
+            "SELECT id FROM creative_media WHERE creative_id = %s AND media_type = 'VIDEO' LIMIT 1",
+            (creative_id,),
         )
         if not media_rows:
             print(f"  creative_media 동기화 스킵: VIDEO 미디어 없음 (creative_id={creative_id})", file=sys.stderr)
             return
 
         media_id = media_rows[0]["id"]
-        patch_url = f"{SB_URL}/rest/v1/creative_media?id=eq.{media_id}"
-        patch_headers = {
-            **HEADERS,
-            "Content-Type": "application/json",
-            "Prefer": "return=minimal",
-        }
-        res = requests.patch(
-            patch_url,
-            headers=patch_headers,
-            json={"video_analysis": payload},
-            timeout=30,
+        ok = db_update(
+            "creative_media",
+            {"video_analysis": json.dumps(payload)},
+            {"id": media_id},
         )
-        if res.ok:
+        if ok:
             print(f"  creative_media.video_analysis 동기화 완료 (media_id={media_id})", file=sys.stderr)
         else:
-            print(f"  creative_media.video_analysis 동기화 실패: {res.status_code}", file=sys.stderr)
+            print(f"  creative_media.video_analysis 동기화 실패", file=sys.stderr)
     except Exception as e:
         print(f"  creative_media 동기화 에러 (무시): {e}", file=sys.stderr)
 
@@ -322,19 +382,23 @@ def main():
         print(json.dumps({"ok": False, "error": "ffmpeg not installed", "analyzed": 0, "errors": 1, "skipped": 0}))
         return
 
+    # DB 연결 확인
+    try:
+        conn = get_db_conn()
+        conn.close()
+        print(f"  DB 연결 성공: {DATABASE_URL.split('@')[1] if '@' in DATABASE_URL else 'local'}", file=sys.stderr)
+    except Exception as e:
+        print(f"ERROR: DB 연결 실패: {e}", file=sys.stderr)
+        print(json.dumps({"ok": False, "error": f"DB connection failed: {e}", "analyzed": 0, "errors": 1, "skipped": 0}))
+        return
+
     # 이미 분석된 VIDEO ad_id 조회
     existing_set = set()
     try:
-        offset = 0
-        PAGE = 1000
-        while True:
-            batch = sb_get(f"/creative_saliency?select=ad_id&target_type=eq.video&attention_map_url=not.is.null&limit={PAGE}&offset={offset}")
-            if not batch:
-                break
-            existing_set.update(r["ad_id"] for r in batch)
-            if len(batch) < PAGE:
-                break
-            offset += PAGE
+        rows = db_query(
+            "SELECT ad_id FROM creative_saliency WHERE target_type = 'video' AND attention_map_url IS NOT NULL"
+        )
+        existing_set = {r["ad_id"] for r in rows}
     except Exception as e:
         print(f"  기존 분석 조회 실패 (무시): {e}", file=sys.stderr)
 
@@ -343,37 +407,36 @@ def main():
 
     # 대상 소재 조회 (VIDEO만, storage_url 또는 media_url 있는 것)
     all_creatives = []
-    PAGE_SIZE = 1000
-    offset = 0
-    while True:
-        q = (
-            "/creative_media?"
-            "select=id,media_url,storage_url,media_type,creatives!inner(ad_id,account_id)"
-            "&media_type=eq.VIDEO"
-            "&order=id"
-            f"&limit={PAGE_SIZE}"
-            f"&offset={offset}"
-        )
+    try:
+        sql = """
+            SELECT cm.id, cm.media_url, cm.storage_url, cm.media_type,
+                   c.ad_id, c.account_id
+            FROM creative_media cm
+            JOIN creatives c ON c.id = cm.creative_id
+            WHERE cm.media_type = 'VIDEO'
+        """
+        params = []
         if args.account_id:
-            q += f"&creatives.account_id=eq.{args.account_id}"
-        batch = sb_get(q)
-        if not batch:
-            break
-        # storage_url(mp4) 또는 media_url 있는 것만 포함 + 정규화
-        for r in batch:
+            sql += " AND c.account_id = %s"
+            params.append(args.account_id)
+        sql += " ORDER BY cm.id"
+
+        rows = db_query(sql, params or None)
+        for r in rows:
             storage = r.get("storage_url")
             media = r.get("media_url")
             if (storage and storage.endswith(".mp4")) or media:
                 all_creatives.append({
-                    "ad_id": r.get("creatives", {}).get("ad_id"),
-                    "account_id": r.get("creatives", {}).get("account_id"),
+                    "ad_id": r["ad_id"],
+                    "account_id": r["account_id"],
                     "media_url": media,
                     "storage_url": storage,
-                    "media_type": r.get("media_type"),
+                    "media_type": r["media_type"],
                 })
-        if len(batch) < PAGE_SIZE:
-            break
-        offset += PAGE_SIZE
+    except Exception as e:
+        print(f"ERROR: 소재 조회 실패: {e}", file=sys.stderr)
+        print(json.dumps({"ok": False, "error": f"Query failed: {e}", "analyzed": 0, "errors": 1, "skipped": 0}))
+        return
 
     print(f"  전체 VIDEO 소재: {len(all_creatives)}건", file=sys.stderr)
 
@@ -395,12 +458,11 @@ def main():
     print(f"  이번 라운드 처리: {len(to_analyze)}건", file=sys.stderr)
 
     # 모델 사전 로드
-    from predict import get_model
     get_model()
 
     analyzed = 0
     errors = 0
-    video_results = []  # ad_id별 분석 결과 (cron route에서 DB 직접 저장용)
+    video_results = []
 
     for i, creative in enumerate(to_analyze):
         ad_id = creative["ad_id"]
@@ -465,7 +527,7 @@ def main():
                         saliency = predict_saliency(img)
                         heatmap_bytes = create_heatmap(img, saliency)
                         storage_path = f"video-saliency/{account_id}/{ad_id}/frame_{fi:04d}.png"
-                        heatmap_url = sb_storage_upload("creatives", storage_path, heatmap_bytes)
+                        heatmap_url = gcs_upload(storage_path, heatmap_bytes)
 
                     # 프레임 결과 DB 저장
                     ok, status = save_frame_result(ad_id, account_id, fr, heatmap_url)
@@ -497,17 +559,17 @@ def main():
                 file=sys.stderr,
             )
 
-            # 6. 요약 결과 DB 저장 (Supabase REST — 레거시 호환)
+            # 6. 요약 결과 DB 저장 (Cloud SQL)
             ok, status = save_video_summary(ad_id, account_id, summary, frame_results)
             if ok:
                 analyzed += 1
-                # 7. creative_media.video_analysis 시계열 동기화 (Supabase)
+                # 7. creative_media.video_analysis 시계열 동기화
                 update_creative_media_analysis(ad_id, summary)
             else:
                 print(f"  영상 요약 DB 저장 실패: {status}", file=sys.stderr)
                 errors += 1
 
-            # 8. 결과를 stdout JSON에 포함 (cron route → Cloud SQL 직접 저장용)
+            # 8. 결과를 stdout JSON에 포함
             video_results.append({
                 "ad_id": ad_id,
                 "summary": {
@@ -524,7 +586,7 @@ def main():
     print(f"분석 완료: {analyzed}건", file=sys.stderr)
     print(f"에러: {errors}건", file=sys.stderr)
 
-    # stdout에 결과 JSON 출력 (server.js가 파싱)
+    # stdout에 결과 JSON 출력
     print(json.dumps({
         "ok": True,
         "analyzed": analyzed,

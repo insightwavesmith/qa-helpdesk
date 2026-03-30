@@ -65,14 +65,14 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const supabase = createServiceClient();
+    const db = createServiceClient();
 
     // ━━━ 1. creative_media에서 처리 대상 N행 조회 ━━━
     // - saliency_url IS NULL: 아직 분석 안 된 카드
     // - media_type = IMAGE: VIDEO 카드 스킵 (DeepGaze는 이미지 전용)
     // - media_url 또는 storage_url 있음: 이미지 다운로드 가능한 카드만
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const svc = supabase as any;
+    const svc = db as any;
 
     // 1단계: creative_media 조회 (임베딩 조인 없이)
     const { data: rawMedia, error: queryErr } = await svc
