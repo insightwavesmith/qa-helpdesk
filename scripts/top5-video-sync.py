@@ -349,6 +349,7 @@ def main():
     cur.execute(f"""
         WITH ranked AS (
           SELECT c.account_id, aa.account_name, c.ad_id, cm.id as cm_id,
+            cm.storage_url,
             c.raw_creative->>'body'          as body,
             c.raw_creative->>'thumbnail_url' as thumb_url,
             SUM(cp.total_spend) as spend,
