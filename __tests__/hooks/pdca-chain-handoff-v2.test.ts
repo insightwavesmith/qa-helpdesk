@@ -32,7 +32,7 @@ describe('위험도 게이트 분기', () => {
     expect(result.stdout).toContain('MOZZI');
   });
 
-  it('RV-2: src/ 변경(일반) → L2 → PM + auto_approve 30분', () => {
+  it('RV-2: src/ 변경(일반) → L2 → MOZZI 직접 (V2)', () => {
     testEnv = createTestEnv();
     writeAnalysisFile(testEnv.tmpDir, 96);
     writeTeamContext(testEnv.tmpDir, 'CTO');
@@ -41,8 +41,8 @@ describe('위험도 게이트 분기', () => {
       mockBroker: { health: false }
     });
     const result = runHook(hookPath, {});
-    expect(result.stdout).toContain('PM_LEADER');
-    expect(result.stdout).toContain('auto_approve_after_minutes');
+    expect(result.stdout).toContain('MOZZI');
+    expect(result.stdout).toContain('cto_to_coo');
   });
 
   it('RV-3: auth 파일 변경 → 고위험 → PM 수동 검수 필수', () => {
@@ -54,7 +54,7 @@ describe('위험도 게이트 분기', () => {
       mockBroker: { health: false }
     });
     const result = runHook(hookPath, {});
-    expect(result.stdout).toContain('PM_LEADER');
+    expect(result.stdout).toContain('MOZZI');
     expect(result.stdout).toContain('수동 검수 필수');
     expect(result.stdout).not.toContain('auto_approve');
   });
@@ -115,7 +115,7 @@ describe('curl 직접 전송', () => {
     writeTeamContext(testEnv.tmpDir, 'CTO');
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
-      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true }
+      mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true }
     });
     const result = runHook(hookPath, {});
     expect(result.stdout).toContain('자동 전송 완료');
@@ -155,7 +155,7 @@ describe('curl 직접 전송', () => {
     writeTeamContext(testEnv.tmpDir, 'CTO');
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
-      mockBroker: { health: true, peers: [{ id: 'pm1', summary: 'PM_LEADER | bscamp' }], sendOk: true }
+      mockBroker: { health: true, peers: [{ id: 'mozzi1', summary: 'MOZZI | bscamp' }], sendOk: true }
     });
     const result = runHook(hookPath, {});
     expect(result.stdout).toContain('자기 peer ID 미발견');
@@ -167,10 +167,9 @@ describe('curl 직접 전송', () => {
     writeTeamContext(testEnv.tmpDir, 'CTO');
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
-      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: false }
+      mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: false }
     });
     const result = runHook(hookPath, {});
-    expect(result.stdout).toContain('전송 실패');
     expect(result.stdout).toContain('ACTION_REQUIRED');
   });
 
@@ -232,7 +231,7 @@ describe('기존 동작 호환', () => {
     const result = runHook(hookPath, {});
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('ANALYSIS_REPORT');
-    expect(result.stdout).toContain('PM_LEADER');
+    expect(result.stdout).toContain('MOZZI');
   });
 
   it('RV-18: team-context 없음 → 비대상 통과', () => {

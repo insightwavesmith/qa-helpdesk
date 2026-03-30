@@ -64,16 +64,6 @@
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/pdca-single-source.sh",
-            "timeout": 10000
-          },
-          {
-            "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/pre-read-context.sh",
-            "timeout": 10000
-          },
-          {
-            "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-deploy-authority.sh",
             "timeout": 5000
           },
@@ -95,11 +85,6 @@
           {
             "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-plan.sh",
-            "timeout": 10000
-          },
-          {
-            "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/enforce-plan-before-do.sh",
             "timeout": 10000
           },
           {
@@ -140,11 +125,6 @@
         ]
       }
     ],
-    "Stop": [
-      {
-        "hooks": []
-      }
-    ],
     "TaskCompleted": [
       {
         "hooks": [
@@ -170,17 +150,12 @@
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/pdca-sync-monitor.sh",
-            "timeout": 30000
-          },
-          {
-            "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/auto-team-cleanup.sh",
-            "timeout": 5000
-          },
-          {
-            "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.claude/hooks/notify-completion.sh",
+            "timeout": 10000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/deploy-trigger.sh",
             "timeout": 10000
           },
           {
@@ -191,13 +166,14 @@
         ]
       }
     ],
-    "TeammateIdle": [
+    "PostToolUse": [
       {
+        "matcher": "TeamCreate",
         "hooks": [
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/teammate-idle.sh",
-            "timeout": 15000
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/registry-update.sh",
+            "timeout": 5000
           }
         ]
       }

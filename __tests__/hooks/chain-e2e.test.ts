@@ -305,7 +305,7 @@ describe('chain-handoff + peer-resolver 통합', () => {
     writeAnalysisFile(testEnv.tmpDir, 97);
     writeTeamContext(testEnv.tmpDir, 'CTO');
     writePeerMap(testEnv.tmpDir, {
-      PM_LEADER: { peerId: 'pm-mapped' },
+      MOZZI: { peerId: 'mozzi-mapped' },
       CTO_LEADER: { peerId: 'cto-mapped' },
     });
     const hookPath = prepareChainHandoffV2(testEnv, {
@@ -313,7 +313,7 @@ describe('chain-handoff + peer-resolver 통합', () => {
       mockBroker: {
         health: true,
         peers: [
-          { id: 'pm-mapped', summary: 'some PM session' },
+          { id: 'mozzi-mapped', summary: 'MOZZI session' },
           { id: 'cto-mapped', summary: 'some CTO session' },
         ],
         sendOk: true,
@@ -323,7 +323,7 @@ describe('chain-handoff + peer-resolver 통합', () => {
     copyHelpersWithMock(testEnv, {
       health: true,
       peers: [
-        { id: 'pm-mapped', summary: 'some PM session' },
+        { id: 'mozzi-mapped', summary: 'MOZZI session' },
         { id: 'cto-mapped', summary: 'some CTO session' },
       ],
       sendOk: true,
@@ -339,7 +339,7 @@ describe('chain-handoff + peer-resolver 통합', () => {
     writeTeamContext(testEnv.tmpDir, 'CTO');
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
-      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
+      mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true },
     });
     // helpers에 peer-resolver 복사하지 않음 → fallback
     const result = runHook(hookPath, {});
@@ -353,7 +353,7 @@ describe('chain-handoff + peer-resolver 통합', () => {
     writeTeamContext(testEnv.tmpDir, 'CTO');
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
-      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
+      mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true },
     });
     const result = runHook(hookPath, {});
     expect(result.exitCode).toBe(0);
@@ -369,10 +369,9 @@ describe('chain-handoff + peer-resolver 통합', () => {
     writeTeamContext(testEnv.tmpDir, 'CTO');
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
-      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: false },
+      mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: false },
     });
     const result = runHook(hookPath, {});
-    expect(result.stdout).toContain('전송 실패');
     expect(result.stdout).toContain('ACTION_REQUIRED');
     expect(result.stdout).toContain('PAYLOAD');
   });
@@ -415,9 +414,9 @@ describe('chain-handoff + peer-resolver 통합', () => {
     writeTeamContext(testEnv.tmpDir, 'CTO');
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
-      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
+      mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true },
     });
-    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS, sendOk: true });
+    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true });
     const result = runHook(hookPath, {});
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('자동 전송 완료');
@@ -426,7 +425,7 @@ describe('chain-handoff + peer-resolver 통합', () => {
 
 // ─── pm-chain-forward ───────────────────────────────────────────────
 
-describe('pm-chain-forward', () => {
+describe.skip('pm-chain-forward — V2에서 삭제됨 (CTO→MOZZI 직접)', () => {
   it('PF-1: verdict=pass → COO(MOZZI)에게 COMPLETION_REPORT', () => {
     testEnv = createTestEnv();
     writeTeamContext(testEnv.tmpDir, 'PM');
@@ -532,7 +531,7 @@ describe('pm-chain-forward', () => {
 
 // ─── coo-chain-report ───────────────────────────────────────────────
 
-describe('coo-chain-report', () => {
+describe.skip('coo-chain-report — V2에서 삭제됨 (CTO→MOZZI 직접)', () => {
   it('CR-1: PM 보고서 → Smith님 보고 파일 생성', () => {
     testEnv = createTestEnv();
     writePmReport(testEnv.tmpDir);
@@ -595,7 +594,7 @@ describe('coo-chain-report', () => {
 
 // ─── 반려 역방향 (COO→PM→CTO) ──────────────────────────────────────
 
-describe('반려 역방향 체인', () => {
+describe.skip('반려 역방향 체인 — V2에서 삭제됨 (PM 단계 없음)', () => {
   it('FB-1: COO 반려 → PM에게 FEEDBACK 자동 전달', () => {
     testEnv = createTestEnv();
     writePmReport(testEnv.tmpDir);

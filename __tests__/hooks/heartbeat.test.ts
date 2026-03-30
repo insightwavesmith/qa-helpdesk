@@ -112,7 +112,7 @@ function prepareWatchdog(
 
 describe('P5-1~6: heartbeat 검증', () => {
 
-  it('P5-1: heartbeat 발동 시 로그 기록', () => {
+  it.skip('P5-1: heartbeat 발동 시 로그 기록 — V2에서 teammate-idle.sh 삭제됨', () => {
     testEnv = createTestEnv();
 
     // TASK 없음 → 모든 완료 → exit 0
@@ -126,7 +126,7 @@ describe('P5-1~6: heartbeat 검증', () => {
     expect(log).toContain('heartbeat fired');
   });
 
-  it('P5-2: 좀비 pane 감지 시 ZOMBIE 기록', () => {
+  it.skip('P5-2: 좀비 pane 감지 시 ZOMBIE 기록 — V2에서 teammate-idle.sh 삭제됨', () => {
     testEnv = createTestEnv();
 
     const hookPath = prepareTeammateIdle(testEnv, {
@@ -183,7 +183,7 @@ describe('P5-1~6: heartbeat 검증', () => {
     expect(r.stderr).toContain('미존재');
   });
 
-  it('P5-6: 팀원 상태 수집 — team/panes 기록', () => {
+  it.skip('P5-6: 팀원 상태 수집 — V2에서 teammate-idle.sh 삭제됨', () => {
     testEnv = createTestEnv();
 
     const hookPath = prepareTeammateIdle(testEnv, {

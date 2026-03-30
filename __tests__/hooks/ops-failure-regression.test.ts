@@ -36,7 +36,7 @@ afterEach(() => {
 
 // ─── COO-3: PM 건너뛰기 ─────────────────────────────────────
 
-describe('OFR-1~3: COO-3 PM 건너뛰기 — pm-report 없으면 보고 차단', () => {
+describe.skip('OFR-1~3: COO-3 PM 건너뛰기 — V2에서 coo-chain-report.sh 삭제됨', () => {
 
   it('OFR-1: last-pm-report.json 없으면 보고서 생성 안 함', () => {
     testEnv = createTestEnv();
@@ -85,7 +85,7 @@ describe('OFR-1~3: COO-3 PM 건너뛰기 — pm-report 없으면 보고 차단',
 
 // ─── COO-4: 숫자만 전달 ─────────────────────────────────────
 
-describe('OFR-4~6: COO-4 숫자만 전달 — 보고서 필수 필드 검증', () => {
+describe.skip('OFR-4~6: COO-4 숫자만 전달 — V2에서 coo-chain-report.sh 삭제됨', () => {
 
   it('OFR-4: task_file, match_rate, pm_verdict, pm_notes 전부 존재', () => {
     testEnv = createTestEnv();
@@ -570,7 +570,7 @@ describe('OFR-24~26: CF-1 Bearer 누락 — webhook Authorization 검증', () =>
     expect(content).toMatch(/OPENCLAW_WEBHOOK_TOKEN:-[^}]+/);
   });
 
-  it('OFR-26: coo-chain-report.sh direct curl에도 Authorization 포함', () => {
+  it.skip('OFR-26: coo-chain-report.sh — V2에서 삭제됨', () => {
     const content = readFileSync(
       join(PROJECT_DIR, '.claude/hooks/coo-chain-report.sh'), 'utf-8'
     );
@@ -649,7 +649,7 @@ exit 0
 
 // ─── CF-3: PM→COO 미도착 — ACTION_REQUIRED 검증 ─────────────
 
-describe('OFR-30~32: CF-3 PM→COO 미도착 — ACTION_REQUIRED stdout 검증', () => {
+describe.skip('OFR-30~32: CF-3 PM→COO 미도착 — V2에서 pm-chain-forward.sh 삭제됨', () => {
 
   it('OFR-30: broker down → stdout에 "ACTION_REQUIRED" 포함', () => {
     testEnv = createTestEnv();

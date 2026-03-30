@@ -1,11 +1,14 @@
 #!/bin/bash
-# pdca-chain-handoff.sh v3 — Match Rate 게이트 + 위험도 분기 + curl 직접 전송
-# TaskCompleted hook 체인의 마지막 (8번째)
+# pdca-chain-handoff.sh v4 — Match Rate 게이트 + 위험도 분기 + PM 우회 COO 직통
+# TaskCompleted hook 체인의 마지막 (6번째)
 #
 # v3 (2026-03-29):
 #   변경1: CTO-only 필터 → 전팀 대상 + FROM_ROLE 변수
 #   변경2: L0/L1 → Match Rate 스킵 → MOZZI 직접 ANALYSIS_REPORT
 #   변경3: 기존 L2/L3 from_role 하드코딩 → FROM_ROLE 변수
+# v4 (2026-03-30):
+#   변경1: L2/L3 PM_LEADER → MOZZI 직통 (PM 검수 제거, Smith님 확정)
+#   변경2: chain_step cto_to_pm → cto_to_coo
 set -uo pipefail
 
 # ── 1. 팀원 bypass ──
@@ -163,25 +166,20 @@ case "$PROCESS_LEVEL" in
         MANUAL_REVIEW="false"
         ;;
     L2)
-        TO_ROLE="PM_LEADER"
-        CHAIN_STEP="cto_to_pm"
-        if [ "$RISK_COUNT" -gt 0 ]; then
-            AUTO_APPROVE=""
-            MANUAL_REVIEW="true"
-        else
-            AUTO_APPROVE='"auto_approve_after_minutes": 30,'
-            MANUAL_REVIEW="false"
-        fi
+        TO_ROLE="MOZZI"
+        CHAIN_STEP="cto_to_coo"
+        AUTO_APPROVE=""
+        MANUAL_REVIEW="false"
         ;;
     L3)
-        TO_ROLE="PM_LEADER"
-        CHAIN_STEP="cto_to_pm"
+        TO_ROLE="MOZZI"
+        CHAIN_STEP="cto_to_coo"
         AUTO_APPROVE=""
         MANUAL_REVIEW="true"
         ;;
     *)
-        TO_ROLE="PM_LEADER"
-        CHAIN_STEP="cto_to_pm"
+        TO_ROLE="MOZZI"
+        CHAIN_STEP="cto_to_coo"
         AUTO_APPROVE=""
         MANUAL_REVIEW="false"
         ;;
@@ -258,6 +256,19 @@ if [ -z "$TARGET_ID" ] || [ -z "$MY_ID" ]; then
 
     [ -z "$TARGET_ID" ] && TARGET_ID=$(echo "$PEERS_JSON" | jq -r "[.[] | select(.summary | test(\"${TO_ROLE}\"))][0].id // empty" 2>/dev/null)
     [ -z "$MY_ID" ] && MY_ID=$(echo "$PEERS_JSON" | jq -r "[.[] | select(.summary | test(\"${FROM_ROLE}\"))][0].id // empty" 2>/dev/null)
+fi
+
+if [ -z "$TARGET_ID" ]; then
+    # v4: peer-roles.json fallback
+    PEER_ROLES="$PROJECT_DIR/.claude/runtime/peer-roles.json"
+    if [ -f "$PEER_ROLES" ]; then
+        FALLBACK_SESSION=$(jq -r ".${TO_ROLE}.session // empty" "$PEER_ROLES" 2>/dev/null)
+        if [ -n "$FALLBACK_SESSION" ]; then
+            # tmux send-keys로 direct 전송 시도
+            tmux send-keys -t "$FALLBACK_SESSION" "" 2>/dev/null
+            echo "⚠ peer summary 매칭 실패 → peer-roles.json fallback 사용"
+        fi
+    fi
 fi
 
 if [ -z "$TARGET_ID" ]; then

@@ -2,13 +2,18 @@
 
 > 상세 프로토콜/운영 가이드는 `CLAUDE-DETAIL.md` 참조. 이 파일은 핵심 규칙만 수록.
 
-## 세션 시작 필수 읽기 (예외 없음)
+## 세션 시작 필수 읽기 + 액션 (예외 없음)
 ```
 1. 이 파일 (CLAUDE.md) — 규칙
 2. docs/adr/ADR-002-service-context.md — 서비스 이해 (우리가 뭘 만드는지)
 3. docs/adr/ADR-001-account-ownership.md — 설계 원칙
 4. docs/postmortem/index.json — 과거 사고 교훈 (같은 실수 반복 방지)
 5. .claude/tasks/ 폴더 — 현재 TASK 확인
+6. [V2] set_summary 호출 — 역할 식별자 등록:
+   CTO: "CTO_LEADER | bscamp | {TASK명}"
+   PM:  "PM_LEADER | bscamp | {TASK명}"
+   COO: "MOZZI | bscamp | reporting"
+7. [V2] bash .claude/hooks/session-resume-check.sh
 ```
 > 위 5개를 읽지 않고 작업 시작하면 리젝. 서비스를 이해하지 못한 코드는 의미 없다.
 > 특히 4번 회고는 **마이그레이션, 대규모 변경, SDK 교체** 작업 시 반드시 해당 PM 항목 정독.
@@ -37,13 +42,15 @@
 6. Match Rate ≥ 90% → 완료 보고서 생성 → 다음 기능으로 자동 이동.
 7. 각 단계 전환 시 Smith님에게 확인 묻지 않는다. 자동 진행이 기본값.
 
-## PDCA 체인 핸드오프 프로토콜
+## PDCA 체인 핸드오프 프로토콜 (V2 — 2026-03-30 Smith님 확정)
 
-**CTO → PM 검수 → COO → Smith님 판단. 자동 체이닝.**
-- 프로토콜: `bscamp-team/v1` (COMPLETION_REPORT / FEEDBACK / ACK)
-- chain_step: `cto_qa → cto_to_pm → pm_review → pm_to_coo → coo_report → smith_ok`
-- Match Rate < 95% → exit 2 (CTO 자체 수정). ≥ 95% → PM 전달.
-- broker 미기동 시 → 수동 fallback (차단하지 않음, exit 0)
+**CTO → COO → Smith님. PM 검수 없음.**
+- 프로토콜: `bscamp-team/v1` (COMPLETION_REPORT / ANALYSIS_REPORT / ACK)
+- chain_step: `cto_to_coo → coo_report → smith_ok`
+- Match Rate < 95% → CTO 자체 수정 후 재시도
+- Match Rate ≥ 95% → COO 직접 전달 (PM 우회)
+- L0/L1 → Match Rate 스킵 → COO 직접
+- broker 미기동 시 → peer-roles.json fallback → 수동 보고 (exit 0)
 
 > 상세: `CLAUDE-DETAIL.md` → "PDCA 체인 핸드오프 상세 프로토콜"
 
@@ -67,6 +74,23 @@ bash .claude/hooks/session-resume-check.sh
 
 자동 판단: `fix:`/`hotfix:` → L0, src/ 미수정 → L1, src/ 수정 → L2, migration/auth/.env 등 → L3.
 L3 추가: ADR 필수, 롤백 전략 명시, Smith님 최종 승인 필수.
+
+## 배포 규칙 (V2 — 2026-03-30 Smith님 확정)
+
+**모든 배포는 CTO 리더가 실행한다.** 팀원 배포 금지 (validate-deploy-authority.sh).
+PM 검수 단계 없음. Gap 통과하면 바로 배포.
+
+| 레벨 | 배포 조건 | 배포 명령 | 배포 후 |
+|------|----------|----------|--------|
+| **L0** | fix/hotfix 커밋 | 리더 즉시 배포 | COO 보고 |
+| **L1** | src/ 미수정 | 배포 없음 | COO 보고 |
+| **L2** | Gap 95%+ | 리더 배포 | COO 보고 |
+| **L3** | Gap 95%+ | 리더 배포 | COO 보고 → Smith님 확인 |
+
+### 배포 후 런타임 검증 (RET-004)
+배포 성공 ≠ 서비스 정상. 배포 후 반드시:
+1. Cloud Run 로그 확인 (에러 0건)
+2. 핵심 플로우 1회 실행 (health check)
 
 ## bkit PDCA 워크플로우 (필수)
 

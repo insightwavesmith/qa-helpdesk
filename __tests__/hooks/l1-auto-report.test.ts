@@ -539,7 +539,7 @@ describe('pdca-chain-handoff L1 ANALYSIS_REPORT (LR)', () => {
     const result = runHook(hookPath);
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('자동 전송 완료');
-    expect(result.stdout).toContain('PM_LEADER');
+    expect(result.stdout).toContain('MOZZI');
   });
 
   // LR-15: L0 (fix: 커밋) → Match Rate 스킵 → MOZZI 직접

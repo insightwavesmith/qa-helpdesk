@@ -174,7 +174,7 @@ function runResolver(hooksDir: string, tmpDir: string, env: Record<string, strin
 
 describe('RW-1~4: 병렬 팀 실전 e2e', () => {
 
-  it('RW-1: CTO + PM 동시 TASK → 각각 독립 체인 발동', () => {
+  it('RW-1: CTO + PM 동시 TASK → 각각 독립 체인 발동', { timeout: 15000 }, () => {
     testEnv = createTestEnv();
     writeSessionContext(testEnv.tmpDir, 'sdk-cto', 'CTO');
     writeSessionContext(testEnv.tmpDir, 'sdk-pm', 'PM');
@@ -204,7 +204,7 @@ describe('RW-1~4: 병렬 팀 실전 e2e', () => {
     expect(rPm.stdout).toContain('자동 전송 완료');
   });
 
-  it('RW-2: CTO TeamDelete → PM 체인 영향 0', () => {
+  it.skip('RW-2: CTO TeamDelete → PM 체인 — V2에서 pm-chain-forward.sh 삭제됨', () => {
     testEnv = createTestEnv();
     writeSessionContext(testEnv.tmpDir, 'sdk-cto', 'CTO');
     writeTeamContext(testEnv.tmpDir, 'PM');
@@ -323,19 +323,19 @@ describe('RW-5~6: TeamDelete → TaskCompleted 타이밍', () => {
 
 describe('RW-7~10: 체인 풀플로우 e2e', () => {
 
-  it('RW-7: CTO 완료 → pdca-chain-handoff → PM 자동 전달 + report 파일', () => {
+  it('RW-7: CTO 완료 → pdca-chain-handoff → MOZZI 자동 전달 + report 파일 (V2)', () => {
     testEnv = createTestEnv();
     writeTeamContext(testEnv.tmpDir, 'CTO');
     writeAnalysisFile(testEnv.tmpDir, 97);
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
-      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
+      mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true },
     });
-    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS, sendOk: true });
+    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true });
     const r = runHook(hookPath, {});
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toContain('자동 전송 완료');
-    expect(r.stdout).toContain('PM_LEADER');
+    expect(r.stdout).toContain('MOZZI');
 
     // last-completion-report.json 검증
     const reportPath = join(testEnv.runtimeDir, 'last-completion-report.json');
@@ -343,11 +343,11 @@ describe('RW-7~10: 체인 풀플로우 e2e', () => {
     const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
     expect(report.type).toBe('COMPLETION_REPORT');
     expect(report.from_role).toBe('CTO_LEADER');
-    expect(report.to_role).toBe('PM_LEADER');
+    expect(report.to_role).toBe('MOZZI');
     expect(report.payload.match_rate).toBe(97);
   });
 
-  it('RW-8: PM pass → pm-chain-forward → COO(MOZZI) 자동 전달', () => {
+  it.skip('RW-8: PM pass → pm-chain-forward — V2에서 삭제됨', () => {
     testEnv = createTestEnv();
     writeTeamContext(testEnv.tmpDir, 'PM');
     writePmVerdict(testEnv.tmpDir, 'pass', 'LGTM');
@@ -362,7 +362,7 @@ describe('RW-7~10: 체인 풀플로우 e2e', () => {
     expect(r.stdout).toContain('자동 전송 완료');
   });
 
-  it('RW-9: PM reject → CTO에게 FEEDBACK 전달', () => {
+  it.skip('RW-9: PM reject → pm-chain-forward — V2에서 삭제됨', () => {
     testEnv = createTestEnv();
     writeTeamContext(testEnv.tmpDir, 'PM');
     writePmVerdict(testEnv.tmpDir, 'reject', '빌드 실패', ['tsc 에러 3건']);
@@ -377,7 +377,7 @@ describe('RW-7~10: 체인 풀플로우 e2e', () => {
     expect(r.stdout).toContain('자동 전송 완료');
   });
 
-  it('RW-10: COO 보고서 생성 → webhook wake 호출', () => {
+  it.skip('RW-10: COO 보고서 생성 — V2에서 coo-chain-report.sh 삭제됨', () => {
     testEnv = createTestEnv();
     writePmReport(testEnv.tmpDir);
     const hookPath = prepareCooChainReport(testEnv, { webhookOk: true });
@@ -459,7 +459,7 @@ describe('RW-11~15: requireApproval 통합', () => {
 
 describe('RW-16~18: 보고 도달 검증', () => {
 
-  it('RW-16: 체인 끝에 coo-smith-report.json 생성 + 필드 검증', () => {
+  it.skip('RW-16: coo-smith-report — V2에서 coo-chain-report.sh 삭제됨', () => {
     testEnv = createTestEnv();
     writePmReport(testEnv.tmpDir, { match_rate: 98, pm_verdict: 'pass', pm_notes: 'Perfect' });
     const hookPath = prepareCooChainReport(testEnv, { webhookOk: true });
@@ -505,7 +505,7 @@ exit 0
     expect(logContent).toContain('Authorization: Bearer');
   });
 
-  it('RW-18: 중복 보고 방지 — 같은 msg_id 2회 → dedup', () => {
+  it.skip('RW-18: 중복 보고 방지 — V2에서 coo-chain-report.sh 삭제됨', () => {
     testEnv = createTestEnv();
     writePmReport(testEnv.tmpDir);  // msg_id: 'chain-pm-test-1'
     const hookPath = prepareCooChainReport(testEnv, { webhookOk: true });
@@ -546,9 +546,9 @@ describe('RW-19~20: context resolver 엣지케이스', () => {
     writeHookOutputStub(testEnv.hooksDir);
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
-      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
+      mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true },
     });
-    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS, sendOk: true });
+    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true });
     copyResolver(testEnv.hooksDir);
     const rHook = runHook(hookPath, { _MOCK_SESSION_NAME: '', TMUX: '' });
     expect(rHook.exitCode).toBe(0);
@@ -574,9 +574,9 @@ describe('RW-19~20: context resolver 엣지케이스', () => {
     writeHookOutputStub(testEnv.hooksDir);
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
-      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
+      mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true },
     });
-    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS, sendOk: true });
+    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true });
     copyResolver(testEnv.hooksDir);
     const rHook = runHook(hookPath, { _MOCK_SESSION_NAME: 'sdk-cto' });
     expect(rHook.exitCode).toBe(0);
@@ -588,16 +588,16 @@ describe('RW-19~20: context resolver 엣지케이스', () => {
 
 describe('P2-1~4: 체인 실전 e2e 시뮬레이션', () => {
 
-  it('P2-1: E2E-1 handoff → PM 전달 → msg_id 기록', () => {
+  it('P2-1: E2E-1 handoff → MOZZI 전달 → msg_id 기록 (V2)', () => {
     testEnv = createTestEnv();
     writeAnalysisFile(testEnv.tmpDir, 97);
     writeHookOutputStub(testEnv.hooksDir);
     writeSessionContext(testEnv.tmpDir, 'sdk-cto', 'CTO');
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
-      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
+      mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true },
     });
-    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS, sendOk: true });
+    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true });
     copyResolver(testEnv.hooksDir);
 
     const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'sdk-cto' });

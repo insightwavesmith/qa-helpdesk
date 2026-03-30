@@ -277,9 +277,9 @@ describe('A. Context Edge Cases', () => {
 
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
-      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
+      mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true },
     });
-    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS, sendOk: true });
+    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true });
     const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'sdk-cto' });
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toContain('자동 전송 완료');
@@ -337,9 +337,9 @@ describe('A. Context Edge Cases', () => {
     writeAnalysisFile(testEnv.tmpDir, 97);
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
-      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
+      mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true },
     });
-    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS, sendOk: true });
+    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true });
     copyResolver(testEnv.hooksDir);
     const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'sdk-cto' });
     expect(r.exitCode).toBe(0);
@@ -396,9 +396,9 @@ describe('B. TeamDelete Timing', () => {
     writeAnalysisFile(testEnv.tmpDir, 97);
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
-      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
+      mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true },
     });
-    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS, sendOk: true });
+    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true });
     copyResolver(testEnv.hooksDir);
     const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'sdk-cto' });
     expect(r.exitCode).toBe(0);
@@ -469,31 +469,31 @@ describe('B. TeamDelete Timing', () => {
 
 describe('C. Chain Routing', () => {
 
-  it('BP-C1: CTO → PM 자동 전달 (L2, 95%+, to_role=PM_LEADER)', () => {
+  it('BP-C1: CTO → MOZZI 자동 전달 (L2, 95%+, V2 direct)', () => {
     testEnv = createTestEnv();
     writeTeamContext(testEnv.tmpDir, 'CTO');
     writeAnalysisFile(testEnv.tmpDir, 97);
 
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
-      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
+      mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true },
     });
-    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS, sendOk: true });
+    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true });
     const r = runHook(hookPath, {});
     expect(r.exitCode).toBe(0);
-    expect(r.stdout).toContain('PM_LEADER');
+    expect(r.stdout).toContain('MOZZI');
     expect(r.stdout).toContain('자동 전송 완료');
 
     // last-completion-report.json 검증
     const reportPath = join(testEnv.runtimeDir, 'last-completion-report.json');
     expect(existsSync(reportPath)).toBe(true);
     const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
-    expect(report.to_role).toBe('PM_LEADER');
-    expect(report.payload.chain_step).toBe('cto_to_pm');
+    expect(report.to_role).toBe('MOZZI');
+    expect(report.payload.chain_step).toBe('cto_to_coo');
     expect(report.payload.process_level).toBe('L2');
   });
 
-  it('BP-C2: PM pass → COO (verdict=pass, to_role=MOZZI)', () => {
+  it.skip('BP-C2: PM pass → V2에서 pm-chain-forward.sh 삭제됨', () => {
     testEnv = createTestEnv();
     writeTeamContext(testEnv.tmpDir, 'PM');
     writePmVerdict(testEnv.tmpDir, 'pass', 'LGTM');
@@ -509,7 +509,7 @@ describe('C. Chain Routing', () => {
     expect(r.stdout).toContain('자동 전송 완료');
   });
 
-  it('BP-C3: PM reject → CTO (type=FEEDBACK, issues 존재)', () => {
+  it.skip('BP-C3: PM reject → V2에서 pm-chain-forward.sh 삭제됨', () => {
     testEnv = createTestEnv();
     writeTeamContext(testEnv.tmpDir, 'PM');
     writePmVerdict(testEnv.tmpDir, 'reject', 'tsc 에러', ['빌드 실패']);
@@ -525,7 +525,7 @@ describe('C. Chain Routing', () => {
     expect(r.stdout).toContain('자동 전송 완료');
   });
 
-  it('BP-C4: COO → webhook (webhook 200 OK)', () => {
+  it.skip('BP-C4: COO → webhook — V2에서 coo-chain-report.sh 삭제됨', () => {
     testEnv = createTestEnv();
     writePmReport(testEnv.tmpDir);
 
@@ -576,7 +576,7 @@ describe('C. Chain Routing', () => {
     expect(r.stdout).toContain('ACTION_REQUIRED');
   });
 
-  it('BP-C8: 중복 dedup → 2번째 skip', () => {
+  it.skip('BP-C8: 중복 dedup — V2에서 coo-chain-report.sh 삭제됨', () => {
     testEnv = createTestEnv();
     writePmReport(testEnv.tmpDir);  // msg_id: 'chain-pm-test-1'
 
@@ -616,12 +616,7 @@ describe('D. Hook Environment', () => {
     // PATH 조작 대신, hook 소스에 `command -v jq` 가드가 있는지 확인
     const handoffSrc = readFileSync(join(process.cwd(), '.claude/hooks/pdca-chain-handoff.sh'), 'utf-8');
     expect(handoffSrc).toContain('command -v jq');
-
-    const pmForwardSrc = readFileSync(join(process.cwd(), '.claude/hooks/pm-chain-forward.sh'), 'utf-8');
-    expect(pmForwardSrc).toContain('command -v jq');
-
-    const cooReportSrc = readFileSync(join(process.cwd(), '.claude/hooks/coo-chain-report.sh'), 'utf-8');
-    expect(cooReportSrc).toContain('command -v jq');
+    // V2: pm-chain-forward.sh, coo-chain-report.sh 삭제됨
   });
 
   it('BP-D3: curl 타임아웃 확인 (--max-time 3 존재)', () => {
@@ -810,9 +805,9 @@ describe('F. Error Recovery', () => {
 
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
-      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
+      mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true },
     });
-    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS, sendOk: true });
+    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true });
 
     // 2회 연속 빠른 호출
     const r1 = runHook(hookPath, {});
@@ -847,9 +842,9 @@ describe('G. Additional Edge Cases', () => {
     writeAnalysisFile(testEnv.tmpDir, 97);
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
-      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
+      mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true },
     });
-    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS, sendOk: true });
+    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true });
     const r = runHook(hookPath, {});
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toContain('자동 전송 완료');
@@ -860,17 +855,17 @@ describe('G. Additional Edge Cases', () => {
     writeTeamContext(testEnv.tmpDir, 'CTO');
     writeAnalysisFile(testEnv.tmpDir, 97);
 
-    // peer-map에 존재하지 않는 peer ID 등록
+    // peer-map에 존재하지 않는 peer ID 등록 (V2: MOZZI로 라우팅)
     writePeerMap(testEnv.tmpDir, {
-      PM_LEADER: { peerId: 'stale-nonexistent-id-12345' },
+      MOZZI: { peerId: 'stale-nonexistent-id-12345' },
     });
 
     // broker에는 실제 peer 존재 → summary 매칭 fallback으로 resolve
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
-      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
+      mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true },
     });
-    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS, sendOk: true });
+    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true });
     const r = runHook(hookPath, {});
     expect(r.exitCode).toBe(0);
     // stale peer-map ID는 broker에서 확인 실패 → fallback으로 summary 매칭
@@ -899,7 +894,7 @@ describe('G. Additional Edge Cases', () => {
     expect(r.stdout.trim()).toBe('97');
   });
 
-  it('BP-G4: 빈 report 파일 (0바이트) → exit 0', () => {
+  it.skip('BP-G4: 빈 report 파일 — V2에서 coo-chain-report.sh 삭제됨', () => {
     testEnv = createTestEnv();
 
     // 0바이트 pm-report 파일 생성
@@ -912,7 +907,7 @@ describe('G. Additional Edge Cases', () => {
     expect(r.exitCode).toBe(0);
   });
 
-  it('BP-G5: webhook URL 오염 → ACTION_REQUIRED', () => {
+  it.skip('BP-G5: webhook URL — V2에서 coo-chain-report.sh 삭제됨', () => {
     testEnv = createTestEnv();
     writePmReport(testEnv.tmpDir);
 
@@ -927,7 +922,7 @@ describe('G. Additional Edge Cases', () => {
     expect(r.stdout).toContain('ACTION_REQUIRED');
   });
 
-  it('BP-G6: 단일 세션 풀사이클 (CTO → PM → COO)', () => {
+  it.skip('BP-G6: 단일 세션 풀사이클 — V2에서 PM 단계 삭제됨', () => {
     testEnv = createTestEnv();
 
     // ── Step 1: CTO 완료 → PM 전달 ──

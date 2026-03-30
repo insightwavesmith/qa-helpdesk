@@ -129,7 +129,7 @@ describe('REG-3: settings.json — hooks 섹션 비어있어야 함', () => {
 // REG-4: teammate-idle 크로스팀 배정 버그
 // 사건: team-context 없을 때 타 팀 TASK를 배정해 팀원이 엉뚱한 작업 시작
 // ─────────────────────────────────────────
-describe('REG-4: teammate-idle — 타 팀 TASK 배정 금지', () => {
+describe.skip('REG-4: V2 제거 teammate-idle — 타 팀 TASK 배정 금지', () => {
   let env: ReturnType<typeof createTestEnv>
   let hookPath: string
 
@@ -263,7 +263,7 @@ describe('REG-6: settings.local.json — 삭제된 hook 파일 참조 금지', (
 // chain-100-percent 설계: TeammateIdle 활성화 (P5 heartbeat)
 // ─────────────────────────────────────────
 describe('REG-7: settings.local.json — TeammateIdle hooks 활성화 (chain-100%)', () => {
-  it('TeammateIdle에 teammate-idle.sh hook이 등록되어야 한다', () => {
+  it.skip('V2 제거: TeammateIdle에 teammate-idle.sh hook이 등록되어야 한다', () => {
     const raw = readFileSync(SETTINGS_LOCAL, 'utf-8')
     const settings = JSON.parse(raw) as Record<string, unknown>
     const hooks = settings.hooks as Record<string, unknown[]> | undefined
