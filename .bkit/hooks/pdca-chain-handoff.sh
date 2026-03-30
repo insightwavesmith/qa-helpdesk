@@ -22,8 +22,9 @@ set -uo pipefail
 
 
 # ── 1. 팀원 bypass ──
-source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
-[ "$IS_TEAMMATE" = "true" ] && exit 0
+# 팀원이어도 chain-handoff는 실행 (팀원 최종 커밋 허용)
+# source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
+# [ "$IS_TEAMMATE" = "true" ] && exit 0
 
 PROJECT_DIR="/Users/smith/projects/bscamp"
 cd "$PROJECT_DIR" || exit 0
@@ -80,9 +81,18 @@ TASK_NAME=$(jq -r '.task // "unknown"' "$CONTEXT_FILE" 2>/dev/null || echo "unkn
 TASK_SLUG=$(echo "$TASK_NAME" | tr ' ' '-' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g' | cut -c1-30)
 create_chain_status "$TASK_NAME" "$CHAIN_KEY" "$TASK_SLUG" "$PROJECT_DIR" 2>/dev/null || true
 
-# ── 2-C. Slack 알림 (체인 시작) ──
+# ── 2-C. 대시보드 DB 연동 (task-completed.sh에서 통합) ──
+COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "")
+CHANGED_COUNT_QUICK=$(git diff HEAD~1 --name-only 2>/dev/null | grep -c '.' || true)
+BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
+curl -sf -X POST http://localhost:3201/api/hooks/task-completed \
+  -H 'Content-Type: application/json' \
+  -d "{\"commitHash\":\"$COMMIT_HASH\",\"changedFiles\":$CHANGED_COUNT_QUICK,\"feature\":\"$BRANCH\"}" \
+  --max-time 3 2>/dev/null || true
+
+# ── 2-D. Slack 알림 (체인 시작) ──
 if [ -n "${SLACK_BOT_TOKEN:-}" ]; then
-    SLACK_MSG="[체인] ${TASK_NAME} — ${CHAIN_KEY} 시작"
+    SLACK_MSG="🔔 [${CHAIN_KEY}] ${TASK_NAME} — 체인 시작"
     curl -sf -X POST https://slack.com/api/chat.postMessage \
       -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
       -H "Content-Type: application/json" \
@@ -145,15 +155,27 @@ EOFPAYLOAD
         -d "$WAKE_BODY" \
         --max-time 5 2>/dev/null || echo "000")
 
+    # Slack 알림 (L0/L1 완료)
+    if [ -n "${SLACK_BOT_TOKEN:-}" ]; then
+        if [ "$_CK_LEVEL" = "L0" ]; then
+            _SL_MSG="✅ [${CHAIN_KEY}] ${TASK_NAME} — 완료"
+        else
+            _SL_MSG="✅ [${CHAIN_KEY}] ${TASK_NAME} — 조사/분석 완료"
+        fi
+        curl -sf -X POST https://slack.com/api/chat.postMessage \
+          -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d "{\"channel\":\"C0AN7ATS4DD\",\"text\":\"${_SL_MSG}\"}" \
+          --max-time 5 2>/dev/null || true
+    fi
+
     if [ "$WAKE_HTTP" -ge 200 ] && [ "$WAKE_HTTP" -lt 300 ] 2>/dev/null; then
-        echo "✅ [${CHAIN_KEY}] ANALYSIS_REPORT → MOZZI webhook 전송 완료"
-        echo "  팀: ${FROM_ROLE}"
-        echo "  산출물: ${DELIVERABLES}"
+        echo "✅ [${CHAIN_KEY}] ANALYSIS_REPORT → MOZZI webhook + Slack 전송 완료"
         exit 0
     fi
 
-    # Fallback
-    echo "⚠ [${CHAIN_KEY}] webhook 미응답 (HTTP ${WAKE_HTTP}). 수동 보고 필요."
+    # Webhook 실패해도 Slack은 이미 전송됨 — webhook fallback만
+    echo "⚠ [${CHAIN_KEY}] webhook 미응답 (HTTP ${WAKE_HTTP}). Slack 알림은 전송됨."
     echo "ACTION_REQUIRED: send_message(MOZZI, ANALYSIS_REPORT)"
     echo "PAYLOAD: ${PAYLOAD}"
     exit 0
@@ -242,8 +264,23 @@ PAYLOAD=$(cat <<EOFPAYLOAD
 EOFPAYLOAD
 )
 
-# ── 8. MOZZI(COO)는 항상 webhook wake (OpenClaw 에이전트, broker peer 아님) ──
+# ── 8. MOZZI(COO): webhook wake + Slack 동시 전송 ──
 if [ "$TO_ROLE" = "MOZZI" ]; then
+    # 8-a. Slack 알림 (L2/L3 완료)
+    if [ -n "${SLACK_BOT_TOKEN:-}" ]; then
+        if [ "$MANUAL_REVIEW" = "true" ]; then
+            _SL_MSG="⚠️ [${CHAIN_KEY}] ${TASK_NAME} — 수동검수 대기 (Match Rate ${RATE}%)"
+        else
+            _SL_MSG="✅ [${CHAIN_KEY}] ${TASK_NAME} — 완료 (Match Rate ${RATE}%)"
+        fi
+        curl -sf -X POST https://slack.com/api/chat.postMessage \
+          -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d "{\"channel\":\"C0AN7ATS4DD\",\"text\":\"${_SL_MSG}\"}" \
+          --max-time 5 2>/dev/null || true
+    fi
+
+    # 8-b. Webhook wake (COO 자동 판단용 — 삭제 금지)
     WAKE_URL="http://127.0.0.1:18789/hooks/wake"
     WAKE_TOKEN="mz-hook-Kx9mP4vR7nWqZj2026"
     WAKE_MSG="[CHAIN] ${TEAM} ${CHAIN_STEP} 완료. ${CHAIN_KEY}, Match Rate: ${RATE}%"
@@ -254,17 +291,17 @@ if [ "$TO_ROLE" = "MOZZI" ]; then
         -H "Authorization: Bearer ${WAKE_TOKEN}" \
         -d "$WAKE_BODY" \
         --max-time 5 2>/dev/null || echo "000")
+
+    # 보고서 저장 (Slack은 이미 전송됨)
+    echo "$PAYLOAD" | jq '.' > "$PROJECT_DIR/.bkit/runtime/last-completion-report.json" 2>/dev/null
+
     if [ "$WAKE_HTTP" = "200" ] || [ "$WAKE_HTTP" = "204" ]; then
-        echo "✅ COMPLETION_REPORT → MOZZI webhook 전송 완료"
+        echo "✅ COMPLETION_REPORT → Slack + webhook 전송 완료"
         echo "  ${CHAIN_KEY}, Match Rate: ${RATE}%"
-        echo "  chain_step: ${CHAIN_STEP}"
-        [ "$MANUAL_REVIEW" = "true" ] && echo "  ⚠ 수동 검수 필수 (고위험/L3)"
-        echo "$PAYLOAD" | jq '.' > "$PROJECT_DIR/.bkit/runtime/last-completion-report.json" 2>/dev/null
         exit 0
     else
-        echo "⚠ webhook 미응답 (HTTP ${WAKE_HTTP}). 수동 보고 필요."
+        echo "⚠ webhook 미응답 (HTTP ${WAKE_HTTP}). Slack 알림은 전송됨."
         echo "ACTION_REQUIRED: send_message(MOZZI, COMPLETION_REPORT)"
-        echo "PAYLOAD: ${PAYLOAD}"
         exit 0
     fi
 fi
