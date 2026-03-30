@@ -1,0 +1,1960 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>에이전트 대시보드 목업</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --primary: #F75D5D;
+    --primary-hover: #E54949;
+    --bg: #FFFFFF;
+    --card-bg: #FFFFFF;
+    --border: #e5e7eb;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    --text-light: #d1d5db;
+    --success: #10b981;
+    --warning: #fbbf24;
+    --error: #ef4444;
+    --info: #3b82f6;
+    --purple: #8b5cf6;
+    --cyan: #06b6d4;
+    --sidebar-w: 220px;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: #f9fafb;
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── 레이아웃 ── */
+  .app { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--bg);
+    border-right: 1px solid var(--border);
+    padding: 20px 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-logo {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-logo h1 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--primary);
+  }
+
+  .sidebar-logo p {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .sidebar nav { flex: 1; }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    border-left: 3px solid transparent;
+  }
+
+  .nav-item:hover { background: #f3f4f6; color: var(--text-primary); }
+  .nav-item.active {
+    background: #fef2f2;
+    color: var(--primary);
+    border-left-color: var(--primary);
+    font-weight: 600;
+  }
+
+  .nav-icon { width: 18px; text-align: center; font-size: 15px; }
+
+  .main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    padding: 24px 32px;
+    max-width: 1200px;
+  }
+
+  /* ── 공통 ── */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  .card-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid #f3f4f6;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-body { padding: 16px 20px; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .badge-running { background: #fef2f2; color: var(--primary); }
+  .badge-idle { background: #f3f4f6; color: var(--text-secondary); }
+  .badge-paused { background: #fffbeb; color: #d97706; }
+  .badge-error { background: #fef2f2; color: var(--error); }
+  .badge-completed { background: #ecfdf5; color: var(--success); }
+  .badge-terminated { background: #f3f4f6; color: var(--text-light); }
+
+  .badge-critical { background: #fef2f2; color: var(--error); }
+  .badge-high { background: #fff7ed; color: #ea580c; }
+  .badge-medium { background: #fffbeb; color: #d97706; }
+  .badge-low { background: #f0f9ff; color: #0284c7; }
+
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+  }
+  .dot-running { background: var(--primary); }
+  .dot-idle { background: var(--text-light); }
+  .dot-paused { background: var(--warning); }
+  .dot-error { background: var(--error); }
+  .dot-completed { background: var(--success); }
+
+  h2.page-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+  }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .metric-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  .metric-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .metric-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .metric-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ── 탭 네비 ── */
+  .tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab {
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s;
+  }
+
+  .tab:hover { color: var(--text-primary); }
+  .tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    font-weight: 600;
+  }
+
+  /* ── 필터 바 ── */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .filter-btn.active {
+    background: var(--primary);
+    color: white;
+  }
+
+  .filter-btn:not(.active) {
+    background: #f3f4f6;
+    color: var(--text-secondary);
+  }
+
+  .filter-btn:not(.active):hover {
+    background: #e5e7eb;
+  }
+
+  .filter-input {
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    flex: 1;
+    min-width: 180px;
+    outline: none;
+    font-family: inherit;
+  }
+
+  .filter-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(247,93,93,0.1);
+  }
+
+  /* ── 페이지 섹션 ── */
+  .page-section {
+    display: none;
+  }
+  .page-section.active {
+    display: block;
+  }
+
+  /* ── 조직도 ── */
+  .orgchart-canvas {
+    width: 100%;
+    height: 520px;
+    background: #f9fafb;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .org-node {
+    position: absolute;
+    width: 150px;
+    min-height: 70px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    cursor: default;
+    transition: all 0.2s;
+    z-index: 2;
+  }
+
+  .org-node:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-color: #d1d5db;
+  }
+
+  .org-node-inner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .org-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .org-status-dot {
+    position: absolute;
+    bottom: -1px; right: -1px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 2px solid white;
+  }
+
+  .org-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .org-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .org-role {
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .org-edge {
+    position: absolute;
+    z-index: 1;
+  }
+
+  .zoom-controls {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 10;
+  }
+
+  .zoom-btn {
+    width: 28px; height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    color: var(--text-secondary);
+  }
+
+  .zoom-btn:hover { background: #f3f4f6; }
+
+  .org-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    padding: 0 4px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ── 체인 매트릭스 ── */
+  .chain-matrix {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+  }
+
+  .chain-matrix th {
+    padding: 10px 12px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: #f9fafb;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .chain-matrix th:first-child {
+    text-align: left;
+    min-width: 200px;
+  }
+
+  .chain-matrix td {
+    padding: 12px;
+    text-align: center;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+  }
+
+  .chain-matrix td:first-child {
+    text-align: left;
+  }
+
+  .chain-matrix tr:hover td {
+    background: #fafafa;
+  }
+
+  .gate {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .gate-done { background: #ecfdf5; color: var(--success); }
+  .gate-current { background: #fef2f2; color: var(--primary); border: 2px solid var(--primary); animation: pulse-gate 2s infinite; }
+  .gate-pending { background: #f3f4f6; color: var(--text-light); }
+  .gate-failed { background: #fef2f2; color: var(--error); }
+
+  @keyframes pulse-gate {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(247,93,93,0.3); }
+    50% { box-shadow: 0 0 0 6px rgba(247,93,93,0); }
+  }
+
+  .chain-task-name {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .chain-task-type {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .match-rate {
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .match-rate.low { color: var(--error); }
+  .match-rate.mid { color: #d97706; }
+  .match-rate.high { color: var(--success); }
+
+  .cron-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-muted);
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    padding: 4px 10px;
+    border-radius: 6px;
+    margin-left: auto;
+  }
+
+  .cron-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--info);
+    animation: blink-cron 2s infinite;
+  }
+
+  @keyframes blink-cron {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── 칸반 보드 ── */
+  .kanban {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    min-height: 400px;
+  }
+
+  .kanban-col {
+    background: #f9fafb;
+    border-radius: var(--radius);
+    padding: 12px;
+    min-height: 300px;
+  }
+
+  .kanban-col-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid;
+  }
+
+  .kanban-col-header.backlog { border-color: var(--text-light); }
+  .kanban-col-header.in_progress { border-color: var(--primary); }
+  .kanban-col-header.in_review { border-color: var(--purple); }
+  .kanban-col-header.completed { border-color: var(--success); }
+
+  .kanban-col-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .kanban-col-count {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: white;
+    padding: 1px 8px;
+    border-radius: 9999px;
+    border: 1px solid var(--border);
+  }
+
+  .kanban-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    cursor: default;
+    transition: all 0.15s;
+  }
+
+  .kanban-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-color: #d1d5db;
+  }
+
+  .kanban-card-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+
+  .kanban-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+  }
+
+  .kanban-card-badge {
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .kanban-card-badge.plan { background: #dbeafe; color: #1d4ed8; }
+  .kanban-card-badge.design { background: #ede9fe; color: #7c3aed; }
+  .kanban-card-badge.do { background: #fef2f2; color: var(--primary); }
+  .kanban-card-badge.check { background: #ecfdf5; color: #059669; }
+  .kanban-card-badge.L2 { background: #fff7ed; color: #ea580c; }
+  .kanban-card-badge.L1 { background: #f0f9ff; color: #0284c7; }
+  .kanban-card-badge.L0 { background: #fef2f2; color: var(--error); }
+
+  .progress-bar {
+    width: 60px; height: 4px;
+    background: #f3f4f6;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+
+  .progress-fill.primary { background: var(--primary); }
+  .progress-fill.success { background: var(--success); }
+
+  /* ── 비용 ── */
+  .cost-chart-placeholder {
+    height: 220px;
+    background: linear-gradient(180deg, #fef2f2 0%, #fff 100%);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    padding: 20px 30px;
+    margin-bottom: 16px;
+  }
+
+  .cost-bar {
+    width: 40px;
+    border-radius: 4px 4px 0 0;
+    transition: height 0.3s;
+    position: relative;
+  }
+
+  .cost-bar .cost-bar-label {
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .cost-bar .cost-bar-value {
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .budget-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .budget-row:last-child { border-bottom: none; }
+
+  .budget-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    min-width: 120px;
+  }
+
+  .budget-bar-bg {
+    flex: 1;
+    height: 8px;
+    background: #f3f4f6;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .budget-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s;
+  }
+
+  .budget-pct {
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 50px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── 에이전트 상세 드로어 ── */
+  .drawer-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.2);
+    z-index: 200;
+  }
+
+  .drawer-overlay.open { display: block; }
+
+  .drawer {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 400px;
+    background: white;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+    z-index: 201;
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    overflow-y: auto;
+  }
+
+  .drawer-overlay.open .drawer {
+    transform: translateX(0);
+  }
+
+  .drawer-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
+  }
+
+  .drawer-close {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    background: white;
+    font-size: 16px;
+    color: var(--text-muted);
+  }
+
+  .drawer-close:hover { background: #f3f4f6; }
+
+  .drawer-body { padding: 20px; }
+
+  .drawer-section {
+    margin-bottom: 20px;
+  }
+
+  .drawer-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+
+  .drawer-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .drawer-stat {
+    background: #f9fafb;
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+  }
+
+  .drawer-stat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .drawer-stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .run-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 12px;
+  }
+
+  .run-row:last-child { border-bottom: none; }
+
+  /* ── 뷰 토글 ── */
+  .view-toggle {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+
+  .view-toggle-btn {
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    background: white;
+    color: var(--text-secondary);
+    transition: all 0.15s;
+  }
+
+  .view-toggle-btn.active {
+    background: var(--primary);
+    color: white;
+  }
+
+  .view-toggle-btn:not(.active):hover {
+    background: #f3f4f6;
+  }
+
+  /* ── 테이블 ── */
+  .table-wrapper { overflow-x: auto; }
+
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  table.data-table th {
+    padding: 10px 16px;
+    text-align: left;
+    font-weight: 500;
+    color: var(--text-muted);
+    font-size: 12px;
+    background: #f9fafb;
+    border-bottom: 1px solid var(--border);
+  }
+
+  table.data-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    color: var(--text-primary);
+  }
+
+  table.data-table tr:hover td {
+    background: #fafafa;
+  }
+
+  .mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; }
+  .text-right { text-align: right; }
+  .text-center { text-align: center; }
+  .text-muted { color: var(--text-muted); }
+  .text-sm { font-size: 12px; }
+  .font-bold { font-weight: 700; }
+  .tabular { font-variant-numeric: tabular-nums; }
+  .flex { display: flex; }
+  .items-center { align-items: center; }
+  .gap-2 { gap: 8px; }
+  .gap-1 { gap: 4px; }
+  .mr-auto { margin-right: auto; }
+  .ml-auto { margin-left: auto; }
+  .mb-4 { margin-bottom: 16px; }
+  .mt-2 { margin-top: 8px; }
+  .mt-4 { margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ── 사이드바 ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>bscamp</h1>
+      <p>에이전트 대시보드</p>
+    </div>
+    <nav>
+      <a class="nav-item active" onclick="showPage('dashboard')">
+        <span class="nav-icon">📊</span> 대시보드
+      </a>
+      <a class="nav-item" onclick="showPage('org')">
+        <span class="nav-icon">🏢</span> 조직도
+      </a>
+      <a class="nav-item" onclick="showPage('chains')">
+        <span class="nav-icon">🔗</span> 체인 현황
+      </a>
+      <a class="nav-item" onclick="showPage('tickets')">
+        <span class="nav-icon">📋</span> 태스크 보드
+      </a>
+      <a class="nav-item" onclick="showPage('costs')">
+        <span class="nav-icon">💰</span> 비용 추적
+      </a>
+      <a class="nav-item" onclick="showPage('agents')">
+        <span class="nav-icon">🤖</span> 에이전트 로그
+      </a>
+      <a class="nav-item" onclick="showPage('archive')">
+        <span class="nav-icon">📁</span> 완료 아카이브
+      </a>
+      <a class="nav-item" onclick="showPage('activity')">
+        <span class="nav-icon">⚡</span> 활동
+      </a>
+      <a class="nav-item" onclick="showPage('routines')">
+        <span class="nav-icon">🔄</span> 루틴
+      </a>
+    </nav>
+    <div style="padding: 12px 20px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted);">
+      v0.1.0 목업
+    </div>
+  </aside>
+
+  <!-- ── 메인 콘텐츠 ── -->
+  <main class="main">
+
+    <!-- ═══ 1. 대시보드 ═══ -->
+    <section id="page-dashboard" class="page-section active">
+      <h2 class="page-title">대시보드</h2>
+
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-label">🤖 에이전트</div>
+          <div class="metric-value">5/8</div>
+          <div class="metric-desc">실행중 3, 대기 2, 오류 1</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">📋 진행중 태스크</div>
+          <div class="metric-value">4</div>
+          <div class="metric-desc">전체 23건</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">💰 이번 달 비용</div>
+          <div class="metric-value">$12.40</div>
+          <div class="metric-desc">미해결 예산 0건</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">🔗 PDCA 피처</div>
+          <div class="metric-value">6</div>
+          <div class="metric-desc">implementing 2, designing 1, checking 1</div>
+        </div>
+      </div>
+
+      <!-- 에이전트 상태 테이블 -->
+      <div class="card mb-4">
+        <div class="card-header">에이전트 현황</div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>이름</th>
+                <th>상태</th>
+                <th>역할</th>
+                <th>모델</th>
+                <th class="text-right">월 비용</th>
+                <th>마지막 활동</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>모찌</strong></td>
+                <td><span class="badge badge-running">실행중</span></td>
+                <td>COO</td>
+                <td class="mono text-muted">claude-opus-4-6</td>
+                <td class="text-right tabular">$3.20</td>
+                <td class="text-muted text-sm">30초 전</td>
+              </tr>
+              <tr>
+                <td><strong>CTO_LEADER</strong></td>
+                <td><span class="badge badge-running">실행중</span></td>
+                <td>리더</td>
+                <td class="mono text-muted">claude-opus-4-6</td>
+                <td class="text-right tabular">$4.10</td>
+                <td class="text-muted text-sm">15초 전</td>
+              </tr>
+              <tr>
+                <td><strong>PM_LEADER</strong></td>
+                <td><span class="badge badge-running">실행중</span></td>
+                <td>리더</td>
+                <td class="mono text-muted">claude-opus-4-6</td>
+                <td class="text-right tabular">$2.80</td>
+                <td class="text-muted text-sm">1분 전</td>
+              </tr>
+              <tr>
+                <td><strong>frontend-dev</strong></td>
+                <td><span class="badge badge-idle">대기</span></td>
+                <td>개발자</td>
+                <td class="mono text-muted">claude-opus-4-6</td>
+                <td class="text-right tabular">$1.50</td>
+                <td class="text-muted text-sm">5분 전</td>
+              </tr>
+              <tr>
+                <td><strong>backend-dev</strong></td>
+                <td><span class="badge badge-idle">대기</span></td>
+                <td>개발자</td>
+                <td class="mono text-muted">claude-opus-4-6</td>
+                <td class="text-right tabular">$0.80</td>
+                <td class="text-muted text-sm">12분 전</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 최근 알림 -->
+      <div class="card">
+        <div class="card-header">최근 알림</div>
+        <div class="card-body" style="padding: 0;">
+          <div style="padding: 10px 20px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: flex-start; gap: 10px;">
+            <span class="dot dot-completed" style="margin-top: 5px;"></span>
+            <div style="flex: 1;">
+              <div style="font-size: 13px; font-weight: 500;">체인 자동화 TDD 완료</div>
+              <div style="font-size: 11px; color: var(--text-muted);">414건 전체 Green — Match Rate 100%</div>
+            </div>
+            <span class="text-muted text-sm">2분 전</span>
+          </div>
+          <div style="padding: 10px 20px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: flex-start; gap: 10px;">
+            <span class="dot dot-running" style="margin-top: 5px;"></span>
+            <div style="flex: 1;">
+              <div style="font-size: 13px; font-weight: 500;">에이전트 대시보드 기획 시작</div>
+              <div style="font-size: 11px; color: var(--text-muted);">PM_LEADER → PM팀원 위임</div>
+            </div>
+            <span class="text-muted text-sm">5분 전</span>
+          </div>
+          <div style="padding: 10px 20px; display: flex; align-items: flex-start; gap: 10px;">
+            <span class="dot dot-paused" style="margin-top: 5px; background: var(--warning);"></span>
+            <div style="flex: 1;">
+              <div style="font-size: 13px; font-weight: 500;">backend-dev 5분 이상 idle</div>
+              <div style="font-size: 11px; color: var(--text-muted);">TeamDelete 검토 필요</div>
+            </div>
+            <span class="text-muted text-sm">12분 전</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 2. 조직도 ═══ -->
+    <section id="page-org" class="page-section">
+      <h2 class="page-title">조직도</h2>
+
+      <div class="orgchart-canvas">
+        <div class="zoom-controls">
+          <button class="zoom-btn">+</button>
+          <button class="zoom-btn">&minus;</button>
+          <button class="zoom-btn" style="font-size: 10px;">맞춤</button>
+        </div>
+
+        <!-- SVG 연결선 -->
+        <svg style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1;">
+          <!-- Smith → 모찌 -->
+          <path d="M 430 90 L 430 110 L 430 110 L 430 130" fill="none" stroke="#e5e7eb" stroke-width="1.5"/>
+          <!-- 모찌 → CTO_LEADER -->
+          <path d="M 430 200 L 430 220 L 260 220 L 260 240" fill="none" stroke="#e5e7eb" stroke-width="1.5"/>
+          <!-- 모찌 → PM_LEADER -->
+          <path d="M 430 200 L 430 220 L 430 220 L 430 240" fill="none" stroke="#e5e7eb" stroke-width="1.5"/>
+          <!-- 모찌 → MKT_LEADER -->
+          <path d="M 430 200 L 430 220 L 600 220 L 600 240" fill="none" stroke="#e5e7eb" stroke-width="1.5"/>
+          <!-- CTO → frontend-dev -->
+          <path d="M 260 310 L 260 330 L 180 330 L 180 350" fill="none" stroke="#e5e7eb" stroke-width="1.5"/>
+          <!-- CTO → backend-dev -->
+          <path d="M 260 310 L 260 330 L 340 330 L 340 350" fill="none" stroke="#e5e7eb" stroke-width="1.5"/>
+          <!-- PM → pm-writer -->
+          <path d="M 430 310 L 430 330 L 430 330 L 430 350" fill="none" stroke="#e5e7eb" stroke-width="1.5"/>
+        </svg>
+
+        <!-- Smith -->
+        <div class="org-node" style="left: 355px; top: 20px;" onclick="openDrawer('smith')">
+          <div class="org-node-inner">
+            <div class="org-avatar">
+              👤
+              <div class="org-status-dot" style="background: var(--success);"></div>
+            </div>
+            <div class="org-info">
+              <div class="org-name">Smith</div>
+              <div class="org-role">CEO</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 모찌 -->
+        <div class="org-node" style="left: 355px; top: 130px;" onclick="openDrawer('mozzi')">
+          <div class="org-node-inner">
+            <div class="org-avatar">
+              🧁
+              <div class="org-status-dot" style="background: var(--primary);"></div>
+            </div>
+            <div class="org-info">
+              <div class="org-name">모찌</div>
+              <div class="org-role">COO</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CTO_LEADER -->
+        <div class="org-node" style="left: 185px; top: 240px;" onclick="openDrawer('cto')">
+          <div class="org-node-inner">
+            <div class="org-avatar">
+              🤖
+              <div class="org-status-dot" style="background: var(--primary);"></div>
+            </div>
+            <div class="org-info">
+              <div class="org-name">CTO_LEADER</div>
+              <div class="org-role">리더</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PM_LEADER -->
+        <div class="org-node" style="left: 355px; top: 240px;" onclick="openDrawer('pm')">
+          <div class="org-node-inner">
+            <div class="org-avatar">
+              🤖
+              <div class="org-status-dot" style="background: var(--primary);"></div>
+            </div>
+            <div class="org-info">
+              <div class="org-name">PM_LEADER</div>
+              <div class="org-role">리더</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MKT_LEADER -->
+        <div class="org-node" style="left: 525px; top: 240px;">
+          <div class="org-node-inner">
+            <div class="org-avatar">
+              🤖
+              <div class="org-status-dot" style="background: var(--text-light);"></div>
+            </div>
+            <div class="org-info">
+              <div class="org-name">MKT_LEADER</div>
+              <div class="org-role">리더</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- frontend-dev -->
+        <div class="org-node" style="left: 105px; top: 350px;">
+          <div class="org-node-inner">
+            <div class="org-avatar">
+              🤖
+              <div class="org-status-dot" style="background: var(--text-light);"></div>
+            </div>
+            <div class="org-info">
+              <div class="org-name">frontend-dev</div>
+              <div class="org-role">개발자</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- backend-dev -->
+        <div class="org-node" style="left: 265px; top: 350px;">
+          <div class="org-node-inner">
+            <div class="org-avatar">
+              🤖
+              <div class="org-status-dot" style="background: var(--text-light);"></div>
+            </div>
+            <div class="org-info">
+              <div class="org-name">backend-dev</div>
+              <div class="org-role">개발자</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- pm-writer -->
+        <div class="org-node" style="left: 355px; top: 350px;">
+          <div class="org-node-inner">
+            <div class="org-avatar">
+              🤖
+              <div class="org-status-dot" style="background: var(--primary);"></div>
+            </div>
+            <div class="org-info">
+              <div class="org-name">pm-writer</div>
+              <div class="org-role">PM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="org-legend">
+        <div class="legend-item"><span class="dot dot-running"></span> 실행중</div>
+        <div class="legend-item"><span class="dot dot-idle"></span> 대기</div>
+        <div class="legend-item"><span class="dot dot-paused"></span> 일시정지</div>
+        <div class="legend-item"><span class="dot dot-error"></span> 오류</div>
+        <div class="legend-item"><span class="dot" style="background:#e5e7eb;"></span> 종료</div>
+      </div>
+    </section>
+
+    <!-- ═══ 3. 체인 현황 ═══ -->
+    <section id="page-chains" class="page-section">
+      <div class="flex items-center gap-2 mb-4">
+        <h2 class="page-title mr-auto" style="margin-bottom:0;">체인 현황</h2>
+        <div class="cron-indicator">
+          <span class="cron-dot"></span>
+          크론 게이트 판정 — 5분 주기
+        </div>
+      </div>
+
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; background: #f0f9ff; padding: 10px 14px; border-radius: 8px; border: 1px solid #bae6fd;">
+        <strong>구조:</strong> 에이전트는 문서만 작성 → 크론(5분)이 문서 존재+내용 검증 → 게이트 통과 → 다음 단계 자동 트리거 → 대시보드는 결과만 표시
+      </p>
+
+      <div class="card">
+        <div class="card-header">
+          PDCA 게이트 매트릭스
+          <span class="text-sm text-muted">마지막 크론 체크: 2분 전</span>
+        </div>
+        <div class="table-wrapper">
+          <table class="chain-matrix">
+            <thead>
+              <tr>
+                <th style="text-align:left;">기능</th>
+                <th>PLAN</th>
+                <th>DESIGN</th>
+                <th>DEV</th>
+                <th>COMMIT</th>
+                <th>DEPLOY</th>
+                <th>상태</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div class="chain-task-name">체인 자동화 TDD</div>
+                  <div class="chain-task-type">DEV-L2</div>
+                </td>
+                <td><span class="gate gate-done">&#10003;</span></td>
+                <td><span class="gate gate-done">&#10003;</span></td>
+                <td>
+                  <span class="gate gate-done">&#10003;</span>
+                  <div class="match-rate high">100%</div>
+                </td>
+                <td><span class="gate gate-done">&#10003;</span></td>
+                <td><span class="gate gate-done">&#10003;</span></td>
+                <td><span class="badge badge-completed">완료</span></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="chain-task-name">에이전트 대시보드</div>
+                  <div class="chain-task-type">DEV-L2</div>
+                </td>
+                <td><span class="gate gate-done">&#10003;</span></td>
+                <td><span class="gate gate-current">...</span></td>
+                <td><span class="gate gate-pending">-</span></td>
+                <td><span class="gate gate-pending">-</span></td>
+                <td><span class="gate gate-pending">-</span></td>
+                <td><span class="badge badge-running">진행중</span></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="chain-task-name">처방전 시스템</div>
+                  <div class="chain-task-type">DEV-L3</div>
+                </td>
+                <td><span class="gate gate-done">&#10003;</span></td>
+                <td><span class="gate gate-done">&#10003;</span></td>
+                <td>
+                  <span class="gate gate-current">...</span>
+                  <div class="match-rate low">72%</div>
+                </td>
+                <td><span class="gate gate-pending">-</span></td>
+                <td><span class="gate gate-pending">-</span></td>
+                <td><span class="badge badge-running">진행중</span></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="chain-task-name">마케팅 뉴스레터</div>
+                  <div class="chain-task-type">MKT-L1</div>
+                </td>
+                <td><span class="gate gate-done">&#10003;</span></td>
+                <td style="color: var(--text-light);">-</td>
+                <td><span class="gate gate-done">&#10003;</span></td>
+                <td><span class="gate gate-done">&#10003;</span></td>
+                <td><span class="gate gate-current">...</span></td>
+                <td><span class="badge badge-running">배포중</span></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="chain-task-name">경쟁사분석 v3</div>
+                  <div class="chain-task-type">DEV-L2</div>
+                </td>
+                <td><span class="gate gate-current">...</span></td>
+                <td><span class="gate gate-pending">-</span></td>
+                <td><span class="gate gate-pending">-</span></td>
+                <td><span class="gate gate-pending">-</span></td>
+                <td><span class="gate gate-pending">-</span></td>
+                <td><span class="badge badge-idle">대기</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <div style="font-size: 11px; color: var(--text-muted); display: flex; gap: 16px;">
+          <span><span class="gate gate-done" style="width:20px;height:20px;font-size:10px;">&#10003;</span> 크론 검증 통과</span>
+          <span><span class="gate gate-current" style="width:20px;height:20px;font-size:10px;">...</span> 진행중 (다음 크론 체크 대기)</span>
+          <span><span class="gate gate-pending" style="width:20px;height:20px;font-size:10px;">-</span> 대기</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 4. 태스크 보드 ═══ -->
+    <section id="page-tickets" class="page-section">
+      <div class="flex items-center gap-2 mb-4">
+        <h2 class="page-title mr-auto" style="margin-bottom:0;">태스크 보드</h2>
+        <div class="view-toggle">
+          <button class="view-toggle-btn" onclick="showView('list')">리스트</button>
+          <button class="view-toggle-btn active" onclick="showView('kanban')">칸반</button>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <button class="filter-btn active">전체</button>
+        <button class="filter-btn">CTO팀</button>
+        <button class="filter-btn">PM팀</button>
+        <button class="filter-btn">MKT팀</button>
+        <select style="padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 12px; background: white; font-family: inherit;">
+          <option>전체 레벨</option>
+          <option>L0 응급</option>
+          <option>L1 경량</option>
+          <option>L2 표준</option>
+          <option>L3 풀</option>
+        </select>
+        <input class="filter-input" placeholder="검색..." />
+        <span class="text-muted text-sm">8건</span>
+      </div>
+
+      <!-- 칸반 뷰 -->
+      <div id="kanban-view" class="kanban">
+        <!-- 대기 -->
+        <div class="kanban-col">
+          <div class="kanban-col-header backlog">
+            <span class="kanban-col-title">대기</span>
+            <span class="kanban-col-count">2</span>
+          </div>
+          <div class="kanban-card">
+            <div class="kanban-card-title">경쟁사분석 v3</div>
+            <div class="kanban-card-meta">
+              <span class="kanban-card-badge plan">PLAN</span>
+              <span class="kanban-card-badge L2">L2</span>
+              <span>CTO팀</span>
+            </div>
+          </div>
+          <div class="kanban-card">
+            <div class="kanban-card-title">슬랙 알림 시스템</div>
+            <div class="kanban-card-meta">
+              <span class="kanban-card-badge plan">PLAN</span>
+              <span class="kanban-card-badge L2">L2</span>
+              <span>CTO팀</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 진행중 -->
+        <div class="kanban-col">
+          <div class="kanban-col-header in_progress">
+            <span class="kanban-col-title">진행중</span>
+            <span class="kanban-col-count">3</span>
+          </div>
+          <div class="kanban-card" style="border-left: 3px solid var(--primary);">
+            <div class="kanban-card-title">에이전트 대시보드</div>
+            <div class="kanban-card-meta">
+              <span class="kanban-card-badge design">DESIGN</span>
+              <span class="kanban-card-badge L2">L2</span>
+              <span>PM팀</span>
+            </div>
+            <div class="mt-2 flex items-center gap-1">
+              <div class="progress-bar"><div class="progress-fill primary" style="width: 30%;"></div></div>
+              <span style="font-size: 10px; color: var(--text-muted);">1/3</span>
+            </div>
+          </div>
+          <div class="kanban-card" style="border-left: 3px solid var(--primary);">
+            <div class="kanban-card-title">처방전 시스템</div>
+            <div class="kanban-card-meta">
+              <span class="kanban-card-badge do">DO</span>
+              <span class="kanban-card-badge L2">L3</span>
+              <span>CTO팀</span>
+            </div>
+            <div class="mt-2 flex items-center gap-1">
+              <div class="progress-bar"><div class="progress-fill primary" style="width: 72%;"></div></div>
+              <span style="font-size: 10px; color: var(--text-muted);">72%</span>
+            </div>
+          </div>
+          <div class="kanban-card" style="border-left: 3px solid var(--primary);">
+            <div class="kanban-card-title">마케팅 뉴스레터</div>
+            <div class="kanban-card-meta">
+              <span class="kanban-card-badge do">DEPLOY</span>
+              <span class="kanban-card-badge L1">L1</span>
+              <span>MKT팀</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 검토중 -->
+        <div class="kanban-col">
+          <div class="kanban-col-header in_review">
+            <span class="kanban-col-title">검토중</span>
+            <span class="kanban-col-count">1</span>
+          </div>
+          <div class="kanban-card">
+            <div class="kanban-card-title">체인 매트릭스 기획서</div>
+            <div class="kanban-card-meta">
+              <span class="kanban-card-badge check">CHECK</span>
+              <span class="kanban-card-badge L1">L1</span>
+              <span>PM팀</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 완료 -->
+        <div class="kanban-col">
+          <div class="kanban-col-header completed">
+            <span class="kanban-col-title">완료</span>
+            <span class="kanban-col-count">2</span>
+          </div>
+          <div class="kanban-card" style="opacity: 0.7;">
+            <div class="kanban-card-title">체인 자동화 TDD</div>
+            <div class="kanban-card-meta">
+              <span class="kanban-card-badge check">완료</span>
+              <span class="kanban-card-badge L2">L2</span>
+              <span class="mono" style="font-size:10px;">7c04ec4</span>
+            </div>
+          </div>
+          <div class="kanban-card" style="opacity: 0.7;">
+            <div class="kanban-card-title">경쟁사분석 DCO 수정</div>
+            <div class="kanban-card-meta">
+              <span class="kanban-card-badge check">완료</span>
+              <span class="kanban-card-badge L0">L0</span>
+              <span class="mono" style="font-size:10px;">500cf26</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 5. 비용 추적 ═══ -->
+    <section id="page-costs" class="page-section">
+      <h2 class="page-title">비용 추적</h2>
+
+      <div class="tabs">
+        <div class="tab active">개요</div>
+        <div class="tab">예산</div>
+        <div class="tab">상세</div>
+      </div>
+
+      <div class="metric-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="metric-card">
+          <div class="metric-label">총 비용 (이번 달)</div>
+          <div class="metric-value">$12.40</div>
+          <div class="metric-desc">전일 대비 +$1.20</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">총 토큰</div>
+          <div class="metric-value">2.4M</div>
+          <div class="metric-desc">입력 1.8M, 출력 0.6M</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">API 호출</div>
+          <div class="metric-value">847</div>
+          <div class="metric-desc">오늘 128건</div>
+        </div>
+      </div>
+
+      <!-- 일별 추이 차트 (모의) -->
+      <div class="card mb-4">
+        <div class="card-header">일별 비용 추이</div>
+        <div class="cost-chart-placeholder">
+          <div class="cost-bar" style="height: 40px; background: rgba(247,93,93,0.3);">
+            <span class="cost-bar-value">$0.8</span>
+            <span class="cost-bar-label">3/25</span>
+          </div>
+          <div class="cost-bar" style="height: 65px; background: rgba(247,93,93,0.4);">
+            <span class="cost-bar-value">$1.3</span>
+            <span class="cost-bar-label">3/26</span>
+          </div>
+          <div class="cost-bar" style="height: 90px; background: rgba(247,93,93,0.5);">
+            <span class="cost-bar-value">$1.8</span>
+            <span class="cost-bar-label">3/27</span>
+          </div>
+          <div class="cost-bar" style="height: 55px; background: rgba(247,93,93,0.4);">
+            <span class="cost-bar-value">$1.1</span>
+            <span class="cost-bar-label">3/28</span>
+          </div>
+          <div class="cost-bar" style="height: 120px; background: rgba(247,93,93,0.6);">
+            <span class="cost-bar-value">$2.4</span>
+            <span class="cost-bar-label">3/29</span>
+          </div>
+          <div class="cost-bar" style="height: 150px; background: rgba(247,93,93,0.7);">
+            <span class="cost-bar-value">$3.0</span>
+            <span class="cost-bar-label">3/30</span>
+          </div>
+          <div class="cost-bar" style="height: 100px; background: var(--primary);">
+            <span class="cost-bar-value">$2.0</span>
+            <span class="cost-bar-label">3/31</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 에이전트별 비용 -->
+      <div class="card mb-4">
+        <div class="card-header">에이전트별 비용</div>
+        <div class="card-body">
+          <div class="budget-row">
+            <span class="budget-name">CTO_LEADER</span>
+            <div class="budget-bar-bg">
+              <div class="budget-bar-fill" style="width: 65%; background: var(--primary);"></div>
+            </div>
+            <span class="budget-pct tabular">$4.10</span>
+          </div>
+          <div class="budget-row">
+            <span class="budget-name">모찌</span>
+            <div class="budget-bar-bg">
+              <div class="budget-bar-fill" style="width: 50%; background: var(--primary);"></div>
+            </div>
+            <span class="budget-pct tabular">$3.20</span>
+          </div>
+          <div class="budget-row">
+            <span class="budget-name">PM_LEADER</span>
+            <div class="budget-bar-bg">
+              <div class="budget-bar-fill" style="width: 44%; background: var(--primary);"></div>
+            </div>
+            <span class="budget-pct tabular">$2.80</span>
+          </div>
+          <div class="budget-row">
+            <span class="budget-name">frontend-dev</span>
+            <div class="budget-bar-bg">
+              <div class="budget-bar-fill" style="width: 24%; background: var(--primary); opacity: 0.6;"></div>
+            </div>
+            <span class="budget-pct tabular">$1.50</span>
+          </div>
+          <div class="budget-row">
+            <span class="budget-name">backend-dev</span>
+            <div class="budget-bar-bg">
+              <div class="budget-bar-fill" style="width: 13%; background: var(--primary); opacity: 0.4;"></div>
+            </div>
+            <span class="budget-pct tabular">$0.80</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 예산 현황 -->
+      <div class="card">
+        <div class="card-header">예산 현황</div>
+        <div class="card-body">
+          <div class="budget-row">
+            <span class="budget-name">월간 전체</span>
+            <div class="budget-bar-bg">
+              <div class="budget-bar-fill" style="width: 25%; background: var(--success);"></div>
+            </div>
+            <span class="budget-pct tabular" style="color: var(--success);">25%</span>
+            <span class="text-muted text-sm">$12.4 / $50.0</span>
+          </div>
+          <div class="budget-row">
+            <span class="budget-name">CTO팀 주간</span>
+            <div class="budget-bar-bg">
+              <div class="budget-bar-fill" style="width: 60%; background: var(--warning);"></div>
+            </div>
+            <span class="budget-pct tabular" style="color: #d97706;">60%</span>
+            <span class="text-muted text-sm">$6.4 / $10.0</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 6. 에이전트 로그 ═══ -->
+    <section id="page-agents" class="page-section">
+      <h2 class="page-title">에이전트 로그</h2>
+
+      <div class="card mb-4">
+        <div class="card-header">
+          CTO_LEADER
+          <span class="badge badge-running">실행중</span>
+        </div>
+        <div class="card-body">
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;">
+            <div class="drawer-stat">
+              <div class="drawer-stat-label">모델</div>
+              <div style="font-size: 12px; font-weight: 600; font-family: monospace;">claude-opus-4-6</div>
+            </div>
+            <div class="drawer-stat">
+              <div class="drawer-stat-label">tmux 세션</div>
+              <div style="font-size: 12px; font-weight: 600; font-family: monospace;">bscamp-cto</div>
+            </div>
+            <div class="drawer-stat">
+              <div class="drawer-stat-label">입력 토큰</div>
+              <div style="font-size: 18px; font-weight: 700;">45.2K</div>
+            </div>
+            <div class="drawer-stat">
+              <div class="drawer-stat-label">출력 토큰</div>
+              <div style="font-size: 18px; font-weight: 700;">8.1K</div>
+            </div>
+          </div>
+
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">실행 기록</div>
+          <div class="run-row">
+            <span class="badge badge-running" style="min-width: 50px; justify-content: center;">실행중</span>
+            <span>10:30 ~</span>
+            <span class="text-muted">태스크: 에이전트 대시보드</span>
+            <span class="ml-auto tabular">입력 12K / 출력 3.2K</span>
+          </div>
+          <div class="run-row">
+            <span class="badge badge-completed" style="min-width: 50px; justify-content: center;">완료</span>
+            <span>09:15 ~ 09:45</span>
+            <span class="text-muted">태스크: 체인 자동화 TDD</span>
+            <span class="ml-auto tabular">입력 45K / 출력 8K</span>
+          </div>
+          <div class="run-row">
+            <span class="badge badge-completed" style="min-width: 50px; justify-content: center;">완료</span>
+            <span>08:00 ~ 08:30</span>
+            <span class="text-muted">태스크: 경쟁사분석 수정</span>
+            <span class="ml-auto tabular">입력 32K / 출력 6K</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          PM_LEADER
+          <span class="badge badge-running">실행중</span>
+        </div>
+        <div class="card-body">
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;">
+            <div class="drawer-stat">
+              <div class="drawer-stat-label">모델</div>
+              <div style="font-size: 12px; font-weight: 600; font-family: monospace;">claude-opus-4-6</div>
+            </div>
+            <div class="drawer-stat">
+              <div class="drawer-stat-label">tmux 세션</div>
+              <div style="font-size: 12px; font-weight: 600; font-family: monospace;">bscamp-pm</div>
+            </div>
+            <div class="drawer-stat">
+              <div class="drawer-stat-label">입력 토큰</div>
+              <div style="font-size: 18px; font-weight: 700;">28.5K</div>
+            </div>
+            <div class="drawer-stat">
+              <div class="drawer-stat-label">출력 토큰</div>
+              <div style="font-size: 18px; font-weight: 700;">5.4K</div>
+            </div>
+          </div>
+
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">실행 기록</div>
+          <div class="run-row">
+            <span class="badge badge-running" style="min-width: 50px; justify-content: center;">실행중</span>
+            <span>10:25 ~</span>
+            <span class="text-muted">태스크: 에이전트 대시보드 기획서</span>
+            <span class="ml-auto tabular">입력 28.5K / 출력 5.4K</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 7. 완료 아카이브 ═══ -->
+    <section id="page-archive" class="page-section">
+      <h2 class="page-title">완료 아카이브</h2>
+
+      <div class="filter-bar">
+        <input type="date" style="padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 12px; font-family: inherit;">
+        <span class="text-muted">~</span>
+        <input type="date" style="padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 12px; font-family: inherit;">
+        <select style="padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 12px; background: white; font-family: inherit;">
+          <option>전체 팀</option>
+          <option>CTO팀</option>
+          <option>PM팀</option>
+          <option>MKT팀</option>
+        </select>
+        <input class="filter-input" placeholder="키워드 검색..." />
+      </div>
+
+      <!-- 통계 요약 -->
+      <div class="card mb-4">
+        <div class="card-body" style="display: flex; gap: 24px; flex-wrap: wrap;">
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted);">전체 완료</div>
+            <div style="font-size: 24px; font-weight: 700;">42건</div>
+          </div>
+          <div style="border-left: 1px solid var(--border); padding-left: 24px;">
+            <div style="font-size: 11px; color: var(--text-muted);">CTO팀</div>
+            <div style="font-size: 24px; font-weight: 700;">28건</div>
+          </div>
+          <div style="border-left: 1px solid var(--border); padding-left: 24px;">
+            <div style="font-size: 11px; color: var(--text-muted);">PM팀</div>
+            <div style="font-size: 24px; font-weight: 700;">10건</div>
+          </div>
+          <div style="border-left: 1px solid var(--border); padding-left: 24px;">
+            <div style="font-size: 11px; color: var(--text-muted);">MKT팀</div>
+            <div style="font-size: 24px; font-weight: 700;">4건</div>
+          </div>
+          <div style="border-left: 1px solid var(--border); padding-left: 24px;">
+            <div style="font-size: 11px; color: var(--text-muted);">평균 소요</div>
+            <div style="font-size: 24px; font-weight: 700;">2.3일</div>
+          </div>
+          <div style="border-left: 1px solid var(--border); padding-left: 24px;">
+            <div style="font-size: 11px; color: var(--text-muted);">이번 주</div>
+            <div style="font-size: 24px; font-weight: 700;">12건</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 완료 리스트 -->
+      <div class="card">
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>기능</th>
+                <th>팀</th>
+                <th>레벨</th>
+                <th>Match Rate</th>
+                <th>커밋</th>
+                <th>완료일</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>체인 자동화 TDD</strong></td>
+                <td>CTO팀</td>
+                <td><span class="kanban-card-badge L2">L2</span></td>
+                <td><span class="match-rate high">100%</span></td>
+                <td class="mono text-muted">7c04ec4</td>
+                <td class="text-muted">2026-03-30</td>
+              </tr>
+              <tr>
+                <td><strong>경쟁사분석 DCO 수정</strong></td>
+                <td>CTO팀</td>
+                <td><span class="kanban-card-badge L0">L0</span></td>
+                <td>-</td>
+                <td class="mono text-muted">500cf26</td>
+                <td class="text-muted">2026-03-30</td>
+              </tr>
+              <tr>
+                <td><strong>team-context 병렬 분리</strong></td>
+                <td>CTO팀</td>
+                <td><span class="kanban-card-badge L2">L2</span></td>
+                <td><span class="match-rate high">97%</span></td>
+                <td class="mono text-muted">abc1234</td>
+                <td class="text-muted">2026-03-30</td>
+              </tr>
+              <tr>
+                <td><strong>GCP 이관 Phase 5</strong></td>
+                <td>CTO팀</td>
+                <td><span class="kanban-card-badge L2">L3</span></td>
+                <td><span class="match-rate high">95%</span></td>
+                <td class="mono text-muted">def5678</td>
+                <td class="text-muted">2026-03-29</td>
+              </tr>
+              <tr>
+                <td><strong>마케팅 콘텐츠 v2</strong></td>
+                <td>MKT팀</td>
+                <td><span class="kanban-card-badge L1">L1</span></td>
+                <td>-</td>
+                <td class="mono text-muted">ghi9012</td>
+                <td class="text-muted">2026-03-28</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 활동 (간략) ═══ -->
+    <section id="page-activity" class="page-section">
+      <h2 class="page-title">활동</h2>
+      <div class="card">
+        <div class="card-body" style="padding: 0;">
+          <div style="padding: 12px 20px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; gap: 12px;">
+            <span class="text-muted text-sm" style="min-width: 60px;">10:35</span>
+            <span class="badge badge-running" style="min-width: 60px; justify-content: center;">태스크</span>
+            <span>에이전트 대시보드 기획 시작 — <strong>PM_LEADER</strong></span>
+          </div>
+          <div style="padding: 12px 20px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; gap: 12px;">
+            <span class="text-muted text-sm" style="min-width: 60px;">10:30</span>
+            <span class="badge badge-completed" style="min-width: 60px; justify-content: center;">커밋</span>
+            <span><code class="mono">7c04ec4</code> test: hook chain verification — <strong>CTO_LEADER</strong></span>
+          </div>
+          <div style="padding: 12px 20px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; gap: 12px;">
+            <span class="text-muted text-sm" style="min-width: 60px;">10:28</span>
+            <span class="badge badge-idle" style="min-width: 60px; justify-content: center;">상태</span>
+            <span>backend-dev 상태 변경: 실행중 → 대기</span>
+          </div>
+          <div style="padding: 12px 20px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; gap: 12px;">
+            <span class="text-muted text-sm" style="min-width: 60px;">10:25</span>
+            <span class="badge badge-completed" style="min-width: 60px; justify-content: center;">체인</span>
+            <span>체인 자동화 TDD — Match Rate 100% 달성</span>
+          </div>
+          <div style="padding: 12px 20px; display: flex; align-items: center; gap: 12px;">
+            <span class="text-muted text-sm" style="min-width: 60px;">10:20</span>
+            <span style="min-width: 60px; display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; background: #ede9fe; color: #7c3aed; justify-content: center;">예산</span>
+            <span>CTO팀 주간 예산 60% 도달 — 경고</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 루틴 (간략) ═══ -->
+    <section id="page-routines" class="page-section">
+      <h2 class="page-title">루틴</h2>
+      <div class="card">
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>이름</th>
+                <th>크론</th>
+                <th>활성</th>
+                <th>마지막 실행</th>
+                <th>상태</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>게이트 판정 크론</strong></td>
+                <td class="mono text-muted">*/5 * * * *</td>
+                <td><span style="color: var(--success); font-weight: 600;">ON</span></td>
+                <td class="text-muted">2분 전</td>
+                <td><span class="badge badge-completed">성공</span></td>
+              </tr>
+              <tr>
+                <td><strong>에이전트 idle 체크</strong></td>
+                <td class="mono text-muted">*/10 * * * *</td>
+                <td><span style="color: var(--success); font-weight: 600;">ON</span></td>
+                <td class="text-muted">5분 전</td>
+                <td><span class="badge badge-completed">성공</span></td>
+              </tr>
+              <tr>
+                <td><strong>비용 수집</strong></td>
+                <td class="mono text-muted">0 * * * *</td>
+                <td><span style="color: var(--success); font-weight: 600;">ON</span></td>
+                <td class="text-muted">31분 전</td>
+                <td><span class="badge badge-completed">성공</span></td>
+              </tr>
+              <tr>
+                <td><strong>일일 보고서</strong></td>
+                <td class="mono text-muted">0 9 * * *</td>
+                <td><span style="color: var(--text-light); font-weight: 600;">OFF</span></td>
+                <td class="text-muted">-</td>
+                <td>-</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ── 에이전트 상세 드로어 ── -->
+<div id="drawer-overlay" class="drawer-overlay" onclick="closeDrawer(event)">
+  <div class="drawer" onclick="event.stopPropagation()">
+    <div class="drawer-header">
+      <div>
+        <div id="drawer-agent-name" style="font-size: 16px; font-weight: 700;">CTO_LEADER</div>
+        <div id="drawer-agent-role" style="font-size: 12px; color: var(--text-muted);">리더</div>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()">&times;</button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-section">
+        <div class="drawer-section-title">상태</div>
+        <div class="flex items-center gap-2 mb-4">
+          <span class="badge badge-running">실행중</span>
+          <span class="text-muted text-sm">마지막 활동: 15초 전</span>
+        </div>
+        <div class="drawer-stat-grid">
+          <div class="drawer-stat">
+            <div class="drawer-stat-label">월 비용</div>
+            <div class="drawer-stat-value">$4.10</div>
+          </div>
+          <div class="drawer-stat">
+            <div class="drawer-stat-label">실행 횟수</div>
+            <div class="drawer-stat-value">12</div>
+          </div>
+          <div class="drawer-stat">
+            <div class="drawer-stat-label">입력 토큰</div>
+            <div class="drawer-stat-value">45.2K</div>
+          </div>
+          <div class="drawer-stat">
+            <div class="drawer-stat-label">출력 토큰</div>
+            <div class="drawer-stat-value">8.1K</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">현재 작업</div>
+        <div class="kanban-card" style="margin: 0;">
+          <div class="kanban-card-title">에이전트 대시보드</div>
+          <div class="kanban-card-meta">
+            <span class="kanban-card-badge design">DESIGN</span>
+            <span class="kanban-card-badge L2">L2</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">런타임</div>
+        <div style="font-size: 12px;">
+          <div class="flex items-center gap-2 mb-4" style="padding: 8px 12px; background: #f9fafb; border-radius: 8px;">
+            <span style="color: var(--text-muted);">tmux:</span>
+            <code class="mono">bscamp-cto</code>
+            <span style="color: var(--text-muted); margin-left: auto;">PID:</span>
+            <code class="mono">28341</code>
+          </div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">최근 실행 기록</div>
+        <div class="run-row">
+          <span class="badge badge-running" style="font-size: 10px;">실행중</span>
+          <span class="text-sm">10:30~</span>
+          <span class="text-muted text-sm ml-auto tabular">12K/3.2K</span>
+        </div>
+        <div class="run-row">
+          <span class="badge badge-completed" style="font-size: 10px;">완료</span>
+          <span class="text-sm">09:15~09:45</span>
+          <span class="text-muted text-sm ml-auto tabular">45K/8K</span>
+        </div>
+        <div class="run-row">
+          <span class="badge badge-completed" style="font-size: 10px;">완료</span>
+          <span class="text-sm">08:00~08:30</span>
+          <span class="text-muted text-sm ml-auto tabular">32K/6K</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 페이지 전환
+  function showPage(page) {
+    document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+  }
+
+  // 뷰 토글 (리스트/칸반)
+  function showView(view) {
+    document.querySelectorAll('.view-toggle-btn').forEach(btn => btn.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+  }
+
+  // 드로어 열기/닫기
+  function openDrawer(agentId) {
+    document.getElementById('drawer-overlay').classList.add('open');
+  }
+
+  function closeDrawer(e) {
+    if (e && e.target !== e.currentTarget) return;
+    document.getElementById('drawer-overlay').classList.remove('open');
+  }
+</script>
+
+</body>
+</html>
