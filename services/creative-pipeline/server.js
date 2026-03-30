@@ -42,7 +42,7 @@ function runSaliency({ limit, accountId }) {
   return new Promise((resolve, reject) => {
     const args = ['saliency/predict.py', '--limit', String(limit)];
     if (accountId) args.push('--account-id', accountId);
-    execFile('python3', args, { cwd: '/app', timeout: 1800000 }, (err, stdout, stderr) => {
+    execFile('python3', args, { cwd: '/app', timeout: 1800000, maxBuffer: 100 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (stderr) console.error('[saliency stderr]', stderr.slice(-500));
       if (err) return reject(err);
       try {
@@ -73,7 +73,7 @@ function runLpSaliency({ limit, accountId }) {
   return new Promise((resolve, reject) => {
     const args = ['saliency/predict_lp.py', '--limit', String(limit)];
     if (accountId) args.push('--account-id', accountId);
-    execFile('python3', args, { cwd: '/app', timeout: 1800000 }, (err, stdout, stderr) => {
+    execFile('python3', args, { cwd: '/app', timeout: 1800000, maxBuffer: 100 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (stderr) console.error('[lp-saliency stderr]', stderr.slice(-500));
       if (err) return reject(err);
       try {
@@ -105,7 +105,7 @@ function runVideoSaliency({ limit, accountId, maxFrames }) {
     const args = ['saliency/predict_video_frames.py', '--limit', String(limit)];
     if (accountId) args.push('--account-id', accountId);
     if (maxFrames) args.push('--max-frames', String(maxFrames));
-    execFile('python3', args, { cwd: '/app', timeout: 3600000 }, (err, stdout, stderr) => {
+    execFile('python3', args, { cwd: '/app', timeout: 3600000, maxBuffer: 100 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (stderr) console.error('[video-saliency stderr]', stderr.slice(-500));
       if (err) return reject(err);
       try {

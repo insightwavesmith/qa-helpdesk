@@ -276,57 +276,39 @@ export async function GET(req: NextRequest) {
       await new Promise((r) => setTimeout(r, 2000));
     }
 
-    // ━━━ 4. creative_saliency → creative_media.video_analysis 동기화 ━━━
-    // Python이 creative_saliency(target_type='video')에 저장한 요약을
-    // creative_media.video_analysis JSONB로도 동기화
+    // ━━━ 4. Cloud Run 응답의 videoResults → creative_media.video_analysis 직접 저장 ━━━
+    // Python이 반환한 분석 결과를 Cloud SQL에 직접 반영 (Supabase→Cloud SQL 경로 불일치 해소)
     let synced = 0;
     try {
-      const processedAdIds = rows
-        .map((r) => r.creatives?.ad_id)
-        .filter(Boolean) as string[];
+      // ad_id → creative_media row 매핑 (역방향 lookup)
+      const adIdToMediaRow = new Map<string, VideoMediaRow>();
+      for (const row of rows) {
+        const adId = row.creatives?.ad_id;
+        if (adId) adIdToMediaRow.set(adId, row);
+      }
 
-      if (processedAdIds.length > 0) {
-        // creative_saliency에서 video summary 조회
-        const { data: saliencyRows } = await svc
-          .from("creative_saliency")
-          .select("ad_id, cta_attention_score, cognitive_load, top_fixations, attention_map_url")
-          .in("ad_id", processedAdIds)
-          .eq("target_type", "video");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const res of results as any[]) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const videoResults = res.videoResults as { ad_id: string; summary: Record<string, unknown> }[] | undefined;
+        if (!videoResults || !Array.isArray(videoResults)) continue;
 
-        if (saliencyRows && saliencyRows.length > 0) {
-          // ad_id → summary 매핑
-          const summaryMap = new Map<string, Record<string, unknown>>();
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          for (const s of saliencyRows as any[]) {
-            summaryMap.set(s.ad_id as string, {
-              cta_attention_score: s.cta_attention_score,
-              cognitive_load: s.cognitive_load,
-              attention_map_url: s.attention_map_url,
-              synced_at: new Date().toISOString(),
-              model_version: "deepgaze-iie",
-            });
-          }
+        for (const vr of videoResults) {
+          const mediaRow = adIdToMediaRow.get(vr.ad_id);
+          if (!mediaRow) continue;
+          if (mediaRow.video_analysis) continue; // 이미 있으면 스킵
 
-          // creative_media 업데이트
-          for (const row of rows) {
-            const adId = row.creatives?.ad_id;
-            if (!adId) continue;
-            const summary = summaryMap.get(adId);
-            if (!summary) continue;
-            if (row.video_analysis) continue; // 이미 있으면 스킵
+          const { error: updateErr } = await svc
+            .from("creative_media")
+            .update({ video_analysis: vr.summary })
+            .eq("id", mediaRow.id);
 
-            const { error: updateErr } = await svc
-              .from("creative_media")
-              .update({ video_analysis: summary })
-              .eq("id", row.id);
-
-            if (!updateErr) {
-              synced++;
-            } else {
-              console.error(
-                `[video-saliency] video_analysis 동기화 실패 id=${row.id}: ${updateErr.message}`,
-              );
-            }
+          if (!updateErr) {
+            synced++;
+          } else {
+            console.error(
+              `[video-saliency] video_analysis 저장 실패 id=${mediaRow.id}: ${updateErr.message}`,
+            );
           }
         }
       }

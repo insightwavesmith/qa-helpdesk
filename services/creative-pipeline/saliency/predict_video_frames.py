@@ -400,6 +400,7 @@ def main():
 
     analyzed = 0
     errors = 0
+    video_results = []  # ad_id별 분석 결과 (cron route에서 DB 직접 저장용)
 
     for i, creative in enumerate(to_analyze):
         ad_id = creative["ad_id"]
@@ -496,15 +497,25 @@ def main():
                 file=sys.stderr,
             )
 
-            # 6. 요약 결과 DB 저장
+            # 6. 요약 결과 DB 저장 (Supabase REST — 레거시 호환)
             ok, status = save_video_summary(ad_id, account_id, summary, frame_results)
             if ok:
                 analyzed += 1
-                # 7. creative_media.video_analysis 시계열 동기화
+                # 7. creative_media.video_analysis 시계열 동기화 (Supabase)
                 update_creative_media_analysis(ad_id, summary)
             else:
                 print(f"  영상 요약 DB 저장 실패: {status}", file=sys.stderr)
                 errors += 1
+
+            # 8. 결과를 stdout JSON에 포함 (cron route → Cloud SQL 직접 저장용)
+            video_results.append({
+                "ad_id": ad_id,
+                "summary": {
+                    **summary,
+                    "analyzed_at": datetime.now(timezone.utc).isoformat(),
+                    "model_version": "deepgaze-iie",
+                },
+            })
 
     # 결과 출력
     print(f"\n━━━ 영상 프레임 분석 결과 ━━━", file=sys.stderr)
@@ -514,7 +525,13 @@ def main():
     print(f"에러: {errors}건", file=sys.stderr)
 
     # stdout에 결과 JSON 출력 (server.js가 파싱)
-    print(json.dumps({"ok": True, "analyzed": analyzed, "errors": errors, "skipped": skipped}))
+    print(json.dumps({
+        "ok": True,
+        "analyzed": analyzed,
+        "errors": errors,
+        "skipped": skipped,
+        "videoResults": video_results,
+    }))
 
 
 if __name__ == "__main__":

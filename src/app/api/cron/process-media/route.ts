@@ -395,6 +395,34 @@ async function processImageRows(
 // ── VIDEO 처리 ────────────────────────────────────────────────
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
 
+/**
+ * video_id 추출 — 4단계 폴백
+ * 1순위: raw_creative.video_id (직접 필드)
+ * 2순위: raw_creative.object_story_spec.video_data.video_id (SHARE 타입)
+ * 3순위: raw_creative.asset_feed_spec.videos[0].video_id (Advantage+)
+ * 4순위: content_hash (collect-daily가 videoId를 content_hash에 저장)
+ */
+function extractVideoId(row: PendingMediaRow): string | null {
+  const rc = row.raw_creative;
+  if (!rc) return row.content_hash || null;
+
+  // 1순위: 직접 필드
+  if (rc.video_id && typeof rc.video_id === "string") return rc.video_id;
+
+  // 2순위: object_story_spec.video_data.video_id
+  const oss = rc.object_story_spec as { video_data?: { video_id?: string } } | undefined;
+  if (oss?.video_data?.video_id) return oss.video_data.video_id;
+
+  // 3순위: asset_feed_spec.videos[0].video_id
+  const afs = rc.asset_feed_spec as { videos?: { video_id?: string }[] } | undefined;
+  if (afs?.videos && afs.videos.length > 0 && afs.videos[0].video_id) {
+    return afs.videos[0].video_id;
+  }
+
+  // 4순위: content_hash (collect-daily가 content_hash = videoId로 저장)
+  return row.content_hash || null;
+}
+
 async function processVideoRows(
   cleanAccountId: string,
   rows: PendingMediaRow[],
@@ -402,22 +430,31 @@ async function processVideoRows(
   svc: any,
   result: ProcessResult,
 ): Promise<void> {
-  // video_id 수집
+  // video_id 수집 (4단계 폴백 적용)
   const videoIds: string[] = [];
   const rowByVideoId = new Map<string, PendingMediaRow[]>();
+  let noVideoIdCount = 0;
 
   for (const row of rows) {
-    const videoId = row.raw_creative?.video_id as string | undefined;
-    if (!videoId) continue;
+    const videoId = extractVideoId(row);
+    if (!videoId) {
+      noVideoIdCount++;
+      continue;
+    }
     videoIds.push(videoId);
     if (!rowByVideoId.has(videoId)) rowByVideoId.set(videoId, []);
     rowByVideoId.get(videoId)!.push(row);
   }
 
+  if (noVideoIdCount > 0) {
+    console.warn(
+      `[process-media] VIDEO video_id 추출 불가 ${noVideoIdCount}건 스킵 [${cleanAccountId}] (raw_creative에 video_id/oss.video_data/afs.videos/content_hash 모두 없음)`
+    );
+    result.byType.VIDEO.processed += noVideoIdCount;
+    result.processed += noVideoIdCount;
+  }
+
   if (videoIds.length === 0) {
-    // video_id 없는 VIDEO 행 — 처리 불가로 건너뜀
-    result.byType.VIDEO.processed += rows.length;
-    result.processed += rows.length;
     return;
   }
 
@@ -436,6 +473,9 @@ async function processVideoRows(
   } catch (err) {
     console.warn(`[process-media] VIDEO fetchVideoThumbnails 실패 [${cleanAccountId}]:`, err);
   }
+
+  // 스킵 사유별 카운터
+  const skipReasons = { noSourceUrl: 0, oversized: 0, downloadFail: 0 };
 
   for (const [videoId, videoRows] of rowByVideoId) {
     for (const row of videoRows) {
@@ -481,7 +521,7 @@ async function processVideoRows(
         const sourceUrl = sourceUrlMap.get(videoId) || null;
 
         if (!sourceUrl) {
-          console.warn(`[process-media] VIDEO 소스 URL 없음: ${row.id} (videoId=${videoId})`);
+          skipReasons.noSourceUrl++;
           // 썸네일만 있으면 thumbnail_url 업데이트
           if (thumbnailUrl) {
             await svc
@@ -502,8 +542,9 @@ async function processVideoRows(
           const contentLength = parseInt(headRes.headers.get("content-length") ?? "0", 10);
           if (contentLength > MAX_VIDEO_SIZE) {
             console.warn(
-              `[process-media] VIDEO 크기 초과 (${(contentLength / 1024 / 1024).toFixed(1)}MB > 100MB): ${row.id}`
+              `[process-media] VIDEO 크기 초과 (${(contentLength / 1024 / 1024).toFixed(1)}MB > 100MB): ${row.id} (videoId=${videoId})`
             );
+            skipReasons.oversized++;
             // 썸네일만 업데이트
             if (thumbnailUrl) {
               await svc
@@ -518,7 +559,8 @@ async function processVideoRows(
         // mp4 다운로드
         const mp4Res = await fetch(sourceUrl, { signal: AbortSignal.timeout(120_000) });
         if (!mp4Res.ok) {
-          console.warn(`[process-media] VIDEO 다운로드 실패 (${mp4Res.status}): ${row.id}`);
+          console.warn(`[process-media] VIDEO 다운로드 실패 (${mp4Res.status}): ${row.id} (videoId=${videoId})`);
+          skipReasons.downloadFail++;
           result.byType.VIDEO.errors++;
           result.errors++;
           continue;
@@ -528,8 +570,9 @@ async function processVideoRows(
         const mp4Buffer = Buffer.from(await mp4Res.arrayBuffer());
         if (mp4Buffer.length > MAX_VIDEO_SIZE) {
           console.warn(
-            `[process-media] VIDEO 버퍼 크기 초과 (${(mp4Buffer.length / 1024 / 1024).toFixed(1)}MB): ${row.id}`
+            `[process-media] VIDEO 버퍼 크기 초과 (${(mp4Buffer.length / 1024 / 1024).toFixed(1)}MB): ${row.id} (videoId=${videoId})`
           );
+          skipReasons.oversized++;
           if (thumbnailUrl) {
             await svc
               .from("creative_media")
@@ -586,5 +629,18 @@ async function processVideoRows(
 
     // 영상 간 딜레이
     await new Promise((r) => setTimeout(r, 200));
+  }
+
+  // ═══ VIDEO 스킵 사유 요약 로그 ═══
+  const totalSkipped = noVideoIdCount + skipReasons.noSourceUrl + skipReasons.oversized + skipReasons.downloadFail;
+  if (totalSkipped > 0) {
+    console.log(
+      `[process-media] VIDEO 스킵 요약 [${cleanAccountId}]: ` +
+      `총 ${totalSkipped}건 — ` +
+      `video_id없음=${noVideoIdCount}, ` +
+      `소스URL없음=${skipReasons.noSourceUrl}, ` +
+      `100MB초과=${skipReasons.oversized}, ` +
+      `다운로드실패=${skipReasons.downloadFail}`
+    );
   }
 }
