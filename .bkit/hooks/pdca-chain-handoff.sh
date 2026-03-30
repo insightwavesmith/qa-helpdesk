@@ -1,5 +1,5 @@
 #!/bin/bash
-# pdca-chain-handoff.sh v5 — Match Rate 게이트 + 위험도 분기 + PM 우회 COO 직통
+# pdca-chain-handoff.sh v6 — 체인 매트릭스 통합 (WORK_TYPE × PROCESS_LEVEL)
 # TaskCompleted hook 체인의 마지막 (6번째)
 #
 # v3 (2026-03-29):
@@ -12,6 +12,12 @@
 # v5 (2026-03-30):
 #   변경1: broker MCP → webhook wake (MOZZI는 OpenClaw 에이전트, broker peer 아님)
 #   변경2: L0/L1 + L2/L3 모두 http://127.0.0.1:18789/hooks/wake 경유
+# v6 (2026-03-31):
+#   변경1: detect-work-type.sh source (업무 유형 자동 분류)
+#   변경2: chain-status JSON 생성 (chain-status-writer.sh 연동)
+#   변경3: EARLY_LEVEL → CHAIN_KEY 기반 분기
+#   변경4: FROM_ROLE에 MKT_LEADER 추가
+#   변경5: Slack 알림 추가 (체인 시작 시)
 set -uo pipefail
 
 
@@ -55,12 +61,34 @@ else
     TEAM=$(jq -r '.team // empty' "$CONTEXT_FILE" 2>/dev/null || true)
 fi
 [ -z "$TEAM" ] && exit 0
-# 팀명을 from_role로 변환 (CTO → CTO_LEADER, PM → PM_LEADER, 기타 → 그대로)
+
+# 팀명을 from_role로 변환
 case "$TEAM" in
     CTO*) FROM_ROLE="CTO_LEADER" ;;
     PM*)  FROM_ROLE="PM_LEADER" ;;
+    MKT*) FROM_ROLE="MKT_LEADER" ;;
     *)    FROM_ROLE="${TEAM}_LEADER" ;;
 esac
+
+# ── 2-A. 업무 유형 + 레벨 자동 분류 ──
+source "$(dirname "$0")/helpers/detect-work-type.sh" 2>/dev/null
+CHAIN_KEY="${WORK_TYPE}-${PROCESS_LEVEL}"  # 예: DEV-L2, MKT-L1
+
+# ── 2-B. chain-status JSON 생성 ──
+source "$(dirname "$0")/helpers/chain-status-writer.sh" 2>/dev/null
+TASK_NAME=$(jq -r '.task // "unknown"' "$CONTEXT_FILE" 2>/dev/null || echo "unknown")
+TASK_SLUG=$(echo "$TASK_NAME" | tr ' ' '-' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g' | cut -c1-30)
+create_chain_status "$TASK_NAME" "$CHAIN_KEY" "$TASK_SLUG" "$PROJECT_DIR" 2>/dev/null || true
+
+# ── 2-C. Slack 알림 (체인 시작) ──
+if [ -n "${SLACK_BOT_TOKEN:-}" ]; then
+    SLACK_MSG="[체인] ${TASK_NAME} — ${CHAIN_KEY} 시작"
+    curl -sf -X POST https://slack.com/api/chat.postMessage \
+      -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d "{\"channel\":\"C0AN7ATS4DD\",\"text\":\"${SLACK_MSG}\"}" \
+      --max-time 5 2>/dev/null || true
+fi
 
 # ── 3. 변경 파일 + 위험도 판단 ──
 CHANGED_FILES=$(git diff HEAD~1 --name-only 2>/dev/null || echo "")
@@ -71,19 +99,11 @@ HIGH_RISK_PATTERN="(auth|middleware\.ts|migration|\.sql|payment|\.env|firebase|s
 RISK_COUNT=$(echo "$CHANGED_FILES" | grep -cE "$HIGH_RISK_PATTERN" || true)
 RISK_FLAGS=$(echo "$CHANGED_FILES" | grep -oE "$HIGH_RISK_PATTERN" | sort -u | tr '\n' ',' | sed 's/,$//')
 
-# ── 3-B. L0/L1 → Match Rate 스킵 → ANALYSIS_REPORT 직접 전송 ──
-LAST_MSG=$(git log --oneline -1 2>/dev/null || echo "")
-IS_FIX=$(echo "$LAST_MSG" | grep -cE '^[a-f0-9]+ (fix|hotfix):' || true)
+# ── 3-B. CHAIN_KEY 기반 L0/L1 분기 → Match Rate 스킵 → ANALYSIS_REPORT 직접 전송 ──
+# CHAIN_KEY에서 레벨 추출
+_CK_LEVEL="${CHAIN_KEY##*-}"  # DEV-L0 → L0, MKT-L1 → L1
 
-if [ "$IS_FIX" -gt 0 ]; then
-    EARLY_LEVEL="L0"
-elif [ "$HAS_SRC" -eq 0 ]; then
-    EARLY_LEVEL="L1"
-else
-    EARLY_LEVEL=""
-fi
-
-if [ "$EARLY_LEVEL" = "L0" ] || [ "$EARLY_LEVEL" = "L1" ]; then
+if [ "$_CK_LEVEL" = "L0" ] || [ "$_CK_LEVEL" = "L1" ]; then
     # L0/L1: Match Rate 게이트 스킵 → MOZZI 직접 ANALYSIS_REPORT
     TASK_FILE=$(jq -r '.taskFiles[0] // empty' "$CONTEXT_FILE" 2>/dev/null || true)
     TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -104,8 +124,9 @@ if [ "$EARLY_LEVEL" = "L0" ] || [ "$EARLY_LEVEL" = "L1" ]; then
   "payload": {
     "task_file": "${TASK_FILE}",
     "deliverables": [${DELIVERABLES}],
-    "process_level": "${EARLY_LEVEL}",
-    "summary": "조사/분석 완료 (${EARLY_LEVEL}). 산출물 확인 필요.",
+    "process_level": "${_CK_LEVEL}",
+    "chain_key": "${CHAIN_KEY}",
+    "summary": "조사/분석 완료 (${CHAIN_KEY}). 산출물 확인 필요.",
     "chain_step": "l1_to_coo"
   },
   "ts": "${TIMESTAMP}",
@@ -117,7 +138,7 @@ EOFPAYLOAD
     # Webhook wake → MOZZI (OpenClaw 에이전트, broker peer 아님)
     WAKE_URL="http://127.0.0.1:18789/hooks/wake"
     WAKE_TOKEN="mz-hook-Kx9mP4vR7nWqZj2026"
-    WAKE_BODY=$(jq -nc --arg t "[CHAIN] ${FROM_ROLE} ${EARLY_LEVEL} 완료. 산출물: ${DELIVERABLES}" '{text: $t}')
+    WAKE_BODY=$(jq -nc --arg t "[CHAIN] ${FROM_ROLE} ${CHAIN_KEY} 완료. 산출물: ${DELIVERABLES}" '{text: $t}')
     WAKE_HTTP=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$WAKE_URL" \
         -H 'Content-Type: application/json' \
         -H "Authorization: Bearer ${WAKE_TOKEN}" \
@@ -125,31 +146,23 @@ EOFPAYLOAD
         --max-time 5 2>/dev/null || echo "000")
 
     if [ "$WAKE_HTTP" -ge 200 ] && [ "$WAKE_HTTP" -lt 300 ] 2>/dev/null; then
-        echo "✅ [${EARLY_LEVEL}] ANALYSIS_REPORT → MOZZI webhook 전송 완료"
+        echo "✅ [${CHAIN_KEY}] ANALYSIS_REPORT → MOZZI webhook 전송 완료"
         echo "  팀: ${FROM_ROLE}"
         echo "  산출물: ${DELIVERABLES}"
         exit 0
     fi
 
     # Fallback
-    echo "⚠ [${EARLY_LEVEL}] webhook 미응답 (HTTP ${WAKE_HTTP}). 수동 보고 필요."
+    echo "⚠ [${CHAIN_KEY}] webhook 미응답 (HTTP ${WAKE_HTTP}). 수동 보고 필요."
     echo "ACTION_REQUIRED: send_message(MOZZI, ANALYSIS_REPORT)"
     echo "PAYLOAD: ${PAYLOAD}"
     exit 0
 fi
 
-# ── 이하 기존 L2/L3 로직 (Match Rate 게이트 + COMPLETION_REPORT) ──
+# ── 이하 L2/L3 로직 (Match Rate 게이트 + COMPLETION_REPORT) ──
 
-if [ "$HAS_SRC" -eq 0 ]; then
-    PROCESS_LEVEL="L1"
-elif [ "$RISK_COUNT" -gt 0 ]; then
-    PROCESS_LEVEL="L3"
-else
-    PROCESS_LEVEL="L2"
-fi
-
-# ── 4. Match Rate 게이트 (L2/L3만 — L0/L1 bypass) ──
-if [ "$PROCESS_LEVEL" = "L2" ] || [ "$PROCESS_LEVEL" = "L3" ]; then
+# ── 4. Match Rate 게이트 (L2/L3만) ──
+if [ "$_CK_LEVEL" = "L2" ] || [ "$_CK_LEVEL" = "L3" ]; then
     source "$(dirname "$0")/helpers/match-rate-parser.sh"
     RATE=$(parse_match_rate "$PROJECT_DIR/docs/03-analysis")
     if [ -z "$RATE" ] || [ "$RATE" -lt 0 ] 2>/dev/null; then
@@ -163,12 +176,12 @@ if [ "$PROCESS_LEVEL" = "L2" ] || [ "$PROCESS_LEVEL" = "L3" ]; then
         exit 2
     fi
 else
-    # L0/L1: Match Rate 불필요
+    # L0/L1: Match Rate 불필요 (이 분기에 올 일 없지만 안전장치)
     RATE=0
 fi
 
 # ── 6. 분기 결정 ──
-case "$PROCESS_LEVEL" in
+case "$_CK_LEVEL" in
     L0|L1)
         TO_ROLE="MOZZI"
         CHAIN_STEP="cto_to_coo"
@@ -215,9 +228,10 @@ PAYLOAD=$(cat <<EOFPAYLOAD
     "analysis_file": "${ANALYSIS_FILE}",
     "commit_hash": "${LAST_COMMIT}",
     "changed_files": ${CHANGED_COUNT},
-    "summary": "개발 완료. Match Rate ${RATE}%. Level ${PROCESS_LEVEL}.",
+    "summary": "개발 완료. Match Rate ${RATE}%. ${CHAIN_KEY}.",
     "chain_step": "${CHAIN_STEP}",
-    "process_level": "${PROCESS_LEVEL}",
+    "chain_key": "${CHAIN_KEY}",
+    "process_level": "${_CK_LEVEL}",
     "risk_flags": [$(echo "$RISK_FLAGS" | sed 's/[^,]*/"&"/g')],
     ${AUTO_APPROVE}
     "requires_manual_review": ${MANUAL_REVIEW}
@@ -232,7 +246,7 @@ EOFPAYLOAD
 if [ "$TO_ROLE" = "MOZZI" ]; then
     WAKE_URL="http://127.0.0.1:18789/hooks/wake"
     WAKE_TOKEN="mz-hook-Kx9mP4vR7nWqZj2026"
-    WAKE_MSG="[CHAIN] ${TEAM} ${CHAIN_STEP} 완료. Level: ${PROCESS_LEVEL}, Match Rate: ${RATE}%"
+    WAKE_MSG="[CHAIN] ${TEAM} ${CHAIN_STEP} 완료. ${CHAIN_KEY}, Match Rate: ${RATE}%"
     [ "$MANUAL_REVIEW" = "true" ] && WAKE_MSG="${WAKE_MSG} ⚠ 수동 검수 필수"
     WAKE_BODY=$(jq -nc --arg t "$WAKE_MSG" '{text: $t}')
     WAKE_HTTP=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$WAKE_URL" \
@@ -242,7 +256,7 @@ if [ "$TO_ROLE" = "MOZZI" ]; then
         --max-time 5 2>/dev/null || echo "000")
     if [ "$WAKE_HTTP" = "200" ] || [ "$WAKE_HTTP" = "204" ]; then
         echo "✅ COMPLETION_REPORT → MOZZI webhook 전송 완료"
-        echo "  Level: ${PROCESS_LEVEL}, Match Rate: ${RATE}%"
+        echo "  ${CHAIN_KEY}, Match Rate: ${RATE}%"
         echo "  chain_step: ${CHAIN_STEP}"
         [ "$MANUAL_REVIEW" = "true" ] && echo "  ⚠ 수동 검수 필수 (고위험/L3)"
         echo "$PAYLOAD" | jq '.' > "$PROJECT_DIR/.bkit/runtime/last-completion-report.json" 2>/dev/null
@@ -268,7 +282,7 @@ HAS_MESSENGER=false
 # 8-1. Health check
 if ! curl -sf "${BROKER_URL}/health" >/dev/null 2>&1; then
     echo "⚠ broker 미기동. 수동 핸드오프 필요."
-    echo "Match Rate ${RATE}% 통과 (${PROCESS_LEVEL}). ${TO_ROLE}에게 직접 전달하세요."
+    echo "Match Rate ${RATE}% 통과 (${CHAIN_KEY}). ${TO_ROLE}에게 직접 전달하세요."
     [ "$MANUAL_REVIEW" = "true" ] && echo "  ⚠ 수동 검수 필수 (고위험/L3)"
     echo "ACTION_REQUIRED: send_message(${TO_ROLE}, COMPLETION_REPORT)"
     echo "PAYLOAD: ${PAYLOAD}"
@@ -340,7 +354,7 @@ fi
 if [ "$SEND_OK" = "true" ]; then
     echo "✅ PDCA 체인 자동 전송 완료"
     echo "  Match Rate: ${RATE}%"
-    echo "  Level: ${PROCESS_LEVEL}"
+    echo "  ${CHAIN_KEY}"
     echo "  대상: ${TO_ROLE} (peer: ${TARGET_ID})"
     echo "  chain_step: ${CHAIN_STEP}"
     [ "$MANUAL_REVIEW" = "true" ] && echo "  ⚠ 수동 검수 필수 (고위험/L3)"
