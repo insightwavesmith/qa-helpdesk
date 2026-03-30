@@ -190,14 +190,15 @@ export function parseSceneAnalysis(
       saw: s.desc || "-",
       heard: deriveHeard(audio, s.type),
       felt: deriveFeeling(s.analysis.viewer_action, s.type),
-      gaze: s.deepgaze
-        ? {
-            dominantRegion: s.deepgaze.dominant_region,
-            fixationCount: s.deepgaze.fixation_count,
-            avgIntensity: s.deepgaze.avg_intensity,
-            ctaVisible: s.deepgaze.cta_visible,
-          }
-        : null,
+      gaze:
+        s.deepgaze && s.deepgaze.fixation_count > 0
+          ? {
+              dominantRegion: s.deepgaze.dominant_region,
+              fixationCount: s.deepgaze.fixation_count,
+              avgIntensity: s.deepgaze.avg_intensity,
+              ctaVisible: s.deepgaze.cta_visible,
+            }
+          : null,
       elementAttention: (s.element_attention ?? []).map((ea) => ({
         type: ea.type,
         attentionPct: ea.attention_pct,
