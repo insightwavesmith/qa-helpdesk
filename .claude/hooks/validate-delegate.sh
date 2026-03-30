@@ -1,6 +1,6 @@
 #!/bin/bash
-# validate-delegate.sh — 리더의 src/ 직접 수정 차단 (팀원은 허용)
-# PreToolUse hook (Edit|Write): 리더(pane 0)가 src/ 수정 시 차단, 팀원(pane 1+)은 통과
+# validate-delegate.sh — 리더의 코드 직접 수정 차단 (allowlist 방식, 팀원은 허용)
+# PreToolUse hook (Edit|Write): 리더(pane 0)가 허용 목록 외 파일 수정 시 차단, 팀원(pane 1+)은 통과
 # exit 2 = 차단 (게이트)
 #
 # Agent Teams 구조:
@@ -59,13 +59,9 @@ if [ "${IS_TEAMMATE:-}" = "true" ]; then
     fi
 fi
 
-# src/ 파일이 아니면 패스
-if ! echo "$REL_FILE" | grep -q "^src/"; then
-    exit 0
-fi
-
-# 설정/문서 파일은 패스
-if echo "$REL_FILE" | grep -qE '^\.(claude|md)|^docs/|^TASK|^CLAUDE'; then
+# ── 리더 허용 경로 (allowlist) ──
+# 허용 목록에 매칭되면 패스, 아니면 차단 대상
+if echo "$REL_FILE" | grep -qE '^docs/|^TASK|^CLAUDE|^\.claude/|^\.bkit/(state|logs)/|\.md$|^package\.json$|^tsconfig\.json$'; then
     exit 0
 fi
 
@@ -94,9 +90,9 @@ if [ "$PANE_INDEX" -gt 0 ] 2>/dev/null; then
 fi
 
 # ─── 리더 (pane_index == 0) → 차단 ───
-echo "❌ [delegate 강제] 리더는 src/ 코드를 직접 수정할 수 없습니다." >&2
+echo "❌ [delegate 강제] 리더는 허용 목록 외 파일을 직접 수정할 수 없습니다." >&2
+echo "허용: docs/, TASK*, CLAUDE*, .claude/, .bkit/state|logs/, *.md, package.json, tsconfig.json" >&2
 echo "팀원(frontend-dev, backend-dev)에게 작업을 위임하세요." >&2
-echo "CLAUDE.md 규칙: '리더가 직접 코드 쓰면 리젝'" >&2
-source "$PROJECT_DIR/.claude/hooks/notify-hook.sh" 2>/dev/null && \
-    notify_hook "🚫 [게이트] 리더가 src/ 직접 수정 시도: $REL_FILE" "validate-delegate"
+source "$PROJECT_DIR/.bkit/hooks/notify-hook.sh" 2>/dev/null && \
+    notify_hook "🚫 [게이트] 리더가 허용 외 파일 직접 수정 시도: $REL_FILE" "validate-delegate"
 exit 2
