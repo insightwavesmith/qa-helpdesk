@@ -5,6 +5,7 @@ import { after } from "next/server";
 import { createServiceClient } from "@/lib/db";
 import { createAIAnswerForQuestion } from "@/lib/rag";
 import { getCurrentUser } from "@/lib/firebase/auth";
+import { notifyNewQuestion } from "@/lib/slack";
 
 export async function getQuestions({
   page = 1,
@@ -136,6 +137,13 @@ export async function createQuestion(formData: {
     console.error("createQuestion error:", error);
     return { data: null, error: error.message };
   }
+
+  // fire-and-forget: 슬랙 채널에 새 질문 알림
+  notifyNewQuestion({
+    title: formData.title,
+    authorName: profile.name || "이름 없음",
+    questionId: data.id,
+  }).catch(err => console.error("[Slack] 알림 실패:", err));
 
   // AI 답변 자동 생성 (동기 실행 — after()는 서버리스 타임아웃 시 silent fail)
   try {
