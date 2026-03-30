@@ -4,6 +4,7 @@ import { useAgents, useUnreadCount } from '../hooks/useApi';
 const NAV_ITEMS = [
   { to: '/', label: '대시보드', icon: '📊' },
   { to: '/tickets', label: '태스크', icon: '📋' },
+  { to: '/agents', label: '에이전트', icon: '🤖' },
   { to: '/costs', label: '비용', icon: '💰' },
   { to: '/org', label: '조직도', icon: '👥' },
   { to: '/chains', label: '체인', icon: '🔗' },

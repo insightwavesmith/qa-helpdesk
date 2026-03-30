@@ -51,6 +51,7 @@ export interface Agent {
   status: string;
   model: string | null;
   icon: string | null;
+  reportsTo: string | null;
   spentMonthlyCents: number;
   lastHeartbeatAt: string | null;
   createdAt: string;
@@ -108,5 +109,126 @@ export function useUnreadCount() {
     queryKey: ['notifications', 'unread-count'],
     queryFn: () => fetchJson('/notifications/unread-count'),
     refetchInterval: 5000,
+  });
+}
+
+// ─── 비용 ─────────────────────────────────────
+
+export interface CostSummary {
+  totalCents: number;
+  totalTokens: number;
+  eventCount: number;
+}
+
+export interface CostByModel {
+  model: string;
+  totalCents: number;
+  totalTokens: number;
+  eventCount: number;
+}
+
+export interface CostByAgent {
+  agentId: string;
+  agentName: string | null;
+  displayName: string | null;
+  totalCents: number;
+  totalTokens: number;
+  eventCount: number;
+}
+
+export interface BudgetPolicy {
+  id: string;
+  scopeType: string;
+  scopeId: string | null;
+  amountCents: number;
+  warnPercent: number;
+  hardStop: number;
+  windowKind: string;
+  active: number;
+  createdAt: string;
+}
+
+export interface BudgetIncident {
+  id: string;
+  policyId: string;
+  agentId: string | null;
+  kind: string;
+  amountAtTrigger: number;
+  thresholdAmount: number;
+  resolved: number;
+  resolvedAt: string | null;
+  createdAt: string;
+}
+
+export function useCostsSummary() {
+  return useQuery<CostSummary>({
+    queryKey: ['costs', 'summary'],
+    queryFn: () => fetchJson('/costs/summary'),
+    refetchInterval: 10000,
+  });
+}
+
+export function useCostsByModel() {
+  return useQuery<CostByModel[]>({
+    queryKey: ['costs', 'by-model'],
+    queryFn: () => fetchJson('/costs/by-model'),
+    refetchInterval: 10000,
+  });
+}
+
+export function useCostsByAgent() {
+  return useQuery<CostByAgent[]>({
+    queryKey: ['costs', 'by-agent'],
+    queryFn: () => fetchJson('/costs/by-agent'),
+    refetchInterval: 10000,
+  });
+}
+
+export function useBudgetPolicies() {
+  return useQuery<BudgetPolicy[]>({
+    queryKey: ['budgets', 'policies'],
+    queryFn: () => fetchJson('/budgets/policies'),
+    refetchInterval: 10000,
+  });
+}
+
+export function useBudgetIncidents(resolved?: boolean) {
+  const params = resolved !== undefined ? `?resolved=${resolved ? '1' : '0'}` : '';
+  return useQuery<BudgetIncident[]>({
+    queryKey: ['budgets', 'incidents', resolved],
+    queryFn: () => fetchJson(`/budgets/incidents${params}`),
+    refetchInterval: 10000,
+  });
+}
+
+// ─── 체인 ─────────────────────────────────────
+
+export interface Chain {
+  id: string;
+  name: string;
+  description: string | null;
+  active: number;
+  createdAt: string;
+}
+
+export interface ChainStep {
+  id: string;
+  chainId: string;
+  stepOrder: number;
+  teamRole: string;
+  phase: string;
+  label: string;
+  completionCondition: string;
+  autoTriggerNext: number;
+  assignee: string | null;
+  deployConfig: string | null;
+  createdAt: string;
+}
+
+export function useChains() {
+  return useQuery<Chain[]>({
+    queryKey: ['chains'],
+    queryFn: () => fetchJson('/chains'),
+    refetchInterval: 10000,
   });
 }

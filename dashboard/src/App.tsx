@@ -4,7 +4,10 @@ import { Layout } from './components/Layout';
 import { DashboardPage } from './pages/DashboardPage';
 import { TicketsPage } from './pages/TicketsPage';
 import { ActivityPage } from './pages/ActivityPage';
-import { PlaceholderPage } from './pages/PlaceholderPage';
+import { CostsPage } from './pages/CostsPage';
+import { OrgChartPage } from './pages/OrgChartPage';
+import { ChainsPage } from './pages/ChainsPage';
+import { AgentsPage } from './pages/AgentsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,9 +27,10 @@ export default function App() {
             <Route index element={<DashboardPage />} />
             <Route path="tickets" element={<TicketsPage />} />
             <Route path="activity" element={<ActivityPage />} />
-            <Route path="costs" element={<PlaceholderPage title="비용 추적" />} />
-            <Route path="org" element={<PlaceholderPage title="조직도" />} />
-            <Route path="chains" element={<PlaceholderPage title="체인 편집기" />} />
+            <Route path="costs" element={<CostsPage />} />
+            <Route path="org" element={<OrgChartPage />} />
+            <Route path="chains" element={<ChainsPage />} />
+            <Route path="agents" element={<AgentsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
