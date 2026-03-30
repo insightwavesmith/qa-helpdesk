@@ -76,6 +76,11 @@
             "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-deploy-authority.sh",
             "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/postmortem-review-gate.sh",
+            "timeout": 10000
           }
         ]
       },

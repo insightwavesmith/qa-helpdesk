@@ -7,11 +7,11 @@
 1. 이 파일 (CLAUDE.md) — 규칙
 2. docs/adr/ADR-002-service-context.md — 서비스 이해 (우리가 뭘 만드는지)
 3. docs/adr/ADR-001-account-ownership.md — 설계 원칙
-4. docs/retrospective/README.md — 과거 사고 교훈 (같은 실수 반복 방지)
+4. docs/postmortem/index.json — 과거 사고 교훈 (같은 실수 반복 방지)
 5. .claude/tasks/ 폴더 — 현재 TASK 확인
 ```
 > 위 5개를 읽지 않고 작업 시작하면 리젝. 서비스를 이해하지 못한 코드는 의미 없다.
-> 특히 4번 회고는 **마이그레이션, 대규모 변경, SDK 교체** 작업 시 반드시 해당 RET 항목 정독.
+> 특히 4번 회고는 **마이그레이션, 대규모 변경, SDK 교체** 작업 시 반드시 해당 PM 항목 정독.
 
 ## 절대 규칙
 0. **세션 시작 즉시 delegate 모드 진입**: Shift+Tab → delegate 모드. 팀원(frontend-dev, backend-dev, qa-engineer) 생성 후 작업 배정. Leader가 직접 코드 쓰면 리젝. 팀 없이 단독 작업 금지.

@@ -1,4 +1,12 @@
-# 회고 (Retrospective)
+# 회고 (Retrospective) — ⚠️ docs/postmortem/으로 이관됨
+
+> **이 디렉토리는 더 이상 사용하지 않습니다.**
+> 모든 회고 문서는 `docs/postmortem/`으로 이관되었습니다.
+> 인덱스: `docs/postmortem/index.json`
+
+---
+
+(아래는 이관 전 원본 참조용)
 
 에이전트팀이 **세션 시작 시 반드시 읽어야** 하는 사고 기록.
 같은 실수를 반복하지 않기 위한 교훈 모음.

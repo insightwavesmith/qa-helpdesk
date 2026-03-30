@@ -1,0 +1,86 @@
+{
+  "postmortems": [
+    {
+      "id": "PM-001",
+      "date": "2026-03-26",
+      "slug": "query-builder",
+      "title": "쿼리빌더 Big Bang 마이그레이션 장애",
+      "severity": "critical",
+      "category": "migration",
+      "status": "resolved",
+      "preventionTdd": ["__tests__/hooks/chain-e2e-realworld.test.ts"],
+      "relatedFiles": ["src/lib/query-builder.ts"],
+      "tags": ["big-bang", "runtime-qa", "126-files", "migration"]
+    },
+    {
+      "id": "PM-002",
+      "date": "2026-03-30",
+      "slug": "team-context-collision",
+      "title": "team-context 병렬 충돌",
+      "severity": "critical",
+      "category": "chain",
+      "status": "resolved",
+      "preventionTdd": ["__tests__/hooks/chain-e2e-realworld.test.ts"],
+      "relatedFiles": [".claude/hooks/helpers/team-context-resolver.sh"],
+      "tags": ["chain", "context", "parallel", "teamdelete"]
+    },
+    {
+      "id": "PM-003",
+      "date": "2026-03-30",
+      "slug": "approval-no-notify",
+      "title": "승인 요청 리더 미전달",
+      "severity": "warning",
+      "category": "process",
+      "status": "resolved",
+      "preventionTdd": ["__tests__/hooks/chain-e2e-realworld.test.ts"],
+      "relatedFiles": [".claude/hooks/helpers/approval-handler.sh"],
+      "tags": ["approval", "notification", "process"]
+    },
+    {
+      "id": "PM-004",
+      "date": "2026-03-30",
+      "slug": "deploy-blocked",
+      "title": "리더 배포 명령어 차단",
+      "severity": "warning",
+      "category": "permission",
+      "status": "resolved",
+      "preventionTdd": ["__tests__/hooks/deploy-authority.test.ts"],
+      "relatedFiles": [".claude/hooks/validate-deploy-authority.sh"],
+      "tags": ["deploy", "permission", "authority"]
+    },
+    {
+      "id": "PM-005",
+      "date": "2026-03-30",
+      "slug": "dashboard-sync-loop",
+      "title": "dashboard-sync 무한 커밋 루프",
+      "severity": "critical",
+      "category": "infra",
+      "status": "resolved",
+      "preventionTdd": ["__tests__/hooks/chain-e2e-realworld.test.ts"],
+      "relatedFiles": [".claude/hooks/dashboard-sync.sh"],
+      "tags": ["sync", "dashboard", "git", "infinite-loop"]
+    },
+    {
+      "id": "PM-006",
+      "date": "2026-03-30",
+      "slug": "vercel-gcs-confusion",
+      "title": "Vercel/GCS 환경 혼동",
+      "severity": "warning",
+      "category": "config",
+      "status": "resolved",
+      "preventionTdd": [],
+      "relatedFiles": ["docs/adr/ADR-002-service-context.md"],
+      "tags": ["config", "vercel", "cloud-run", "documentation"]
+    }
+  ],
+  "categories": [
+    "migration", "chain", "deployment", "config", "permission",
+    "data-loss", "performance", "security", "infra", "process"
+  ],
+  "stats": {
+    "total": 6,
+    "resolved": 6,
+    "open": 0,
+    "lastUpdated": "2026-03-30"
+  }
+}
