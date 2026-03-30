@@ -143,9 +143,9 @@ describe('HookBridgeService', () => {
   it('TC-H07: 잘못된 체인 참조에도 이벤트 기록', async () => {
     const ticket = await ticketSvc.create({ feature: 'f1', title: 't1' });
     await ticketSvc.changeStatus(ticket.id, 'in_progress');
+    // chainStepId만 설정 (chainId FK 제약 회피, chainStepId는 FK 아님)
     testDb.update(schema.tickets).set({
-      chainStepId: 'nonexistent',
-      chainId: 'nonexistent',
+      chainStepId: 'nonexistent-step',
     }).where(eq(schema.tickets.id, ticket.id)).run();
 
     await expect(hookSvc.onTaskCompleted({ buildSuccess: true }))

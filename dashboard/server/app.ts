@@ -8,6 +8,9 @@ import { registerBudgetRoutes } from './routes/budgets.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
 import { registerNotificationRoutes } from './routes/notifications.js';
 import { registerPdcaRoutes } from './routes/pdca.js';
+import { registerHookRoutes } from './routes/hooks.js';
+import { registerAgentRoutes } from './routes/agents.js';
+import { registerRoutineRoutes } from './routes/routines.js';
 
 const app: Application = express();
 
@@ -31,5 +34,8 @@ registerBudgetRoutes(app, db);
 registerDashboardRoutes(app, db);
 registerNotificationRoutes(app, db);
 registerPdcaRoutes(app, db);
+registerHookRoutes(app, db);
+registerAgentRoutes(app, db);
+registerRoutineRoutes(app, db);
 
 export default app;
