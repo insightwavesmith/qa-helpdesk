@@ -14,6 +14,7 @@
 #   변경2: L0/L1 + L2/L3 모두 http://127.0.0.1:18789/hooks/wake 경유
 set -uo pipefail
 
+
 # ── 1. 팀원 bypass ──
 source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
 [ "$IS_TEAMMATE" = "true" ] && exit 0
