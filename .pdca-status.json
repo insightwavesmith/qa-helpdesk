@@ -597,9 +597,10 @@
       },
       "updatedAt": "2026-03-30T20:00:00",
       "notes": "Plan 완료. 7건(B1 requireApproval P0, B2+B3 P1, A1+B4 P2, A2+A3 P3). Wave 4개. 총 5.5~6.5일."
-    },
+    }
+  },
   "chain-context-fix": {
-      "phase": "completed",
+      "phase": "plan",
       "plan": {
         "team": "pm",
         "done": true,
@@ -607,32 +608,32 @@
         "at": "2026-03-30"
       },
       "design": {
-        "team": "cto",
-        "done": true,
-        "doc": "docs/02-design/features/chain-context-fix.design.md",
-        "at": "2026-03-30"
+        "team": "pm",
+        "done": false,
+        "doc": "",
+        "at": null
       },
       "do": {
         "team": "cto",
-        "done": true,
+        "done": false,
         "commit": null,
-        "at": "2026-03-30"
+        "at": null
       },
       "check": {
         "team": "qa",
-        "done": true,
-        "doc": "docs/03-analysis/chain-context-fix.analysis.md",
-        "matchRate": 100
+        "done": false,
+        "doc": "",
+        "matchRate": null
       },
       "act": {
-        "done": true,
+        "done": false,
         "commit": null
       },
-      "updatedAt": "2026-03-30T22:00:00",
-      "notes": "P0-URGENT 완료. resolver+아카이빙+hook 9개 마이그레이션. TDD 12건+회귀 62건=74건 all Green. Match Rate 100%."
+      "updatedAt": "2026-03-30T20:30:00",
+      "notes": "P0-URGENT Plan 완료. team-context 팀별 분리 + 아카이빙. hook 9개 수정. TDD 12건+회귀 53건=65건. 공수 1일."
     }
   },
-  "updatedAt": "2026-03-30T22:00:00",
-  "notes": "chain-context-fix P0-URGENT 완료. 체인 자동 발동률 0%→100%.",
+  "updatedAt": "2026-03-30T20:30:00",
+  "notes": "chain-context-fix P0-URGENT Plan 완료. 체인 0% 동작 근본 수정.",
   "_autoSyncNote": "auto-synced at 2026-03-30"
 }
