@@ -41,10 +41,14 @@ function extractMediaUrls(snapshot?: SearchApiSnapshot) {
   const videoUrl =
     snapshot?.videos?.[0]?.video_hd_url ??
     snapshot?.videos?.[0]?.video_sd_url ??
+    snapshot?.cards?.[0]?.video_hd_url ??
+    snapshot?.cards?.[0]?.video_sd_url ??
     null;
 
   const videoPreviewUrl =
-    snapshot?.videos?.[0]?.video_preview_image_url ?? null;
+    snapshot?.videos?.[0]?.video_preview_image_url ??
+    snapshot?.cards?.[0]?.video_preview_image_url ??
+    null;
 
   const displayFormat = detectDisplayFormat(snapshot);
 
@@ -55,13 +59,17 @@ function extractMediaUrls(snapshot?: SearchApiSnapshot) {
 function detectDisplayFormat(snapshot?: SearchApiSnapshot): DisplayFormat {
   const fmt = snapshot?.display_format?.toUpperCase();
   if (fmt === "VIDEO" || (snapshot?.videos?.length ?? 0) > 0) return "VIDEO";
-  if (fmt === "CAROUSEL" || fmt === "DCO" || fmt === "MULTI_IMAGES")
-    return "CAROUSEL";
+  // DCO/CAROUSEL: cards 안에 video URL이 있으면 VIDEO
+  if (fmt === "CAROUSEL" || fmt === "DCO" || fmt === "MULTI_IMAGES") {
+    const hasVideoCard = snapshot?.cards?.some(
+      (c) => c.video_hd_url || c.video_sd_url || c.video_preview_image_url
+    );
+    return hasVideoCard ? "VIDEO" : "CAROUSEL";
+  }
   if (fmt === "IMAGE" || (snapshot?.images?.length ?? 0) > 0) return "IMAGE";
-  // cards만 있고 display_format 미지정: Advantage+ 영상 소재일 수 있으므로 CAROUSEL 단정 금지
   if ((snapshot?.cards?.length ?? 0) > 0) {
     const hasVideoCard = snapshot!.cards!.some(
-      (c) => c.video_preview_image_url
+      (c) => c.video_hd_url || c.video_sd_url || c.video_preview_image_url
     );
     return hasVideoCard ? "VIDEO" : "CAROUSEL";
   }
