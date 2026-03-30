@@ -36,8 +36,8 @@ import { PrescriptionError } from '@/types/prescription';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = 'gemini-3-pro-preview';
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
-const TIMEOUT_MS = 15_000;
-const MAX_RETRIES = 1;
+const TIMEOUT_MS = 90_000; // v3 프롬프트 확장으로 60→90초
+const MAX_RETRIES = 2;
 
 // ── STEP 1: 소재 원본 + 메타데이터 조회 ─────────────────────────────
 
@@ -283,7 +283,7 @@ async function step11_callGemini(prompt: {
             contents: [{ parts }],
             generationConfig: {
               temperature: 0.2,
-              maxOutputTokens: 4096,
+              maxOutputTokens: 8192,
               responseMimeType: 'application/json',
             },
           }),
@@ -304,7 +304,9 @@ async function step11_callGemini(prompt: {
       const text = responseData.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 
       try {
-        return JSON.parse(text) as GeminiPrescriptionOutput;
+        // Gemini가 코드펜스로 감쌀 수 있으므로 제거
+        const cleaned = text.replace(/^```(?:json)?\s*\n?/m, '').replace(/\n?```\s*$/m, '').trim();
+        return JSON.parse(cleaned) as GeminiPrescriptionOutput;
       } catch {
         throw new PrescriptionError('분석 결과 처리 중 오류가 발생했습니다.', 500, 'GEMINI_PARSE_ERROR');
       }
