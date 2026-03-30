@@ -39,37 +39,37 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/destructive-detector.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/destructive-detector.sh",
             "timeout": 5000
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-qa.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/validate-qa.sh",
             "timeout": 10000
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-pdca.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/validate-pdca.sh",
             "timeout": 15000
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-task.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/validate-task.sh",
             "timeout": 15000
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/enforce-qa-before-merge.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/enforce-qa-before-merge.sh",
             "timeout": 120000
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-deploy-authority.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/validate-deploy-authority.sh",
             "timeout": 5000
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/postmortem-review-gate.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/postmortem-review-gate.sh",
             "timeout": 10000
           }
         ]
@@ -79,17 +79,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-delegate.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/validate-delegate.sh",
             "timeout": 5000
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-plan.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/validate-plan.sh",
             "timeout": 10000
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-design.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/validate-design.sh",
             "timeout": 15000
           }
         ]
@@ -99,7 +99,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/enforce-teamcreate.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/enforce-teamcreate.sh",
             "timeout": 5000
           }
         ]
@@ -109,7 +109,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-before-delegate.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/validate-before-delegate.sh",
             "timeout": 10000
           }
         ]
@@ -119,7 +119,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/validate-pdca-before-teamdelete.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/validate-pdca-before-teamdelete.sh",
             "timeout": 10000
           }
         ]
@@ -130,42 +130,42 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/task-completed.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/task-completed.sh",
             "timeout": 10000
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/task-quality-gate.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/task-quality-gate.sh",
             "timeout": 120000
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/gap-analysis.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/gap-analysis.sh",
             "timeout": 15000
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/pdca-update.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/pdca-update.sh",
             "timeout": 30000
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/notify-completion.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/notify-completion.sh",
             "timeout": 10000
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/deploy-trigger.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/deploy-trigger.sh",
             "timeout": 10000
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/deploy-verify.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/deploy-verify.sh",
             "timeout": 5000
           },
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/pdca-chain-handoff.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/pdca-chain-handoff.sh",
             "timeout": 15000
           }
         ]
@@ -177,7 +177,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /Users/smith/projects/bscamp/.claude/hooks/registry-update.sh",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/registry-update.sh",
             "timeout": 5000
           }
         ]

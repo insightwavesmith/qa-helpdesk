@@ -5,7 +5,7 @@ description: Claude Code 훅 생성 가이드. settings.json 등록 + 셸 스크
 
 <objective>
 bscamp 프로젝트의 Claude Code 훅을 생성한다.
-기존 훅 패턴(.claude/hooks/*.sh)을 따라 일관된 구조로 작성.
+기존 훅 패턴(.bkit/hooks/*.sh)을 따라 일관된 구조로 작성.
 </objective>
 
 <hook_types>
@@ -43,7 +43,7 @@ exit 0
 // .claude/settings.json → hooks.{이벤트} 배열에 추가
 {
   "type": "command",
-  "command": "bash /Users/smith/projects/bscamp/.claude/hooks/{hook_name}.sh",
+  "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/{hook_name}.sh",
   "timeout": 10000
 }
 ```
@@ -52,8 +52,8 @@ matcher 옵션: "Bash", "Edit|Write", "Task", "Read" 등 도구명 정규식
 
 <process>
 1. 사용자에게 질문: 어떤 이벤트? 어떤 조건에서 차단/허용?
-2. .claude/hooks/ 기존 훅 패턴 확인
-3. 셸 스크립트 작성 (.claude/hooks/{name}.sh)
+2. .bkit/hooks/ 기존 훅 패턴 확인
+3. 셸 스크립트 작성 (.bkit/hooks/{name}.sh)
 4. chmod +x 실행
 5. settings.json에 훅 등록
 6. 테스트 방법 안내
