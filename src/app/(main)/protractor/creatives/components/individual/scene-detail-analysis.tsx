@@ -85,9 +85,25 @@ export function SceneDetailAnalysis({
   saliencyFrames,
 }: SceneDetailAnalysisProps) {
   const sceneAnalysis = analysisJson.scene_analysis;
-  if (!sceneAnalysis || !sceneAnalysis.scenes || sceneAnalysis.scenes.length === 0) {
+  const sceneJourney = analysisJson.scene_journey;
+
+  // scene_journey도 scene_analysis도 없으면 렌더 안 함
+  if (
+    (!sceneAnalysis || !sceneAnalysis.scenes || sceneAnalysis.scenes.length === 0) &&
+    (!sceneJourney || sceneJourney.length === 0)
+  ) {
     return null;
   }
+
+  // scene_journey 인덱스 맵 (time 기준으로 매칭)
+  const journeyByTime = new Map(
+    (sceneJourney ?? []).map((sj) => [sj.time, sj])
+  );
+
+  const scenes = sceneAnalysis?.scenes ?? [];
+
+  // scene_journey만 있고 scene_analysis가 없는 경우
+  const useJourneyOnly = scenes.length === 0 && sceneJourney && sceneJourney.length > 0;
 
   return (
     <div className="rounded-xl bg-slate-50 border border-slate-200 p-4">
@@ -102,115 +118,202 @@ export function SceneDetailAnalysis({
 
       {/* 씬 카드들 */}
       <div className="space-y-2">
-        {sceneAnalysis.scenes.map((scene, idx) => {
-          const borderColor = SCENE_BORDER_COLORS[scene.type] ?? "#64748b";
-          const { start } = parseSceneTime(scene.time);
-          const frameUrl = findClosestFrame(saliencyFrames, start);
+        {useJourneyOnly
+          ? /* scene_journey만 있는 경우 */
+            sceneJourney!.map((sj, idx) => {
+              const borderColor = SCENE_BORDER_COLORS[sj.type] ?? "#64748b";
+              const { start } = parseSceneTime(sj.time);
+              const frameUrl = findClosestFrame(saliencyFrames, start);
 
-          // element_attention에서 주요 요소 추출
-          const elements = scene.element_attention ?? [];
-          const dominantRegion = scene.deepgaze.dominant_region;
+              // 처방 target에서 여정 단계 추출
+              const stageKey = sj.prescription.target.includes("감각")
+                ? "감각"
+                : sj.prescription.target.includes("사고")
+                  ? "사고"
+                  : "행동";
+              const stageBadge = STAGE_BADGES[stageKey];
 
-          // improvement 분류
-          const improvementLevel =
-            scene.type === "cta" || scene.type === "CTA" ? "필수" : "개선";
-          const impStyle = IMPROVEMENT_STYLES[improvementLevel] ?? IMPROVEMENT_STYLES["개선"];
-
-          // 여정 단계 추정
-          const stageKey =
-            idx === 0 ? "감각" : idx < sceneAnalysis.scenes.length - 1 ? "사고" : "행동";
-          const stageBadge = STAGE_BADGES[stageKey];
-
-          return (
-            <div
-              key={idx}
-              className="bg-white rounded-lg p-3"
-              style={{ borderLeft: `4px solid ${borderColor}` }}
-            >
-              <div className="grid gap-3" style={{ gridTemplateColumns: "100px 1fr" }}>
-                {/* 시선 프레임 이미지 */}
-                <div>
-                  {frameUrl ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={frameUrl}
-                      alt={`${scene.time} 시선`}
-                      className="w-[100px] h-[178px] object-cover rounded-md"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-[100px] h-[178px] bg-slate-100 rounded-md flex items-center justify-center text-gray-300 text-xs">
-                      프레임 없음
-                    </div>
-                  )}
-                  <div
-                    className="text-[10px] font-semibold text-center mt-1"
-                    style={{ color: borderColor }}
-                  >
-                    {scene.time} · {scene.type}
-                  </div>
-                </div>
-
-                {/* 분석 내용 */}
-                <div>
-                  {/* 봤다/들었다/느꼈다/시선 */}
-                  <div className="text-xs text-gray-600 leading-relaxed mb-2 space-y-0.5">
+              return (
+                <div
+                  key={idx}
+                  className="bg-white rounded-lg p-3"
+                  style={{ borderLeft: `4px solid ${borderColor}` }}
+                >
+                  <div className="grid gap-3" style={{ gridTemplateColumns: "100px 1fr" }}>
                     <div>
-                      <strong>👁:</strong> {scene.desc}
-                    </div>
-                    {scene.analysis.viewer_action && (
-                      <div>
-                        <strong>🧠:</strong> {scene.analysis.viewer_action}
+                      {frameUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={frameUrl}
+                          alt={`${sj.time} 시선`}
+                          className="w-[100px] h-[178px] object-cover rounded-md"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-[100px] h-[178px] bg-slate-100 rounded-md flex items-center justify-center text-gray-300 text-xs">
+                          프레임 없음
+                        </div>
+                      )}
+                      <div className="text-[10px] font-semibold text-center mt-1" style={{ color: borderColor }}>
+                        {sj.time} · {sj.type}
                       </div>
-                    )}
+                    </div>
                     <div>
-                      <strong>📍:</strong> {dominantRegion} 집중
-                      {elements.length > 0 && (
-                        <span>
-                          {" · "}
-                          {elements.map((e) => `${e.type} ${Math.round(e.attention_pct)}%`).join(", ")}
-                        </span>
-                      )}
-                      {" · "}
-                      인지부하{" "}
-                      {scene.analysis.attention_quality === "high"
-                        ? "low"
-                        : scene.analysis.attention_quality === "low"
-                          ? "high"
-                          : "medium"}
+                      <div className="text-xs text-gray-600 leading-relaxed mb-2 space-y-0.5">
+                        <div><strong>👁 봤다:</strong> {sj.watched}</div>
+                        <div><strong>👂 들었다:</strong> {sj.heard}</div>
+                        <div><strong>🧠 느꼈다:</strong> {sj.felt}</div>
+                        <div><strong>📍 시선:</strong> {sj.gaze_point}</div>
+                        {sj.subtitle_text && (
+                          <div><strong>📝 자막:</strong> {sj.subtitle_text}</div>
+                        )}
+                      </div>
+                      <div
+                        className="text-[11px] p-2 rounded-md"
+                        style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)" }}
+                      >
+                        <span>💊 </span>
+                        {stageBadge && (
+                          <span
+                            className="inline-flex items-center px-1 py-0.5 rounded text-[9px] font-semibold mr-1"
+                            style={{ background: stageBadge.bg, color: stageBadge.color }}
+                          >
+                            {stageBadge.icon} {stageKey}
+                          </span>
+                        )}
+                        <span>{sj.prescription.action}</span>
+                        <div className="text-[10px] text-gray-400 mt-0.5">근거: {sj.prescription.reasoning}</div>
+                      </div>
                     </div>
                   </div>
-
-                  {/* 개선안 */}
-                  {scene.analysis.improvement && (
-                    <div
-                      className="text-[11px] p-2 rounded-md"
-                      style={{
-                        background: impStyle.bg,
-                        border: `1px solid ${impStyle.border}`,
-                      }}
-                    >
-                      <span>💊 </span>
-                      <span className="font-bold" style={{ color: impStyle.color }}>
-                        {impStyle.label}
-                      </span>
-                      {stageBadge && (
-                        <span
-                          className="inline-flex items-center ml-1 px-1 py-0.5 rounded text-[9px] font-semibold"
-                          style={{ background: stageBadge.bg, color: stageBadge.color }}
-                        >
-                          {stageBadge.icon} {stageKey}
-                        </span>
-                      )}
-                      <span className="ml-1">{" — "}</span>
-                      <span>{scene.analysis.improvement}</span>
-                    </div>
-                  )}
                 </div>
-              </div>
-            </div>
-          );
-        })}
+              );
+            })
+          : /* scene_analysis + scene_journey 병합 */
+            scenes.map((scene, idx) => {
+              const borderColor = SCENE_BORDER_COLORS[scene.type] ?? "#64748b";
+              const { start } = parseSceneTime(scene.time);
+              const frameUrl = findClosestFrame(saliencyFrames, start);
+
+              // v3: scene_journey에서 매칭되는 데이터 병합
+              const journey = journeyByTime.get(scene.time);
+
+              const elements = scene.element_attention ?? [];
+              const dominantRegion = scene.deepgaze.dominant_region;
+
+              const improvementLevel = scene.type === "cta" || scene.type === "CTA" ? "필수" : "개선";
+              const impStyle = IMPROVEMENT_STYLES[improvementLevel] ?? IMPROVEMENT_STYLES["개선"];
+
+              // v3: journey의 prescription.target에서 여정 단계, fallback → 위치 기반 추정
+              const stageKey = journey
+                ? (journey.prescription.target.includes("감각")
+                    ? "감각"
+                    : journey.prescription.target.includes("사고")
+                      ? "사고"
+                      : "행동")
+                : (idx === 0 ? "감각" : idx < scenes.length - 1 ? "사고" : "행동");
+              const stageBadge = STAGE_BADGES[stageKey];
+
+              return (
+                <div
+                  key={idx}
+                  className="bg-white rounded-lg p-3"
+                  style={{ borderLeft: `4px solid ${borderColor}` }}
+                >
+                  <div className="grid gap-3" style={{ gridTemplateColumns: "100px 1fr" }}>
+                    <div>
+                      {frameUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={frameUrl}
+                          alt={`${scene.time} 시선`}
+                          className="w-[100px] h-[178px] object-cover rounded-md"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-[100px] h-[178px] bg-slate-100 rounded-md flex items-center justify-center text-gray-300 text-xs">
+                          프레임 없음
+                        </div>
+                      )}
+                      <div className="text-[10px] font-semibold text-center mt-1" style={{ color: borderColor }}>
+                        {scene.time} · {scene.type}
+                      </div>
+                    </div>
+
+                    <div>
+                      {/* v3: scene_journey 데이터 우선, fallback → scene_analysis */}
+                      <div className="text-xs text-gray-600 leading-relaxed mb-2 space-y-0.5">
+                        <div>
+                          <strong>👁 봤다:</strong> {journey?.watched ?? scene.desc}
+                        </div>
+                        {journey?.heard && (
+                          <div>
+                            <strong>👂 들었다:</strong> {journey.heard}
+                          </div>
+                        )}
+                        <div>
+                          <strong>🧠 느꼈다:</strong> {journey?.felt ?? scene.analysis.viewer_action ?? "-"}
+                        </div>
+                        <div>
+                          <strong>📍 시선:</strong> {journey?.gaze_point ?? `${dominantRegion} 집중`}
+                          {!journey && elements.length > 0 && (
+                            <span>
+                              {" · "}
+                              {elements.map((e) => `${e.type} ${Math.round(e.attention_pct)}%`).join(", ")}
+                            </span>
+                          )}
+                        </div>
+                        {journey?.subtitle_text && (
+                          <div>
+                            <strong>📝 자막:</strong> {journey.subtitle_text}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* v3: scene_journey 처방 우선, fallback → scene_analysis improvement */}
+                      {journey ? (
+                        <div
+                          className="text-[11px] p-2 rounded-md"
+                          style={{ background: impStyle.bg, border: `1px solid ${impStyle.border}` }}
+                        >
+                          <span>💊 </span>
+                          {stageBadge && (
+                            <span
+                              className="inline-flex items-center px-1 py-0.5 rounded text-[9px] font-semibold mr-1"
+                              style={{ background: stageBadge.bg, color: stageBadge.color }}
+                            >
+                              {stageBadge.icon} {stageKey}
+                            </span>
+                          )}
+                          <span>{journey.prescription.action}</span>
+                          <div className="text-[10px] text-gray-400 mt-0.5">근거: {journey.prescription.reasoning}</div>
+                        </div>
+                      ) : scene.analysis.improvement ? (
+                        <div
+                          className="text-[11px] p-2 rounded-md"
+                          style={{ background: impStyle.bg, border: `1px solid ${impStyle.border}` }}
+                        >
+                          <span>💊 </span>
+                          <span className="font-bold" style={{ color: impStyle.color }}>
+                            {impStyle.label}
+                          </span>
+                          {stageBadge && (
+                            <span
+                              className="inline-flex items-center ml-1 px-1 py-0.5 rounded text-[9px] font-semibold"
+                              style={{ background: stageBadge.bg, color: stageBadge.color }}
+                            >
+                              {stageBadge.icon} {stageKey}
+                            </span>
+                          )}
+                          <span className="ml-1">{" — "}</span>
+                          <span>{scene.analysis.improvement}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
       </div>
     </div>
   );

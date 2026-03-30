@@ -1,5 +1,7 @@
 "use client";
 
+import type { CustomerJourneyDetail } from "@/types/prescription";
+
 // ── 고객 여정 요약 4단계 카드 ────────────────────────────────────────
 // 목업: 감각👁👂 / 사고🧠 / 행동-선행🖱 / 행동-후행💳
 
@@ -10,6 +12,7 @@ interface JourneySummaryProps {
     action_click: string;
     action_purchase: string;
   } | null;
+  detail?: CustomerJourneyDetail | null;
   coreInsight?: string;
 }
 
@@ -44,15 +47,35 @@ const STAGES = [
   },
 ] as const;
 
-export function JourneySummary({ summary, coreInsight }: JourneySummaryProps) {
-  if (!summary) return null;
+export function JourneySummary({ summary, detail, coreInsight }: JourneySummaryProps) {
+  if (!summary && !detail) return null;
 
-  const values: Record<string, string> = {
-    sensation: summary.sensation,
-    thinking: summary.thinking,
-    action_click: summary.action_click,
-    action_purchase: summary.action_purchase,
-  };
+  // v3: detail이 있으면 summary 추출, 없으면 기존 summary 사용
+  const values: Record<string, string> = detail
+    ? {
+        sensation: detail.sensation.summary,
+        thinking: detail.thinking.summary,
+        action_click: detail.action_click.summary,
+        action_purchase: detail.action_purchase.summary,
+      }
+    : {
+        sensation: summary?.sensation ?? "-",
+        thinking: summary?.thinking ?? "-",
+        action_click: summary?.action_click ?? "-",
+        action_purchase: summary?.action_purchase ?? "-",
+      };
+
+  // v3: detail에서 하위 텍스트 추출
+  const subTexts: Record<string, string | null> = detail
+    ? {
+        sensation: detail.sensation.detail,
+        thinking: detail.thinking.detail,
+        action_click: detail.action_click.metric,
+        action_purchase: detail.action_purchase.metric,
+      }
+    : { sensation: null, thinking: null, action_click: null, action_purchase: null };
+
+  const insight = detail?.core_insight ?? coreInsight;
 
   return (
     <div className="bg-white rounded-lg p-3 border border-slate-200 mt-3">
@@ -73,13 +96,18 @@ export function JourneySummary({ summary, coreInsight }: JourneySummaryProps) {
             >
               {values[stage.key] || "-"}
             </div>
+            {subTexts[stage.key] && (
+              <div className="text-[10px] text-gray-400 mt-1 leading-tight">
+                {subTexts[stage.key]}
+              </div>
+            )}
           </div>
         ))}
       </div>
 
-      {coreInsight && (
+      {insight && (
         <div className="text-xs text-gray-600 leading-relaxed">
-          <strong>핵심:</strong> {coreInsight}
+          <strong>핵심:</strong> {insight}
         </div>
       )}
     </div>

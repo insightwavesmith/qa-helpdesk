@@ -47,7 +47,19 @@ interface SceneData {
 }
 
 function extractScenes(analysisJson: AnalysisJsonV3, durationSeconds: number): SceneData[] {
-  // scene_analysis가 있으면 실제 씬 데이터 사용
+  // v3: scene_journey가 있으면 우선 사용 (봤다/들었다/느꼈다 풀 데이터)
+  const sceneJourney = analysisJson.scene_journey;
+  if (sceneJourney && sceneJourney.length > 0) {
+    return sceneJourney.map((scene) => ({
+      timeRange: scene.time,
+      type: scene.type,
+      saw: scene.watched || "-",
+      heard: scene.heard || "-",
+      felt: scene.felt || "-",
+    }));
+  }
+
+  // fallback: scene_analysis가 있으면 실제 씬 데이터 사용
   const sceneAnalysis = analysisJson.scene_analysis;
   if (sceneAnalysis?.scenes && sceneAnalysis.scenes.length > 0) {
     return sceneAnalysis.scenes.map((scene) => ({
@@ -120,16 +132,17 @@ export function CustomerJourney({
 
   if (scenes.length === 0) return null;
 
-  // ear_analysis에서 핵심 인사이트 추출
-  const coreInsight = analysisJson.ear_analysis
-    ? `고객은 ${
-        analysisJson.ear_analysis.primary_bottleneck === "foundation"
-          ? "기반(인지)"
-          : analysisJson.ear_analysis.primary_bottleneck === "engagement"
-            ? "참여"
-            : "전환"
-      } 단계에서 병목. ${analysisJson.ear_analysis.bottleneck_detail}`
-    : undefined;
+  // v3: customer_journey_detail.core_insight 우선, fallback → ear_analysis
+  const coreInsight = analysisJson.customer_journey_detail?.core_insight
+    ?? (analysisJson.ear_analysis
+      ? `고객은 ${
+          analysisJson.ear_analysis.primary_bottleneck === "foundation"
+            ? "기반(인지)"
+            : analysisJson.ear_analysis.primary_bottleneck === "engagement"
+              ? "참여"
+              : "전환"
+        } 단계에서 병목. ${analysisJson.ear_analysis.bottleneck_detail}`
+      : undefined);
 
   return (
     <div
@@ -216,6 +229,7 @@ export function CustomerJourney({
       {/* 고객 여정 요약 4단계 */}
       <JourneySummary
         summary={customerJourneySummary ?? analysisJson.customer_journey_summary ?? null}
+        detail={analysisJson.customer_journey_detail ?? null}
         coreInsight={coreInsight}
       />
     </div>

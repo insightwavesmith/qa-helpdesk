@@ -51,13 +51,25 @@ const EMOTION_LABELS: Record<string, string> = {
 
 export function AudioAnalysis({ analysisJson }: AudioAnalysisProps) {
   const audio = analysisJson.audio;
-  if (!audio) return null;
+  const detail = analysisJson.audio_analysis_detail;
 
-  const toneText = TONE_LABELS[audio.narration_tone] ?? audio.narration_tone;
-  const bgmText = BGM_LABELS[audio.bgm_genre] ?? audio.bgm_genre;
+  // audio 기본 데이터도 없으면 렌더 안 함
+  if (!audio && !detail) return null;
+
+  // v3: Gemini 상세 분석이 있으면 자유 텍스트 사용
+  const toneText = detail?.narration_tone
+    ?? (audio ? (TONE_LABELS[audio.narration_tone] ?? audio.narration_tone) : "-");
+  const bgmText = detail?.bgm_genre
+    ?? (audio ? (BGM_LABELS[audio.bgm_genre] ?? audio.bgm_genre) : "-");
+  const emotionFlowText = detail?.emotion_flow;
+
+  // fallback: enum 기반 감정 흐름
   const emotion = analysisJson.psychology?.emotion;
   const emotionStyle = emotion ? EMOTION_COLORS[emotion] : null;
   const emotionLabel = emotion ? EMOTION_LABELS[emotion] : null;
+
+  const hasNarration = audio?.has_narration ?? !!detail?.narration_tone;
+  const hasBgm = audio ? audio.bgm_genre !== "none" : !!detail?.bgm_genre;
 
   return (
     <div
@@ -74,9 +86,9 @@ export function AudioAnalysis({ analysisJson }: AudioAnalysisProps) {
         <div className="bg-white rounded-lg p-3">
           <div className="text-[11px] text-gray-500 mb-1">나레이션 톤</div>
           <div className="text-xs text-gray-800">
-            {audio.has_narration ? toneText : "나레이션 없음"}
+            {hasNarration ? toneText : "나레이션 없음"}
           </div>
-          {audio.bgm_genre !== "none" && (
+          {hasBgm && (
             <>
               <div className="text-[11px] text-gray-500 mt-2 mb-1">BGM</div>
               <div className="text-xs text-gray-800">{bgmText}</div>
@@ -87,21 +99,25 @@ export function AudioAnalysis({ analysisJson }: AudioAnalysisProps) {
         {/* 감정 흐름 */}
         <div className="bg-white rounded-lg p-3">
           <div className="text-[11px] text-gray-500 mb-1">감정 흐름</div>
-          <div className="flex flex-wrap gap-1 items-center mt-1">
-            {emotionLabel && emotionStyle && (
-              <span
-                className="px-2 py-0.5 rounded-full text-[11px]"
-                style={{ background: emotionStyle.bg, color: emotionStyle.color }}
-              >
-                {emotionLabel}
-              </span>
-            )}
-            {audio.sound_effects && (
-              <span className="px-2 py-0.5 rounded-full text-[11px] bg-blue-50 text-blue-400">
-                효과음 있음
-              </span>
-            )}
-          </div>
+          {emotionFlowText ? (
+            <div className="text-xs text-gray-800 leading-relaxed">{emotionFlowText}</div>
+          ) : (
+            <div className="flex flex-wrap gap-1 items-center mt-1">
+              {emotionLabel && emotionStyle && (
+                <span
+                  className="px-2 py-0.5 rounded-full text-[11px]"
+                  style={{ background: emotionStyle.bg, color: emotionStyle.color }}
+                >
+                  {emotionLabel}
+                </span>
+              )}
+              {audio?.sound_effects && (
+                <span className="px-2 py-0.5 rounded-full text-[11px] bg-blue-50 text-blue-400">
+                  효과음 있음
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
