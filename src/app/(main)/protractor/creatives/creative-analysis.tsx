@@ -255,8 +255,6 @@ function IndividualTab({
   const [selectedCreativeId, setSelectedCreativeId] = useState<string | null>(
     null
   );
-  const [sortKey, setSortKey] = useState<"score" | "roas">("score");
-
   // 검색 상태
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<
@@ -302,12 +300,6 @@ function IndividualTab({
 
   // 소재 목록 결정 (검색 결과 우선)
   const baseResults: IntelligenceScore[] = intelligenceData?.results ?? [];
-  const sortedResults = searchResults
-    ? null
-    : [...baseResults].sort((a, b) => {
-        if (sortKey === "roas") return (b.roas ?? 0) - (a.roas ?? 0);
-        return (b.overall_score ?? 0) - (a.overall_score ?? 0);
-      });
 
   const selectedCreative =
     baseResults.find((r) => r.ad_id === selectedCreativeId) ?? null;
@@ -358,14 +350,6 @@ function IndividualTab({
               ? "로딩 중..."
               : `총 ${baseResults.length}개 소재`}
           </p>
-          <select
-            value={sortKey}
-            onChange={(e) => setSortKey(e.target.value as "score" | "roas")}
-            className="px-3 py-1.5 border border-gray-200 rounded text-sm"
-          >
-            <option value="score">점수순</option>
-            <option value="roas">ROAS순</option>
-          </select>
         </div>
       )}
 
@@ -395,7 +379,7 @@ function IndividualTab({
                 ))
               )}
             </div>
-          ) : sortedResults && sortedResults.length === 0 ? (
+          ) : baseResults.length === 0 ? (
             <div className="text-center py-16 text-gray-400">
               <ImageIcon className="mx-auto h-10 w-10 mb-3" />
               <p className="text-sm">분석된 소재가 없습니다</p>
@@ -404,18 +388,19 @@ function IndividualTab({
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {(sortedResults ?? []).map((item) => (
-                <CreativeCard
-                  key={item.id}
-                  item={item}
-                  isSelected={selectedCreativeId === item.ad_id}
-                  onClick={() =>
-                    setSelectedCreativeId(
-                      selectedCreativeId === item.ad_id ? null : item.ad_id
-                    )
-                  }
-                />
+            <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
+              {(baseResults).map((item) => (
+                <div key={item.id} className="min-w-[280px] max-w-[320px] snap-center flex-shrink-0">
+                  <CreativeCard
+                    item={item}
+                    isSelected={selectedCreativeId === item.ad_id}
+                    onClick={() =>
+                      setSelectedCreativeId(
+                        selectedCreativeId === item.ad_id ? null : item.ad_id
+                      )
+                    }
+                  />
+                </div>
               ))}
             </div>
           )}
