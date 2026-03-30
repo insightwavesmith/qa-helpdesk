@@ -110,25 +110,30 @@ detect_zombie_panes() {
             fi
         done
     done | {
+        local _SUB_PANES=()
+        local _SUB_COUNT=0
+        local _SUB_DETAILS=""
         while IFS='' read -r line; do
-            ZOMBIE_PANES+=("$line")
-            ZOMBIE_COUNT=$((ZOMBIE_COUNT + 1))
+            _SUB_PANES+=("$line")
+            _SUB_COUNT=$((_SUB_COUNT + 1))
             local Z_SESSION Z_PANE Z_IDX Z_REASON
             Z_SESSION=$(echo "$line" | cut -d: -f1)
             Z_PANE=$(echo "$line" | cut -d: -f2)
             Z_IDX=$(echo "$line" | cut -d: -f3)
             Z_REASON=$(echo "$line" | cut -d: -f4)
-            ZOMBIE_DETAILS="${ZOMBIE_DETAILS}  - ${Z_SESSION} pane#${Z_IDX} (${Z_PANE}): ${Z_REASON}\n"
+            _SUB_DETAILS="${_SUB_DETAILS}  - ${Z_SESSION} pane#${Z_IDX} (${Z_PANE}): ${Z_REASON}\n"
         done
 
         # subshell 안이므로 파일로 결과 전달
         local RESULT_FILE="${_ZPD_PROJECT_DIR}/.claude/runtime/.zombie-detect-result"
         mkdir -p "$(dirname "$RESULT_FILE")"
-        echo "$ZOMBIE_COUNT" > "$RESULT_FILE"
-        echo -e "$ZOMBIE_DETAILS" >> "$RESULT_FILE"
-        for z in "${ZOMBIE_PANES[@]}"; do
-            echo "PANE:$z" >> "$RESULT_FILE"
-        done
+        echo "$_SUB_COUNT" > "$RESULT_FILE"
+        echo -e "$_SUB_DETAILS" >> "$RESULT_FILE"
+        if [ ${#_SUB_PANES[@]} -gt 0 ]; then
+            for z in "${_SUB_PANES[@]}"; do
+                echo "PANE:$z" >> "$RESULT_FILE"
+            done
+        fi
     }
 
     # subshell 결과 읽기

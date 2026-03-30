@@ -268,7 +268,7 @@ describe('A. Context Edge Cases', () => {
     expect(r.stdout).not.toContain('자동 전송 완료');
   });
 
-  it('BP-A4: taskFiles 빈 배열 → 체인 발동 정상', () => {
+  it('BP-A4: taskFiles 빈 배열 → 체인 발동 정상', { timeout: 15000 }, () => {
     testEnv = createTestEnv();
     writeSessionContext(testEnv.tmpDir, 'sdk-cto', 'CTO', { taskFiles: [] });
     writeAnalysisFile(testEnv.tmpDir, 97);

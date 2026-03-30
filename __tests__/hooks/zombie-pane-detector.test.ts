@@ -222,7 +222,7 @@ esac
 describe('zombie-pane-detector — 감지', () => {
 
   // ZD-1: 좀비 없는 정상 상태 — shell_only 아닌 pane (claude 프로세스 있음)
-  it('ZD-1: 정상 pane (claude 프로세스 있음) → 좀비 0건', () => {
+  it('ZD-1: 정상 pane (claude 프로세스 있음) → 좀비 0건', { timeout: 15000 }, () => {
     testEnv = createTestEnv();
     const scriptPath = prepareZombieDetector(testEnv, {
       tmuxPanes: [

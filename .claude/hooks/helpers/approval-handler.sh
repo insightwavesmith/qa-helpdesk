@@ -66,4 +66,32 @@ EOFREQ
     if type notify_hook >/dev/null 2>&1; then
         notify_hook "🔐 승인 요청: 팀원이 ${REL_FILE} 수정 시도. 승인 필요." "approval-gate" 2>/dev/null
     fi
+
+    # 리더에게 tmux send-keys 알림
+    notify_leader_approval "$REL_FILE" "$KEY"
+}
+
+# 리더에게 승인 요청 알림 (tmux send-keys)
+notify_leader_approval() {
+    local REL_FILE="$1"
+    local KEY="$2"
+
+    # tmux 환경 아니면 스킵
+    [ -z "${TMUX:-}" ] && return 0
+
+    # 리더 pane = 항상 pane 0 (세션 내)
+    local SESSION_NAME
+    SESSION_NAME=$(tmux display-message -p '#{session_name}' 2>/dev/null) || return 0
+
+    local TEAMMATE_PANE
+    TEAMMATE_PANE=$(tmux display-message -p '#{pane_index}' 2>/dev/null) || return 0
+
+    # 리더한테 보낼 메시지
+    local MSG="[승인요청] 팀원(pane${TEAMMATE_PANE})이 ${REL_FILE} 수정 승인 요청. 처리: echo \$(date +%s) > ${_APPROVAL_DIR}/granted/${KEY}"
+
+    # 리더 pane(0)에 send-keys — 실패해도 무시
+    tmux send-keys -t "${SESSION_NAME}:0.0" "" 2>/dev/null || true
+    tmux send-keys -t "${SESSION_NAME}:0.0" "$MSG" 2>/dev/null || true
+
+    return 0
 }

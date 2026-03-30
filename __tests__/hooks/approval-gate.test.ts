@@ -8,6 +8,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { execSync } from 'child_process';
+import { runBashFunction } from './helpers';
 import {
   createTestEnv,
   cleanupTestEnv,
@@ -235,5 +236,179 @@ describe('APR-1~9: validate-delegate 승인 게이트', () => {
     expect(r.exitCode).toBe(2);
     const pendingDir = join(testEnv.tmpDir, '.claude', 'runtime', 'approvals', 'pending');
     expect(existsSync(join(pendingDir, `${approvalKey(relFile)}.json`))).toBe(true);
+  });
+});
+
+// ─── P1-1~6: 승인 자동 감지 (notify_leader_approval) ──────────
+
+/** approval-handler.sh를 tmux mock 포함하여 준비 */
+function prepareApprovalHandler(
+  env: ReturnType<typeof createTestEnv>,
+  opts?: { mockTmux?: boolean; tmuxSessionName?: string; tmuxPaneIndex?: number }
+): { scriptPath: string; sendKeysLog: string } {
+  const helpersDir = join(env.hooksDir, 'helpers');
+  mkdirSync(helpersDir, { recursive: true });
+
+  const src = join(process.cwd(), '.claude/hooks/helpers/approval-handler.sh');
+  let content = readFileSync(src, 'utf-8');
+
+  // _APPROVAL_DIR 치환
+  content = content.replace(
+    /\$\{PROJECT_DIR:-[^}]*\}/,
+    env.tmpDir
+  );
+
+  const sendKeysLog = join(env.tmpDir, 'tmux-sendkeys.log');
+
+  if (opts?.mockTmux) {
+    const mockTmux = join(env.tmpDir, 'mock-tmux.sh');
+    const sessionName = opts.tmuxSessionName || 'test-session';
+    const paneIndex = opts.tmuxPaneIndex ?? 1;
+
+    writeFileSync(mockTmux, `#!/bin/bash
+ARGS="$*"
+if echo "$ARGS" | grep -q "display-message.*session_name"; then
+    echo "${sessionName}"
+    exit 0
+fi
+if echo "$ARGS" | grep -q "display-message.*pane_index"; then
+    echo "${paneIndex}"
+    exit 0
+fi
+if echo "$ARGS" | grep -q "send-keys"; then
+    echo "$ARGS" >> "${sendKeysLog}"
+    exit 0
+fi
+exit 0
+`, { mode: 0o755 });
+
+    content = content.replace(/tmux /g, `"${mockTmux}" `);
+  }
+
+  // notify-hook stub
+  writeFileSync(
+    join(env.hooksDir, 'notify-hook.sh'),
+    '#!/bin/bash\nnotify_hook() { true; }\n',
+    { mode: 0o755 }
+  );
+
+  const destPath = join(helpersDir, 'approval-handler.sh');
+  writeFileSync(destPath, content, { mode: 0o755 });
+  return { scriptPath: destPath, sendKeysLog };
+}
+
+describe('P1-1~6: 승인 자동 감지 notify_leader_approval', () => {
+
+  it('P1-1: 팀원 pending 생성 시 send-keys 호출', () => {
+    testEnv = createTestEnv();
+    const { scriptPath, sendKeysLog } = prepareApprovalHandler(testEnv, { mockTmux: true });
+
+    const r = runBashFunction(scriptPath, 'request_approval ".claude/hooks/test.sh" "Edit"', {
+      TMUX: '/tmp/tmux-501/default,12345,0',
+    });
+
+    // pending 파일 확인
+    const key = approvalKey('.claude/hooks/test.sh');
+    const pendingPath = join(testEnv.tmpDir, '.claude', 'runtime', 'approvals', 'pending', `${key}.json`);
+    expect(existsSync(pendingPath)).toBe(true);
+
+    // send-keys 호출 확인
+    expect(existsSync(sendKeysLog)).toBe(true);
+    const log = readFileSync(sendKeysLog, 'utf-8');
+    expect(log).toContain('send-keys');
+    expect(log).toContain('승인요청');
+  });
+
+  it('P1-2: tmux 없는 환경에서 알림 스킵', () => {
+    testEnv = createTestEnv();
+    const { scriptPath, sendKeysLog } = prepareApprovalHandler(testEnv, { mockTmux: true });
+
+    const r = runBashFunction(scriptPath, 'request_approval ".claude/hooks/test.sh" "Edit"', {
+      TMUX: '',
+    });
+
+    // pending 파일 생성됨
+    const key = approvalKey('.claude/hooks/test.sh');
+    const pendingPath = join(testEnv.tmpDir, '.claude', 'runtime', 'approvals', 'pending', `${key}.json`);
+    expect(existsSync(pendingPath)).toBe(true);
+
+    // send-keys 미호출 (TMUX 없으므로)
+    expect(existsSync(sendKeysLog)).toBe(false);
+  });
+
+  it('P1-3: 리더 승인 후 팀원 재시도 → return 0 (승인)', () => {
+    testEnv = createTestEnv();
+    const { scriptPath } = prepareApprovalHandler(testEnv);
+    const relFile = '.claude/hooks/test.sh';
+
+    // 승인 파일 생성
+    grantApproval(testEnv.tmpDir, relFile);
+
+    const r = runBashFunction(scriptPath, `check_approval "${relFile}"`, {});
+    expect(r.exitCode).toBe(0);
+  });
+
+  it('P1-4: 리더 거부 후 팀원 재시도 → return 1 (미승인)', () => {
+    testEnv = createTestEnv();
+    const { scriptPath } = prepareApprovalHandler(testEnv);
+    const relFile = '.claude/hooks/test.sh';
+
+    // 거부 파일 생성
+    const dir = join(testEnv.tmpDir, '.claude', 'runtime', 'approvals', 'granted');
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, approvalKey(relFile)), 'rejected');
+
+    const r = runBashFunction(scriptPath, `check_approval "${relFile}"; echo "EXIT:$?"`, {});
+    // check_approval returns 1 → set -e catches → exitCode != 0
+    expect(r.exitCode).not.toBe(0);
+  });
+
+  it('P1-5: 승인 TTL 만료 후 재알림', () => {
+    testEnv = createTestEnv();
+    const { scriptPath, sendKeysLog } = prepareApprovalHandler(testEnv, { mockTmux: true });
+    const relFile = '.claude/hooks/test.sh';
+
+    // 6분 전 승인 (만료)
+    const sixMinAgo = Math.floor(Date.now() / 1000) - 360;
+    grantApproval(testEnv.tmpDir, relFile, sixMinAgo);
+
+    // check_approval → return 1 (만료)
+    const rCheck = runBashFunction(scriptPath, `check_approval "${relFile}"; echo "EXIT:$?"`, {});
+    expect(rCheck.exitCode).not.toBe(0);
+
+    // 재요청 시 send-keys 재호출
+    const rReq = runBashFunction(scriptPath, `request_approval "${relFile}" "Edit"`, {
+      TMUX: '/tmp/tmux-501/default,12345,0',
+    });
+    expect(existsSync(sendKeysLog)).toBe(true);
+    const log = readFileSync(sendKeysLog, 'utf-8');
+    expect(log).toContain('send-keys');
+  });
+
+  it('P1-6: 동시 다중 팀원 요청 → 각각 별도 pending + send-keys', () => {
+    testEnv = createTestEnv();
+    const { scriptPath, sendKeysLog } = prepareApprovalHandler(testEnv, { mockTmux: true });
+
+    const file1 = '.claude/hooks/custom-hook.sh';
+    const file2 = 'supabase/migrations/20260330_create_table.sql';
+
+    // 2개 파일 동시 요청
+    runBashFunction(scriptPath, `request_approval "${file1}" "Edit"`, {
+      TMUX: '/tmp/tmux-501/default,12345,0',
+    });
+    runBashFunction(scriptPath, `request_approval "${file2}" "Write"`, {
+      TMUX: '/tmp/tmux-501/default,12345,0',
+    });
+
+    // 각각 별도 pending
+    const pendingDir = join(testEnv.tmpDir, '.claude', 'runtime', 'approvals', 'pending');
+    expect(existsSync(join(pendingDir, `${approvalKey(file1)}.json`))).toBe(true);
+    expect(existsSync(join(pendingDir, `${approvalKey(file2)}.json`))).toBe(true);
+
+    // send-keys 2회 호출 (각 request_approval마다)
+    expect(existsSync(sendKeysLog)).toBe(true);
+    const log = readFileSync(sendKeysLog, 'utf-8');
+    const sendKeysCount = (log.match(/send-keys/g) || []).length;
+    expect(sendKeysCount).toBeGreaterThanOrEqual(2);
   });
 });

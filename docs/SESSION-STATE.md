@@ -1,6 +1,32 @@
-# SESSION-STATE — 마지막 업데이트: 2026-03-30
+# SESSION-STATE — 마지막 업데이트: 2026-03-30 (2차)
 
-## 최근 완료 작업 (이번 세션)
+## 현재 진행 중 — 4건 핫픽스 (L0)
+
+Smith님 지시 4건. PM 승인 없이 핫픽스 진행.
+
+| # | 작업 | 상태 | 조사 결과 |
+|---|------|------|-----------|
+| 1 | QA탭 버그 수정 배포 | 코드 완료 (`a996443`), 배포 필요 | Cloud Run 재배포 필요 |
+| 2 | Slack 알림 — 질문 생성 시 | **미구현** → 구현 필요 | `createQuestion()` (questions.ts)에 Slack 웹훅 호출 추가. 채널 `C0AL8E8LUTT`, `SLACK_BOT_TOKEN` 사용 |
+| 3 | 카카오 알림톡 — 답변 승인 시 | 코드 구현됨, 동작 확인 필요 | `approveAnswer()` → `sendKakaoNotification()` 체인 정상. SOLAPI env var prod에 설정됨. 코드상 문제 없음 |
+| 4 | 전체 핫픽스 커밋 + push | 대기 | #2 구현 완료 후 실행 |
+
+### Task 2 구현 계획 (Slack 알림)
+- 파일: `src/lib/slack.ts` 신규 생성 — `sendSlackNotification(channel, text)` 함수
+- `src/actions/questions.ts`의 `createQuestion()` 성공 후 fire-and-forget으로 Slack 전송
+- Slack Bot Token: `SLACK_BOT_TOKEN` (이미 .env.prod에 존재)
+- 채널 ID: `C0AL8E8LUTT`
+- 메시지 포맷: `📩 새 질문이 등록됐습니다\n*{제목}*\n작성자: {이름}\nhttps://bscamp.app/questions/{id}`
+- 기존 `scripts/slack-queue-drain.mjs`의 패턴 참고 (`chat.postMessage` API)
+
+### Task 3 검증 결과 (카카오 알림톡)
+- `src/lib/solapi.ts`: 코드 정상 (HMAC-SHA256 인증, fire-and-forget)
+- `src/actions/answers.ts:189-209`: approveAnswer → question author → profiles.phone → sendKakaoNotification 체인 정상
+- 환경변수 `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`: prod에 설정됨
+- 잠재 이슈: profiles 테이블에 phone 필드가 비어있으면 스킵됨 (정상 동작, 데이터 문제)
+- **결론: 코드 수정 불필요. 알림 안 오면 수강생 phone 미등록 가능성.**
+
+## 이전 세션 완료 작업
 
 | # | 작업 | 커밋 | 상태 |
 |---|------|------|------|

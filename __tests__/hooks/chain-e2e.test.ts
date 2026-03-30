@@ -389,8 +389,8 @@ describe('chain-handoff + peer-resolver 통합', () => {
       mockBroker: {
         health: true,
         peers: [
-          { id: 'mozzi-mapped', summary: 'hermes session' },
-          { id: 'cto-mapped', summary: 'cto session' },
+          { id: 'mozzi-mapped', summary: 'MOZZI | hermes session' },
+          { id: 'cto-mapped', summary: 'CTO_LEADER | cto session' },
         ],
         sendOk: true,
       },
@@ -398,8 +398,8 @@ describe('chain-handoff + peer-resolver 통합', () => {
     copyHelpersWithMock(testEnv, {
       health: true,
       peers: [
-        { id: 'mozzi-mapped', summary: 'hermes session' },
-        { id: 'cto-mapped', summary: 'cto session' },
+        { id: 'mozzi-mapped', summary: 'MOZZI | hermes session' },
+        { id: 'cto-mapped', summary: 'CTO_LEADER | cto session' },
       ],
       sendOk: true,
     });

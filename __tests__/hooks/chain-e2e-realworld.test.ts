@@ -583,3 +583,89 @@ describe('RW-19~20: context resolver 엣지케이스', () => {
     expect(rHook.stdout).toContain('자동 전송 완료');
   });
 });
+
+// ─── P2-1~4: 체인 실전 테스트 시뮬레이션 ─────────────────────
+
+describe('P2-1~4: 체인 실전 e2e 시뮬레이션', () => {
+
+  it('P2-1: E2E-1 handoff → PM 전달 → msg_id 기록', () => {
+    testEnv = createTestEnv();
+    writeAnalysisFile(testEnv.tmpDir, 97);
+    writeHookOutputStub(testEnv.hooksDir);
+    writeSessionContext(testEnv.tmpDir, 'sdk-cto', 'CTO');
+    const hookPath = prepareChainHandoffV2(testEnv, {
+      changedFiles: ['src/app/page.tsx'],
+      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
+    });
+    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS, sendOk: true });
+    copyResolver(testEnv.hooksDir);
+
+    const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'sdk-cto' });
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toContain('자동 전송 완료');
+
+    // last-completion-report.json 생성 확인
+    const reportPath = join(testEnv.tmpDir, '.claude', 'runtime', 'last-completion-report.json');
+    expect(existsSync(reportPath)).toBe(true);
+  });
+
+  it('P2-2: E2E-2 Match Rate 80% → exit 2, 96% → exit 0', () => {
+    testEnv = createTestEnv();
+    writeHookOutputStub(testEnv.hooksDir);
+    writeSessionContext(testEnv.tmpDir, 'sdk-cto', 'CTO');
+    copyResolver(testEnv.hooksDir);
+
+    // 1차: Match Rate 80% → exit 2
+    writeAnalysisFile(testEnv.tmpDir, 80);
+    const hookPath1 = prepareChainHandoffV2(testEnv, {
+      changedFiles: ['src/app/page.tsx'],
+      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
+    });
+    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS, sendOk: true });
+    const r1 = runHook(hookPath1, { _MOCK_SESSION_NAME: 'sdk-cto' });
+    expect(r1.exitCode).toBe(2);
+
+    // 2차: Match Rate 96% → exit 0
+    writeAnalysisFile(testEnv.tmpDir, 96);
+    const hookPath2 = prepareChainHandoffV2(testEnv, {
+      changedFiles: ['src/app/page.tsx'],
+      mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
+    });
+    copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS, sendOk: true });
+    const r2 = runHook(hookPath2, { _MOCK_SESSION_NAME: 'sdk-cto' });
+    expect(r2.exitCode).toBe(0);
+  });
+
+  it('P2-3: E2E-3 병렬 context 독립', () => {
+    testEnv = createTestEnv();
+
+    // 2개 세션 context
+    writeSessionContext(testEnv.tmpDir, 'sdk-cto', 'CTO');
+    writeSessionContext(testEnv.tmpDir, 'sdk-cto-2', 'CTO-2');
+
+    const runtimeDir = join(testEnv.tmpDir, '.claude', 'runtime');
+    const ctx1 = join(runtimeDir, 'team-context-sdk-cto.json');
+    const ctx2 = join(runtimeDir, 'team-context-sdk-cto-2.json');
+
+    expect(existsSync(ctx1)).toBe(true);
+    expect(existsSync(ctx2)).toBe(true);
+
+    // 독립 확인: 서로 다른 team 필드
+    const data1 = JSON.parse(readFileSync(ctx1, 'utf-8'));
+    const data2 = JSON.parse(readFileSync(ctx2, 'utf-8'));
+    expect(data1.team).not.toBe(data2.team);
+    expect(data1.session).toBe('sdk-cto');
+    expect(data2.session).toBe('sdk-cto-2');
+  });
+
+  it('P2-4: verify-chain-e2e.sh 문법 검증 (bash -n)', () => {
+    const src = join(process.cwd(), '.claude/hooks/verify-chain-e2e.sh');
+    let passed = true;
+    try {
+      execSync(`bash -n "${src}" 2>&1`, { encoding: 'utf-8' });
+    } catch {
+      passed = false;
+    }
+    expect(passed).toBe(true);
+  });
+});

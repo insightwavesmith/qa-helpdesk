@@ -259,12 +259,11 @@ describe('REG-6: settings.local.json — 삭제된 hook 파일 참조 금지', (
 })
 
 // ─────────────────────────────────────────
-// REG-7: TeammateIdle hook 빈 배열 확인 (D-2 결정)
-// D-2 결정: TeammateIdle은 빈 배열 []이어야 함 — idle hook 비활성화
-// 이전: "비어있지 않아야 함" → 반전: "빈 배열이어야 함"
+// REG-7: TeammateIdle hook 설정 확인
+// chain-100-percent 설계: TeammateIdle 활성화 (P5 heartbeat)
 // ─────────────────────────────────────────
-describe('REG-7: settings.local.json — TeammateIdle hooks 빈 배열이어야 함 (D-2)', () => {
-  it('TeammateIdle 이벤트가 빈 배열 []이어야 한다', () => {
+describe('REG-7: settings.local.json — TeammateIdle hooks 활성화 (chain-100%)', () => {
+  it('TeammateIdle에 teammate-idle.sh hook이 등록되어야 한다', () => {
     const raw = readFileSync(SETTINGS_LOCAL, 'utf-8')
     const settings = JSON.parse(raw) as Record<string, unknown>
     const hooks = settings.hooks as Record<string, unknown[]> | undefined
@@ -274,11 +273,8 @@ describe('REG-7: settings.local.json — TeammateIdle hooks 빈 배열이어야 
 
     const idleHooks = hooks!.TeammateIdle as unknown[]
 
-    // D-2 결정: TeammateIdle은 빈 배열 [] — idle hook 비활성화
-    expect(
-      idleHooks,
-      'TeammateIdle은 빈 배열이어야 함 (D-2 결정: idle hook 비활성화)'
-    ).toEqual([])
+    // chain-100-percent 설계: heartbeat 활성화
+    expect(idleHooks.length).toBeGreaterThan(0)
   })
 })
 

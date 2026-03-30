@@ -9,6 +9,30 @@ source "$(dirname "$0")/helpers/team-context-resolver.sh" 2>/dev/null
 resolve_team_context 2>/dev/null
 CONTEXT_FILE="${TEAM_CONTEXT_FILE:-$PROJECT_DIR/.claude/runtime/team-context.json}"
 
+# --- heartbeat 로그 (idle 트리거 기록) ---
+_HB_RUNTIME="$PROJECT_DIR/.claude/runtime"
+_HB_LOG="$_HB_RUNTIME/heartbeat.log"
+mkdir -p "$_HB_RUNTIME" 2>/dev/null
+echo "$(date '+%Y-%m-%d %H:%M:%S') heartbeat fired" >> "$_HB_LOG"
+
+# 팀원 상태 수집
+if [ -f "${CONTEXT_FILE:-}" ]; then
+    _HB_TEAM=$(jq -r '.team // "unknown"' "$CONTEXT_FILE" 2>/dev/null || echo "unknown")
+    _HB_PANES=$(tmux list-panes -t "$(tmux display-message -p '#{session_name}' 2>/dev/null || true)" -F '#{pane_index} #{pane_current_command}' 2>/dev/null | tail -n +2 || true)
+    echo "$(date '+%Y-%m-%d %H:%M:%S') team=$_HB_TEAM panes: $_HB_PANES" >> "$_HB_LOG"
+fi
+
+# 좀비 pane 감지
+if [ -f "$(dirname "$0")/helpers/zombie-pane-detector.sh" ]; then
+    source "$(dirname "$0")/helpers/zombie-pane-detector.sh" 2>/dev/null || true
+    if type detect_zombie_panes >/dev/null 2>&1; then
+        detect_zombie_panes 2>/dev/null || true
+        if [ "${ZOMBIE_COUNT:-0}" -gt 0 ]; then
+            echo "$(date '+%Y-%m-%d %H:%M:%S') ZOMBIE ${ZOMBIE_COUNT}건" >> "$_HB_LOG"
+        fi
+    fi
+fi
+
 # --- 프론트매터 파싱 헬퍼 ---
 parse_frontmatter_field() {
     local file="$1" key="$2"
