@@ -217,14 +217,12 @@ export function CreativeDetailPanel({
         )}
 
         {/* 6. 시선 분석 */}
-        {detail.saliency && (
-          <GazeAnalysis
-            saliency={detail.saliency}
-            saliencyFrames={detail.saliency_frames ?? null}
-            mediaType={creative?.media_type ?? "IMAGE"}
-            mediaUrl={mediaUrl}
-          />
-        )}
+        <GazeAnalysis
+          saliency={detail.saliency ?? null}
+          saliencyFrames={null}
+          mediaType={creative?.media_type ?? "IMAGE"}
+          mediaUrl={mediaUrl}
+        />
 
         {/* 7. 처방 Top 3 */}
         <PrescriptionCards

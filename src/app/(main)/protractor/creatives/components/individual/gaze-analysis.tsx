@@ -42,12 +42,12 @@ function GaugeBar({
   return (
     <div>
       <div className="flex items-center justify-between text-xs mb-1">
-        <span className="text-gray-600">{label}</span>
+        <span style={{ color: "#475569" }}>{label}</span>
         <span className="font-semibold" style={{ color }}>
           {value.toFixed(2)}
         </span>
       </div>
-      <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+      <div className="h-2 rounded-full overflow-hidden" style={{ background: "#e2e8f0" }}>
         <div
           className="h-full rounded-full transition-all"
           style={{ width: `${pct}%`, background: color }}
@@ -67,10 +67,73 @@ export function GazeAnalysis({
 }: GazeAnalysisProps) {
   const [currentFrameIdx, setCurrentFrameIdx] = useState(0);
 
+  // saliency가 null인 경우 — "시선 데이터 수집 중" 상태
   if (!saliency) {
     return (
-      <div className="rounded-xl bg-slate-50 border border-slate-200 p-4">
-        <div className="text-sm text-gray-500 text-center">시선 분석 데이터 없음</div>
+      <div
+        className="rounded-xl border p-4"
+        style={{ background: "#f8fafc", borderColor: "#e2e8f0" }}
+      >
+        <div className="flex items-center gap-2 mb-3">
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(6,182,212,0.15)" }}
+          >
+            <span className="text-sm">👁</span>
+          </div>
+          <div className="text-sm font-bold" style={{ color: "#1e293b" }}>시선 분석</div>
+        </div>
+
+        {/* 수집 중 상태 표시 */}
+        <div className="relative rounded-lg overflow-hidden mb-3" style={{ background: "#f1f5f9" }}>
+          {mediaUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={mediaUrl}
+              alt="소재 원본"
+              className="w-full h-auto block"
+              style={{ opacity: 0.4, filter: "grayscale(0.5)" }}
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-40" />
+          )}
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center"
+            style={{ background: "rgba(248,250,252,0.6)" }}
+          >
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center mb-2"
+              style={{ background: "rgba(6,182,212,0.15)" }}
+            >
+              <span className="text-xl">👁</span>
+            </div>
+            <div className="text-sm font-semibold" style={{ color: "#475569" }}>
+              시선 데이터 수집 중
+            </div>
+            <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginTop: "4px" }}>
+              DeepGaze 분석 완료 후 히트맵이 표시됩니다
+            </div>
+          </div>
+        </div>
+
+        {/* 빈 게이지 */}
+        <div className="space-y-2.5">
+          <div>
+            <div className="flex items-center justify-between text-xs mb-1">
+              <span style={{ color: "#475569" }}>CTA 주목도</span>
+              <span style={{ color: "#cbd5e1" }}>—</span>
+            </div>
+            <div className="h-2 rounded-full" style={{ background: "#e2e8f0" }} />
+          </div>
+          <div>
+            <div className="flex items-center justify-between text-xs mb-1">
+              <span style={{ color: "#475569" }}>인지부하</span>
+              <span style={{ color: "#cbd5e1" }}>—</span>
+            </div>
+            <div className="h-2 rounded-full" style={{ background: "#e2e8f0" }} />
+          </div>
+        </div>
       </div>
     );
   }
@@ -81,15 +144,23 @@ export function GazeAnalysis({
   const heatmapUrl = currentFrame?.attention_map_url ?? saliency.attention_map_url;
 
   return (
-    <div className="rounded-xl bg-slate-50 border border-slate-200 p-4">
+    <div
+      className="rounded-xl border p-4"
+      style={{ background: "#f8fafc", borderColor: "#e2e8f0" }}
+    >
       {/* 헤더 */}
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-base">👁</span>
-        <div className="text-sm font-bold text-gray-800">시선 분석</div>
+        <div
+          className="w-8 h-8 rounded-full flex items-center justify-center"
+          style={{ background: "rgba(6,182,212,0.15)" }}
+        >
+          <span className="text-sm">👁</span>
+        </div>
+        <div className="text-sm font-bold" style={{ color: "#1e293b" }}>시선 분석</div>
       </div>
 
       {/* 히트맵 오버레이 */}
-      <div className="relative rounded-lg overflow-hidden bg-gray-100 mb-3">
+      <div className="relative rounded-lg overflow-hidden mb-3" style={{ background: "#f1f5f9" }}>
         {/* 원본 이미지/썸네일 */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -114,24 +185,32 @@ export function GazeAnalysis({
           (fix, idx) => (
             <div
               key={idx}
-              className="absolute rounded-full border-2 border-white"
+              className="absolute rounded-full"
               style={{
                 left: `${fix.x * 100}%`,
                 top: `${fix.y * 100}%`,
                 width: `${Math.max(12, fix.ratio * 40)}px`,
                 height: `${Math.max(12, fix.ratio * 40)}px`,
                 background: `rgba(239,68,68,${Math.min(0.8, fix.ratio)})`,
+                border: "2px solid white",
                 transform: "translate(-50%, -50%)",
               }}
             />
           )
         )}
+        {/* 시선 추적 라벨 */}
+        <div
+          className="absolute top-2 right-2 px-2 py-0.5 rounded text-white"
+          style={{ fontSize: "0.6rem", background: "rgba(0,0,0,0.6)" }}
+        >
+          🔴 시선 추적
+        </div>
       </div>
 
       {/* VIDEO 프레임 슬라이더 */}
       {hasFrames && (
         <div className="mb-3">
-          <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+          <div className="flex items-center justify-between mb-1" style={{ fontSize: "0.72rem", color: "#64748b" }}>
             <span>프레임 {currentFrameIdx + 1} / {saliencyFrames.length}</span>
             <span>{currentFrame?.timestamp_sec.toFixed(1)}초</span>
           </div>
@@ -141,7 +220,8 @@ export function GazeAnalysis({
             max={saliencyFrames.length - 1}
             value={currentFrameIdx}
             onChange={(e) => setCurrentFrameIdx(Number(e.target.value))}
-            className="w-full h-1.5 accent-[#F75D5D]"
+            className="w-full h-1.5"
+            style={{ accentColor: "#F75D5D" }}
           />
         </div>
       )}
