@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-31T11:58:17.656Z",
+  "lastUpdated": "2026-03-31T11:59:41.408Z",
   "activeFeatures": [
     "slack-notification",
     "organic-channel-distribution-phase2",
@@ -8,10 +8,9 @@
     "protractor-ux-prescription",
     "video-permission-skip",
     "video-collection-audit",
-    "helpers",
     ".bkit"
   ],
-  "primaryFeature": "helpers",
+  "primaryFeature": "slack-notification",
   "features": {
     "slack-notification": {
       "phase": "implementing",
@@ -911,19 +910,6 @@
       "phaseTimestamps": {},
       "automationLevel": 2
     },
-    "helpers": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-03-31T11:58:09.182Z",
-        "lastUpdated": "2026-03-31T11:58:12.331Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/.bkit/hooks/helpers/living-context-loader.sh"
-    },
     ".bkit": {
       "phase": "do",
       "phaseNumber": 3,
@@ -933,7 +919,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-31T11:58:14.577Z",
-        "lastUpdated": "2026-03-31T11:58:17.656Z"
+        "lastUpdated": "2026-03-31T11:59:41.408Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/.bkit/hooks/session-resume-check.sh"
     }
@@ -946,7 +932,7 @@
   "session": {
     "startedAt": "2026-03-30T05:20:31.424Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-31T11:58:17.656Z"
+    "lastActivity": "2026-03-31T11:59:41.408Z"
   },
   "history": [
     {
@@ -1605,6 +1591,12 @@
     },
     {
       "timestamp": "2026-03-31T11:58:17.656Z",
+      "feature": ".bkit",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-31T11:59:41.408Z",
       "feature": ".bkit",
       "phase": "do",
       "action": "updated"

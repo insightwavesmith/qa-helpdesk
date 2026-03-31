@@ -19,6 +19,20 @@ DEBOUNCE=1800      # 30분 쿨다운
 command -v jq >/dev/null 2>&1 || exit 0
 mkdir -p "$DEBOUNCE_DIR"
 
+PDCA_STATUS="$PROJECT_DIR/.bkit/state/pdca-status.json"
+
+is_completed_feature() {
+    local slug="$1"
+    [ ! -f "$PDCA_STATUS" ] && return 1
+    local phase
+    phase=$(jq -r --arg s "$slug" '
+        .features[$s].phase //
+        (.features | to_entries[] | select(.key | test($s;"i")) | .value.phase) //
+        "unknown"
+    ' "$PDCA_STATUS" 2>/dev/null || echo "unknown")
+    [ "$phase" = "completed" ]
+}
+
 send_slack_alert() {
     local task="$1" gate="$2" elapsed="$3" timeout="$4"
     local elapsed_min=$(( elapsed / 60 ))
@@ -52,7 +66,12 @@ for status_file in "$RUNTIME_DIR"/chain-status-*.json "$RUNTIME_DIR"/task-state-
 
     TASK=$(jq -r '.task // .feature // "unknown"' "$status_file" 2>/dev/null || continue)
     SLUG=$(echo "$TASK" | tr ' ' '-' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g' | cut -c1-30)
+    FEATURE=$(jq -r '.feature // empty' "$status_file" 2>/dev/null || echo "")
     CURRENT=$(jq -r '.current // "unknown"' "$status_file" 2>/dev/null || echo "unknown")
+
+    # pdca-status.json에서 completed인 피처는 skip
+    [ -n "$FEATURE" ] && is_completed_feature "$FEATURE" && continue
+    [ -n "$SLUG" ] && is_completed_feature "$SLUG" && continue
 
     # 모든 게이트 done인데 coo-ack 없음 → ACK 타임아웃 체크
     if [ "$CURRENT" = "done" ] || [ "$CURRENT" = "report" ]; then
