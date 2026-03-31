@@ -6,9 +6,27 @@ import { DiversityAlert } from "./diversity-alert";
 import { BenchmarkInsight } from "./benchmark-insight";
 import { AccountPrescription } from "./account-prescription";
 
+// ── CSS 변수 (목업 :root 동일) ──────────────────────────────────
+const V = {
+  bg: "#ffffff",
+  bg2: "#f8fafc",
+  bg3: "#e2e8f0",
+  bd: "#e2e8f0",
+  ac: "#F75D5D",
+  ac2: "#E54949",
+  t: "#1e293b",
+  t2: "#475569",
+  t3: "#64748b",
+  g: "#10b981",
+  a: "#f59e0b",
+  r: "#ef4444",
+  p: "#8b5cf6",
+  cy: "#06b6d4",
+  b: "#3b82f6",
+};
+
 // ── 타입 ──────────────────────────────────────────────────────────
 
-/** 부모에서 analysis_json 기반으로 추출된 flat 데이터 */
 export interface PortfolioCreativeItem {
   id: string;
   overall_score: number | null;
@@ -35,33 +53,24 @@ interface PortfolioTabV2Props {
   accountId: string;
 }
 
-// ── 유틸 ──────────────────────────────────────────────────────────
+// ── 섹션 카드 스타일 (목업 .s 클래스 동일) ────────────────────────
+const sectionStyle: React.CSSProperties = {
+  background: V.bg2,
+  borderRadius: 12,
+  padding: "1.5rem",
+  marginBottom: "1.2rem",
+  border: `1px solid ${V.bd}`,
+};
 
-function SummaryCard({
-  label,
-  value,
-  unit,
-  highlight = false,
-}: {
-  label: string;
-  value: string;
-  unit?: string;
-  highlight?: boolean;
-}) {
-  return (
-    <div className="bg-slate-50 rounded-xl px-4 py-3 border border-slate-200 text-center">
-      <div className="text-[11px] text-gray-500">{label}</div>
-      <div
-        className={`text-3xl font-extrabold mt-0.5 ${highlight ? "text-[#F75D5D]" : "text-gray-900"}`}
-      >
-        {value}
-        {unit && (
-          <span className="text-sm font-semibold">{unit}</span>
-        )}
-      </div>
-    </div>
-  );
-}
+const h2Style: React.CSSProperties = {
+  color: V.ac,
+  fontSize: "1.15rem",
+  fontWeight: 700,
+  marginBottom: ".8rem",
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+};
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────
 
@@ -73,7 +82,6 @@ export function PortfolioTabV2({
 }: PortfolioTabV2Props) {
   const results = portfolioItems;
 
-  // 집계
   const totalCount = results.length;
   const avgScore =
     totalCount > 0
@@ -86,7 +94,6 @@ export function PortfolioTabV2({
       ? results.reduce((s, r) => s + (r.roas ?? 0), 0) / totalCount
       : null;
 
-  // 점수 분포
   const scoreBuckets = [
     { label: "0-20", min: 0, max: 20, count: 0 },
     { label: "20-40", min: 20, max: 40, count: 0 },
@@ -103,21 +110,15 @@ export function PortfolioTabV2({
   }
   const maxBucketCount = Math.max(...scoreBuckets.map((b) => b.count), 1);
 
-  // 벤치마크
-  const hookBenchmarks: BenchmarkRow[] =
-    benchmarkData?.benchmarks?.hook_type ?? [];
-  const styleBenchmarks: BenchmarkRow[] =
-    benchmarkData?.benchmarks?.style ?? [];
+  const hookBenchmarks: BenchmarkRow[] = benchmarkData?.benchmarks?.hook_type ?? [];
+  const styleBenchmarks: BenchmarkRow[] = benchmarkData?.benchmarks?.style ?? [];
   const maxHookRoas = Math.max(...hookBenchmarks.map((b) => b.avg_roas ?? 0), 1);
-  const maxStyleRoas = Math.max(
-    ...styleBenchmarks.map((b) => b.avg_roas ?? 0),
-    1
-  );
+  const maxStyleRoas = Math.max(...styleBenchmarks.map((b) => b.avg_roas ?? 0), 1);
   const highScoreCount = scoreBuckets[4].count;
 
   if (intelligenceLoading) {
     return (
-      <div className="space-y-4">
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {Array.from({ length: 6 }).map((_, i) => (
           <Skeleton key={i} className="h-24 rounded-xl" />
         ))}
@@ -125,7 +126,6 @@ export function PortfolioTabV2({
     );
   }
 
-  // 벤치마크 인사이트 계산
   const topHook = hookBenchmarks.length > 0
     ? hookBenchmarks.reduce((a, b) => ((a.avg_roas ?? 0) > (b.avg_roas ?? 0) ? a : b))
     : null;
@@ -137,83 +137,92 @@ export function PortfolioTabV2({
     : null;
 
   return (
-    <div className="space-y-5">
-      {/* 요약 카드 4개 */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <SummaryCard
-          label="평균 L4 점수"
-          value={avgScore != null ? `${avgScore}` : "-"}
-          unit="점"
-        />
-        <SummaryCard label="총 소재 수" value={`${totalCount}`} unit="개" />
-        <SummaryCard
-          label="평균 ROAS"
-          value={avgRoas != null ? avgRoas.toFixed(2) : "-"}
-        />
-        <SummaryCard
-          label="80점 이상 소재"
-          value={`${highScoreCount}`}
-          unit="개"
-          highlight={highScoreCount > 0}
-        />
+    <div>
+      {/* ═══ 요약 카드 4개 ═══ */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: "1.2rem" }}>
+        {[
+          { label: "평균 L4 점수", value: avgScore != null ? String(avgScore) : "-", unit: "점", highlight: false },
+          { label: "총 소재 수", value: String(totalCount), unit: "개", highlight: false },
+          { label: "평균 ROAS", value: avgRoas != null ? avgRoas.toFixed(2) : "-", unit: "", highlight: false },
+          { label: "80점 이상 소재", value: String(highScoreCount), unit: "개", highlight: highScoreCount > 0 },
+        ].map((card) => (
+          <div
+            key={card.label}
+            style={{
+              background: V.bg2,
+              borderRadius: 12,
+              padding: "1.2rem",
+              border: `1px solid ${V.bd}`,
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: ".72rem", color: V.t3 }}>{card.label}</div>
+            <div
+              style={{
+                fontSize: "1.8rem",
+                fontWeight: 800,
+                color: card.highlight ? V.ac : V.t,
+              }}
+            >
+              {card.value}
+              {card.unit && (
+                <span style={{ fontSize: ".9rem", fontWeight: 600 }}>{card.unit}</span>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Andromeda 다양성 경고 + 클러스터 */}
+      {/* ═══ Andromeda 다양성 경고 + 클러스터 ═══ */}
       <DiversityAlert accountId={accountId} />
 
-      {/* 5축별 분포 */}
+      {/* ═══ 5축별 분포 ═══ */}
       <AxisDistribution accountId={accountId} />
 
-      {/* 📈 L4 점수 분포 히스토그램 */}
-      <div className="rounded-xl bg-slate-50 border border-slate-200 p-5">
-        <h3 className="flex items-center gap-2 text-[1.15rem] font-bold text-[#F75D5D] mb-3">
-          📈 L4 점수 분포
-        </h3>
-        <div className="flex items-end gap-2 h-32 px-4">
+      {/* ═══ L4 점수 분포 히스토그램 ═══ */}
+      <div style={sectionStyle}>
+        <h2 style={h2Style}>📈 L4 점수 분포</h2>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 120, padding: "0 1rem" }}>
           {scoreBuckets.map((b, idx) => {
-            const isHighBucket = idx === 4; // 80-100
+            const isHigh = idx === 4;
             return (
-              <div
-                key={b.label}
-                className="flex-1 flex flex-col items-center gap-1"
-              >
-                <span className="text-[11px] text-gray-500">{b.count}</span>
+              <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                <span style={{ fontSize: ".7rem", color: V.t3 }}>{b.count}</span>
                 <div
-                  className="w-full rounded-t-md min-h-[4px] transition-all"
                   style={{
-                    height: `${Math.max(4, (b.count / maxBucketCount) * 100)}px`,
-                    background: isHighBucket ? "#10b981" : "#F75D5D",
+                    width: "100%",
+                    background: isHigh ? V.g : V.ac,
                     opacity: 0.8,
+                    borderRadius: "4px 4px 0 0",
+                    height: `${Math.max(4, (b.count / maxBucketCount) * 90)}px`,
                   }}
                 />
-                <span className="text-[10px] text-gray-400">{b.label}</span>
+                <span style={{ fontSize: ".65rem", color: V.t3 }}>{b.label}</span>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* 🪝 훅 유형별 / 🎨 스타일별 ROAS (2열) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* ═══ 훅 유형별 / 스타일별 ROAS (2열) ═══ */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         {hookBenchmarks.length > 0 && (
-          <div className="rounded-xl bg-slate-50 border border-slate-200 p-5">
-            <h3 className="flex items-center gap-2 text-[1.15rem] font-bold text-[#F75D5D] mb-3">
-              🪝 훅 유형별 평균 ROAS
-            </h3>
-            <div className="space-y-3">
+          <div style={sectionStyle}>
+            <h2 style={h2Style}>🪝 훅 유형별 평균 ROAS</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {hookBenchmarks.slice(0, 8).map((b) => (
                 <div key={b.element_value}>
-                  <div className="flex items-center justify-between text-xs mb-0.5">
-                    <span className="text-gray-700">{b.element_value}</span>
-                    <span className="text-gray-500">
-                      ROAS {b.avg_roas?.toFixed(2) ?? "-"} (n={b.sample_count})
-                    </span>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".75rem", marginBottom: 2 }}>
+                    <span>{b.element_value}</span>
+                    <span style={{ color: V.t3 }}>ROAS {b.avg_roas?.toFixed(2) ?? "-"} (n={b.sample_count})</span>
                   </div>
-                  <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div style={{ height: 6, background: V.bg3, borderRadius: 3 }}>
                     <div
-                      className="h-full bg-[#F75D5D] rounded-full"
                       style={{
                         width: `${((b.avg_roas ?? 0) / maxHookRoas) * 100}%`,
+                        height: "100%",
+                        background: V.ac,
+                        borderRadius: 3,
                       }}
                     />
                   </div>
@@ -224,24 +233,22 @@ export function PortfolioTabV2({
         )}
 
         {styleBenchmarks.length > 0 && (
-          <div className="rounded-xl bg-slate-50 border border-slate-200 p-5">
-            <h3 className="flex items-center gap-2 text-[1.15rem] font-bold text-[#F75D5D] mb-3">
-              🎨 스타일별 평균 ROAS
-            </h3>
-            <div className="space-y-3">
+          <div style={sectionStyle}>
+            <h2 style={h2Style}>🎨 스타일별 평균 ROAS</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {styleBenchmarks.slice(0, 8).map((b) => (
                 <div key={b.element_value}>
-                  <div className="flex items-center justify-between text-xs mb-0.5">
-                    <span className="text-gray-700">{b.element_value}</span>
-                    <span className="text-gray-500">
-                      ROAS {b.avg_roas?.toFixed(2) ?? "-"} (n={b.sample_count})
-                    </span>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".75rem", marginBottom: 2 }}>
+                    <span>{b.element_value}</span>
+                    <span style={{ color: V.t3 }}>ROAS {b.avg_roas?.toFixed(2) ?? "-"} (n={b.sample_count})</span>
                   </div>
-                  <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div style={{ height: 6, background: V.bg3, borderRadius: 3 }}>
                     <div
-                      className="h-full bg-[#F75D5D] rounded-full"
                       style={{
                         width: `${((b.avg_roas ?? 0) / maxStyleRoas) * 100}%`,
+                        height: "100%",
+                        background: V.ac,
+                        borderRadius: 3,
                       }}
                     />
                   </div>
@@ -252,18 +259,14 @@ export function PortfolioTabV2({
         )}
       </div>
 
-      {/* 💡 벤치마크 인사이트 */}
-      <BenchmarkInsight
-        topHook={topHook}
-        topStyle={topStyle}
-        worstHook={worstHook}
-      />
+      {/* ═══ 벤치마크 인사이트 ═══ */}
+      <BenchmarkInsight topHook={topHook} topStyle={topStyle} worstHook={worstHook} />
 
-      {/* 🏆 계정 처방 요약 */}
+      {/* ═══ 계정 처방 요약 ═══ */}
       <AccountPrescription accountId={accountId} />
 
-      {/* 하단 푸터 */}
-      <div className="text-center py-5 text-gray-500 text-xs">
+      {/* ═══ 하단 푸터 ═══ */}
+      <div style={{ textAlign: "center", padding: "1.5rem", color: V.t3, fontSize: ".75rem", marginTop: "1rem" }}>
         🍡 Andromeda 다양성 분석 (768차원 임베딩 + 4축 가중 Jaccard + PDA 프레임)
         <br />
         2026-03-31 · &quot;같은 광고만 반복하면 고객이 먼저 지친다&quot;

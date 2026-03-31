@@ -2,28 +2,22 @@
 
 import useSWR from "swr";
 import { jsonFetcher } from "@/lib/swr/config";
-import { Skeleton } from "@/components/ui/skeleton";
+
+// ── CSS 변수 (목업 동일) ────────────────────────────────────────
+const V = {
+  bg: "#ffffff", bg2: "#f8fafc", bg3: "#e2e8f0", bd: "#e2e8f0",
+  ac: "#F75D5D", t3: "#64748b", p: "#8b5cf6",
+  r: "#ef4444", b: "#3b82f6", g: "#10b981", a: "#f59e0b",
+};
 
 // ── 타입 ──────────────────────────────────────────────────────────
 
-interface AxisDistributionProps {
-  accountId: string;
-}
+interface AxisDistributionProps { accountId: string; }
 
-interface AxisItem {
-  label: string;
-  count: number;
-}
-
+interface AxisItem { label: string; count: number; }
 interface AxisDistributionData {
-  format: AxisItem[];
-  hook: AxisItem[];
-  messaging: AxisItem[];
-  target: AxisItem[];
-  category: AxisItem[];
+  format: AxisItem[]; hook: AxisItem[]; messaging: AxisItem[]; target: AxisItem[]; category: AxisItem[];
 }
-
-// ── 5축 설정 ─────────────────────────────────────────────────────
 
 const AXIS_CONFIGS = [
   { key: "format" as const, label: "포맷", icon: "🎬" },
@@ -33,7 +27,7 @@ const AXIS_CONFIGS = [
   { key: "category" as const, label: "카테고리", icon: "🏷️" },
 ];
 
-const BAR_COLORS = ["#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"];
+const BAR_COLORS = [V.r, V.b, V.g, V.a, V.p];
 
 // ── 컴포넌트 ──────────────────────────────────────────────────────
 
@@ -43,77 +37,52 @@ export function AxisDistribution({ accountId }: AxisDistributionProps) {
     jsonFetcher
   );
 
-  if (isLoading) {
-    return <Skeleton className="h-40 rounded-xl" />;
-  }
+  if (isLoading) return <div style={{ height: 160, borderRadius: 12, background: V.bg3, animation: "pulse 2s infinite" }} />;
 
-  // 데이터 없어도 UI 구조 유지 (목업 규칙)
-  const axisData = data ?? {
-    format: [],
-    hook: [],
-    messaging: [],
-    target: [],
-    category: [],
-  };
+  const axisData = data ?? { format: [], hook: [], messaging: [], target: [], category: [] };
 
   return (
-    <div
-      className="rounded-xl bg-slate-50 border border-slate-200 p-5"
-      style={{ borderLeftWidth: 4, borderLeftColor: "#8b5cf6" }}
-    >
-      <h3
-        className="flex items-center gap-2 text-[1.15rem] font-bold mb-1"
-        style={{ color: "#8b5cf6" }}
-      >
+    <div style={{
+      background: V.bg2, borderRadius: 12, padding: "1.5rem", marginBottom: "1.2rem",
+      border: `1px solid ${V.bd}`, borderLeft: `4px solid ${V.p}`,
+    }}>
+      <h2 style={{ color: V.p, fontSize: "1.15rem", fontWeight: 700, marginBottom: ".8rem", display: "flex", alignItems: "center", gap: 8 }}>
         📊 5축별 소재 분포
-      </h3>
+      </h2>
 
-      <div className="grid grid-cols-5 gap-3">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 10 }}>
         {AXIS_CONFIGS.map((axis) => {
           const items = axisData[axis.key] ?? [];
           const maxCount = Math.max(...items.map((i) => i.count), 1);
 
           return (
-            <div
-              key={axis.key}
-              className="bg-white rounded-lg p-3 text-center"
-            >
-              <div className="text-[11px] text-gray-500 mb-2">
+            <div key={axis.key} style={{ background: V.bg, borderRadius: 8, padding: "1rem", textAlign: "center" }}>
+              <div style={{ fontSize: ".7rem", color: V.t3, marginBottom: 6 }}>
                 {axis.icon} {axis.label}
               </div>
 
               {items.length > 0 ? (
-                <div className="flex flex-col gap-1.5 text-[11px]">
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: ".7rem" }}>
                   {items.slice(0, 3).map((item, idx) => {
                     const pct = Math.round((item.count / maxCount) * 100);
-                    const isOverConcentrated = pct >= 65;
-                    const color = isOverConcentrated
-                      ? "#ef4444"
-                      : BAR_COLORS[Math.min(idx, BAR_COLORS.length - 1)];
+                    const isOver = pct >= 65;
+                    const color = isOver ? V.r : BAR_COLORS[Math.min(idx, BAR_COLORS.length - 1)];
 
                     return (
                       <div key={item.label}>
-                        <div className="flex justify-between">
-                          <span className="text-gray-700">{item.label}</span>
-                          <span className="font-bold">{item.count}</span>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span>{item.label}</span>
+                          <span style={{ fontWeight: 700 }}>{item.count}</span>
                         </div>
-                        <div className="h-1 bg-slate-200 rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${pct}%`,
-                              background: color,
-                            }}
-                          />
+                        <div style={{ height: 4, background: V.bg3, borderRadius: 2 }}>
+                          <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: 2 }} />
                         </div>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <div className="text-[11px] text-gray-400 py-2">
-                  데이터 없음
-                </div>
+                <div style={{ fontSize: ".7rem", color: V.t3, padding: "8px 0" }}>데이터 없음</div>
               )}
             </div>
           );
