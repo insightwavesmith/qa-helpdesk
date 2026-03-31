@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-31T00:38:46.562Z",
+  "lastUpdated": "2026-03-31T00:45:51.642Z",
   "activeFeatures": [
     "slack-notification",
     "organic-channel-distribution-phase2",
@@ -15,7 +15,8 @@
     "individual",
     "protractor",
     "portfolio",
-    "account-prescription"
+    "account-prescription",
+    "prescription-reanalysis"
   ],
   "primaryFeature": "helpers",
   "features": {
@@ -1021,6 +1022,19 @@
         "lastUpdated": "2026-03-31T00:22:03.576Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/src/app/api/protractor/account-prescription/route.ts"
+    },
+    "prescription-reanalysis": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-31T00:45:51.642Z",
+        "lastUpdated": "2026-03-31T00:45:51.642Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/prescription-reanalysis/route.ts"
     }
   },
   "pipeline": {
@@ -1031,7 +1045,7 @@
   "session": {
     "startedAt": "2026-03-30T05:20:31.424Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-31T00:38:46.562Z"
+    "lastActivity": "2026-03-31T00:45:51.642Z"
   },
   "history": [
     {
@@ -1505,6 +1519,12 @@
     {
       "timestamp": "2026-03-31T00:38:46.562Z",
       "feature": "individual",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-31T00:45:51.642Z",
+      "feature": "prescription-reanalysis",
       "phase": "do",
       "action": "updated"
     }
