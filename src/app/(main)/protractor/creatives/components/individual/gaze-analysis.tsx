@@ -5,7 +5,7 @@ import { useState } from "react";
 // ── 타입 ──────────────────────────────────────────────────────────
 
 interface SaliencyData {
-  attention_map_url: string;
+  attention_map_url: string | null;
   top_fixations: Array<{ x: number; y: number; ratio: number }>;
   cta_attention_score: number;
   cognitive_load: number;

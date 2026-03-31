@@ -13,6 +13,12 @@ interface PerformanceData {
   roas: number;
   video_p3s_rate: number | null;
   video_thruplay_rate: number | null;
+  video_p25_rate: number | null;
+  video_p50_rate: number | null;
+  video_p75_rate: number | null;
+  video_p100_rate: number | null;
+  shares_per_10k: number | null;
+  saves_per_10k: number | null;
   purchase_count: number;
   reach_to_purchase_rate: number;
 }
@@ -57,6 +63,10 @@ function pctFormat(v: number): string {
   return `${(v * 100).toFixed(2)}%`;
 }
 
+function per10kFormat(v: number): string {
+  return v.toFixed(1);
+}
+
 const AXES: AxisConfig[] = [
   {
     key: "foundation",
@@ -70,7 +80,10 @@ const AXES: AxisConfig[] = [
     primaryLabel: "3초시청률",
     detailMetrics: [
       { key: "video_p3s_rate", label: "3초시청률", format: pctFormat },
-      { key: "video_thruplay_rate", label: "완전시청률", format: pctFormat },
+      { key: "video_p25_rate", label: "25%재생률", format: pctFormat },
+      { key: "video_p50_rate", label: "50%재생률", format: pctFormat },
+      { key: "video_p75_rate", label: "75%재생률", format: pctFormat },
+      { key: "video_p100_rate", label: "100%재생률", format: pctFormat },
     ],
     getScore: (perf, bm) => {
       const val = perf.video_p3s_rate ?? perf.ctr;
@@ -81,7 +94,7 @@ const AXES: AxisConfig[] = [
     getPrimaryValue: (perf) => perf.video_p3s_rate,
     getPrimaryFormatted: (perf) =>
       perf.video_p3s_rate != null
-        ? `3초시청률 ${(perf.video_p3s_rate * 100).toFixed(2)}%`
+        ? `3초시청률 ${perf.video_p3s_rate.toFixed(2)}%`
         : "데이터 수집 중",
   },
   {
@@ -92,11 +105,36 @@ const AXES: AxisConfig[] = [
     bgColor: "rgba(245,158,11,0.15)",
     borderColor: "rgba(245,158,11,0.2)",
     emoji: "🟡",
-    primaryMetric: "ctr",
+    primaryMetric: "shares_per_10k",
     primaryLabel: "참여지표",
     detailMetrics: [
+      { key: "shares_per_10k", label: "공유/만노출", format: per10kFormat },
+      { key: "saves_per_10k", label: "저장/만노출", format: per10kFormat },
+    ],
+    getScore: (perf, bm) => {
+      const val = perf.shares_per_10k ?? 0;
+      const bench = bm?.shares_per_10k?.p50;
+      if (!val || !bench || bench === 0) return 0;
+      return Math.min(100, Math.max(0, (val / bench) * 50));
+    },
+    getPrimaryValue: (perf) => perf.shares_per_10k,
+    getPrimaryFormatted: (perf) =>
+      perf.shares_per_10k != null
+        ? `공유 ${perf.shares_per_10k.toFixed(1)}/만노출`
+        : "데이터 수집 중",
+  },
+  {
+    key: "conversion",
+    label: "전환",
+    subLabel: "클릭하나?",
+    color: "#ef4444",
+    bgColor: "rgba(239,68,68,0.15)",
+    borderColor: "rgba(239,68,68,0.2)",
+    emoji: "🔴",
+    primaryMetric: "ctr",
+    primaryLabel: "전환지표",
+    detailMetrics: [
       { key: "ctr", label: "CTR", format: pctFormat },
-      { key: "cpc", label: "CPC", format: (v) => `₩${Math.round(v).toLocaleString()}` },
     ],
     getScore: (perf, bm) => {
       const val = perf.ctr;
@@ -106,31 +144,7 @@ const AXES: AxisConfig[] = [
     },
     getPrimaryValue: (perf) => perf.ctr,
     getPrimaryFormatted: (perf) =>
-      `CTR ${(perf.ctr * 100).toFixed(2)}%`,
-  },
-  {
-    key: "conversion",
-    label: "전환",
-    subLabel: "돈이 되나?",
-    color: "#ef4444",
-    bgColor: "rgba(239,68,68,0.15)",
-    borderColor: "rgba(239,68,68,0.2)",
-    emoji: "🔴",
-    primaryMetric: "reach_to_purchase_rate",
-    primaryLabel: "전환지표",
-    detailMetrics: [
-      { key: "reach_to_purchase_rate", label: "노출당구매확률", format: pctFormat },
-      { key: "roas", label: "ROAS", format: (v) => v.toFixed(1) },
-    ],
-    getScore: (perf, bm) => {
-      const val = perf.reach_to_purchase_rate;
-      const bench = bm?.reach_to_purchase_rate?.p50;
-      if (!val || !bench || bench === 0) return 0;
-      return Math.min(100, Math.max(0, (val / bench) * 50));
-    },
-    getPrimaryValue: (perf) => perf.reach_to_purchase_rate,
-    getPrimaryFormatted: (perf) =>
-      `구매전환율 ${(perf.reach_to_purchase_rate * 100).toFixed(2)}%`,
+      `CTR ${perf.ctr.toFixed(2)}%`,
   },
 ];
 

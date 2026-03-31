@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sal = saliency as any;
 
-  // 5. daily_ad_insights 성과 집계 (최근 30일, ad_id 기준)
+  // 5. daily_ad_insights 성과 집계 (최근 7일, ad_id 기준)
   let performance: {
     impressions: number;
     reach: number;
@@ -81,19 +81,25 @@ export async function GET(req: NextRequest) {
     roas: number;
     video_p3s_rate: number | null;
     video_thruplay_rate: number | null;
+    video_p25_rate: number | null;
+    video_p50_rate: number | null;
+    video_p75_rate: number | null;
+    video_p100_rate: number | null;
+    shares_per_10k: number | null;
+    saves_per_10k: number | null;
     purchase_count: number;
     reach_to_purchase_rate: number;
   } | null = null;
 
   if (adId) {
     const sinceDate = new Date();
-    sinceDate.setDate(sinceDate.getDate() - 30);
+    sinceDate.setDate(sinceDate.getDate() - 7);
     const sinceDateStr = sinceDate.toISOString().split("T")[0];
 
     const { data: insights } = await svc
       .from("daily_ad_insights")
       .select(
-        "impressions, reach, spend, clicks, purchase_value, purchases, video_p3s_rate, thruplay_rate, roas, ctr, reach_to_purchase_rate",
+        "impressions, reach, spend, clicks, purchase_value, purchases, video_p3s_rate, thruplay_rate, roas, ctr, reach_to_purchase_rate, video_p25, video_p50, video_p75, video_p100, shares_per_10k, saves_per_10k",
       )
       .eq("ad_id", adId)
       .gte("date", sinceDateStr);
@@ -111,6 +117,14 @@ export async function GET(req: NextRequest) {
       let videoP3sCount = 0;
       let thruplaySum = 0;
       let thruplayCount = 0;
+      let totalVideoP25 = 0;
+      let totalVideoP50 = 0;
+      let totalVideoP75 = 0;
+      let totalVideoP100 = 0;
+      let sharesPer10kSum = 0;
+      let sharesPer10kCount = 0;
+      let savesPer10kSum = 0;
+      let savesPer10kCount = 0;
 
       for (const row of rows) {
         totalImpressions += Number(row.impressions) || 0;
@@ -128,7 +142,22 @@ export async function GET(req: NextRequest) {
           thruplaySum += Number(row.thruplay_rate);
           thruplayCount++;
         }
+        totalVideoP25 += Number(row.video_p25) || 0;
+        totalVideoP50 += Number(row.video_p50) || 0;
+        totalVideoP75 += Number(row.video_p75) || 0;
+        totalVideoP100 += Number(row.video_p100) || 0;
+
+        if (row.shares_per_10k != null) {
+          sharesPer10kSum += Number(row.shares_per_10k);
+          sharesPer10kCount++;
+        }
+        if (row.saves_per_10k != null) {
+          savesPer10kSum += Number(row.saves_per_10k);
+          savesPer10kCount++;
+        }
       }
+
+      const isVideo = m.media_type === "VIDEO";
 
       performance = {
         impressions: totalImpressions,
@@ -147,12 +176,36 @@ export async function GET(req: NextRequest) {
             ? Math.round((totalPurchaseValue / totalSpend) * 100) / 100
             : 0,
         video_p3s_rate:
-          m.media_type === "VIDEO" && videoP3sCount > 0
+          isVideo && videoP3sCount > 0
             ? Math.round((videoP3sSum / videoP3sCount) * 100) / 100
             : null,
         video_thruplay_rate:
-          m.media_type === "VIDEO" && thruplayCount > 0
+          isVideo && thruplayCount > 0
             ? Math.round((thruplaySum / thruplayCount) * 100) / 100
+            : null,
+        video_p25_rate:
+          isVideo && totalReach > 0
+            ? Math.round((totalVideoP25 / totalReach) * 10000) / 100
+            : null,
+        video_p50_rate:
+          isVideo && totalReach > 0
+            ? Math.round((totalVideoP50 / totalReach) * 10000) / 100
+            : null,
+        video_p75_rate:
+          isVideo && totalReach > 0
+            ? Math.round((totalVideoP75 / totalReach) * 10000) / 100
+            : null,
+        video_p100_rate:
+          isVideo && totalReach > 0
+            ? Math.round((totalVideoP100 / totalReach) * 10000) / 100
+            : null,
+        shares_per_10k:
+          sharesPer10kCount > 0
+            ? Math.round((sharesPer10kSum / sharesPer10kCount) * 100) / 100
+            : null,
+        saves_per_10k:
+          savesPer10kCount > 0
+            ? Math.round((savesPer10kSum / savesPer10kCount) * 100) / 100
             : null,
         purchase_count: totalPurchases,
         reach_to_purchase_rate:
