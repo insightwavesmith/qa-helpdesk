@@ -57,10 +57,6 @@ function pctFormat(v: number): string {
   return `${(v * 100).toFixed(2)}%`;
 }
 
-function numFormat(v: number): string {
-  return v.toFixed(1);
-}
-
 const AXES: AxisConfig[] = [
   {
     key: "foundation",
@@ -74,7 +70,7 @@ const AXES: AxisConfig[] = [
     primaryLabel: "3초시청률",
     detailMetrics: [
       { key: "video_p3s_rate", label: "3초시청률", format: pctFormat },
-      { key: "video_thruplay_rate", label: "ThruPlay율", format: pctFormat },
+      { key: "video_thruplay_rate", label: "완전시청률", format: pctFormat },
     ],
     getScore: (perf, bm) => {
       const val = perf.video_p3s_rate ?? perf.ctr;
@@ -86,7 +82,7 @@ const AXES: AxisConfig[] = [
     getPrimaryFormatted: (perf) =>
       perf.video_p3s_rate != null
         ? `3초시청률 ${(perf.video_p3s_rate * 100).toFixed(2)}%`
-        : "데이터 없음",
+        : "데이터 수집 중",
   },
   {
     key: "engagement",
@@ -97,10 +93,10 @@ const AXES: AxisConfig[] = [
     borderColor: "rgba(245,158,11,0.2)",
     emoji: "🟡",
     primaryMetric: "ctr",
-    primaryLabel: "CTR",
+    primaryLabel: "참여지표",
     detailMetrics: [
       { key: "ctr", label: "CTR", format: pctFormat },
-      { key: "cpc", label: "CPC", format: (v) => `₩${Math.round(v)}` },
+      { key: "cpc", label: "CPC", format: (v) => `₩${Math.round(v).toLocaleString()}` },
     ],
     getScore: (perf, bm) => {
       const val = perf.ctr;
@@ -121,10 +117,10 @@ const AXES: AxisConfig[] = [
     borderColor: "rgba(239,68,68,0.2)",
     emoji: "🔴",
     primaryMetric: "reach_to_purchase_rate",
-    primaryLabel: "구매전환율",
+    primaryLabel: "전환지표",
     detailMetrics: [
       { key: "reach_to_purchase_rate", label: "노출당구매확률", format: pctFormat },
-      { key: "roas", label: "ROAS", format: numFormat },
+      { key: "roas", label: "ROAS", format: (v) => v.toFixed(1) },
     ],
     getScore: (perf, bm) => {
       const val = perf.reach_to_purchase_rate;
@@ -162,8 +158,45 @@ export function ThreeAxisScore({ performance, benchmarks }: ThreeAxisScoreProps)
 
   if (!performance) {
     return (
-      <div className="rounded-xl bg-slate-50 border border-slate-200 p-4">
-        <div className="text-sm text-gray-500 text-center">성과 데이터 없음</div>
+      <div
+        className="rounded-xl border p-4"
+        style={{ background: "#f8fafc", borderColor: "#e2e8f0", borderLeftWidth: 4, borderLeftColor: "#ef4444" }}
+      >
+        <div className="flex items-center gap-2.5 mb-3">
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center text-base"
+            style={{ background: "rgba(239,68,68,0.15)", color: "#ef4444" }}
+          >
+            📊
+          </div>
+          <div>
+            <div className="text-sm font-bold" style={{ color: "#ef4444" }}>
+              성과 — 이 광고는 지금 이 정도야
+            </div>
+            <div className="text-xs" style={{ color: "#64748b" }}>성과 데이터 수집 중</div>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2.5">
+          {AXES.map((axis) => (
+            <div
+              key={axis.key}
+              className="bg-white rounded-lg p-3 text-center"
+              style={{ borderTop: `3px solid ${axis.color}` }}
+            >
+              <div style={{ fontSize: "0.7rem", color: "#64748b" }}>
+                {axis.emoji} {axis.label} ({axis.subLabel})
+              </div>
+              <div
+                className="text-3xl font-extrabold my-1"
+                style={{ color: "#e2e8f0" }}
+              >
+                —
+              </div>
+              <div style={{ fontSize: "0.7rem", color: "#94a3b8" }}>데이터 수집 중</div>
+              <div className="h-1.5 rounded-full mt-1.5" style={{ background: "#e2e8f0" }} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -171,7 +204,10 @@ export function ThreeAxisScore({ performance, benchmarks }: ThreeAxisScoreProps)
   const bm = benchmarks?.metrics ?? {};
 
   return (
-    <div className="rounded-xl bg-slate-50 border border-slate-200 p-4" style={{ borderLeftWidth: 4, borderLeftColor: "#ef4444" }}>
+    <div
+      className="rounded-xl border p-4"
+      style={{ background: "#f8fafc", borderColor: "#e2e8f0", borderLeftWidth: 4, borderLeftColor: "#ef4444" }}
+    >
       {/* 헤더 */}
       <div className="flex items-center gap-2.5 mb-3">
         <div
@@ -184,7 +220,7 @@ export function ThreeAxisScore({ performance, benchmarks }: ThreeAxisScoreProps)
           <div className="text-sm font-bold" style={{ color: "#ef4444" }}>
             성과 — 이 광고는 지금 이 정도야
           </div>
-          <div className="text-xs text-gray-500">벤치마크 대비 어디가 부족한지</div>
+          <div className="text-xs" style={{ color: "#64748b" }}>벤치마크 대비 어디가 부족한지</div>
         </div>
       </div>
 
@@ -201,7 +237,7 @@ export function ThreeAxisScore({ performance, benchmarks }: ThreeAxisScoreProps)
               className="bg-white rounded-lg p-3 text-center"
               style={{ borderTop: `3px solid ${axis.color}` }}
             >
-              <div className="text-[11px] text-gray-500">
+              <div style={{ fontSize: "0.7rem", color: "#64748b" }}>
                 {axis.emoji} {axis.label} ({axis.subLabel})
               </div>
               <div
@@ -210,9 +246,9 @@ export function ThreeAxisScore({ performance, benchmarks }: ThreeAxisScoreProps)
               >
                 {score}
               </div>
-              <div className="text-[11px] text-gray-600">{primaryFormatted}</div>
+              <div style={{ fontSize: "0.72rem", color: "#475569" }}>{primaryFormatted}</div>
               {/* 스코어 바 */}
-              <div className="h-1.5 bg-slate-200 rounded-full mt-1.5">
+              <div className="h-1.5 rounded-full mt-1.5" style={{ background: "#e2e8f0" }}>
                 <div
                   className="h-full rounded-full transition-all"
                   style={{
@@ -230,7 +266,8 @@ export function ThreeAxisScore({ performance, benchmarks }: ThreeAxisScoreProps)
       <div className="text-center mb-2">
         <button
           onClick={() => setShowDetails(!showDetails)}
-          className="bg-white border border-slate-200 text-gray-500 px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-50 transition-colors"
+          className="bg-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors hover:bg-gray-50"
+          style={{ border: "1px solid #e2e8f0", color: "#64748b" }}
         >
           {showDetails ? "▴ 세부항목 접기" : "▾ 세부항목 보기"}
         </button>
@@ -246,8 +283,8 @@ export function ThreeAxisScore({ performance, benchmarks }: ThreeAxisScoreProps)
               style={{ border: `1px solid ${axis.borderColor}` }}
             >
               <div
-                className="text-[11px] font-bold mb-1.5"
-                style={{ color: axis.color }}
+                className="font-bold mb-1.5"
+                style={{ fontSize: "0.72rem", color: axis.color }}
               >
                 {axis.emoji} {axis.label}
               </div>
@@ -256,7 +293,16 @@ export function ThreeAxisScore({ performance, benchmarks }: ThreeAxisScoreProps)
                   const actual =
                     performance[dm.key as keyof PerformanceData] as number | null;
                   const bench = bm[dm.key];
-                  if (actual == null) return null;
+                  if (actual == null) return (
+                    <div
+                      key={dm.key}
+                      className="flex items-center justify-between"
+                      style={{ fontSize: "0.7rem", color: "#94a3b8" }}
+                    >
+                      <span>{dm.label}</span>
+                      <span>수집 중</span>
+                    </div>
+                  );
                   const p50 = bench?.p50;
                   const p75 = bench?.p75;
                   const status =
@@ -267,7 +313,8 @@ export function ThreeAxisScore({ performance, benchmarks }: ThreeAxisScoreProps)
                   return (
                     <div
                       key={dm.key}
-                      className="flex items-center justify-between text-[11px] text-gray-600"
+                      className="flex items-center justify-between"
+                      style={{ fontSize: "0.7rem", color: "#475569" }}
                     >
                       <span>{dm.label}</span>
                       <span>

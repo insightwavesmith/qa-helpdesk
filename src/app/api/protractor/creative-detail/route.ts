@@ -55,47 +55,23 @@ export async function GET(req: NextRequest) {
   const adId: string | null = c?.ad_id ?? null;
   const accountId: string | null = c?.account_id ?? null;
 
-  // 4. creative_saliency 조회
-  const { data: saliency } = await svc
-    .from("creative_saliency")
-    .select(
-      "attention_map_url, top_fixations, cta_attention_score, cognitive_load",
-    )
-    .eq("creative_media_id", id)
-    .single();
+  // 4. creative_saliency 조회 (ad_id 기준)
+  let saliency = null;
+  if (adId) {
+    const { data: salData } = await svc
+      .from("creative_saliency")
+      .select(
+        "attention_map_url, top_fixations, cta_attention_score, cognitive_load",
+      )
+      .eq("ad_id", adId)
+      .single();
+    saliency = salData;
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sal = saliency as any;
 
-  // 5. VIDEO면 video_saliency_frames 조회
-  let saliencyFrames: Array<{
-    frame_index: number;
-    timestamp_sec: number;
-    attention_map_url: string;
-    top_fixations: Array<{ x: number; y: number; ratio: number }>;
-  }> | null = null;
-
-  if (m.media_type === "VIDEO") {
-    const { data: frames } = await svc
-      .from("video_saliency_frames")
-      .select(
-        "frame_index, second, attention_map_url, top_fixations",
-      )
-      .eq("creative_media_id", id)
-      .order("second", { ascending: true });
-
-    if (frames && (frames as unknown[]).length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      saliencyFrames = (frames as any[]).map((f) => ({
-        frame_index: f.frame_index ?? 0,
-        timestamp_sec: f.second,
-        attention_map_url: f.attention_map_url,
-        top_fixations: f.top_fixations ?? [],
-      }));
-    }
-  }
-
-  // 6. daily_ad_insights 성과 집계 (최근 30일, ad_id 기준)
+  // 5. daily_ad_insights 성과 집계 (최근 30일, ad_id 기준)
   let performance: {
     impressions: number;
     reach: number;
@@ -117,10 +93,10 @@ export async function GET(req: NextRequest) {
     const { data: insights } = await svc
       .from("daily_ad_insights")
       .select(
-        "impressions, reach, spend, clicks, website_purchase_value, purchases, video_p3s_rate, thruplay_rate, roas, ctr, reach_to_purchase_rate",
+        "impressions, reach, spend, clicks, purchase_value, purchases, video_p3s_rate, thruplay_rate, roas, ctr, reach_to_purchase_rate",
       )
       .eq("ad_id", adId)
-      .gte("date_start", sinceDateStr);
+      .gte("date", sinceDateStr);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows = (insights as any[]) ?? [];
@@ -141,7 +117,7 @@ export async function GET(req: NextRequest) {
         totalReach += Number(row.reach) || 0;
         totalSpend += Number(row.spend) || 0;
         totalClicks += Number(row.clicks) || 0;
-        totalPurchaseValue += Number(row.website_purchase_value) || 0;
+        totalPurchaseValue += Number(row.purchase_value) || 0;
         totalPurchases += Number(row.purchases) || 0;
 
         if (row.video_p3s_rate != null) {
@@ -289,7 +265,6 @@ export async function GET(req: NextRequest) {
           cognitive_load: Number(sal.cognitive_load) || 0,
         }
       : null,
-    saliency_frames: saliencyFrames,
     benchmarks,
     top_creative: topCreative,
   });
