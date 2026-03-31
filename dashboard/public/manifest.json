@@ -1,0 +1,41 @@
+{
+  "name": "bkit 에이전트 모니터",
+  "short_name": "bkit 모니터",
+  "description": "bkit 에이전트팀 실시간 모니터링 위젯",
+  "start_url": "/widget",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#111827",
+  "background_color": "#111827",
+  "lang": "ko",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["developer", "monitoring", "productivity"],
+  "shortcuts": [
+    {
+      "name": "에이전트 상태",
+      "short_name": "상태",
+      "description": "에이전트 실시간 상태 확인",
+      "url": "/widget",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

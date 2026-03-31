@@ -9,6 +9,7 @@ import { OrgChartPage } from './pages/OrgChartPage';
 import { ChainsPage } from './pages/ChainsPage';
 import { AgentsPage } from './pages/AgentsPage';
 import { RoutinesPage } from './pages/RoutinesPage';
+import { WidgetPage } from './pages/WidgetPage';
 import { useLiveUpdates } from './hooks/useLiveUpdates';
 
 const queryClient = new QueryClient({
@@ -31,6 +32,10 @@ export default function App() {
       <LiveUpdatesInit />
       <BrowserRouter>
         <Routes>
+          {/* 모바일 위젯 (Layout 없음) */}
+          <Route path="widget" element={<WidgetPage />} />
+
+          {/* 기본 대시보드 (Layout 포함) */}
           <Route element={<Layout />}>
             <Route index element={<DashboardPage />} />
             <Route path="tickets" element={<TicketsPage />} />
