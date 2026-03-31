@@ -8,6 +8,10 @@
 #   pane_index 1+ = 팀원 (코드 작성이 본업)
 #   tmux 없음 = 로컬 개발 → 패스
 
+# V3: PID 역추적 자동 등록 (실패해도 계속)
+source "$(dirname "$0")/helpers/hook-self-register.sh" 2>/dev/null
+auto_register_peer 2>/dev/null
+
 # 안전 실패: hook 에러 시 팀원 작업 방해 방지 → 허용
 trap 'exit 0' ERR
 

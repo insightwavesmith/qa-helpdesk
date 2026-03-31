@@ -9,6 +9,10 @@
 
 PROJECT_DIR="/Users/smith/projects/bscamp"
 
+# V3: PID 역추적 자동 등록 (실패해도 계속)
+source "$(dirname "$0")/helpers/hook-self-register.sh" 2>/dev/null
+auto_register_peer 2>/dev/null
+
 # Hook 출력 최소화 (D8-1)
 source "$(dirname "$0")/helpers/hook-output.sh" 2>/dev/null && hook_init
 

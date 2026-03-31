@@ -3,6 +3,11 @@
 # 항상 exit 0
 
 PROJECT_DIR="/Users/smith/projects/bscamp"
+
+# V3: PID 역추적 자동 등록 (실패해도 계속)
+source "$(dirname "$0")/helpers/hook-self-register.sh" 2>/dev/null
+auto_register_peer 2>/dev/null
+
 SLACK_CHANNEL="C0AN7ATS4DD"
 
 INPUT=$(cat 2>/dev/null || true)

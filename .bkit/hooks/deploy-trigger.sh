@@ -11,6 +11,10 @@ source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
 PROJECT_DIR="/Users/smith/projects/bscamp"
 cd "$PROJECT_DIR" || exit 0
 
+# V3: PID 역추적 자동 등록 (실패해도 계속)
+source "$(dirname "$0")/helpers/hook-self-register.sh" 2>/dev/null
+auto_register_peer 2>/dev/null
+
 LAST_MSG=$(git log --oneline -1 2>/dev/null || echo "")
 IS_FIX=$(echo "$LAST_MSG" | grep -cE '^[a-f0-9]+ (fix|hotfix):' || true)
 HAS_SRC=$(git diff HEAD~1 --name-only 2>/dev/null | grep -c "^src/" || true)

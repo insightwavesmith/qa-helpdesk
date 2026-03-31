@@ -3,6 +3,10 @@
 # PreToolUse hook for Bash tool
 # exit 0 = 허용, exit 2 = 차단
 
+# V3: PID 역추적 자동 등록 (실패해도 계속)
+source "$(dirname "$0")/helpers/hook-self-register.sh" 2>/dev/null
+auto_register_peer 2>/dev/null
+
 INPUT=$(cat)
 
 # Bash tool의 command 필드만 파싱 (다른 tool은 무시)
