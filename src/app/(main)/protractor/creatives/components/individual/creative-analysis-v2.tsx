@@ -7,6 +7,19 @@ import type {
   CustomerJourneyDetail,
 } from "@/types/prescription";
 
+// ── 목업 CSS 재현 (hover, 반응형 등 인라인으로 불가능한 스타일) ────────
+const MOCKUP_STYLES = `
+  .cav2-journey-content:hover { background: rgba(99,102,241,.04) !important; }
+  @media(max-width:768px) {
+    .cav2-root { padding: 1rem !important; }
+    .cav2-video-grid { grid-template-columns: 1fr !important; }
+  }
+  @keyframes cav2-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+`;
+
 // ── CSS 변수 (목업 :root 동일) ───────────────────────────────────────
 const CSS_VARS: Record<string, string> = {
   "--bg": "#ffffff",
@@ -632,19 +645,23 @@ export function CreativeAnalysisV2({
   // ═══════════════════════════════════════════════════════════════
 
   return (
-    <div
-      style={{
-        ...CSS_VARS,
-        maxWidth: 1200,
-        margin: "0 auto",
-        fontFamily:
-          "'Pretendard Variable', -apple-system, BlinkMacSystemFont, sans-serif",
-        color: v("--t"),
-        lineHeight: 1.7,
-        fontSize: "14px",
-        padding: "2rem",
-      } as React.CSSProperties}
-    >
+    <>
+      {/* 목업 CSS 재현 (hover, 반응형, 애니메이션) */}
+      <style dangerouslySetInnerHTML={{ __html: MOCKUP_STYLES }} />
+      <div
+        className="cav2-root"
+        style={{
+          ...CSS_VARS,
+          maxWidth: 1200,
+          margin: "0 auto",
+          fontFamily:
+            "'Pretendard Variable', -apple-system, BlinkMacSystemFont, sans-serif",
+          color: v("--t"),
+          lineHeight: 1.7,
+          fontSize: "14px",
+          padding: "2rem",
+        } as React.CSSProperties}
+      >
       {/* ═══ 소재 네비게이션 ═══ */}
       <div
         style={{
@@ -1028,6 +1045,7 @@ export function CreativeAnalysisV2({
 
           {/* 영상 + 타임라인 그리드 */}
           <div
+            className="cav2-video-grid"
             style={{
               display: "grid",
               gridTemplateColumns: "210px 1fr",
@@ -1531,7 +1549,8 @@ export function CreativeAnalysisV2({
         <br />
         &ldquo;모든 숫자는 고객이 만든다&rdquo;
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -1872,6 +1891,7 @@ function JourneyRow({
         <span style={{ fontSize: ".6rem" }}>{scene.type}</span>
       </div>
       <div
+        className="cav2-journey-content"
         style={{
           padding: "8px 12px",
           borderRadius: "0 8px 8px 0",
