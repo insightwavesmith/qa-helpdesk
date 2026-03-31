@@ -297,7 +297,9 @@ async function step11_callGemini(prompt: {
       }
 
       if (!res.ok) {
-        throw new PrescriptionError(`AI 분석 중 오류가 발생했습니다.`, 500, 'GEMINI_ERROR');
+        const errBody = await res.text().catch(() => '(no body)');
+        console.error(`[Gemini] HTTP ${res.status}: ${errBody.slice(0, 500)}`);
+        throw new PrescriptionError('AI 분석 중 오류가 발생했습니다.', 500, 'GEMINI_ERROR');
       }
 
       const responseData = await res.json();

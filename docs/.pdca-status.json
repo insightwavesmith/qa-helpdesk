@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-30T21:16:00.000000+00:00",
+  "lastUpdated": "2026-03-31T00:11:50.000000+00:00",
   "activeFeatures": [
     "slack-notification",
     "organic-channel-distribution-phase2",
@@ -9,9 +9,10 @@
     "video-permission-skip",
     "video-collection-audit",
     "helpers",
-    ".claude"
+    ".claude",
+    "cto-gemini-upgrade"
   ],
-  "primaryFeature": "helpers",
+  "primaryFeature": "cto-gemini-upgrade",
   "features": {
     "slack-notification": {
       "phase": "implementing",
@@ -924,6 +925,20 @@
       },
       "lastFile": "/Users/smith/projects/bscamp/src/app/(main)/protractor/creatives/components/individual/scene-detail-analysis.tsx",
       "notes": "소재분석 탭 UI 목업 매칭 구현 완료. 씬별 상세 분석(봤다👁/들었다👂/느꼈다🧠) + 고객여정 4단계 + 오디오분석 + scene_analysis 실데이터 연결. 커밋 81eee80. 7개 파일 수정/추가. tsc+build+ESLint 전체 통과."
+    },
+    "cto-gemini-upgrade": {
+      "phase": "completed",
+      "phaseNumber": 5,
+      "matchRate": 95,
+      "iterationCount": 1,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T23:46:00.000Z",
+        "lastUpdated": "2026-03-31T00:11:50.000Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/(main)/protractor/creatives/components/individual/ad-axis-card.tsx",
+      "notes": "Gemini 프롬프트 보강 + 엔젤앤비 Top5 재분석 + UI 매칭 완료. scene_journey/audio_analysis/customer_journey_detail + ad_axis 광고축 카테고리 완전 구현. 커밋 b251031 (+282줄, 7파일). 목표 150% 초과 달성."
     },
     ".claude": {
       "phase": "do",
