@@ -3,6 +3,10 @@
 # PreToolUse hook (Agent): team_name 없는 구현용 Agent spawn 차단
 # exit 2 = 차단 (게이트)
 
+# V3: PID 역추적 자동 등록 (실패해도 계속)
+source "$(dirname "$0")/helpers/hook-self-register.sh" 2>/dev/null
+auto_register_peer 2>/dev/null
+
 INPUT=$(cat)
 
 # tool_input에서 subagent_type, team_name, prompt 추출

@@ -4,6 +4,11 @@
 # V2 (2026-03-30): P4 해결
 
 PROJECT_DIR="/Users/smith/projects/bscamp"
+
+# V3: PID 역추적 자동 등록 (실패해도 계속)
+source "$(dirname "$0")/helpers/hook-self-register.sh" 2>/dev/null
+auto_register_peer 2>/dev/null
+
 REGISTRY="$PROJECT_DIR/.bkit/runtime/teammate-registry.json"
 mkdir -p "$(dirname "$REGISTRY")" 2>/dev/null
 

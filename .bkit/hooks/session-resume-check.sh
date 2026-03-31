@@ -5,6 +5,10 @@ set -uo pipefail
 
 PROJECT_DIR="/Users/smith/projects/bscamp"
 
+# V3: PID 역추적 자동 등록 (세션 시작 시 가장 먼저 등록)
+source "$(dirname "$0")/helpers/hook-self-register.sh" 2>/dev/null
+auto_register_peer 2>/dev/null
+
 PDCA_FILE="$PROJECT_DIR/.bkit/state/pdca-status.json"
 REGISTRY="$PROJECT_DIR/.bkit/runtime/teammate-registry.json"
 BOARD="$PROJECT_DIR/.claude/tasks/BOARD.json"

@@ -8,6 +8,10 @@
 #
 # v1.0 (2026-03-28)
 
+# V3: PID 역추적 자동 등록 (실패해도 계속)
+source "$(dirname "$0")/helpers/hook-self-register.sh" 2>/dev/null
+auto_register_peer 2>/dev/null
+
 trap 'exit 0' ERR
 
 # 팀원은 TeamDelete 사용 안 하지만 혹시 모를 상황 → 통과

@@ -2,11 +2,15 @@
 # validate-before-delegate.sh — 팀원 위임 전 구조분석/설계 체크
 # PreToolUse hook: 팀원 생성(Task tool) 시 TASK별 분석 문서가 있는지 확인
 # exit 2 = 차단 (게이트)
-# 
+#
 # 체크 대상: 리더가 팀원에게 위임하려면 다음 중 하나가 존재해야 함
 # - docs/01-plan/features/*.plan.md (최근 30분 이내 수정)
 # - ANALYSIS-*.md (프로젝트 루트, 최근 30분 이내)
 # - DEV-STATUS.md에 "구조 분석" 또는 "설계" 관련 기록 (최근 30분)
+
+# V3: PID 역추적 자동 등록 (실패해도 계속)
+source "$(dirname "$0")/helpers/hook-self-register.sh" 2>/dev/null
+auto_register_peer 2>/dev/null
 
 # 팀원은 PDCA 게이팅 패스 (리더 전용 검증)
 source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
