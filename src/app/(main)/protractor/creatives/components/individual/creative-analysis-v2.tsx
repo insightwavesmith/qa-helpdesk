@@ -633,9 +633,10 @@ export function CreativeAnalysisV2({
 
   return (
     <div
-      className="max-w-[1200px] mx-auto"
       style={{
         ...CSS_VARS,
+        maxWidth: 1200,
+        margin: "0 auto",
         fontFamily:
           "'Pretendard Variable', -apple-system, BlinkMacSystemFont, sans-serif",
         color: v("--t"),
