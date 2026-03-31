@@ -128,17 +128,29 @@ export function CreativeDetailPanel({
 
   const creative = detail.creative;
 
-  // saliency → saliencyFrames 변환 (단일 → 배열)
-  const saliencyFrames = detail.saliency?.top_fixations
-    ? [
-        {
-          frame_index: 0,
-          timestamp_sec: 0,
-          attention_map_url: detail.saliency.attention_map_url ?? "",
-          top_fixations: detail.saliency.top_fixations,
-        },
-      ]
-    : null;
+  // saliency → saliencyFrames 변환
+  // video_analysis.heatmap_urls가 있으면 프레임별 히트맵 사용
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const va = creative?.video_analysis as Record<string, any> | null;
+  const heatmapUrls = va?.heatmap_urls as Array<{ sec: number; url: string }> | undefined;
+  
+  const saliencyFrames = heatmapUrls && heatmapUrls.length > 0
+    ? heatmapUrls.map((h, i) => ({
+        frame_index: i,
+        timestamp_sec: h.sec,
+        attention_map_url: h.url,
+        top_fixations: detail.saliency?.top_fixations ?? [],
+      }))
+    : detail.saliency?.top_fixations
+      ? [
+          {
+            frame_index: 0,
+            timestamp_sec: 0,
+            attention_map_url: detail.saliency.attention_map_url ?? "",
+            top_fixations: detail.saliency.top_fixations,
+          },
+        ]
+      : null;
 
   // CreativeAnalysisV2에 전달할 performance 매핑
   const v2Performance = detail.performance

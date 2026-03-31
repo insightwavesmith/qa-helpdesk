@@ -60,7 +60,7 @@ interface AxisConfig {
 }
 
 function pctFormat(v: number): string {
-  return `${(v * 100).toFixed(2)}%`;
+  return `${v.toFixed(2)}%`;
 }
 
 function per10kFormat(v: number): string {

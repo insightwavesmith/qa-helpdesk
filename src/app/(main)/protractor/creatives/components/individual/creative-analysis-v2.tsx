@@ -122,7 +122,7 @@ function v(name: string): string {
   return `var(${name})`;
 }
 
-function pct(val: number | null | undefined, multiplier = 100): string {
+function pct(val: number | null | undefined, multiplier = 1): string {
   if (val == null) return "0%";
   return `${(val * multiplier).toFixed(2)}%`;
 }
@@ -438,7 +438,7 @@ function buildAxes(
       score: foundationScore,
       primaryLabel: "3초시청률",
       primaryActual:
-        p3s != null ? `${(p3s * 100).toFixed(2)}%` : "데이터 없음",
+        p3s != null ? `${p3s.toFixed(2)}%` : "데이터 없음",
       emoji: "🟢",
       good: foundationScore >= 50,
       details: foundationDetails,
@@ -547,8 +547,12 @@ export function CreativeAnalysisV2({
     analysisJson?.top3_prescriptions ??
     null;
 
-  const mediaUrl =
+  const rawMediaUrl =
     creative?.storage_url ?? creative?.media_url ?? "";
+  // gs:// → public HTTPS URL 변환
+  const mediaUrl = rawMediaUrl.startsWith("gs://")
+    ? rawMediaUrl.replace("gs://", "https://storage.googleapis.com/")
+    : rawMediaUrl;
   const isVideo = creative?.media_type === "VIDEO";
   const durationSec = creative?.duration_seconds ?? 0;
 
