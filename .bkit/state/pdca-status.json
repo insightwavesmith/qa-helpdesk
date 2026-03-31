@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-31T16:48:08.279Z",
+  "lastUpdated": "2026-03-31T16:48:37.612Z",
   "activeFeatures": [
     "slack-notification",
     "organic-channel-distribution-phase2",
@@ -475,9 +475,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-31T16:48:08.279Z",
-        "lastUpdated": "2026-03-31T16:48:08.279Z"
+        "lastUpdated": "2026-03-31T16:48:37.612Z"
       },
-      "lastFile": "/Users/smith/projects/bscamp/.bkit/hooks/helpers/migrate-runtime.sh"
+      "lastFile": "/Users/smith/projects/bscamp/.bkit/hooks/helpers/hook-self-register.sh"
     }
   },
   "pipeline": {
@@ -488,7 +488,7 @@
   "session": {
     "startedAt": "2026-03-30T05:20:31.424Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-31T16:48:08.279Z"
+    "lastActivity": "2026-03-31T16:48:37.612Z"
   },
   "history": [
     {
@@ -1171,6 +1171,12 @@
     },
     {
       "timestamp": "2026-03-31T16:48:08.279Z",
+      "feature": "helpers",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-31T16:48:37.612Z",
       "feature": "helpers",
       "phase": "do",
       "action": "updated"
