@@ -190,7 +190,7 @@ describe('RW-1~4: 병렬 팀 실전 e2e', () => {
     copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true });
     const rCto = runHook(hookCto, { _MOCK_SESSION_NAME: 'sdk-cto' });
     expect(rCto.exitCode).toBe(0);
-    expect(rCto.stdout).toContain('자동 전송 완료');
+    expect(rCto.stdout).toContain('전송 완료');
 
     // PM chain: L1 (docs/ 만 수정) → MOZZI
     const hookPm = prepareChainHandoffV2(testEnv, {
@@ -201,7 +201,7 @@ describe('RW-1~4: 병렬 팀 실전 e2e', () => {
     const rPm = runHook(hookPm, { _MOCK_SESSION_NAME: 'sdk-pm' });
     expect(rPm.exitCode).toBe(0);
     expect(rPm.stdout).toContain('MOZZI');
-    expect(rPm.stdout).toContain('자동 전송 완료');
+    expect(rPm.stdout).toContain('전송 완료');
   });
 
   it.skip('RW-2: CTO TeamDelete → PM 체인 — V2에서 pm-chain-forward.sh 삭제됨', () => {
@@ -223,7 +223,7 @@ describe('RW-1~4: 병렬 팀 실전 e2e', () => {
     const r = runHook(hookPath, {});
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toContain('MOZZI');
-    expect(r.stdout).toContain('자동 전송 완료');
+    expect(r.stdout).toContain('전송 완료');
 
     // CTO archive 무사
     expect(existsSync(ctoArchive)).toBe(true);
@@ -299,7 +299,7 @@ describe('RW-5~6: TeamDelete → TaskCompleted 타이밍', () => {
     const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'sdk-cto' });
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toContain('MOZZI');
-    expect(r.stdout).toContain('자동 전송 완료');
+    expect(r.stdout).toContain('전송 완료');
   });
 
   it('RW-6: 아카이브 없고 활성 context도 없으면 → silent exit 0', () => {
@@ -313,7 +313,7 @@ describe('RW-5~6: TeamDelete → TaskCompleted 타이밍', () => {
       mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
     });
     copyResolver(testEnv.hooksDir);
-    const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'nonexistent-session' });
+    const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'nonexistent-session', TMUX: '' });
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toBe('');
   });
@@ -334,7 +334,7 @@ describe('RW-7~10: 체인 풀플로우 e2e', () => {
     copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true });
     const r = runHook(hookPath, {});
     expect(r.exitCode).toBe(0);
-    expect(r.stdout).toContain('자동 전송 완료');
+    expect(r.stdout).toContain('전송 완료');
     expect(r.stdout).toContain('MOZZI');
 
     // last-completion-report.json 검증
@@ -359,7 +359,7 @@ describe('RW-7~10: 체인 풀플로우 e2e', () => {
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toContain('pass');
     expect(r.stdout).toContain('MOZZI');
-    expect(r.stdout).toContain('자동 전송 완료');
+    expect(r.stdout).toContain('전송 완료');
   });
 
   it.skip('RW-9: PM reject → pm-chain-forward — V2에서 삭제됨', () => {
@@ -374,7 +374,7 @@ describe('RW-7~10: 체인 풀플로우 e2e', () => {
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toContain('reject');
     expect(r.stdout).toContain('CTO_LEADER');
-    expect(r.stdout).toContain('자동 전송 완료');
+    expect(r.stdout).toContain('전송 완료');
   });
 
   it.skip('RW-10: COO 보고서 생성 — V2에서 coo-chain-report.sh 삭제됨', () => {
@@ -552,7 +552,7 @@ describe('RW-19~20: context resolver 엣지케이스', () => {
     copyResolver(testEnv.hooksDir);
     const rHook = runHook(hookPath, { _MOCK_SESSION_NAME: '', TMUX: '' });
     expect(rHook.exitCode).toBe(0);
-    expect(rHook.stdout).toContain('자동 전송 완료');
+    expect(rHook.stdout).toContain('전송 완료');
   });
 
   it('RW-20: 레거시 team-context.json만 존재 → 하위 호환 읽기', () => {
@@ -580,7 +580,7 @@ describe('RW-19~20: context resolver 엣지케이스', () => {
     copyResolver(testEnv.hooksDir);
     const rHook = runHook(hookPath, { _MOCK_SESSION_NAME: 'sdk-cto' });
     expect(rHook.exitCode).toBe(0);
-    expect(rHook.stdout).toContain('자동 전송 완료');
+    expect(rHook.stdout).toContain('전송 완료');
   });
 });
 
@@ -602,7 +602,7 @@ describe('P2-1~4: 체인 실전 e2e 시뮬레이션', () => {
 
     const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'sdk-cto' });
     expect(r.exitCode).toBe(0);
-    expect(r.stdout).toContain('자동 전송 완료');
+    expect(r.stdout).toContain('전송 완료');
 
     // last-completion-report.json 생성 확인
     const reportPath = join(testEnv.tmpDir, '.bkit', 'runtime', 'last-completion-report.json');

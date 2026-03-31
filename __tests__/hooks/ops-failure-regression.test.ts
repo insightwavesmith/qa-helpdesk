@@ -744,8 +744,8 @@ describe('OFR-33~35: CF-4 TaskCompleted 미발동 — 설정 + 전제 조건', (
       testEnv.tmpDir,
       testEnv.hooksDir,
     );
-    // team-context 안 만듦
-    const result = runHook(hookPath, { IS_TEAMMATE: 'false' });
+    // team-context 안 만듦 + TMUX 격리 (tmux 세션 상속 방지)
+    const result = runHook(hookPath, { IS_TEAMMATE: 'false', TMUX: '' });
     expect(result.exitCode).toBe(0);
     // silent exit — 출력 거의 없음
     expect(result.stdout.trim()).toBe('');

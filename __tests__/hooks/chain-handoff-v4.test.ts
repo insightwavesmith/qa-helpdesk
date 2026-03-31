@@ -37,7 +37,7 @@ describe('pdca-chain-handoff.sh v4 — PM 우회', () => {
 
     const result = runHook(hookPath, { IS_TEAMMATE: 'false' });
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain('자동 전송 완료');
+    expect(result.stdout).toContain('전송 완료');
 
     // last-completion-report 확인
     const reportPath = join(testEnv.tmpDir, '.bkit', 'runtime', 'last-completion-report.json');
@@ -60,7 +60,7 @@ describe('pdca-chain-handoff.sh v4 — PM 우회', () => {
 
     const result = runHook(hookPath, { IS_TEAMMATE: 'false' });
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain('자동 전송 완료');
+    expect(result.stdout).toContain('전송 완료');
     expect(result.stdout).toContain('MOZZI');
   });
 
@@ -81,8 +81,8 @@ describe('pdca-chain-handoff.sh v4 — PM 우회', () => {
 
     const result = runHook(hookPath, { IS_TEAMMATE: 'false' });
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain('peer 미발견');
-    expect(result.stdout).toContain('ACTION_REQUIRED');
+    // V5: MOZZI는 항상 webhook 경로 → broker peer 존재 여부 무관
+    expect(result.stdout).toContain('전송 완료');
   });
 
   it('I1: L0 체인 — fix 커밋 → Match Rate 스킵 → MOZZI 직통', () => {

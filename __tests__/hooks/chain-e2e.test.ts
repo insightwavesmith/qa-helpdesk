@@ -330,7 +330,7 @@ describe('chain-handoff + peer-resolver 통합', () => {
     });
     const result = runHook(hookPath, {});
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain('자동 전송 완료');
+    expect(result.stdout).toContain('전송 완료');
   });
 
   it('CH-2: peer-resolver 없음 → inline summary fallback 동작', () => {
@@ -344,7 +344,7 @@ describe('chain-handoff + peer-resolver 통합', () => {
     // helpers에 peer-resolver 복사하지 않음 → fallback
     const result = runHook(hookPath, {});
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain('자동 전송 완료');
+    expect(result.stdout).toContain('전송 완료');
   });
 
   it('CH-3: 전송 성공 시 last-completion-report.json 저장', () => {
@@ -363,7 +363,7 @@ describe('chain-handoff + peer-resolver 통합', () => {
     expect(report.payload.match_rate).toBe(97);
   });
 
-  it('CH-4: 전송 실패 → ACTION_REQUIRED + PAYLOAD', () => {
+  it('CH-4: V5: broker sendOk 무관 → MOZZI webhook 전송', () => {
     testEnv = createTestEnv();
     writeAnalysisFile(testEnv.tmpDir, 97);
     writeTeamContext(testEnv.tmpDir, 'CTO');
@@ -372,8 +372,8 @@ describe('chain-handoff + peer-resolver 통합', () => {
       mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: false },
     });
     const result = runHook(hookPath, {});
-    expect(result.stdout).toContain('ACTION_REQUIRED');
-    expect(result.stdout).toContain('PAYLOAD');
+    // V5: MOZZI → webhook 경로 → broker send 무관
+    expect(result.stdout).toContain('전송 완료');
   });
 
   it('CH-5: L1 → MOZZI 라우팅 + peer-map 우선', () => {
@@ -405,7 +405,7 @@ describe('chain-handoff + peer-resolver 통합', () => {
     const result = runHook(hookPath, {});
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('MOZZI');
-    expect(result.stdout).toContain('자동 전송 완료');
+    expect(result.stdout).toContain('전송 완료');
   });
 
   it('CH-6: chain-messenger retry → 성공', () => {
@@ -419,7 +419,7 @@ describe('chain-handoff + peer-resolver 통합', () => {
     copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true });
     const result = runHook(hookPath, {});
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain('자동 전송 완료');
+    expect(result.stdout).toContain('전송 완료');
   });
 });
 
@@ -438,7 +438,7 @@ describe.skip('pm-chain-forward — V2에서 삭제됨 (CTO→MOZZI 직접)', ()
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('pass');
     expect(result.stdout).toContain('MOZZI');
-    expect(result.stdout).toContain('자동 전송 완료');
+    expect(result.stdout).toContain('전송 완료');
   });
 
   it('PF-2: verdict=reject → CTO에게 FEEDBACK', () => {
@@ -453,7 +453,7 @@ describe.skip('pm-chain-forward — V2에서 삭제됨 (CTO→MOZZI 직접)', ()
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('reject');
     expect(result.stdout).toContain('CTO_LEADER');
-    expect(result.stdout).toContain('자동 전송 완료');
+    expect(result.stdout).toContain('전송 완료');
   });
 
   it('PF-3: verdict 없음 → skip', () => {
@@ -523,7 +523,7 @@ describe.skip('pm-chain-forward — V2에서 삭제됨 (CTO→MOZZI 직접)', ()
       mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true },
     });
     const result = runHook(hookPath, {});
-    expect(result.stdout).toContain('자동 전송 완료');
+    expect(result.stdout).toContain('전송 완료');
     const verdictPath = join(testEnv.tmpDir, '.bkit', 'runtime', 'pm-verdict.json');
     expect(existsSync(verdictPath)).toBe(false);
   });

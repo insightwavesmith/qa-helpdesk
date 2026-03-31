@@ -246,6 +246,22 @@ export function prepareChainHandoffV2(
   // detect-process-level.sh — 빈 파일로 stub (source해도 에러 안 나게)
   writeFileSync(join(env.hooksDir, 'detect-process-level.sh'), '#!/bin/bash\n# stub\n', { mode: 0o755 });
 
+  // hook-self-register.sh stub (V3: PID 역추적 자동 등록 — 테스트에서는 no-op)
+  writeFileSync(
+    join(helpersDir, 'hook-self-register.sh'),
+    '#!/bin/bash\nfind_my_peer_id() { return 1; }\nauto_register_peer() { return 0; }\n',
+    { mode: 0o755 }
+  );
+
+  // hook-output.sh stub (D8-1: 출력 최소화 — 테스트에서는 no-op)
+  if (!existsSync(join(helpersDir, 'hook-output.sh'))) {
+    writeFileSync(
+      join(helpersDir, 'hook-output.sh'),
+      '#!/bin/bash\nhook_init() { true; }\n',
+      { mode: 0o755 }
+    );
+  }
+
   return destPath;
 }
 
@@ -528,9 +544,13 @@ function createMockCurlWithWebhook(tmpDir: string, broker: {
 # mock-curl: broker + webhook 응답 시뮬레이션
 ARGS="$*"
 
-# webhook wake
+# webhook wake (V5: MOZZI webhook 전송)
 if echo "$ARGS" | grep -q "/hooks/wake"; then
-    ${webhookOk ? 'echo \'{"ok":true}\'; exit 0' : 'exit 22'}
+    if echo "$ARGS" | grep -q '\\-o'; then
+        ${webhookOk ? 'echo -n "200"; exit 0' : 'echo -n "000"; exit 22'}
+    else
+        ${webhookOk ? 'echo \'{"ok":true}\'; exit 0' : 'exit 22'}
+    fi
 fi
 
 # health check
@@ -573,6 +593,17 @@ function createMockCurl(tmpDir: string, broker: {
   const script = `#!/bin/bash
 # mock-curl: broker 응답 시뮬레이션
 ARGS="$*"
+
+# webhook wake (V5: MOZZI webhook 전송)
+if echo "$ARGS" | grep -q "/hooks/wake"; then
+    # -w '%{http_code}' -o /dev/null 패턴 감지 → HTTP 상태코드만 출력
+    if echo "$ARGS" | grep -q '\\-o'; then
+        echo -n "200"
+    else
+        echo '{"ok":true}'
+    fi
+    exit 0
+fi
 
 # health check
 if echo "$ARGS" | grep -q "/health"; then

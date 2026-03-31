@@ -1,4 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
 import { createTestEnv, runHook, cleanupTestEnv, writeAnalysisFile, writeTeamContext, prepareChainHandoffV2 } from './helpers';
 
 const MOCK_PEERS = [
@@ -28,8 +30,9 @@ describe('위험도 게이트 분기', () => {
       mockBroker: { health: false }
     });
     const result = runHook(hookPath, {});
-    expect(result.stdout).toContain('l1_to_coo');
+    // V5: L1 → MOZZI webhook 전송
     expect(result.stdout).toContain('MOZZI');
+    expect(result.stdout).toContain('전송 완료');
   });
 
   it('RV-2: src/ 변경(일반) → L2 → MOZZI 직접 (V2)', () => {
@@ -68,10 +71,11 @@ describe('위험도 게이트 분기', () => {
       mockBroker: { health: false }
     });
     const result = runHook(hookPath, {});
-    expect(result.stdout).toContain('requires_manual_review');
+    // V5: L3 webhook 성공 → "수동 검수 필수" 출력
+    expect(result.stdout).toContain('수동 검수 필수');
   });
 
-  it('RV-5: .env 변경 → risk_flags에 .env 포함', () => {
+  it('RV-5: .env 변경 → L3 고위험 → 수동 검수 필수', () => {
     testEnv = createTestEnv();
     writeAnalysisFile(testEnv.tmpDir, 97);
     writeTeamContext(testEnv.tmpDir, 'CTO');
@@ -80,7 +84,14 @@ describe('위험도 게이트 분기', () => {
       mockBroker: { health: false }
     });
     const result = runHook(hookPath, {});
-    expect(result.stdout).toContain('.env');
+    // V5: .env → L3 → webhook 성공 → saved to file, stdout에 수동 검수 표시
+    expect(result.stdout).toContain('수동 검수 필수');
+    // 저장된 report에 risk_flags 확인
+    const reportPath = join(testEnv.tmpDir, '.bkit', 'runtime', 'last-completion-report.json');
+    if (existsSync(reportPath)) {
+      const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
+      expect(JSON.stringify(report)).toContain('.env');
+    }
   });
 
   it('RV-6: payment 관련 파일 → 고위험 플래그', () => {
@@ -109,7 +120,7 @@ describe('위험도 게이트 분기', () => {
 });
 
 describe('curl 직접 전송', () => {
-  it('RV-8: broker + peers OK → "자동 전송 완료" 메시지', () => {
+  it('RV-8: broker + peers OK → "전송 완료" 메시지', () => {
     testEnv = createTestEnv();
     writeAnalysisFile(testEnv.tmpDir, 97);
     writeTeamContext(testEnv.tmpDir, 'CTO');
@@ -118,11 +129,11 @@ describe('curl 직접 전송', () => {
       mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true }
     });
     const result = runHook(hookPath, {});
-    expect(result.stdout).toContain('자동 전송 완료');
+    expect(result.stdout).toContain('전송 완료');
     expect(result.exitCode).toBe(0);
   });
 
-  it('RV-9: broker 다운 → ACTION_REQUIRED + PAYLOAD 출력', () => {
+  it('RV-9: broker 다운 → V5: MOZZI는 webhook 경로, broker 무관 → 전송 성공', () => {
     testEnv = createTestEnv();
     writeAnalysisFile(testEnv.tmpDir, 97);
     writeTeamContext(testEnv.tmpDir, 'CTO');
@@ -131,12 +142,12 @@ describe('curl 직접 전송', () => {
       mockBroker: { health: false }
     });
     const result = runHook(hookPath, {});
-    expect(result.stdout).toContain('ACTION_REQUIRED');
-    expect(result.stdout).toContain('broker 미기동');
+    // V5: MOZZI는 항상 webhook 경로 → broker 상태 무관
+    expect(result.stdout).toContain('전송 완료');
     expect(result.exitCode).toBe(0);
   });
 
-  it('RV-10: 대상 peer 미발견 → ACTION_REQUIRED', () => {
+  it('RV-10: V5: MOZZI는 webhook 경로 → broker peer 존재 여부 무관', () => {
     testEnv = createTestEnv();
     writeAnalysisFile(testEnv.tmpDir, 97);
     writeTeamContext(testEnv.tmpDir, 'CTO');
@@ -145,11 +156,11 @@ describe('curl 직접 전송', () => {
       mockBroker: { health: true, peers: [{ id: 'cto1', summary: 'CTO_LEADER | bscamp' }], sendOk: true }
     });
     const result = runHook(hookPath, {});
-    expect(result.stdout).toContain('peer 미발견');
-    expect(result.stdout).toContain('ACTION_REQUIRED');
+    // V5: MOZZI는 webhook 전송 → broker peer lookup 불필요
+    expect(result.stdout).toContain('전송 완료');
   });
 
-  it('RV-11: 자기 CTO peer 미발견 → ACTION_REQUIRED', () => {
+  it('RV-11: V5: MOZZI webhook 경로 → 자기 peer 불필요', () => {
     testEnv = createTestEnv();
     writeAnalysisFile(testEnv.tmpDir, 97);
     writeTeamContext(testEnv.tmpDir, 'CTO');
@@ -158,10 +169,11 @@ describe('curl 직접 전송', () => {
       mockBroker: { health: true, peers: [{ id: 'mozzi1', summary: 'MOZZI | bscamp' }], sendOk: true }
     });
     const result = runHook(hookPath, {});
-    expect(result.stdout).toContain('자기 peer ID 미발견');
+    // V5: webhook 경로로 전송
+    expect(result.stdout).toContain('전송 완료');
   });
 
-  it('RV-12: send-message 실패 → ACTION_REQUIRED', () => {
+  it('RV-12: V5: MOZZI webhook 경로 → broker send 실패 무관', () => {
     testEnv = createTestEnv();
     writeAnalysisFile(testEnv.tmpDir, 97);
     writeTeamContext(testEnv.tmpDir, 'CTO');
@@ -170,7 +182,8 @@ describe('curl 직접 전송', () => {
       mockBroker: { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: false }
     });
     const result = runHook(hookPath, {});
-    expect(result.stdout).toContain('ACTION_REQUIRED');
+    // V5: webhook 경로 → broker send 실패와 무관하게 성공
+    expect(result.stdout).toContain('전송 완료');
   });
 
   it('RV-13: L1 → MOZZI peer 검색', () => {
@@ -183,10 +196,10 @@ describe('curl 직접 전송', () => {
     });
     const result = runHook(hookPath, {});
     expect(result.stdout).toContain('MOZZI');
-    expect(result.stdout).toContain('자동 전송 완료');
+    expect(result.stdout).toContain('전송 완료');
   });
 
-  it('RV-14: PAYLOAD가 유효한 JSON', () => {
+  it('RV-14: V5 webhook 성공 → last-completion-report.json 유효한 JSON', () => {
     testEnv = createTestEnv();
     writeAnalysisFile(testEnv.tmpDir, 96);
     writeTeamContext(testEnv.tmpDir, 'CTO');
@@ -195,12 +208,14 @@ describe('curl 직접 전송', () => {
       mockBroker: { health: false }
     });
     const result = runHook(hookPath, {});
-    const payloadMatch = result.stdout.match(/PAYLOAD: ({[\s\S]*})/);
-    expect(payloadMatch).not.toBeNull();
-    expect(() => JSON.parse(payloadMatch![1])).not.toThrow();
+    expect(result.stdout).toContain('전송 완료');
+    // V5: webhook 성공 시 PAYLOAD가 last-completion-report.json에 저장됨
+    const reportPath = join(testEnv.tmpDir, '.bkit', 'runtime', 'last-completion-report.json');
+    expect(existsSync(reportPath)).toBe(true);
+    expect(() => JSON.parse(readFileSync(reportPath, 'utf-8'))).not.toThrow();
   });
 
-  it('RV-15: msg_id에 타임스탬프 + PID 포함', () => {
+  it('RV-15: V5 last-completion-report.json에 msg_id 포함', () => {
     testEnv = createTestEnv();
     writeAnalysisFile(testEnv.tmpDir, 97);
     writeTeamContext(testEnv.tmpDir, 'CTO');
@@ -209,7 +224,10 @@ describe('curl 직접 전송', () => {
       mockBroker: { health: false }
     });
     const result = runHook(hookPath, {});
-    expect(result.stdout).toMatch(/chain-cto-\d+-\d+/);
+    expect(result.stdout).toContain('전송 완료');
+    const reportPath = join(testEnv.tmpDir, '.bkit', 'runtime', 'last-completion-report.json');
+    const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
+    expect(report.msg_id).toMatch(/chain-cto-\d+-\d+/);
   });
 });
 

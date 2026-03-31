@@ -49,9 +49,8 @@ describe('V2 실전 조건 테스트', () => {
 
     const result = runHook(hookPath, { IS_TEAMMATE: 'false' });
     expect(result.exitCode).toBe(0);
-    // summary 빈 상태에서 매칭 실패 → fallback
-    expect(result.stdout).toContain('미발견');
-    expect(result.stdout).toContain('ACTION_REQUIRED');
+    // V5: MOZZI는 항상 webhook 경로 → broker peer summary 무관
+    expect(result.stdout).toContain('전송 완료');
   });
 
   it('R2: TeammateIdle hook 제거 확인 — 스크립트 파일 없음', () => {

@@ -224,11 +224,11 @@ describe('A. Context Edge Cases', () => {
       mockBroker: { health: true, peers: MOCK_PEERS, sendOk: true },
     });
     copyResolver(testEnv.hooksDir);
-    const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'nonexistent' });
+    const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'nonexistent', TMUX: '' });
     expect(r.exitCode).toBe(0);
     // stdout에 COMPLETION_REPORT 없음 (체인 미발동)
     expect(r.stdout).not.toContain('COMPLETION_REPORT');
-    expect(r.stdout).not.toContain('자동 전송 완료');
+    expect(r.stdout).not.toContain('전송 완료');
   });
 
   it('BP-A2: 빈 JSON {} → exit 0', () => {
@@ -247,7 +247,7 @@ describe('A. Context Edge Cases', () => {
     copyResolver(testEnv.hooksDir);
     const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'empty' });
     expect(r.exitCode).toBe(0);
-    expect(r.stdout).not.toContain('자동 전송 완료');
+    expect(r.stdout).not.toContain('전송 완료');
   });
 
   it('BP-A3: team 필드 없음 {"session":"x"} → exit 0', () => {
@@ -265,7 +265,7 @@ describe('A. Context Edge Cases', () => {
     copyResolver(testEnv.hooksDir);
     const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'noteam' });
     expect(r.exitCode).toBe(0);
-    expect(r.stdout).not.toContain('자동 전송 완료');
+    expect(r.stdout).not.toContain('전송 완료');
   });
 
   it('BP-A4: taskFiles 빈 배열 → 체인 발동 정상', { timeout: 15000 }, () => {
@@ -282,7 +282,7 @@ describe('A. Context Edge Cases', () => {
     copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true });
     const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'sdk-cto' });
     expect(r.exitCode).toBe(0);
-    expect(r.stdout).toContain('자동 전송 완료');
+    expect(r.stdout).toContain('전송 완료');
   });
 
   it('BP-A5: 3팀 동시 context → 각각 독립 resolve', () => {
@@ -343,7 +343,7 @@ describe('A. Context Edge Cases', () => {
     copyResolver(testEnv.hooksDir);
     const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'sdk-cto' });
     expect(r.exitCode).toBe(0);
-    expect(r.stdout).toContain('자동 전송 완료');
+    expect(r.stdout).toContain('전송 완료');
   });
 
   it('BP-A8: 레거시 team-context.json fallback', () => {
@@ -375,7 +375,7 @@ describe('A. Context Edge Cases', () => {
     const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'broken' });
     expect(r.exitCode).toBe(0);
     // 체인 발동 안 함
-    expect(r.stdout).not.toContain('자동 전송 완료');
+    expect(r.stdout).not.toContain('전송 완료');
   });
 });
 
@@ -402,7 +402,7 @@ describe('B. TeamDelete Timing', () => {
     copyResolver(testEnv.hooksDir);
     const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'sdk-cto' });
     expect(r.exitCode).toBe(0);
-    expect(r.stdout).toContain('자동 전송 완료');
+    expect(r.stdout).toContain('전송 완료');
 
     // archived 파일에서 team 필드 확인
     const archivedPath = join(testEnv.runtimeDir, 'team-context-sdk-cto.archived.json');
@@ -482,7 +482,7 @@ describe('C. Chain Routing', () => {
     const r = runHook(hookPath, {});
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toContain('MOZZI');
-    expect(r.stdout).toContain('자동 전송 완료');
+    expect(r.stdout).toContain('전송 완료');
 
     // last-completion-report.json 검증
     const reportPath = join(testEnv.runtimeDir, 'last-completion-report.json');
@@ -506,7 +506,7 @@ describe('C. Chain Routing', () => {
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toContain('pass');
     expect(r.stdout).toContain('MOZZI');
-    expect(r.stdout).toContain('자동 전송 완료');
+    expect(r.stdout).toContain('전송 완료');
   });
 
   it.skip('BP-C3: PM reject → V2에서 pm-chain-forward.sh 삭제됨', () => {
@@ -522,7 +522,7 @@ describe('C. Chain Routing', () => {
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toContain('reject');
     expect(r.stdout).toContain('CTO_LEADER');
-    expect(r.stdout).toContain('자동 전송 완료');
+    expect(r.stdout).toContain('전송 완료');
   });
 
   it.skip('BP-C4: COO → webhook — V2에서 coo-chain-report.sh 삭제됨', () => {
@@ -543,7 +543,7 @@ describe('C. Chain Routing', () => {
     expect(report.payload.chain_step).toBe('coo_report');
   });
 
-  it('BP-C5: broker 미기동 → ACTION_REQUIRED', () => {
+  it('BP-C5: broker 미기동 → V5: MOZZI webhook 경로 (broker 무관)', () => {
     testEnv = createTestEnv();
     writeTeamContext(testEnv.tmpDir, 'CTO');
     writeAnalysisFile(testEnv.tmpDir, 97);
@@ -555,17 +555,15 @@ describe('C. Chain Routing', () => {
     copyHelpersWithMock(testEnv, { health: false });
     const r = runHook(hookPath, {});
     expect(r.exitCode).toBe(0);
-    expect(r.stdout).toContain('ACTION_REQUIRED');
-    // 체인 블로킹 안 함 (exit 0)
-    expect(r.stdout).not.toContain('자동 전송 완료');
+    // V5: MOZZI → webhook 경로 → broker 미기동 무관
+    expect(r.stdout).toContain('전송 완료');
   });
 
-  it('BP-C7: peer 못 찾음 → ACTION_REQUIRED', () => {
+  it('BP-C7: peer 없음 → V5: MOZZI webhook 경로 (peer 무관)', () => {
     testEnv = createTestEnv();
     writeTeamContext(testEnv.tmpDir, 'CTO');
     writeAnalysisFile(testEnv.tmpDir, 97);
 
-    // broker는 살아있지만 PM_LEADER peer 없음
     const hookPath = prepareChainHandoffV2(testEnv, {
       changedFiles: ['src/app/page.tsx'],
       mockBroker: { health: true, peers: [], sendOk: false },
@@ -573,7 +571,8 @@ describe('C. Chain Routing', () => {
     copyHelpersWithMock(testEnv, { health: true, peers: [], sendOk: false });
     const r = runHook(hookPath, {});
     expect(r.exitCode).toBe(0);
-    expect(r.stdout).toContain('ACTION_REQUIRED');
+    // V5: MOZZI → webhook 경로
+    expect(r.stdout).toContain('전송 완료');
   });
 
   it.skip('BP-C8: 중복 dedup — V2에서 coo-chain-report.sh 삭제됨', () => {
@@ -652,7 +651,7 @@ describe('D. Hook Environment', () => {
     const handoffSrc = readFileSync(hookPath, 'utf-8');
     expect(handoffSrc).toContain('mkdir -p');
 
-    const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'nonexistent' });
+    const r = runHook(hookPath, { _MOCK_SESSION_NAME: 'nonexistent', TMUX: '' });
     expect(r.exitCode).toBe(0);
   });
 });
@@ -812,7 +811,7 @@ describe('F. Error Recovery', () => {
     // 2회 연속 빠른 호출
     const r1 = runHook(hookPath, {});
     expect(r1.exitCode).toBe(0);
-    expect(r1.stdout).toContain('자동 전송 완료');
+    expect(r1.stdout).toContain('전송 완료');
 
     const r2 = runHook(hookPath, {});
     expect(r2.exitCode).toBe(0);
@@ -847,7 +846,7 @@ describe('G. Additional Edge Cases', () => {
     copyHelpersWithMock(testEnv, { health: true, peers: MOCK_PEERS_WITH_MOZZI, sendOk: true });
     const r = runHook(hookPath, {});
     expect(r.exitCode).toBe(0);
-    expect(r.stdout).toContain('자동 전송 완료');
+    expect(r.stdout).toContain('전송 완료');
   });
 
   it('BP-G2: stale peer-map → fallback', () => {
@@ -869,7 +868,7 @@ describe('G. Additional Edge Cases', () => {
     const r = runHook(hookPath, {});
     expect(r.exitCode).toBe(0);
     // stale peer-map ID는 broker에서 확인 실패 → fallback으로 summary 매칭
-    expect(r.stdout).toContain('자동 전송 완료');
+    expect(r.stdout).toContain('전송 완료');
   });
 
   it('BP-G3: 1일+ analysis 파일 → 전체 최신 fallback', () => {
@@ -937,7 +936,7 @@ describe('G. Additional Edge Cases', () => {
     const r1 = runHook(handoffHook, {});
     expect(r1.exitCode).toBe(0);
     expect(r1.stdout).toContain('PM_LEADER');
-    expect(r1.stdout).toContain('자동 전송 완료');
+    expect(r1.stdout).toContain('전송 완료');
 
     // last-completion-report.json 생성됨
     const completionReport = join(testEnv.runtimeDir, 'last-completion-report.json');
@@ -954,7 +953,7 @@ describe('G. Additional Edge Cases', () => {
     const r2 = runHook(pmHook, {});
     expect(r2.exitCode).toBe(0);
     expect(r2.stdout).toContain('MOZZI');
-    expect(r2.stdout).toContain('자동 전송 완료');
+    expect(r2.stdout).toContain('전송 완료');
 
     // ── Step 3: COO 보고서 생성 + webhook ──
     // PM report 생성 (COO가 읽을 파일)

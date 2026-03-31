@@ -177,11 +177,11 @@ describe('pdca-chain-handoff L1 bypass', () => {
     });
     const result = runHook(hookPath, {});
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain('자동 전송 완료');
+    expect(result.stdout).toContain('전송 완료');
     expect(result.stdout).toContain('MOZZI');
   });
 
-  it('CL-3: L1 + broker down → ACTION_REQUIRED + L1 info', () => {
+  it('CL-3: L1 + broker down → V5: webhook 성공 (broker 무관)', () => {
     testEnv = createTestEnv();
     writeTeamContext(testEnv.tmpDir, 'CTO');
     const hookPath = prepareChainHandoffV2(testEnv, {
@@ -190,11 +190,12 @@ describe('pdca-chain-handoff L1 bypass', () => {
     });
     const result = runHook(hookPath, {});
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain('ACTION_REQUIRED');
+    // V5: L1은 webhook 경로 → broker 상태 무관, 성공 메시지에 L1 포함
     expect(result.stdout).toContain('L1');
+    expect(result.stdout).toContain('전송 완료');
   });
 
-  it('CL-4: L1 PAYLOAD에 process_level: "L1"', () => {
+  it('CL-4: L1 webhook 성공 메시지에 L1 레벨 포함', () => {
     testEnv = createTestEnv();
     writeTeamContext(testEnv.tmpDir, 'CTO');
     const hookPath = prepareChainHandoffV2(testEnv, {
@@ -202,13 +203,12 @@ describe('pdca-chain-handoff L1 bypass', () => {
       mockBroker: { health: false },
     });
     const result = runHook(hookPath, {});
-    const payloadMatch = result.stdout.match(/PAYLOAD: ({[\s\S]*})/);
-    expect(payloadMatch).not.toBeNull();
-    const payload = JSON.parse(payloadMatch![1]);
-    expect(payload.payload.process_level).toBe('L1');
+    // V5: webhook 성공 → "✅ [L1] ANALYSIS_REPORT → MOZZI webhook 전송 완료"
+    expect(result.stdout).toContain('L1');
+    expect(result.stdout).toContain('전송 완료');
   });
 
-  it('CL-5: L1 PAYLOAD type = ANALYSIS_REPORT (v3)', () => {
+  it('CL-5: L1 → ANALYSIS_REPORT 전송 (v5 webhook)', () => {
     testEnv = createTestEnv();
     writeTeamContext(testEnv.tmpDir, 'CTO');
     const hookPath = prepareChainHandoffV2(testEnv, {
@@ -216,10 +216,9 @@ describe('pdca-chain-handoff L1 bypass', () => {
       mockBroker: { health: false },
     });
     const result = runHook(hookPath, {});
-    const payloadMatch = result.stdout.match(/PAYLOAD: ({[\s\S]*})/);
-    expect(payloadMatch).not.toBeNull();
-    const payload = JSON.parse(payloadMatch![1]);
-    expect(payload.type).toBe('ANALYSIS_REPORT');
+    // V5: webhook 성공 메시지에 ANALYSIS_REPORT 포함
+    expect(result.stdout).toContain('ANALYSIS_REPORT');
+    expect(result.stdout).toContain('전송 완료');
   });
 
   it('CL-6: L2 + no analysis → exit 2 (기존 동작)', () => {
@@ -245,7 +244,7 @@ describe('pdca-chain-handoff L1 bypass', () => {
     expect(result.exitCode).toBe(2);
   });
 
-  it('CL-8: L1 chain_step = "l1_to_coo" (v3)', () => {
+  it('CL-8: L1 → MOZZI webhook 전송 (v5, l1_to_coo 라우팅)', () => {
     testEnv = createTestEnv();
     writeTeamContext(testEnv.tmpDir, 'CTO');
     const hookPath = prepareChainHandoffV2(testEnv, {
@@ -253,7 +252,9 @@ describe('pdca-chain-handoff L1 bypass', () => {
       mockBroker: { health: false },
     });
     const result = runHook(hookPath, {});
-    expect(result.stdout).toContain('l1_to_coo');
+    // V5: L1 → webhook → MOZZI, chain_step은 내부 라우팅 (stdout에 미출력)
+    expect(result.stdout).toContain('MOZZI');
+    expect(result.stdout).toContain('전송 완료');
   });
 
   it('CL-9: mixed src/ + docs/ → L2 (Match Rate 필요, 없으면 차단)', () => {
@@ -267,7 +268,7 @@ describe('pdca-chain-handoff L1 bypass', () => {
     expect(result.exitCode).toBe(2);
   });
 
-  it('CL-10: L1 summary에 "L1" 포함', () => {
+  it('CL-10: L1 webhook 성공 메시지에 L1 포함', () => {
     testEnv = createTestEnv();
     writeTeamContext(testEnv.tmpDir, 'CTO');
     const hookPath = prepareChainHandoffV2(testEnv, {
@@ -275,13 +276,12 @@ describe('pdca-chain-handoff L1 bypass', () => {
       mockBroker: { health: false },
     });
     const result = runHook(hookPath, {});
-    const payloadMatch = result.stdout.match(/PAYLOAD: ({[\s\S]*})/);
-    expect(payloadMatch).not.toBeNull();
-    const payload = JSON.parse(payloadMatch![1]);
-    expect(payload.payload.summary).toContain('L1');
+    // V5: webhook 성공 → stdout에 L1 포함
+    expect(result.stdout).toContain('L1');
+    expect(result.stdout).toContain('전송 완료');
   });
 
-  it('CL-11: L1 to_role = MOZZI (v3)', () => {
+  it('CL-11: L1 → MOZZI webhook 전송 (v5)', () => {
     testEnv = createTestEnv();
     writeTeamContext(testEnv.tmpDir, 'CTO');
     const hookPath = prepareChainHandoffV2(testEnv, {
@@ -289,10 +289,9 @@ describe('pdca-chain-handoff L1 bypass', () => {
       mockBroker: { health: false },
     });
     const result = runHook(hookPath, {});
-    const payloadMatch = result.stdout.match(/PAYLOAD: ({[\s\S]*})/);
-    expect(payloadMatch).not.toBeNull();
-    const payload = JSON.parse(payloadMatch![1]);
-    expect(payload.to_role).toBe('MOZZI');
+    // V5: MOZZI webhook 전송
+    expect(result.stdout).toContain('MOZZI');
+    expect(result.stdout).toContain('전송 완료');
   });
 });
 
@@ -469,7 +468,7 @@ describe('pdca-chain-handoff L1 ANALYSIS_REPORT (LR)', () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('ANALYSIS_REPORT');
     expect(result.stdout).toContain('MOZZI');
-    expect(result.stdout).toContain('자동 전송 완료');
+    expect(result.stdout).toContain('전송 완료');
   });
 
   // LR-10: L1 PM팀 + broker OK → MOZZI에 ANALYSIS_REPORT 전송
@@ -489,8 +488,8 @@ describe('pdca-chain-handoff L1 ANALYSIS_REPORT (LR)', () => {
     expect(result.stdout).toContain('PM_LEADER');
   });
 
-  // LR-11: L1 + broker 다운 → ACTION_REQUIRED fallback
-  it('LR-11: L1 + broker 다운 → ACTION_REQUIRED', () => {
+  // LR-11: L1 + broker 다운 → V5: webhook 경로 (broker 무관)
+  it('LR-11: L1 + broker 다운 → V5: webhook 전송 성공', () => {
     writeTeamContext(env.tmpDir, 'CTO');
     const hookPath = prepareChainHandoffV2(env, {
       changedFiles: ['docs/01-plan/test.plan.md'],
@@ -498,12 +497,12 @@ describe('pdca-chain-handoff L1 ANALYSIS_REPORT (LR)', () => {
     });
     const result = runHook(hookPath);
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain('ACTION_REQUIRED');
     expect(result.stdout).toContain('ANALYSIS_REPORT');
+    expect(result.stdout).toContain('전송 완료');
   });
 
-  // LR-12: L1 + MOZZI peer 없음 → ACTION_REQUIRED fallback
-  it('LR-12: L1 + MOZZI peer 미발견 → ACTION_REQUIRED', () => {
+  // LR-12: L1 + MOZZI peer 없음 → V5: webhook 경로 (peer 무관)
+  it('LR-12: L1 + MOZZI peer 미발견 → V5: webhook 전송 성공', () => {
     writeTeamContext(env.tmpDir, 'CTO');
     const hookPath = prepareChainHandoffV2(env, {
       changedFiles: ['docs/01-plan/test.plan.md'],
@@ -511,7 +510,7 @@ describe('pdca-chain-handoff L1 ANALYSIS_REPORT (LR)', () => {
     });
     const result = runHook(hookPath);
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain('ACTION_REQUIRED');
+    expect(result.stdout).toContain('전송 완료');
   });
 
   // LR-13: L2 CTO → 기존 동작 (Match Rate 95% 게이트)
@@ -538,7 +537,7 @@ describe('pdca-chain-handoff L1 ANALYSIS_REPORT (LR)', () => {
     });
     const result = runHook(hookPath);
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain('자동 전송 완료');
+    expect(result.stdout).toContain('전송 완료');
     expect(result.stdout).toContain('MOZZI');
   });
 
@@ -576,7 +575,8 @@ describe('pdca-chain-handoff L1 ANALYSIS_REPORT (LR)', () => {
     });
     const result = runHook(hookPath);
     expect(result.stdout).toContain('ANALYSIS_REPORT');
-    expect(result.stdout).toContain('deliverables');
+    // V5: webhook 성공 → "산출물:" 행에 deliverables 출력
+    expect(result.stdout).toContain('산출물');
     expect(result.stdout).toContain('l1_to_coo');
   });
 
