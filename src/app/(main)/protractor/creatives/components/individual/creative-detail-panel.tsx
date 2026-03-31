@@ -129,13 +129,23 @@ export function CreativeDetailPanel({
   const creative = detail.creative;
 
   // saliency → saliencyFrames 변환
-  // video_analysis.heatmap_urls가 있으면 프레임별 히트맵 사용
+  // 1순위: API saliency.frames (프레임별 히트맵 URL 자동 생성)
+  // 2순위: video_analysis.heatmap_urls (레거시)
+  // 3순위: saliency 단일 이미지
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const va = creative?.video_analysis as Record<string, any> | null;
   const heatmapUrls = va?.heatmap_urls as Array<{ sec: number; url: string }> | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const salFrames = (detail.saliency as any)?.frames as Array<{ sec: number; url: string }> | undefined;
   
-  const saliencyFrames = heatmapUrls && heatmapUrls.length > 0
-    ? heatmapUrls.map((h, i) => ({
+  const frameSource = salFrames && salFrames.length > 0
+    ? salFrames
+    : heatmapUrls && heatmapUrls.length > 0
+      ? heatmapUrls
+      : null;
+
+  const saliencyFrames = frameSource
+    ? frameSource.map((h, i) => ({
         frame_index: i,
         timestamp_sec: h.sec,
         attention_map_url: h.url,

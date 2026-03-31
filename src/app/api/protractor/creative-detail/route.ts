@@ -311,12 +311,28 @@ export async function GET(req: NextRequest) {
     },
     performance,
     saliency: sal
-      ? {
-          attention_map_url: sal.attention_map_url,
-          top_fixations: sal.top_fixations ?? [],
-          cta_attention_score: Number(sal.cta_attention_score) || 0,
-          cognitive_load: Number(sal.cognitive_load) || 0,
-        }
+      ? (() => {
+          // 프레임별 히트맵 URL 리스트 자동 생성
+          // attention_map_url: .../frame_0s_dg3.png → base path 추출 후 duration만큼 생성
+          const baseUrl = sal.attention_map_url;
+          const frames: { sec: number; url: string }[] = [];
+          if (baseUrl && m.duration_seconds) {
+            const dir = baseUrl.substring(0, baseUrl.lastIndexOf("/"));
+            for (let s = 0; s < Math.ceil(m.duration_seconds); s++) {
+              frames.push({
+                sec: s,
+                url: `${dir}/frame_${s}s_dg3.png`,
+              });
+            }
+          }
+          return {
+            attention_map_url: baseUrl,
+            top_fixations: sal.top_fixations ?? [],
+            cta_attention_score: Number(sal.cta_attention_score) || 0,
+            cognitive_load: Number(sal.cognitive_load) || 0,
+            frames,
+          };
+        })()
       : null,
     benchmarks,
     top_creative: topCreative,
