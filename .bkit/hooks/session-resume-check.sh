@@ -108,6 +108,8 @@ if [ -f "$LIVING_CONTEXT_LOADER" ]; then
     source "$LIVING_CONTEXT_LOADER" 2>/dev/null
     _LC_FEATURE=$(jq -r '.primaryFeature // "unknown"' "$PDCA_FILE" 2>/dev/null || echo "unknown")
     _LC_PHASE=$(jq -r ".features[\"$_LC_FEATURE\"].phase // \"do\"" "$PDCA_FILE" 2>/dev/null || echo "do")
+    # pdca-status phase명 → loader phase명 정규화
+    case "$_LC_PHASE" in implementing|coding) _LC_PHASE="do" ;; reviewing) _LC_PHASE="check" ;; improving) _LC_PHASE="act" ;; planning) _LC_PHASE="plan" ;; designing) _LC_PHASE="design" ;; esac
     load_context "$_LC_FEATURE" "$_LC_PHASE" 2>/dev/null
     if [ "${#CONTEXT_FILES[@]}" -gt 0 ]; then
         echo "📚 Living Context — ${#CONTEXT_FILES[@]}개 문서 로드 대상:"
