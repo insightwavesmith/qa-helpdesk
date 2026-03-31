@@ -26,7 +26,7 @@ const BGM_LABELS: Record<string, string> = {
   none: "BGM 없음",
 };
 
-// 감정 흐름 색상
+// 감정 흐름 색상 (enum 기반 fallback)
 const EMOTION_COLORS: Record<string, { bg: string; color: string }> = {
   fear: { bg: "rgba(239,68,68,0.12)", color: "#fca5a5" },
   joy: { bg: "rgba(16,185,129,0.12)", color: "#6ee7b7" },
@@ -48,6 +48,36 @@ const EMOTION_LABELS: Record<string, string> = {
   anger: "분노",
   neutral: "중립",
 };
+
+// 감정 흐름 텍스트에서 키워드 추출 → 뱃지 색상 매핑
+const FLOW_BADGE_COLORS: Array<{ keyword: string; bg: string; color: string }> = [
+  { keyword: "공감", bg: "rgba(239,68,68,0.12)", color: "#fca5a5" },
+  { keyword: "문제", bg: "rgba(239,68,68,0.12)", color: "#fca5a5" },
+  { keyword: "신뢰", bg: "rgba(139,92,246,0.12)", color: "#c4b5fd" },
+  { keyword: "권위", bg: "rgba(139,92,246,0.12)", color: "#c4b5fd" },
+  { keyword: "감탄", bg: "rgba(59,130,246,0.12)", color: "#93c5fd" },
+  { keyword: "물광", bg: "rgba(59,130,246,0.12)", color: "#93c5fd" },
+  { keyword: "효과", bg: "rgba(59,130,246,0.12)", color: "#93c5fd" },
+  { keyword: "유익", bg: "rgba(16,185,129,0.12)", color: "#6ee7b7" },
+  { keyword: "꿀팁", bg: "rgba(16,185,129,0.12)", color: "#6ee7b7" },
+  { keyword: "만족", bg: "rgba(16,185,129,0.12)", color: "#6ee7b7" },
+  { keyword: "제안", bg: "rgba(245,158,11,0.12)", color: "#fde68a" },
+  { keyword: "할인", bg: "rgba(245,158,11,0.12)", color: "#fde68a" },
+  { keyword: "행동", bg: "rgba(245,158,11,0.12)", color: "#fde68a" },
+  { keyword: "기대", bg: "rgba(59,130,246,0.12)", color: "#93c5fd" },
+  { keyword: "호기심", bg: "rgba(59,130,246,0.12)", color: "#93c5fd" },
+];
+
+function getBadgeColor(text: string): { bg: string; color: string } {
+  for (const item of FLOW_BADGE_COLORS) {
+    if (text.includes(item.keyword)) return { bg: item.bg, color: item.color };
+  }
+  return { bg: "rgba(100,116,139,0.12)", color: "#94a3b8" };
+}
+
+function parseEmotionFlow(flowText: string): string[] {
+  return flowText.split("→").map((s) => s.trim()).filter(Boolean);
+}
 
 export function AudioAnalysis({ analysisJson }: AudioAnalysisProps) {
   const audio = analysisJson.audio;
@@ -100,7 +130,21 @@ export function AudioAnalysis({ analysisJson }: AudioAnalysisProps) {
         <div className="bg-white rounded-lg p-3">
           <div className="text-[11px] text-gray-500 mb-1">감정 흐름</div>
           {emotionFlowText ? (
-            <div className="text-xs text-gray-800 leading-relaxed">{emotionFlowText}</div>
+            <div className="flex flex-wrap gap-1 items-center mt-1">
+              {parseEmotionFlow(emotionFlowText).map((step, idx, arr) => (
+                <span key={idx} className="flex items-center gap-1">
+                  <span
+                    className="px-2 py-0.5 rounded-full text-[11px]"
+                    style={{ background: getBadgeColor(step).bg, color: getBadgeColor(step).color }}
+                  >
+                    {step}
+                  </span>
+                  {idx < arr.length - 1 && (
+                    <span className="text-gray-400 text-[10px]">→</span>
+                  )}
+                </span>
+              ))}
+            </div>
           ) : (
             <div className="flex flex-wrap gap-1 items-center mt-1">
               {emotionLabel && emotionStyle && (

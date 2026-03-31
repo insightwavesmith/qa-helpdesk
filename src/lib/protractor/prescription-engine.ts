@@ -437,6 +437,7 @@ function step13_finalAssembly(
     customer_journey_summary: geminiOutput.customer_journey_summary,
     weakness_analysis: postProcess.weaknessAnalysis,
     // v3 확장 필드
+    ad_axis: geminiOutput.ad_axis ?? undefined,
     scene_journey: geminiOutput.scene_journey ?? [],
     audio_analysis: geminiOutput.audio_analysis ?? undefined,
     customer_journey_detail: geminiOutput.customer_journey_detail ?? undefined,
@@ -574,6 +575,7 @@ export async function generatePrescription(
       andromeda_warning: result.andromeda_warning,
       ear_analysis: result.ear_analysis,
       // v3 확장 필드
+      ad_axis: result.ad_axis,
       scene_journey: result.scene_journey,
       audio_analysis_detail: result.audio_analysis,
       customer_journey_detail: result.customer_journey_detail,

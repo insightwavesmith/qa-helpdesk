@@ -12,6 +12,7 @@ import { GazeAnalysis } from "./gaze-analysis";
 import { PrescriptionCards } from "./prescription-cards";
 import { SceneDetailAnalysis } from "./scene-detail-analysis";
 import { AudioAnalysis } from "./audio-analysis";
+import { AdAxisCard } from "./ad-axis-card";
 
 // ── API 응답 타입 ─────────────────────────────────────────────────
 
@@ -187,6 +188,9 @@ export function CreativeDetailPanel({
 
         {/* 2. 5축 분석 태그 */}
         {analysisJson && <FiveAxisCard analysisJson={analysisJson} />}
+
+        {/* 2.5. 광고축 카테고리 */}
+        {analysisJson && <AdAxisCard analysisJson={analysisJson} />}
 
         {/* 3. 고객 여정 타임라인 (VIDEO만) */}
         {isVideo && analysisJson && creative?.duration_seconds && (

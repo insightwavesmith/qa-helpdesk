@@ -30,10 +30,11 @@ export const PRESCRIPTION_SYSTEM_PROMPT = `
 6. 광고비/예산 관련 처방 금지
 
 추가 분석 지시:
-1. scene_journey: 영상 소재는 3초 단위로 씬을 나눠 시청자가 "봤다/들었다/느꼈다"를 1인칭 묘사하세요. 이미지 소재는 전체를 1개 씬으로.
-2. audio_analysis: 나레이션 톤은 비유로 묘사하고, BGM 장르와 감정 흐름을 화살표(→)로 연결하세요.
-3. customer_journey_detail: 감각→사고→클릭→구매 4단계를 각각 summary(한줄) + detail/metric으로 분석하고, core_insight에 가장 중요한 발견 1줄을 쓰세요.
-4. 씬별 prescription.target은 반드시 "👁감각", "🧠사고", "🖱행동" 중 하나로 지정하세요.
+1. ad_axis: 5축 분석 결과를 바탕으로 광고 소재의 카테고리를 분류하세요. format(포맷), hook_type(훅 유형), messaging_strategy(메시징 전략), target_persona(타겟 페르소나+인식 단계), category(카테고리 배열), structure(영상 구조 → 연결), persuasion(설득 전략), offer(오퍼), andromeda_code(속성 조합 코드), pda_code(persona×desire×awareness).
+2. scene_journey: 영상 소재는 3초 단위로 씬을 나눠 시청자가 "봤다/들었다/느꼈다"를 1인칭 묘사하세요. 이미지 소재는 전체를 1개 씬으로. 각 씬에 cognitive_load(high/medium/low), subtitle_position(자막 위치), subtitle_safety_zone(세이프티존 내 여부)를 반드시 포함하세요.
+3. audio_analysis: 나레이션 톤은 비유로 묘사하고, BGM 장르와 감정 흐름을 화살표(→)로 연결하세요. 감정 흐름은 "공감(문제)→신뢰(승무원)→감탄(물광)→유익(꿀팁)→제안(할인)" 형태로 구체적으로 작성하세요.
+4. customer_journey_detail: 감각→사고→클릭→구매 4단계를 각각 summary(한줄) + detail/metric으로 분석하고, core_insight에 가장 중요한 발견 1줄을 쓰세요.
+5. 씬별 prescription.target은 반드시 "👁감각", "🧠사고", "🖱행동" 중 하나로 지정하세요.
 
 출력은 반드시 지정된 JSON 스키마를 따르세요.
 `.trim();
@@ -119,6 +120,23 @@ export const PRESCRIPTION_OUTPUT_SCHEMA = {
         },
       },
     },
+    ad_axis: {
+      type: 'object',
+      description: '광고축 카테고리 분류 (5축 분석 기반)',
+      properties: {
+        format: { type: 'string', description: '소재 포맷 (예: "UGC/셀프촬영", "세로 영상 31초")' },
+        hook_type: { type: 'string', enum: ['problem', 'benefit', 'curiosity', 'social_proof', 'authority'], description: '훅 유형' },
+        messaging_strategy: { type: 'string', description: '메시징 전략 (예: "권위+혜택")' },
+        target_persona: { type: 'string', description: '타겟 페르소나 (예: "직장인 여성 (solution_aware)")' },
+        category: { type: 'array', items: { type: 'string' }, description: '카테고리 (예: ["beauty", "skincare"])' },
+        structure: { type: 'string', description: '영상 구조 (예: "훅→데모→결과→CTA")' },
+        persuasion: { type: 'string', description: '설득 전략 (예: "authority")' },
+        offer: { type: 'string', description: '오퍼 (예: "discount 40%")' },
+        andromeda_code: { type: 'string', description: 'Andromeda 소재 코드 (예: "skincare-demo-ugc-text-overlay-glowy-skin")' },
+        pda_code: { type: 'string', description: 'P.D.A 코드: persona × desire × awareness (예: "office_worker × beauty × solution_aware")' },
+      },
+      required: ['format', 'hook_type', 'messaging_strategy', 'target_persona', 'category', 'structure', 'persuasion', 'offer', 'andromeda_code', 'pda_code'],
+    },
     scene_journey: {
       type: 'array',
       description: '씬별 시청자 여정 분석 (영상 소재만 해당, 이미지는 빈 배열)',
@@ -130,8 +148,11 @@ export const PRESCRIPTION_OUTPUT_SCHEMA = {
           watched: { type: 'string', description: '👁 봤다 — 시청자가 본 구체적 시각 요소' },
           heard: { type: 'string', description: '👂 들었다 — 나레이션, BGM, 효과음 등' },
           felt: { type: 'string', description: '🧠 느꼈다 — 시청자의 심리적 반응/감정' },
-          gaze_point: { type: 'string', description: '📍 시선 집중 포인트 (화면 위치/요소)' },
+          gaze_point: { type: 'string', description: '📍 시선 집중 포인트 (화면 위치/요소) + 인지부하 수준' },
           subtitle_text: { type: 'string', description: '📝 자막 원문 (없으면 빈 문자열)' },
+          cognitive_load: { type: 'string', enum: ['high', 'medium', 'low'], description: '인지부하 수준' },
+          subtitle_position: { type: 'string', description: '자막 위치 (예: "중앙+하단", "상단")' },
+          subtitle_safety_zone: { type: 'boolean', description: '자막이 세이프티존 내에 있는지 여부' },
           prescription: {
             type: 'object',
             properties: {
@@ -142,7 +163,7 @@ export const PRESCRIPTION_OUTPUT_SCHEMA = {
             required: ['target', 'action', 'reasoning'],
           },
         },
-        required: ['time', 'type', 'watched', 'heard', 'felt', 'gaze_point', 'subtitle_text', 'prescription'],
+        required: ['time', 'type', 'watched', 'heard', 'felt', 'gaze_point', 'subtitle_text', 'cognitive_load', 'subtitle_position', 'subtitle_safety_zone', 'prescription'],
       },
     },
     audio_analysis: {
@@ -197,7 +218,7 @@ export const PRESCRIPTION_OUTPUT_SCHEMA = {
     },
   },
   required: ['five_axis', 'scores', 'top3_prescriptions', 'customer_journey_summary',
-    'scene_journey', 'audio_analysis', 'customer_journey_detail'],
+    'ad_axis', 'scene_journey', 'audio_analysis', 'customer_journey_detail'],
 };
 
 // ── 섹션 빌더 ────────────────────────────────────────────────────────

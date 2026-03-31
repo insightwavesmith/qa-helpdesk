@@ -117,7 +117,8 @@ export interface AnalysisJsonV3 {
     }>;
   };
 
-  // ── v3 확장: 씬 여정 + 오디오 상세 + 고객여정 상세 ──
+  // ── v3 확장: 광고축 + 씬 여정 + 오디오 상세 + 고객여정 상세 ──
+  ad_axis?: AdAxis;
   scene_journey?: SceneJourneyItem[];
   audio_analysis_detail?: AudioAnalysisDetail;
   customer_journey_detail?: CustomerJourneyDetail;
@@ -272,7 +273,8 @@ export interface PrescriptionResponse {
     affects_groups: string[];
     ear_impact: string;
   }>;
-  // ── v3 확장: 씬 여정 + 오디오 + 고객여정 상세 ──
+  // ── v3 확장: 광고축 + 씬 여정 + 오디오 + 고객여정 상세 ──
+  ad_axis?: AdAxis;
   scene_journey?: SceneJourneyItem[];
   audio_analysis?: AudioAnalysisDetail;
   customer_journey_detail?: CustomerJourneyDetail;
@@ -426,6 +428,21 @@ export interface EarAnalysis {
   improvementPriority: string;
 }
 
+// ── 광고축 카테고리 (ad_axis) ────────────────────────────────────────
+
+export interface AdAxis {
+  format: string;                  // "UGC/셀프촬영", "세로영상 31초"
+  hook_type: string;               // "problem" | "benefit" | "curiosity" | "social_proof" | "authority"
+  messaging_strategy: string;      // "권위+혜택"
+  target_persona: string;          // "직장인 여성 (solution_aware)"
+  category: string[];              // ["beauty", "skincare"]
+  structure: string;               // "훅→데모→결과→CTA"
+  persuasion: string;              // "authority"
+  offer: string;                   // "discount 40%"
+  andromeda_code: string;          // "skincare-demo-ugc-text-overlay-glowy-skin"
+  pda_code: string;                // "office_worker × beauty × solution_aware"
+}
+
 // ── 씬 여정 (scene_journey) ──────────────────────────────────────────
 
 export interface SceneJourneyItem {
@@ -436,6 +453,9 @@ export interface SceneJourneyItem {
   felt: string;                    // 🧠 느꼈다 (심리적 반응)
   gaze_point: string;              // 📍 시선 집중 포인트
   subtitle_text: string;           // 📝 자막 원문
+  cognitive_load?: string;         // 인지부하: "high" | "medium" | "low"
+  subtitle_position?: string;      // 자막 위치: "중앙+하단"
+  subtitle_safety_zone?: boolean;  // 세이프티존 내 여부
   prescription: {                  // 💊 씬별 처방
     target: string;                // 👁감각/🧠사고/🖱행동
     action: string;                // 구체적 개선방법
@@ -513,7 +533,8 @@ export interface GeminiPrescriptionOutput {
     issue: string;
     benchmark_comparison: string;
   }>;
-  // ── v3 확장: 씬 여정 + 오디오 + 고객여정 상세 ──
+  // ── v3 확장: 광고축 + 씬 여정 + 오디오 + 고객여정 상세 ──
+  ad_axis?: AdAxis;
   scene_journey?: SceneJourneyItem[];
   audio_analysis?: AudioAnalysisDetail;
   customer_journey_detail?: CustomerJourneyDetail;

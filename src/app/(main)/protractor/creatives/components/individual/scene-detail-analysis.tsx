@@ -163,11 +163,29 @@ export function SceneDetailAnalysis({
                         <div><strong>👁 봤다:</strong> {sj.watched}</div>
                         <div><strong>👂 들었다:</strong> {sj.heard}</div>
                         <div><strong>🧠 느꼈다:</strong> {sj.felt}</div>
-                        <div><strong>📍 시선:</strong> {sj.gaze_point}</div>
-                        {sj.subtitle_text && (
-                          <div><strong>📝 자막:</strong> {sj.subtitle_text}</div>
-                        )}
+                        <div>
+                          <strong>📍 시선:</strong> {sj.gaze_point}
+                          {sj.cognitive_load && (
+                            <span> · 인지부하 {sj.cognitive_load}</span>
+                          )}
+                        </div>
                       </div>
+                      {sj.subtitle_text && (
+                        <div
+                          className="text-[11px] text-gray-500 mb-2 px-2 py-1 rounded"
+                          style={{ background: "#f8fafc" }}
+                        >
+                          📝 &quot;{sj.subtitle_text}&quot;
+                          {sj.subtitle_position && (
+                            <span> · {sj.subtitle_position}</span>
+                          )}
+                          {sj.subtitle_safety_zone !== undefined && (
+                            <span>
+                              {" · "}세이프티존 {sj.subtitle_safety_zone ? "✅" : "❌"}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <div
                         className="text-[11px] p-2 rounded-md"
                         style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)" }}
@@ -262,13 +280,27 @@ export function SceneDetailAnalysis({
                               {elements.map((e) => `${e.type} ${Math.round(e.attention_pct)}%`).join(", ")}
                             </span>
                           )}
+                          {journey?.cognitive_load && (
+                            <span> · 인지부하 {journey.cognitive_load}</span>
+                          )}
                         </div>
-                        {journey?.subtitle_text && (
-                          <div>
-                            <strong>📝 자막:</strong> {journey.subtitle_text}
-                          </div>
-                        )}
                       </div>
+                      {journey?.subtitle_text && (
+                        <div
+                          className="text-[11px] text-gray-500 mb-2 px-2 py-1 rounded"
+                          style={{ background: "#f8fafc" }}
+                        >
+                          📝 &quot;{journey.subtitle_text}&quot;
+                          {journey.subtitle_position && (
+                            <span> · {journey.subtitle_position}</span>
+                          )}
+                          {journey.subtitle_safety_zone !== undefined && (
+                            <span>
+                              {" · "}세이프티존 {journey.subtitle_safety_zone ? "✅" : "❌"}
+                            </span>
+                          )}
+                        </div>
+                      )}
 
                       {/* v3: scene_journey 처방 우선, fallback → scene_analysis improvement */}
                       {journey ? (
