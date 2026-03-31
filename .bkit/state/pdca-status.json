@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-31T16:50:06.917Z",
+  "lastUpdated": "2026-03-31T16:51:16.679Z",
   "activeFeatures": [
     "slack-notification",
     "organic-channel-distribution-phase2",
@@ -476,9 +476,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-31T16:48:08.279Z",
-        "lastUpdated": "2026-03-31T16:48:37.612Z"
+        "lastUpdated": "2026-03-31T16:51:16.679Z"
       },
-      "lastFile": "/Users/smith/projects/bscamp/.bkit/hooks/helpers/hook-self-register.sh"
+      "lastFile": "/Users/smith/projects/bscamp/.bkit/hooks/helpers/peer-resolver.sh"
     },
     ".bkit": {
       "phase": "do",
@@ -502,7 +502,7 @@
   "session": {
     "startedAt": "2026-03-30T05:20:31.424Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-31T16:50:06.917Z"
+    "lastActivity": "2026-03-31T16:51:16.679Z"
   },
   "history": [
     {
@@ -1264,6 +1264,12 @@
     {
       "timestamp": "2026-03-31T16:50:06.917Z",
       "feature": ".bkit",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-31T16:51:16.679Z",
+      "feature": "helpers",
       "phase": "do",
       "action": "updated"
     }

@@ -12,6 +12,10 @@ _PR_PROJECT_DIR="${PROJECT_DIR:-/Users/smith/projects/bscamp}"
 _PR_RUNTIME_DIR="$_PR_PROJECT_DIR/.bkit/runtime"
 _PR_BROKER_URL="${BROKER_URL:-http://localhost:7899}"
 
+# hook-self-register.sh 함수 의존 (resolve_self에서 get_my_role, find_my_peer_id 사용)
+type find_my_peer_id >/dev/null 2>&1 || \
+    source "$_PR_PROJECT_DIR/.bkit/hooks/helpers/hook-self-register.sh" 2>/dev/null
+
 _role_to_session_pattern() {
     case "$1" in
         PM_LEADER|PM) echo "sdk-pm" ;;
