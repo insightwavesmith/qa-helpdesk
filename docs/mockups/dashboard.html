@@ -909,9 +909,20 @@
       <a class="nav-item" onclick="showPage('routines')">
         <span class="nav-icon">🔄</span> 루틴
       </a>
+
+      <div style="padding: 8px 20px 4px; font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">v2 하네스</div>
+      <a class="nav-item" onclick="showPage('coo')">
+        <span class="nav-icon">🍡</span> COO 상태
+      </a>
+      <a class="nav-item" onclick="showPage('context')">
+        <span class="nav-icon">📖</span> Living Context
+      </a>
+      <a class="nav-item" onclick="showPage('peers')">
+        <span class="nav-icon">🔗</span> Peers 연결
+      </a>
     </nav>
     <div style="padding: 12px 20px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted);">
-      v0.1.0 목업
+      v0.2.0 목업
     </div>
   </aside>
 
@@ -1840,6 +1851,399 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ COO 상태 (v2 신규) ═══ -->
+    <section id="page-coo" class="page-section">
+      <h2 class="page-title">COO 게이트 상태</h2>
+
+      <!-- COO 메트릭 -->
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-label">⏱ 평균 ACK 시간</div>
+          <div class="metric-value">2<span style="font-size: 16px; color: var(--text-muted);">분</span></div>
+          <div class="metric-desc">목표: 5분 이내</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">📋 평균 보고 시간</div>
+          <div class="metric-value">8<span style="font-size: 16px; color: var(--text-muted);">분</span></div>
+          <div class="metric-desc">목표: 15분 이내</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label" style="color: var(--error);">⚠ 누락 ACK</div>
+          <div class="metric-value" style="color: var(--error);">2</div>
+          <div class="metric-desc">목표: 0건</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label" style="color: var(--error);">⚠ 누락 보고</div>
+          <div class="metric-value" style="color: var(--error);">1</div>
+          <div class="metric-desc">목표: 0건</div>
+        </div>
+      </div>
+
+      <!-- 대기 중 게이트 -->
+      <div class="card" style="margin-bottom: 20px;">
+        <div class="card-header">
+          대기 중 게이트
+          <span class="badge badge-running">3건 대기</span>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>TASK</th>
+                <th>게이트</th>
+                <th>대기 시간</th>
+                <th>타임아웃</th>
+                <th>상태</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>총가치각도기 리팩터링</strong><br><span class="text-muted" style="font-size:11px;">DEV-L2</span></td>
+                <td>ACK</td>
+                <td class="mono">2분 12초</td>
+                <td class="mono">5분</td>
+                <td><span class="badge badge-running">대기중</span></td>
+              </tr>
+              <tr>
+                <td><strong>LP 분석 파이프라인</strong><br><span class="text-muted" style="font-size:11px;">DEV-L2</span></td>
+                <td>Smith 보고</td>
+                <td class="mono" style="color: var(--warning);">12분 43초</td>
+                <td class="mono">15분</td>
+                <td><span class="badge badge-paused">임박</span></td>
+              </tr>
+              <tr>
+                <td><strong>블로그 메타 광고 가이드</strong><br><span class="text-muted" style="font-size:11px;">MKT-L1</span></td>
+                <td>검수</td>
+                <td class="mono">45분</td>
+                <td class="mono">24시간</td>
+                <td><span class="badge badge-idle">검수 대기</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 최근 처리 이력 -->
+      <div class="card" style="margin-bottom: 20px;">
+        <div class="card-header">최근 처리 이력</div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>TASK</th>
+                <th>게이트</th>
+                <th>처리 시간</th>
+                <th>결과</th>
+                <th>시각</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>chain-automation-100</strong></td>
+                <td>ACK + Smith 보고</td>
+                <td class="mono">1분 30초</td>
+                <td><span class="badge badge-completed">완료</span></td>
+                <td class="text-muted">18:45</td>
+              </tr>
+              <tr>
+                <td><strong>agent-ops-hardening-p1</strong></td>
+                <td>ACK + Smith 보고</td>
+                <td class="mono">3분 15초</td>
+                <td><span class="badge badge-completed">완료</span></td>
+                <td class="text-muted">17:20</td>
+              </tr>
+              <tr>
+                <td><strong>video-pipeline-dedup-fix</strong></td>
+                <td>ACK</td>
+                <td class="mono" style="color: var(--error);">8분 22초</td>
+                <td><span class="badge badge-error">타임아웃</span></td>
+                <td class="text-muted">15:10</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- COO 자율 범위 표 -->
+      <div class="card">
+        <div class="card-header">자율 진행 범위</div>
+        <div class="card-body">
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+            <div style="background: #ecfdf5; border-radius: 8px; padding: 12px;">
+              <div style="font-size: 12px; font-weight: 600; color: #059669; margin-bottom: 6px;">자율 완주</div>
+              <div style="font-size: 11px; color: #065f46;">DEV-L0~L2, OPS-L0~L2, MKT-L1~L2</div>
+            </div>
+            <div style="background: #fffbeb; border-radius: 8px; padding: 12px;">
+              <div style="font-size: 12px; font-weight: 600; color: #d97706; margin-bottom: 6px;">검수까지 자율</div>
+              <div style="font-size: 11px; color: #92400e;">DEV-L3 (Smith 수동검수 대기)</div>
+            </div>
+            <div style="background: #fef2f2; border-radius: 8px; padding: 12px;">
+              <div style="font-size: 12px; font-weight: 600; color: var(--error); margin-bottom: 6px;">Smith 필수</div>
+              <div style="font-size: 11px; color: #991b1b;">BIZ-L1~L2 (전략 결정)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Living Context (v2 신규) ═══ -->
+    <section id="page-context" class="page-section">
+      <h2 class="page-title">Living Context</h2>
+
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-label">📄 로드된 문서</div>
+          <div class="metric-value">7</div>
+          <div class="metric-desc">현재 피처 컨텍스트</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">🔄 마지막 로드</div>
+          <div class="metric-value" style="font-size: 20px;">19:06</div>
+          <div class="metric-desc">sdk-pm 세션 시작 시</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">⚠ 컨텍스트 유실</div>
+          <div class="metric-value" style="color: var(--success);">0</div>
+          <div class="metric-desc">세션 시작 후 미로드 건수</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">📦 상류 캐스케이드</div>
+          <div class="metric-value">4<span style="font-size: 16px; color: var(--text-muted);">계층</span></div>
+          <div class="metric-desc">불변규칙 + Plan + Design + Postmortem</div>
+        </div>
+      </div>
+
+      <!-- 세션별 Context 상태 -->
+      <div class="card" style="margin-bottom: 20px;">
+        <div class="card-header">세션별 Context 로딩 상태</div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>세션</th>
+                <th>피처</th>
+                <th>Phase</th>
+                <th>로드 문서</th>
+                <th>상류 캐스케이드</th>
+                <th>마지막 로드</th>
+                <th>상태</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>sdk-cto</strong></td>
+                <td>protractor-refactoring</td>
+                <td><span class="kanban-card-badge do">DO</span></td>
+                <td class="mono">7개</td>
+                <td>
+                  <span class="badge badge-completed" style="font-size:10px;">CLAUDE.md</span>
+                  <span class="badge badge-completed" style="font-size:10px;">ADR</span>
+                  <span class="badge badge-completed" style="font-size:10px;">Plan</span>
+                  <span class="badge badge-completed" style="font-size:10px;">Design</span>
+                </td>
+                <td class="text-muted">13:05</td>
+                <td><span class="badge badge-completed">정상</span></td>
+              </tr>
+              <tr>
+                <td><strong>sdk-cto-2</strong></td>
+                <td>gcp-full-migration</td>
+                <td><span class="kanban-card-badge do">DO</span></td>
+                <td class="mono">8개</td>
+                <td>
+                  <span class="badge badge-completed" style="font-size:10px;">CLAUDE.md</span>
+                  <span class="badge badge-completed" style="font-size:10px;">ADR</span>
+                  <span class="badge badge-completed" style="font-size:10px;">Plan</span>
+                  <span class="badge badge-completed" style="font-size:10px;">Design</span>
+                  <span class="badge badge-completed" style="font-size:10px;">Postmortem</span>
+                </td>
+                <td class="text-muted">00:31</td>
+                <td><span class="badge badge-completed">정상</span></td>
+              </tr>
+              <tr>
+                <td><strong>sdk-pm</strong></td>
+                <td>agent-dashboard</td>
+                <td><span class="kanban-card-badge design">DESIGN</span></td>
+                <td class="mono">5개</td>
+                <td>
+                  <span class="badge badge-completed" style="font-size:10px;">CLAUDE.md</span>
+                  <span class="badge badge-completed" style="font-size:10px;">ADR</span>
+                  <span class="badge badge-completed" style="font-size:10px;">Plan</span>
+                </td>
+                <td class="text-muted">19:06</td>
+                <td><span class="badge badge-completed">정상</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 문서 체인 시각화 -->
+      <div class="card">
+        <div class="card-header">상류 문서 캐스케이드 (현재 피처: protractor-refactoring)</div>
+        <div class="card-body">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <div style="background: #dbeafe; border: 1px solid #93c5fd; border-radius: 8px; padding: 8px 14px; font-size: 12px;">
+              <div style="font-weight: 600; color: #1d4ed8;">계층 1: 불변규칙</div>
+              <div style="color: #1e40af; font-size: 11px; margin-top: 4px;">CLAUDE.md<br>ADR-001<br>ADR-002<br>SERVICE-VISION.md</div>
+            </div>
+            <div style="font-size: 18px; color: var(--text-light);">→</div>
+            <div style="background: #ede9fe; border: 1px solid #c4b5fd; border-radius: 8px; padding: 8px 14px; font-size: 12px;">
+              <div style="font-weight: 600; color: #7c3aed;">계층 2: Plan</div>
+              <div style="color: #6d28d9; font-size: 11px; margin-top: 4px;">protractor-refactoring.plan.md</div>
+            </div>
+            <div style="font-size: 18px; color: var(--text-light);">→</div>
+            <div style="background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 8px 14px; font-size: 12px;">
+              <div style="font-weight: 600; color: var(--primary);">계층 3: Design</div>
+              <div style="color: #dc2626; font-size: 11px; margin-top: 4px;">protractor-refactoring.design.md</div>
+            </div>
+            <div style="font-size: 18px; color: var(--text-light);">→</div>
+            <div style="background: #ecfdf5; border: 1px solid #6ee7b7; border-radius: 8px; padding: 8px 14px; font-size: 12px;">
+              <div style="font-weight: 600; color: #059669;">계층 4: Postmortem</div>
+              <div style="color: #047857; font-size: 11px; margin-top: 4px;">해당 없음</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Peers 연결 (v2 신규) ═══ -->
+    <section id="page-peers" class="page-section">
+      <h2 class="page-title">Claude Peers 연결 상태</h2>
+
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-label">🟢 활성 Peer</div>
+          <div class="metric-value">4</div>
+          <div class="metric-desc">sdk-cto, sdk-cto-2, sdk-pm, mozzi</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">💬 오늘 메시지</div>
+          <div class="metric-value">23</div>
+          <div class="metric-desc">TASK_ASSIGN 8, COMPLETION 6, QUERY 9</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">⚡ 평균 응답</div>
+          <div class="metric-value">45<span style="font-size: 16px; color: var(--text-muted);">초</span></div>
+          <div class="metric-desc">peer 메시지 응답 시간</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">❌ 실패 메시지</div>
+          <div class="metric-value" style="color: var(--success);">0</div>
+          <div class="metric-desc">전송 실패 건수</div>
+        </div>
+      </div>
+
+      <!-- Peer 목록 -->
+      <div class="card" style="margin-bottom: 20px;">
+        <div class="card-header">Peer 목록 + 연결 상태</div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Peer</th>
+                <th>역할</th>
+                <th>tmux 세션</th>
+                <th>Summary</th>
+                <th>마지막 통신</th>
+                <th>상태</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="dot dot-running" style="margin-right: 6px;"></span><strong>mozzi-main</strong></td>
+                <td>COO</td>
+                <td class="mono">-</td>
+                <td class="text-muted" style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">MOZZI | bscamp | 에이전트팀 구조화</td>
+                <td class="text-muted">방금</td>
+                <td><span class="badge badge-running">활성</span></td>
+              </tr>
+              <tr>
+                <td><span class="dot dot-running" style="margin-right: 6px;"></span><strong>sdk-cto</strong></td>
+                <td>CTO-1 리더</td>
+                <td class="mono">sdk-cto</td>
+                <td class="text-muted" style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">CTO_LEADER | bscamp | protractor-refactoring</td>
+                <td class="text-muted">3분 전</td>
+                <td><span class="badge badge-running">활성</span></td>
+              </tr>
+              <tr>
+                <td><span class="dot dot-running" style="margin-right: 6px;"></span><strong>sdk-cto-2</strong></td>
+                <td>CTO-2 리더</td>
+                <td class="mono">sdk-cto-2</td>
+                <td class="text-muted" style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">CTO_LEADER | bscamp | gcp-migration</td>
+                <td class="text-muted">18분 전</td>
+                <td><span class="badge badge-idle">idle</span></td>
+              </tr>
+              <tr>
+                <td><span class="dot dot-running" style="margin-right: 6px;"></span><strong>sdk-pm</strong></td>
+                <td>PM 리더</td>
+                <td class="mono">sdk-pm</td>
+                <td class="text-muted" style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">PM_LEADER | bscamp | agent-dashboard</td>
+                <td class="text-muted">1분 전</td>
+                <td><span class="badge badge-running">활성</span></td>
+              </tr>
+              <tr>
+                <td><span class="dot dot-idle" style="margin-right: 6px;"></span><strong>hermes-gw</strong></td>
+                <td>Gateway</td>
+                <td class="mono">hermes-gw</td>
+                <td class="text-muted">-</td>
+                <td class="text-muted">3일 전</td>
+                <td><span class="badge badge-terminated">비활성</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 최근 메시지 피드 -->
+      <div class="card">
+        <div class="card-header">최근 Peer 메시지</div>
+        <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px; background: #f9fafb; border-radius: 8px;">
+              <span style="font-size: 10px; font-weight: 600; color: var(--primary); white-space: nowrap; padding-top: 2px;">19:06</span>
+              <div>
+                <div style="font-size: 11px;"><strong>sdk-pm</strong> → <strong>mozzi</strong></div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                  <span class="badge badge-completed" style="font-size: 9px; margin-right: 4px;">COMPLETION_REPORT</span>
+                  agent-dashboard Design 완료, matchRate: 95%
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px; background: #f9fafb; border-radius: 8px;">
+              <span style="font-size: 10px; font-weight: 600; color: var(--info); white-space: nowrap; padding-top: 2px;">19:04</span>
+              <div>
+                <div style="font-size: 11px;"><strong>mozzi</strong> → <strong>sdk-pm</strong></div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                  <span class="badge badge-idle" style="font-size: 9px; margin-right: 4px;">TASK_ASSIGN</span>
+                  dashboard 목업 v2 보완 작업 배정
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px; background: #f9fafb; border-radius: 8px;">
+              <span style="font-size: 10px; font-weight: 600; color: var(--success); white-space: nowrap; padding-top: 2px;">18:45</span>
+              <div>
+                <div style="font-size: 11px;"><strong>mozzi</strong> → <strong>sdk-cto</strong></div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                  <span class="badge badge-completed" style="font-size: 9px; margin-right: 4px;">ACK</span>
+                  chain-automation-100 수신 확인
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px; background: #fff7ed; border-radius: 8px;">
+              <span style="font-size: 10px; font-weight: 600; color: #d97706; white-space: nowrap; padding-top: 2px;">17:30</span>
+              <div>
+                <div style="font-size: 11px;"><strong>sdk-cto</strong> → <strong>mozzi</strong></div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                  <span class="badge badge-paused" style="font-size: 9px; margin-right: 4px;">TASK_QUERY</span>
+                  Plan에 없는 추가 API 필요 — 범위 확장 문의
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

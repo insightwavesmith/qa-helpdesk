@@ -8,9 +8,10 @@
     "protractor-ux-prescription",
     "video-permission-skip",
     "video-collection-audit",
+    "helpers",
     ".bkit"
   ],
-  "primaryFeature": "slack-notification",
+  "primaryFeature": "helpers",
   "features": {
     "slack-notification": {
       "phase": "implementing",
@@ -909,6 +910,19 @@
       },
       "phaseTimestamps": {},
       "automationLevel": 2
+    },
+    "helpers": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-31T11:58:09.182Z",
+        "lastUpdated": "2026-03-31T11:58:12.331Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/.bkit/hooks/helpers/living-context-loader.sh"
     },
     ".bkit": {
       "phase": "do",

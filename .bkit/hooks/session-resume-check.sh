@@ -102,6 +102,20 @@ if [ -f "$ZOMBIE_DETECTOR" ]; then
     fi
 fi
 
+# ── 7. Living Context 로딩 가이드 ──
+LIVING_CONTEXT_LOADER="$(dirname "$0")/helpers/living-context-loader.sh"
+if [ -f "$LIVING_CONTEXT_LOADER" ]; then
+    source "$LIVING_CONTEXT_LOADER" 2>/dev/null
+    _LC_FEATURE=$(jq -r '.primaryFeature // "unknown"' "$PDCA_FILE" 2>/dev/null || echo "unknown")
+    _LC_PHASE=$(jq -r ".features[\"$_LC_FEATURE\"].phase // \"do\"" "$PDCA_FILE" 2>/dev/null || echo "do")
+    load_context "$_LC_FEATURE" "$_LC_PHASE" 2>/dev/null
+    if [ "${#CONTEXT_FILES[@]}" -gt 0 ]; then
+        echo "📚 Living Context — ${#CONTEXT_FILES[@]}개 문서 로드 대상:"
+        for _f in "${CONTEXT_FILES[@]}"; do echo "  → $_f"; done
+        echo ""
+    fi
+fi
+
 # ── 6. 요약 ──
 if [ "$FOUND_ISSUES" -eq 0 ]; then
     echo "✅ 이전 세션 잔여 이슈 없음. 깨끗한 상태입니다."
