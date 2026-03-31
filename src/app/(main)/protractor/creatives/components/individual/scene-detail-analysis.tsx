@@ -150,8 +150,9 @@ export function SceneDetailAnalysis({
                           loading="lazy"
                         />
                       ) : (
-                        <div className="w-[100px] h-[178px] bg-slate-100 rounded-md flex items-center justify-center text-gray-300 text-xs">
-                          프레임 없음
+                        <div className="w-[100px] h-[178px] bg-slate-100 rounded-md flex flex-col items-center justify-center text-xs">
+                          <span className="text-lg mb-1">👁</span>
+                          <span style={{ color: "#94a3b8" }}>수집 중</span>
                         </div>
                       )}
                       <div className="text-[10px] font-semibold text-center mt-1" style={{ color: borderColor }}>
@@ -249,8 +250,9 @@ export function SceneDetailAnalysis({
                           loading="lazy"
                         />
                       ) : (
-                        <div className="w-[100px] h-[178px] bg-slate-100 rounded-md flex items-center justify-center text-gray-300 text-xs">
-                          프레임 없음
+                        <div className="w-[100px] h-[178px] bg-slate-100 rounded-md flex flex-col items-center justify-center text-xs">
+                          <span className="text-lg mb-1">👁</span>
+                          <span style={{ color: "#94a3b8" }}>수집 중</span>
                         </div>
                       )}
                       <div className="text-[10px] font-semibold text-center mt-1" style={{ color: borderColor }}>

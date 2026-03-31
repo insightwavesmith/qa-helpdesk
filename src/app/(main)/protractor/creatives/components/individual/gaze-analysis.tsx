@@ -170,7 +170,7 @@ export function GazeAnalysis({
           loading="lazy"
         />
         {/* 히트맵 오버레이 */}
-        {heatmapUrl && (
+        {heatmapUrl ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={heatmapUrl}
@@ -179,6 +179,13 @@ export function GazeAnalysis({
             style={{ opacity: 0.6 }}
             loading="lazy"
           />
+        ) : (
+          <div
+            className="absolute top-2 right-2 px-2 py-1 rounded-md text-[10px] font-semibold"
+            style={{ background: "rgba(0,0,0,0.5)", color: "#94a3b8" }}
+          >
+            히트맵 수집 중
+          </div>
         )}
         {/* 주시점 오버레이 */}
         {(currentFrame?.top_fixations ?? saliency.top_fixations).map(
