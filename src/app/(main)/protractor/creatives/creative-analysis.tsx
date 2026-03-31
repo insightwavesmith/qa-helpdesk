@@ -258,44 +258,17 @@ function IndividualTab({
           <p className="text-xs mt-1">소재 인텔리전스 분석 후 결과가 표시됩니다</p>
         </div>
       ) : (
-        <>
-          {/* 네비게이션 헤더 */}
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">
-              ROAS 기준 상위 {baseResults.length}개 소재
-            </p>
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-gray-700">
-                {currentIndex + 1} / {baseResults.length}
-              </span>
-              <div className="flex gap-1">
-                <button
-                  onClick={goPrev}
-                  disabled={currentIndex === 0}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                </button>
-                <button
-                  onClick={goNext}
-                  disabled={currentIndex === baseResults.length - 1}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* 상세 패널 */}
-          {currentCreative && (
-            <CreativeDetailPanel
-              creativeId={currentCreative.id}
-              accountId={accountId}
-              onClose={() => {}}
-            />
-          )}
-        </>
+        currentCreative && (
+          <CreativeDetailPanel
+            creativeId={currentCreative.id}
+            accountId={accountId}
+            onClose={() => {}}
+            currentIndex={currentIndex}
+            totalCount={baseResults.length}
+            onPrev={goPrev}
+            onNext={goNext}
+          />
+        )
       )}
     </div>
   );

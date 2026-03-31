@@ -4,10 +4,7 @@ import useSWR from "swr";
 import { Skeleton } from "@/components/ui/skeleton";
 import { jsonFetcher } from "@/lib/swr/config";
 import type { AnalysisJsonV3 } from "@/types/prescription";
-import {
-  CreativeAnalysisV2,
-  type CreativeAnalysisV2Props,
-} from "./creative-analysis-v2";
+import { CreativeAnalysisV2 } from "./creative-analysis-v2";
 
 // ── API 응답 타입 ─────────────────────────────────────────────────
 
@@ -63,11 +60,13 @@ interface CreativeDetailResponse {
 }
 
 interface PrescriptionResponse {
-  top3_prescriptions?: CreativeAnalysisV2Props["prescription"] extends infer T
-    ? T extends { top3_prescriptions?: infer U }
-      ? U
-      : never
-    : never;
+  top3_prescriptions?: Array<{
+    rank: number;
+    title: string;
+    action: string;
+    journey_stage: string;
+    difficulty: "쉬움" | "보통" | "어려움";
+  }>;
   customer_journey_summary?: {
     sensation: string;
     thinking: string;
@@ -93,7 +92,7 @@ interface CreativeDetailPanelProps {
 export function CreativeDetailPanel({
   creativeId,
   accountId,
-  onClose,
+  onClose: _onClose,
   currentIndex = 0,
   totalCount = 1,
   onPrev,
