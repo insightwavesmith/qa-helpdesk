@@ -84,4 +84,4 @@ force=true로 재분석:
 ## DB
 - Cloud SQL: postgresql://postgres:BsCamp2026Gcp@34.50.5.237:5432/bscamp
 - **Supabase 절대 쓰지 마**
-- Gemini API Key: AIzaSyBQZUTjVUeYiT1XLzkWZEjJ7cmSZEbtgus
+- Gemini API Key: .env.local의 GEMINI_API_KEY 참조
