@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-03-31T00:09:22.603Z",
+  "lastUpdated": "2026-03-31T00:22:59.283Z",
   "activeFeatures": [
     "slack-notification",
     "organic-channel-distribution-phase2",
@@ -13,7 +13,9 @@
     "creative-detail",
     "bscamp",
     "individual",
-    "protractor"
+    "protractor",
+    "portfolio",
+    "account-prescription"
   ],
   "primaryFeature": "helpers",
   "features": {
@@ -993,6 +995,32 @@
         "lastUpdated": "2026-03-31T00:09:22.603Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/src/lib/protractor/prescription-engine.ts"
+    },
+    "portfolio": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-31T00:20:42.465Z",
+        "lastUpdated": "2026-03-31T00:22:59.283Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/(main)/protractor/creatives/components/portfolio/diversity-alert.tsx"
+    },
+    "account-prescription": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-31T00:22:03.576Z",
+        "lastUpdated": "2026-03-31T00:22:03.576Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/protractor/account-prescription/route.ts"
     }
   },
   "pipeline": {
@@ -1003,7 +1031,7 @@
   "session": {
     "startedAt": "2026-03-30T05:20:31.424Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-31T00:09:22.603Z"
+    "lastActivity": "2026-03-31T00:22:59.283Z"
   },
   "history": [
     {
@@ -1351,6 +1379,36 @@
     {
       "timestamp": "2026-03-31T00:09:22.603Z",
       "feature": "protractor",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-31T00:20:42.465Z",
+      "feature": "portfolio",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-31T00:20:55.780Z",
+      "feature": "portfolio",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-31T00:21:10.848Z",
+      "feature": "portfolio",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-31T00:22:03.576Z",
+      "feature": "account-prescription",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-31T00:22:59.283Z",
+      "feature": "portfolio",
       "phase": "do",
       "action": "updated"
     }
