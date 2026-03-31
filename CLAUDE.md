@@ -188,7 +188,8 @@ PM 검수 단계 없음. Gap 통과하면 바로 배포.
 
 ## 기술 스택
 - Next.js 15 (App Router), TypeScript, Tailwind CSS
-- Supabase (PostgreSQL + Auth), MDXEditor, Playwright
+- Cloud SQL (PostgreSQL), Firebase Auth, GCS, Cloud Run
+- MDXEditor, Playwright
 
 ## 커밋 컨벤션
 - 한글 작성. prefix: feat/fix/refactor/style/chore
@@ -201,11 +202,11 @@ TASK 완료 후 반드시 `project-status.md`를 업데이트해라.
 ## 에이전트팀 작업 완료 조건 (절대 규칙)
 1. tsc + build 통과
 2. feature 브랜치 push
-3. **Vercel preview URL 브라우저 QA 필수** — bypass 시크릿으로 접근
+3. **Cloud Run 배포 후 헬스체크 QA 필수**
 4. QA 통과 → `/tmp/agent-qa-passed` 마커 생성
 5. main merge 시 validate-qa.sh가 마커 확인 → 없으면 차단
 
-> 상세 (SDK 필수 프로세스, QA 마커, TASK 작성 규칙, 배포 절차, Vercel Preview, 파일 구조): `CLAUDE-DETAIL.md`
+> 상세 (SDK 필수 프로세스, QA 마커, TASK 작성 규칙, 배포 절차, 파일 구조): `CLAUDE-DETAIL.md`
 
 ## 모찌리포트 카테고리 규칙
 - 리포트 생성 시 `/Users/smith/projects/mozzi-reports/REPORT-CATEGORIES.md` 읽고 카테고리 판단
