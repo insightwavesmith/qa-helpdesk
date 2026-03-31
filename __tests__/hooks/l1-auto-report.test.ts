@@ -577,7 +577,7 @@ describe('pdca-chain-handoff L1 ANALYSIS_REPORT (LR)', () => {
     expect(result.stdout).toContain('ANALYSIS_REPORT');
     // V5: webhook 성공 → "산출물:" 행에 deliverables 출력
     expect(result.stdout).toContain('산출물');
-    expect(result.stdout).toContain('l1_to_coo');
+    expect(result.stdout).toContain('MOZZI');
   });
 
   // LR-17: L2 PM팀 → 기존대로 PM은 Match Rate 게이트 실행
