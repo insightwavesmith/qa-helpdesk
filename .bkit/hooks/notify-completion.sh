@@ -25,6 +25,24 @@ except: print('TASK 완료')
 
 # 환경변수 우선, 없으면 stdin JSON 값
 TASK_NAME="${TASK_NAME:-$TASK_TITLE}"
+
+# TASK_NAME 자동 감지: "팀명: 작업내용" 형식
+if [ "$TASK_NAME" = "TASK 완료" ] || [ -z "$TASK_NAME" ]; then
+    _TEAM=""
+    if [ -n "${TMUX:-}" ]; then
+        _TEAM=$(tmux display-message -p '#{session_name}' 2>/dev/null || true)
+    fi
+    [ -z "$_TEAM" ] && _TEAM="agent"
+
+    _DESC=$(cd "$PROJECT_DIR" 2>/dev/null && git log --oneline -20 2>/dev/null \
+        | grep -v "자동 커밋" | head -1 \
+        | sed 's/^[a-f0-9]* //' | sed 's/^[a-z]*: //' || true)
+    [ -z "$_DESC" ] && _DESC=$(cd "$PROJECT_DIR" 2>/dev/null && git log --oneline -1 2>/dev/null \
+        | sed 's/^[a-f0-9]* //' || echo "작업 완료")
+
+    TASK_NAME="$_TEAM: $_DESC"
+fi
+
 TASK_LEVEL="${TASK_LEVEL:-L2}"
 MATCH_RATE="${MATCH_RATE:-}"
 COMMIT_HASH="${COMMIT_HASH:-}"
