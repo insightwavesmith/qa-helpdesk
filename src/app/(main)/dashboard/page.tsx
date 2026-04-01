@@ -14,13 +14,22 @@ export default async function DashboardPage() {
 
   const profile = await getProfile(user.uid) as { role: string; name: string } | null;
 
-  const role = profile?.role;
+  // 프로필 미존재 (Firebase Auth만 있고 Cloud SQL 누락) → 로그인으로 리다이렉트 (로그인 시 자동 복구)
+  if (!profile) {
+    redirect("/login");
+  }
+
+  const role = profile.role;
 
   if (role === "admin" || role === "assistant") {
     return <AdminDashboard />;
   }
 
-  if (role === "lead" || role === "member") {
+  if (role === "lead") {
+    redirect("/pending");
+  }
+
+  if (role === "member") {
     return <MemberDashboard />;
   }
 

@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-01T03:14:31.015Z",
+  "lastUpdated": "2026-03-31T11:13:52.000000+00:00",
   "activeFeatures": [
     "slack-notification",
     "organic-channel-distribution-phase2",
@@ -8,15 +8,10 @@
     "protractor-ux-prescription",
     "video-permission-skip",
     "video-collection-audit",
-    "agent-harness-v2",
-    "embed-creatives-job",
     "helpers",
-    ".bkit",
-    "dashboard",
-    "__tests__",
-    "signup"
+    ".claude"
   ],
-  "primaryFeature": "slack-notification",
+  "primaryFeature": "helpers",
   "features": {
     "slack-notification": {
       "phase": "implementing",
@@ -244,6 +239,62 @@
       "phaseTimestamps": {},
       "automationLevel": 2
     },
+    "agent-ops-dashboard": {
+      "phase": "completed",
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/01-plan/features/agent-ops-dashboard.plan.md",
+        "at": "2026-03-28"
+      },
+      "design": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/02-design/features/agent-ops-dashboard.design.md",
+        "at": "2026-03-28"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": null,
+        "at": "2026-03-28"
+      },
+      "check": {
+        "team": "qa",
+        "done": true,
+        "doc": "docs/03-analysis/agent-ops-dashboard.analysis.md",
+        "matchRate": 95
+      },
+      "act": {
+        "done": true,
+        "commit": null
+      },
+      "updatedAt": "2026-03-28T20:30:00",
+      "notes": "W1~W3 구현 완료. 서버+UI+TDD 20건+Gap 분석 95%. Bun+Hono+Preact localhost:3847.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-28T20:30:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
+    },
     "video-permission-skip": {
       "phase": "implementing",
       "plan": {
@@ -284,6 +335,286 @@
       },
       "stateMachine": {
         "currentState": "implementing",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
+    },
+    "agent-team-operations": {
+      "phase": "completed",
+      "plan": {
+        "team": "cto",
+        "done": true,
+        "doc": "docs/01-plan/features/agent-team-operations.plan.md",
+        "at": "2026-03-28"
+      },
+      "design": {
+        "team": "cto",
+        "done": true,
+        "doc": "docs/02-design/features/agent-team-operations.design.md",
+        "at": "2026-03-28"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": null,
+        "at": "2026-03-28"
+      },
+      "check": {
+        "team": "qa",
+        "done": true,
+        "doc": "docs/03-analysis/agent-team-operations.analysis.md",
+        "matchRate": 97
+      },
+      "act": {
+        "done": true,
+        "commit": null
+      },
+      "updatedAt": "2026-03-28T22:27:00",
+      "notes": "Wave 0~4 최종 검증 완료. TDD 67건 실행, 66/67 통과(1건 설계의도Red). 좀비 pane 0건. Match Rate 97% 유지. TASK 체크박스 W4-1~W4-3 완료 처리.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-28T22:27:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
+    },
+    "pdca-chain-automation": {
+      "phase": "completed",
+      "plan": {
+        "team": "cto",
+        "done": true,
+        "doc": "docs/01-plan/features/pdca-chain-automation.plan.md",
+        "at": "2026-03-29"
+      },
+      "design": {
+        "team": "cto",
+        "done": true,
+        "doc": "docs/02-design/features/pdca-chain-automation.design.md",
+        "at": "2026-03-29"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": "cc7fa8a",
+        "at": "2026-03-29"
+      },
+      "check": {
+        "team": "qa",
+        "done": true,
+        "doc": "docs/03-analysis/pdca-chain-automation.analysis.md",
+        "matchRate": 97
+      },
+      "act": {
+        "done": true,
+        "commit": "cc7fa8a"
+      },
+      "updatedAt": "2026-03-29T12:00:00",
+      "notes": "Match Rate 97%. match-rate-parser.sh + pdca-chain-handoff.sh 구현 완료. TDD 25건 Green. 불일치 1건(CTO 팀명 정확일치) 경미.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-29T12:00:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
+    },
+    "agent-ops-platform-testing": {
+      "phase": "completed",
+      "plan": {
+        "team": "cto",
+        "done": true,
+        "doc": "docs/01-plan/features/agent-ops-platform-testing.plan.md",
+        "at": "2026-03-29"
+      },
+      "design": {
+        "team": "cto",
+        "done": true,
+        "doc": "docs/02-design/features/agent-ops-platform-testing.design.md",
+        "at": "2026-03-29"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": "cc7fa8a",
+        "at": "2026-03-29"
+      },
+      "check": {
+        "team": "qa",
+        "done": true,
+        "doc": "docs/03-analysis/agent-ops-platform-testing.analysis.md",
+        "matchRate": 96
+      },
+      "act": {
+        "done": true,
+        "commit": "cc7fa8a"
+      },
+      "updatedAt": "2026-03-29T12:00:00",
+      "notes": "Match Rate 96%. 203/203 테스트 Green (hooks 140 + dashboard 63). 미구현 12건(MCP-1~12, WK-6,7) P2/P3 다음 이터레이션.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-29T12:00:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
+    },
+    "agent-ops-review-issues": {
+      "phase": "completed",
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/01-plan/features/agent-ops-review-issues.plan.md",
+        "at": "2026-03-29"
+      },
+      "design": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/02-design/features/agent-ops-review-issues.design.md",
+        "at": "2026-03-29"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": null,
+        "at": "2026-03-29"
+      },
+      "check": {
+        "team": "qa",
+        "done": true,
+        "doc": "docs/03-analysis/agent-ops-review-issues.analysis.md",
+        "matchRate": 97
+      },
+      "act": {
+        "done": true,
+        "commit": null
+      },
+      "updatedAt": "2026-03-29T16:10:00",
+      "notes": "W1~W3 완료. pdca-chain-handoff.sh v2(curl 직접+위험도 게이트) + session-resume-check.sh(신규). TDD 35건 Green. 기존 PC-1~25 호환. Match Rate 97%.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-29T16:10:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
+    },
+    "video-pipeline-dedup-fix": {
+      "phase": "completed",
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/01-plan/features/video-pipeline-dedup-fix.plan.md",
+        "at": "2026-03-29"
+      },
+      "design": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/02-design/features/video-pipeline-dedup-fix.design.md",
+        "at": "2026-03-29"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": null,
+        "at": "2026-03-30"
+      },
+      "check": {
+        "team": "qa",
+        "done": true,
+        "doc": "docs/03-analysis/video-pipeline-dedup-fix.analysis.md",
+        "matchRate": 97
+      },
+      "act": {
+        "done": true,
+        "commit": null
+      },
+      "updatedAt": "2026-03-30T01:00:00",
+      "notes": "W1~W4 완료. ①Dedup 사전조회+동기화 ②embed chain dedup>0 ③task-quality-gate+pdca-chain-handoff v3 ④fetchVideoSourceUrls 개별fallback+thumbnail. TDD 64건 Green. Match Rate 97%.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-30T01:00:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
         "previousState": null,
         "stateHistory": [],
         "retryCount": 0,
@@ -356,48 +687,47 @@
       "phaseTimestamps": {},
       "automationLevel": 2
     },
-    "agent-harness-v2": {
-      "phase": "implementing",
+    "chain-automation-100": {
+      "phase": "completed",
       "plan": {
         "team": "cto",
         "done": true,
-        "doc": "docs/01-plan/features/agent-harness-v2.plan.md",
-        "at": "2026-03-31"
+        "doc": "",
+        "at": "2026-03-29"
       },
       "design": {
         "team": "cto",
         "done": true,
-        "doc": "docs/02-design/features/agent-harness-v2.design.md",
-        "at": "2026-03-31"
+        "doc": "",
+        "at": "2026-03-29"
       },
       "do": {
         "team": "cto",
-        "done": false,
+        "done": true,
         "commit": null,
-        "at": "2026-03-31"
+        "at": "2026-03-29"
       },
       "check": {
         "team": "qa",
-        "done": false,
+        "done": true,
         "doc": "",
-        "matchRate": null
+        "matchRate": 100
       },
       "act": {
-        "done": false,
-        "commit": null,
-        "deployedAt": null
+        "done": true,
+        "commit": null
       },
-      "notes": "에이전트 하네스 v2: living-context + coo-harness + dashboard-v2",
-      "updatedAt": "2026-03-31",
+      "updatedAt": "2026-03-29T23:05:00",
+      "notes": "체인 자동화 100%. peer-resolver(3전략)+chain-messenger(retry)+PM/COO 핸드오프. TDD 38건 all Green. L2.",
       "requirements": [],
       "documents": {},
       "timestamps": {
-        "started": "2026-03-31T12:23:58.000Z",
-        "lastUpdated": "2026-03-31"
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-29T23:05:00"
       },
       "stateMachine": {
-        "currentState": "implementing",
-        "previousState": "designing",
+        "currentState": "completed",
+        "previousState": null,
         "stateHistory": [],
         "retryCount": 0,
         "maxRetries": 5,
@@ -413,25 +743,25 @@
       "phaseTimestamps": {},
       "automationLevel": 2
     },
-    "embed-creatives-job": {
-      "phase": "implementing",
+    "acp-plugin-sdk-research": {
+      "phase": "completed",
       "plan": {
-        "team": "cto",
+        "team": "pm",
         "done": true,
-        "doc": "docs/01-plan/features/embed-creatives-job.plan.md",
-        "at": "2026-03-30"
+        "doc": "docs/01-plan/features/acp-plugin-sdk-research.plan.md",
+        "at": "2026-03-29"
       },
       "design": {
-        "team": "cto",
-        "done": true,
-        "doc": "docs/02-design/features/embed-creatives-job.design.md",
-        "at": "2026-03-30"
+        "team": "pm",
+        "done": false,
+        "doc": "",
+        "at": null
       },
       "do": {
         "team": "cto",
         "done": false,
         "commit": null,
-        "at": "2026-03-30"
+        "at": null
       },
       "check": {
         "team": "qa",
@@ -441,20 +771,131 @@
       },
       "act": {
         "done": false,
-        "commit": null,
-        "deployedAt": null
+        "commit": null
       },
-      "notes": "embed-creatives Cloud Run Job 전환 (L2) — 코드 구현 완료, 배포 대기",
-      "updatedAt": "2026-03-30",
+      "updatedAt": "2026-03-29T19:00:00",
+      "notes": "L1 리서치 완료. ACP 전환 시기상조, Plugin 점진 마이그레이션 권고.",
       "requirements": [],
       "documents": {},
       "timestamps": {
-        "started": "2026-03-31T12:23:58.000Z",
-        "lastUpdated": "2026-03-30"
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-29T19:00:00"
       },
       "stateMachine": {
-        "currentState": "implementing",
-        "previousState": "designing",
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
+    },
+    "agent-ops-hardening": {
+      "phase": "completed",
+      "plan": {
+        "team": "cto",
+        "done": true,
+        "doc": "docs/01-plan/features/agent-ops-hardening.plan.md",
+        "at": "2026-03-30"
+      },
+      "design": {
+        "team": "cto",
+        "done": true,
+        "doc": "docs/02-design/features/agent-ops-hardening.design.md",
+        "at": "2026-03-30"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": "faa1d80",
+        "at": "2026-03-30"
+      },
+      "check": {
+        "team": "qa",
+        "done": true,
+        "doc": "docs/03-analysis/agent-ops-hardening.analysis.md",
+        "matchRate": 97
+      },
+      "act": {
+        "done": true,
+        "commit": "faa1d80"
+      },
+      "updatedAt": "2026-03-30T02:02:00",
+      "notes": "P0 완료. D5+D7+D8-1+D8-4. OFR-1~35 Green. Match Rate 97% (34/35 일치, 1건 P3 경미). 커밋 faa1d80.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-30T02:02:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
+    },
+    "agent-ops-hardening-p1": {
+      "phase": "completed",
+      "plan": {
+        "team": "cto",
+        "done": true,
+        "doc": "docs/01-plan/features/agent-ops-hardening.plan.md",
+        "at": "2026-03-30"
+      },
+      "design": {
+        "team": "cto",
+        "done": true,
+        "doc": "docs/02-design/features/agent-ops-hardening-p1.design.md",
+        "at": "2026-03-30"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "commit": null,
+        "at": "2026-03-30"
+      },
+      "check": {
+        "team": "qa",
+        "done": true,
+        "doc": "docs/03-analysis/agent-ops-hardening-p1.analysis.md",
+        "matchRate": 100
+      },
+      "act": {
+        "done": true,
+        "commit": null
+      },
+      "updatedAt": "2026-03-30T17:40:00",
+      "notes": "P1 완료. D3(에러분류룰북)+D6(수신측dedup)+D8-5(CLAUDE.md 741→175줄). TDD 18건 Green. P0 35건 회귀 없음. Match Rate 100%.",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-30T05:20:31.424Z",
+        "lastUpdated": "2026-03-30T17:40:00"
+      },
+      "stateMachine": {
+        "currentState": "completed",
+        "previousState": null,
         "stateHistory": [],
         "retryCount": 0,
         "maxRetries": 5,
@@ -478,12 +919,13 @@
       "requirements": [],
       "documents": {},
       "timestamps": {
-        "started": "2026-03-31T16:48:08.279Z",
-        "lastUpdated": "2026-03-31T16:51:16.679Z"
+        "started": "2026-03-30T05:29:49.589Z",
+        "lastUpdated": "2026-03-30T05:29:49.589Z"
       },
-      "lastFile": "/Users/smith/projects/bscamp/.bkit/hooks/helpers/peer-resolver.sh"
+      "lastFile": "/Users/smith/projects/bscamp/.claude/hooks/helpers/migrate-runtime.sh",
+      "notes": "에이전트 대시보드 v3 + PDCA 체인 매트릭스 구현 완료 (커밋 6fc54b1, c130695)"
     },
-    ".bkit": {
+    ".claude": {
       "phase": "do",
       "phaseNumber": 3,
       "matchRate": null,
@@ -491,49 +933,10 @@
       "requirements": [],
       "documents": {},
       "timestamps": {
-        "started": "2026-03-31T16:48:54.004Z",
-        "lastUpdated": "2026-03-31T16:50:06.917Z"
+        "started": "2026-03-30T05:29:56.347Z",
+        "lastUpdated": "2026-03-30T06:01:45.065Z"
       },
-      "lastFile": "/Users/smith/projects/bscamp/.bkit/hooks/validate-pdca-before-teamdelete.sh"
-    },
-    "dashboard": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-03-31T16:57:06.564Z",
-        "lastUpdated": "2026-03-31T17:06:32.248Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/dashboard/vitest.config.ts"
-    },
-    "__tests__": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-03-31T16:57:23.939Z",
-        "lastUpdated": "2026-03-31T17:09:33.815Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/__tests__/hooks/l1-auto-report.test.ts"
-    },
-    "signup": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-04-01T03:14:19.783Z",
-        "lastUpdated": "2026-04-01T03:14:31.015Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/src/app/(auth)/signup/page.tsx"
+      "lastFile": "/Users/smith/projects/bscamp/.claude/hooks/pdca-chain-handoff.sh"
     }
   },
   "pipeline": {
@@ -544,7 +947,7 @@
   "session": {
     "startedAt": "2026-03-30T05:20:31.424Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-01T03:14:31.015Z"
+    "lastActivity": "2026-03-31T11:13:52.000Z"
   },
   "history": [
     {
@@ -562,1008 +965,6 @@
     {
       "timestamp": "2026-03-30T06:01:45.065Z",
       "feature": ".claude",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T20:54:57.022Z",
-      "feature": "creative-detail",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T21:07:34.582Z",
-      "feature": "bscamp",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T21:07:45.770Z",
-      "feature": "creative-detail",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T21:08:03.952Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T21:08:47.166Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T21:09:19.200Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T21:09:51.305Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T21:10:04.884Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T21:10:26.999Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T21:10:32.538Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T21:10:43.229Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T21:10:49.646Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T21:15:19.737Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:30:09.529Z",
-      "feature": "bscamp",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:30:17.508Z",
-      "feature": "bscamp",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:30:23.235Z",
-      "feature": "bscamp",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:30:46.065Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:31:02.731Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:31:12.322Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:31:20.055Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:31:50.536Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:36:09.531Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:36:14.189Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:38:00.098Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:39:43.112Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:45:50.805Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:48:50.026Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:49:01.074Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:49:29.772Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:49:59.643Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:50:07.203Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:51:07.464Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:51:32.495Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:59:42.567Z",
-      "feature": "bscamp",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-30T23:59:55.960Z",
-      "feature": "bscamp",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:00:05.169Z",
-      "feature": "bscamp",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:00:14.279Z",
-      "feature": "bscamp",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:00:38.521Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:00:47.105Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:01:05.504Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:01:12.541Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:01:21.028Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:01:52.634Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:02:04.266Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:02:23.928Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:02:45.130Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:02:58.974Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:03:11.747Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:03:21.302Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:07:34.215Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:07:43.805Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:08:24.543Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:08:35.853Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:09:10.912Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:09:22.603Z",
-      "feature": "protractor",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:20:42.465Z",
-      "feature": "portfolio",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:20:55.780Z",
-      "feature": "portfolio",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:21:10.848Z",
-      "feature": "portfolio",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:22:03.576Z",
-      "feature": "account-prescription",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:22:59.283Z",
-      "feature": "portfolio",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:24:00.511Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:31:52.551Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:33:05.551Z",
-      "feature": "portfolio",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:34:00.807Z",
-      "feature": "portfolio",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:34:33.999Z",
-      "feature": "portfolio",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:34:53.560Z",
-      "feature": "portfolio",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:35:18.633Z",
-      "feature": "portfolio",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:35:25.747Z",
-      "feature": "portfolio",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:35:31.027Z",
-      "feature": "portfolio",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:35:36.315Z",
-      "feature": "portfolio",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:35:46.097Z",
-      "feature": "portfolio",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:37:07.697Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:37:22.488Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:37:32.880Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:38:02.998Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:38:46.562Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T00:45:51.642Z",
-      "feature": "prescription-reanalysis",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T03:48:59.551Z",
-      "feature": "creative-detail",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T03:49:07.493Z",
-      "feature": "creative-detail",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T03:49:11.422Z",
-      "feature": "creative-detail",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T03:49:15.588Z",
-      "feature": "creative-detail",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T03:49:20.283Z",
-      "feature": "creative-detail",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T03:49:24.445Z",
-      "feature": "creative-detail",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T03:53:32.394Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T03:53:52.161Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T03:54:29.613Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T03:54:45.309Z",
-      "feature": "creative-detail",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T03:54:51.880Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T03:55:18.037Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T03:55:43.351Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T03:56:17.665Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T03:56:28.784Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T03:58:31.620Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T03:59:02.615Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T04:00:01.245Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T04:00:10.822Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T04:13:17.486Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T04:13:37.961Z",
-      "feature": "creatives",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T04:13:46.840Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T04:14:46.233Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T04:15:22.009Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T05:33:33.748Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T05:37:05.643Z",
-      "feature": "individual",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T11:58:09.182Z",
-      "feature": "helpers",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T11:58:12.331Z",
-      "feature": "helpers",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T11:58:14.577Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T11:58:17.656Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T11:59:41.408Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T12:29:41.640Z",
-      "feature": "helpers",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T12:29:48.721Z",
-      "feature": "helpers",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:48:08.279Z",
-      "feature": "helpers",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:48:37.612Z",
-      "feature": "helpers",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:48:54.004Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:49:03.245Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:49:09.727Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:49:17.852Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:49:21.057Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:49:23.164Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:49:37.334Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:49:42.692Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:49:45.364Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:49:47.818Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:50:01.848Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:50:06.917Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:51:16.679Z",
-      "feature": "helpers",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:57:06.565Z",
-      "feature": "dashboard",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:57:18.780Z",
-      "feature": "dashboard",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:57:23.939Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:57:27.280Z",
-      "feature": "dashboard",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:57:30.789Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:57:45.481Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:57:57.535Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:58:37.565Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:59:14.045Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:59:28.158Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:59:29.039Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:59:29.746Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:59:39.832Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T16:59:40.723Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:00:00.550Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:00:24.062Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:01:10.310Z",
-      "feature": "dashboard",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:01:30.204Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:01:48.373Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:03:57.272Z",
-      "feature": "dashboard",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:04:25.919Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:04:28.390Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:04:34.275Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:04:59.746Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:05:29.572Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:05:37.270Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:06:00.478Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:06:16.279Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:06:27.581Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:06:32.248Z",
-      "feature": "dashboard",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:06:52.441Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:06:54.272Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:07:00.408Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:07:21.847Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:07:26.283Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:07:38.406Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:07:44.715Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:07:59.157Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:09:08.584Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-03-31T17:09:33.815Z",
-      "feature": "__tests__",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T03:14:19.783Z",
-      "feature": "signup",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T03:14:31.015Z",
-      "feature": "signup",
       "phase": "do",
       "action": "updated"
     }
@@ -1584,7 +985,6 @@
     "stateFile": ".bkit/runtime/agent-state.json",
     "eventsFile": ".bkit/runtime/agent-events.jsonl"
   },
-  "updatedAt": "2026-03-31T05:49:53.558722",
-  "_autoSyncNote": "auto-synced at 2026-03-31 05:49:53, last commit: 4601e62",
-  "last_updated": "2026-03-30T19:07:31Z"
+  "updatedAt": "2026-04-01T12:38:14.453582",
+  "_autoSyncNote": "auto-synced at 2026-04-01 12:38:14, last commit: 9faa6518"
 }

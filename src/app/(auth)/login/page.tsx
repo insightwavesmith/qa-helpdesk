@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { getProfileById } from "@/actions/auth";
+import { getProfileById, ensureProfile } from "@/actions/auth";
 import { mp } from "@/lib/mixpanel";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
@@ -35,11 +35,29 @@ export default function LoginPage() {
       });
       if (!res.ok) throw new Error("세션 생성 실패");
 
-      // Mixpanel: 로그인 트래킹
+      // 프로필 조회 + 미존재 시 자동 복구 (Firebase Auth만 있고 Cloud SQL 프로필 없는 경우)
       const user = cred.user;
       if (user) {
         mp.identify(user.uid);
-        const { data: profile } = await getProfileById(user.uid);
+        let { data: profile } = await getProfileById(user.uid);
+
+        // Cloud SQL 프로필 미존재 → 자동 복구 (GCS 이관 시 누락된 계정 대응)
+        if (!profile) {
+          console.warn("[login] 프로필 미존재, 자동 복구 시도:", user.uid);
+          const recoveryResult = await ensureProfile(user.uid, user.email || email, {
+            name: user.displayName || email.split("@")[0],
+          });
+          if (!recoveryResult.error) {
+            const recovered = await getProfileById(user.uid);
+            profile = recovered.data;
+          } else {
+            console.error("[login] 프로필 복구 실패:", recoveryResult.error);
+            setError("계정 정보를 불러올 수 없습니다. 관리자에게 문의해 주세요.");
+            setLoading(false);
+            return;
+          }
+        }
+
         if (profile) {
           mp.people.set({
             $name: profile.name,
