@@ -622,6 +622,7 @@ L0 경로:
  37  │ protect-stage.sh                   │ staging 브랜치 보호                        │ PreToolUse
  38  │ session-resume-check.sh            │ 세션 시작 시 미완료 작업 복구               │ 세션 시작
  39  │ verify-chain-e2e.sh                │ 체인 E2E 검증                             │ 수동
+ 40  │ pane-access-guard.sh               │ 팀원 pane 직접 접근 차단 (A0-7)           │ PreToolUse:Bash
 ```
 
 ### 헬퍼 (19개)
@@ -664,6 +665,7 @@ L0 경로:
         "matcher": "Bash",
         "hooks": [
           "destructive-detector.sh",     // 위험 명령 차단
+          "pane-access-guard.sh",        // 팀원 pane 접근 차단
           "validate-qa.sh",              // QA 전 merge 차단
           "validate-pdca.sh",            // PDCA 준수
           "validate-task.sh",            // TASK 유효성
@@ -807,6 +809,8 @@ L0~L3  │ 레벨 자동 판단        │ ⚠️ detect-process-level.sh → ho
      - .bkit/state/*                ← PDCA 상태 파일
      - 그 외 src/, docs/ 등        ← Design 범위 내 자유
    ```
+
+6. **팀원 pane 직접 접근 미차단**: COO/타 팀이 리더를 우회하여 팀원 pane에 직접 send-keys → pane-access-guard.sh로 **해결**
 
    **현재 문제**: PM-003 교훈으로 approval-handler에 tmux send-keys 알림을 추가했지만, 범위가 `.claude/` 전체로 과확장됨. 이로 인해 팀원이 hook 스크립트를 수정할 때마다 불필요한 승인 대기 → 작업 지연.
 
@@ -2060,6 +2064,16 @@ task-quality-gate.sh
 | **hook** | 모든 validate-*.sh 에서 차단 사유 JSON 출력 |
 
 **PM-003 교훈**: 차단 후 알림이 없으면 차단은 교착이 된다. 차단→알림→해제가 세트. approval-handler.sh에 tmux send-keys 추가로 해결.
+
+### [A0-7] 팀원 pane 직접 접근 금지
+
+| 항목 | 내용 |
+|------|------|
+| **원칙** | 팀의 리더(pane 0)만 해당 팀 팀원(pane 1+)에 tmux send-keys 가능. COO, 타 팀 리더, 팀원 → 타 팀/자기 팀 팀원 pane 직접 접근 금지 |
+| **위반 케이스** | 모찌(COO)가 CTO 팀원 pane에 직접 "이거 고쳐"라고 send-keys |
+| **위반 시 영향** | 리더 모르게 팀원에 직접 지시 → 작업 충돌, 리더 조율 실패 |
+| **시스템 강제** | ✅ pane-access-guard.sh (PreToolUse:Bash) |
+| **hook** | pane-access-guard.sh |
 
 ## 7.2 TIER 1 — 운영 원칙 (반복 실패 기반)
 

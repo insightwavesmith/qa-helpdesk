@@ -45,6 +45,11 @@
           },
           {
             "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/pane-access-guard.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/validate-qa.sh",
             "timeout": 10000
           },
