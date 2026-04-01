@@ -782,13 +782,15 @@ L3     │ Plan+Design+ADR 필수  │ ⚠️ ADR 존재 체크 미구현
 L0~L3  │ 레벨 자동 판단        │ ⚠️ detect-process-level.sh → hook 분기 미연결
 ```
 
-### 빈 구멍 3가지
+### 빈 구멍 4가지
 
 1. **레벨별 분기 자동화**: detect-process-level.sh가 레벨을 판단하지만, 각 hook에서 레벨에 따라 분기하는 로직이 일부 미구현. 현재는 Plan/Design 파일 존재 유무로만 판단.
 
 2. **대시보드 DB 강제 업데이트**: dashboard-sync.sh가 TaskCompleted 체인에 미연결. 현재는 수동으로 대시보드 데이터를 업데이트해야 함.
 
 3. **coo_approved 게이팅**: TASK 파일에 `coo_approved: true`가 없으면 팀이 착수하지 못하도록 하는 hook 미구현. 현재는 규칙으로만 강제.
+
+4. **배포 성공 검증 (push_verified 한계)**: 현재 `push_verified`는 `git push` 성공만 체크하고, Cloud Run 배포 성공 여부는 검증하지 않음. `deploy-verify.sh`가 TaskCompleted 체인에 등록되어 있지만, 실제 Cloud Run 서비스 헬스체크(HTTP 200 확인)까지 연결되지 않음. **git push 성공 ≠ 배포 성공 ≠ 서비스 정상** (PM-001 교훈). deploy-verify.sh에 `gcloud run services describe` + curl 헬스체크 로직 추가 필요.
 
 ## 3.4 차단 → 자동 역할 요청 → 체인 재개 구조
 
@@ -1285,16 +1287,17 @@ TaskCompleted 이벤트 발생
 
 ## 5.1 완료의 정의
 
-### 4가지 조건 전부 충족해야 "완료"
+### 5가지 조건 전부 충족해야 "완료"
 
 ```
-완료 = 커밋 + TaskCompleted hook + 대시보드 DB 업데이트 + 슬랙 보고
+완료 = 커밋 + push + 배포 성공 검증 + TaskCompleted hook + 대시보드 DB 업데이트 + 슬랙 보고
 ```
 
 | # | 조건 | 확인 방법 | 없으면 |
 |---|------|----------|--------|
 | 1 | **커밋** | `git log --oneline -1` 에 해당 기능 커밋 존재 | 산출물 유실 위험 |
-| 2 | **TaskCompleted hook** | task-completed.sh 실행됨 (task-state JSON 업데이트) | 대시보드에 반영 안 됨 |
+| 2 | **push + 배포 성공** | `git push` 성공 + Cloud Run 배포 + 헬스체크 HTTP 200 | push만으론 불충분. 아래 빈 구멍 참조 |
+| 3 | **TaskCompleted hook** | task-completed.sh 실행됨 (task-state JSON 업데이트) | 대시보드에 반영 안 됨 |
 | 3 | **대시보드 DB 업데이트** | task-state-{feature}.json 모든 게이트 done | 모찌가 상태 파악 불가 |
 | 4 | **슬랙 보고** | notify-completion.sh 실행 → Slack 메시지 | Smith님에게 전달 안 됨 |
 
@@ -1411,7 +1414,66 @@ Design 문서에서 추출하는 항목:
 {각 미구현 항목의 이유와 필요한 작업}
 ```
 
-## 5.4 90% 미달 시 재지시 루프 흐름
+## 5.4 빈 구멍: push_verified vs 배포 성공 검증
+
+### 현재 상태
+
+```
+현재 완료 체인:
+  git push (push_verified) ────→ TaskCompleted ────→ notify-completion
+         ✅ 체크됨                                    ✅ Slack 보고
+
+  Cloud Run 배포 ────→ 서비스 헬스체크 (HTTP 200)
+         ⚠️ deploy-trigger.sh    ❌ 실제 HTTP 체크 미구현
+            등록은 돼 있으나
+            조건부 실행
+```
+
+### 문제
+
+`push_verified`는 `git push origin main` 성공 여부만 확인한다.
+하지만 **git push 성공 ≠ Cloud Run 배포 성공 ≠ 서비스 정상**.
+
+3단계 검증이 필요하지만 현재는 1단계(push)만 체크:
+
+```
+1단계: git push 성공     ← 현재 push_verified가 체크하는 범위
+2단계: Cloud Run 배포 성공 ← deploy-trigger.sh 조건부 (L0/L2/L3만)
+3단계: 서비스 정상 (HTTP 200 + 에러 로그 0건) ← deploy-verify.sh 미구현
+```
+
+### PM-001 교훈
+
+> "배포 성공 ≠ 서비스 정상. 프로덕션 로그 확인 필수."
+> gcloud run deploy 성공 메시지를 받았지만, 실제 서비스에서 환경변수 누락으로 전체 장애.
+
+### 목표 구조 (구현 필요)
+
+```
+[TaskCompleted]
+    │
+    ▼
+deploy-trigger.sh
+    │ 조건: L0/L2/L3 + Match Rate ≥ 95%
+    │
+    ▼
+gcloud run deploy (Cloud Run 배포)
+    │
+    ▼
+deploy-verify.sh (강화 필요)
+    ├── gcloud run services describe → status: Ready 확인
+    ├── curl -sf {서비스URL}/api/health → HTTP 200 확인
+    ├── gcloud logging read → 최근 5분 에러 0건 확인
+    └── 실패 시: Slack 알림 "배포 성공했으나 서비스 이상" + 롤백 고려
+```
+
+### 필요한 변경
+
+1. **deploy-verify.sh 강화**: HTTP 헬스체크 + Cloud Run 로그 에러 체크 추가
+2. **task-state JSON에 deploy_verified 게이트 추가**: `{ "push": done, "deploy": done, "healthcheck": done }` 3단계 분리
+3. **deploy 실패 시 체인 차단**: 현재 deploy-verify.sh는 exit 0 (무조건 통과) → 실패 시 exit 2로 차단
+
+## 5.5 90% 미달 시 재지시 루프 흐름
 
 ```
 [TaskCompleted]
@@ -1445,7 +1507,7 @@ task-quality-gate.sh
                 → "3회 재작업 후에도 기준 미달. 확인 필요."
 ```
 
-## 5.5 "완료처럼 보이지만 미완료인 케이스"
+## 5.6 "완료처럼 보이지만 미완료인 케이스"
 
 실제 실패 사례를 기반으로 정리한 위험 패턴:
 
