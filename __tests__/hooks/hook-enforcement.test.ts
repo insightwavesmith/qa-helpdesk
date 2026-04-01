@@ -20,6 +20,12 @@ afterEach(() => {
 // 공통 헬퍼
 // ─────────────────────────────────────────────
 
+const baseEnv: Record<string, string> = {
+  PATH: process.env.PATH || '',
+  HOME: process.env.HOME || '',
+  SHELL: process.env.SHELL || '',
+};
+
 /** stdin으로 tool_input JSON 파이핑하여 hook 실행 */
 function runBashHook(
   hookPath: string,
@@ -30,7 +36,7 @@ function runBashHook(
   try {
     const stdout = execSync(
       `echo '${input.replace(/'/g, "'\\''")}' | bash "${hookPath}"`,
-      { encoding: 'utf-8', env: { ...process.env, ...env }, timeout: 5000 },
+      { encoding: 'utf-8', env: { ...baseEnv, ...env }, timeout: 5000 },
     );
     return { exitCode: 0, stdout, stderr: '' };
   } catch (err: any) {
@@ -52,7 +58,7 @@ function runNonBashHook(
   try {
     const stdout = execSync(
       `echo '${input.replace(/'/g, "'\\''")}' | bash "${hookPath}"`,
-      { encoding: 'utf-8', env: { ...process.env, ...env }, timeout: 5000 },
+      { encoding: 'utf-8', env: { ...baseEnv, ...env }, timeout: 5000 },
     );
     return { exitCode: 0, stdout, stderr: '' };
   } catch (err: any) {
