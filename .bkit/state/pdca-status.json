@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-01T04:32:02.000000+00:00",
+  "lastUpdated": "2026-04-01T05:04:46.644Z",
   "activeFeatures": [
     "slack-notification",
     "organic-channel-distribution-phase2",
@@ -9,7 +9,8 @@
     "video-permission-skip",
     "video-collection-audit",
     "helpers",
-    ".claude"
+    ".claude",
+    "approval-handler-scope"
   ],
   "primaryFeature": "team-playbook",
   "features": {
@@ -920,9 +921,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-30T05:29:49.589Z",
-        "lastUpdated": "2026-03-30T05:29:49.589Z"
+        "lastUpdated": "2026-04-01T05:04:46.644Z"
       },
-      "lastFile": "/Users/smith/projects/bscamp/.claude/hooks/helpers/migrate-runtime.sh",
+      "lastFile": "/Users/smith/projects/bscamp/.bkit/hooks/helpers/approval-handler.sh",
       "notes": "에이전트 대시보드 v3 + PDCA 체인 매트릭스 구현 완료 (커밋 6fc54b1, c130695)"
     },
     ".claude": {
@@ -937,6 +938,19 @@
         "lastUpdated": "2026-03-30T06:01:45.065Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/.claude/hooks/pdca-chain-handoff.sh"
+    },
+    "approval-handler-scope": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-01T05:04:06.482Z",
+        "lastUpdated": "2026-04-01T05:04:27.735Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/__tests__/hooks/approval-handler-scope/approval-scope.test.sh"
     }
   },
   "pipeline": {
@@ -947,7 +961,7 @@
   "session": {
     "startedAt": "2026-03-30T05:20:31.424Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-31T11:13:52.000Z"
+    "lastActivity": "2026-04-01T05:04:46.644Z"
   },
   "history": [
     {
@@ -965,6 +979,30 @@
     {
       "timestamp": "2026-03-30T06:01:45.065Z",
       "feature": ".claude",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-01T05:04:06.482Z",
+      "feature": "approval-handler-scope",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-01T05:04:26.819Z",
+      "feature": "approval-handler-scope",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-01T05:04:27.735Z",
+      "feature": "approval-handler-scope",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-01T05:04:46.644Z",
+      "feature": "helpers",
       "phase": "do",
       "action": "updated"
     }

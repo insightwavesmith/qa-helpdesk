@@ -11,6 +11,20 @@ _APPROVAL_DIR="${PROJECT_DIR:-.}/.bkit/runtime/approvals"
 # 승인 대상 파일 판별
 is_approval_required() {
     local REL_FILE="$1"
+
+    # IS_TEAMMATE=true → 화이트리스트 (좁은 범위만 차단)
+    if [ "${IS_TEAMMATE:-}" = "true" ]; then
+        # 차단: settings.local.json
+        echo "$REL_FILE" | grep -qE '\.claude/settings\.local\.json' && return 0
+        # 차단: .env / .env.*
+        echo "$REL_FILE" | grep -qE '(^|/)\.env($|\.)' && return 0
+        # 차단: migration 포함 경로
+        echo "$REL_FILE" | grep -qiE 'migration' && return 0
+        # 그 외 전부 허용
+        return 1
+    fi
+
+    # 리더 or IS_TEAMMATE 미설정 → 기존 로직 (넓은 범위 차단)
     echo "$REL_FILE" | grep -qE '\.claude/|migration|\.env' && return 0
     return 1
 }
