@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-01T06:56:43.735Z",
+  "lastUpdated": "2026-04-01T06:27:20Z",
   "activeFeatures": [
     "slack-notification",
     "organic-channel-distribution-phase2",
@@ -9,10 +9,7 @@
     "video-permission-skip",
     "video-collection-audit",
     "helpers",
-    ".claude",
-    "pane-access-guard",
-    ".bkit",
-    "__tests__"
+    ".claude"
   ],
   "primaryFeature": "team-playbook",
   "features": {
@@ -940,45 +937,6 @@
         "lastUpdated": "2026-03-30T06:01:45.065Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/.claude/hooks/pdca-chain-handoff.sh"
-    },
-    "pane-access-guard": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-04-01T06:53:08.299Z",
-        "lastUpdated": "2026-04-01T06:55:08.873Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/__tests__/hooks/pane-access-guard/pane-guard.test.sh"
-    },
-    ".bkit": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-04-01T06:53:30.610Z",
-        "lastUpdated": "2026-04-01T06:55:00.784Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/.bkit/hooks/pane-access-guard.sh"
-    },
-    "__tests__": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-04-01T06:56:43.735Z",
-        "lastUpdated": "2026-04-01T06:56:43.735Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/__tests__/hooks/hook-enforcement.test.ts"
     }
   },
   "pipeline": {
@@ -989,7 +947,7 @@
   "session": {
     "startedAt": "2026-03-30T05:20:31.424Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-01T06:56:43.735Z"
+    "lastActivity": "2026-03-31T11:13:52.000Z"
   },
   "history": [
     {
@@ -1007,36 +965,6 @@
     {
       "timestamp": "2026-03-30T06:01:45.065Z",
       "feature": ".claude",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T06:53:08.299Z",
-      "feature": "pane-access-guard",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T06:53:30.610Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T06:55:00.784Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T06:55:08.873Z",
-      "feature": "pane-access-guard",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T06:56:43.735Z",
-      "feature": "__tests__",
       "phase": "do",
       "action": "updated"
     }
@@ -1057,6 +985,6 @@
     "stateFile": ".bkit/runtime/agent-state.json",
     "eventsFile": ".bkit/runtime/agent-events.jsonl"
   },
-  "updatedAt": "2026-04-01T15:52:45.727275",
-  "_autoSyncNote": "auto-synced at 2026-04-01 15:52:45, last commit: 0a14b50e"
+  "updatedAt": "2026-04-01T16:02:51.826494",
+  "_autoSyncNote": "auto-synced at 2026-04-01 16:02:51, last commit: efe51172"
 }

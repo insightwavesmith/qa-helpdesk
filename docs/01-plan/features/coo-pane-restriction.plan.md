@@ -11,7 +11,7 @@
 
 | 항목 | 내용 |
 |------|------|
-| **기능** | 7개 hook 강제 항목으로 에이전트팀 운영 규율을 시스템으로 완전 강제 |
+| **기능** | 8개 hook 강제 항목으로 에이전트팀 운영 규율을 시스템으로 완전 강제 |
 | **작성일** | 2026-04-01 |
 | **핵심** | 역할 경계(A0-3), T-PDCA 프로세스(A0-1), 단일 소스(A0-2) 원칙을 hook으로 100% 강제 |
 | **배경** | COO 팀원 pane 직접 개입, spawn.sh 미사용, tmux kill 남용, 미승인 TASK 착수 등 반복 위반 |
@@ -22,13 +22,13 @@
 | 관점 | 내용 |
 |------|------|
 | **Problem** | 운영 규칙이 문서에만 존재 → LLM이 무시/망각 → 반복 위반 |
-| **Solution** | 7개 hook으로 PreToolUse/PostToolUse/TaskCompleted 레벨에서 패턴 매칭 차단 |
+| **Solution** | 8개 hook으로 PreToolUse/PostToolUse/TaskCompleted 레벨에서 패턴 매칭 차단 |
 | **Function UX Effect** | 위반 시 즉시 차단 + 올바른 경로 안내 메시지 |
 | **Core Value** | LLM 판단 0, 패턴 매칭으로 게이트. 규칙 = 코드 |
 
 ---
 
-## 7개 항목 총괄
+## 8개 항목 총괄
 
 | # | 항목 | hook 파일 | hook 이벤트 | 원칙 |
 |---|------|----------|------------|------|
@@ -39,6 +39,7 @@
 | 5 | 레벨/담당팀 게이팅 | `validate-task-fields.sh` | PreToolUse:Bash(팀 위임 시) | A0-1 |
 | 6 | DM 차단 | `filter-completion-dm.sh` | TaskCompleted | A0-3 |
 | 7 | 슬랙 알림 필터 | `validate-slack-payload.sh` | PreToolUse:Bash(curl 시) | A0-2 |
+| 8 | L0/L1 리더 직접 수정 차단 | `enforce-leader-delegate.sh` | PreToolUse:Edit\|Write | A0-3 |
 
 ---
 
@@ -217,6 +218,43 @@ TASK_NAME/팀명 없는 슬랙 알림은 디버깅 불가 + 노이즈.
 
 ---
 
+## 항목 8: L0/L1 리더 직접 수정 차단 (enforce-leader-delegate.sh)
+
+### 배경
+기존 L0/L1 프로세스는 "CTO 직행" — 리더가 직접 코드를 수정했음.
+이는 delegate 원칙(A0-3)에 위배. **리더는 어떤 레벨에서도 코드를 직접 수정하지 않는다.**
+
+### 변경된 프로세스
+
+| 레벨 | 기존 | 변경 |
+|------|------|------|
+| **L0** (프로덕션 장애) | CTO 직행 (리더 직접 수정) | CTO 리더 조사+범위정의 → 팀원 구현 → 배포 |
+| **L1** (버그 원인 명확) | CTO 직행 (리더 직접 수정) | CTO 리더 조사+범위정의 → 팀원 구현 → QA → 배포 |
+
+### 판별 로직
+
+```
+1. 호출자가 리더(pane 0)인가?
+   - 아니면 → 허용 (exit 0, 팀원은 코드 수정 가능)
+2. tool_name이 Edit 또는 Write인가?
+   - 아니면 → 허용 (exit 0)
+3. 대상 파일이 src/ 아래인가?
+   - 아니면 → 허용 (exit 0, 설계 문서/설정 파일은 리더 수정 가능)
+4. 리더가 src/ 파일 수정 시도 → 차단 (exit 2)
+   - "리더는 코드를 직접 수정할 수 없습니다. 팀원에게 위임하세요." 안내
+```
+
+### 기존 validate-delegate.sh 와의 관계
+- validate-delegate.sh는 이미 리더 src/ 수정을 차단하지만, **L0/L1 예외가 있었음**
+- enforce-leader-delegate.sh는 그 예외를 제거하여 **모든 레벨에서 리더 수정 금지**
+- 또는: validate-delegate.sh에서 L0/L1 예외 분기를 삭제하는 방식으로 구현 가능
+
+### 문서 수정 대상
+- **TEAM-ABSOLUTE-PRINCIPLES.md**: 프로세스 레벨 테이블 수정 (CTO 직행 → 리더 조사+팀원 구현)
+- **TEAM-PLAYBOOK.md**: L0/L1 프로세스 흐름 업데이트
+
+---
+
 ## 구현 산출물
 
 | # | 산출물 | 파일 경로 | 설명 |
@@ -228,9 +266,10 @@ TASK_NAME/팀명 없는 슬랙 알림은 디버깅 불가 + 노이즈.
 | 5 | validate-task-fields.sh | `.bkit/hooks/validate-task-fields.sh` | PreToolUse:Bash — 레벨/담당팀 미기입 TASK 전달 차단 |
 | 6 | filter-completion-dm.sh | `.bkit/hooks/filter-completion-dm.sh` | TaskCompleted — 팀원 DM 차단 |
 | 7 | validate-slack-payload.sh | `.bkit/hooks/validate-slack-payload.sh` | PreToolUse:Bash — 슬랙 알림 필수 필드 검증 |
-| 8 | settings.local.json 등록 | `.claude/settings.local.json` | 7개 hook 등록 |
-| 9 | TEAM-ABSOLUTE-PRINCIPLES.md | 외부 문서 | A0-7, A0-8 원칙 추가 |
-| 10 | TEAM-PLAYBOOK.md | `docs/TEAM-PLAYBOOK.md` | hook 목록 + 원칙 카탈로그 업데이트 |
+| 8 | enforce-leader-delegate.sh | `.bkit/hooks/enforce-leader-delegate.sh` | PreToolUse:Edit\|Write — L0/L1 리더 직접 수정 차단 |
+| 9 | settings.local.json 등록 | `.claude/settings.local.json` | 8개 hook 등록 |
+| 10 | TEAM-ABSOLUTE-PRINCIPLES.md | 외부 문서 | A0-7, A0-8 + L0/L1 프로세스 수정 |
+| 11 | TEAM-PLAYBOOK.md | `docs/TEAM-PLAYBOOK.md` | hook 목록 + 원칙 카탈로그 + L0/L1 프로세스 업데이트 |
 
 **모든 hook은 destructive-detector.sh 패턴 준수:**
 - stdin JSON 파싱 (python3) → 패턴 매칭 (grep/regex) → exit 0(허용) / exit 2(차단)
@@ -239,10 +278,10 @@ TASK_NAME/팀명 없는 슬랙 알림은 디버깅 불가 + 노이즈.
 
 ## 완료 게이트
 
-- [ ] 7개 hook 파일 구현 + settings.local.json 등록
-- [ ] TDD 전체 케이스 PASS (항목별 최소 5개, 총 50개+)
-- [ ] TEAM-ABSOLUTE-PRINCIPLES.md A0-7, A0-8 추가
-- [ ] TEAM-PLAYBOOK.md hook 목록 + 원칙 카탈로그 업데이트
+- [ ] 8개 hook 파일 구현 + settings.local.json 등록
+- [ ] TDD 전체 케이스 PASS (항목별 최소 5개, 총 70개+)
+- [ ] TEAM-ABSOLUTE-PRINCIPLES.md A0-7, A0-8 + 프로세스 레벨 테이블 수정
+- [ ] TEAM-PLAYBOOK.md hook 목록 + 원칙 카탈로그 + L0/L1 프로세스 업데이트
 - [ ] 각 hook 실제 차단 테스트 확인
 
 ---
@@ -258,6 +297,7 @@ TASK_NAME/팀명 없는 슬랙 알림은 디버깅 불가 + 노이즈.
 | TASK 파일 경로 파싱 실패 | 게이팅 무력화 | 파싱 실패 시 차단 (fail-closed) |
 | 슬랙 payload JSON 파싱 실패 | 필터 무력화 | 파싱 실패 시 차단 (fail-closed) |
 | hook 체인 순서 충돌 | 예상 외 차단 | destructive-detector → pane-guard → enforce-spawn → prevent-kill → 나머지 순서 고정 |
+| L0 긴급 대응 지연 | 리더 위임 시간 | L0라도 리더는 조사+범위정의만. 팀원이 즉시 구현하도록 위임 속도 최적화 |
 
 ---
 
