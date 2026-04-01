@@ -24,7 +24,8 @@
       "TaskOutput(*)",
       "SendMessage(*)",
       "mcp__claude-peers__check_messages",
-      "mcp__claude-peers__send_message"
+      "mcp__claude-peers__send_message",
+      "mcp__claude-peers__set_summary"
     ],
     "deny": []
   },
@@ -77,6 +78,31 @@
             "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/postmortem-review-gate.sh",
             "timeout": 10000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/enforce-spawn.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/prevent-tmux-kill.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/validate-coo-approval.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/validate-task-fields.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/validate-slack-payload.sh",
+            "timeout": 5000
           }
         ]
       },
@@ -153,6 +179,11 @@
             "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/pdca-update.sh",
             "timeout": 30000
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/filter-completion-dm.sh",
+            "timeout": 5000
           },
           {
             "type": "command",

@@ -600,7 +600,8 @@ L0 경로:
  15  │ task-quality-gate.sh               │ Match Rate 90% 체크                      │ TaskCompleted
  16  │ gap-analysis.sh                    │ Design vs 구현 Gap 분석                   │ TaskCompleted
  17  │ pdca-update.sh                     │ PDCA 상태 파일 업데이트                    │ TaskCompleted
- 18  │ notify-completion.sh               │ Slack 알림 + COO webhook                  │ TaskCompleted
+ 18  │ filter-completion-dm.sh            │ 팀원 TaskCompleted DM 차단 (A0-3)        │ TaskCompleted
+ 19  │ notify-completion.sh               │ Slack 알림 + COO webhook                  │ TaskCompleted
  19  │ deploy-trigger.sh                  │ 배포 트리거                               │ TaskCompleted
  20  │ deploy-verify.sh                   │ 배포 후 헬스체크 검증                      │ TaskCompleted
  21  │ pdca-chain-handoff.sh              │ 다음 팀 자동 체인 핸드오프                  │ TaskCompleted
@@ -623,6 +624,12 @@ L0 경로:
  38  │ session-resume-check.sh            │ 세션 시작 시 미완료 작업 복구               │ 세션 시작
  39  │ verify-chain-e2e.sh                │ 체인 E2E 검증                             │ 수동
  40  │ pane-access-guard.sh               │ 팀원 pane 직접 접근 차단 (A0-7)           │ PreToolUse:Bash
+ 41  │ enforce-spawn.sh                   │ spawn.sh 미경유 claude 직접 실행 차단 (A0-8) │ PreToolUse:Bash
+ 42  │ prevent-tmux-kill.sh               │ tmux kill 명령 차단 (A0-4)               │ PreToolUse:Bash
+ 43  │ validate-coo-approval.sh           │ TASK coo_approved 게이팅 (A0-1)          │ PreToolUse:Bash
+ 44  │ validate-task-fields.sh            │ TASK 레벨/담당팀 필수 확인               │ PreToolUse:Bash
+ 45  │ filter-completion-dm.sh            │ 팀원 TaskCompleted DM 차단 (A0-3)        │ TaskCompleted
+ 46  │ validate-slack-payload.sh          │ 슬랙 payload TASK_NAME+팀명 확인 (A0-2)  │ PreToolUse:Bash
 ```
 
 ### 헬퍼 (19개)
@@ -671,7 +678,12 @@ L0 경로:
           "validate-task.sh",            // TASK 유효성
           "enforce-qa-before-merge.sh",  // QA 없이 merge 차단
           "validate-deploy-authority.sh", // 배포 권한
-          "postmortem-review-gate.sh"    // 회고 필독
+          "postmortem-review-gate.sh",   // 회고 필독
+          "enforce-spawn.sh",            // spawn.sh 미경유 차단
+          "prevent-tmux-kill.sh",        // tmux kill 차단
+          "validate-coo-approval.sh",    // coo_approved 게이팅
+          "validate-task-fields.sh",     // TASK 레벨/담당팀 확인
+          "validate-slack-payload.sh"    // 슬랙 payload 검증
         ]
       },
       {
@@ -708,6 +720,7 @@ L0 경로:
           "task-quality-gate.sh",    // Match Rate 체크
           "gap-analysis.sh",         // Gap 분석
           "pdca-update.sh",          // PDCA 상태 업데이트
+          "filter-completion-dm.sh", // 팀원 DM 차단
           "notify-completion.sh",    // Slack 알림
           "deploy-trigger.sh",       // 배포 트리거
           "deploy-verify.sh",        // 배포 검증
@@ -790,7 +803,7 @@ L0~L3  │ 레벨 자동 판단        │ ⚠️ detect-process-level.sh → ho
 
 2. **대시보드 DB 강제 업데이트**: dashboard-sync.sh가 TaskCompleted 체인에 미연결. 현재는 수동으로 대시보드 데이터를 업데이트해야 함.
 
-3. **coo_approved 게이팅**: TASK 파일에 `coo_approved: true`가 없으면 팀이 착수하지 못하도록 하는 hook 미구현. 현재는 규칙으로만 강제.
+3. **coo_approved 게이팅**: TASK 파일에 `coo_approved: true`가 없으면 팀이 착수하지 못하도록 하는 hook → validate-coo-approval.sh + validate-task-fields.sh로 **해결**
 
 4. **배포 성공 검증 (push_verified 한계)**: 현재 `push_verified`는 `git push` 성공만 체크하고, Cloud Run 배포 성공 여부는 검증하지 않음. `deploy-verify.sh`가 TaskCompleted 체인에 등록되어 있지만, 실제 Cloud Run 서비스 헬스체크(HTTP 200 확인)까지 연결되지 않음. **git push 성공 ≠ 배포 성공 ≠ 서비스 정상** (PM-001 교훈). deploy-verify.sh에 `gcloud run services describe` + curl 헬스체크 로직 추가 필요.
 
@@ -2074,6 +2087,16 @@ task-quality-gate.sh
 | **위반 시 영향** | 리더 모르게 팀원에 직접 지시 → 작업 충돌, 리더 조율 실패 |
 | **시스템 강제** | ✅ pane-access-guard.sh (PreToolUse:Bash) |
 | **hook** | pane-access-guard.sh |
+
+### [A0-8] spawn.sh 경유 필수
+
+| 항목 | 내용 |
+|------|------|
+| **원칙** | 에이전트가 claude 바이너리를 직접 실행(--resume, -p, --continue) 금지. 반드시 spawn.sh 경유 |
+| **위반 케이스** | 팀원이 `claude --resume abc123`으로 다른 세션 직접 복원 시도 |
+| **위반 시 영향** | registry 미등록, peer-map 누락 → 체인 핸드오프 실패 |
+| **시스템 강제** | ✅ enforce-spawn.sh (PreToolUse:Bash) |
+| **hook** | enforce-spawn.sh |
 
 ## 7.2 TIER 1 — 운영 원칙 (반복 실패 기반)
 

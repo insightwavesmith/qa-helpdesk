@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-01T06:27:20Z",
+  "lastUpdated": "2026-04-01T07:23:02.190Z",
   "activeFeatures": [
     "slack-notification",
     "organic-channel-distribution-phase2",
@@ -9,7 +9,11 @@
     "video-permission-skip",
     "video-collection-audit",
     "helpers",
-    ".claude"
+    ".claude",
+    ".bkit",
+    "hook-enforcement",
+    "bscamp",
+    "firebase"
   ],
   "primaryFeature": "team-playbook",
   "features": {
@@ -937,6 +941,58 @@
         "lastUpdated": "2026-03-30T06:01:45.065Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/.claude/hooks/pdca-chain-handoff.sh"
+    },
+    ".bkit": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-01T07:11:17.566Z",
+        "lastUpdated": "2026-04-01T07:19:50.120Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/.bkit/hooks/enforce-spawn.sh"
+    },
+    "hook-enforcement": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-01T07:13:20.244Z",
+        "lastUpdated": "2026-04-01T07:23:02.190Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/__tests__/hooks/hook-enforcement/hooks-b.test.sh"
+    },
+    "bscamp": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-01T07:15:31.297Z",
+        "lastUpdated": "2026-04-01T07:15:31.297Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/lib/auth-utils.ts"
+    },
+    "firebase": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-01T07:15:32.769Z",
+        "lastUpdated": "2026-04-01T07:15:32.769Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/lib/firebase/middleware.ts"
     }
   },
   "pipeline": {
@@ -947,7 +1003,7 @@
   "session": {
     "startedAt": "2026-03-30T05:20:31.424Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-31T11:13:52.000Z"
+    "lastActivity": "2026-04-01T07:23:02.190Z"
   },
   "history": [
     {
@@ -965,6 +1021,60 @@
     {
       "timestamp": "2026-03-30T06:01:45.065Z",
       "feature": ".claude",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-01T07:11:17.566Z",
+      "feature": ".bkit",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-01T07:11:22.909Z",
+      "feature": ".bkit",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-01T07:11:30.428Z",
+      "feature": ".bkit",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-01T07:13:20.244Z",
+      "feature": "hook-enforcement",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-01T07:15:31.297Z",
+      "feature": "bscamp",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-01T07:15:32.769Z",
+      "feature": "firebase",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-01T07:19:50.120Z",
+      "feature": ".bkit",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-01T07:23:01.003Z",
+      "feature": "hook-enforcement",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-01T07:23:02.190Z",
+      "feature": "hook-enforcement",
       "phase": "do",
       "action": "updated"
     }
