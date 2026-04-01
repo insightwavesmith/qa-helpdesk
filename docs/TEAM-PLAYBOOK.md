@@ -782,7 +782,7 @@ L3     │ Plan+Design+ADR 필수  │ ⚠️ ADR 존재 체크 미구현
 L0~L3  │ 레벨 자동 판단        │ ⚠️ detect-process-level.sh → hook 분기 미연결
 ```
 
-### 빈 구멍 4가지
+### 빈 구멍 5가지
 
 1. **레벨별 분기 자동화**: detect-process-level.sh가 레벨을 판단하지만, 각 hook에서 레벨에 따라 분기하는 로직이 일부 미구현. 현재는 Plan/Design 파일 존재 유무로만 판단.
 
@@ -791,6 +791,26 @@ L0~L3  │ 레벨 자동 판단        │ ⚠️ detect-process-level.sh → ho
 3. **coo_approved 게이팅**: TASK 파일에 `coo_approved: true`가 없으면 팀이 착수하지 못하도록 하는 hook 미구현. 현재는 규칙으로만 강제.
 
 4. **배포 성공 검증 (push_verified 한계)**: 현재 `push_verified`는 `git push` 성공만 체크하고, Cloud Run 배포 성공 여부는 검증하지 않음. `deploy-verify.sh`가 TaskCompleted 체인에 등록되어 있지만, 실제 Cloud Run 서비스 헬스체크(HTTP 200 확인)까지 연결되지 않음. **git push 성공 ≠ 배포 성공 ≠ 서비스 정상** (PM-001 교훈). deploy-verify.sh에 `gcloud run services describe` + curl 헬스체크 로직 추가 필요.
+
+5. **팀원 승인 규제 과도 (approval-handler 범위 축소 필요)**: 현재 `IS_TEAMMATE=true`인 팀원이 `.claude/` 경로 파일을 수정할 때 **모든 파일**에 대해 리더 승인 요청이 발생한다. 팀원은 Design 범위 안에서 자유롭게 작업해야 하며, 승인이 필요한 파일은 아래 3가지로 한정해야 한다:
+
+   ```
+   승인 필요 (화이트리스트):
+     - .claude/settings.local.json  ← hook 등록/권한 변경
+     - .env / .env.*                ← 환경변수/시크릿
+     - **/migration*                ← DB 마이그레이션
+
+   승인 불필요 (팀원 자유):
+     - .claude/hooks/*.sh           ← hook 스크립트 수정
+     - .bkit/hooks/*.sh             ← bkit hook 수정
+     - .bkit/runtime/*              ← 런타임 상태 파일
+     - .bkit/state/*                ← PDCA 상태 파일
+     - 그 외 src/, docs/ 등        ← Design 범위 내 자유
+   ```
+
+   **현재 문제**: PM-003 교훈으로 approval-handler에 tmux send-keys 알림을 추가했지만, 범위가 `.claude/` 전체로 과확장됨. 이로 인해 팀원이 hook 스크립트를 수정할 때마다 불필요한 승인 대기 → 작업 지연.
+
+   **필요한 변경**: approval-handler.sh에서 `IS_TEAMMATE=true`일 때 파일 경로 화이트리스트 매칭 추가. 화이트리스트에 해당하는 파일만 승인 요청, 나머지는 바로 통과.
 
 ## 3.4 차단 → 자동 역할 요청 → 체인 재개 구조
 
@@ -1716,6 +1736,58 @@ task-quality-gate.sh
 └──────────────────────────────────────────────────────────┘
 ```
 
+### 유형 6: 완료 보고 Slack DM 미전송 — Smith님 알림 누락
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  상황: TaskCompleted 발생 → notify-completion.sh 실행      │
+│        → webhook(18789)으로 COO에만 신호                   │
+│        → Smith님 Slack DM 자동 발송 안 됨                   │
+│  이유: notify-completion.sh가 채널(C0AN7ATS4DD)에만 보고    │
+│        Smith님 DM(D09V1NX98SK)으로의 직접 알림 미구현        │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  현재 흐름 (불완전):                                       │
+│                                                          │
+│  TaskCompleted                                           │
+│      │                                                   │
+│      ▼                                                   │
+│  notify-completion.sh                                    │
+│      ├─→ webhook :18789 → COO 수신     ✅               │
+│      ├─→ Slack 채널 C0AN7ATS4DD         ✅ (팀 공유)     │
+│      └─→ Smith님 DM D09V1NX98SK         ❌ 미구현        │
+│                                                          │
+│  목표 흐름 (완전):                                         │
+│                                                          │
+│  TaskCompleted                                           │
+│      │                                                   │
+│      ▼                                                   │
+│  notify-completion.sh                                    │
+│      ├─→ webhook :18789 → COO 수신     ✅               │
+│      ├─→ Slack 채널 C0AN7ATS4DD         ✅ (팀 공유)     │
+│      └─→ Slack DM D09V1NX98SK           ✅ Smith님 직접  │
+│          │                                               │
+│          └─→ 메시지 형식:                                  │
+│              "✅ TASK 완료: {task명}"                      │
+│              "레벨: L{N} | Match Rate: {XX}%"             │
+│              "커밋: {hash} | 파일: {N}개"                  │
+│              "담당: {팀명}"                                │
+│                                                          │
+│  필요한 변경:                                              │
+│  1. notify-completion.sh에 Slack DM 전송 로직 추가         │
+│     - chat.postMessage API, channel: D09V1NX98SK         │
+│     - SLACK_BOT_TOKEN 환경변수 사용                        │
+│  2. DM 전송 실패해도 exit 0 (체인 차단 안 함)              │
+│  3. 완료 보고 = 채널 + DM + webhook 3중 전송이 기본값       │
+│                                                          │
+│  근거:                                                    │
+│  - 절대원칙 A0-2: 완료 = 커밋 + hook + DB + Slack 보고     │
+│  - Smith님은 Slack 채널을 실시간 모니터링 안 함              │
+│  - DM이어야 모바일 푸시 알림으로 즉시 인지 가능              │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+```
+
 ## 6.2 자동 요청 메시지 포맷 (claude-peers)
 
 ### 표준 메시지 구조
@@ -1852,6 +1924,67 @@ task-quality-gate.sh
 
 ✅ "3회 재작업 후에도 87%. Design의 항목 3이 현재 아키텍처에서 불가능합니다. COO에게 Design 재검토를 요청합니다."
    → 구체적 사유 + 에스컬레이션.
+```
+
+## 6.5 빈 구멍 TDD 케이스
+
+아래는 Ch.3 빈 구멍 5번(팀원 승인 규제 완화) + Ch.6 유형 6(Slack DM 자동 보고)에 대한 TDD 케이스.
+구현 전 테스트 먼저 작성하고, 구현 후 전량 통과를 확인한다.
+
+### TDD 세트 A: 팀원 승인 규제 완화 (approval-handler.sh 범위 축소)
+
+> 디렉토리: `__tests__/hooks/approval-handler-scope/`
+
+| # | 카테고리 | 테스트 명 | 설명 | bash 검증 명령 |
+|---|:-------:|---------|------|---------------|
+| A-01 | 🟢 정상 | 팀원 hook 수정 시 승인 없이 통과 | `IS_TEAMMATE=true`인 팀원이 `.bkit/hooks/gap-analysis.sh` 수정 시 approval-handler가 승인 요청 없이 exit 0 반환 | `IS_TEAMMATE=true TOOL_INPUT='{"file_path":".bkit/hooks/gap-analysis.sh"}' bash .bkit/hooks/helpers/approval-handler.sh 2>&1; [ $? -eq 0 ] && ! ls .bkit/runtime/approvals/pending-* 2>/dev/null` |
+| A-02 | 🟢 정상 | 팀원 .bkit/runtime/ 수정 시 승인 없이 통과 | 런타임 상태 파일 수정은 자유 | `IS_TEAMMATE=true TOOL_INPUT='{"file_path":".bkit/runtime/task-state-test.json"}' bash .bkit/hooks/helpers/approval-handler.sh 2>&1; [ $? -eq 0 ]` |
+| A-03 | 🟢 정상 | 팀원 .bkit/state/ 수정 시 승인 없이 통과 | PDCA 상태 파일 수정은 자유 | `IS_TEAMMATE=true TOOL_INPUT='{"file_path":".bkit/state/pdca-status.json"}' bash .bkit/hooks/helpers/approval-handler.sh 2>&1; [ $? -eq 0 ]` |
+| A-04 | 🟢 정상 | 팀원 src/ 수정 시 승인 없이 통과 | Design 범위 내 코드 수정은 자유 | `IS_TEAMMATE=true TOOL_INPUT='{"file_path":"src/app/page.tsx"}' bash .bkit/hooks/helpers/approval-handler.sh 2>&1; [ $? -eq 0 ]` |
+| A-05 | 🔴 차단 | 팀원 settings.local.json 수정 시 승인 필요 | hook 등록/권한 변경은 승인 필수 | `IS_TEAMMATE=true TOOL_INPUT='{"file_path":".claude/settings.local.json"}' bash .bkit/hooks/helpers/approval-handler.sh 2>&1; [ $? -eq 2 ] && ls .bkit/runtime/approvals/pending-* 2>/dev/null` |
+| A-06 | 🔴 차단 | 팀원 .env 수정 시 승인 필요 | 환경변수/시크릿 변경은 승인 필수 | `IS_TEAMMATE=true TOOL_INPUT='{"file_path":".env"}' bash .bkit/hooks/helpers/approval-handler.sh 2>&1; [ $? -eq 2 ]` |
+| A-07 | 🔴 차단 | 팀원 .env.local 수정 시 승인 필요 | .env 변형 파일도 동일 적용 | `IS_TEAMMATE=true TOOL_INPUT='{"file_path":".env.local"}' bash .bkit/hooks/helpers/approval-handler.sh 2>&1; [ $? -eq 2 ]` |
+| A-08 | 🔴 차단 | 팀원 migration 파일 수정 시 승인 필요 | DB 마이그레이션은 승인 필수 (L3 위험) | `IS_TEAMMATE=true TOOL_INPUT='{"file_path":"src/lib/migration.ts"}' bash .bkit/hooks/helpers/approval-handler.sh 2>&1; [ $? -eq 2 ]` |
+| A-09 | 🔴 차단 | 팀원 migration 디렉토리 파일 수정 시 승인 필요 | migrations/ 경로 포함 파일도 차단 | `IS_TEAMMATE=true TOOL_INPUT='{"file_path":"migrations/001-create-table.sql"}' bash .bkit/hooks/helpers/approval-handler.sh 2>&1; [ $? -eq 2 ]` |
+| A-10 | 🟡 경계 | 리더(IS_TEAMMATE=false)는 기존 로직 유지 | 리더는 기존 validate-delegate.sh가 처리. approval-handler 범위 밖 | `IS_TEAMMATE=false TOOL_INPUT='{"file_path":".bkit/hooks/gap-analysis.sh"}' bash .bkit/hooks/helpers/approval-handler.sh 2>&1; [ $? -eq 0 ]` |
+| A-11 | 🟡 경계 | IS_TEAMMATE 미설정 시 기존 동작 (안전 모드) | 환경변수 없으면 기존 전체 승인 로직 유지 | `unset IS_TEAMMATE && TOOL_INPUT='{"file_path":".claude/settings.local.json"}' bash .bkit/hooks/helpers/approval-handler.sh 2>&1; [ $? -eq 2 ]` |
+| A-12 | 🟡 경계 | 승인 차단 시 리더 tmux send-keys 알림 발생 | PM-003 교훈 유지: 차단 → 알림 → 해제 세트 | `IS_TEAMMATE=true TOOL_INPUT='{"file_path":".env"}' bash .bkit/hooks/helpers/approval-handler.sh 2>&1 | grep -q "send-keys"` |
+
+### TDD 세트 B: Slack DM 자동 보고 (notify-completion.sh Smith님 DM)
+
+> 디렉토리: `__tests__/hooks/notify-completion-dm/`
+
+| # | 카테고리 | 테스트 명 | 설명 | bash 검증 명령 |
+|---|:-------:|---------|------|---------------|
+| B-01 | 🟢 정상 | TaskCompleted 시 Smith님 DM 전송 시도 | notify-completion.sh 실행 시 Slack API chat.postMessage가 channel=D09V1NX98SK로 호출됨 | `SLACK_BOT_TOKEN="test-token" TASK_NAME="test-task" TASK_LEVEL="L2" MATCH_RATE="95" COMMIT_HASH="abc123" bash .bkit/hooks/notify-completion.sh 2>&1 | grep -q "D09V1NX98SK"` |
+| B-02 | 🟢 정상 | DM 메시지에 TASK명 포함 | 전송 페이로드에 task 이름이 포함됨 | `SLACK_BOT_TOKEN="test-token" TASK_NAME="slack-notification" bash .bkit/hooks/notify-completion.sh 2>&1 | grep -q "slack-notification"` |
+| B-03 | 🟢 정상 | DM 메시지에 Match Rate 포함 | 전송 페이로드에 Match Rate 수치가 포함됨 | `SLACK_BOT_TOKEN="test-token" TASK_NAME="test" MATCH_RATE="92" bash .bkit/hooks/notify-completion.sh 2>&1 | grep -q "92"` |
+| B-04 | 🟢 정상 | DM 메시지에 레벨 포함 | L0~L3 레벨 정보가 메시지에 포함됨 | `SLACK_BOT_TOKEN="test-token" TASK_NAME="test" TASK_LEVEL="L3" bash .bkit/hooks/notify-completion.sh 2>&1 | grep -q "L3"` |
+| B-05 | 🟢 정상 | DM 메시지에 커밋 해시 포함 | 커밋 해시가 메시지에 포함됨 | `SLACK_BOT_TOKEN="test-token" TASK_NAME="test" COMMIT_HASH="3c50c838" bash .bkit/hooks/notify-completion.sh 2>&1 | grep -q "3c50c838"` |
+| B-06 | 🟢 정상 | 채널 + DM + webhook 3중 전송 | notify-completion.sh 1회 실행으로 3곳 모두 전송 시도 | `SLACK_BOT_TOKEN="test-token" TASK_NAME="test" bash .bkit/hooks/notify-completion.sh 2>&1 | grep -c "chat.postMessage" | grep -q "^2$"` |
+| B-07 | 🔴 에러 | DM 전송 실패해도 exit 0 | Slack API 에러 시에도 체인 차단 안 함 | `SLACK_BOT_TOKEN="invalid" TASK_NAME="test" bash .bkit/hooks/notify-completion.sh 2>/dev/null; [ $? -eq 0 ]` |
+| B-08 | 🔴 에러 | SLACK_BOT_TOKEN 미설정 시 DM 스킵 + exit 0 | 토큰 없어도 체인 차단 안 함 | `unset SLACK_BOT_TOKEN && TASK_NAME="test" bash .bkit/hooks/notify-completion.sh 2>/dev/null; [ $? -eq 0 ]` |
+| B-09 | 🔴 에러 | DM 전송 실패 시 에러 로그 기록 | error-log.json에 실패 사유 기록 | `SLACK_BOT_TOKEN="invalid" TASK_NAME="test" bash .bkit/hooks/notify-completion.sh 2>/dev/null && [ -f .bkit/runtime/error-log.json ] && jq -e '.[-1].target == "smith-dm"' .bkit/runtime/error-log.json` |
+| B-10 | 🟡 경계 | 채널 전송 성공 + DM 전송 실패 → 부분 성공 로그 | 채널은 성공했지만 DM만 실패한 경우 구분 가능 | `SLACK_BOT_TOKEN="test-token" TASK_NAME="test" bash .bkit/hooks/notify-completion.sh 2>&1 | grep -q "channel:ok.*dm:failed\|dm:failed.*channel:ok"` |
+| B-11 | 🟡 경계 | L0(긴급) 시 DM 메시지에 긴급 표시 | L0 프로덕션 장애 완료 보고는 "[긴급]" 접두사 | `SLACK_BOT_TOKEN="test-token" TASK_NAME="hotfix" TASK_LEVEL="L0" bash .bkit/hooks/notify-completion.sh 2>&1 | grep -q "긴급\|URGENT"` |
+| B-12 | 🟡 경계 | webhook + Slack 둘 다 실패해도 exit 0 | 알림 전체 실패가 PDCA 체인을 차단하면 안 됨 | `SLACK_BOT_TOKEN="invalid" WEBHOOK_URL="http://invalid:18789" TASK_NAME="test" bash .bkit/hooks/notify-completion.sh 2>/dev/null; [ $? -eq 0 ]` |
+
+### TDD 검증 순서
+
+```
+1. 테스트 파일 생성
+   __tests__/hooks/approval-handler-scope/approval-scope.test.sh  (A-01 ~ A-12)
+   __tests__/hooks/notify-completion-dm/notify-dm.test.sh          (B-01 ~ B-12)
+
+2. 구현 전 실행 → 전량 FAIL 확인 (Red)
+
+3. 구현
+   - approval-handler.sh: 화이트리스트 매칭 로직 추가
+   - notify-completion.sh: Slack DM 전송 로직 추가
+
+4. 구현 후 실행 → 전량 PASS 확인 (Green)
+
+5. 리팩터 (필요 시) → 재실행 → 전량 PASS 유지
 ```
 
 ---
