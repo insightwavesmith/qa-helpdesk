@@ -27,7 +27,7 @@ except:
 [ -z "$COMMAND" ] && exit 0
 
 # spawn.sh 아닌 명령 → 패스
-echo "$COMMAND" | grep -q 'spawn\.sh' || exit 0
+echo "$COMMAND" | grep -qE '(^|\s|/)spawn\.sh' || exit 0
 
 # TASK 파일 찾기 (TASK_DIR 오버라이드 지원)
 TASK_DIR="${TASK_DIR:-/Users/smith/projects/bscamp}"
