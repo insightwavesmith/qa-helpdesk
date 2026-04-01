@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/db";
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { encrypt } from "@/lib/crypto";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 
 // POST /api/protractor/save-secret
 // 인증된 사용자만 자신의 시크릿 저장 가능
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
     const { error } = await svc
       .from("service_secrets" as never)
       .upsert({
-        user_id: user.uid,
+        user_id: toProfileId(user.uid),
         service: "mixpanel",
         key_name: `secret_${metaAccountId}`,
         key_value: encrypt(mixpanelSecret),

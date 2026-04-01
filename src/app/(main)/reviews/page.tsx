@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { getReviews } from "@/actions/reviews";
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/db";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 import { ReviewListClient } from "./review-list-client";
 
 const PAGE_SIZE = 12;
@@ -17,7 +18,7 @@ async function getUserRole(): Promise<string | null> {
     const { data: profile } = await svc
       .from("profiles")
       .select("role")
-      .eq("id", user.uid)
+      .eq("id", toProfileId(user.uid))
       .single();
 
     return profile?.role || null;

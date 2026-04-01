@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/db";
 import { getCurrentUser } from "@/lib/firebase/auth";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 import { fetchAccountAds, buildInsightRows, upsertInsights } from "@/lib/protractor/meta-collector";
 import { fetchMixpanelRevenue, lookupMixpanelSecret } from "@/lib/protractor/mixpanel-collector";
 import {
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (!profile || profile.role !== "admin") {

@@ -36,7 +36,7 @@ function runBashHook(
   try {
     const stdout = execSync(
       `echo '${input.replace(/'/g, "'\\''")}' | bash "${hookPath}"`,
-      { encoding: 'utf-8', env: { ...baseEnv, ...env }, timeout: 5000 },
+      { encoding: 'utf-8', env: { ...baseEnv, ...env } as NodeJS.ProcessEnv, timeout: 5000 },
     );
     return { exitCode: 0, stdout, stderr: '' };
   } catch (err: any) {
@@ -58,7 +58,7 @@ function runNonBashHook(
   try {
     const stdout = execSync(
       `echo '${input.replace(/'/g, "'\\''")}' | bash "${hookPath}"`,
-      { encoding: 'utf-8', env: { ...baseEnv, ...env }, timeout: 5000 },
+      { encoding: 'utf-8', env: { ...baseEnv, ...env } as NodeJS.ProcessEnv, timeout: 5000 },
     );
     return { exitCode: 0, stdout, stderr: '' };
   } catch (err: any) {

@@ -1,4 +1,7 @@
 #!/bin/bash
+# Block logger: 차단(exit 2) 시 자동 기록
+_bl_trap() { local e=$?; [ "$e" = "2" ] && source "$(dirname "$0")/helpers/block-logger.sh" 2>/dev/null && log_block "차단" "destructive-detector" "${COMMAND:-unknown}" 2>/dev/null; exit $e; }
+trap _bl_trap EXIT
 # destructive-detector.sh — 위험 작업 자동 차단
 # PreToolUse hook for Bash tool
 # exit 0 = 허용, exit 2 = 차단

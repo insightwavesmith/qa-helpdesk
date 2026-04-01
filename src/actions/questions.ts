@@ -5,6 +5,7 @@ import { after } from "next/server";
 import { createServiceClient } from "@/lib/db";
 import { createAIAnswerForQuestion } from "@/lib/rag";
 import { getCurrentUser } from "@/lib/firebase/auth";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 import { notifyNewQuestion } from "@/lib/slack";
 
 export async function getQuestions({
@@ -108,7 +109,7 @@ export async function createQuestion(formData: {
   const { data: profile } = await svc
     .from("profiles")
     .select("role, name")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (!profile || !["student", "member", "admin"].includes(profile.role)) {
@@ -122,7 +123,7 @@ export async function createQuestion(formData: {
       title: formData.title,
       content: formData.content,
       category_id: formData.categoryId,
-      author_id: user.uid,
+      author_id: toProfileId(user.uid),
       image_urls: JSON.stringify(formData.imageUrls && formData.imageUrls.length > 0 ? formData.imageUrls : []),
       ...(formData.parentQuestionId
         ? { parent_question_id: formData.parentQuestionId }
@@ -168,13 +169,13 @@ export async function deleteFollowUpQuestion(id: string, parentQuestionId: strin
 
   const svc = createServiceClient();
 
-  const { data: profile } = await svc.from("profiles").select("role").eq("id", user.uid).single();
+  const { data: profile } = await svc.from("profiles").select("role").eq("id", toProfileId(user.uid)).single();
   const isAdmin = profile?.role === "admin";
 
   const { data: question } = await svc.from("questions").select("author_id").eq("id", id).single();
   if (!question) return { error: "질문을 찾을 수 없습니다." };
 
-  const isOwner = question.author_id === user.uid;
+  const isOwner = question.author_id === toProfileId(user.uid);
   if (!isAdmin && !isOwner) return { error: "권한이 없습니다." };
 
   // 답변 먼저 삭제
@@ -203,14 +204,14 @@ export async function deleteQuestion(id: string) {
   const svc = createServiceClient();
 
   // Get user role
-  const { data: profile } = await svc.from("profiles").select("role").eq("id", user.uid).single();
+  const { data: profile } = await svc.from("profiles").select("role").eq("id", toProfileId(user.uid)).single();
   const isAdmin = profile?.role === "admin";
 
   // Get question author
   const { data: question } = await svc.from("questions").select("author_id").eq("id", id).single();
   if (!question) return { error: "질문을 찾을 수 없습니다." };
 
-  const isOwner = question.author_id === user.uid;
+  const isOwner = question.author_id === toProfileId(user.uid);
   if (!isAdmin && !isOwner) return { error: "권한이 없습니다." };
 
   // 답변 먼저 삭제
@@ -247,7 +248,7 @@ export async function updateQuestion(formData: {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   const isStaff =
@@ -263,7 +264,7 @@ export async function updateQuestion(formData: {
     return { data: null, error: "질문을 찾을 수 없습니다." };
   }
 
-  const isOwner = question.author_id === user.uid;
+  const isOwner = question.author_id === toProfileId(user.uid);
   if (!isStaff && !isOwner) {
     return { data: null, error: "수정 권한이 없습니다." };
   }

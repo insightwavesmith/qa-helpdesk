@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/db";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,7 +51,7 @@ export async function PATCH(
     .from("competitor_monitors")
     .update(updateFields)
     .eq("id", id)
-    .eq("user_id", user.uid);
+    .eq("user_id", toProfileId(user.uid));
 
   if (error) {
     return NextResponse.json(
@@ -88,7 +89,7 @@ export async function DELETE(
     .from("competitor_monitors")
     .delete()
     .eq("id", id)
-    .eq("user_id", user.uid);
+    .eq("user_id", toProfileId(user.uid));
 
   if (error) {
     return NextResponse.json(

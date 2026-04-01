@@ -1,4 +1,7 @@
 #!/bin/bash
+# Block logger: 차단(exit 2) 시 자동 기록
+_bl_trap() { local e=$?; [ "$e" = "2" ] && source "$(dirname "$0")/helpers/block-logger.sh" 2>/dev/null && log_block "차단" "task-quality-gate" "${COMMAND:-unknown}" 2>/dev/null; exit $e; }
+trap _bl_trap EXIT
 # task-quality-gate.sh — 태스크 완료 시 품질 검증 (QA 강제)
 # TaskCompleted hook: 검증 실패 시 exit 2로 차단
 #

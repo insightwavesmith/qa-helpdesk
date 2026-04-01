@@ -1,4 +1,7 @@
 #!/bin/bash
+# Block logger: 차단(exit 2) 시 자동 기록
+_bl_trap() { local e=$?; [ "$e" = "2" ] && source "$(dirname "$0")/helpers/block-logger.sh" 2>/dev/null && log_block "차단" "validate-plan" "${COMMAND:-unknown}" 2>/dev/null; exit $e; }
+trap _bl_trap EXIT
 # validate-plan.sh — Plan/Design 문서 + PDCA 상태 없이 src/ 수정 차단
 # PreToolUse hook (Edit|Write): src/ 파일 수정 시 PDCA 전체 검증
 # exit 2 = 차단 (게이트)

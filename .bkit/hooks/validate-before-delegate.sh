@@ -1,4 +1,7 @@
 #!/bin/bash
+# Block logger: 차단(exit 2) 시 자동 기록
+_bl_trap() { local e=$?; [ "$e" = "2" ] && source "$(dirname "$0")/helpers/block-logger.sh" 2>/dev/null && log_block "차단" "validate-before-delegate" "${COMMAND:-unknown}" 2>/dev/null; exit $e; }
+trap _bl_trap EXIT
 # validate-before-delegate.sh — 팀원 위임 전 구조분석/설계 체크
 # PreToolUse hook: 팀원 생성(Task tool) 시 TASK별 분석 문서가 있는지 확인
 # exit 2 = 차단 (게이트)

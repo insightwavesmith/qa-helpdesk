@@ -28,7 +28,7 @@ export async function precomputeDashboardStats(
         db
           .from("answers")
           .select("id", { count: "exact", head: true })
-          .eq("is_approved", false),
+          .or("is_approved.eq.false,is_approved.is.null"),
         db
           .from("contents")
           .select("id", { count: "exact", head: true })

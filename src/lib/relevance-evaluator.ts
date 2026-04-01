@@ -28,7 +28,7 @@ JSON 형식:
 
 /**
  * RAG 검색 결과의 관련성 평가
- * 실패 시 기본값 AMBIGUOUS 반환 (안전하게 웹서치 실행)
+ * 실패 시 기본값 CORRECT 반환 (평가 실패 시 RAG 결과 신뢰)
  */
 export async function evaluateRelevance(
   question: string,
@@ -36,9 +36,9 @@ export async function evaluateRelevance(
   chunks: ChunkResult[]
 ): Promise<RelevanceEvaluation> {
   const defaultResult: RelevanceEvaluation = {
-    grade: "AMBIGUOUS",
-    confidence: 0.5,
-    reasoning: "관련성 평가 실패 — 기본값 적용",
+    grade: "CORRECT",
+    confidence: 0.4,
+    reasoning: "평가 실패 — RAG 결과 신뢰 (웹검색 불필요)",
   };
 
   if (chunks.length === 0) {

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getReviewById } from "@/actions/reviews";
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/db";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 import { ReviewDetailClient } from "./ReviewDetailClient";
 
 async function getUserInfo(): Promise<{ role: string | null; userId: string | null }> {
@@ -13,10 +14,10 @@ async function getUserInfo(): Promise<{ role: string | null; userId: string | nu
     const { data: profile } = await svc
       .from("profiles")
       .select("role")
-      .eq("id", user.uid)
+      .eq("id", toProfileId(user.uid))
       .single();
 
-    return { role: profile?.role || null, userId: user.uid };
+    return { role: profile?.role || null, userId: toProfileId(user.uid) };
   } catch {
     return { role: null, userId: null };
   }

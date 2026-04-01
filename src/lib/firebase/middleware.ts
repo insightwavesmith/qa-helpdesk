@@ -4,6 +4,7 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE_NAME } from "@/lib/firebase/auth";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 
 // 공개 경로 (인증 불필요)
 const PUBLIC_PATHS = [
@@ -122,7 +123,7 @@ export async function updateSession(request: NextRequest) {
       const { query } = await import("@/lib/db/pool");
       const result = await query(
         "SELECT role, onboarding_status FROM profiles WHERE id = $1 LIMIT 1",
-        [uid]
+        [toProfileId(uid)]
       );
       const profile: { role: string; onboarding_status: string } | null = result.rows[0] || null;
 

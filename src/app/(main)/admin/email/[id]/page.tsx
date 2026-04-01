@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/db";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 import { getContentById } from "@/actions/contents";
 import NewsletterInlineEditor from "@/components/email/NewsletterInlineEditor";
 
@@ -13,7 +14,7 @@ async function checkIsAdmin(): Promise<boolean> {
     const { data: profile } = await svc
       .from("profiles")
       .select("role")
-      .eq("id", user.uid)
+      .eq("id", toProfileId(user.uid))
       .single();
 
     return profile?.role === "admin";

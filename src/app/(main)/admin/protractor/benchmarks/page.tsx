@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/db";
 import { redirect } from "next/navigation";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 import { BenchmarkAdmin } from "@/app/(main)/protractor/components/benchmark-admin";
 
 /**
@@ -16,7 +17,7 @@ export default async function BenchmarkManagementPage() {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (!profile || profile.role !== "admin") {

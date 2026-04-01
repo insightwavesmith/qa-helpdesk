@@ -7,6 +7,7 @@ import { getExcerpt } from "@/components/posts/post-card";
 import { decodeHtmlEntities } from "@/lib/utils/decode-entities";
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/db";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 
 function timeAgo(dateStr: string | null) {
   if (!dateStr) return "";
@@ -62,7 +63,7 @@ export async function StudentHome({}: StudentHomeProps) {
       const { data: accounts } = await svc
         .from("ad_accounts")
         .select("account_id")
-        .eq("user_id", user.uid)
+        .eq("user_id", toProfileId(user.uid))
         .limit(1);
 
       if (accounts && accounts.length > 0) {

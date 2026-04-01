@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/db";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 import { redirect } from "next/navigation";
 import { SettingsForm } from "./settings-form";
 import { PageViewTracker } from "@/components/tracking/page-view-tracker";
@@ -17,14 +18,14 @@ export default async function SettingsPage() {
   const { data: profile } = await svc
     .from("profiles")
     .select("name, phone, shop_name, shop_url, meta_account_id, mixpanel_project_id, mixpanel_secret_key, mixpanel_board_id, annual_revenue")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   // 광고계정 목록 조회 (활성 계정만)
   const { data: adAccounts } = await svc
     .from("ad_accounts")
     .select("id, account_id, account_name, mixpanel_project_id, mixpanel_board_id, active")
-    .eq("user_id", user.uid)
+    .eq("user_id", toProfileId(user.uid))
     .eq("active", true)
     .order("created_at", { ascending: true });
 
@@ -33,7 +34,7 @@ export default async function SettingsPage() {
       <PageViewTracker event="settings_viewed" />
       <SettingsForm
         profile={profile}
-        userId={user.uid}
+        userId={toProfileId(user.uid)}
         accounts={adAccounts ?? []}
       />
     </div>

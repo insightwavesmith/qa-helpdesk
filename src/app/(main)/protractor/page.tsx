@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/db";
 import { redirect } from "next/navigation";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 import RealDashboard from "./real-dashboard";
 import SampleDashboard from "./sample-dashboard";
 
@@ -22,7 +23,7 @@ export default async function ProtractorPage() {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (!profile) {
@@ -46,7 +47,7 @@ export default async function ProtractorPage() {
     const { data: adAccounts } = await svc
       .from("ad_accounts")
       .select("*")
-      .eq("user_id", user.uid)
+      .eq("user_id", toProfileId(user.uid))
       .eq("active", true)
       .order("created_at", { ascending: false });
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient, type DbClient } from "@/lib/db";
 import { getCurrentUser } from "@/lib/firebase/auth";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 
 type AdminAuthSuccess = {
   user: { uid: string; email?: string };
@@ -30,7 +31,7 @@ export async function requireAdmin(
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (!profile?.role || !allowedRoles.includes(profile.role)) {

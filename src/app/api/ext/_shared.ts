@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient, type DbClient } from "@/lib/db";
 import { verifyIdToken } from "@/lib/firebase/auth";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 
 type ExtAuthSuccess = {
   user: { id: string; email?: string };
@@ -45,7 +46,7 @@ export async function requireExtUser(
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", toProfileId(user.id))
     .single();
 
   if (!profile?.role || !allowedRoles.includes(profile.role)) {

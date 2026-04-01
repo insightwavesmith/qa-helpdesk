@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/db";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 import { NewReviewForm } from "./new-review-form";
 
 export default async function NewReviewPage() {
@@ -12,7 +13,7 @@ export default async function NewReviewPage() {
   const { data: profile } = await svc
     .from("profiles")
     .select("role, cohort")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (profile?.role !== "student") {

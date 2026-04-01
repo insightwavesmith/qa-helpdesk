@@ -1,4 +1,7 @@
 #!/bin/bash
+# Block logger: 차단(exit 2) 시 자동 기록
+_bl_trap() { local e=$?; [ "$e" = "2" ] && source "$(dirname "$0")/helpers/block-logger.sh" 2>/dev/null && log_block "차단" "validate-task" "${COMMAND:-unknown}" 2>/dev/null; exit $e; }
+trap _bl_trap EXIT
 # validate-task.sh — TASK.md 포맷 검증
 # 두 가지 포맷 지원:
 #   구 포맷: "현재 동작 / 기대 동작 / 하지 말 것" (What/Why 중심)

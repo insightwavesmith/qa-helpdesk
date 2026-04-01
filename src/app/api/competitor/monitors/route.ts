@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/db";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,7 +30,7 @@ export async function GET() {
   const { data: monitors, error } = await svc
     .from("competitor_monitors")
     .select("*")
-    .eq("user_id", user.uid)
+    .eq("user_id", toProfileId(user.uid))
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -127,7 +128,7 @@ export async function POST(req: NextRequest) {
   const { count } = await svc
     .from("competitor_monitors")
     .select("id", { count: "exact", head: true })
-    .eq("user_id", user.uid);
+    .eq("user_id", toProfileId(user.uid));
 
   if ((count ?? 0) >= 10) {
     return NextResponse.json(
@@ -143,7 +144,7 @@ export async function POST(req: NextRequest) {
   const { data: existing } = await svc
     .from("competitor_monitors")
     .select("id")
-    .eq("user_id", user.uid)
+    .eq("user_id", toProfileId(user.uid))
     .eq("brand_name", brandName)
     .maybeSingle();
 
@@ -164,7 +165,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await svc
     .from("competitor_monitors")
     .insert({
-      user_id: user.uid,
+      user_id: toProfileId(user.uid),
       brand_name: brandName,
       page_id: pageId,
       page_profile_url: pageProfileUrl,

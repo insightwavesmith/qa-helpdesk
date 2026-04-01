@@ -1,4 +1,7 @@
 #!/bin/bash
+# Block logger: 차단(exit 2) 시 자동 기록
+_bl_trap() { local e=$?; [ "$e" = "2" ] && source "$(dirname "$0")/helpers/block-logger.sh" 2>/dev/null && log_block "차단" "postmortem-review-gate" "${COMMAND:-unknown}" 2>/dev/null; exit $e; }
+trap _bl_trap EXIT
 # postmortem-review-gate.sh — TASK 시작 전 최근 postmortem 리뷰 강제
 # PreToolUse(Bash) hook: 세션 1회만 실행
 # exit 0 = 가이드만 (차단 아님), 정보 제공

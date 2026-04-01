@@ -96,7 +96,7 @@ curl -sf -X POST http://localhost:3201/api/hooks/task-completed \
 
 # ── 2-D. Slack 알림 (체인 시작) ──
 if [ -n "${SLACK_BOT_TOKEN:-}" ]; then
-    SLACK_MSG="🔔 [${CHAIN_KEY}] ${TASK_NAME} — 체인 시작"
+    SLACK_MSG="🔔 [${TASK_NAME}] 체인 시작 (${CHAIN_KEY})"
     curl -sf -X POST https://slack.com/api/chat.postMessage \
       -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
       -H "Content-Type: application/json" \
@@ -162,9 +162,9 @@ EOFPAYLOAD
     # Slack 알림 (L0/L1 완료)
     if [ -n "${SLACK_BOT_TOKEN:-}" ]; then
         if [ "$_CK_LEVEL" = "L0" ]; then
-            _SL_MSG="✅ [${CHAIN_KEY}] ${TASK_NAME} — 완료"
+            _SL_MSG="✅ [${TASK_NAME}] 완료 (${CHAIN_KEY})"
         else
-            _SL_MSG="✅ [${CHAIN_KEY}] ${TASK_NAME} — 조사/분석 완료"
+            _SL_MSG="✅ [${TASK_NAME}] 조사/분석 완료 (${CHAIN_KEY})"
         fi
         curl -sf -X POST https://slack.com/api/chat.postMessage \
           -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
@@ -273,9 +273,9 @@ if [ "$TO_ROLE" = "MOZZI" ]; then
     # 8-a. Slack 알림 (L2/L3 완료)
     if [ -n "${SLACK_BOT_TOKEN:-}" ]; then
         if [ "$MANUAL_REVIEW" = "true" ]; then
-            _SL_MSG="⚠️ [${CHAIN_KEY}] ${TASK_NAME} — 수동검수 대기 (Match Rate ${RATE}%)"
+            _SL_MSG="⚠️ [${TASK_NAME}] 수동검수 대기 (${CHAIN_KEY}, Match Rate ${RATE}%)"
         else
-            _SL_MSG="✅ [${CHAIN_KEY}] ${TASK_NAME} — 완료 (Match Rate ${RATE}%)"
+            _SL_MSG="✅ [${TASK_NAME}] 완료 (${CHAIN_KEY}, Match Rate ${RATE}%)"
         fi
         curl -sf -X POST https://slack.com/api/chat.postMessage \
           -H "Authorization: Bearer $SLACK_BOT_TOKEN" \

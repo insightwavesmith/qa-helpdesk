@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/db";
 import { getCurrentUser } from "@/lib/firebase/auth";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 import { generateEmbedding } from "@/lib/gemini";
 
 const DEFAULT_BATCH_SIZE = 100;
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
   const { data: profile } = await db
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (profile?.role !== "admin") {

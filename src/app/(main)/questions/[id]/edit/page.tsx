@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/db";
 import { getQuestionById, getCategories } from "@/actions/questions";
 import { parseImageUrls } from "@/lib/parse-image-urls";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 import { NewQuestionForm } from "../../new/new-question-form";
 
 export default async function EditQuestionPage({
@@ -25,12 +26,12 @@ export default async function EditQuestionPage({
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   const isStaff =
     profile?.role === "admin" || profile?.role === "assistant";
-  const isOwner = question.author?.id === user.uid;
+  const isOwner = question.author?.id === toProfileId(user.uid);
 
   if (!isStaff && !isOwner) {
     redirect(`/questions/${id}`);

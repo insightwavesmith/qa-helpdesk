@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Block logger: 차단(exit 2) 시 자동 기록
+_bl_trap() { local e=$?; [ "$e" = "2" ] && source "$(dirname "$0")/helpers/block-logger.sh" 2>/dev/null && log_block "차단" "validate-design" "${COMMAND:-unknown}" 2>/dev/null; exit $e; }
+trap _bl_trap EXIT
 # validate-design.sh — Design 없이 src/ 수정 차단 + 커밋 시 설계서 갱신 확인
 # PreToolUse hook (Edit|Write + Bash):
 #   1) Edit/Write: src/ 파일 수정 시 Design 문서 존재 + 최소 줄 수 확인 → 없으면 exit 2

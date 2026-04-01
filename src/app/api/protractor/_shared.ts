@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient, type DbClient } from "@/lib/db";
 import type { UserRole } from "@/types";
 import { getCurrentUser } from "@/lib/firebase/auth";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 
 const ALLOWED_ROLES: UserRole[] = ["student", "member", "admin"];
 
@@ -28,7 +29,7 @@ export async function requireProtractorAccess(): Promise<AuthSuccess | AuthFailu
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (!profile || !ALLOWED_ROLES.includes(profile.role)) {
@@ -56,7 +57,7 @@ export async function verifyAccountOwnership(
     .from("ad_accounts")
     .select("id")
     .eq("account_id", accountId)
-    .eq("user_id", userId)
+    .eq("user_id", toProfileId(userId))
     .single();
 
   return !!data;

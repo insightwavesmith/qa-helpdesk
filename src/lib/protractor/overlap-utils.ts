@@ -43,11 +43,14 @@ export async function metaGet(path: string, params: Record<string, string>) {
   return data;
 }
 
-// ── 활성 OUTCOME_SALES 캠페인의 광고세트 목록 ───────────────
+// ── 판매 목적 캠페인 objective (ODAX + 레거시) ──────────────
+const SALES_OBJECTIVES = ["OUTCOME_SALES", "CONVERSIONS", "PRODUCT_CATALOG_SALES"];
+
+// ── 활성 판매 캠페인의 광고세트 목록 ────────────────────────
 export async function fetchActiveAdsets(accountId: string): Promise<AdsetInfo[]> {
-  // 1) 활성 캠페인 (OUTCOME_SALES)
+  // 1) 활성 캠페인 (판매 목적 — ODAX + 레거시)
   const campaignsData = await metaGet(`act_${accountId}/campaigns`, {
-    effective_status: '["ACTIVE"]',
+    effective_status: '["ACTIVE","PAUSED"]',
     fields: "id,name,objective",
     limit: "100",
   });
@@ -58,7 +61,7 @@ export async function fetchActiveAdsets(accountId: string): Promise<AdsetInfo[]>
       name: string;
       objective: string;
     }[]
-  ).filter((c) => c.objective === "OUTCOME_SALES");
+  ).filter((c) => SALES_OBJECTIVES.includes(c.objective));
 
   if (salesCampaigns.length === 0) return [];
 
@@ -67,7 +70,7 @@ export async function fetchActiveAdsets(accountId: string): Promise<AdsetInfo[]>
   const adsetResults = await Promise.allSettled(
     salesCampaigns.map(async (campaign) => {
       const adsetsData = await metaGet(`${campaign.id}/adsets`, {
-        effective_status: '["ACTIVE"]',
+        effective_status: '["ACTIVE","PAUSED"]',
         fields: "id,name",
         limit: "100",
       });

@@ -1,4 +1,7 @@
 #!/bin/bash
+# Block logger: 차단(exit 2) 시 자동 기록
+_bl_trap() { local e=$?; [ "$e" = "2" ] && source "$(dirname "$0")/helpers/block-logger.sh" 2>/dev/null && log_block "차단" "validate-pdca-before-teamdelete" "${COMMAND:-unknown}" 2>/dev/null; exit $e; }
+trap _bl_trap EXIT
 # validate-pdca-before-teamdelete.sh — TeamDelete 전 PDCA 기록 강제
 # PreToolUse hook (TeamDelete matcher): 리더가 팀 해산 전 PDCA 상태 갱신했는지 확인
 # exit 2 = 차단, exit 0 = 허용

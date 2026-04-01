@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/db";
 import { getCurrentUser } from "@/lib/firebase/auth";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 import { getCreativeType } from "@/lib/protractor/creative-type";
 import { runCollectDaily } from "@/app/api/cron/collect-daily/route";
 import {
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (!profile || !["admin", "assistant"].includes(profile.role)) {

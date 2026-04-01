@@ -1,6 +1,7 @@
 "use server";
 
 import { createServiceClient } from "@/lib/db";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 
 /**
  * Phase 5: 회원가입 후 profile 생성 (Cloud SQL용)
@@ -20,6 +21,7 @@ export async function ensureProfile(
     invite_code?: string;
   },
 ) {
+  userId = toProfileId(userId);
   const svc = createServiceClient();
 
   // 이미 존재하면 스킵 (Supabase trigger가 먼저 만들었을 수 있음)
@@ -56,6 +58,7 @@ export async function ensureProfile(
 }
 
 export async function updateBusinessCertUrl(userId: string, url: string) {
+  userId = toProfileId(userId);
   const db = createServiceClient();
 
   const { error } = await db
@@ -77,6 +80,7 @@ export async function updateBusinessCertUrl(userId: string, url: string) {
  */
 export async function getProfileById(userId: string) {
   try {
+    userId = toProfileId(userId);
     const svc = createServiceClient();
     const { data, error } = await svc
       .from("profiles")
@@ -98,6 +102,7 @@ export async function getProfileById(userId: string) {
  * Phase 4: 클라이언트 사이드 프로필 role/onboarding 조회 → 서버 액션 전환
  */
 export async function getProfileRoleStatus(userId: string) {
+  userId = toProfileId(userId);
   const svc = createServiceClient();
   const { data, error } = await svc
     .from("profiles")
@@ -112,6 +117,7 @@ export async function getProfileRoleStatus(userId: string) {
  * Phase 4: 클라이언트 사이드 프로필 업데이트 → 서버 액션 전환
  */
 export async function updateProfile(userId: string, updates: Record<string, unknown>) {
+  userId = toProfileId(userId);
   const svc = createServiceClient();
   const { error } = await svc
     .from("profiles")
@@ -122,6 +128,7 @@ export async function updateProfile(userId: string, updates: Record<string, unkn
 }
 
 export async function savePrivacyConsent(userId: string) {
+  userId = toProfileId(userId);
   const db = createServiceClient();
 
   const { error } = await db

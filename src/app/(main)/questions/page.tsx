@@ -3,6 +3,7 @@ import { getQuestions, getCategories } from "@/actions/questions";
 import { QuestionsListClient } from "./questions-list-client";
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/db";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 
 export default async function QuestionsPage({
   searchParams,
@@ -23,7 +24,7 @@ export default async function QuestionsPage({
   const tab = params.tab || "all";
 
   const user = await getCurrentUser();
-  const currentUserId = user?.uid;
+  const currentUserId = user ? toProfileId(user.uid) : undefined;
 
   // 역할 조회: student/member/admin만 질문 작성 가능
   let canCreateQuestion = false;
@@ -34,7 +35,7 @@ export default async function QuestionsPage({
   // categories + profile + (가능하면 questions) 병렬 실행
   const categoriesPromise = getCategories();
   const profilePromise = user
-    ? createServiceClient().from("profiles").select("role").eq("id", user.uid).single()
+    ? createServiceClient().from("profiles").select("role").eq("id", toProfileId(user.uid)).single()
     : Promise.resolve({ data: null });
 
   // 카테고리 필터 불필요 시 getQuestions도 즉시 시작

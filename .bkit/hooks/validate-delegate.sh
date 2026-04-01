@@ -97,6 +97,7 @@ fi
 echo "❌ [delegate 강제] 리더는 허용 목록 외 파일을 직접 수정할 수 없습니다." >&2
 echo "허용: docs/, TASK*, CLAUDE*, .claude/settings*, .bkit/state|logs/, *.md, package.json, tsconfig.json" >&2
 echo "팀원(frontend-dev, backend-dev)에게 작업을 위임하세요." >&2
+source "$(dirname "$0")/helpers/block-logger.sh" 2>/dev/null && log_block "리더 허용 외 파일 수정: $REL_FILE" "validate-delegate" "$REL_FILE"
 source "$PROJECT_DIR/.bkit/hooks/notify-hook.sh" 2>/dev/null && \
     notify_hook "🚫 [게이트] 리더가 허용 외 파일 직접 수정 시도: $REL_FILE" "validate-delegate"
 exit 2

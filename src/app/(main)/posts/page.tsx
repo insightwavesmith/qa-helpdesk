@@ -8,6 +8,7 @@ import { getExcerpt } from "@/components/posts/post-card";
 import { PostsRedesignClient } from "./posts-redesign-client";
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/db";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 
 const PAGE_SIZE = 12;
 
@@ -40,7 +41,7 @@ export default async function PostsPage({
   if (user) {
     const svc = createServiceClient();
     const [{ data: profile }, result] = await Promise.all([
-      svc.from("profiles").select("role").eq("id", user.uid).single(),
+      svc.from("profiles").select("role").eq("id", toProfileId(user.uid)).single(),
       postsPromise,
     ]);
     isAdmin = profile?.role === "admin";

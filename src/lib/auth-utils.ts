@@ -3,11 +3,13 @@
 import { cache } from "react";
 import { createServiceClient, type DbClient } from "@/lib/db";
 import { getCurrentUser } from "@/lib/firebase/auth";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 
 /**
  * 같은 요청 내 profiles 중복 조회 방지용 캐시 함수
  */
 export const getProfile = cache(async (uid: string) => {
+  uid = toProfileId(uid);
   const svc = createServiceClient();
   const { data } = await svc
     .from("profiles")
@@ -28,7 +30,7 @@ export async function requireAdmin(): Promise<DbClient> {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (profile?.role !== "admin") throw new Error("권한이 없습니다.");
@@ -46,7 +48,7 @@ export async function requireStaff(): Promise<DbClient> {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (!profile || !["admin", "assistant"].includes(profile.role)) {

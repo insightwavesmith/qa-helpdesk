@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireProtractorAccess } from "../_shared";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 
 // GET /api/protractor/accounts
 // student/member/admin만 접근 가능
@@ -12,7 +13,7 @@ export async function GET() {
 
     let query = svc.from("ad_accounts").select("*").eq("active", true);
     if (profile.role !== "admin") {
-      query = query.eq("user_id", user.uid);
+      query = query.eq("user_id", toProfileId(user.uid));
     }
 
     const { data, error } = await query.order("created_at", { ascending: false });

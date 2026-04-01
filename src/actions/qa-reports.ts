@@ -2,6 +2,7 @@
 
 import { createServiceClient } from "@/lib/db";
 import { getCurrentUser } from "@/lib/firebase/auth";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 
 export interface QaReport {
   id: string;
@@ -38,7 +39,7 @@ export async function createQaReport(data: {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (!profile || !["admin", "assistant"].includes(profile.role)) {
@@ -49,7 +50,7 @@ export async function createQaReport(data: {
   const { data: report, error } = await (svc as any)
     .from("qa_reports")
     .insert({
-      author_id: user.uid,
+      author_id: toProfileId(user.uid),
       title: data.title,
       description: data.description,
       severity: data.severity,
@@ -85,7 +86,7 @@ export async function getQaReports(options?: {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (!profile || !["admin", "assistant"].includes(profile.role)) {
@@ -138,7 +139,7 @@ export async function updateQaReportStatus(
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (!profile || !["admin", "assistant"].includes(profile.role)) {

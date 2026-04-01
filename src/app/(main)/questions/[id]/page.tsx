@@ -6,6 +6,7 @@ import { getAnswersByQuestionId } from "@/actions/answers";
 import { AnswerForm } from "./answer-form";
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/db";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 import { ImageGallery } from "@/components/questions/ImageGallery";
 import { SourceReferences } from "@/components/questions/SourceReferences";
 import { Badge } from "@/components/ui/badge";
@@ -61,12 +62,12 @@ export default async function QuestionDetailPage({
   try {
     const user = await getCurrentUser();
     if (user) {
-      currentUserId = user.uid;
+      currentUserId = toProfileId(user.uid);
       const svc = createServiceClient();
       const { data: profile } = await svc
         .from("profiles")
         .select("role")
-        .eq("id", user.uid)
+        .eq("id", toProfileId(user.uid))
         .single();
       isAdmin = profile?.role === "admin" || profile?.role === "assistant";
     }

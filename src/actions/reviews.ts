@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { createServiceClient } from "@/lib/db";
 import { getCurrentUser } from "@/lib/firebase/auth";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 
 // 수강후기 목록 조회
 export async function getReviews({
@@ -101,7 +102,7 @@ export async function createReview(data: {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (profile?.role !== "student") {
@@ -111,7 +112,7 @@ export async function createReview(data: {
   const { data: review, error } = await svc
     .from("reviews")
     .insert({
-      author_id: user.uid,
+      author_id: toProfileId(user.uid),
       title: data.title,
       content: data.content,
       image_urls: data.imageUrls,
@@ -147,7 +148,7 @@ export async function createAdminReview(data: {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (profile?.role !== "admin") {
@@ -162,7 +163,7 @@ export async function createAdminReview(data: {
   const { data: review, error } = await svc
     .from("reviews")
     .insert({
-      author_id: user.uid,
+      author_id: toProfileId(user.uid),
       title: data.title,
       content: data.content,
       youtube_url: data.youtubeUrl || null,
@@ -192,7 +193,7 @@ export async function togglePinReview(id: string) {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (profile?.role !== "admin") {
@@ -232,7 +233,7 @@ export async function toggleFeaturedReview(reviewId: string) {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (profile?.role !== "admin") {
@@ -342,7 +343,7 @@ export async function deleteReview(id: string) {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   // Check if admin or author
@@ -354,7 +355,7 @@ export async function deleteReview(id: string) {
   if (!review) return { error: "후기를 찾을 수 없습니다." };
 
   const isAdmin = profile?.role === "admin";
-  const isOwner = review.author_id === user.uid;
+  const isOwner = review.author_id === toProfileId(user.uid);
   if (!isAdmin && !isOwner) {
     return { error: "권한이 없습니다." };
   }

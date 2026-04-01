@@ -1,4 +1,7 @@
 #!/bin/bash
+# Block logger: 차단(exit 2) 시 자동 기록
+_bl_trap() { local e=$?; [ "$e" = "2" ] && source "$(dirname "$0")/helpers/block-logger.sh" 2>/dev/null && log_block "차단" "enforce-qa-before-merge" "${COMMAND:-unknown}" 2>/dev/null; exit $e; }
+trap _bl_trap EXIT
 # enforce-qa-before-merge.sh — Check(QA) 없이 커밋/푸시 차단
 # PreToolUse hook (Bash): git commit/push 시 QA 검증 강제
 # exit 2 = 차단 (게이트), 에러 시 기본값 = exit 2 (안전 실패)

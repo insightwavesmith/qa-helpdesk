@@ -9,6 +9,7 @@ import { getParentQuestionId } from "@/actions/questions";
 import { runStyleLearning } from "@/lib/style-learner";
 import { sendKakaoNotification } from "@/lib/solapi";
 import { getCurrentUser } from "@/lib/firebase/auth";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 
 export async function getAnswersByQuestionId(
   questionId: string,
@@ -45,7 +46,7 @@ export async function getPendingAnswersCount() {
   const { count, error } = await db
     .from("answers")
     .select("*", { count: "exact", head: true })
-    .eq("is_approved", false);
+    .or("is_approved.eq.false,is_approved.is.null");
 
   if (error) {
     console.error("getPendingAnswersCount error:", error);
@@ -72,7 +73,7 @@ export async function createAnswer(formData: {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (!profile || !["student", "member", "admin"].includes(profile.role)) {
@@ -84,7 +85,7 @@ export async function createAnswer(formData: {
     .insert({
       question_id: formData.questionId,
       content: formData.content,
-      author_id: user.uid,
+      author_id: toProfileId(user.uid),
       is_ai: false,
       is_approved: false,
       image_urls: JSON.stringify(formData.imageUrls || []),
@@ -133,7 +134,7 @@ export async function getPendingAnswers({
       "*, author:profiles!answers_author_id_fkey(id, name), question:questions!answers_question_id_fkey(id, title, content, image_urls)",
       { count: "exact" }
     )
-    .eq("is_approved", false)
+    .or("is_approved.eq.false,is_approved.is.null")
     .order("created_at", { ascending: false })
     .range(from, to);
 
@@ -309,11 +310,11 @@ export async function updateAnswerByAuthor(answerId: string, content: string, im
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   const isStaff = profile?.role === "admin" || profile?.role === "assistant";
-  const isAuthor = answer.author_id === user.uid;
+  const isAuthor = answer.author_id === toProfileId(user.uid);
 
   if (!isAuthor && !isStaff) {
     return { error: "수정 권한이 없습니다." };

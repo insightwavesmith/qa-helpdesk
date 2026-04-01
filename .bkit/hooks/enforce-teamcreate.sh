@@ -1,4 +1,7 @@
 #!/bin/bash
+# Block logger: 차단(exit 2) 시 자동 기록
+_bl_trap() { local e=$?; [ "$e" = "2" ] && source "$(dirname "$0")/helpers/block-logger.sh" 2>/dev/null && log_block "차단" "enforce-teamcreate" "${COMMAND:-unknown}" 2>/dev/null; exit $e; }
+trap _bl_trap EXIT
 # enforce-teamcreate.sh — Agent 단독 spawn으로 구현 작업 차단, TeamCreate 강제
 # PreToolUse hook (Agent): team_name 없는 구현용 Agent spawn 차단
 # exit 2 = 차단 (게이트)

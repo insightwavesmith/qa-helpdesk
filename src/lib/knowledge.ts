@@ -603,36 +603,10 @@ export async function generate(
     pipelineStages.push("stage0");
     domainAnalysis = await analyzeDomain(request.query, request.imageDescriptions);
 
-    // 단순+비기술 → Stage 1~2 스킵, 직접 답변
-    if (domainAnalysis?.skipRAG && domainAnalysis.directAnswer) {
-      pipelineStages.push("stage0_direct");
-      // fire-and-forget 로깅
-      const svc = createServiceClient();
-      Promise.resolve(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (svc as any).from("knowledge_usage").insert({
-          consumer_type: request.consumerType,
-          source_types: [],
-          input_tokens: 0,
-          output_tokens: 0,
-          total_tokens: 0,
-          model,
-          question_id: request.questionId || null,
-          content_id: request.contentId || null,
-          duration_ms: Date.now() - startTime,
-          domain_analysis: domainAnalysis,
-          question_type: domainAnalysis.questionType,
-          complexity: domainAnalysis.complexity,
-          pipeline_stages: pipelineStages,
-        } as Record<string, unknown>)
-      ).catch((err) => console.error("[KS] Usage log failed:", err));
-
-      return {
-        content: domainAnalysis.directAnswer,
-        sourceRefs: [],
-        tokensUsed: 0,
-        model,
-      };
+    // 도메인 분석 결과 로깅 (skipRAG 판정이라도 RAG 파이프라인은 항상 실행)
+    if (domainAnalysis?.skipRAG) {
+      pipelineStages.push("stage0_skiprag_override");
+      console.log("[KS] skipRAG 판정이지만 RAG 강제 실행:", domainAnalysis.questionType, domainAnalysis.complexity);
     }
   }
 
@@ -641,9 +615,14 @@ export async function generate(
   let stage1Embedding: number[] | null = null;
   if (isQAConsumer) {
     pipelineStages.push("stage1a_similar_qa");
-    // Stage 1과 Stage 2에서 임베딩 재사용을 위해 먼저 생성
-    stage1Embedding = await generateEmbedding(query, { taskType: "RETRIEVAL_QUERY" });
-    similarQAs = await searchSimilarQuestions(query, stage1Embedding);
+    try {
+      // Stage 1과 Stage 2에서 임베딩 재사용을 위해 먼저 생성
+      stage1Embedding = await generateEmbedding(query, { taskType: "RETRIEVAL_QUERY" });
+      similarQAs = await searchSimilarQuestions(query, stage1Embedding);
+    } catch (err) {
+      console.error("[KS] Stage 1a 실패 (유사QA 검색):", err);
+      // 임베딩 실패해도 파이프라인 계속 진행
+    }
   }
 
   // F-03: Stage 1에서 사용된 chunk ID 수집 (Stage 2 중복 방지)

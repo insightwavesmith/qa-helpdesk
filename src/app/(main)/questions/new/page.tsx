@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/db";
+import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 import { getCategories } from "@/actions/questions";
 import { NewQuestionForm } from "./new-question-form";
 
@@ -13,7 +14,7 @@ export default async function NewQuestionPage() {
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
-    .eq("id", user.uid)
+    .eq("id", toProfileId(user.uid))
     .single();
 
   if (!["student", "member", "admin"].includes(profile?.role || "")) {
