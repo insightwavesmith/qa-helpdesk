@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-01T06:33:55.886Z",
+  "lastUpdated": "2026-04-01T06:27:20Z",
   "activeFeatures": [
     "slack-notification",
     "organic-channel-distribution-phase2",
@@ -9,10 +9,7 @@
     "video-permission-skip",
     "video-collection-audit",
     "helpers",
-    ".claude",
-    "approval-handler-scope",
-    "notify-completion-dm",
-    ".bkit"
+    ".claude"
   ],
   "primaryFeature": "team-playbook",
   "features": {
@@ -923,9 +920,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-30T05:29:49.589Z",
-        "lastUpdated": "2026-04-01T05:04:46.644Z"
+        "lastUpdated": "2026-03-30T05:29:49.589Z"
       },
-      "lastFile": "/Users/smith/projects/bscamp/.bkit/hooks/helpers/approval-handler.sh",
+      "lastFile": "/Users/smith/projects/bscamp/.claude/hooks/helpers/migrate-runtime.sh",
       "notes": "에이전트 대시보드 v3 + PDCA 체인 매트릭스 구현 완료 (커밋 6fc54b1, c130695)"
     },
     ".claude": {
@@ -940,45 +937,6 @@
         "lastUpdated": "2026-03-30T06:01:45.065Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/.claude/hooks/pdca-chain-handoff.sh"
-    },
-    "approval-handler-scope": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-04-01T05:04:06.482Z",
-        "lastUpdated": "2026-04-01T05:04:27.735Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/__tests__/hooks/approval-handler-scope/approval-scope.test.sh"
-    },
-    "notify-completion-dm": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-04-01T05:07:05.572Z",
-        "lastUpdated": "2026-04-01T05:13:23.266Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/__tests__/hooks/notify-completion-dm/notify-dm.test.sh"
-    },
-    ".bkit": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-04-01T05:08:23.467Z",
-        "lastUpdated": "2026-04-01T06:33:55.886Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/.bkit/hooks/notify-completion.sh"
     }
   },
   "pipeline": {
@@ -989,7 +947,7 @@
   "session": {
     "startedAt": "2026-03-30T05:20:31.424Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-01T06:33:55.886Z"
+    "lastActivity": "2026-03-31T11:13:52.000Z"
   },
   "history": [
     {
@@ -1007,84 +965,6 @@
     {
       "timestamp": "2026-03-30T06:01:45.065Z",
       "feature": ".claude",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T05:04:06.482Z",
-      "feature": "approval-handler-scope",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T05:04:26.819Z",
-      "feature": "approval-handler-scope",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T05:04:27.735Z",
-      "feature": "approval-handler-scope",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T05:04:46.644Z",
-      "feature": "helpers",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T05:07:05.572Z",
-      "feature": "notify-completion-dm",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T05:07:30.911Z",
-      "feature": "notify-completion-dm",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T05:07:33.880Z",
-      "feature": "notify-completion-dm",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T05:08:23.467Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T05:10:33.980Z",
-      "feature": "notify-completion-dm",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T05:13:23.266Z",
-      "feature": "notify-completion-dm",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T05:13:47.334Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T06:27:06.320Z",
-      "feature": ".bkit",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-01T06:33:55.886Z",
-      "feature": ".bkit",
       "phase": "do",
       "action": "updated"
     }
@@ -1105,6 +985,6 @@
     "stateFile": ".bkit/runtime/agent-state.json",
     "eventsFile": ".bkit/runtime/agent-events.jsonl"
   },
-  "updatedAt": "2026-04-01T13:45:15.193070",
-  "_autoSyncNote": "auto-synced at 2026-04-01 13:45:15, last commit: 3f6270e6"
+  "updatedAt": "2026-04-01T15:52:45.727275",
+  "_autoSyncNote": "auto-synced at 2026-04-01 15:52:45, last commit: 0a14b50e"
 }
