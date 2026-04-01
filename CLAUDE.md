@@ -31,17 +31,37 @@
 8. **SERVICE-VISION.md 필독**: TASK 시작 전 `~/.openclaw/workspace/SERVICE-VISION.md` 읽어라. 서비스를 모르고 개발하면 리젝.
 9. **Destructive Detector**: rm -rf, force push, 전체 DELETE 등 위험 작업은 hook이 자동 차단. 우회 불가.
 
-## PDCA 자동 순차 진행 (공통규칙, 예외 없음)
+## T-PDCA 프레임워크 (공통규칙, 예외 없음)
 
-**이 규칙은 모든 에이전트팀(CTO-1, CTO-2, PM, 마케팅)에 공통 적용된다.**
+**모든 업무는 T-PDCA 사이클을 따른다. T 단계 없이 팀 전달 = 절대 금지.**
 
-1. Plan → Design → Do → Check → Act 순서를 자동으로 진행한다. **물어보지 마라.**
-2. Plan 문서가 없으면 → 작성하고 다음 단계로 넘어간다.
-3. Design 문서가 없으면 → 작성하고 다음 단계로 넘어간다.
+```
+T  → Task 정의 + Smith님 승인 (모찌가 TASK 작성 → Smith님 확인 → coo_approved: true)
+P  → Plan  (L2-기능, L3만)
+D  → Design (L1, L2, L3 — L0만 스킵)
+Do → 구현 (CTO 리더가 팀원에 위임. 리더 직접 코드 수정 금지)
+C  → Check (Gap 분석 + Match Rate)
+A  → Act (완료 보고 + DB 동기화)
+```
+
+### 레벨별 PDCA 분기
+| 레벨 | 대상 | PDCA 단계 | 프로세스 |
+|------|------|-----------|---------|
+| **L0** | 프로덕션 장애 | **CA** | CTO 리더 조사(범위 정의) → **팀원 구현** → 리더 배포 |
+| **L1** | 버그 원인 명확 | **DCA** | CTO 리더 조사 → **팀원 구현** → QA → 리더 배포 |
+| **L2-버그** | 버그 원인 불명 | **DCA** | CTO 리더 조사 → 팀원 수정 → Gap → 보고 |
+| **L2-기능** | 요구사항 명확 | **PDCA** | PM Design → CTO 팀원 구현 → Gap → 보고 |
+| **L3** | 요구 불명확/구조 변경 | **PDCA** | PM Plan+Design → CTO 팀원 구현 → Gap → 보안 감사 → 보고 |
+
+**L0/L1이라도 리더가 직접 src/ 수정 금지. 조사+범위정의만 하고 팀원에게 구현 위임.**
+
+### 자동 진행 규칙
+1. 각 단계를 자동으로 진행한다. **물어보지 마라.**
+2. PM이 Do 지시하면 = **바로 구현 시작. COO 확인 불필요.**
+3. Plan/Design 문서가 없으면 → 작성하고 다음 단계로 넘어간다.
 4. 구현(Do) → 완료 후 자동으로 Check(Gap 분석) 실행.
 5. **멈추는 유일한 조건**: Check에서 Match Rate < 90%. 이 경우 Act(수정) 후 재검증.
 6. Match Rate ≥ 90% → 완료 보고서 생성 → 다음 기능으로 자동 이동.
-7. 각 단계 전환 시 Smith님에게 확인 묻지 않는다. 자동 진행이 기본값.
 
 ## PDCA 체인 핸드오프 프로토콜 (V2 — 2026-03-30 Smith님 확정)
 
@@ -73,17 +93,18 @@ bash .bkit/hooks/session-resume-check.sh
 
 ## PDCA 프로세스 레벨 시스템
 
-**모든 작업은 PDCA를 거치되, 산출물 깊이만 조절한다.** 레벨은 hook이 자동 판단 (`detect-process-level.sh`).
+**모든 작업은 T-PDCA를 거치되, 산출물 깊이만 조절한다.** 레벨은 hook이 자동 판단 (`detect-process-level.sh`).
 
-| 레벨 | 대상 | Plan | Design | Check | Match Rate |
-|------|------|------|--------|-------|------------|
-| **L0 응급** | fix:/hotfix: 커밋, 프로덕션 장애 | 커밋 메시지 1줄 | 스킵 | tsc+build만 | - |
-| **L1 경량** | src/ 미수정 (리서치, 마케팅, 문서) | TASK 1~3줄 | 스킵 | 결과물 존재 확인 | - |
-| **L2 표준** | src/ 수정 일반 기능 개발 | plan.md 필수 | design.md 필수 | Gap 분석 + tsc + build | 90%+ |
-| **L3 풀** | DB/Auth/인프라/마이그레이션 | plan.md + ADR | design.md + 롤백 전략 | Gap + 보안 감사 | **95%+** |
+| 레벨 | 대상 | Plan | Design | Check | Match Rate | 구현 방식 |
+|------|------|------|--------|-------|------------|----------|
+| **L0 응급** | fix:/hotfix: 커밋, 프로덕션 장애 | 커밋 메시지 1줄 | 스킵 | tsc+build만 | - | 리더 조사 → **팀원 구현** → 배포 |
+| **L1 경���** | 버그 원인 명확, src/ 미수정 | TASK 1~3줄 | 상황별 | 결과물 존재 확인 | - | 리더 조사 → **팀원 구현** → QA → 배포 |
+| **L2 표준** | src/ 수정 일반 기능 개발 | plan.md 필수 | design.md 필수 | Gap 분석 + tsc + build | 90%+ | Design 기반 **팀원 구현** |
+| **L3 풀** | DB/Auth/인프라/마이그레이션 | plan.md + ADR | design.md + 롤백 전략 | Gap + 보안 감사 | **95%+** | Plan+Design 기반 **팀원 구현** |
 
 자동 판단: `fix:`/`hotfix:` → L0, src/ 미수정 → L1, src/ 수정 → L2, migration/auth/.env 등 → L3.
 L3 추가: ADR 필수, 롤백 전략 명시, Smith님 최종 승인 필수.
+**모든 레벨에서 리더 직접 코드 수정 금지** — validate-delegate.sh가 차단.
 
 ## 배포 규칙 (V2 — 2026-03-30 Smith님 확정)
 
@@ -117,13 +138,25 @@ PM 검수 단계 없음. Gap 통과하면 바로 배포.
 
 > 상세 (폴더 구조, 역할별 담당, Design 템플릿, TDD 절차, Gap 분석 템플릿, 상태 업데이트 규칙): `CLAUDE-DETAIL.md` → "bkit PDCA 워크플로우 상세"
 
+## 역할 경계 (A0-3 — 절대 불침범)
+
+| 역할 | 할 것 | 하지 말 것 |
+|------|-------|-----------|
+| **Smith님** | 방향/의도 정의, 레벨 확인/승인, 최종 판단 | 직접 코딩, TASK 직접 작성 |
+| **모찌(COO)** | T 단계 실행, TASK 작성, 레벨 판단, 팀 배정, 완료 판단 | 직접 코딩, Smith님 확인 없이 팀 전달, Plan/Design 작성 |
+| **PM** | Plan + Design + TDD 케이스 작성 | src/ 코드 작성, 배포 |
+| **CTO** | 구현 + QA + 배포 (리더는 조율만) | Plan/Design 없이 구현 시작 (L0/L1 예외) |
+
+**CTO는 Plan/Design 없이 구현 시작 금지.** L0/L1도 리더가 조사+범위정의만 하고 팀원이 구현.
+**PM이 Do 지시하면 바로 구현 시작.** COO 확인 불필요.
+
 ## 에이전트팀 운영 (필수 — 예외 없음)
 
 ### 리더-팀원 역할 분리
 
-**리더(Lead)**: 팀 생성, TASK 분해/배정, 팀원 조율, 결과물 검증, Plan/Design 작성, PDCA 기록.
-**리더 금지**: src/ 코드 직접 수정 (validate-delegate.sh가 차단), 팀원 없이 혼자 작업.
-**팀원(Teammate)**: 리더 배정 TASK 실행, 코드 작성/수정, 팀원 간 직접 소통.
+**리더(Lead)**: 팀 생성, TASK 분해/배정, 팀원 조율, 결과물 검증, Plan/Design 작성, PDCA 기록, 배포.
+**리더 금지**: src/ 코드 직접 수정 (validate-delegate.sh가 차단), 팀원 없이 혼자 작업, gcloud 등 인프라 CLI 직접 실행.
+**팀원(Teammate)**: 리더 배정 TASK 실행, 코드 작성/수정, 테스트 실행, 커밋.
 
 ### 핵심 운영 규칙
 - **팀원 종료**: 작업 완료 확인 즉시 TeamDelete 실행. idle 방치 = 토큰 낭비.
@@ -168,8 +201,8 @@ PM 검수 단계 없음. Gap 통과하면 바로 배포.
 2. `git push` — 원격 저장소 반영
 3. task를 **completed** 상태로 변경 — 이게 있어야 COO한테 webhook 보고가 감
 
-**커밋 안 하면 산출물 유실. push 안 하면 팀 공유 안 됨. completed 안 하면 보고 체인 끊김.**
-문서만 작성하고 끝내는 건 "완료"가 아니다.
+**완료 = 커밋 + TaskCompleted + 대시보드 DB 업데이트 + 슬랙 보고. 전부 없으면 미완료.**
+문서만 작성하고 끝내는 건 "완료"가 아니다. 하나라도 빠지면 리젝.
 - [ ] Gap 분석 문서 작성 (Match Rate 90%+)
 
 **이 체크리스트를 실행하지 않고 "완료"라고 보고하면 리젝된다.**
