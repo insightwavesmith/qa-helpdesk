@@ -1,7 +1,69 @@
 {
-  "feature": "team-playbook",
+  "feature": "rag-pipeline-fix",
   "phase": "check",
-  "updatedAt": "2026-04-01T17:00:00Z",
-  "notes": "hook-enforcement 7건 전체 구현 완료. TDD 63/63 PASS. settings.local.json 등록 완료. 문서 업데이트 완료.",
-  "matchRate": 100
+  "status": "completed",
+  "updatedAt": "2026-04-01T09:54:29Z",
+  "notes": "RAG 파이프라인 3건 버그 수정: skipRAG 조기종료 제거, Stage1a try-catch, 관련성평가 기본값",
+  "matchRate": null,
+  "features": {
+    "hook-hardening-v2": {
+      "phase": "design-complete",
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/01-plan/features/hook-hardening-v2.plan.md",
+        "at": "2026-04-01"
+      },
+      "design": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/02-design/features/hook-hardening-v2.design.md",
+        "at": "2026-04-01"
+      },
+      "do": {
+        "team": "cto",
+        "done": false,
+        "commit": null,
+        "at": null
+      },
+      "check": {
+        "team": "qa",
+        "done": false,
+        "doc": "",
+        "matchRate": null
+      },
+      "act": {
+        "done": false,
+        "commit": null,
+        "deployedAt": null
+      },
+      "notes": "OI-007~017 전체 대응. 8 Feature, TDD 47건. CTO 전달 대기.",
+      "updatedAt": "2026-04-01",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-01T09:54:29Z",
+        "lastUpdated": "2026-04-01T09:54:29Z"
+      },
+      "stateMachine": {
+        "currentState": "design-complete",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
+    }
+  },
+  "primaryFeature": "hook-hardening-v2",
+  "lastUpdated": "2026-04-01T09:54:29Z"
 }

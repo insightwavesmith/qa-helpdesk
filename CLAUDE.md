@@ -135,6 +135,7 @@ PM 검수 단계 없음. Gap 통과하면 바로 배포.
 5. **Match Rate**: 90% 이상이어야 완료. 미만이면 Act(수정) 후 재검증
 6. **기존 문서 확인**: 같은 기능의 이전 plan/design/analysis가 있으면 반드시 읽고 시작
 7. **TDD (L2/L3)**: 테스트 먼저 작성 → 코드 구현 → 리팩터 (vitest, `__tests__/{feature}/`)
+8. **TDD = Gap 100% 기준**: Design 문서의 TDD 섹션은 Design의 모든 동작을 1:1로 커버하도록 작성. Gap 분석 시 "Design에 있는데 테스트에 없음" = 0건이어야 함. TDD 케이스가 곧 Gap 검증 체크리스트.
 
 > 상세 (폴더 구조, 역할별 담당, Design 템플릿, TDD 절차, Gap 분석 템플릿, 상태 업데이트 규칙): `CLAUDE-DETAIL.md` → "bkit PDCA 워크플로우 상세"
 
@@ -251,3 +252,14 @@ TASK 완료 후 반드시 `project-status.md`를 업데이트해라.
 - 에러 분류 자동화: `.bkit/hooks/helpers/error-classifier.sh`
 - 룰북: `docs/ops/error-rulebook.md`
 - 분류만 자동, TASK 자동 생성 안 함.
+
+## 운영 이슈 기재 (필수)
+- **이슈 발견 시**: `docs/issues/operational-issues.md`에 즉시 기재. 미기재 시 완료 인정 안 함.
+- **hook 차단 시**: block-logger.sh가 `.bkit/runtime/block-log.json`에 자동 기록. 세션 종료 시 operational-issues.md에 미반영 건 안내.
+- **이슈 카테고리**: operational-issues(기술), agent-teams-bugs(팀 버그), infrastructure-issues(인프라), known-limitations(제약)
+
+## 자기순환학습 (회고 + 자가발전)
+- **postmortem**: `docs/postmortem/index.json` — 사고 후 회고. 세션 시작 시 postmortem-review-gate.sh가 관련 항목 안내.
+- **prevention TDD**: postmortem마다 재발 방지 테스트 작성. prevention-tdd-tracker.sh가 누락 감지.
+- **운영 이슈**: `docs/issues/operational-issues.md` — hook 차단/우회/데드락 등 운영 중 발견 이슈 축적.
+- **순환 루프**: 이슈 축적 → 패턴 분석 → hook 개선 → 재발 감소. 크론이 block-log.json에서 반복 차단 패턴 감지 → 개선 TASK 자동 제안.

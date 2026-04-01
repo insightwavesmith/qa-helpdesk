@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-01T06:27:20Z",
+  "lastUpdated": "2026-04-01T09:54:29Z",
   "activeFeatures": [
     "slack-notification",
     "organic-channel-distribution-phase2",
@@ -11,7 +11,7 @@
     "helpers",
     ".claude"
   ],
-  "primaryFeature": "team-playbook",
+  "primaryFeature": "hook-hardening-v2",
   "features": {
     "slack-notification": {
       "phase": "implementing",
@@ -937,6 +937,63 @@
         "lastUpdated": "2026-03-30T06:01:45.065Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/.claude/hooks/pdca-chain-handoff.sh"
+    },
+    "hook-hardening-v2": {
+      "phase": "design-complete",
+      "plan": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/01-plan/features/hook-hardening-v2.plan.md",
+        "at": "2026-04-01"
+      },
+      "design": {
+        "team": "pm",
+        "done": true,
+        "doc": "docs/02-design/features/hook-hardening-v2.design.md",
+        "at": "2026-04-01"
+      },
+      "do": {
+        "team": "cto",
+        "done": false,
+        "commit": null,
+        "at": null
+      },
+      "check": {
+        "team": "qa",
+        "done": false,
+        "doc": "",
+        "matchRate": null
+      },
+      "act": {
+        "done": false,
+        "commit": null,
+        "deployedAt": null
+      },
+      "notes": "OI-007~017 전체 대응. 8 Feature, TDD 47건. CTO 전달 대기.",
+      "updatedAt": "2026-04-01",
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-01T09:54:29Z",
+        "lastUpdated": "2026-04-01T09:54:29Z"
+      },
+      "stateMachine": {
+        "currentState": "design-complete",
+        "previousState": null,
+        "stateHistory": [],
+        "retryCount": 0,
+        "maxRetries": 5,
+        "circuitBreakerOpen": false
+      },
+      "metrics": {
+        "qualityScore": null,
+        "conventionCompliance": null,
+        "apiCompliance": null,
+        "cycleTimeMs": null,
+        "iterationEfficiency": null
+      },
+      "phaseTimestamps": {},
+      "automationLevel": 2
     }
   },
   "pipeline": {
@@ -985,6 +1042,6 @@
     "stateFile": ".bkit/runtime/agent-state.json",
     "eventsFile": ".bkit/runtime/agent-events.jsonl"
   },
-  "updatedAt": "2026-04-01T16:02:51.826494",
+  "updatedAt": "2026-04-01T09:54:29Z",
   "_autoSyncNote": "auto-synced at 2026-04-01 16:02:51, last commit: efe51172"
 }
