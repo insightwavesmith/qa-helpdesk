@@ -1,10 +1,10 @@
 {
-  "feature": "signup-profile-fix",
-  "phase": "do",
-  "status": "in_progress",
-  "updatedAt": "2026-04-02T01:15:04.786270",
-  "notes": "P0 Firebase UID→UUID v5 변환. 60개 파일 수정 진행 중.",
-  "matchRate": null,
+  "version": "3.0",
+  "lastUpdated": "2026-04-01T16:48:53.458Z",
+  "activeFeatures": [
+    ".bkit"
+  ],
+  "primaryFeature": ".bkit",
   "features": {
     "hook-hardening-v2": {
       "phase": "completed",
@@ -62,9 +62,53 @@
       },
       "phaseTimestamps": {},
       "automationLevel": 2
+    },
+    ".bkit": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-01T16:48:53.458Z",
+        "lastUpdated": "2026-04-01T16:48:53.458Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/.bkit/hooks/destructive-detector.sh"
     }
   },
-  "primaryFeature": "hook-hardening-v2",
-  "lastUpdated": "2026-04-01T12:30:00Z",
-  "_autoSyncNote": "auto-synced at 2026-04-02 01:15:04, last commit: 7666c452"
+  "pipeline": {
+    "currentPhase": 1,
+    "level": "Dynamic",
+    "phaseHistory": []
+  },
+  "session": {
+    "startedAt": "2026-04-01T16:15:16.216Z",
+    "onboardingCompleted": false,
+    "lastActivity": "2026-04-01T16:48:53.458Z"
+  },
+  "history": [
+    {
+      "timestamp": "2026-04-01T16:48:53.458Z",
+      "feature": ".bkit",
+      "phase": "do",
+      "action": "updated"
+    }
+  ],
+  "stateMachine": {
+    "defaultWorkflow": "default",
+    "activeWorkflows": {},
+    "totalTransitions": 0
+  },
+  "automation": {
+    "globalLevel": 2,
+    "trustScore": 40,
+    "pendingApprovals": 0,
+    "lastGateResult": null
+  },
+  "team": {
+    "enabled": true,
+    "stateFile": ".bkit/runtime/agent-state.json",
+    "eventsFile": ".bkit/runtime/agent-events.jsonl"
+  }
 }

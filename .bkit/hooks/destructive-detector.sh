@@ -93,4 +93,61 @@ if echo "$COMMAND" | grep -qiE '\bTRUNCATE\s+(TABLE\s+)?\w+'; then
   exit 2
 fi
 
+# 패턴 9: ALTER TABLE (스키마 변경) — COO 승인 필수
+if echo "$COMMAND" | grep -qiE 'ALTER\s+TABLE\b'; then
+  if [ -n "${SLACK_BOT_TOKEN:-}" ]; then
+    curl -s -X POST "https://slack.com/api/chat.postMessage" \
+      -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d "{\"channel\":\"D09V1NX98SK\",\"text\":\"🚨 [스키마 가드] ALTER TABLE 감지\\n명령: $(echo "$COMMAND" | sed 's/"/\\\\"/g' | head -c 200)\\nSmith님 승인 후 진행 필요\"}" >/dev/null 2>&1 &
+  fi
+  echo "[destructive-detector] 차단: ALTER TABLE 감지 (스키마 변경)" >&2
+  echo "   명령어: $COMMAND" >&2
+  echo "   스키마 변경은 모찌(COO) 승인 후 진행. 슬랙 DM 발송됨." >&2
+  exit 2
+fi
+
+# 패턴 10: DROP COLUMN (컬럼 삭제) — COO 승인 필수
+if echo "$COMMAND" | grep -qiE 'DROP\s+COLUMN\b'; then
+  if [ -n "${SLACK_BOT_TOKEN:-}" ]; then
+    curl -s -X POST "https://slack.com/api/chat.postMessage" \
+      -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d "{\"channel\":\"D09V1NX98SK\",\"text\":\"🚨 [스키마 가드] DROP COLUMN 감지\\n명령: $(echo "$COMMAND" | sed 's/"/\\\\"/g' | head -c 200)\\nSmith님 승인 후 진행 필요\"}" >/dev/null 2>&1 &
+  fi
+  echo "[destructive-detector] 차단: DROP COLUMN 감지 (스키마 변경)" >&2
+  echo "   명령어: $COMMAND" >&2
+  echo "   스키마 변경은 모찌(COO) 승인 후 진행. 슬랙 DM 발송됨." >&2
+  exit 2
+fi
+
+# 패턴 11: CREATE TABLE (테이블 생성) — COO 승인 필수
+if echo "$COMMAND" | grep -qiE 'CREATE\s+TABLE\b'; then
+  if [ -n "${SLACK_BOT_TOKEN:-}" ]; then
+    curl -s -X POST "https://slack.com/api/chat.postMessage" \
+      -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d "{\"channel\":\"D09V1NX98SK\",\"text\":\"🚨 [스키마 가드] CREATE TABLE 감지\\n명령: $(echo "$COMMAND" | sed 's/"/\\\\"/g' | head -c 200)\\nSmith님 승인 후 진행 필요\"}" >/dev/null 2>&1 &
+  fi
+  echo "[destructive-detector] 차단: CREATE TABLE 감지 (스키마 변경)" >&2
+  echo "   명령어: $COMMAND" >&2
+  echo "   스키마 변경은 모찌(COO) 승인 후 진행. 슬랙 DM 발송됨." >&2
+  exit 2
+fi
+
+# 패턴 12: migration 파일 생성 감지 — COO 승인 필수
+if echo "$COMMAND" | grep -qiE '(touch|cat\s*>|tee\s|mv\s|cp\s).*\.(sql)\b' || \
+   echo "$COMMAND" | grep -qiE '(touch|cat\s*>|tee\s|mv\s|cp\s).*/migration'; then
+  if [ -n "${SLACK_BOT_TOKEN:-}" ]; then
+    curl -s -X POST "https://slack.com/api/chat.postMessage" \
+      -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d "{\"channel\":\"D09V1NX98SK\",\"text\":\"🚨 [스키마 가드] migration 파일 생성 감지\\n명령: $(echo "$COMMAND" | sed 's/"/\\\\"/g' | head -c 200)\\nSmith님 승인 후 진행 필요\"}" >/dev/null 2>&1 &
+  fi
+  echo "[destructive-detector] 차단: migration 파일 생성 감지 (스키마 변경)" >&2
+  echo "   명령어: $COMMAND" >&2
+  echo "   스키마 변경은 모찌(COO) 승인 후 진행. 슬랙 DM 발송됨." >&2
+  exit 2
+fi
+
 exit 0
