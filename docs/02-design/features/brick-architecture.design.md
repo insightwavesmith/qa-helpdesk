@@ -1,8 +1,9 @@
-# Brick Architecture (브릭 아키텍처) Design
+# Brick Architecture Design V2 — 범용 워크플로우 엔진
 
 > 작성일: 2026-04-02
+> V1: `docs/02-design/features/archive/brick-architecture-v1.design.md`
 > Plan: `docs/01-plan/features/brick-architecture.plan.md`
-> TASK: `/Users/smith/.openclaw/workspace/tasks/TASK-BRICK-ARCHITECTURE.md`
+> TASK: `/Users/smith/.openclaw/workspace/tasks/TASK-BRICK-DESIGN-V2.md`
 > 프로세스 레벨: L3 (아키텍처 설계)
 > 작성자: PM팀
 
@@ -10,1557 +11,1437 @@
 
 ## Executive Summary
 
-| 항목 | 값 |
-|------|-----|
-| Feature | Brick — Block × Team × Link 워크플로우 모듈화 아키텍처 |
-| 핵심 철학 | "완전히 강제된 시스템 속에서 완벽한 자율화" |
-| 3축 | Block (what+done+gate), Team (who+tool), Link (how) |
-| 3층 | System Layer(불변) → Process Layer(조합) → Autonomy Layer(자유) |
-| 기존 인프라 | gate-checker, pdca-chain-handoff, team-context, TDD 83건 → Brick 위로 래핑 |
+| 항목 | V1 | V2 |
+|------|-----|-----|
+| 엔진 | engine.sh (bash God Script) | **Python CLI 패키지** (`pip install brick-engine`) |
+| Team | JSON 정의만 | **Adapter 패턴** (Claude Agent Teams = adapter 중 하나) |
+| Gate | bash script만 | **4가지 타입** (command/http/prompt/agent) |
+| 아키텍처 | Claude Code hook 종속 | **독립 CLI** (어디서든 실행) |
+| 상태 관리 | JSON 파일 직접 조작 | **상태 머신** + 이벤트 버스 + 체크포인트 |
+| 확장 | bash script 추가 | **플러그인 아키텍처** (Python 모듈) |
+| 테스트 | bash 단위 테스트 | **pytest** (자동화, 타입힌트, 커버리지) |
+
+### 유지 (V1→V2 변경 없음)
+- **3축**: Block(what+done+gate) × Team(who+tool) × Link(how)
+- **3층**: System Layer(불변) → Process Layer(조합) → Autonomy Layer(자유)
+- **불변 규칙 INV-1~8**: 전부 유지
+- **핵심 철학**: "완전히 강제된 시스템 속에서 완벽한 자율화"
+- **프리셋 YAML 형식**: 유지 (adapter 필드 추가)
+- **브랜딩**: Brick, "Build it. Block by Block."
 
 ### Value Delivered
 
 | 관점 | 내용 |
 |------|------|
-| Problem | T-PDCA가 유일한 프로세스. 새 워크플로우 = hook 하드코딩. 프로세스가 코드에 갇혀 있음 |
-| Solution | 선언형 Block/Team/Link 조합. YAML 프리셋 하나로 새 워크플로우 정의 |
-| Function UX Effect | 새 프로세스 추가 = `.bkit/presets/` 파일 1개 추가. 코드 변경 0 |
-| Core Value | 어떤 업무든 블록 조합으로 자동화. 확장이 코드가 아닌 설정 |
+| Problem | V1이 Claude Code bash hook에 종속. engine.sh가 God Script. bash로 JSON 파싱 한계. Claude Code 없이 사용 불가 |
+| Solution | 독립 Python CLI 엔진. Team=Adapter 패턴으로 어떤 에이전트 프레임워크든 연결. Gate에 LLM 평가 가능 |
+| Core Value | Brick = 범용 워크플로우 엔진. Claude Agent Teams는 adapter 중 하나. 세계적으로 쓸 수 있는 도구 |
 
 ---
 
 ## 1. 전체 아키텍처
 
-### 1.1 3층 아키텍처 (3-Layer Architecture)
+### 1.1 시스템 구조도
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        brick CLI                                │
+│  brick start / status / complete / approve / viz / validate     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                    Engine Core                            │  │
+│  │  ┌──────────────┐  ┌──────────┐  ┌──────────────────┐   │  │
+│  │  │ StateMachine │  │ EventBus │  │ CheckpointStore  │   │  │
+│  │  │ (상태 전이)   │  │ (발행/구독)│  │ (저장/복구)       │   │  │
+│  │  └──────┬───────┘  └────┬─────┘  └────────┬─────────┘   │  │
+│  │         │               │                  │              │  │
+│  │  ┌──────┴───────────────┴──────────────────┴───────────┐ │  │
+│  │  │              WorkflowExecutor                       │ │  │
+│  │  │  프리셋 로드 → 인스턴스 생성 → 블록 실행 → gate 판정  │ │  │
+│  │  └─────────────────────────────────────────────────────┘ │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐   │
+│  │  Block   │  │  Link    │  │  Gate    │  │  Team        │   │
+│  │ Registry │  │ Registry │  │ Registry │  │ Adapter Pool │   │
+│  │ (플러그인)│  │ (플러그인)│  │ (플러그인)│  │ (플러그인)    │   │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────────┘   │
+│                                                                 │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                  Integration Layer                        │  │
+│  │  Claude Code hook (thin wrapper) │ GitHub Actions │ n8n  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 1.2 3층 아키텍처 (V2)
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                    Autonomy Layer (자유)                      │
-│  팀 내부 작업 방식, 도구 사용법, 산출물 구조                      │
-│  "How는 자유" — 리더가 팀 안에서 알아서 판단                     │
+│  팀 내부 작업 방식 — Adapter가 팀에게 Block을 전달한 후       │
+│  팀 안에서 어떻게 처리하는지는 팀 자율                         │
 ├──────────────────────────────────────────────────────────────┤
 │                    Process Layer (조합 가능)                   │
-│  워크플로우 정의, 프리셋, 블록 타입 등록, 게이트 설정              │
-│  .bkit/presets/*.yaml + .bkit/blocks/*.yaml                  │
+│  워크플로우 정의 (YAML 프리셋) + Block/Link/Gate/Adapter 조합 │
+│  presets/*.yaml + plugins                                    │
 ├──────────────────────────────────────────────────────────────┤
 │                    System Layer (불변 — 헌법)                  │
-│  Block Interface, Invariants, Event History, Engine           │
-│  .bkit/brick/engine.sh + .bkit/brick/schema/                 │
+│  Engine Core (StateMachine + EventBus + Checkpoint)          │
+│  Invariants INV-1~8 + Plugin Interface Contracts             │
+│  brick/ Python 패키지                                        │
 └──────────────────────────────────────────────────────────────┘
 ```
 
-### 1.2 System Layer 불변 규칙 (Invariants)
+### 1.3 불변 규칙 (Invariants) — V1 유지 + V2 추가
 
-| # | 불변 규칙 | 위반 시 |
-|---|----------|--------|
-| INV-1 | TASK 없이 워크플로우 시작 불가 | engine이 차단 |
-| INV-2 | Block에 what + done 없으면 블록이 아님 | 스키마 검증 실패 |
-| INV-3 | 산출물 없이 다음 Block 진행 불가 | gate-checker가 차단 |
-| INV-4 | 모든 Block 전환은 Event History에 기록 | engine이 자동 기록 |
-| INV-5 | Team 배정 없는 Block 실행 불가 | engine이 차단 |
-| INV-6 | Link 정의 없는 Block 간 전환 불가 | engine이 차단 |
+| # | 규칙 | 출처 |
+|---|------|------|
+| INV-1 | TASK 없이 워크플로우 시작 불가 | V1 |
+| INV-2 | Block에 what + done 없으면 블록이 아님 | V1 |
+| INV-3 | 산출물 없이 다음 Block 진행 불가 | V1 |
+| INV-4 | 모든 Block 전환은 Event History에 기록 | V1 |
+| INV-5 | Team(Adapter) 배정 없는 Block 실행 불가 | V1 (확장) |
+| INV-6 | Link 정의 없는 Block 간 전환 불가 | V1 |
+| INV-7 | 워크플로우 그래프에 의도하지 않은 순환 불가 | V1 §12 |
+| INV-8 | Core 프리셋 무단 수정 불가 | V1 §12 |
+| INV-9 | **상태 전이는 StateMachine을 통해서만** (직접 JSON 수정 금지) | V2 신규 |
+| INV-10 | **모든 상태 변경은 Checkpoint에 저장** (크래시 후 복구 보장) | V2 신규 |
 
-### 1.3 시스템 전체 흐름
+### 1.4 설계 원칙 (Temporal + Kestra에서 배운 것)
+
+| 원칙 | 출처 | Brick 적용 |
+|------|------|-----------|
+| **Workflow = Deterministic State Machine** | Temporal | engine은 순수 함수: (현재 상태, 이벤트) → 다음 상태. side effect 없음 |
+| **Activity = Side Effect** | Temporal | 실제 작업(코드 작성, 배포)은 TeamAdapter에 위임. engine은 상태만 |
+| **Everything is Plugin** | Kestra | Block 타입, Gate 타입, Link 타입, Team Adapter 전부 플러그인 |
+| **YAML Declarative** | Kestra | 기본은 YAML, 복잡한 건 Python 플러그인으로 확장 |
+| **Event-Driven** | Kestra | 블록 전이마다 이벤트 발행 → 구독자 반응 |
+| **Checkpoint + Replay** | Temporal | 크래시 후 마지막 checkpoint에서 정확히 재개 |
+| **Serverless First** | Brick 고유 | 별도 서버 없이 CLI로 동작. 나중에 서버 모드 추가 가능 |
+| **Task Queue (경량)** | Temporal | 블록 실행을 큐로 디스패치 → 팀 경합 해결 (초기: 파일 기반 큐) |
+
+---
+
+## 2. Engine Core
+
+### 2.1 StateMachine (상태 머신)
+
+**위치**: `brick/engine/state_machine.py`
+
+워크플로우와 블록의 상태 전이를 관리하는 **순수 함수형** 엔진. side effect 없음.
+
+#### 워크플로우 상태
 
 ```
-[TASK 정의]
-    │
-    ▼
-[프리셋 선택] ─── detect-work-type.sh OR 수동 지정
-    │
-    ▼
-[워크플로우 인스턴스 생성]
-    │  .bkit/runtime/workflows/{workflow-id}.json
-    ▼
-[Block 1] ──gate──▶ [Block 2] ──gate──▶ [Block 3] ...
-    │                    │                    │
-    ▼                    ▼                    ▼
-  Team A              Team B              Team C
-  (자율)              (자율)              (자율)
+                    ┌─────────┐
+                    │ pending │
+                    └────┬────┘
+                         │ start
+                    ┌────▼────┐
+              ┌─────│ running │─────┐
+              │     └────┬────┘     │
+              │          │          │
+         suspended   completed   failed
+              │          │          │
+              └──→ running ◄───────┘  (resume / retry)
+```
+
+```python
+class WorkflowStatus(Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    SUSPENDED = "suspended"     # 선점으로 일시정지
+```
+
+#### 블록 상태
+
+```
+pending → queued → running → gate_checking → completed
+                      │            │
+                      │        gate_failed → retry / rollback
+                      │
+                   failed → retry / escalate
+```
+
+```python
+class BlockStatus(Enum):
+    PENDING = "pending"
+    QUEUED = "queued"           # TaskQueue에 들어감
+    RUNNING = "running"         # Adapter가 실행 중
+    GATE_CHECKING = "gate_checking"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    SUSPENDED = "suspended"
+```
+
+#### 상태 전이 함수 (핵심)
+
+```python
+class StateMachine:
+    """순수 함수형 상태 머신. side effect 없음."""
+    
+    def transition(
+        self, 
+        workflow: WorkflowInstance, 
+        event: Event
+    ) -> tuple[WorkflowInstance, list[Command]]:
+        """
+        (현재 상태, 이벤트) → (다음 상태, 실행할 명령 목록)
+        
+        Commands는 engine 외부에서 실행:
+        - StartBlock(block_id, adapter)
+        - CheckGate(block_id, gates)
+        - EmitEvent(event)
+        - SaveCheckpoint(state)
+        """
+        ...
+```
+
+**핵심**: StateMachine.transition()은 **순수 함수**. 파일 I/O, 네트워크, 프로세스 실행 없음. 테스트가 극도로 쉬움.
+
+### 2.2 EventBus (이벤트 버스)
+
+**위치**: `brick/engine/event_bus.py`
+
+블록 전이마다 이벤트를 발행하고, 구독자가 반응.
+
+```python
+class EventBus:
+    """초기: 단순 콜백 리스트. 나중에 Redis/Kafka로 교체 가능."""
+    
+    def subscribe(self, event_type: str, handler: Callable) -> None: ...
+    def publish(self, event: Event) -> None: ...
+    def replay(self, events: list[Event]) -> None: ...  # checkpoint 복구용
+```
+
+#### 이벤트 타입
+
+| 이벤트 | 발행 시점 | 기본 구독자 |
+|--------|----------|------------|
+| `workflow.started` | 워크플로우 시작 | 로거 |
+| `workflow.completed` | 마지막 블록 gate 통과 | 로거, 알림 |
+| `workflow.failed` | 복구 불가 실패 | 로거, 알림, escalation |
+| `block.started` | 블록 실행 시작 | 로거, 알림 (on_start hook) |
+| `block.completed` | 블록 gate 통과 | 로거, 알림 (on_complete hook), 체인 |
+| `block.failed` | 블록 실패 | 로거, 알림 (on_fail hook) |
+| `block.gate_passed` | gate 자동 통과 | 로거 |
+| `block.gate_failed` | gate 실패 | retry/rollback 핸들러 |
+| `block.gate_review_requested` | review gate 대기 | COO/Owner 알림 |
+| `block.suspended` | 선점으로 일시정지 | 로거 |
+| `block.resumed` | 선점 해제 후 재개 | 로거 |
+| `adapter.started` | Adapter가 작업 시작 | 로거 |
+| `adapter.heartbeat` | Adapter 생존 신호 | 타임아웃 와치독 |
+| `adapter.completed` | Adapter 작업 완료 | gate 트리거 |
+| `adapter.failed` | Adapter 실패 | recovery 핸들러 |
+
+#### 이벤트-Hook 매핑 (Claude Code hook 4타입 연결)
+
+```yaml
+# 프리셋에서 이벤트-hook 바인딩
+events:
+  block.started:
+    - type: command
+      command: "echo '블록 시작: {block_id}'"
+    - type: http
+      url: "https://hooks.slack.com/..."
+      body: {text: "🚀 {block_id} 시작"}
+  block.completed:
+    - type: command
+      command: "brick chain-next --workflow {workflow_id}"
+    - type: prompt
+      prompt: "이 블록의 산출물 품질을 평가하라: {artifacts}"
+      model: haiku
+```
+
+### 2.3 CheckpointStore (체크포인트)
+
+**위치**: `brick/engine/checkpoint.py`
+
+모든 상태 변경을 디스크에 저장. 크래시 후 정확한 상태에서 재개.
+
+```python
+class CheckpointStore:
+    """파일 기반 체크포인트. 나중에 DB로 교체 가능."""
+    
+    def save(self, workflow_id: str, state: WorkflowInstance) -> None:
+        """원자적 저장: temp 파일 → rename (반쪽짜리 쓰기 방지)"""
+        ...
+    
+    def load(self, workflow_id: str) -> WorkflowInstance | None: ...
+    
+    def list_active(self) -> list[str]:
+        """미완료 워크플로우 ID 목록 (세션 복구용)"""
+        ...
+    
+    def save_event(self, workflow_id: str, event: Event) -> None:
+        """이벤트 로그 append (replay용)"""
+        ...
+```
+
+**저장 경로**: `.bkit/runtime/workflows/{workflow_id}/`
+```
+.bkit/runtime/workflows/signup-fix-20260402/
+├── state.json          # 현재 상태 스냅샷
+├── events.jsonl        # 이벤트 로그 (append-only)
+└── blocks/
+    ├── design.json     # 블록별 상세 상태
+    └── do.json
+```
+
+**원자적 저장 (Atomic Write)**:
+```python
+def save(self, workflow_id, state):
+    path = self._state_path(workflow_id)
+    tmp = path.with_suffix('.tmp')
+    tmp.write_text(json.dumps(state.to_dict(), indent=2))
+    tmp.rename(path)  # 원자적 — 반쪽짜리 파일 불가
+```
+
+### 2.4 TaskQueue (경량 큐)
+
+**위치**: `brick/engine/task_queue.py`
+
+블록 실행을 큐에 넣고 순서대로 디스패치. 팀 경합 해결.
+
+```python
+class TaskQueue:
+    """파일 기반 경량 큐. 별도 서버 불필요."""
+    
+    def enqueue(self, block_execution: BlockExecution) -> None: ...
+    def dequeue(self, adapter_name: str) -> BlockExecution | None: ...
+    def peek(self) -> list[BlockExecution]: ...
+    
+    # 우선순위 큐: L0 > L1 > L2 > L3
+    def enqueue_priority(self, block_execution: BlockExecution, priority: int) -> None: ...
+```
+
+**경합 해결**: exclusive 팀에 2개 워크플로우 → 큐에 넣고 순서대로.
+
+---
+
+## 3. 축 1: Block (what + done + gate) — V1 유지 + V2 확장
+
+### 3.1 Block 데이터 모델
+
+**위치**: `brick/models/block.py`
+
+```python
+@dataclass
+class Block:
+    """Block = 단위 업무. what + done이 최소 필수."""
+    
+    id: str                              # 워크플로우 내 유일
+    what: str                            # 필수: 뭘 하는가
+    done: DoneCondition                  # 필수: 완료 조건
+    
+    type: str = "Custom"                 # 블록 타입 (레지스트리)
+    description: str = ""
+    gate: GateConfig | None = None       # 출구 조건
+    input: InputConfig | None = None     # 이전 블록 산출물
+    timeout: int | None = None           # 블록 타임아웃 (초)
+    idempotent: bool = True              # 멱등성 (V1 §12.1.3)
+    metadata: dict = field(default_factory=dict)
+
+@dataclass
+class DoneCondition:
+    artifacts: list[str] = field(default_factory=list)   # 파일 경로 (glob)
+    metrics: dict[str, Any] = field(default_factory=dict) # match_rate, tsc_errors 등
+    custom: list[str] = field(default_factory=list)       # 커스텀 체크 스크립트
+
+@dataclass
+class GateConfig:
+    handlers: list[GateHandler] = field(default_factory=list)  # V2: 4타입 지원
+    review: ReviewConfig | None = None
+    on_fail: str = "retry"              # retry | rollback | escalate | skip
+    max_retries: int = 3
+    on_review_reject: ReviewRejectConfig | None = None  # V1 §12.3.1
+
+@dataclass
+class GateHandler:
+    """Gate = Hook 4가지 타입. Claude Code hook과 동일 구조."""
+    type: str           # command | http | prompt | agent
+    # type별 파라미터
+    command: str | None = None          # type=command
+    url: str | None = None              # type=http
+    headers: dict | None = None         # type=http
+    prompt: str | None = None           # type=prompt
+    model: str | None = None            # type=prompt (기본: haiku)
+    agent_prompt: str | None = None     # type=agent
+    # 공통
+    timeout: int = 30                   # 초
+    on_fail: str = "fail"               # fail | warn | skip
+```
+
+### 3.2 Block 타입 레지스트리 — V1 유지
+
+**위치**: `brick/presets/block-types.yaml` (V1과 동일 형식)
+
+내장 9종: Plan, Design, Do, Check, Act, Research, Review, Report, Cron.
+확장: `custom-types/` 디렉토리에 YAML 추가 또는 Python 플러그인.
+
+### 3.3 Gate 4가지 타입 (V2 핵심 변경)
+
+V1은 bash script만. V2는 Claude Code hook과 동일한 4가지 타입 지원.
+
+| Type | 구현 | 용도 | 반환 |
+|------|------|------|------|
+| `command` | subprocess 실행 | 파일 존재, tsc, build, 커스텀 스크립트 | exit code 0=pass |
+| `http` | HTTP POST/GET | 외부 서비스 헬스체크, webhook 검증 | status 200=pass |
+| `prompt` | LLM 단일 턴 평가 | "이 Design이 요구사항을 충족하는가?" | yes/no 판정 |
+| `agent` | 에이전트 스폰 (도구 사용 가능) | gap 분석, 코드 리뷰, 보안 감사 | 구조화된 결과 |
+
+```python
+class GateExecutor:
+    """Gate handler를 실행하고 pass/fail 판정."""
+    
+    async def execute(self, handler: GateHandler, context: dict) -> GateResult:
+        match handler.type:
+            case "command":
+                return await self._run_command(handler, context)
+            case "http":
+                return await self._run_http(handler, context)
+            case "prompt":
+                return await self._run_prompt(handler, context)
+            case "agent":
+                return await self._run_agent(handler, context)
+    
+    async def _run_prompt(self, handler, context):
+        """LLM에 프롬프트 보내서 평가. 가벼운 모델(haiku) 사용."""
+        prompt = handler.prompt.format(**context)
+        response = await self.llm_client.evaluate(prompt, model=handler.model or "haiku")
+        return GateResult(
+            passed=response.decision == "yes",
+            detail=response.reasoning,
+            type="prompt"
+        )
+    
+    async def _run_agent(self, handler, context):
+        """서브에이전트 스폰. 도구 사용 가능 (파일 읽기, grep 등)."""
+        result = await self.agent_runner.run(
+            prompt=handler.agent_prompt.format(**context),
+            tools=["Read", "Grep", "Glob"],
+            timeout=handler.timeout
+        )
+        return GateResult(
+            passed=result.verdict == "pass",
+            detail=result.analysis,
+            type="agent"
+        )
+```
+
+#### Gate 순차 실행 + 혼합
+
+```yaml
+# 프리셋에서 gate 정의
+gate:
+  handlers:
+    # 1단계: 자동 체크 (command)
+    - type: command
+      command: "npx tsc --noEmit --quiet"
+    - type: command
+      command: "npm run build"
+    # 2단계: LLM 평가 (prompt)
+    - type: prompt
+      prompt: "다음 코드 변경이 Design 문서의 요구사항을 모두 충족하는지 평가하라: {diff}"
+      model: haiku
+    # 3단계: 에이전트 검증 (agent)  
+    - type: agent
+      agent_prompt: "변경된 파일의 테스트 커버리지를 확인하고 match_rate를 계산하라"
+  
+  # 평가 순서: 순차 실행. 하나라도 fail → 중단
+  evaluation: sequential    # sequential | parallel | vote
+  review:
+    coo: true
+  on_fail: retry
 ```
 
 ---
 
-## 2. 축 1: Block (what + done + gate)
+## 4. 축 2: Team Adapter Pattern (V2 핵심 변경)
 
-### 2.1 Block Interface (JSON Schema)
+### 4.1 TeamAdapter 인터페이스
 
-```jsonc
-{
-  "$schema": "brick/block-v1",
-  
-  // ─── Identity ───
-  "id": "plan",                    // 블록 고유 ID (워크플로우 내 유일)
-  "type": "Plan",                  // 블록 타입 (레지스트리에서 검증)
-  "what": "요구사항 분석 및 Plan 문서 작성",  // 필수: 이 블록에서 뭘 하는가
-  "description": "TASK 분석 → Plan 문서 작성",
-  
-  // ─── Done (완료 조건) ─── 필수: 뭘로 끝났다고 치는가
-  "done": {
-    "artifacts": [                 // 산출물 존재 확인
-      "docs/01-plan/features/{feature}.plan.md"
-    ],
-    "metrics": {                   // 수치 기준 (선택)
-      "match_rate": null,          // Plan은 match_rate 불필요
-      "tdd_pass": null
-    },
-    "custom": []                   // 커스텀 검증 스크립트 (선택)
-  },
-  
-  // ─── Gate (출구 조건) ─── 선택
-  "gate": {
-    "auto": [                      // 자동 체크 목록
-      {"type": "artifact_exists", "path": "docs/01-plan/features/{feature}.plan.md"},
-      {"type": "file_min_lines", "path": "docs/01-plan/features/{feature}.plan.md", "min": 20}
-    ],
-    "review": {                    // 검토 게이트 (on/off 가능)
-      "coo": true,                 // COO 검토 필요
-      "owner": false               // Smith님 검토 불필요
-    },
-    "on_fail": "retry"             // 실패 시: retry | rollback | escalate
-  },
-  
-  // ─── Input (이전 블록 산출물) ─── 선택
-  "input": {
-    "required": [],                // 필수 입력 (없으면 시작 불가)
-    "optional": [                  // 선택 입력 (없어도 시작 가능)
-      "docs/adr/*.md"
-    ]
-  }
-}
+**위치**: `brick/adapters/base.py`
+
+```python
+from abc import ABC, abstractmethod
+
+class TeamAdapter(ABC):
+    """Team = 인터페이스. 구현체는 어댑터.
+    
+    어댑터는 Block을 받아서 실행하고, 상태를 보고하고, 산출물을 반환.
+    내부적으로 어떻게 실행하는지는 어댑터 자율 (Autonomy Layer).
+    """
+    
+    @abstractmethod
+    async def start_block(self, block: Block, context: BlockContext) -> str:
+        """블록 실행 시작. execution_id 반환."""
+        ...
+    
+    @abstractmethod
+    async def check_status(self, execution_id: str) -> AdapterStatus:
+        """실행 상태 확인."""
+        ...
+    
+    @abstractmethod
+    async def get_artifacts(self, execution_id: str) -> list[str]:
+        """산출물 경로 목록 반환."""
+        ...
+    
+    @abstractmethod
+    async def cancel(self, execution_id: str) -> bool:
+        """실행 취소."""
+        ...
+    
+    # 선택 구현
+    async def send_signal(self, execution_id: str, signal: dict) -> None:
+        """실행 중인 블록에 신호 전송 (추가 지시 등)."""
+        pass
+    
+    async def get_logs(self, execution_id: str) -> str:
+        """실행 로그 반환."""
+        return ""
 ```
 
-### 2.2 Block 최소 필수 정의
+### 4.2 어댑터 구현체
 
-Block이 되려면 **2가지만 필수**:
-- `what`: 이 블록에서 뭘 하는가 (문자열)
-- `done.artifacts`: 뭘로 끝났다고 치는가 (파일 경로 1개 이상)
+#### 4.2.1 ClaudeAgentTeamsAdapter (우리 기본값)
 
-나머지(type, gate, input, description)는 전부 선택. 없으면 기본값 적용.
+**위치**: `brick/adapters/claude_agent_teams.py`
 
-```jsonc
-// 최소 블록 예시
-{
-  "id": "hotfix",
-  "what": "프로덕션 버그 수정",
-  "done": { "artifacts": ["src/**/*.ts"] }
-}
+```python
+class ClaudeAgentTeamsAdapter(TeamAdapter):
+    """Claude Code Agent Teams를 Brick Block 실행에 연결.
+    
+    동작 방식:
+    1. start_block → tmux send-keys 또는 claude-peers 브로커로 리더에게 TASK 전달
+    2. check_status → team-context.json / peer-map.json 확인
+    3. get_artifacts → done.artifacts 경로 파일 존재 확인
+    4. cancel → TeamDelete 또는 shutdown_request
+    """
+    
+    def __init__(self, config: ClaudeTeamConfig):
+        self.session: str = config.session          # tmux 세션 이름
+        self.broker_port: int = config.broker_port   # claude-peers 포트 (7899)
+        self.peer_role: str = config.peer_role       # CTO_LEADER 등
+        self.team_context_dir: str = config.team_context_dir
+    
+    async def start_block(self, block, context):
+        execution_id = f"{block.id}-{int(time.time())}"
+        
+        # 방법 1: claude-peers 메시지 (권장)
+        message = {
+            "type": "BLOCK_ASSIGNMENT",
+            "block": block.to_dict(),
+            "context": context.to_dict(),
+            "execution_id": execution_id
+        }
+        await self._send_peer_message(self.peer_role, message)
+        
+        # 방법 2: tmux send-keys (fallback)
+        # tmux send-keys -t {session} "TASK: {block.what}" Enter
+        
+        return execution_id
+    
+    async def check_status(self, execution_id):
+        # task-state JSON 확인 또는 peer 상태 확인
+        state_file = Path(self.team_context_dir) / f"task-state-{execution_id}.json"
+        if state_file.exists():
+            data = json.loads(state_file.read_text())
+            return AdapterStatus(
+                status=data.get("status", "running"),
+                progress=data.get("progress"),
+                message=data.get("message")
+            )
+        return AdapterStatus(status="running")
+    
+    async def get_artifacts(self, execution_id):
+        # block.done.artifacts 경로의 파일을 glob으로 확인
+        ...
 ```
 
-### 2.3 Block 타입 레지스트리
+#### 4.2.2 SingleClaudeCodeAdapter
 
-**위치**: `.bkit/brick/block-types.yaml`
+```python
+class SingleClaudeCodeAdapter(TeamAdapter):
+    """Claude Code 단독 실행 (팀 없이).
+    subprocess로 claude 명령 실행."""
+    
+    async def start_block(self, block, context):
+        proc = await asyncio.create_subprocess_exec(
+            "claude", "--print", "--dangerously-skip-permissions",
+            "-m", f"TASK: {block.what}\n\nContext: {json.dumps(context.to_dict())}",
+            stdout=asyncio.subprocess.PIPE
+        )
+        ...
+```
+
+#### 4.2.3 HumanAdapter
+
+```python
+class HumanAdapter(TeamAdapter):
+    """사람이 직접 수행. CLI에서 완료 입력 대기."""
+    
+    async def start_block(self, block, context):
+        print(f"\n🧱 Block: {block.what}")
+        print(f"   Done 조건: {block.done}")
+        print(f"   완료하면 'brick complete --block {block.id}' 실행\n")
+        return f"human-{block.id}-{int(time.time())}"
+    
+    async def check_status(self, execution_id):
+        # .bkit/runtime/human-completions/{execution_id} 파일 존재 확인
+        if completion_file.exists():
+            return AdapterStatus(status="completed")
+        return AdapterStatus(status="waiting_human")
+```
+
+#### 4.2.4 WebhookAdapter
+
+```python
+class WebhookAdapter(TeamAdapter):
+    """외부 서비스에 HTTP로 블록 실행 위임."""
+    
+    async def start_block(self, block, context):
+        response = await httpx.post(
+            self.config.url,
+            json={"block": block.to_dict(), "context": context.to_dict()},
+            headers=self.config.headers
+        )
+        return response.json()["execution_id"]
+    
+    async def check_status(self, execution_id):
+        response = await httpx.get(f"{self.config.url}/status/{execution_id}")
+        return AdapterStatus(**response.json())
+```
+
+#### 4.2.5 어댑터 무관성 (Adapter Agnosticism)
+
+**핵심 원칙**: 어댑터를 교체해도 워크플로우 동작은 동일.
 
 ```yaml
-# 내장 타입 (System Layer — 삭제 불가, 수정 가능)
-block_types:
-  Plan:
-    description: "요구사항 분석 + Plan 문서 작성"
-    default_done:
-      artifacts: ["docs/01-plan/features/{feature}.plan.md"]
-    default_gate:
-      auto: [{type: "artifact_exists"}]
-      review: {coo: true}
-
-  Design:
-    description: "상세 설계 + TDD 케이스 작성"
-    default_done:
-      artifacts: ["docs/02-design/features/{feature}.design.md"]
-      metrics: {tdd_coverage: 100}
-    default_gate:
-      auto: [{type: "artifact_exists"}, {type: "tdd_gap_zero"}]
-      review: {coo: true}
-
-  Do:
-    description: "구현 (코드 작성)"
-    default_done:
-      artifacts: ["src/**"]
-      metrics: {match_rate: 90, tsc_errors: 0, build_pass: true}
-    default_gate:
-      auto: [{type: "match_rate", "min": 90}, {type: "tsc_pass"}, {type: "build_pass"}]
-
-  Check:
-    description: "검증 (Gap 분석 + QA)"
-    default_done:
-      artifacts: ["docs/03-analysis/{feature}.analysis.md"]
-      metrics: {match_rate: 90}
-    default_gate:
-      auto: [{type: "match_rate", "min": 90}]
-
-  Act:
-    description: "배포 + 완료 보고"
-    default_done:
-      artifacts: []
-      metrics: {deploy_health: true}
-    default_gate:
-      auto: [{type: "deploy_health"}]
-      review: {owner: false}
-
-  Research:
-    description: "조사 + 분석 보고서"
-    default_done:
-      artifacts: ["docs/03-analysis/{feature}.analysis.md"]
-    default_gate:
-      auto: [{type: "artifact_exists"}, {type: "file_min_lines", "min": 50}]
-
-  Review:
-    description: "코드/설계 리뷰"
-    default_done:
-      artifacts: ["docs/03-analysis/{feature}.review.md"]
-
-  Report:
-    description: "보고서 작성 + 전달"
-    default_done:
-      artifacts: ["{output_path}"]
-
-  Cron:
-    description: "반복 실행 블록"
-    default_done:
-      metrics: {exit_code: 0}
-
-# 커스텀 타입 추가 방법: 이 파일에 항목 추가
-# 또는 .bkit/brick/custom-types/*.yaml 에 개별 파일로
+# 같은 프리셋, 다른 어댑터
+teams:
+  do:
+    adapter: claude_agent_teams    # Claude로 실행
+    config: {session: sdk-cto}
+  
+  # 또는:
+  do:
+    adapter: human                 # 사람이 직접
+  
+  # 또는:
+  do:
+    adapter: webhook               # 외부 서비스에 위임
+    config: {url: "https://api.example.com/execute"}
 ```
 
-### 2.4 Gate 메커니즘 상세
+engine 입장에서는 전부 `TeamAdapter.start_block()` → `check_status()` → `get_artifacts()`. 내부가 Claude든 사람이든 무관.
 
-Gate = Block의 **출구 조건**. Block 자체가 아님.
+### 4.3 Autonomy Layer 경계 — 팀이 못 하는 것
 
-#### Gate Auto 체크 타입
+어댑터에 위임된 후 팀 내부는 자율. **하지만 이것은 불가**:
 
-| gate type | 설명 | 파라미터 | 구현 |
-|-----------|------|----------|------|
-| `artifact_exists` | 파일 존재 확인 | `path` (glob 가능) | `ls {path}` |
-| `file_min_lines` | 파일 최소 줄 수 | `path`, `min` | `wc -l` |
-| `match_rate` | Gap 분석 Match Rate | `min` (0-100) | match-rate-parser.sh |
-| `tsc_pass` | TypeScript 타입 체크 | — | `npx tsc --noEmit` |
-| `build_pass` | 빌드 성공 | — | `npm run build` |
-| `tdd_pass` | 테스트 통과 | `pattern` | `npx vitest run {pattern}` |
-| `tdd_gap_zero` | TDD Gap 0건 | — | Design↔TDD 매핑 검증 |
-| `deploy_health` | 배포 헬스체크 | `url` | HTTP 200 확인 |
-| `custom_script` | 커스텀 스크립트 | `script` | `bash {script}` exit 0 |
-
-#### Gate Review 설정
-
-```jsonc
-"review": {
-  "coo": true,       // COO(모찌) 검토 → coo-watchdog.sh ACK 대기
-  "owner": false      // Smith님 검토 → smith-report 대기
-}
-```
-
-- `true` = 게이트 활성 (검토 통과해야 다음 블록)
-- `false` = 게이트 비활성 (스킵)
-- **on/off 토글 가능** — 프리셋에서 기본값, 런타임에서 오버라이드
-
-#### Gate on_fail 정책
-
-| 정책 | 동작 |
+| 금지 | 이유 |
 |------|------|
-| `retry` | 같은 Block 재실행 (최대 3회, 설정 가능) |
-| `rollback` | 이전 Block으로 돌아감 (Link 역방향) |
-| `escalate` | COO/Owner에게 에스컬레이션 알림 |
-| `skip` | 게이트 무시하고 다음 진행 (위험 — L0 전용) |
+| Block 정의 수정 (what/done 변경) | System Layer 불변 |
+| Gate 비활성화 | System Layer 불변 |
+| 다른 Block으로 직접 전환 | engine만 가능 |
+| 워크플로우 인스턴스 직접 수정 | StateMachine만 가능 |
+| 다른 팀의 Block에 간섭 | 팀 격리 원칙 |
 
 ---
 
-## 3. 축 2: Team (who + tool)
+## 5. 축 3: Link — V1 유지
 
-### 3.1 Team Interface (JSON Schema)
+V1의 7가지 Link 타입 (sequential, parallel, compete, loop, cron, branch, custom) 전부 유지.
 
-```jsonc
-{
-  "$schema": "brick/team-v1",
-  
-  // ─── Identity ───
-  "name": "cto-team",              // 팀 고유 이름
-  "display": "CTO팀",
-  "session": "sdk-cto",            // Claude Code 세션 식별자
-  "channel": "C0AN7ATS4DD",        // Slack 채널 (선택)
-  
-  // ─── Members ───
-  "leader": {
-    "model": "opus",               // 리더 모델
-    "role": "CTO_LEADER",          // peer-resolver 역할
-    "autonomy": "delegate",        // delegate | direct
-    "restrictions": [              // 리더 금지 사항
-      "no_src_edit",               // src/ 직접 수정 금지
-      "no_infra_cli"               // gcloud 등 직접 실행 금지
-    ]
-  },
-  "workers": [                     // 팀원 정의
-    {
-      "name": "frontend-dev",
-      "model": "opus",
-      "scope": ["src/app/", "src/components/"],
-      "max_instances": 2
-    },
-    {
-      "name": "backend-dev",
-      "model": "opus",
-      "scope": ["src/lib/", "src/actions/"],
-      "max_instances": 2
-    },
-    {
-      "name": "qa-engineer",
-      "model": "opus",
-      "scope": ["__tests__/"],
-      "max_instances": 1
-    }
-  ],
-  
-  // ─── Toolkit (팀의 속성 — 블록이 아님) ───
-  "toolkit": {
-    "mcp": ["context7", "claude-peers"],
-    "skills": [],
-    "bkit": ["gap-detector", "code-analyzer"],
-    "cli": ["npx", "npm", "git"]
-  },
-  
-  // ─── Config ───
-  "config": {
-    "max_workers": 3,              // 동시 팀원 수 상한
-    "timeout": 600000,             // 팀 작업 타임아웃 (ms)
-    "permissions": "bypassPermissions"
-  }
-}
+V2 변경: Link 핸들러도 **Python 플러그인**으로 구현.
+
+**위치**: `brick/links/`
+
+```python
+class LinkHandler(ABC):
+    """Link 타입별 동작 정의."""
+    
+    @abstractmethod
+    def evaluate(self, source_block: BlockInstance, context: dict) -> LinkDecision:
+        """다음 블록(들)을 결정."""
+        ...
+
+class SequentialLink(LinkHandler):
+    def evaluate(self, source_block, context):
+        if source_block.status == "completed":
+            return LinkDecision(next_blocks=[self.target_id])
+        elif source_block.status == "failed":
+            return LinkDecision(next_blocks=[self.on_fail_target])
+
+class ParallelLink(LinkHandler):
+    """모든 대상 블록을 동시에 시작."""
+    def evaluate(self, source_block, context):
+        return LinkDecision(
+            next_blocks=self.target_ids,
+            parallel=True,
+            merge_strategy=self.merge   # all | any | n_of_m
+        )
+
+class CompeteLink(LinkHandler):
+    """같은 블록을 N개 어댑터로 동시 실행 → judge가 선택."""
+    ...
+
+class LoopLink(LinkHandler):
+    """gate 실패 시 이전 블록으로. max_retries 제한."""
+    ...
+
+class BranchLink(LinkHandler):
+    """조건에 따라 분기."""
+    ...
+
+class CronLink(LinkHandler):
+    """스케줄 기반 반복 트리거."""
+    ...
 ```
 
-### 3.2 팀 유형
-
-| 팀 | 역할 | 기본 블록 배정 |
-|----|------|--------------|
-| PM팀 | Plan + Design + TDD 케이스 | Plan, Design, Research, Review |
-| CTO팀 | 구현 + QA + 배포 | Do, Check, Act |
-| COO(모찌) | 게이트 검토 + 보고 | Gate review (블록 아님) |
-| 마케팅팀 | 홍보 + 리포트 | Report |
-
-### 3.3 팀-블록 배정 규칙
-
-- 블록 1개에 팀 1개 배정 = **기본 모드**
-- 블록 1개에 팀 N개 배정 = **경쟁 모드** (Link.type: compete)
-- 팀 1개가 블록 N개 순차 처리 = **일반 모드**
-- **팀 내부 프로세스는 자율** — COO는 what + done만 정의, 리더가 판단
-  - 리더가 팀원 몇 명 쓸지, 어떤 순서로 할지, 어떤 도구 쓸지 = 자율
-  - 이것이 Autonomy Layer
-
-### 3.4 팀 내부 재귀적 프로세스
-
-**에이전트팀 ≠ 서브에이전트**. 팀은 자체 프로세스를 가진 조직.
-
-```
-Block: Do (구현)
-  └─ Team: CTO팀
-       └─ 리더 내부 프로세스 (Autonomy Layer):
-            ├─ 팀원 생성
-            ├─ TASK 분해 → 팀원 배정
-            ├─ 팀원 구현 → 리더 리뷰
-            ├─ tsc + build 확인
-            └─ 커밋 + 리더 보고
-```
-
-블록 바깥(Process Layer)에서 보면 "Do 블록 실행 → done 조건 충족?" 만 보임.
-블록 안(Autonomy Layer)에서는 팀이 자유롭게 내부 프로세스 운영.
-
----
-
-## 4. 축 3: Link (how)
-
-### 4.1 Link Interface (JSON Schema)
-
-```jsonc
-{
-  "$schema": "brick/link-v1",
-  
-  "from": "plan",                  // 출발 블록 ID
-  "to": "design",                  // 도착 블록 ID
-  "type": "sequential",            // 연결 타입
-  
-  // ─── 조건 (선택) ───
-  "condition": {
-    "type": "gate_pass",           // gate_pass | artifact_exists | metric | custom
-    "params": {}
-  },
-  
-  // ─── 실패 시 역방향 ───
-  "on_fail": {
-    "to": "plan",                  // 실패 시 되돌아갈 블록
-    "type": "rollback"
-  },
-  
-  // ─── 이벤트 훅 ───
-  "events": {
-    "on_start": ["notify-task-started.sh"],
-    "on_complete": ["pdca-chain-handoff.sh"],
-    "on_fail": ["notify-failure.sh"],
-    "on_timeout": ["escalate.sh"]
-  },
-  
-  // ─── 컨텍스트 전달 ───
-  "context_pass": {
-    "artifacts": true,             // 이전 블록 산출물 자동 주입
-    "state": true                  // 이전 블록 상태 전달
-  }
-}
-```
-
-### 4.2 Link 타입 상세
-
-#### 4.2.1 Sequential (순차)
-
-```
-[Block A] ──→ [Block B] ──→ [Block C]
-```
-
-- 기본 타입. A gate 통과 → B 시작.
-- 역방향: B gate 실패 → on_fail 정책에 따라 A로 돌아감.
-- **현행 매핑**: pdca-chain-handoff.sh의 CTO→COO→Smith 체인
-
-#### 4.2.2 Parallel (병렬)
-
-```
-              ┌─→ [Block B1]
-[Block A] ──→├─→ [Block B2] ──→ [Block C]  (merge)
-              └─→ [Block B3]
-```
-
-- A 완료 → B1, B2, B3 동시 시작.
-- 전부 완료 → C 시작 (merge 전략: all | any | N-of-M).
-- **현행 매핑**: 없음 (신규). 구현: 각 Block에 별도 Team 배정 → TaskCreated 동시 발행
-
-```jsonc
-{
-  "from": "plan",
-  "to": ["design-api", "design-ui", "design-db"],
-  "type": "parallel",
-  "merge": {
-    "strategy": "all",            // all: 전부 완료 | any: 하나만 | n_of_m: N개
-    "next": "implement"
-  }
-}
-```
-
-#### 4.2.3 Compete (경쟁)
-
-```
-              ┌─→ [Team A: Block X]
-[Block X] ──→│                      ──→ [Judge] ──→ [Block Y]
-              └─→ [Team B: Block X]
-```
-
-- 같은 블록을 2개 이상 팀이 동시 수행 → 우수 산출물 선택.
-- Judge = auto(metric 비교) 또는 review(COO/Owner 판단).
-- **현행 매핑**: 없음 (신규). 구현: tmux 2세션 병렬 → judge gate
-
-```jsonc
-{
-  "from": "research",
-  "to": "research",              // 자기 자신 (같은 블록)
-  "type": "compete",
-  "teams": ["pm-team-a", "pm-team-b"],
-  "judge": {
-    "type": "review",            // auto | review
-    "reviewer": "coo"
-  },
-  "next": "report"
-}
-```
-
-#### 4.2.4 Loop (반복)
-
-```
-[Block A] ──→ [Block B] ──→ gate 실패 ──→ [Block A] (재시도)
-                              │
-                              gate 성공 ──→ [Block C]
-```
-
-- Gate 실패 시 이전 블록 재실행. 최대 횟수 제한.
-- **현행 매핑**: pdca-iterator (gap < 90% → Do 재실행)
-
-```jsonc
-{
-  "from": "check",
-  "to": "do",
-  "type": "loop",
-  "condition": {"type": "metric", "key": "match_rate", "op": "<", "value": 90},
-  "max_retries": 3,
-  "on_exhaust": "escalate"       // 최대 횟수 소진 시
-}
-```
-
-#### 4.2.5 Cron (반복 스케줄)
-
-```
-[Schedule: 05:00 KST] ──→ [Block: collect] ──→ [Block: process]
-```
-
-- 블록(들)에 반복 스케줄. 별도 개념이 아님 — Link의 한 타입.
-- TASK도 크론도 같은 것: 크론은 "자동으로 TASK가 반복 생성"되는 Link.
-
-```jsonc
-{
-  "from": "__cron__",            // 특수 소스: 스케줄러
-  "to": "collect",
-  "type": "cron",
-  "schedule": "0 5 * * *",       // cron 표현식
-  "timezone": "Asia/Seoul",
-  "chain": ["collect", "process", "analyze"]  // 크론이 트리거하는 블록 체인
-}
-```
-
-#### 4.2.6 Branch (조건 분기)
-
-```
-                  ┌─ condition A ──→ [Block B]
-[Block A] ──→ ───┤
-                  └─ condition B ──→ [Block C]
-```
-
-- 조건에 따라 다른 블록으로 분기.
-- **현행 매핑**: detect-work-type.sh의 L0/L1/L2/L3 분기
-
-```jsonc
-{
-  "from": "triage",
-  "type": "branch",
-  "branches": [
-    {"condition": {"level": "L0"}, "to": "hotfix-do"},
-    {"condition": {"level": "L1"}, "to": "design"},
-    {"condition": {"level": "L2"}, "to": "plan"},
-    {"condition": {"level": "L3"}, "to": "plan"}
-  ]
-}
-```
-
-#### 4.2.7 확장 (Custom)
-
-새 Link 타입 추가 방법: `.bkit/brick/link-types/` 에 타입 정의 + 실행 스크립트.
+### Compete judge:auto 기준 정의 (V1 보완)
 
 ```yaml
-# .bkit/brick/link-types/approval.yaml
-name: approval
-description: "외부 승인 대기"
-handler: ".bkit/brick/handlers/approval-handler.sh"
-params:
-  - approver     # 승인자
-  - timeout      # 대기 시간
-```
-
-### 4.3 이벤트 훅 (Event Hooks)
-
-모든 Link는 4개 이벤트에 hook을 바인딩할 수 있다:
-
-| 이벤트 | 발화 시점 | 기본 hook |
-|--------|----------|----------|
-| `on_start` | 블록 실행 시작 | notify-task-started.sh |
-| `on_complete` | 블록 gate 통과 | pdca-chain-handoff.sh |
-| `on_fail` | 블록 gate 실패 | notify-failure.sh (신규) |
-| `on_timeout` | 블록 타임아웃 | escalate.sh (신규) |
-
-hook은 **기존 .bkit/hooks/ 디렉토리의 스크립트 재사용**. Brick 전용 hook 추가 시 `.bkit/brick/hooks/`에 배치.
-
----
-
-## 5. 워크플로우 엔진
-
-### 5.1 Workflow = Block[] × Team[] × Link[]
-
-워크플로우 = 블록 목록 + 팀 배정 + 연결 정의의 **조합**.
-
-```jsonc
-{
-  "$schema": "brick/workflow-v1",
-  "id": "feature-signup-fix",
-  "name": "회원가입 버그 수정",
-  "preset": "t-pdca-l1",          // 프리셋 기반 (선택)
-  "task": "TASK-SIGNUP-PROFILE-FIX",
-  
-  "blocks": [
-    {"id": "design", "type": "Design", "what": "UUID v5 변환 설계", "done": {"artifacts": ["docs/02-design/features/signup-profile-fix.design.md"]}},
-    {"id": "do", "type": "Do", "what": "코드 구현", "done": {"metrics": {"match_rate": 90, "tsc_errors": 0}}},
-    {"id": "check", "type": "Check", "what": "Gap 분석", "done": {"metrics": {"match_rate": 90}}},
-    {"id": "act", "type": "Act", "what": "배포 + 보고", "done": {"metrics": {"deploy_health": true}}}
-  ],
-  
-  "teams": {
-    "design": "pm-team",
-    "do": "cto-team",
-    "check": "cto-team",
-    "act": "cto-team"
-  },
-  
-  "links": [
-    {"from": "design", "to": "do", "type": "sequential"},
-    {"from": "do", "to": "check", "type": "sequential"},
-    {"from": "check", "to": "do", "type": "loop", "condition": {"match_rate_below": 90}, "max_retries": 3},
-    {"from": "check", "to": "act", "type": "sequential", "condition": {"match_rate_gte": 90}}
-  ]
-}
-```
-
-### 5.2 워크플로우 엔진 (engine.sh)
-
-**위치**: `.bkit/brick/engine.sh`
-
-**역할**:
-1. 프리셋 또는 커스텀 워크플로우 YAML/JSON 로드
-2. 워크플로우 인스턴스 생성 (`.bkit/runtime/workflows/{id}.json`)
-3. 현재 블록 추적 + gate 판정 → 다음 블록 결정
-4. Link 이벤트 훅 발화
-5. Event History 기록
-
-**인터페이스**:
-```bash
-# 워크플로우 시작
-brick-engine start --preset t-pdca-l2 --feature signup-fix
-
-# 현재 상태 확인
-brick-engine status --workflow {id}
-
-# 블록 완료 보고 (gate 판정 트리거)
-brick-engine complete --block do --workflow {id}
-
-# 수동 게이트 통과 (review gate)
-brick-engine approve --block design --reviewer coo --workflow {id}
-
-# 워크플로우 시각화
-brick-engine viz --workflow {id}
-```
-
-### 5.3 워크플로우 인스턴스 상태
-
-**위치**: `.bkit/runtime/workflows/{workflow-id}.json`
-
-```jsonc
-{
-  "workflow_id": "feature-signup-fix-20260402",
-  "preset": "t-pdca-l1",
-  "task": "TASK-SIGNUP-PROFILE-FIX",
-  "feature": "signup-fix",
-  "status": "running",            // pending | running | completed | failed
-  "created_at": "2026-04-02T10:00:00+09:00",
-  
-  "blocks": {
-    "design": {"status": "completed", "started_at": "...", "completed_at": "...", "artifacts": ["..."]},
-    "do":     {"status": "in_progress", "started_at": "...", "team": "cto-team", "worker": "backend-dev"},
-    "check":  {"status": "pending"},
-    "act":    {"status": "pending"}
-  },
-  
-  "current_block": "do",
-  "history": [
-    {"event": "block_start", "block": "design", "at": "...", "team": "pm-team"},
-    {"event": "gate_pass", "block": "design", "at": "...", "gates": ["artifact_exists: pass"]},
-    {"event": "block_start", "block": "do", "at": "...", "team": "cto-team"}
-  ]
-}
-```
-
-### 5.4 컨텍스트 자동 주입
-
-Block 전환 시 이전 Block의 산출물을 다음 Block에 자동 주입.
-
-```
-Design 블록 완료
-  산출물: signup-profile-fix.design.md
-      │
-      ▼ (Link.context_pass.artifacts = true)
-Do 블록 시작
-  input.required = ["docs/02-design/features/signup-profile-fix.design.md"]
-  → 팀 리더에게 "이 Design 기반으로 구현하라" 자동 컨텍스트
-```
-
-**구현**: engine.sh가 Block 전환 시 이전 Block의 `done.artifacts` → 다음 Block의 `input` 으로 자동 매핑.
-현행 living-context-loader.sh의 Phase별 문서 로딩이 이 역할 수행 → Brick engine으로 통합.
-
----
-
-## 6. 프리셋 시스템
-
-### 6.1 프리셋 = 워크플로우 템플릿
-
-**위치**: `.bkit/presets/`
-
-프리셋은 Block/Team/Link의 **기본 조합**. 실행 시 오버라이드 가능.
-
-### 6.2 내장 프리셋
-
-#### T-PDCA L0 (응급)
-
-```yaml
-# .bkit/presets/t-pdca-l0.yaml
-name: "T-PDCA L0 응급"
-description: "프로덕션 장애 — 즉시 수정 + 배포"
-blocks:
-  - {id: do, type: Do, what: "버그 수정", done: {metrics: {tsc_errors: 0, build_pass: true}}}
-  - {id: act, type: Act, what: "배포 + 보고", done: {metrics: {deploy_health: true}}}
+# compete 타입 judge 설정
 links:
-  - {from: do, to: act, type: sequential}
-teams:
-  do: cto-team
-  act: cto-team
-gates:
-  do: {auto: [tsc_pass, build_pass], review: {coo: false, owner: false}}
-  act: {auto: [deploy_health], review: {coo: false}}
+  - from: research
+    to: research
+    type: compete
+    teams: [pm-team-a, pm-team-b]
+    judge:
+      type: auto                 # auto | review
+      metric: "file_line_count"  # 파일 줄 수 비교 (많을수록 우수)
+      # 또는:
+      metric: "match_rate"       # gap 분석 점수
+      # 또는:
+      type: prompt               # LLM이 판단
+      prompt: "두 산출물을 비교하여 더 우수한 것을 선택하라: A={artifact_a}, B={artifact_b}"
 ```
 
-#### T-PDCA L1 (경량)
+---
 
-```yaml
-# .bkit/presets/t-pdca-l1.yaml
-name: "T-PDCA L1 경량"
-description: "원인 명확한 버그 — Design + Do + Check + Act"
-blocks:
-  - {id: design, type: Design, what: "수정 방향 설계"}
-  - {id: do, type: Do, what: "구현"}
-  - {id: check, type: Check, what: "Gap 분석"}
-  - {id: act, type: Act, what: "배포 + 보고"}
-links:
-  - {from: design, to: do, type: sequential}
-  - {from: do, to: check, type: sequential}
-  - {from: check, to: do, type: loop, condition: {match_rate_below: 90}, max_retries: 3}
-  - {from: check, to: act, type: sequential, condition: {match_rate_gte: 90}}
-teams:
-  design: pm-team
-  do: cto-team
-  check: cto-team
-  act: cto-team
+## 6. 워크플로우 엔진 (WorkflowExecutor)
+
+### 6.1 실행 흐름
+
+```python
+class WorkflowExecutor:
+    """워크플로우 전체 실행 관리."""
+    
+    def __init__(self, state_machine, event_bus, checkpoint, gate_executor, adapter_pool):
+        ...
+    
+    async def start(self, preset: str, feature: str, task: str) -> str:
+        """워크플로우 시작."""
+        # 1. 프리셋 로드 + 검증
+        workflow_def = self.preset_loader.load(preset)
+        self.validator.validate(workflow_def)  # DAG 검증, 스키마 검증
+        
+        # 2. 인스턴스 생성
+        instance = WorkflowInstance.from_definition(workflow_def, feature, task)
+        
+        # 3. 체크포인트 저장
+        self.checkpoint.save(instance.id, instance)
+        
+        # 4. 첫 블록 시작
+        first_block = instance.get_first_block()
+        await self._execute_block(instance, first_block)
+        
+        # 5. 이벤트 발행
+        self.event_bus.publish(Event("workflow.started", instance.id))
+        
+        return instance.id
+    
+    async def complete_block(self, workflow_id: str, block_id: str):
+        """블록 완료 보고 → gate 판정 → 다음 블록."""
+        instance = self.checkpoint.load(workflow_id)
+        
+        # 1. gate 실행
+        gate_result = await self.gate_executor.run_gates(
+            instance.blocks[block_id],
+            instance.context
+        )
+        
+        # 2. 상태 전이
+        event = Event("block.gate_passed" if gate_result.passed else "block.gate_failed")
+        instance, commands = self.state_machine.transition(instance, event)
+        
+        # 3. 체크포인트 저장
+        self.checkpoint.save(workflow_id, instance)
+        self.checkpoint.save_event(workflow_id, event)
+        
+        # 4. 명령 실행
+        for cmd in commands:
+            await self._execute_command(cmd)
+    
+    async def resume(self, workflow_id: str):
+        """크래시 후 재개. 체크포인트에서 상태 복구."""
+        instance = self.checkpoint.load(workflow_id)
+        if not instance:
+            raise WorkflowNotFound(workflow_id)
+        
+        current_block = instance.get_current_block()
+        if current_block.status == "running":
+            # adapter에서 상태 확인
+            adapter = self.adapter_pool.get(current_block.adapter)
+            status = await adapter.check_status(current_block.execution_id)
+            ...
 ```
 
-#### T-PDCA L2 (표준)
+### 6.2 컨텍스트 자동 주입 (V1 §5.4 유지 + 확장)
+
+```python
+@dataclass
+class BlockContext:
+    """블록 실행 시 주입되는 컨텍스트."""
+    
+    workflow_id: str
+    block_id: str
+    feature: str
+    task: str
+    
+    # 이전 블록 산출물 (자동 주입)
+    input_artifacts: list[str]
+    
+    # 이전 블록 메트릭 (자동 주입)
+    previous_metrics: dict
+    
+    # 컨텍스트 계약 (V1 §12.5.1)
+    context_contract: dict | None = None
+    
+    # 환경 변수
+    env: dict = field(default_factory=dict)
+```
+
+---
+
+## 7. CLI 인터페이스
+
+**위치**: `brick/cli.py` (Click 기반)
+
+```python
+import click
+
+@click.group()
+def cli():
+    """🧱 Brick — Build it. Block by Block."""
+    pass
+
+@cli.command()
+@click.option("--preset", required=True, help="프리셋 이름 (t-pdca-l2 등)")
+@click.option("--feature", required=True, help="피처 이름")
+@click.option("--task", default=None, help="TASK 파일 경로")
+@click.option("--adapter", default="claude_agent_teams", help="기본 Team adapter")
+def start(preset, feature, task, adapter):
+    """워크플로우 시작."""
+    ...
+
+@cli.command()
+@click.argument("workflow_id", required=False)
+def status(workflow_id):
+    """워크플로우 상태 확인."""
+    ...
+
+@cli.command()
+@click.option("--block", required=True)
+@click.option("--workflow", required=True)
+def complete(block, workflow):
+    """블록 완료 보고 → gate 판정."""
+    ...
+
+@cli.command()
+@click.option("--block", required=True)
+@click.option("--workflow", required=True)
+@click.option("--reviewer", required=True)
+def approve(block, workflow, reviewer):
+    """Review gate 수동 승인."""
+    ...
+
+@cli.command()
+@click.argument("workflow_id", required=False)
+def viz(workflow_id):
+    """워크플로우 시각화 (CLI)."""
+    ...
+
+@cli.command()
+@click.option("--preset", required=True)
+def validate(preset):
+    """프리셋 검증 (DAG, 스키마, 참조)."""
+    ...
+
+@cli.command()
+@click.option("--block", required=True)
+@click.option("--workflow", required=True)
+def gate(block, workflow):
+    """Gate 수동 실행."""
+    ...
+
+@cli.command()
+def init():
+    """.bkit/ 디렉토리 초기화."""
+    ...
+```
+
+---
+
+## 8. Claude Code Integration (Thin Wrapper)
+
+V2에서 Claude Code hook은 `brick` CLI를 호출하는 **1줄짜리 thin wrapper**.
+
+### 8.1 settings.local.json 변경
+
+```json
+{
+  "hooks": {
+    "TaskCompleted": [{
+      "hooks": [{
+        "type": "command",
+        "command": "brick complete --block $(cat /dev/stdin | python3 -c 'import sys,json; print(json.load(sys.stdin).get(\"task_subject\",\"\"))') --workflow $(cat .bkit/runtime/active-workflow)",
+        "timeout": 30000
+      }]
+    }]
+  }
+}
+```
+
+### 8.2 기존 hook → brick CLI 매핑
+
+| 기존 hook | V2 brick CLI | 역할 |
+|-----------|-------------|------|
+| gate-checker.sh | `brick gate --block {id}` | gate 판정 |
+| pdca-chain-handoff.sh | `brick complete --block {id}` + EventBus | 체인 전달 |
+| detect-work-type.sh | `brick start --preset auto` | 프리셋 자동 선택 |
+| notify-task-started.sh | EventBus subscriber (http hook) | 알림 |
+| notify-completion.sh | EventBus subscriber (http hook) | 알림 |
+| session-resume-check.sh | `brick resume` | 미완료 워크플로우 재개 |
+
+---
+
+## 9. 프리셋 시스템 — V1 유지 + adapter 필드 추가
+
+### 9.1 V2 프리셋 형식
 
 ```yaml
 # .bkit/presets/t-pdca-l2.yaml
+$schema: brick/preset-v2
 name: "T-PDCA L2 표준"
 description: "일반 기능 개발 — Plan + Design + Do + Check + Act"
+
 blocks:
-  - {id: plan, type: Plan, what: "요구사항 분석"}
-  - {id: design, type: Design, what: "상세 설계 + TDD"}
-  - {id: do, type: Do, what: "구현"}
-  - {id: check, type: Check, what: "Gap 분석"}
-  - {id: act, type: Act, what: "배포 + 보고"}
+  - id: plan
+    type: Plan
+    what: "요구사항 분석"
+  - id: design
+    type: Design
+    what: "상세 설계 + TDD"
+  - id: do
+    type: Do
+    what: "구현"
+  - id: check
+    type: Check
+    what: "Gap 분석"
+  - id: act
+    type: Act
+    what: "배포 + 보고"
+
 links:
   - {from: plan, to: design, type: sequential}
   - {from: design, to: do, type: sequential}
   - {from: do, to: check, type: sequential}
   - {from: check, to: do, type: loop, condition: {match_rate_below: 90}, max_retries: 3}
   - {from: check, to: act, type: sequential, condition: {match_rate_gte: 90}}
-teams:
-  plan: pm-team
-  design: pm-team
-  do: cto-team
-  check: cto-team
-  act: cto-team
+
+teams:                             # V2: adapter 지정
+  plan: {adapter: claude_agent_teams, config: {session: sdk-pm, role: PM_LEADER}}
+  design: {adapter: claude_agent_teams, config: {session: sdk-pm, role: PM_LEADER}}
+  do: {adapter: claude_agent_teams, config: {session: sdk-cto, role: CTO_LEADER}}
+  check: {adapter: claude_agent_teams, config: {session: sdk-cto, role: CTO_LEADER}}
+  act: {adapter: claude_agent_teams, config: {session: sdk-cto, role: CTO_LEADER}}
+
 gates:
-  plan: {review: {coo: true}}
-  design: {review: {coo: true}, auto: [tdd_gap_zero]}
-  do: {auto: [match_rate, tsc_pass, build_pass]}
-  check: {auto: [match_rate]}
-  act: {auto: [deploy_health]}
+  plan:
+    handlers:
+      - {type: command, command: "test -f docs/01-plan/features/{feature}.plan.md"}
+    review: {coo: true}
+  design:
+    handlers:
+      - {type: command, command: "test -f docs/02-design/features/{feature}.design.md"}
+      - {type: agent, agent_prompt: "Design의 TDD 섹션이 모든 스펙을 커버하는지 확인하라"}
+    review: {coo: true}
+  do:
+    handlers:
+      - {type: command, command: "npx tsc --noEmit --quiet"}
+      - {type: command, command: "npm run build"}
+      - {type: agent, agent_prompt: "변경 파일과 Design 문서의 gap을 분석하라. match_rate 반환"}
+  check:
+    handlers:
+      - {type: command, command: "brick gate-check match-rate --min 90"}
+  act:
+    handlers:
+      - {type: command, command: "curl -sf https://bscamp.app/api/health"}
+
+events:
+  block.started:
+    - {type: http, url: "${SLACK_WEBHOOK}", body: {text: "🧱 {block_id} 시작 | {feature}"}}
+  block.completed:
+    - {type: http, url: "${SLACK_WEBHOOK}", body: {text: "✅ {block_id} 완료 | {feature}"}}
 ```
-
-#### T-PDCA L3 (풀)
-
-```yaml
-# .bkit/presets/t-pdca-l3.yaml
-name: "T-PDCA L3 풀"
-description: "DB/Auth/인프라 — Plan + Design + Do + Check + 보안감사 + Act"
-extends: t-pdca-l2
-overrides:
-  blocks:
-    - {id: security, type: Review, what: "보안 감사", after: check}
-  links:
-    - {from: check, to: security, type: sequential, condition: {match_rate_gte: 95}}
-    - {from: security, to: act, type: sequential}
-  gates:
-    do: {auto: [{type: match_rate, min: 95}]}     # L3은 95%
-    act: {review: {owner: true}}                    # Smith님 최종 승인
-```
-
-#### Hotfix
-
-```yaml
-# .bkit/presets/hotfix.yaml
-name: "Hotfix"
-description: "즉시 수정 + QA + 배포"
-blocks:
-  - {id: do, type: Do, what: "버그 수정"}
-  - {id: qa, type: Check, what: "QA"}
-links:
-  - {from: do, to: qa, type: sequential}
-teams:
-  do: cto-team
-  qa: cto-team
-gates:
-  do: {auto: [tsc_pass, build_pass], review: {coo: false}}
-  qa: {auto: [build_pass]}
-```
-
-#### Research
-
-```yaml
-# .bkit/presets/research.yaml
-name: "Research"
-description: "조사 + 보고서"
-blocks:
-  - {id: research, type: Research, what: "조사 분석"}
-  - {id: report, type: Report, what: "보고서 작성 + 전달"}
-links:
-  - {from: research, to: report, type: sequential}
-teams:
-  research: pm-team
-  report: pm-team
-gates:
-  research: {auto: [{type: file_min_lines, min: 50}]}
-```
-
-#### Custom (자유 조합)
-
-```yaml
-# .bkit/presets/custom-example.yaml
-name: "경쟁가설 A/B"
-description: "2팀 경쟁 → 우수 산출물 선택 → 구현"
-blocks:
-  - {id: research, type: Research, what: "시장 분석"}
-  - {id: design, type: Design, what: "설계 (경쟁)"}
-  - {id: do, type: Do, what: "구현"}
-links:
-  - {from: research, to: design, type: compete, teams: [pm-team-a, pm-team-b], judge: {type: review, reviewer: coo}}
-  - {from: design, to: do, type: sequential}
-```
-
-### 6.3 프리셋 확장 방법
-
-1. `.bkit/presets/` 에 YAML 파일 추가
-2. `blocks`, `links`, `teams`, `gates` 정의
-3. `extends` 로 기존 프리셋 상속 + `overrides` 로 부분 수정
-4. `brick-engine start --preset {name}` 으로 실행
 
 ---
 
-## 7. 기존 인프라 매핑 (마이그레이션 경로)
+## 10. 플러그인 아키텍처
 
-### 7.1 매핑 테이블
+### 10.1 플러그인 타입
 
-| 현행 구성요소 | Brick 대응 | 전환 방법 |
-|--------------|-----------|----------|
-| `gate-checker.sh` | Block.gate + engine.sh | gate 로직을 engine으로 이동, 스크립트는 gate handler로 래핑 |
-| `pdca-chain-handoff.sh` | Link(sequential).on_complete | Link 이벤트 훅으로 등록 |
-| `detect-work-type.sh` | 프리셋 자동 선택기 | L0→hotfix, L1→t-pdca-l1, L2→t-pdca-l2, L3→t-pdca-l3 |
-| `team-context-*.json` | Team 런타임 상태 | workflow 인스턴스의 teams 섹션으로 통합 |
-| `task-state-{feature}.json` | 워크플로우 인스턴스 blocks 상태 | `.bkit/runtime/workflows/` 로 이동 |
-| `match-rate-parser.sh` | gate handler (match_rate) | `.bkit/brick/gates/match-rate.sh` 로 래핑 |
-| `living-context-loader.sh` | Link.context_pass | engine이 블록 전환 시 자동 호출 |
-| `notify-completion.sh` | Link.events.on_complete | 이벤트 훅으로 등록 |
-| `notify-task-started.sh` | Link.events.on_start | 이벤트 훅으로 등록 |
-| `validate-delegate.sh` | Team.leader.restrictions | 팀 정의에서 선언적으로 관리 |
-| `enforce-teamcreate.sh` | INV-5 (팀 배정 없는 Block 실행 불가) | engine 레벨 검증 |
+| 플러그인 | 인터페이스 | 등록 방법 |
+|----------|-----------|----------|
+| Block Type | `BlockTypePlugin` | `block-types.yaml` 또는 Python 모듈 |
+| Gate Handler | `GateHandler` | 내장 + `brick/gates/` Python 파일 |
+| Link Type | `LinkHandler` | 내장 + `brick/links/` Python 파일 |
+| Team Adapter | `TeamAdapter` | 내장 + `brick/adapters/` Python 파일 |
+| Event Subscriber | `EventSubscriber` | `events:` 섹션 또는 Python 모듈 |
 
-### 7.2 마이그레이션 전략
+### 10.2 플러그인 등록 (entry_points)
 
-**Phase 1: 래핑 (하위 호환)**
-- 기존 hook 그대로 유지
-- Brick engine을 **상위 래퍼**로 추가
-- engine → 기존 hook 호출 → 결과 수집
-- TDD 83건 유지 + Brick 전용 테스트 추가
+```toml
+# pyproject.toml
+[project.entry-points."brick.adapters"]
+claude_agent_teams = "brick.adapters.claude_agent_teams:ClaudeAgentTeamsAdapter"
+claude_code = "brick.adapters.claude_code:SingleClaudeCodeAdapter"
+human = "brick.adapters.human:HumanAdapter"
+webhook = "brick.adapters.webhook:WebhookAdapter"
 
-**Phase 2: 통합**
-- gate-checker.sh → engine의 gate 판정으로 통합
-- pdca-chain-handoff.sh → Link 이벤트 시스템으로 통합
-- team-context → workflow 인스턴스로 통합
+[project.entry-points."brick.gates"]
+artifact_exists = "brick.gates.artifact_exists:ArtifactExistsGate"
+match_rate = "brick.gates.match_rate:MatchRateGate"
+prompt_eval = "brick.gates.prompt_eval:PromptEvalGate"
+agent_eval = "brick.gates.agent_eval:AgentEvalGate"
 
-**Phase 3: 완전 전환**
-- 기존 hook을 Brick handler로 완전 대체
-- 프리셋 기반 운영으로 전환
+[project.entry-points."brick.links"]
+sequential = "brick.links.sequential:SequentialLink"
+parallel = "brick.links.parallel:ParallelLink"
+compete = "brick.links.compete:CompeteLink"
+```
+
+외부 패키지도 entry_points로 플러그인 등록 가능:
+```bash
+pip install brick-adapter-github-actions
+# → brick.adapters.github_actions 자동 등록
+```
 
 ---
 
-## 8. 비교 분석
+## 11. 비교 분석 (V1 + Temporal/Kestra/n8n 추가)
 
-### 8.1 Brick vs 현존 시스템
+| 항목 | **Brick V2** | Temporal | Kestra | n8n | CrewAI | LangGraph |
+|------|-------------|----------|--------|-----|--------|-----------|
+| **핵심** | Block×Team×Link | Workflow×Activity | Flow×Task | Node×Edge | Agent×Crew | Node×Edge×State |
+| **정의 방식** | YAML 선언형 | 코드 (Go/Python) | YAML 선언형 | GUI + JSON | Python 코드 | Python 코드 |
+| **팀 1등 시민** | ✅ Adapter | ❌ Worker Pool | ❌ 없음 | ❌ 없음 | ✅ Crew | ❌ 없음 |
+| **상태 머신** | ✅ Python | ✅ Go 서버 | ✅ Java 서버 | ⚠️ 제한적 | ❌ 없음 | ✅ Python |
+| **체크포인트** | ✅ 파일 기반 | ✅ DB 기반 | ✅ DB 기반 | ❌ 없음 | ❌ 없음 | ✅ 메모리 |
+| **이벤트 버스** | ✅ 콜백 (→Redis) | ✅ Signal | ✅ Kafka | ⚠️ Webhook | ❌ 없음 | ❌ 없음 |
+| **플러그인** | ✅ entry_points | ⚠️ Activity | ✅ 전부 플러그인 | ✅ 노드 패키지 | ❌ 없음 | ❌ 없음 |
+| **서버 필요** | ❌ CLI-first | ✅ 서버 필수 | ✅ 서버 필수 | ✅ 서버 필수 | ❌ 코드 | ❌ 코드 |
+| **LLM gate** | ✅ prompt/agent | ❌ 없음 | ❌ 없음 | ⚠️ AI 노드 | ❌ 없음 | ❌ 없음 |
+| **게이트 on/off** | ✅ 선언적 | ❌ 코드 | ❌ 없음 | ❌ 없음 | ❌ 없음 | ❌ 없음 |
+| **병렬/경쟁** | ✅ Link 타입 | ✅ Child WF | ✅ Parallel | ✅ Split | ❌ 없음 | ✅ 가능 |
+| **가격** | 무료 (OSS) | 유료 Cloud | 유료 EE | 유료 Cloud | 무료 | 무료 |
 
-| 항목 | Brick | CrewAI | LangGraph | MetaGPT | AutoGen | Temporal |
-|------|-------|--------|-----------|---------|---------|----------|
-| **핵심 개념** | Block×Team×Link | Agent×Task×Crew | Node×Edge×State | Role×Action×SOP | Agent×Chat×Group | Workflow×Activity×Signal |
-| **팀 개념** | ✅ 1등 시민 | ✅ Crew | ❌ 없음 | ✅ Role 고정 | ✅ Group | ❌ Worker 풀 |
-| **프로세스 자유도** | ✅ 임의 조합 | ⚠️ 순차/계층만 | ✅ 그래프 | ⚠️ SOP 고정 | ⚠️ 채팅 기반 | ✅ 임의 조합 |
-| **병렬/경쟁** | ✅ Link 타입 | ❌ 없음 | ✅ 가능 | ❌ 없음 | ⚠️ 제한적 | ✅ 가능 |
-| **양방향 (실패→이전)** | ✅ on_fail | ❌ 단방향 | ⚠️ 수동 | ❌ 없음 | ❌ 없음 | ✅ Signal |
-| **게이트 on/off** | ✅ 선언적 | ❌ 없음 | ❌ 없음 | ❌ 없음 | ❌ 없음 | ⚠️ 코드 |
-| **도구 귀속** | ✅ 팀 속성 | ✅ Agent 속성 | ✅ Node 속성 | ✅ Action | ✅ Agent | ❌ Activity 속성 |
-| **크론/스케줄** | ✅ Link 타입 | ❌ 없음 | ❌ 없음 | ❌ 없음 | ❌ 없음 | ✅ Schedule |
-| **프리셋 (템플릿)** | ✅ YAML 프리셋 | ❌ 코드 | ❌ 코드 | ⚠️ SOP | ❌ 코드 | ⚠️ 코드 |
-| **재귀적 팀 프로세스** | ✅ Autonomy Layer | ❌ 없음 | ❌ 없음 | ❌ 없음 | ❌ 없음 | ✅ Child Workflow |
-| **선언형 정의** | ✅ YAML/JSON | ❌ Python | ❌ Python | ❌ Python | ❌ Python | ❌ Go/Python |
-| **런타임** | bash+JSON | Python | Python | Python | Python | Go 서버 |
-| **이벤트 훅** | ✅ 4개 | ⚠️ callback | ⚠️ 제한적 | ❌ 없음 | ⚠️ 제한적 | ✅ Signal |
+### Brick V2 고유 차별점
 
-### 8.2 Brick의 차별점
-
-1. **팀 + 프로세스 조합**: CrewAI처럼 팀이 있지만, LangGraph처럼 프로세스가 자유로움. 둘 다 가진 건 Brick뿐
-2. **선언형 워크플로우**: 모든 경쟁자가 코드(Python) 기반. Brick은 YAML/JSON 선언
-3. **3층 분리**: System(불변) / Process(조합) / Autonomy(자유) — 강제와 자유의 공존
-4. **게이트 on/off**: 유일하게 검증 강도를 동적으로 조절 가능
-5. **기존 인프라 재사용**: 별도 서버 없이 bash hook + JSON으로 구현
-
-### 8.3 ln-1000 (levnikolaevich) vs Brick
-
-| 항목 | ln-1000 | Brick |
-|------|---------|-------|
-| 구조 | 고정 4단계 파이프라인 (300→310→400→500) | 임의 블록 조합 |
-| 확장 | 각 Stage 내부 수정 | 프리셋 파일 추가 |
-| 비유 | "기차 노선" — 정해진 역 순서대로 | "레고" — 벽돌 자유 조합 |
-| 적합 | 단일 Story 처리 | 다양한 업무 유형 (개발/분석/보고/크론) |
+1. **AI-Native Gate**: prompt/agent 타입으로 LLM이 직접 품질 판정. 다른 워크플로우 엔진은 전부 rule-based만
+2. **Team Adapter**: "누가 실행하는가"가 교체 가능한 1등 시민. Temporal은 Worker Pool이지 팀이 아님
+3. **Serverless + 선언형**: Kestra처럼 YAML이지만 서버 없이 CLI로 동작
+4. **3층 분리**: 강제(System) × 조합(Process) × 자유(Autonomy) — 없는 개념
 
 ---
 
-## 9. 시각화 설계
+## 12. 심층 분석 — V1 유지 + Adapter 엣지케이스
 
-### 9.1 CLI 출력 (brick-engine viz)
+### 12.1 V1 심층 분석 항목 (전부 유지)
 
+- §12.1.1 세션 크래시 복구 → V2: CheckpointStore로 해결
+- §12.1.2 순환 참조 감지 → V2: validator에서 DAG 검증
+- §12.1.3 블록 멱등성 → V2: Block.idempotent 속성
+- §12.2.1 팀 자원 경합 → V2: TaskQueue 우선순위 큐
+- §12.2.2 팀원 크래시 → V2: adapter.check_status() heartbeat
+- §12.3.1 Auto + Review Gate 충돌 → V2: GateExecutor 순차 실행
+- §12.3.2 Gate 타임아웃 → V2: GateHandler.timeout
+- §12.4.1 YAML 지옥 방지 → V2: 3단계 프리셋 관리
+- §12.4.2 프리셋 검증 → V2: `brick validate`
+- §12.5.1 암묵적 의존성 → V2: context_contract
+- §12.5.2 외부 시스템 의존성 → V2: gate dependency
+- §12.6.1 워크플로우 디버깅 → V2: EventBus + 상세 로깅
+- §12.6.2 워크플로우 메트릭 → V2: WorkflowInstance.metrics
+- §12.7.1 프리셋 변조 방지 → V2: readonly Core 프리셋
+- §12.7.2 Gate 우회 방지 → V2: L1+ skip 거부
+
+### 12.2 V2 추가 엣지케이스
+
+#### 12.2.1 Adapter 장애 격리 (Adapter Fault Isolation)
+
+**문제**: ClaudeAgentTeamsAdapter가 죽어도 engine은 살아있어야 함.
+
+**해결**:
+- Adapter 호출은 전부 `try/except`로 감싸고 `adapter.failed` 이벤트 발행
+- Adapter 타임아웃: `start_block()` 호출 후 config.timeout 내 `check_status()` 응답 없으면 `adapter.timeout` 이벤트
+- Adapter 교체: 실행 중 adapter 장애 시 fallback adapter로 전환 가능
+
+```python
+# engine 내부
+try:
+    execution_id = await adapter.start_block(block, context)
+except AdapterError as e:
+    self.event_bus.publish(Event("adapter.failed", {"error": str(e)}))
+    if block.fallback_adapter:
+        adapter = self.adapter_pool.get(block.fallback_adapter)
+        execution_id = await adapter.start_block(block, context)
+    else:
+        raise
 ```
-┌─── Workflow: signup-fix (T-PDCA L1) ──────────────────────┐
-│                                                            │
-│  [Design] ──→ [Do] ──→ [Check] ──→ [Act]                  │
-│   ✅ PM팀     🔄 CTO팀   ⏳ CTO팀    ⏳ CTO팀             │
-│   12분         진행중                                      │
-│                    │         │                              │
-│                    └── loop ─┘ (match_rate < 90%)          │
-│                                                            │
-│  Current: Do (3/4 blocks)                                  │
-│  Match Rate: — (Check 미실행)                              │
-│  Started: 2026-04-02 10:00 KST                            │
-└────────────────────────────────────────────────────────────┘
+
+#### 12.2.2 Prompt Gate 비결정성 (Prompt Gate Non-Determinism)
+
+**문제**: prompt 타입 gate는 LLM 호출이라 같은 입력에 다른 결과 가능.
+
+**해결**:
+- prompt gate 결과를 이벤트 로그에 reasoning과 함께 기록
+- `gate.prompt.confidence_threshold`: 확신도 기준 (기본 0.8). 미달 시 review gate로 에스컬레이션
+- `gate.prompt.retries`: 동일 프롬프트 N회 실행 → 다수결 (기본 1, 중요한 gate는 3)
+
+```yaml
+gate:
+  handlers:
+    - type: prompt
+      prompt: "이 구현이 Design을 충족하는가?"
+      model: haiku
+      confidence_threshold: 0.8
+      retries: 3                  # 3회 실행 → 다수결
+      on_low_confidence: review   # 확신도 낮으면 COO 검토로
 ```
 
-### 9.2 대시보드 블록 흐름도
+#### 12.2.3 Agent Gate 리소스 관리
 
-대시보드(dashboard/)에 Brick 시각화 컴포넌트 추가:
-- 블록을 사각형으로, 연결을 화살표로 표시
-- 블록 상태별 색상: ✅ 완료(초록), 🔄 진행(파랑), ⏳ 대기(회색), ❌ 실패(빨강)
-- 클릭하면 해당 블록 상세 (산출물, gate 상태, 팀 정보)
-- **구현은 별도 TASK** — 이 Design에서는 데이터 구조만 정의
+**문제**: agent 타입 gate는 서브에이전트를 스폰. 토큰 비용 + 시간.
+
+**해결**:
+- agent gate에 `max_tokens` 제한
+- agent gate 결과 캐싱: 같은 입력이면 이전 결과 재사용 (TTL)
+- agent gate는 기본 비활성. 프리셋에서 명시적 활성화 필요
+
+#### 12.2.4 Adapter 간 상태 동기화
+
+**문제**: 워크플로우가 block A는 ClaudeAdapter, block B는 HumanAdapter로 실행하면, 산출물 경로가 다를 수 있음.
+
+**해결**:
+- engine이 관리하는 공유 `workspace` 디렉토리
+- 모든 adapter는 workspace 내에 산출물 생성
+- `BlockContext.workspace` 경로를 adapter에 전달
 
 ---
 
-## 10. 파일 구조
+## 13. 파일 구조 (V2)
 
 ```
-.bkit/
-├── brick/                          # System Layer
-│   ├── engine.sh                   # 워크플로우 엔진 (핵심)
-│   ├── schema/                     # JSON Schema 정의
-│   │   ├── block-v1.json
-│   │   ├── team-v1.json
-│   │   ├── link-v1.json
-│   │   └── workflow-v1.json
-│   ├── block-types.yaml            # 블록 타입 레지스트리
-│   ├── link-types/                 # Link 타입 확장
-│   │   └── approval.yaml
-│   ├── gates/                      # gate handler 스크립트
-│   │   ├── artifact-exists.sh
-│   │   ├── match-rate.sh
-│   │   ├── tsc-pass.sh
-│   │   ├── build-pass.sh
-│   │   └── deploy-health.sh
-│   └── hooks/                      # Brick 전용 이벤트 훅
-│       ├── block-start.sh
-│       └── block-complete.sh
-├── presets/                        # Process Layer
+brick/                              # pip install brick-engine
+├── __init__.py                     # 버전, 상수
+├── cli.py                          # Click CLI (entry point)
+├── engine/
+│   ├── __init__.py
+│   ├── state_machine.py            # 순수 함수형 상태 머신
+│   ├── event_bus.py                # 이벤트 발행/구독
+│   ├── checkpoint.py               # 상태 저장/복구 (파일 기반)
+│   ├── task_queue.py               # 경량 블록 실행 큐
+│   ├── executor.py                 # WorkflowExecutor
+│   └── validator.py                # DAG 검증, 스키마 검증
+├── models/
+│   ├── __init__.py
+│   ├── block.py                    # Block 데이터 모델
+│   ├── team.py                     # Team 데이터 모델
+│   ├── link.py                     # Link 데이터 모델
+│   ├── workflow.py                 # WorkflowDefinition + WorkflowInstance
+│   ├── gate.py                     # GateConfig, GateHandler, GateResult
+│   └── events.py                   # Event 타입 정의
+├── adapters/
+│   ├── __init__.py
+│   ├── base.py                     # TeamAdapter ABC
+│   ├── claude_agent_teams.py       # Claude Agent Teams
+│   ├── claude_code.py              # Claude Code 단독
+│   ├── human.py                    # 사람 (수동)
+│   ├── webhook.py                  # 외부 서비스
+│   └── codex.py                    # OpenAI Codex (stub)
+├── gates/
+│   ├── __init__.py
+│   ├── base.py                     # GateExecutor
+│   ├── artifact_exists.py
+│   ├── match_rate.py
+│   ├── tsc_pass.py
+│   ├── build_pass.py
+│   ├── deploy_health.py
+│   ├── prompt_eval.py              # LLM 프롬프트 평가
+│   ├── agent_eval.py               # 에이전트 평가
+│   └── http_check.py              # HTTP 체크
+├── links/
+│   ├── __init__.py
+│   ├── base.py                     # LinkHandler ABC
+│   ├── sequential.py
+│   ├── parallel.py
+│   ├── compete.py
+│   ├── loop.py
+│   ├── cron.py
+│   └── branch.py
+├── presets/
 │   ├── t-pdca-l0.yaml
 │   ├── t-pdca-l1.yaml
 │   ├── t-pdca-l2.yaml
 │   ├── t-pdca-l3.yaml
 │   ├── hotfix.yaml
-│   ├── research.yaml
-│   └── custom/                     # 사용자 정의 프리셋
-├── runtime/
-│   └── workflows/                  # 워크플로우 인스턴스 (런타임)
-│       └── {workflow-id}.json
-├── hooks/                          # 기존 hook (래핑 대상)
-│   ├── gate-checker.sh
-│   ├── pdca-chain-handoff.sh
-│   └── ...
-└── state/                          # 기존 상태 파일
+│   └── research.yaml
+├── schema/
+│   ├── block-v2.json
+│   ├── team-v2.json
+│   ├── link-v2.json
+│   ├── workflow-v2.json
+│   └── preset-v2.json
+└── tests/
+    ├── conftest.py                 # 공통 fixture
+    ├── test_state_machine.py
+    ├── test_event_bus.py
+    ├── test_checkpoint.py
+    ├── test_task_queue.py
+    ├── test_executor.py
+    ├── test_gates.py
+    ├── test_adapters.py
+    ├── test_links.py
+    ├── test_presets.py
+    ├── test_validator.py
+    ├── test_cli.py
+    └── test_integration.py
+
+# Claude Code hook (thin wrapper)
+.bkit/hooks/
+├── brick-task-completed.sh         # brick complete 호출 (1줄)
+├── brick-session-resume.sh         # brick resume 호출 (1줄)
+└── brick-gate.sh                   # brick gate 호출 (1줄)
 ```
 
 ---
 
-## 11. TDD 케이스 (Gap 100%)
+## 14. 브랜딩
 
-Design의 모든 항목을 1:1로 커버. "Design에 있는데 테스트에 없음" = 0건.
+| 항목 | 값 |
+|------|-----|
+| 이름 | **Brick** |
+| 슬로건 | "Build it. Block by Block." |
+| 모티프 | Structure × Freedom |
+| 컬러 | #C6084A(레드) + #1C1A1A(다크) + #FF6B35(벽돌오렌지) + #00D4AA(터미널그린) |
+| 폰트 | JetBrains Mono Bold(로고) + Noto Sans(본문) |
+| 로고 | 그리드 블록 타이포 스타일 |
+| 레퍼런스 | 레드브릭 브랜드가이드 (`~/Library/Mobile Documents/com~apple~CloudDocs/claude/Redbrick_brandGuide.pdf`) |
+| CLI 아이콘 | 🧱 (brick emoji) |
 
-### System Layer 불변 규칙 (INV-1~6)
+---
 
-| ID | 테스트 | Design 항목 | 검증 |
+## 15. 기존 인프라 → V2 마이그레이션
+
+| 현행 | V2 대응 | 전환 |
+|------|---------|------|
+| gate-checker.sh | `brick gate` CLI + GateExecutor | gate 로직을 Python으로 |
+| pdca-chain-handoff.sh | EventBus `block.completed` subscriber | 이벤트 기반으로 |
+| detect-work-type.sh | `brick start --preset auto` + PresetSelector | 프리셋 자동 선택 |
+| team-context.json | ClaudeAgentTeamsAdapter 내부 상태 | adapter 캡슐화 |
+| task-state-{feature}.json | WorkflowInstance.blocks 상태 | CheckpointStore |
+| match-rate-parser.sh | `brick.gates.match_rate:MatchRateGate` | Python 플러그인 |
+| living-context-loader.sh | BlockContext.input_artifacts 자동 주입 | executor 내장 |
+| notify-completion.sh | EventBus + http event handler | 이벤트 기반 |
+| validate-delegate.sh | ClaudeAgentTeamsAdapter.restrictions | adapter 캡슐화 |
+| enforce-teamcreate.sh | INV-5 (engine 레벨 검증) | engine 내장 |
+
+---
+
+## 16. TDD 케이스 + 매핑 테이블
+
+### Engine Core
+
+| ID | 테스트 | Design 섹션 | 검증 |
 |----|--------|------------|------|
-| BK-01 | TASK 없이 워크플로우 시작 시 차단 | INV-1 | engine start → exit 2 |
-| BK-02 | what 없는 Block 스키마 검증 실패 | INV-2 | JSON Schema 검증 → error |
-| BK-03 | done 없는 Block 스키마 검증 실패 | INV-2 | JSON Schema 검증 → error |
-| BK-04 | 산출물 없이 다음 Block 진행 차단 | INV-3 | gate artifact_exists → fail → 다음 블록 미진행 |
-| BK-05 | 모든 Block 전환 Event History 기록 | INV-4 | 블록 완료 → history[] 엔트리 추가 확인 |
-| BK-06 | Team 미배정 Block 실행 차단 | INV-5 | teams 섹션에 블록 없음 → exit 2 |
-| BK-07 | Link 미정의 Block 간 전환 차단 | INV-6 | links에 from→to 없음 → 전환 불가 |
+| BK-01 | StateMachine: pending → running 전이 | §2.1 | event(start) → status=running |
+| BK-02 | StateMachine: running → completed 전이 | §2.1 | event(all_blocks_done) → status=completed |
+| BK-03 | StateMachine: running → failed 전이 | §2.1 | event(unrecoverable_error) → status=failed |
+| BK-04 | StateMachine: running → suspended (선점) | §2.1 | event(preempt) → status=suspended |
+| BK-05 | StateMachine: suspended → running (재개) | §2.1 | event(resume) → status=running |
+| BK-06 | StateMachine: transition()은 순수 함수 (side effect 없음) | §2.1 | IO mock 0개로 테스트 가능 |
+| BK-07 | Block 상태: pending→queued→running→gate_checking→completed | §2.1 | 전체 전이 체인 |
+| BK-08 | EventBus: publish → subscribe 수신 확인 | §2.2 | callback 호출 확인 |
+| BK-09 | EventBus: 복수 subscriber 전부 수신 | §2.2 | 3개 subscriber → 3번 호출 |
+| BK-10 | EventBus: replay (이벤트 재생) | §2.2 | 저장된 이벤트 순서대로 재생 |
+| BK-11 | CheckpointStore: save → load 일치 | §2.3 | 저장 후 로드 → 동일 객체 |
+| BK-12 | CheckpointStore: 원자적 저장 (tmp→rename) | §2.3 | 중간 크래시 → 이전 상태 유지 |
+| BK-13 | CheckpointStore: list_active() 미완료 목록 | §2.3 | running 2개 → 2개 반환 |
+| BK-14 | CheckpointStore: save_event() append-only | §2.3 | 3개 이벤트 → events.jsonl 3줄 |
+| BK-15 | TaskQueue: enqueue → dequeue FIFO | §2.4 | 순서대로 |
+| BK-16 | TaskQueue: priority queue (L0 > L2) | §2.4 | L0 먼저 dequeue |
+
+### Invariants (INV-1~10)
+
+| ID | 테스트 | Design 섹션 | 검증 |
+|----|--------|------------|------|
+| BK-17 | INV-1: TASK 없이 시작 차단 | §1.3 | task=None → error |
+| BK-18 | INV-2: what 없는 Block 거부 | §1.3 | what="" → validation error |
+| BK-19 | INV-3: done 없는 Block 거부 | §1.3 | done=None → validation error |
+| BK-20 | INV-4: 산출물 없이 다음 Block 차단 | §1.3 | artifact 미존재 → gate fail |
+| BK-21 | INV-5: 모든 전환 Event History 기록 | §1.3 | transition → event logged |
+| BK-22 | INV-6: Adapter 미배정 Block 실행 차단 | §1.3 | adapter=None → error |
+| BK-23 | INV-7: Link 미정의 전환 차단 | §1.3 | link 없음 → error |
+| BK-24 | INV-8: 순환 참조 거부 (non-loop) | §1.3 | A→B→A sequential → error |
+| BK-25 | INV-9: Core 프리셋 수정 차단 | §1.3 | readonly → error |
+| BK-26 | INV-10: 직접 JSON 수정 차단 (StateMachine만) | §1.3 | 외부에서 state.json 수정 → 감지 |
+| BK-27 | INV-10: 모든 상태 변경 checkpoint 저장 | §1.3 | transition → save 호출 확인 |
 
 ### Block (축 1)
 
-| ID | 테스트 | Design 항목 | 검증 |
+| ID | 테스트 | Design 섹션 | 검증 |
 |----|--------|------------|------|
-| BK-08 | 최소 Block (what + done만) 생성 성공 | §2.2 | 최소 JSON → 유효 |
-| BK-09 | Block 타입 레지스트리 로드 | §2.3 | block-types.yaml 파싱 → Plan/Design/Do/Check/Act 존재 |
-| BK-10 | 커스텀 Block 타입 등록 | §2.3 | custom-types/ 파일 추가 → 레지스트리에 반영 |
-| BK-11 | Gate auto: artifact_exists 통과 | §2.4 | 파일 존재 → gate pass |
-| BK-12 | Gate auto: artifact_exists 차단 | §2.4 | 파일 미존재 → gate fail |
-| BK-13 | Gate auto: match_rate 통과 (≥90) | §2.4 | match_rate=92 → pass |
-| BK-14 | Gate auto: match_rate 차단 (<90) | §2.4 | match_rate=85 → fail |
-| BK-15 | Gate auto: tsc_pass 통과 | §2.4 | tsc exit 0 → pass |
-| BK-16 | Gate auto: build_pass 통과 | §2.4 | build exit 0 → pass |
-| BK-17 | Gate auto: tdd_gap_zero 검증 | §2.4 | Design↔TDD 전수 매핑 → pass |
-| BK-18 | Gate auto: custom_script 실행 | §2.4 | 스크립트 exit 0 → pass |
-| BK-19 | Gate review: coo=true → ACK 대기 | §2.4 | coo review → pending 상태 |
-| BK-20 | Gate review: coo=false → 스킵 | §2.4 | coo review false → 즉시 통과 |
-| BK-21 | Gate on_fail: retry (최대 3회) | §2.4 | 실패 3회 → retry → 4회차 escalate |
-| BK-22 | Gate on_fail: rollback → 이전 블록 | §2.4 | rollback → 이전 블록 재실행 |
-| BK-23 | Gate on_fail: escalate → 알림 | §2.4 | escalate → notify hook 발화 |
+| BK-28 | 최소 Block (what + done만) 유효 | §3.1 | validation pass |
+| BK-29 | Block 타입 레지스트리 로드 | §3.2 | 9개 내장 타입 존재 |
+| BK-30 | 커스텀 Block 타입 등록 | §3.2 | custom-types/ 추가 → 레지스트리 반영 |
 
-### Team (축 2)
+### Gate 4타입 (축 1 확장)
 
-| ID | 테스트 | Design 항목 | 검증 |
+| ID | 테스트 | Design 섹션 | 검증 |
 |----|--------|------------|------|
-| BK-24 | Team 정의 JSON 파싱 | §3.1 | team-v1 스키마 검증 → 유효 |
-| BK-25 | Team-Block 1:1 배정 | §3.3 | blocks.do → teams.do=cto-team 매핑 |
-| BK-26 | Team-Block N:1 경쟁 배정 | §3.3 | compete 타입 → 2팀 동시 배정 |
-| BK-27 | 리더 restrictions 적용 | §3.1 | no_src_edit → src/ 수정 시 차단 |
-| BK-28 | Toolkit MCP/skills 바인딩 | §3.1 | toolkit.mcp → context7 사용 가능 |
-| BK-29 | max_workers 상한 적용 | §3.1 | max=3 → 4번째 팀원 생성 차단 |
+| BK-31 | Gate command: exit 0 = pass | §3.3 | subprocess → pass |
+| BK-32 | Gate command: exit 1 = fail | §3.3 | subprocess → fail |
+| BK-33 | Gate http: status 200 = pass | §3.3 | mock HTTP → pass |
+| BK-34 | Gate http: status 500 = fail | §3.3 | mock HTTP → fail |
+| BK-35 | Gate prompt: LLM "yes" = pass | §3.3 | mock LLM → pass |
+| BK-36 | Gate prompt: LLM "no" = fail | §3.3 | mock LLM → fail |
+| BK-37 | Gate prompt: confidence < threshold → review escalation | §12.2.2 | low confidence → review |
+| BK-38 | Gate prompt: retries 다수결 | §12.2.2 | 2/3 yes → pass |
+| BK-39 | Gate agent: 서브에이전트 결과 수집 | §3.3 | mock agent → result |
+| BK-40 | Gate agent: max_tokens 제한 | §12.2.3 | 초과 → timeout |
+| BK-41 | Gate 혼합: command + prompt + agent 순차 | §3.3 | 순서대로 실행, 하나 fail → 중단 |
+| BK-42 | Gate evaluation: parallel 모드 | §3.3 | 동시 실행 → 전부 pass 필요 |
+| BK-43 | Gate on_fail: retry (max 3) | §3.1 | 3회 → 4회차 escalate |
+| BK-44 | Gate on_fail: rollback | §3.1 | 이전 블록 재실행 |
+| BK-45 | Gate on_fail: escalate | §3.1 | 알림 이벤트 발행 |
+| BK-46 | Gate review: coo=true → 대기 | §3.1 | review_requested 이벤트 |
+| BK-47 | Gate review: coo=false → 스킵 | §3.1 | 즉시 통과 |
+| BK-48 | Gate review: 타임아웃 → on_timeout | §V1 12.3.2 | timeout → auto_approve |
+| BK-49 | Gate review: 거부 → on_review_reject | §V1 12.3.1 | reject → rollback |
+| BK-50 | Gate review: max_reviews 소진 → escalate | §V1 12.3.1 | 3회 거부 → escalate |
+| BK-51 | L1+ preset에서 skip 거부 | §V1 12.7.2 | L2 + skip → error |
+
+### Team Adapter (축 2)
+
+| ID | 테스트 | Design 섹션 | 검증 |
+|----|--------|------------|------|
+| BK-52 | 모든 adapter가 TeamAdapter 인터페이스 준수 | §4.1 | isinstance 체크 |
+| BK-53 | ClaudeAgentTeamsAdapter: start_block 정상 | §4.2.1 | execution_id 반환 |
+| BK-54 | ClaudeAgentTeamsAdapter: check_status 정상 | §4.2.1 | AdapterStatus 반환 |
+| BK-55 | ClaudeAgentTeamsAdapter: tmux 미존재 시 에러 | §4.2.1 | 적절한 에러 |
+| BK-56 | HumanAdapter: start_block → CLI 출력 | §4.2.3 | print 확인 |
+| BK-57 | HumanAdapter: complete 파일 생성 시 completed | §4.2.3 | 파일 → status=completed |
+| BK-58 | WebhookAdapter: HTTP 실패 시 에러 | §4.2.4 | 500 → AdapterError |
+| BK-59 | Adapter 교체해도 워크플로우 동일 (어댑터 무관성) | §4.2.5 | mock adapter A, B → 같은 결과 |
+| BK-60 | Adapter 장애 격리: adapter 에러 → engine 생존 | §12.2.1 | exception → adapter.failed event |
+| BK-61 | Adapter fallback: 장애 시 대체 adapter | §12.2.1 | fallback 호출 확인 |
+| BK-62 | Adapter 타임아웃 | §12.2.1 | timeout → adapter.timeout event |
+| BK-63 | Autonomy Layer 경계: adapter가 Block 수정 불가 | §4.3 | immutable Block 검증 |
 
 ### Link (축 3)
 
-| ID | 테스트 | Design 항목 | 검증 |
+| ID | 테스트 | Design 섹션 | 검증 |
 |----|--------|------------|------|
-| BK-30 | Link sequential 정상 전환 | §4.2.1 | A gate pass → B 시작 |
-| BK-31 | Link sequential 역방향 (on_fail) | §4.2.1 | B gate fail → A 재실행 |
-| BK-32 | Link parallel: all merge | §4.2.2 | B1+B2+B3 완료 → C 시작 |
-| BK-33 | Link parallel: any merge | §4.2.2 | B1만 완료 → C 시작 |
-| BK-34 | Link compete: 2팀 동시 실행 | §4.2.3 | 같은 블록 2팀 → 2인스턴스 |
-| BK-35 | Link compete: judge 선택 | §4.2.3 | judge → 우수 산출물 선택 |
-| BK-36 | Link loop: 재시도 (max_retries 내) | §4.2.4 | 실패 → 이전 블록 재실행 |
-| BK-37 | Link loop: max_retries 소진 → on_exhaust | §4.2.4 | 3회 실패 → escalate |
-| BK-38 | Link cron: 스케줄 정의 | §4.2.5 | cron expression → 유효 |
-| BK-39 | Link branch: 조건 분기 | §4.2.6 | level=L0 → hotfix-do |
-| BK-40 | Link branch: 기본 분기 (조건 없음) | §4.2.6 | 매칭 없음 → default |
+| BK-64 | Sequential: A completed → B 시작 | §5 | next_blocks=[B] |
+| BK-65 | Sequential: B failed → on_fail 경로 | §5 | rollback → A |
+| BK-66 | Parallel: all merge | §5 | B1+B2+B3 완료 → C |
+| BK-67 | Parallel: any merge | §5 | B1만 완료 → C |
+| BK-68 | Compete: 2 adapter 동시 실행 | §5 | 2 execution_id |
+| BK-69 | Compete: judge auto (metric) | §5 | 높은 점수 선택 |
+| BK-70 | Compete: judge prompt (LLM) | §5 | LLM 선택 |
+| BK-71 | Loop: 재시도 max_retries 내 | §5 | retry → 이전 블록 |
+| BK-72 | Loop: max_retries 소진 | §5 | escalate |
+| BK-73 | Cron: 스케줄 표현식 파싱 | §5 | cron → 유효 |
+| BK-74 | Branch: 조건 분기 | §5 | level=L0 → hotfix |
+| BK-75 | Branch: 기본 분기 | §5 | 매칭 없음 → default |
 
-### Event Hook
+### Workflow Executor
 
-| ID | 테스트 | Design 항목 | 검증 |
+| ID | 테스트 | Design 섹션 | 검증 |
 |----|--------|------------|------|
-| BK-41 | on_start 이벤트 발화 | §4.3 | 블록 시작 → notify-task-started.sh 호출 |
-| BK-42 | on_complete 이벤트 발화 | §4.3 | 블록 완료 → pdca-chain-handoff.sh 호출 |
-| BK-43 | on_fail 이벤트 발화 | §4.3 | 블록 실패 → notify-failure.sh 호출 |
-| BK-44 | on_timeout 이벤트 발화 | §4.3 | 타임아웃 → escalate.sh 호출 |
+| BK-76 | 프리셋 로드 + 검증 | §6.1 | YAML → WorkflowDefinition |
+| BK-77 | 프리셋 extends 상속 | §V1 6.2 | L3 extends L2 → security 추가 |
+| BK-78 | 프리셋 overrides 적용 | §V1 6.2 | match_rate 90→95 |
+| BK-79 | 인스턴스 생성 + checkpoint 저장 | §6.1 | state.json 생성 |
+| BK-80 | 컨텍스트 자동 주입 | §6.2 | Design 산출물 → Do input |
+| BK-81 | 워크플로우 완료 상태 전환 | §6.1 | 마지막 블록 → completed |
+| BK-82 | resume: 크래시 후 재개 | §6.1 | checkpoint → 정확한 상태 |
+| BK-83 | resume: in_progress 블록 adapter 상태 확인 | §6.1 | check_status 호출 |
+| BK-84 | context_contract 필수 항목 미충족 | §V1 12.5.1 | missing → gate fail |
 
-### Workflow Engine
+### CLI
 
-| ID | 테스트 | Design 항목 | 검증 |
+| ID | 테스트 | Design 섹션 | 검증 |
 |----|--------|------------|------|
-| BK-45 | 프리셋 로드 (t-pdca-l2) | §6.2 | YAML 로드 → blocks/links/teams 파싱 성공 |
-| BK-46 | 프리셋 extends 상속 | §6.2 (L3 extends L2) | L3 = L2 + security 블록 추가 |
-| BK-47 | 프리셋 overrides 적용 | §6.2 | match_rate 90→95 오버라이드 |
-| BK-48 | 워크플로우 인스턴스 생성 | §5.3 | engine start → workflows/{id}.json 생성 |
-| BK-49 | 현재 블록 추적 | §5.3 | current_block 업데이트 확인 |
-| BK-50 | 컨텍스트 자동 주입 | §5.4 | Design 산출물 → Do input에 자동 매핑 |
-| BK-51 | 워크플로우 완료 상태 전환 | §5.3 | 마지막 블록 gate pass → status: completed |
+| BK-85 | `brick start` 정상 실행 | §7 | exit 0 + workflow_id 출력 |
+| BK-86 | `brick status` 정상 출력 | §7 | 상태 표시 |
+| BK-87 | `brick complete` gate 트리거 | §7 | gate 실행 |
+| BK-88 | `brick validate` 유효한 프리셋 | §7 | exit 0 |
+| BK-89 | `brick validate` 유효하지 않은 프리셋 → 상세 에러 | §7 | exit 1 + 에러 메시지 |
+| BK-90 | `brick viz` 시각화 출력 | §7 | 블록 흐름도 텍스트 |
+| BK-91 | `brick init` .bkit/ 생성 | §7 | 디렉토리 + 기본 파일 |
 
-### 기존 인프라 하위 호환
+### Integration (Claude Code hook)
 
-| ID | 테스트 | Design 항목 | 검증 |
+| ID | 테스트 | Design 섹션 | 검증 |
 |----|--------|------------|------|
-| BK-52 | gate-checker.sh 래핑 동작 | §7.1 | engine → gate-checker 호출 → 결과 수집 |
-| BK-53 | pdca-chain-handoff.sh 이벤트 연동 | §7.1 | on_complete → 기존 handoff 호출 |
-| BK-54 | detect-work-type → 프리셋 매핑 | §7.1 | L0→hotfix, L2→t-pdca-l2 |
-| BK-55 | 기존 TDD 83건 통과 유지 | §7.2 | Brick 추가 후 기존 테스트 전체 green |
+| BK-92 | TaskCompleted hook → `brick complete` 호출 | §8.2 | stdin JSON → CLI 호출 |
+| BK-93 | session-resume → `brick resume` 호출 | §8.2 | 미완료 WF 재개 |
+| BK-94 | 기존 bash hook → brick CLI 래핑 정상 | §8.2 | 기존 동작 유지 |
 
-### 비교 분석 검증
+### Plugin
 
-| ID | 테스트 | Design 항목 | 검증 |
+| ID | 테스트 | Design 섹션 | 검증 |
 |----|--------|------------|------|
-| BK-56 | Brick 프리셋에 CrewAI 미지원 기능 포함 | §8.1 | parallel + compete + loop 타입 존재 |
-| BK-57 | 선언형(YAML) 워크플로우 정의 | §8.2 | Python 코드 0줄로 워크플로우 정의 가능 |
+| BK-95 | entry_points adapter 자동 발견 | §10.2 | 등록된 adapter 목록 |
+| BK-96 | entry_points gate 자동 발견 | §10.2 | 등록된 gate 목록 |
+| BK-97 | 외부 플러그인 설치 후 사용 | §10.2 | pip install → 자동 등록 |
 
-### 시각화
+### Integration (End-to-End)
 
-| ID | 테스트 | Design 항목 | 검증 |
+| ID | 테스트 | Design 섹션 | 검증 |
 |----|--------|------------|------|
-| BK-58 | CLI viz 출력 형식 | §9.1 | brick-engine viz → 블록 흐름도 텍스트 출력 |
-| BK-59 | 워크플로우 인스턴스 JSON 대시보드 호환 | §9.2 | workflows/{id}.json → 대시보드 읽기 가능 |
+| BK-98 | T-PDCA L2 전체 E2E (mock adapter) | §9.1 | start → 5블록 순차 → completed |
+| BK-99 | Hotfix 프리셋 E2E | §V1 6.2 | start → Do → QA → completed |
+| BK-100 | loop 재시도 + 통과 E2E | §5 | fail → retry → pass → next |
 
 ---
 
 ### TDD 커버리지 요약
 
-| Design 섹션 | TDD 케이스 | 커버리지 |
-|-------------|-----------|---------|
-| System Layer 불변 규칙 (§1.2) | BK-01~07 (7건) | 6/6 INV = 100% |
-| Block (§2) | BK-08~23 (16건) | 스키마+타입+gate 전체 = 100% |
-| Team (§3) | BK-24~29 (6건) | 정의+배정+제한 = 100% |
-| Link (§4) | BK-30~44 (15건) | 7타입+4이벤트 = 100% |
-| Workflow Engine (§5-6) | BK-45~51 (7건) | 프리셋+인스턴스+컨텍스트 = 100% |
-| 기존 인프라 호환 (§7) | BK-52~55 (4건) | 래핑+매핑+하위호환 = 100% |
-| 비교 분석 (§8) | BK-56~57 (2건) | 차별점 검증 = 100% |
-| 시각화 (§9) | BK-58~59 (2건) | CLI+대시보드 = 100% |
-| **총계** | **59건** | **Gap 0건 = 100%** |
+| Design 섹션 | TDD 케이스 | 건수 |
+|-------------|-----------|------|
+| Engine Core (§2) | BK-01~16 | 16 |
+| Invariants (§1.3) | BK-17~27 | 11 |
+| Block (§3) | BK-28~30 | 3 |
+| Gate 4타입 (§3.3) | BK-31~51 | 21 |
+| Team Adapter (§4) | BK-52~63 | 12 |
+| Link (§5) | BK-64~75 | 12 |
+| Workflow Executor (§6) | BK-76~84 | 9 |
+| CLI (§7) | BK-85~91 | 7 |
+| Integration (§8) | BK-92~94 | 3 |
+| Plugin (§10) | BK-95~97 | 3 |
+| E2E | BK-98~100 | 3 |
+| **총계** | **BK-01~100** | **100건, Gap 0** |
 
 ---
 
-## 12. 심층 분석 — 엣지케이스, 숨은 의존성, 실패 시나리오, 확장 병목
-
-> 3축 뼈대 너머, COO/CEO가 사고하지 못한 구조적 문제와 해결책.
-
-### 12.1 워크플로우 생명주기 문제
-
-#### 12.1.1 세션 크래시 복구 (Workflow Recovery)
-
-**문제**: Block 실행 중 Claude Code 세션이 죽으면?
-- 현행: session-resume-check.sh가 미완료 TASK/좀비 팀원 감지
-- Brick: 워크플로우 인스턴스 JSON이 디스크에 있으므로 상태는 보존됨
-- **하지만**: Block 내부 팀원의 작업 진행 상태는 유실 가능
-
-**해결**:
-```jsonc
-// 워크플로우 인스턴스에 checkpoint 추가
-"blocks": {
-  "do": {
-    "status": "in_progress",
-    "checkpoint": {
-      "last_commit": "abc1234",        // 마지막 커밋 해시
-      "worker_state": "implementing",  // 팀원 작업 단계
-      "files_modified": ["src/lib/auth.ts"],
-      "saved_at": "2026-04-02T10:30:00+09:00"
-    }
-  }
-}
-```
-- engine이 세션 시작 시 `runtime/workflows/` 스캔
-- `in_progress` 블록 발견 → 해당 팀+블록부터 재개
-- checkpoint 없으면 블록 처음부터 재시작 (멱등성 필요 — §12.1.3)
-
-#### 12.1.2 순환 참조 감지 (Circular Link Detection)
-
-**문제**: A→B→C→A 같은 순환 Link를 정의하면 무한 루프.
-- loop 타입은 의도적 순환이지만 max_retries가 있음
-- branch + sequential 조합으로 **의도하지 않은 순환** 가능
-
-**해결**:
-- engine이 워크플로우 로드 시 **DAG 검증** (Directed Acyclic Graph)
-- loop 타입만 역방향 허용, 나머지 타입에서 순환 감지 → 즉시 거부
-- loop 타입도 max_retries 필수 (기본 3, 최대 10)
-- **INV-7 추가**: 워크플로우 그래프에 의도하지 않은 순환 존재 불가
-
-```
-BK-60: 순환 참조 워크플로우 로드 시 거부 (A→B→C→A, loop 아닌 sequential)
-BK-61: loop 타입 max_retries 미지정 시 기본값 3 적용
-```
-
-#### 12.1.3 블록 멱등성 (Block Idempotency)
-
-**문제**: 크래시 후 재시작, 또는 loop 재실행 시 Block이 안전하게 재실행 가능한가?
-- Do 블록: 이전 커밋 위에 추가 커밋 → 안전
-- Design 블록: 파일 덮어쓰기 → 안전
-- Act 블록: **배포 2회 실행** → 위험할 수 있음
-- Report 블록: **Slack 메시지 2회 전송** → 중복
-
-**해결**:
-- Block 정의에 `idempotent` 속성 추가 (기본: true)
-- `idempotent: false` 블록은 재실행 전 **명시적 확인** 요구
-- engine이 재실행 시 `blocks.{id}.execution_count` 체크
-- Act 블록 기본: `idempotent: false` → 재실행 시 경고 + review gate 강제
-
-```jsonc
-// Block 정의 확장
-{
-  "id": "act",
-  "type": "Act",
-  "idempotent": false,           // 재실행 위험 표시
-  "on_rerun": "require_review"   // 재실행 시 강제 검토
-}
-```
-
-```
-BK-62: idempotent=false 블록 재실행 시 review gate 강제 활성화
-BK-63: execution_count 추적 (블록 실행 횟수)
-```
-
-### 12.2 팀 자원 경합 (Resource Contention)
-
-#### 12.2.1 동시 워크플로우의 팀 경합
-
-**문제**: 워크플로우 2개가 동시에 CTO팀을 필요로 하면?
-- 현행: 팀은 하나만 존재, 동시 사용 불가
-- Brick: 여러 워크플로우가 같은 팀 참조 가능
-
-**해결 — 팀 스케줄링 정책**:
-
-```jsonc
-// Team 정의 확장
-"scheduling": {
-  "policy": "exclusive",         // exclusive | shared | priority
-  "max_concurrent_blocks": 1,    // 동시 처리 블록 수
-  "queue_strategy": "fifo"       // fifo | priority | deadline
-}
-```
-
-| 정책 | 동작 | 적합 |
-|------|------|------|
-| `exclusive` | 한 번에 1개 워크플로우만 사용 | CTO팀 (기본) |
-| `shared` | 여러 워크플로우 동시 사용 (workers 분배) | PM팀 (분석 병렬) |
-| `priority` | 높은 레벨(L0>L1>L2>L3) 우선 | 응급 대응 시 |
-
-**선점(Preemption)**: L0 워크플로우가 들어오면 L2 블록을 일시정지하고 L0 먼저.
-- 일시정지된 블록은 `status: suspended` → L0 완료 후 자동 재개
-- checkpoint 기반 재개
-
-```
-BK-64: exclusive 팀에 2개 워크플로우 동시 요청 → 큐 대기
-BK-65: priority 정책: L0 워크플로우가 L2 블록 선점
-BK-66: suspended 블록 자동 재개 (선점 해제 후)
-```
-
-#### 12.2.2 팀원 크래시 (Worker Failure)
-
-**문제**: Do 블록 실행 중 팀원(backend-dev)이 크래시하면?
-- 현행: TeamDelete 후 재생성이지만, 작업 유실 가능
-- tmux pane 죽으면 좀비 상태
-
-**해결**:
-- engine이 블록 실행 중 팀원 heartbeat 모니터링 (idle notification 추적)
-- heartbeat 타임아웃 → worker_failure 이벤트 발화
-- 블록에 `worker_recovery` 정책 추가:
-  - `recreate`: 새 팀원 생성 → checkpoint부터 재시작
-  - `reassign`: 다른 팀원에게 재배정
-  - `escalate`: 리더에게 보고
-
-```
-BK-67: 팀원 heartbeat 타임아웃 → worker_failure 이벤트
-BK-68: worker_recovery: recreate → 새 팀원 + checkpoint 재개
-```
-
-### 12.3 게이트 상호작용 문제
-
-#### 12.3.1 Auto + Review Gate 충돌
-
-**문제**: Auto gate는 통과했는데 Review gate에서 COO가 거부하면?
-- Auto 결과를 버리나? Review 거부 사유에 따라 블록을 어디로 보내나?
-
-**해결 — Gate 평가 순서와 거부 경로**:
-
-```
-Gate 평가 순서: auto → review (순차적)
-- auto 실패 → 즉시 on_fail (review 미진행)
-- auto 통과 + review 거부 → review_reject 경로
-- auto 통과 + review 승인 → 다음 블록
-```
-
-```jsonc
-// Gate 확장
-"gate": {
-  "auto": [...],
-  "review": {"coo": true},
-  "on_review_reject": {
-    "action": "rollback",        // retry | rollback | revise
-    "feedback_to": "team",       // 거부 사유를 팀에 전달
-    "max_reviews": 3             // 최대 리뷰 횟수 (무한 핑퐁 방지)
-  }
-}
-```
-
-```
-BK-69: auto 통과 + review 거부 → on_review_reject 경로
-BK-70: max_reviews 소진 → escalate (무한 핑퐁 방지)
-```
-
-#### 12.3.2 Gate 타임아웃
-
-**문제**: Review gate에서 COO/Owner가 장기간 미응답이면?
-- 현행: coo-watchdog.sh 5분 타임아웃
-- Brick: 블록마다 다른 타임아웃 필요할 수 있음
-
-**해결**:
-```jsonc
-"gate": {
-  "review": {
-    "coo": true,
-    "timeout": 300000,           // 5분 (ms)
-    "on_timeout": "auto_approve" // auto_approve | escalate | retry
-  }
-}
-```
-
-```
-BK-71: review gate 타임아웃 → on_timeout 정책 실행
-```
-
-### 12.4 프리셋 확장 시 복잡도 관리
-
-#### 12.4.1 YAML 지옥 방지 (Preset Sprawl)
-
-**문제**: 프리셋이 50개가 되면 관리 불가능. 비슷한 프리셋이 미세하게 다른 변형으로 난립.
-
-**해결 — 3단계 프리셋 관리**:
-
-```
-Level 1: Core Presets (System Layer — 수정 금지)
-  t-pdca-l0.yaml, t-pdca-l1.yaml, t-pdca-l2.yaml, t-pdca-l3.yaml
-  hotfix.yaml, research.yaml
-
-Level 2: Extended Presets (Process Layer — extends로 파생)
-  custom/competitor-analysis.yaml (extends: research)
-  custom/landing-page-audit.yaml (extends: t-pdca-l2)
-
-Level 3: One-shot Presets (Autonomy Layer — 일회성, 자동 정리)
-  runtime/presets/temp-{workflow-id}.yaml
-  → 워크플로우 완료 후 자동 삭제
-```
-
-- Core 프리셋은 6개 이하로 제한
-- Extended는 반드시 `extends` 사용 (처음부터 작성 금지)
-- One-shot은 런타임에서 자동 생성/삭제
-
-#### 12.4.2 프리셋 검증 (Preset Validation)
-
-```bash
-# 프리셋 검증 명령
-brick-engine validate --preset custom/my-workflow.yaml
-
-# 검증 항목:
-# 1. Block 스키마 유효성
-# 2. Link 순환 참조 검사
-# 3. Team 참조 존재 확인
-# 4. Gate 타입 레지스트리 검증
-# 5. extends 체인 충돌 검사
-```
-
-```
-BK-72: 유효하지 않은 프리셋 로드 시 상세 에러 메시지
-BK-73: extends 체인 충돌 (부모-자식 gate 모순) 감지
-```
-
-### 12.5 숨은 의존성
-
-#### 12.5.1 블록 간 암묵적 의존성
-
-**문제**: Link로 명시하지 않았지만 실제로 의존하는 관계.
-- 예: Check 블록이 Do 블록의 **특정 커밋 해시**를 참조
-- 예: Act 블록이 Check의 **match_rate 숫자**를 참조
-- Link에는 "sequential" 이라고만 돼 있음
-
-**해결 — Explicit Context Contract**:
-
-```jsonc
-// Link에 context contract 명시
-{
-  "from": "do",
-  "to": "check",
-  "type": "sequential",
-  "context_contract": {
-    "required": ["commit_hash", "files_changed"],  // 필수 전달
-    "optional": ["test_results"]                    // 선택 전달
-  }
-}
-```
-
-- engine이 블록 완료 시 context_contract 필수 항목 검증
-- 필수 항목 없으면 gate 실패 처리
-
-```
-BK-74: context_contract 필수 항목 미충족 시 gate 실패
-```
-
-#### 12.5.2 외부 시스템 의존성
-
-**문제**: Gate 체크가 외부 시스템에 의존.
-- `deploy_health` → Cloud Run URL 호출 (네트워크 필요)
-- `tsc_pass` → node_modules 존재 필요
-- Slack 알림 → webhook URL 유효 필요
-
-**해결**:
-- Gate에 `dependencies` 필드 추가
-- engine이 gate 실행 전 dependency 체크
-- 실패 시 gate 실행 자체를 보류 (`gate_blocked` 상태)
-
-```jsonc
-"gate": {
-  "auto": [{
-    "type": "deploy_health",
-    "dependencies": ["network", "cloud_run_service"],
-    "fallback": "skip_with_warning"    // 의존성 미충족 시
-  }]
-}
-```
-
-```
-BK-75: gate dependency 미충족 → gate_blocked 상태 + 재시도 큐
-```
-
-### 12.6 관측성 (Observability)
-
-#### 12.6.1 워크플로우 디버깅
-
-**문제**: 블록이 왜 안 넘어가는지 파악 어려움. "gate 실패"만 나오고 뭐가 실패인지 모름.
-
-**해결 — Gate 실행 상세 로그**:
-
-```jsonc
-// history 엔트리 확장
-{
-  "event": "gate_check",
-  "block": "do",
-  "at": "2026-04-02T11:00:00+09:00",
-  "gates": [
-    {"type": "tsc_pass", "result": "pass", "duration_ms": 3200},
-    {"type": "match_rate", "result": "fail", "actual": 82, "required": 90, "duration_ms": 150},
-    {"type": "build_pass", "result": "skip", "reason": "previous gate failed"}
-  ],
-  "overall": "fail",
-  "on_fail_action": "retry (attempt 2/3)"
-}
-```
-
-```
-BK-76: gate 실패 시 개별 gate 체크 결과 상세 로깅
-```
-
-#### 12.6.2 워크플로우 메트릭
-
-```jsonc
-// 워크플로우 인스턴스에 메트릭 추가
-"metrics": {
-  "total_duration_ms": null,       // 전체 소요 시간
-  "block_durations": {
-    "plan": 720000,                // 12분
-    "design": null                 // 아직 미완료
-  },
-  "gate_attempts": {
-    "do": 2                        // Do 블록 gate 2번 시도
-  },
-  "retry_count": 1,
-  "escalation_count": 0
-}
-```
-
-```
-BK-77: 워크플로우 완료 시 메트릭 자동 집계
-```
-
-### 12.7 보안 고려사항
-
-#### 12.7.1 프리셋 변조 방지
-
-**문제**: 팀원이 `.bkit/presets/` 파일을 수정해서 gate를 우회할 수 있음.
-
-**해결**:
-- Core 프리셋은 `readonly` 플래그 + validate-delegate.sh에서 수정 차단
-- 프리셋 변경 시 git diff 감지 → COO 승인 필요
-- **INV-8 추가**: Core 프리셋 무단 수정 불가
-
-```
-BK-78: Core 프리셋 수정 시도 → 차단 (INV-8)
-```
-
-#### 12.7.2 Gate 우회 방지
-
-**문제**: `on_fail: skip` 이 gate 우회 수단으로 악용 가능.
-
-**해결**:
-- `skip` 정책은 L0 프리셋에서만 허용
-- L1 이상에서 `skip` 사용 시 engine이 거부
-- gate skip 이력은 별도 로그 (audit trail)
-
-```
-BK-79: L1+ 프리셋에서 gate on_fail: skip 사용 시 거부
-BK-80: gate skip 실행 시 audit trail 기록
-```
-
-### 12.8 미래 확장 포인트 (Phase 2+)
-
-#### 12.8.1 워크플로우 합성 (Workflow Composition)
-
-워크플로우 안에 워크플로우를 블록으로 포함:
-
-```yaml
-# 메타 워크플로우
-blocks:
-  - {id: frontend, type: Workflow, preset: t-pdca-l2, what: "프론트엔드 개발"}
-  - {id: backend, type: Workflow, preset: t-pdca-l2, what: "백엔드 개발"}
-links:
-  - {from: frontend, to: backend, type: parallel}
-```
-
-→ Phase 2 이후 구현. 현재는 설계만.
-
-#### 12.8.2 블록 마켓플레이스
-
-커뮤니티가 Block 타입 + 프리셋을 공유:
-```
-brick install @community/security-audit-block
-brick install @community/performance-test-preset
-```
-
-→ 장기 비전. Brick이 CLI 도구로 발전할 때.
-
-#### 12.8.3 실시간 워크플로우 수정 (Hot Reload)
-
-실행 중 워크플로우에 블록 추가/제거:
-```bash
-brick-engine add-block --workflow {id} --block '{"id":"hotfix","type":"Do"}' --after do
-```
-
-→ 위험성 높음. Phase 3+ 에서 안전 장치와 함께.
-
----
-
-## 13. 추가 TDD 케이스 (심층 분석 항목)
-
-| ID | 테스트 | Design 항목 | 검증 |
-|----|--------|------------|------|
-| BK-60 | 순환 참조 워크플로우 거부 | §12.1.2 | A→B→C→A (non-loop) → 로드 실패 |
-| BK-61 | loop max_retries 기본값 | §12.1.2 | 미지정 → 3 적용 |
-| BK-62 | idempotent=false 재실행 시 review 강제 | §12.1.3 | Act 재실행 → review gate on |
-| BK-63 | execution_count 추적 | §12.1.3 | 블록 2회 실행 → count=2 |
-| BK-64 | exclusive 팀 동시 요청 큐 | §12.2.1 | 2 workflow → 1 실행 + 1 대기 |
-| BK-65 | L0 선점 L2 블록 | §12.2.1 | L0 진입 → L2 suspended |
-| BK-66 | suspended 블록 자동 재개 | §12.2.1 | L0 완료 → L2 resume |
-| BK-67 | 팀원 heartbeat 타임아웃 | §12.2.2 | heartbeat 없음 → worker_failure |
-| BK-68 | worker_recovery: recreate | §12.2.2 | crash → 새 팀원 + 재개 |
-| BK-69 | auto 통과 + review 거부 경로 | §12.3.1 | reject → rollback |
-| BK-70 | max_reviews 소진 escalate | §12.3.1 | 3회 거부 → escalate |
-| BK-71 | review gate 타임아웃 | §12.3.2 | timeout → auto_approve |
-| BK-72 | 유효하지 않은 프리셋 거부 | §12.4.2 | 스키마 에러 → 상세 메시지 |
-| BK-73 | extends 충돌 감지 | §12.4.2 | 부모-자식 gate 모순 → 에러 |
-| BK-74 | context_contract 미충족 | §12.5.1 | 필수 항목 없음 → gate fail |
-| BK-75 | gate dependency 미충족 | §12.5.2 | network 없음 → gate_blocked |
-| BK-76 | gate 실패 상세 로깅 | §12.6.1 | 개별 gate 결과 + duration 기록 |
-| BK-77 | 워크플로우 메트릭 집계 | §12.6.2 | 완료 시 duration + attempts 합산 |
-| BK-78 | Core 프리셋 수정 차단 | §12.7.1 | readonly → 수정 거부 |
-| BK-79 | L1+ skip 정책 거부 | §12.7.2 | L2 preset + skip → 거부 |
-| BK-80 | gate skip audit trail | §12.7.2 | L0 skip 실행 → 로그 기록 |
-
----
-
-### 최종 TDD 커버리지 요약
-
-| Design 섹션 | TDD 케이스 | 커버리지 |
-|-------------|-----------|---------|
-| System Layer 불변 규칙 (§1.2) | BK-01~07 (7건) | 100% |
-| Block (§2) | BK-08~23 (16건) | 100% |
-| Team (§3) | BK-24~29 (6건) | 100% |
-| Link (§4) | BK-30~44 (15건) | 100% |
-| Workflow Engine (§5-6) | BK-45~51 (7건) | 100% |
-| 기존 인프라 호환 (§7) | BK-52~55 (4건) | 100% |
-| 비교 분석 (§8) | BK-56~57 (2건) | 100% |
-| 시각화 (§9) | BK-58~59 (2건) | 100% |
-| **심층 분석 (§12)** | **BK-60~80 (21건)** | **100%** |
-| **총계** | **80건** | **Gap 0건 = 100%** |
-
----
-
-_Design 완료. 모찌리포트 배포로 넘어간다._
+_Design V2 끝._
