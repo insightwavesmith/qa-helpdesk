@@ -2,7 +2,7 @@
   "feature": "signup-profile-fix",
   "phase": "do",
   "status": "in_progress",
-  "updatedAt": "2026-04-02T02:05:53.292003",
+  "updatedAt": "2026-04-02T02:15:08.744549",
   "notes": "P0 Firebase UID→UUID v5 변환. 60개 파일 수정 진행 중.",
   "matchRate": null,
   "features": {
@@ -66,5 +66,5 @@
   },
   "primaryFeature": "hook-hardening-v2",
   "lastUpdated": "2026-04-01T12:30:00Z",
-  "_autoSyncNote": "auto-synced at 2026-04-02 02:05:53, last commit: db4cfd7c"
+  "_autoSyncNote": "auto-synced at 2026-04-02 02:15:08, last commit: ccda481a"
 }
