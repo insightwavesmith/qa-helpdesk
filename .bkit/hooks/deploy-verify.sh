@@ -27,6 +27,21 @@ if [ "$LOCAL_HEAD" = "$REMOTE_HEAD" ]; then
             echo "  마지막 배포 커밋: ${LAST_DEPLOY:0:7}"
             echo "  실행: gcloud run deploy bscamp-web --source . --region asia-northeast3"
             echo ""
+        else
+            # 배포 마커가 현재 HEAD와 일치 → 헬스체크 수행
+            if command -v gcloud >/dev/null 2>&1; then
+                SERVICE_URL=$(gcloud run services describe bscamp-web \
+                  --region asia-northeast3 \
+                  --format='value(status.url)' 2>/dev/null || true)
+
+                if [ -n "$SERVICE_URL" ]; then
+                    if curl -sf --max-time 10 "$SERVICE_URL/api/health" >/dev/null 2>&1; then
+                        echo "✅ Cloud Run 헬스체크 통과 ($SERVICE_URL)"
+                    else
+                        echo "⚠ Cloud Run 헬스체크 실패 ($SERVICE_URL/api/health)"
+                    fi
+                fi
+            fi
         fi
     fi
 fi
