@@ -23,7 +23,8 @@
       "TaskStop(*)",
       "TaskOutput(*)",
       "SendMessage(*)",
-      "mcp__claude-peers__check_messages"
+      "mcp__claude-peers__check_messages",
+      "mcp__claude-peers__send_message"
     ],
     "deny": []
   },
