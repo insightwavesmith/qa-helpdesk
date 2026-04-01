@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, deleteUser } from "firebase/auth";
 import { uploadFile } from "@/lib/upload-client";
 import { mp } from "@/lib/mixpanel";
 import { ensureProfile, updateBusinessCertUrl, savePrivacyConsent } from "@/actions/auth";
@@ -314,18 +314,37 @@ export default function SignupPage() {
       const uid = cred.user.uid;
 
       // Phase 5: Cloud SQL 환경에서 profile 생성 (trigger 대체)
-      try {
-        await ensureProfile(uid, formData.email, {
-          name: metadata.name || "",
-          phone: metadata.phone || undefined,
-          shop_url: metadata.shop_url || undefined,
-          shop_name: metadata.shop_name || undefined,
-          business_number: metadata.business_number || undefined,
-          cohort: metadata.cohort || undefined,
-          invite_code: metadata.invite_code || undefined,
-        });
-      } catch (profileErr) {
-        console.error("[signup] ensureProfile failed:", profileErr);
+      // 실패 시 1회 재시도, 그래도 실패하면 Firebase 계정 삭제 + 에러 표시
+      const profilePayload = {
+        name: metadata.name || "",
+        phone: metadata.phone || undefined,
+        shop_url: metadata.shop_url || undefined,
+        shop_name: metadata.shop_name || undefined,
+        business_number: metadata.business_number || undefined,
+        cohort: metadata.cohort || undefined,
+        invite_code: metadata.invite_code || undefined,
+      };
+
+      let profileResult = await ensureProfile(uid, formData.email, profilePayload);
+
+      // 1회 재시도
+      if (profileResult.error) {
+        console.warn("[signup] ensureProfile 1차 실패, 재시도:", profileResult.error);
+        await new Promise((r) => setTimeout(r, 1000));
+        profileResult = await ensureProfile(uid, formData.email, profilePayload);
+      }
+
+      if (profileResult.error) {
+        console.error("[signup] ensureProfile 최종 실패:", profileResult.error);
+        // Firebase 계정 삭제하여 broken 상태 방지
+        try {
+          await deleteUser(cred.user);
+        } catch (delErr) {
+          console.error("[signup] Firebase 계정 삭제 실패:", delErr);
+        }
+        setError("프로필 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+        setLoading(false);
+        return;
       }
 
       // 사업자등록증 파일 업로드 (lead 모드에서만)
