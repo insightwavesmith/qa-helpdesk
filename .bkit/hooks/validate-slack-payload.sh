@@ -1,4 +1,7 @@
 #!/bin/bash
+# Block logger: 차단(exit 2) 시 자동 기록
+_bl_trap() { local e=$?; [ "$e" = "2" ] && source "$(dirname "$0")/helpers/block-logger.sh" 2>/dev/null && log_block "차단" "validate-slack-payload" "${COMMAND:-unknown}" 2>/dev/null; exit $e; }
+trap _bl_trap EXIT
 # validate-slack-payload.sh — curl + hooks.slack.com 전송 시 TASK_NAME + 팀명 확인
 # PreToolUse:Bash hook
 # exit 0 = 통과, exit 2 = 차단

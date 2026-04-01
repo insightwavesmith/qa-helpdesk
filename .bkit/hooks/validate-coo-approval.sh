@@ -1,4 +1,7 @@
 #!/bin/bash
+# Block logger: 차단(exit 2) 시 자동 기록
+_bl_trap() { local e=$?; [ "$e" = "2" ] && source "$(dirname "$0")/helpers/block-logger.sh" 2>/dev/null && log_block "차단" "validate-coo-approval" "${COMMAND:-unknown}" 2>/dev/null; exit $e; }
+trap _bl_trap EXIT
 # validate-coo-approval.sh — spawn.sh 호출 시 coo_approved 검증 (A0-1)
 # PreToolUse:Bash hook
 # exit 0 = 허용, exit 2 = 차단

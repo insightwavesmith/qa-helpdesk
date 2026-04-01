@@ -62,6 +62,7 @@ CALLER_PANE="${MOCK_CALLER_PANE:-$(tmux display-message -p '#{pane_index}' 2>/de
 [ "$CALLER_SESSION" = "$TARGET_SESSION" ] && [ "$CALLER_PANE" = "0" ] && exit 0
 
 # 차단
+source "$(dirname "$0")/helpers/block-logger.sh" 2>/dev/null && log_block "팀원 pane 직접 접근: ${TARGET_SESSION}.${TARGET_PANE}" "pane-access-guard" "$COMMAND"
 echo "[pane-access-guard] 차단: 팀원 pane 직접 접근 금지 (A0-7)" >&2
 echo "   명령어: $COMMAND" >&2
 echo "   대상: ${TARGET_SESSION}.${TARGET_PANE} (팀원)" >&2

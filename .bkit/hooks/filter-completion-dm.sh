@@ -1,4 +1,7 @@
 #!/bin/bash
+# Block logger: 차단(exit 2) 시 자동 기록
+_bl_trap() { local e=$?; [ "$e" = "2" ] && source "$(dirname "$0")/helpers/block-logger.sh" 2>/dev/null && log_block "차단" "filter-completion-dm" "${COMMAND:-unknown}" 2>/dev/null; exit $e; }
+trap _bl_trap EXIT
 # filter-completion-dm.sh — 팀원(pane 1+)의 TaskCompleted DM 차단
 # TaskCompleted hook
 # exit 0 = 통과 (리더), exit 2 = 차단 (팀원)

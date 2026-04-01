@@ -1,13 +1,13 @@
 {
-  "feature": "rag-pipeline-fix",
-  "phase": "check",
+  "feature": "coo-pane-restriction",
+  "phase": "act",
   "status": "completed",
-  "updatedAt": "2026-04-01T09:54:29Z",
+  "updatedAt": "2026-04-01T12:30:00Z",
   "notes": "RAG 파이프라인 3건 버그 수정: skipRAG 조기종료 제거, Stage1a try-catch, 관련성평가 기본값",
   "matchRate": null,
   "features": {
     "hook-hardening-v2": {
-      "phase": "design-complete",
+      "phase": "completed",
       "plan": {
         "team": "pm",
         "done": true,
@@ -22,19 +22,19 @@
       },
       "do": {
         "team": "cto",
-        "done": false,
-        "commit": null,
-        "at": null
+        "done": true,
+        "commit": "pending",
+        "at": "2026-04-01"
       },
       "check": {
         "team": "qa",
-        "done": false,
-        "doc": "",
-        "matchRate": null
+        "done": true,
+        "doc": "docs/03-analysis/features/coo-pane-restriction.analysis.md",
+        "matchRate": 95
       },
       "act": {
-        "done": false,
-        "commit": null,
+        "done": true,
+        "commit": "pending",
         "deployedAt": null
       },
       "notes": "OI-007~017 전체 대응. 8 Feature, TDD 47건. CTO 전달 대기.",
@@ -43,10 +43,10 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-01T09:54:29Z",
-        "lastUpdated": "2026-04-01T09:54:29Z"
+        "lastUpdated": "2026-04-01T12:30:00Z"
       },
       "stateMachine": {
-        "currentState": "design-complete",
+        "currentState": "completed",
         "previousState": null,
         "stateHistory": [],
         "retryCount": 0,
@@ -65,5 +65,5 @@
     }
   },
   "primaryFeature": "hook-hardening-v2",
-  "lastUpdated": "2026-04-01T09:54:29Z"
+  "lastUpdated": "2026-04-01T12:30:00Z"
 }
