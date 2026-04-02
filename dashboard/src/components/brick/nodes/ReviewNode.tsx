@@ -4,19 +4,24 @@ import type { ReviewNodeData } from './types';
 import { STATUS_BORDER_COLORS, STATUS_ICONS } from './types';
 
 const REVIEW_BORDER_COLOR = '#8B5CF6';
+const REVIEW_STATUS_COLORS: Record<string, string> = {
+  approved: '#10B981',
+  rejected: '#EF4444',
+};
 
 export function ReviewNode({ data }: NodeProps) {
   const d = data as ReviewNodeData;
   const statusIcon = STATUS_ICONS[d.status] ?? '○';
   const isRunning = d.status === 'running';
   const progress = d.checklistProgress ?? 0;
+  const borderColor = REVIEW_STATUS_COLORS[d.reviewStatus] ?? REVIEW_BORDER_COLOR;
 
   return (
     <div
       data-testid="review-node"
       className="rounded-lg shadow-sm min-w-[240px]"
       style={{
-        border: `2px solid ${REVIEW_BORDER_COLOR}`,
+        border: `2px solid ${borderColor}`,
         backgroundColor: '#FEFCE8',
       }}
     >
