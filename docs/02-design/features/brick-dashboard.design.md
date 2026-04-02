@@ -2095,7 +2095,36 @@ Engine: block.gate_review_requested 이벤트
 
 Slack Interactive Message → API Server → Engine. Dashboard와 동일 API 사용.
 
-### 12.8 오프라인 편집과 온라인 동기화
+### 12.8 Learning Harness 오진 (False Positive)
+
+**문제**: PatternDetector가 우연의 일치를 패턴으로 감지. 예: 3회 실패가 모두 다른 원인.
+
+**해결**:
+- **확신도 임계값**: confidence < 0.7인 제안은 자동 보류 (Dashboard에 표시 안 함)
+- **LLM 이중 검증**: 패턴 감지(통계) + 원인 분석(LLM)이 모두 동의해야 제안 생성
+- **거부 학습**: 거부된 제안과 유사한 패턴 → 확신도 자동 하향 (반복 오진 방지)
+- **최소 증거**: 실패 이벤트 3건 이상 + 공통 속성(같은 block_id 또는 같은 에러 메시지) 필수
+
+### 12.9 Learning Harness 규칙 충돌
+
+**문제**: 새 규칙이 기존 Gate/Skill 규칙과 모순. 예: "빌드 캐시 삭제" 규칙 vs "캐시 사용 필수" 규칙.
+
+**해결**:
+- 승인 시 ValidationPipeline 실행 → 기존 규칙과 충돌 감지
+- 충돌 감지 시 경고 표시: "기존 규칙 X와 충돌 가능. 계속하시겠습니까?"
+- **규칙 우선순위**: 최신 승인 규칙이 우선 (latest-wins). 명시적 충돌은 사람이 판단
+
+### 12.10 Learning Harness 롤백
+
+**문제**: 승인한 규칙이 오히려 상황을 악화시킴.
+
+**해결**:
+- 모든 규칙 적용은 git commit으로 추적 → `git revert`로 원자적 롤백
+- Dashboard에 "되돌리기" 버튼 → API: `POST /api/v1/learning/proposals/:id/rollback`
+- 롤백 시 proposal.status = "rolled_back" 기록
+- 롤백된 규칙의 패턴이 재감지되면 확신도 크게 하향 (재제안 방지)
+
+### 12.11 오프라인 편집과 온라인 동기화
 
 **문제**: API 서버 없이 파일 직접 편집 → 나중에 `brick serve` 시작 시 동기화.
 
