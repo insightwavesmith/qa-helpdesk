@@ -1611,7 +1611,321 @@ function DynamicConfigForm({ schema, value, onChange }: Props) {
 
 ---
 
-## 10. 비교 분석
+## 10. Learning Harness UI — 진화적 규칙 학습
+
+> "프롬프트 엔지니어링은 끝났다. 에이전트가 실수하면 → 그 실수가 새 규칙이 된다."
+> 하네스는 시간이 지날수록 견고해지는 **진화적 시스템**.
+
+### 10.1 핵심 개념
+
+```
+실패 반복 감지 → 패턴 분석 → 규칙 제안 → 사람 승인 → 파일 자동 반영
+                                              │
+                              ┌────────────────┼────────────────┐
+                              ▼                ▼                ▼
+                        Gate YAML에        SKILL.md에       Link config에
+                        handler 추가      규칙 추가        파라미터 조정
+```
+
+**기존 시스템과의 차이**: bscamp의 `docs/postmortem/` + `docs/issues/operational-issues.md`는 **수동 축적**. Learning Harness는 **자동 감지 + 반자동 적용**. 사람은 승인/거부만.
+
+### 10.2 3축별 학습 대상
+
+| 축 | 학습 대상 | 적용 파일 | 예시 |
+|----|----------|----------|------|
+| **Block** | Gate 규칙 | `.bkit/presets/*.yaml` (gates 섹션) | "빌드 캐시 삭제 후 빌드" handler 추가 |
+| **Team** | Skill 규칙 | `.bkit/skills/*.md` | "동일 파일 동시 수정 금지" 규칙 추가 |
+| **Link** | 연결 파라미터 | `.bkit/presets/*.yaml` (links 섹션) | max_retries 3→5, timeout 조정 |
+
+### 10.3 데이터 모델
+
+```python
+@dataclass
+class FailurePattern:
+    """반복 실패 패턴 — PatternDetector가 이벤트 히스토리에서 추출."""
+    
+    event_type: str            # block.gate_failed, adapter.failed, etc.
+    count: int                 # 반복 횟수
+    window: str                # 분석 기간 ("7d", "30d")
+    block_id: str | None       # 특정 블록에 국한 (없으면 전체)
+    team_id: str | None        # 특정 팀에 국한
+    common_cause: str          # LLM이 분석한 공통 원인
+    event_ids: list[str]       # 증거 이벤트 ID 목록
+
+
+@dataclass
+class LearningProposal:
+    """규칙 제안 — 사람이 승인/거부/수정."""
+    
+    id: str                    # LH-001, LH-002, ...
+    axis: str                  # block | team | link
+    title: str                 # 한 줄 요약
+    description: str           # 상세 설명
+    
+    # 패턴 증거
+    pattern: FailurePattern
+    confidence: float          # 0.0~1.0 (LLM 분석 확신도)
+    
+    # 제안 변경
+    target_file: str           # 변경 대상 파일 경로
+    diff: str                  # unified diff 형식
+    
+    # 상태
+    status: str                # pending | approved | rejected | modified
+    reviewed_by: str | None    # 승인/거부한 사람
+    reviewed_at: str | None
+    reject_reason: str | None  # 거부 사유
+    modified_diff: str | None  # 수정된 diff (modify 시)
+    
+    # 메타
+    created_at: str
+    applied_at: str | None     # 파일에 반영된 시각
+
+
+@dataclass
+class LearningStats:
+    """3축별 학습 통계."""
+    
+    block_rules: int           # 승인된 Block gate 규칙 수
+    team_rules: int            # 승인된 Team skill 규칙 수
+    link_adjustments: int      # 승인된 Link 조정 수
+    
+    pending_count: int         # 대기 중 제안
+    total_proposals: int       # 전체 제안 (승인+거부+대기)
+    reject_rate: float         # 거부율
+    
+    recent: list[LearningProposal]  # 최근 N건
+    timeline: list[dict]       # 월별/주별 추이
+```
+
+### 10.4 패턴 감지 엔진 (PatternDetector)
+
+```python
+class PatternDetector:
+    """이벤트 히스토리에서 반복 실패 패턴을 자동 감지.
+    
+    감지 기준:
+    - 동일 (event_type, block_id) 조합이 window 내 threshold 이상 반복
+    - 기본: 7일간 3회 이상
+    """
+    
+    def __init__(self, event_store: EventStore, llm_client: LLMClient):
+        self.event_store = event_store
+        self.llm_client = llm_client
+        self.threshold = 3
+        self.window = "7d"
+    
+    def detect(self) -> list[FailurePattern]:
+        """전체 이벤트 히스토리 스캔 → 패턴 목록."""
+        events = self.event_store.query(
+            types=["block.gate_failed", "adapter.failed", "block.failed",
+                   "adapter.timeout", "block.gate_review_rejected"],
+            window=self.window
+        )
+        
+        # (event_type, block_id, team_id) 그룹핑
+        groups = defaultdict(list)
+        for e in events:
+            key = (e.type, e.data.get("block_id"), e.data.get("team_id"))
+            groups[key].append(e)
+        
+        patterns = []
+        for key, group in groups.items():
+            if len(group) >= self.threshold:
+                patterns.append(FailurePattern(
+                    event_type=key[0],
+                    count=len(group),
+                    window=self.window,
+                    block_id=key[1],
+                    team_id=key[2],
+                    common_cause="",  # LLM이 채움
+                    event_ids=[e.id for e in group]
+                ))
+        
+        return patterns
+    
+    async def propose(self, pattern: FailurePattern) -> LearningProposal:
+        """패턴 → LLM 분석 → 규칙 제안 생성."""
+        
+        # 1. 실패 이벤트 상세 수집
+        evidence = [self.event_store.get(eid) for eid in pattern.event_ids]
+        
+        # 2. LLM에게 패턴 분석 + 규칙 제안 요청
+        analysis = await self.llm_client.evaluate(
+            prompt=f"""다음 반복 실패 패턴을 분석하고 예방 규칙을 제안하라.
+
+패턴: {pattern.event_type} — {pattern.count}회 반복 ({pattern.window})
+블록: {pattern.block_id or '전체'}
+팀: {pattern.team_id or '전체'}
+
+실패 상세:
+{json.dumps([e.to_dict() for e in evidence], indent=2, ensure_ascii=False)}
+
+출력 형식:
+- axis: block | team | link
+- title: 한 줄 요약
+- description: 상세
+- target_file: 변경 대상 파일
+- diff: unified diff
+- confidence: 0.0~1.0
+- common_cause: 공통 원인""",
+            model="sonnet"  # 비용 대비 충분한 분석력
+        )
+        
+        # 3. LearningProposal 생성
+        return LearningProposal(
+            id=self._next_id(),
+            axis=analysis.axis,
+            title=analysis.title,
+            description=analysis.description,
+            pattern=pattern,
+            confidence=analysis.confidence,
+            target_file=analysis.target_file,
+            diff=analysis.diff,
+            status="pending",
+            created_at=datetime.now().isoformat(),
+            ...
+        )
+```
+
+### 10.5 규칙 적용기 (RuleApplicator)
+
+```python
+class RuleApplicator:
+    """승인된 규칙을 실제 파일에 자동 반영."""
+    
+    async def apply(self, proposal: LearningProposal) -> ApplyResult:
+        """diff를 target_file에 적용."""
+        
+        diff = proposal.modified_diff or proposal.diff
+        target = Path(proposal.target_file)
+        
+        if not target.exists():
+            return ApplyResult(success=False, error="대상 파일 미존재")
+        
+        match proposal.axis:
+            case "block":
+                return await self._apply_gate_rule(target, diff, proposal)
+            case "team":
+                return await self._apply_skill_rule(target, diff, proposal)
+            case "link":
+                return await self._apply_link_adjustment(target, diff, proposal)
+    
+    async def _apply_gate_rule(self, target, diff, proposal):
+        """프리셋 YAML의 gates 섹션에 handler 추가 또는 수정."""
+        preset = ruamel.yaml.load(target.read_text())
+        
+        # diff 파싱 → gates 섹션 패치
+        patched = apply_unified_diff(target.read_text(), diff)
+        target.write_text(patched)
+        
+        # 검증
+        validation = self.validator.validate_preset(patched)
+        if not validation.valid:
+            # 롤백
+            target.write_text(original)
+            return ApplyResult(success=False, error=validation.errors)
+        
+        return ApplyResult(
+            success=True,
+            file=str(target),
+            lines_added=count_additions(diff),
+            lines_removed=count_deletions(diff)
+        )
+    
+    async def _apply_skill_rule(self, target, diff, proposal):
+        """SKILL.md에 학습된 규칙 섹션 추가."""
+        content = target.read_text()
+        
+        # 학습 규칙 마커가 있으면 해당 섹션에 추가, 없으면 새 섹션 생성
+        marker = "## 학습된 규칙 (Learning Harness)"
+        if marker not in content:
+            content += f"\n\n{marker}\n\n"
+        
+        # diff 적용
+        patched = apply_unified_diff(content, diff)
+        target.write_text(patched)
+        
+        return ApplyResult(success=True, file=str(target))
+    
+    async def _apply_link_adjustment(self, target, diff, proposal):
+        """프리셋 YAML의 links 섹션 파라미터 수정."""
+        # gate_rule과 동일 로직 (YAML 패치)
+        return await self._apply_gate_rule(target, diff, proposal)
+```
+
+### 10.6 자동 감지 트리거
+
+패턴 감지는 다음 시점에 자동 실행:
+
+| 트리거 | 시점 | 방법 |
+|--------|------|------|
+| **워크플로우 실패** | `workflow.failed` 이벤트 | EventBus subscriber |
+| **Gate 반복 실패** | `block.gate_failed` 3회 누적 | 카운터 기반 |
+| **주기적 스캔** | 매일 00:00 | `brick serve`의 cron 스케줄러 |
+| **수동 트리거** | Dashboard 버튼 / `brick learn detect` | API / CLI |
+
+### 10.7 진화적 특성 — 시간이 지날수록 견고해지는 하네스
+
+```
+Week 1:  하네스 규칙 0개 → 실패 발생 → 패턴 감지 → 규칙 3개 승인
+Week 2:  규칙 3개 적용 → 이전 실패 미재발 → 새로운 실패 → 규칙 2개 추가
+Week 4:  규칙 5개 → 실패율 40% 감소
+Week 8:  규칙 12개 → 실패율 70% 감소
+Week 12: 규칙 20개 → 대부분의 반복 실패 예방
+
+핵심: 사람은 승인/거부만. 패턴 감지와 규칙 생성은 자동.
+하네스가 스스로 강화되는 positive feedback loop.
+```
+
+**거부도 학습**: 거부된 제안의 사유가 축적되면, PatternDetector가 "이런 유형의 제안은 거부당할 가능성 높음"을 학습 → 확신도 조정. 거부율이 30% 이상이면 `confidence_threshold`를 올려 정밀도 향상.
+
+### 10.8 저장 구조
+
+```
+.bkit/learning/
+├── proposals/
+│   ├── LH-001.yaml           # 개별 제안 (상태, diff, 증거)
+│   ├── LH-002.yaml
+│   └── ...
+├── history.jsonl              # 승인/거부 이벤트 로그 (append-only)
+└── stats.json                 # 3축별 통계 캐시 (주기 갱신)
+```
+
+```yaml
+# .bkit/learning/proposals/LH-023.yaml
+id: LH-023
+axis: team
+title: "PM팀 SKILL.md에 Design 완료 전 TDD 섹션 필수"
+description: |
+  Design 문서 gate 통과 시 TDD 섹션이 누락되어 반복 실패.
+  SKILL.md에 "Design 완료 전 TDD 케이스 매핑 테이블 필수" 규칙 추가 제안.
+confidence: 0.87
+status: approved
+reviewed_by: smith
+reviewed_at: "2026-04-01T15:30:00Z"
+pattern:
+  event_type: block.gate_failed
+  block_id: design
+  count: 3
+  window: "14d"
+  event_ids: [evt-0312, evt-0325, evt-0328]
+target_file: ".bkit/skills/design-writing.md"
+diff: |
+  --- a/.bkit/skills/design-writing.md
+  +++ b/.bkit/skills/design-writing.md
+  @@ -42,0 +43,5 @@
+  +
+  +## 학습된 규칙 (LH-023)
+  +- Design 문서에 TDD 섹션이 없으면 완료로 인정하지 않음
+  +- TDD 케이스는 Design 섹션과 1:1 매핑 필수
+  +- Gap 0% 달성이 Design 완료 기준
+applied_at: "2026-04-01T15:30:05Z"
+```
+
+---
+
+## 11. 비교 분석
 
 | 항목 | **Brick Dashboard** | n8n Editor | K8s Dashboard | Backstage | Retool |
 |------|---------------------|-----------|---------------|-----------|--------|
