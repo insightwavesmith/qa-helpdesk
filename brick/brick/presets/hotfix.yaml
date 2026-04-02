@@ -1,0 +1,17 @@
+$schema: brick/preset-v2
+name: "Hotfix"
+description: "긴급 핫픽스 — Do only"
+level: 0
+
+blocks:
+  - id: do
+    type: Do
+    what: "핫픽스 적용"
+    done:
+      artifacts: []
+      metrics: {build_pass: true}
+
+links: []
+
+teams:
+  do: {adapter: claude_agent_teams, config: {session: sdk-cto, role: CTO_LEADER}}
