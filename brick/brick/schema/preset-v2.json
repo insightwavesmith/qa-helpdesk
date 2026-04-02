@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "brick/preset-v2",
+  "title": "Brick Preset V2",
+  "description": "YAML preset schema for workflow definitions",
+  "type": "object",
+  "required": ["name", "blocks"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "name": {"type": "string", "minLength": 1},
+    "description": {"type": "string"},
+    "level": {"type": "integer", "minimum": 0, "maximum": 3},
+    "extends": {"type": "string"},
+    "overrides": {"type": "object"},
+    "blocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "what"],
+        "properties": {
+          "id": {"type": "string"},
+          "type": {"type": "string"},
+          "what": {"type": "string"},
+          "done": {
+            "type": "object",
+            "properties": {
+              "artifacts": {"type": "array", "items": {"type": "string"}},
+              "metrics": {"type": "object"}
+            }
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to"],
+        "properties": {
+          "from": {"type": "string"},
+          "to": {"type": "string"},
+          "type": {"type": "string"},
+          "condition": {"type": "object"},
+          "max_retries": {"type": "integer"}
+        }
+      }
+    },
+    "teams": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["adapter"],
+        "properties": {
+          "adapter": {"type": "string"},
+          "config": {"type": "object"}
+        }
+      }
+    }
+  }
+}
