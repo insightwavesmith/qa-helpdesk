@@ -11,6 +11,7 @@ import { registerPdcaRoutes } from './routes/pdca.js';
 import { registerHookRoutes } from './routes/hooks.js';
 import { registerAgentRoutes } from './routes/agents.js';
 import { registerRoutineRoutes } from './routes/routines.js';
+import { registerBrickRoutes } from './routes/brick/index.js';
 
 const app: Application = express();
 
@@ -37,5 +38,6 @@ registerPdcaRoutes(app, db);
 registerHookRoutes(app, db);
 registerAgentRoutes(app, db);
 registerRoutineRoutes(app, db);
+registerBrickRoutes(app, db);
 
 export default app;

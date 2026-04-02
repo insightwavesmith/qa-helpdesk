@@ -1,0 +1,102 @@
+// dashboard/server/routes/brick/executions.ts — Brick 실행 API (4개 엔드포인트)
+import type { Application } from 'express';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { eq, desc } from 'drizzle-orm';
+import { brickExecutions, brickExecutionLogs } from '../../db/schema/brick.js';
+
+export function registerExecutionRoutes(app: Application, db: BetterSQLite3Database) {
+  // POST /api/brick/executions — 실행 시작
+  app.post('/api/brick/executions', (req, res) => {
+    try {
+      const { presetId, feature } = req.body;
+
+      if (!presetId || !feature) {
+        return res.status(400).json({ error: 'presetId, feature 필수' });
+      }
+
+      const now = new Date().toISOString();
+
+      // 실행 인스턴스 생성
+      const execution = db.insert(brickExecutions).values({
+        presetId: Number(presetId),
+        feature,
+        status: 'running',
+        blocksState: JSON.stringify({}),
+        startedAt: now,
+      }).returning().get();
+
+      // 첫 블록 시작 로그
+      db.insert(brickExecutionLogs).values({
+        executionId: execution.id,
+        eventType: 'block.started',
+        blockId: 'plan',
+        data: JSON.stringify({ feature, startedAt: now }),
+      }).run();
+
+      console.log('[brick-executions] 실행 시작:', execution.id, feature);
+      res.status(201).json(execution);
+    } catch (e) {
+      res.status(500).json({ error: String(e) });
+    }
+  });
+
+  // POST /api/brick/executions/:id/pause — 일시정지
+  app.post('/api/brick/executions/:id/pause', (req, res) => {
+    try {
+      const updated = db.update(brickExecutions)
+        .set({ status: 'paused' })
+        .where(eq(brickExecutions.id, Number(req.params.id)))
+        .returning()
+        .get();
+
+      if (!updated) {
+        return res.status(404).json({ error: '실행 없음' });
+      }
+
+      // 일시정지 로그
+      db.insert(brickExecutionLogs).values({
+        executionId: updated.id,
+        eventType: 'execution.paused',
+        data: JSON.stringify({ pausedAt: new Date().toISOString() }),
+      }).run();
+
+      console.log('[brick-executions] 일시정지:', req.params.id);
+      res.json(updated);
+    } catch (e) {
+      res.status(500).json({ error: String(e) });
+    }
+  });
+
+  // GET /api/brick/executions/:id — 상태 조회 (blocksState 포함)
+  app.get('/api/brick/executions/:id', (req, res) => {
+    try {
+      const execution = db.select().from(brickExecutions)
+        .where(eq(brickExecutions.id, Number(req.params.id)))
+        .get();
+
+      if (!execution) {
+        return res.status(404).json({ error: '실행 없음' });
+      }
+
+      console.log('[brick-executions] 상태 조회:', req.params.id);
+      res.json(execution);
+    } catch (e) {
+      res.status(500).json({ error: String(e) });
+    }
+  });
+
+  // GET /api/brick/executions/:id/logs — 로그 조회 (시간순)
+  app.get('/api/brick/executions/:id/logs', (req, res) => {
+    try {
+      const logs = db.select().from(brickExecutionLogs)
+        .where(eq(brickExecutionLogs.executionId, Number(req.params.id)))
+        .orderBy(brickExecutionLogs.timestamp)
+        .all();
+
+      console.log('[brick-executions] 로그 조회:', req.params.id, logs.length, '건');
+      res.json(logs);
+    } catch (e) {
+      res.status(500).json({ error: String(e) });
+    }
+  });
+}

@@ -332,6 +332,20 @@ export const knowledgeEntries = sqliteTable('knowledge_entries', {
 }));
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Brick 도메인 (re-export)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+export {
+  brickBlockTypes,
+  brickTeams,
+  brickPresets,
+  brickLinks,
+  brickExecutions,
+  brickExecutionLogs,
+  brickGateResults,
+  brickLearningProposals,
+} from './schema/brick.js';
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 유틸
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function randomHex(bytes: number): string {

@@ -219,6 +219,117 @@ const createTableStatements = [
   )`,
 ];
 
+  // ── Brick 도메인 ──
+
+  // B1: brick_block_types
+  `CREATE TABLE IF NOT EXISTS brick_block_types (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    display_name TEXT NOT NULL,
+    icon TEXT NOT NULL,
+    color TEXT NOT NULL,
+    category TEXT NOT NULL,
+    config TEXT,
+    is_core INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`,
+
+  // B2: brick_teams
+  `CREATE TABLE IF NOT EXISTS brick_teams (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    display_name TEXT NOT NULL,
+    adapter TEXT NOT NULL,
+    adapter_config TEXT,
+    members TEXT,
+    skills TEXT,
+    mcp_servers TEXT,
+    model_config TEXT,
+    status TEXT DEFAULT 'idle',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`,
+
+  // B3: brick_presets
+  `CREATE TABLE IF NOT EXISTS brick_presets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    display_name TEXT NOT NULL,
+    description TEXT,
+    yaml TEXT NOT NULL,
+    is_core INTEGER DEFAULT 0,
+    labels TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`,
+
+  // B4: brick_links
+  `CREATE TABLE IF NOT EXISTS brick_links (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    workflow_id INTEGER REFERENCES brick_presets(id),
+    from_block TEXT NOT NULL,
+    to_block TEXT NOT NULL,
+    link_type TEXT NOT NULL DEFAULT 'sequential',
+    condition TEXT,
+    judge TEXT,
+    cron TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`,
+
+  // B5: brick_executions
+  `CREATE TABLE IF NOT EXISTS brick_executions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    preset_id INTEGER REFERENCES brick_presets(id),
+    feature TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    current_block TEXT,
+    blocks_state TEXT,
+    started_at TEXT,
+    completed_at TEXT,
+    created_at TEXT NOT NULL
+  )`,
+
+  // B6: brick_execution_logs
+  `CREATE TABLE IF NOT EXISTS brick_execution_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    execution_id INTEGER REFERENCES brick_executions(id),
+    event_type TEXT NOT NULL,
+    block_id TEXT,
+    data TEXT,
+    timestamp TEXT NOT NULL
+  )`,
+
+  // B7: brick_gate_results
+  `CREATE TABLE IF NOT EXISTS brick_gate_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    execution_id INTEGER REFERENCES brick_executions(id),
+    block_id TEXT NOT NULL,
+    handler_type TEXT NOT NULL,
+    passed INTEGER,
+    detail TEXT,
+    executed_at TEXT NOT NULL
+  )`,
+
+  // B8: brick_learning_proposals
+  `CREATE TABLE IF NOT EXISTS brick_learning_proposals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    axis TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    pattern TEXT,
+    confidence INTEGER,
+    target_file TEXT,
+    diff TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    reviewed_by TEXT,
+    reviewed_at TEXT,
+    reject_reason TEXT,
+    created_at TEXT NOT NULL
+  )`,
+];
+
 const createIndexStatements = [
   `CREATE INDEX IF NOT EXISTS idx_tickets_feature ON tickets(feature)`,
   `CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status)`,
@@ -232,6 +343,10 @@ const createIndexStatements = [
   `CREATE INDEX IF NOT EXISTS idx_notif_unread ON notifications(read, created_at)`,
   `CREATE INDEX IF NOT EXISTS idx_knowledge_agent ON knowledge_entries(agent_id, category)`,
   `CREATE INDEX IF NOT EXISTS idx_knowledge_category ON knowledge_entries(category, learned_at)`,
+
+  // Brick 인덱스
+  `CREATE INDEX IF NOT EXISTS idx_brick_links_workflow ON brick_links(workflow_id)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_brick_links_pair ON brick_links(workflow_id, from_block, to_block)`,
 ];
 
 export function createSchema(sqlite: { exec: (sql: string) => void }) {
