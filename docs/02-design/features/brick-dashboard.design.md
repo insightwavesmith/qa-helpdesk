@@ -2107,7 +2107,7 @@ Slack Interactive Message → API Server → Engine. Dashboard와 동일 API 사
 
 ---
 
-## 12. 단계별 전달 (Phased Delivery)
+## 13. 단계별 전달 (Phased Delivery)
 
 ### Phase 1: MVP — 리소스 CRUD + 상태 조회
 
