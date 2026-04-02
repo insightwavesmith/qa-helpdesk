@@ -279,6 +279,7 @@ async def test_bd105_http_gate_200_pass():
         mock_client = AsyncMock()
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_client.get = AsyncMock(return_value=mock_response)
         mock_client.request = AsyncMock(return_value=mock_response)
         mock_client_cls.return_value = mock_client
 
@@ -303,6 +304,7 @@ async def test_bd106_http_gate_502_fail():
         mock_client = AsyncMock()
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_client.get = AsyncMock(return_value=mock_response)
         mock_client.request = AsyncMock(return_value=mock_response)
         mock_client_cls.return_value = mock_client
 
@@ -347,6 +349,7 @@ async def test_bd108_http_gate_match_rate_parse():
         mock_client = AsyncMock()
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_client.get = AsyncMock(return_value=mock_response)
         mock_client.request = AsyncMock(return_value=mock_response)
         mock_client_cls.return_value = mock_client
 
@@ -372,6 +375,7 @@ async def test_bd109_http_gate_url_context_substitution():
         mock_client = AsyncMock()
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_client.get = AsyncMock(return_value=mock_response)
         mock_client.request = AsyncMock(return_value=mock_response)
         mock_client_cls.return_value = mock_client
 
