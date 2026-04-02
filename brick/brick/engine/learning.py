@@ -116,3 +116,38 @@ class RuleSuggester:
         data["status"] = "approved"
         path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
         return data
+
+    def reject(self, suggestion_id: str, reason: str = "") -> dict:
+        """Reject a suggestion with reason."""
+        path = self.suggestions_dir / f"{suggestion_id}.json"
+        if not path.exists():
+            raise FileNotFoundError(f"Suggestion {suggestion_id} not found")
+        data = json.loads(path.read_text())
+        data["status"] = "rejected"
+        data["reject_reason"] = reason
+        path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+        return data
+
+    def rollback(self, suggestion_id: str) -> dict:
+        """Rollback a previously approved suggestion."""
+        path = self.suggestions_dir / f"{suggestion_id}.json"
+        if not path.exists():
+            raise FileNotFoundError(f"Suggestion {suggestion_id} not found")
+        data = json.loads(path.read_text())
+        if data.get("status") != "approved":
+            raise ValueError(f"Cannot rollback: suggestion status is '{data.get('status')}', not 'approved'")
+        data["status"] = "rolled_back"
+        path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+        return data
+
+    def list_suggestions(self, status: str | None = None) -> list[dict]:
+        """List all suggestions, optionally filtered by status."""
+        suggestions = []
+        for path in sorted(self.suggestions_dir.glob("*.json")):
+            try:
+                data = json.loads(path.read_text())
+                if status is None or data.get("status") == status:
+                    suggestions.append(data)
+            except Exception:
+                continue
+        return suggestions
