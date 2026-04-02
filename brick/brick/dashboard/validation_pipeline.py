@@ -60,6 +60,24 @@ class InvariantValidator(ResourceValidator):
                         field=f"spec.teams.{block_id}",
                     ))
 
+            # INV-6: All blocks must be connected by links (isolated blocks forbidden)
+            links = resource.spec.get("links", [])
+            if len(blocks) > 1:
+                linked_nodes: set[str] = set()
+                for link in links:
+                    linked_nodes.add(link.get("from", ""))
+                    linked_nodes.add(link.get("to", ""))
+                linked_nodes.discard("")
+
+                for block in blocks:
+                    block_id = block.get("id", "")
+                    if block_id and block_id not in linked_nodes:
+                        errors.append(ValidationError(
+                            code="INV-6",
+                            message=f"Block '{block_id}' is not connected by any link",
+                            field="spec.links",
+                        ))
+
         return errors
 
 
