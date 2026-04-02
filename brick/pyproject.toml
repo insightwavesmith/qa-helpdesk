@@ -11,6 +11,8 @@ dependencies = [
     "click>=8.0",
     "httpx>=0.24",
     "pyyaml>=6.0",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
 ]
 
 [project.optional-dependencies]
