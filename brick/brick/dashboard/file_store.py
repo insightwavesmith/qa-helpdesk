@@ -75,14 +75,31 @@ class FileStore:
     def list(self, kind: str) -> list[BrickResource]:
         """Scan {root}/{kind_path}/ for .yaml files, parse each into BrickResource."""
         kind_dir = self._kind_dir(kind)
-        if not kind_dir.exists():
-            return []
         resources = []
-        for path in sorted(kind_dir.glob("*.yaml")):
-            try:
-                resources.append(self._parse_yaml(path))
-            except Exception:
-                continue  # skip malformed files
+        seen_names: set[str] = set()
+
+        # User resources first (take priority)
+        if kind_dir.exists():
+            for path in sorted(kind_dir.glob("*.yaml")):
+                try:
+                    r = self._parse_yaml(path)
+                    resources.append(r)
+                    seen_names.add(r.name)
+                except Exception:
+                    continue  # skip malformed files
+
+        # Built-in resources (readonly, skip duplicates)
+        builtin = self._builtin_dir(kind)
+        if builtin and builtin.exists():
+            for path in sorted(builtin.glob("*.yaml")):
+                try:
+                    r = self._parse_yaml(path)
+                    if r.name not in seen_names:
+                        r.readonly = True
+                        resources.append(r)
+                except Exception:
+                    continue
+
         return resources
 
     def get(self, kind: str, name: str) -> BrickResource:
