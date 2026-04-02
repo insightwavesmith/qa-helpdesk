@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "brick/workflow-v2",
+  "title": "Brick Workflow V2",
+  "type": "object",
+  "required": ["name", "blocks"],
+  "properties": {
+    "name": {"type": "string", "minLength": 1},
+    "description": {"type": "string"},
+    "blocks": {
+      "type": "array",
+      "items": {"$ref": "block-v2.json"},
+      "minItems": 1
+    },
+    "links": {
+      "type": "array",
+      "items": {"$ref": "link-v2.json"}
+    },
+    "teams": {
+      "type": "object",
+      "additionalProperties": {"$ref": "team-v2.json"}
+    },
+    "gates": {"type": "object"},
+    "events": {"type": "object"},
+    "schema": {"type": "string"},
+    "extends": {"type": "string"},
+    "overrides": {"type": "object"},
+    "level": {"type": "integer", "minimum": 0, "maximum": 3}
+  }
+}
