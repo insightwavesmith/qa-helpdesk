@@ -8,11 +8,12 @@ import time
 from pathlib import Path
 
 from brick.adapters.base import TeamAdapter
+from brick.adapters.management import TeamManagementAdapter
 from brick.models.block import Block
 from brick.models.team import AdapterStatus
 
 
-class ClaudeAgentTeamsAdapter(TeamAdapter):
+class ClaudeAgentTeamsAdapter(TeamAdapter, TeamManagementAdapter):
     """Execute blocks via Claude Agent Teams (tmux session)."""
 
     def __init__(self, config: dict | None = None):
