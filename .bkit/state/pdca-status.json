@@ -1,10 +1,12 @@
 {
-  "feature": "signup-profile-fix",
-  "phase": "do",
-  "status": "in_progress",
-  "updatedAt": "2026-04-02T03:08:36.802455",
-  "notes": "P0 Firebase UID→UUID v5 변환. 60개 파일 수정 진행 중.",
-  "matchRate": null,
+  "version": "3.0",
+  "lastUpdated": "2026-04-02T00:34:58.421Z",
+  "activeFeatures": [
+    "process-media",
+    "dashboard",
+    ".bkit"
+  ],
+  "primaryFeature": "process-media",
   "features": {
     "hook-hardening-v2": {
       "phase": "completed",
@@ -62,9 +64,109 @@
       },
       "phaseTimestamps": {},
       "automationLevel": 2
+    },
+    "process-media": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-02T00:28:30.287Z",
+        "lastUpdated": "2026-04-02T00:28:30.287Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/process-media/route.ts"
+    },
+    "dashboard": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-02T00:29:21.935Z",
+        "lastUpdated": "2026-04-02T00:29:46.175Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/components/dashboard/ChainStatusBadge.tsx"
+    },
+    ".bkit": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-02T00:34:58.421Z",
+        "lastUpdated": "2026-04-02T00:34:58.421Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/.bkit/hooks/enforce-qa-before-merge.sh"
     }
   },
-  "primaryFeature": "hook-hardening-v2",
-  "lastUpdated": "2026-04-01T12:30:00Z",
-  "_autoSyncNote": "auto-synced at 2026-04-02 03:08:36, last commit: ce50be80"
+  "pipeline": {
+    "currentPhase": 1,
+    "level": "Dynamic",
+    "phaseHistory": []
+  },
+  "session": {
+    "startedAt": "2026-04-01T18:08:57.102Z",
+    "onboardingCompleted": false,
+    "lastActivity": "2026-04-02T00:34:58.421Z"
+  },
+  "history": [
+    {
+      "timestamp": "2026-04-02T00:28:30.287Z",
+      "feature": "process-media",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-02T00:29:21.935Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-02T00:29:24.896Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-02T00:29:43.276Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-02T00:29:46.175Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-02T00:34:58.421Z",
+      "feature": ".bkit",
+      "phase": "do",
+      "action": "updated"
+    }
+  ],
+  "stateMachine": {
+    "defaultWorkflow": "default",
+    "activeWorkflows": {},
+    "totalTransitions": 0
+  },
+  "automation": {
+    "globalLevel": 2,
+    "trustScore": 40,
+    "pendingApprovals": 0,
+    "lastGateResult": null
+  },
+  "team": {
+    "enabled": true,
+    "stateFile": ".bkit/runtime/agent-state.json",
+    "eventsFile": ".bkit/runtime/agent-events.jsonl"
+  }
 }
