@@ -33,6 +33,13 @@ class FileStore:
     def _resource_path(self, kind: str, name: str) -> Path:
         return self._kind_dir(kind) / f"{name}.yaml"
 
+    def _builtin_dir(self, kind: str) -> Path | None:
+        if kind == "Preset":
+            builtin = Path(__file__).parent.parent / "presets"
+            if builtin.exists():
+                return builtin
+        return None
+
     def _parse_yaml(self, path: Path) -> BrickResource:
         data = yaml.safe_load(path.read_text())
         return BrickResource(

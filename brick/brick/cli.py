@@ -22,6 +22,15 @@ def init():
     Path(".bkit/runtime/workflows").mkdir(parents=True, exist_ok=True)
     Path(".bkit/runtime/human-completions").mkdir(parents=True, exist_ok=True)
     Path(".bkit/presets").mkdir(parents=True, exist_ok=True)
+
+    # Copy built-in presets (skip if user already has a file with same name)
+    builtin_presets = Path(__file__).parent / "presets"
+    if builtin_presets.exists():
+        for src in builtin_presets.glob("*.yaml"):
+            dst = Path(".bkit/presets") / src.name
+            if not dst.exists():
+                shutil.copy2(src, dst)
+
     click.echo("🧱 Brick initialized.")
 
 
