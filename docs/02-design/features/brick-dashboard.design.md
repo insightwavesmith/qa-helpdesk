@@ -412,6 +412,19 @@ POST   /api/v1/workflows/:id/cancel          # 워크플로우 취소
 POST   /api/v1/workflows/:id/resume          # 일시정지 → 재개
 ```
 
+#### Learning Harness API
+
+```
+GET    /api/v1/learning/proposals              # 규칙 제안 목록 (status 필터)
+GET    /api/v1/learning/proposals/:id          # 제안 상세 (패턴+증거+diff)
+POST   /api/v1/learning/proposals/:id/approve  # 승인 → 파일 자동 반영
+POST   /api/v1/learning/proposals/:id/reject   # 거부 (사유 필수)
+POST   /api/v1/learning/proposals/:id/modify   # diff 수정 후 승인
+GET    /api/v1/learning/history                # 과거 승인/거부 이력
+GET    /api/v1/learning/stats                  # 3축별 학습 현황 통계
+POST   /api/v1/learning/detect                 # 수동 패턴 감지 트리거
+```
+
 #### 검증 API
 
 ```
