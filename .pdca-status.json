@@ -1,10 +1,10 @@
 {
-  "feature": "signup-profile-fix",
+  "feature": "pipeline-phase1-collection",
   "phase": "check",
   "status": "completed",
-  "updatedAt": "2026-04-03T02:02:42.325821",
-  "notes": "P0 Firebase UID→UUID v5 변환 완료. 47파일 수정, TDD 13/13 PASS, 빌드 성공, 로컬 가입 테스트 통과.",
-  "matchRate": 100,
+  "updatedAt": "2026-04-03T07:51:02.878781",
+  "notes": "Pipeline Phase 1 수집 정상화 완료. Match Rate 90%. 크론 에러 6건→0건, Jobs 5개 정상화, 임베딩 45건.",
+  "matchRate": 90,
   "features": {
     "hook-hardening-v2": {
       "phase": "completed",
@@ -62,9 +62,31 @@
       },
       "phaseTimestamps": {},
       "automationLevel": 2
+    },
+    "pipeline-phase1-collection": {
+      "phase": "check",
+      "design": {
+        "team": "cto",
+        "done": true,
+        "doc": "docs/02-design/features/pipeline-phase1-collection.design.md",
+        "at": "2026-04-02"
+      },
+      "do": {
+        "team": "cto",
+        "done": true,
+        "at": "2026-04-03"
+      },
+      "check": {
+        "team": "cto",
+        "done": true,
+        "doc": "docs/03-analysis/pipeline-phase1-collection.analysis.md",
+        "matchRate": 90
+      },
+      "notes": "L2 OPS. META_ACCESS_TOKEN 교체 + 크론 에러 해소 + 커버리지 정상화.",
+      "updatedAt": "2026-04-03"
     }
   },
-  "primaryFeature": "hook-hardening-v2",
-  "lastUpdated": "2026-04-01T12:30:00Z",
+  "primaryFeature": "pipeline-phase1-collection",
+  "lastUpdated": "2026-04-03T07:51:02.878788",
   "_autoSyncNote": "auto-synced at 2026-04-03 02:02:42, last commit: 7ced1538"
 }
