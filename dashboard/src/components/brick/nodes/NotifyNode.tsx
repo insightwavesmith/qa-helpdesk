@@ -4,7 +4,7 @@ import type { NotifyNodeData, NotifyEvent } from './types';
 import { CHANNEL_ADAPTERS } from '../../../lib/brick/channel-adapter';
 
 const NOTIFY_STATUS_STYLES: Record<string, { border: string; bg: string }> = {
-  idle: { border: '#0EA5E9', bg: '#FFFFFF' },
+  idle: { border: '#0EA5E9', bg: '#E0F2FE' },
   running: { border: '#0EA5E9', bg: '#F0F9FF' },
   done: { border: '#10B981', bg: '#ECFDF5' },
   failed: { border: '#EF4444', bg: '#FEF2F2' },

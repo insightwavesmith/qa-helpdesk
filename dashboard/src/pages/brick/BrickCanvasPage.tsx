@@ -107,6 +107,15 @@ function BrickCanvasInner() {
     });
   }, [nodes, edges, presetId]);
 
+  // BF-137: isValidConnection — ReactFlow 내장 연결 유효성 검사
+  const isValidConnection = useCallback(
+    (connection: Connection) => {
+      if (!connection.source || !connection.target) return false;
+      return validateConnection(connection.source, connection.target, edges).valid;
+    },
+    [edges],
+  );
+
   // 연결 시 유효성 검사 + 링크 타입 다이얼로그 (BF-068)
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -236,15 +245,30 @@ function BrickCanvasInner() {
         {/* 캔버스 */}
         <div
           data-testid="canvas"
-          className="flex-1"
+          className="flex-1 relative"
           style={validationErrors.length > 0 ? { border: '2px solid #DC2626' } : undefined}
         >
+          {/* BF-145: 빈 캔버스 온보딩 가이드 */}
+          {nodes.length === 0 && (
+            <div
+              data-testid="onboarding-guide"
+              className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none"
+            >
+              <div className="text-center space-y-3 bg-white/80 rounded-xl px-8 py-6 shadow-sm">
+                <p className="text-lg font-medium text-gray-700">
+                  블록을 왼쪽 팔레트에서 드래그하여 캔버스에 놓으세요
+                </p>
+                <p className="text-sm text-gray-400">← 사이드바에서 블록을 선택하세요</p>
+              </div>
+            </div>
+          )}
           <ReactFlow
             nodes={styledNodes}
             edges={styledEdges}
             onNodesChange={handleNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            isValidConnection={isValidConnection}
             onDrop={onDrop}
             onDragOver={onDragOver}
             onNodeClick={onNodeClick}

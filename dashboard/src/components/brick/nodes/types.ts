@@ -80,11 +80,11 @@ export const BLOCK_CATEGORY_MAP: Record<BlockType, BlockCategory> = {
 };
 
 export const CATEGORY_BG_COLORS: Record<BlockCategory, string> = {
-  Plan: '#EFF6FF',
-  Do: '#F0FDF4',
-  Check: '#FEFCE8',
-  Act: '#FAF5FF',
-  Notify: '#F0F9FF',
+  Plan: '#DBEAFE',
+  Do: '#DCFCE7',
+  Check: '#FEF9C3',
+  Act: '#F3E8FF',
+  Notify: '#E0F2FE',
 };
 
 // ── 게이트 상태 ──

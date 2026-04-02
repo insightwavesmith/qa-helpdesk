@@ -1,8 +1,10 @@
 {
-  "version": "3.0",
-  "lastUpdated": "2026-04-02T16:23:31.437Z",
-  "activeFeatures": [],
-  "primaryFeature": null,
+  "feature": "signup-profile-fix",
+  "phase": "check",
+  "status": "completed",
+  "updatedAt": "2026-04-03T02:02:42.325821",
+  "notes": "P0 Firebase UID→UUID v5 변환 완료. 47파일 수정, TDD 13/13 PASS, 빌드 성공, 로컬 가입 테스트 통과.",
+  "matchRate": 100,
   "features": {
     "hook-hardening-v2": {
       "phase": "completed",
@@ -62,31 +64,7 @@
       "automationLevel": 2
     }
   },
-  "pipeline": {
-    "currentPhase": 1,
-    "level": "Dynamic",
-    "phaseHistory": []
-  },
-  "session": {
-    "startedAt": "2026-04-02T16:23:31.437Z",
-    "onboardingCompleted": false,
-    "lastActivity": "2026-04-02T16:23:31.437Z"
-  },
-  "history": [],
-  "stateMachine": {
-    "defaultWorkflow": "default",
-    "activeWorkflows": {},
-    "totalTransitions": 0
-  },
-  "automation": {
-    "globalLevel": 2,
-    "trustScore": 40,
-    "pendingApprovals": 0,
-    "lastGateResult": null
-  },
-  "team": {
-    "enabled": true,
-    "stateFile": ".bkit/runtime/agent-state.json",
-    "eventsFile": ".bkit/runtime/agent-events.jsonl"
-  }
+  "primaryFeature": "hook-hardening-v2",
+  "lastUpdated": "2026-04-01T12:30:00Z",
+  "_autoSyncNote": "auto-synced at 2026-04-03 02:02:42, last commit: 7ced1538"
 }

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
 import type { BlockNodeData } from './types';
@@ -9,9 +10,32 @@ import {
   BLOCK_CATEGORY_MAP,
   CATEGORY_BG_COLORS,
 } from './types';
+import { useTeams } from '../../../hooks/brick/useTeams';
+
+function TeamDropdown({ onSelect }: { onSelect: (teamName: string) => void }) {
+  const { data: teams = [] } = useTeams();
+  return (
+    <div
+      data-testid="team-dropdown"
+      className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 min-w-[160px]"
+    >
+      {teams.map((team) => (
+        <button
+          key={team.id}
+          data-testid={`team-option-${team.id}`}
+          className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100"
+          onClick={() => onSelect(team.name)}
+        >
+          {team.name}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function BlockNode({ data }: NodeProps) {
   const d = data as BlockNodeData;
+  const [showContextMenu, setShowContextMenu] = useState(false);
   const borderColor = STATUS_BORDER_COLORS[d.status] ?? '#D1D5DB';
   const category = BLOCK_CATEGORY_MAP[d.blockType];
   const bgColor = category ? CATEGORY_BG_COLORS[category] : '#FFFFFF';
@@ -20,14 +44,20 @@ export function BlockNode({ data }: NodeProps) {
   const statusIcon = STATUS_ICONS[d.status] ?? '○';
   const isRunning = d.status === 'running';
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowContextMenu(true);
+  };
+
   return (
     <div
       data-testid="block-node"
-      className="rounded-lg shadow-sm min-w-[240px]"
+      className="relative rounded-lg shadow-sm min-w-[240px]"
       style={{
         border: `2px solid ${borderColor}`,
         backgroundColor: bgColor,
       }}
+      onContextMenu={handleContextMenu}
     >
       <Handle type="target" position={Position.Top} />
 
@@ -70,6 +100,11 @@ export function BlockNode({ data }: NodeProps) {
           </div>
         )}
       </div>
+
+      {/* 팀 배정 컨텍스트 메뉴 (BF-136) */}
+      {showContextMenu && (
+        <TeamDropdown onSelect={() => setShowContextMenu(false)} />
+      )}
 
       <Handle type="source" position={Position.Bottom} />
     </div>
