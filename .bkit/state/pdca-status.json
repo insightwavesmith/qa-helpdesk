@@ -1,8 +1,10 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-02T02:01:29.259Z",
-  "activeFeatures": [],
-  "primaryFeature": null,
+  "lastUpdated": "2026-04-02T02:29:36.440Z",
+  "activeFeatures": [
+    "adapters"
+  ],
+  "primaryFeature": "adapters",
   "features": {
     "hook-hardening-v2": {
       "phase": "completed",
@@ -60,6 +62,19 @@
       },
       "phaseTimestamps": {},
       "automationLevel": 2
+    },
+    "adapters": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-02T02:29:36.440Z",
+        "lastUpdated": "2026-04-02T02:29:36.440Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/brick/brick/adapters/management.py"
     }
   },
   "pipeline": {
@@ -70,9 +85,16 @@
   "session": {
     "startedAt": "2026-04-02T02:01:29.258Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-02T02:01:29.259Z"
+    "lastActivity": "2026-04-02T02:29:36.440Z"
   },
-  "history": [],
+  "history": [
+    {
+      "timestamp": "2026-04-02T02:29:36.440Z",
+      "feature": "adapters",
+      "phase": "do",
+      "action": "updated"
+    }
+  ],
   "stateMachine": {
     "defaultWorkflow": "default",
     "activeWorkflows": {},
