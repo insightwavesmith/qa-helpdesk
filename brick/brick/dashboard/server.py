@@ -22,7 +22,7 @@ def create_app(root: str = ".bkit/") -> FastAPI:
 
     from brick.dashboard.routes import (
         block_types, teams, presets, workflows,
-        validation, type_catalog, resources,
+        validation, type_catalog, resources, learning,
     )
     app.include_router(block_types.router, prefix="/api/v1", tags=["block-types"])
     app.include_router(teams.router, prefix="/api/v1", tags=["teams"])
@@ -31,5 +31,6 @@ def create_app(root: str = ".bkit/") -> FastAPI:
     app.include_router(validation.router, prefix="/api/v1", tags=["validation"])
     app.include_router(type_catalog.router, prefix="/api/v1", tags=["types"])
     app.include_router(resources.router, prefix="/api/v1", tags=["resources"])
+    app.include_router(learning.router, prefix="/api/v1", tags=["learning"])
 
     return app
