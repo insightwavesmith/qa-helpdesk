@@ -2055,7 +2055,7 @@ function useWebSocket(url: string) {
 - UI: 미설치 adapter 선택 시 "이 adapter는 설치되지 않았습니다. `pip install brick-adapter-xxx`" 안내
 - 관리 기능 없는 adapter: 해당 탭 자동 숨김 (§7.3 매트릭스 기반)
 
-### 11.6 Gate 승인 타임아웃
+### 12.6 Gate 승인 타임아웃
 
 **문제**: Review gate 요청 후 승인자 부재 → 워크플로우 무한 대기.
 
