@@ -194,5 +194,16 @@ def approve_rule(suggestion_id):
         raise SystemExit(1)
 
 
+@cli.command()
+@click.option("--port", default=18700, help="Server port")
+@click.option("--readonly", is_flag=True, help="Read-only mode")
+def serve(port, readonly):
+    """Start the Brick Dashboard API server."""
+    import uvicorn
+    from brick.dashboard.server import create_app
+    app = create_app()
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
+
 if __name__ == "__main__":
     cli()
