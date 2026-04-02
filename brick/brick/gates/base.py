@@ -20,6 +20,8 @@ class GateExecutor:
                 return await self._run_prompt(handler, context)
             case "agent":
                 return await self._run_agent(handler, context)
+            case "review":
+                return await self._run_review(handler, context)
             case _:
                 raise ValueError(f"Unknown gate type: {handler.type}")
 
