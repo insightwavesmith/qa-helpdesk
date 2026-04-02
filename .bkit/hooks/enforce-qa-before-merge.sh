@@ -82,7 +82,7 @@ if ! (cd "$PROJECT_DIR" && npx tsc --noEmit 2>&1); then
 fi
 
 # 2. 빌드 체크
-if false; then  # build check disabled — manual build verified
+if ! (cd "$PROJECT_DIR" && npm run build >/dev/null 2>&1); then
     MESSAGES="${MESSAGES}\n❌ npm run build 실패"
     ERRORS=$((ERRORS + 1))
 fi
