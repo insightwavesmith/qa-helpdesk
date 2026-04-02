@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "brick/link-v2",
+  "title": "Brick Link V2",
+  "type": "object",
+  "required": ["from", "to", "type"],
+  "properties": {
+    "from": {"type": "string"},
+    "to": {"type": "string"},
+    "type": {
+      "type": "string",
+      "enum": ["sequential", "parallel", "compete", "loop", "cron", "branch"]
+    },
+    "condition": {"type": "object"},
+    "max_retries": {"type": "integer", "minimum": 0, "default": 3},
+    "merge_strategy": {"type": "string", "enum": ["all", "any", "n_of_m"]},
+    "teams": {"type": "array", "items": {"type": "string"}},
+    "judge": {"type": "object"},
+    "schedule": {"type": "string"},
+    "branches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "condition_key": {"type": "string"},
+          "condition_value": {"type": "string"},
+          "target": {"type": "string"}
+        }
+      }
+    },
+    "on_fail": {"type": "string"}
+  }
+}
