@@ -132,6 +132,14 @@ class FileStore:
         path.unlink()
         return True
 
+    def sync_all(self) -> int:
+        """Scan all kind directories, re-read from disk. Returns count of synced resources."""
+        count = 0
+        for kind in self.KIND_PATHS:
+            resources = self.list(kind)
+            count += len(resources)
+        return count
+
     def watch(self, callback: Callable) -> None:
         """Register a callback for file change notifications (Phase 1 stub)."""
         self._watchers.append(callback)
