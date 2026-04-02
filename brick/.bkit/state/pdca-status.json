@@ -1,9 +1,25 @@
 {
-  "version": "2.0",
-  "lastUpdated": "2026-04-02T01:17:53.365Z",
-  "activeFeatures": [],
-  "primaryFeature": null,
-  "features": {},
+  "version": "3.0",
+  "lastUpdated": "2026-04-02T01:18:46.289Z",
+  "activeFeatures": [
+    "adapters"
+  ],
+  "primaryFeature": "adapters",
+  "features": {
+    "adapters": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-02T01:18:46.289Z",
+        "lastUpdated": "2026-04-02T01:18:46.289Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/brick/brick/adapters/claude_agent_teams.py"
+    }
+  },
   "pipeline": {
     "currentPhase": 1,
     "level": "Dynamic",
@@ -12,7 +28,30 @@
   "session": {
     "startedAt": "2026-04-02T01:17:53.365Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-02T01:17:53.365Z"
+    "lastActivity": "2026-04-02T01:18:46.289Z"
   },
-  "history": []
+  "history": [
+    {
+      "timestamp": "2026-04-02T01:18:46.289Z",
+      "feature": "adapters",
+      "phase": "do",
+      "action": "updated"
+    }
+  ],
+  "stateMachine": {
+    "defaultWorkflow": "default",
+    "activeWorkflows": {},
+    "totalTransitions": 0
+  },
+  "automation": {
+    "globalLevel": 2,
+    "trustScore": 40,
+    "pendingApprovals": 0,
+    "lastGateResult": null
+  },
+  "team": {
+    "enabled": true,
+    "stateFile": ".bkit/runtime/agent-state.json",
+    "eventsFile": ".bkit/runtime/agent-events.jsonl"
+  }
 }
