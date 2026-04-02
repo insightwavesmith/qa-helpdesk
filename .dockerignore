@@ -14,5 +14,5 @@ playwright-report/
 .env*.bak
 services/
 data/
-scripts/
+
 .venv/
