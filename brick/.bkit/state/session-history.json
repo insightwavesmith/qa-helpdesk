@@ -22,5 +22,21 @@
     "feature": null,
     "phase": null,
     "progress": null
+  },
+  {
+    "sessionId": "d7e95488-60fa-47cd-afd2-e6164d689560",
+    "reason": "other",
+    "endedAt": "2026-04-02T06:25:24.494Z",
+    "feature": null,
+    "phase": null,
+    "progress": null
+  },
+  {
+    "sessionId": "53993f44-c344-4f6c-94fe-a77727824454",
+    "reason": "other",
+    "endedAt": "2026-04-02T07:00:42.911Z",
+    "feature": null,
+    "phase": null,
+    "progress": null
   }
 ]

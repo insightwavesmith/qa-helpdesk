@@ -60,7 +60,7 @@ def pipeline(store: FileStore) -> ValidationPipeline:
 class TestBD09InvWorkflowWithoutTask:
     """BD-09: INV-1 — Workflow without task field → ValidationError(INV-1)."""
 
-    def test_workflow_missing_task(self, pipeline: ValidationPipeline):
+    def test_bd09_workflow_missing_task(self, pipeline: ValidationPipeline):
         resource = BrickResource(
             kind="Workflow",
             name="test-wf",
@@ -75,7 +75,7 @@ class TestBD09InvWorkflowWithoutTask:
 class TestBD10BlockTypeMissingWhat:
     """BD-10: INV-2 — BlockType without default_what → ValidationError(INV-2)."""
 
-    def test_blocktype_missing_default_what(self, pipeline: ValidationPipeline):
+    def test_bd10_blocktype_missing_default_what(self, pipeline: ValidationPipeline):
         resource = BrickResource(
             kind="BlockType",
             name="bad-block",
@@ -90,7 +90,7 @@ class TestBD10BlockTypeMissingWhat:
 class TestBD11BlockTypeMissingDone:
     """BD-11: INV-3 — BlockType without default_done → ValidationError(INV-3)."""
 
-    def test_blocktype_missing_default_done(self, pipeline: ValidationPipeline):
+    def test_bd11_blocktype_missing_default_done(self, pipeline: ValidationPipeline):
         resource = BrickResource(
             kind="BlockType",
             name="bad-block",
@@ -105,7 +105,7 @@ class TestBD11BlockTypeMissingDone:
 class TestBD12PresetBlockNoTeam:
     """BD-12: INV-5 — Preset with block that has no team assigned → ValidationError(INV-5)."""
 
-    def test_preset_block_without_team(self, pipeline: ValidationPipeline):
+    def test_bd12_preset_block_without_team(self, pipeline: ValidationPipeline):
         resource = BrickResource(
             kind="Preset",
             name="bad-preset",
@@ -130,7 +130,7 @@ class TestBD12PresetBlockNoTeam:
 class TestBD13PresetDAGCycle:
     """BD-13: INV-7 — Preset DAG with cycle → ValidationError(INV-7)."""
 
-    def test_preset_dag_cycle(self, pipeline: ValidationPipeline):
+    def test_bd13_preset_dag_cycle(self, pipeline: ValidationPipeline):
         resource = BrickResource(
             kind="Preset",
             name="cyclic-preset",
@@ -157,7 +157,7 @@ class TestBD13PresetDAGCycle:
         codes = [e.code for e in result.errors]
         assert "INV-7" in codes
 
-    def test_loop_type_exempt(self, pipeline: ValidationPipeline):
+    def test_bd13_loop_type_exempt(self, pipeline: ValidationPipeline):
         """Loop-type links should not trigger cycle detection."""
         resource = BrickResource(
             kind="Preset",
@@ -186,7 +186,7 @@ class TestBD13PresetDAGCycle:
 class TestBD14ReadonlyModification:
     """BD-14: INV-8 — Readonly resource modification → ValidationError(READONLY)."""
 
-    def test_readonly_resource_error(self, pipeline: ValidationPipeline):
+    def test_bd14_readonly_resource_error(self, pipeline: ValidationPipeline):
         resource = BrickResource(
             kind="BlockType",
             name="plan",
@@ -202,7 +202,7 @@ class TestBD14ReadonlyModification:
 class TestBD15SchemaValidation:
     """BD-15: Schema validation — missing required fields → SchemaValidationError."""
 
-    def test_blocktype_missing_name(self, pipeline: ValidationPipeline):
+    def test_bd15_blocktype_missing_name(self, pipeline: ValidationPipeline):
         resource = BrickResource(
             kind="BlockType",
             name="",  # missing name
@@ -213,7 +213,7 @@ class TestBD15SchemaValidation:
         codes = [e.code for e in result.errors]
         assert "SCHEMA" in codes
 
-    def test_preset_missing_blocks(self, pipeline: ValidationPipeline):
+    def test_bd15_preset_missing_blocks(self, pipeline: ValidationPipeline):
         resource = BrickResource(
             kind="Preset",
             name="bad-preset",
@@ -228,7 +228,7 @@ class TestBD15SchemaValidation:
 class TestBD16ReferenceValidation:
     """BD-16: Reference validation — nonexistent team reference → ReferenceError."""
 
-    def test_preset_references_nonexistent_team(self, pipeline: ValidationPipeline):
+    def test_bd16_preset_references_nonexistent_team(self, pipeline: ValidationPipeline):
         resource = BrickResource(
             kind="Preset",
             name="ref-preset",
@@ -252,7 +252,7 @@ class TestBD16ReferenceValidation:
 class TestBD17MultipleErrors:
     """BD-17: Multiple validation errors returned simultaneously."""
 
-    def test_multiple_errors_at_once(self, pipeline: ValidationPipeline):
+    def test_bd17_multiple_errors_at_once(self, pipeline: ValidationPipeline):
         resource = BrickResource(
             kind="BlockType",
             name="",  # SCHEMA error: no name

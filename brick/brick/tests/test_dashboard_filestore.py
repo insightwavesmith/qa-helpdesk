@@ -47,14 +47,14 @@ def store(bkit_root: Path) -> FileStore:
 class TestBD01ListBlockTypes:
     """BD-01: FileStore list(kind='BlockType') returns built-in block types (9 types)."""
 
-    def test_list_returns_all_builtin_block_types(self, store: FileStore):
+    def test_bd01_list_returns_all_builtin_block_types(self, store: FileStore):
         resources = store.list("BlockType")
         names = {r.name for r in resources}
         assert len(resources) >= 9
         for bt in BUILTIN_BLOCK_TYPES:
             assert bt in names
 
-    def test_list_returns_brick_resources(self, store: FileStore):
+    def test_bd01_list_returns_brick_resources(self, store: FileStore):
         resources = store.list("BlockType")
         for r in resources:
             assert isinstance(r, BrickResource)
@@ -64,7 +64,7 @@ class TestBD01ListBlockTypes:
 class TestBD02CreateBlockType:
     """BD-02: FileStore create(BlockType) creates YAML file at .bkit/block-types/{name}.yaml."""
 
-    def test_create_writes_yaml_file(self, store: FileStore, bkit_root: Path):
+    def test_bd02_create_writes_yaml_file(self, store: FileStore, bkit_root: Path):
         resource = BrickResource(
             kind="BlockType",
             name="test-block",
@@ -82,7 +82,7 @@ class TestBD02CreateBlockType:
         assert data["name"] == "test-block"
         assert data["kind"] == "BlockType"
 
-    def test_create_duplicate_raises(self, store: FileStore):
+    def test_bd02_create_duplicate_raises(self, store: FileStore):
         resource = BrickResource(
             kind="BlockType", name="plan",
             spec={"default_what": "x", "default_done": "y"},
@@ -94,7 +94,7 @@ class TestBD02CreateBlockType:
 class TestBD03UpdateBlockType:
     """BD-03: FileStore update(BlockType) updates existing YAML file."""
 
-    def test_update_overwrites_spec(self, store: FileStore, bkit_root: Path):
+    def test_bd03_update_overwrites_spec(self, store: FileStore, bkit_root: Path):
         # First make it non-readonly so update is allowed
         file_path = bkit_root / "block-types" / "custom.yaml"
         data = yaml.safe_load(file_path.read_text())
@@ -109,7 +109,7 @@ class TestBD03UpdateBlockType:
         reloaded = store.get("BlockType", "custom")
         assert reloaded.spec["default_what"] == "업데이트된 작업"
 
-    def test_update_nonexistent_raises(self, store: FileStore):
+    def test_bd03_update_nonexistent_raises(self, store: FileStore):
         resource = BrickResource(
             kind="BlockType", name="nonexistent",
             spec={"default_what": "x", "default_done": "y"},
@@ -121,7 +121,7 @@ class TestBD03UpdateBlockType:
 class TestBD04DeleteBlockType:
     """BD-04: FileStore delete(BlockType) removes file."""
 
-    def test_delete_removes_file(self, store: FileStore, bkit_root: Path):
+    def test_bd04_delete_removes_file(self, store: FileStore, bkit_root: Path):
         # Create a non-readonly resource first
         resource = BrickResource(
             kind="BlockType", name="deletable",
@@ -138,7 +138,7 @@ class TestBD04DeleteBlockType:
 class TestBD05DeleteReadonly:
     """BD-05: FileStore delete(readonly resource) raises error."""
 
-    def test_delete_readonly_raises(self, store: FileStore):
+    def test_bd05_delete_readonly_raises(self, store: FileStore):
         with pytest.raises(PermissionError):
             store.delete("BlockType", "plan")
 
@@ -146,7 +146,7 @@ class TestBD05DeleteReadonly:
 class TestBD06Watch:
     """BD-06: FileStore watch — external file change triggers callback."""
 
-    def test_watch_callback_mechanism(self, store: FileStore, bkit_root: Path):
+    def test_bd06_watch_callback_mechanism(self, store: FileStore, bkit_root: Path):
         events = []
 
         def on_change(event):
@@ -176,7 +176,7 @@ class TestBD06Watch:
 class TestBD07CreateTeam:
     """BD-07: FileStore create(Team) creates YAML at .bkit/teams/{name}.yaml."""
 
-    def test_create_team(self, store: FileStore, bkit_root: Path):
+    def test_bd07_create_team(self, store: FileStore, bkit_root: Path):
         resource = BrickResource(
             kind="Team",
             name="backend-team",
@@ -199,7 +199,7 @@ class TestBD07CreateTeam:
 class TestBD08CreatePreset:
     """BD-08: FileStore create(Preset) creates YAML at .bkit/presets/{name}.yaml."""
 
-    def test_create_preset(self, store: FileStore, bkit_root: Path):
+    def test_bd08_create_preset(self, store: FileStore, bkit_root: Path):
         resource = BrickResource(
             kind="Preset",
             name="my-workflow",
