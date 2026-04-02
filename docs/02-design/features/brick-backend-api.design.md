@@ -12,18 +12,18 @@
 
 | 항목 | 내용 |
 |------|------|
-| **목표** | 프론트엔드 hooks가 호출하는 38개 API 엔드포인트를 Express 서버에 구현 |
+| **목표** | 프론트엔드 hooks가 호출하는 43개 API 엔드포인트를 Express 서버에 구현 |
 | **핵심 변경** | API 경로 `/api/v1/*` → `/api/brick/*` 통일 |
 | **기술 스택** | Express 4 + better-sqlite3 + Drizzle ORM (기존 dashboard/ 패턴) |
-| **현재 Gap** | 프론트 hooks 100% 완성, 백엔드 라우트 **0%** (38개 전부 미구현) |
-| **TDD** | 53건 |
+| **현재 Gap** | 프론트 hooks 100% 완성, 백엔드 라우트 **0%** (43개 전부 미구현) |
+| **TDD** | 64건 |
 
 ### Value Delivered
 
 | 관점 | 내용 |
 |------|------|
 | **Problem** | 프론트에서 /api/brick/* 호출 시 전부 404. Brick 기능 전체 미동작 |
-| **Solution** | Express 라우트 38개 등록 + SQLite 스키마 + WebSocket 핸들러 |
+| **Solution** | Express 라우트 43개 등록 + SQLite 스키마 + WebSocket 핸들러 |
 | **Function UX Effect** | Brick 캔버스, 블록 카탈로그, 팀 관리, 프리셋 편집 전부 실동작 |
 | **Core Value** | "AI한텐 강제, 나한텐 자유" 비전의 GUI가 실제로 작동하게 됨 |
 
@@ -69,6 +69,7 @@ dashboard/server/routes/brick/
 ├── index.ts              # registerBrickRoutes (전체 등록)
 ├── block-types.ts        # /api/brick/block-types
 ├── teams.ts              # /api/brick/teams (+ 하위 리소스)
+├── links.ts              # /api/brick/links (+ link-types)
 ├── presets.ts            # /api/brick/presets
 ├── executions.ts         # /api/brick/executions (start, pause, status, logs)
 ├── workflows.ts          # /api/brick/workflows (resume, cancel — hooks 경로 호환)
@@ -90,6 +91,7 @@ import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 export function registerBrickRoutes(app: Application, db: BetterSQLite3Database) {
   registerBlockTypeRoutes(app, db);
   registerTeamRoutes(app, db);
+  registerLinkRoutes(app, db);
   registerPresetRoutes(app, db);
   registerExecutionRoutes(app, db);
   registerWorkflowRoutes(app, db);  // resume/cancel (hooks 경로 호환)
@@ -146,7 +148,74 @@ app.post('/api/brick/block-types', (req, res) => {
 | PUT | `/api/brick/teams/:id/model` | useUpdateTeamModel | 모델 변경 |
 | GET | `/api/brick/teams/:id/status` | useTeamStatus | 실시간 상태 |
 
-### 3.3 Presets (8개)
+### 3.3 Links (5개)
+
+> **Smith님 결정 (2026-04-03)**: Link도 Block/Team처럼 독립 CRUD API 필요. 기존에는 link-types(읽기전용 카탈로그) 1개만 있었으나, Link 인스턴스 CRUD가 없어 캔버스에서 생성한 Link가 Preset YAML에만 인라인 저장되는 문제. 독립 테이블 + API로 분리하여 Block/Team과 동일 수준의 관리 체계 구축.
+
+| 메서드 | 경로 | 프론트 hook | 설명 |
+|--------|------|-----------|------|
+| GET | `/api/brick/link-types` | useLinkTypes → queryFn | Link 타입 목록 (6종: sequential, parallel, compete, loop, cron, branch) |
+| GET | `/api/brick/links?workflowId=:id` | useLinks(workflowId) → queryFn | 워크플로우의 Link 인스턴스 목록 |
+| POST | `/api/brick/links` | useCreateLink | Link 생성 (from_block, to_block, type, condition) |
+| PUT | `/api/brick/links/:id` | useUpdateLink | Link 수정 (타입 변경, 조건 변경) |
+| DELETE | `/api/brick/links/:id` | useDeleteLink | Link 삭제 |
+
+**핸들러 시그니처**:
+```typescript
+// GET /api/brick/link-types
+app.get('/api/brick/link-types', (_req, res) => {
+  // 6종 고정 카탈로그 — DB 조회 불필요
+  const linkTypes = [
+    { name: 'sequential', displayName: '순차', style: 'solid', color: '#6B7280' },
+    { name: 'parallel', displayName: '병렬', style: 'dashed', color: '#3B82F6' },
+    { name: 'compete', displayName: '경쟁', style: 'solid', color: '#EF4444' },
+    { name: 'loop', displayName: '반복', style: 'dotted', color: '#8B5CF6' },
+    { name: 'cron', displayName: '크론', style: 'dashed', color: '#F59E0B' },
+    { name: 'branch', displayName: '분기', style: 'solid', color: '#10B981' },
+  ];
+  res.json(linkTypes);
+});
+
+// GET /api/brick/links?workflowId=:id
+app.get('/api/brick/links', (req, res) => {
+  const { workflowId } = req.query;
+  if (!workflowId) return res.status(400).json({ error: 'workflowId 필수' });
+  const links = db.select().from(brickLinks).where(eq(brickLinks.workflowId, Number(workflowId))).all();
+  res.json(links);
+});
+
+// POST /api/brick/links
+app.post('/api/brick/links', (req, res) => {
+  const { workflowId, fromBlock, toBlock, linkType, condition, judge, cron } = req.body;
+  // 유효성: fromBlock/toBlock 존재 확인, 자기참조 차단, DAG 순환 검증
+  const result = db.insert(brickLinks).values({
+    workflowId, fromBlock, toBlock, linkType: linkType || 'sequential', condition, judge, cron,
+  }).returning().get();
+  res.status(201).json(result);
+});
+
+// PUT /api/brick/links/:id
+app.put('/api/brick/links/:id', (req, res) => {
+  const { linkType, condition, judge, cron } = req.body;
+  const updated = db.update(brickLinks)
+    .set({ linkType, condition, judge, cron, updatedAt: new Date().toISOString() })
+    .where(eq(brickLinks.id, Number(req.params.id)))
+    .returning().get();
+  if (!updated) return res.status(404).json({ error: 'Link 없음' });
+  res.json(updated);
+});
+
+// DELETE /api/brick/links/:id
+app.delete('/api/brick/links/:id', (req, res) => {
+  const deleted = db.delete(brickLinks).where(eq(brickLinks.id, Number(req.params.id))).run();
+  if (deleted.changes === 0) return res.status(404).json({ error: 'Link 없음' });
+  res.status(204).end();
+});
+```
+
+**DAG 순환 검증**: Link 생성/수정 시 `fromBlock → toBlock` 경로가 순환을 만드는지 확인. 동일 workflowId의 모든 Link를 조회하여 DFS로 검증. 순환 감지 시 400 반환. (INV-7 연동)
+
+### 3.4 Presets (8개)
 
 | 메서드 | 경로 | 프론트 hook | 설명 |
 |--------|------|-----------|------|
@@ -159,7 +228,7 @@ app.post('/api/brick/block-types', (req, res) => {
 | POST | `/api/brick/presets/import` | useImportPreset | YAML 가져오기 |
 | POST | `/api/brick/presets/:presetId/apply` | useApplyPreset | 프리셋 적용 (캔버스에 로드) |
 
-### 3.4 Executions + Workflows (6개)
+### 3.5 Executions + Workflows (6개)
 
 | 메서드 | 경로 | 프론트 hook | 설명 |
 |--------|------|-----------|------|
@@ -172,14 +241,14 @@ app.post('/api/brick/block-types', (req, res) => {
 
 > **주의**: 프론트 hooks에서 resume/cancel은 `/api/brick/workflows/` prefix를 사용하고, start/pause/status/logs는 `/api/brick/executions/` prefix를 사용함. 백엔드 구현 시 두 라우트 그룹 모두 등록 필요. (`executions.ts` + `workflows.ts` 또는 executions.ts에서 workflows 경로도 함께 등록)
 
-### 3.5 Gates (2개)
+### 3.6 Gates (2개)
 
 | 메서드 | 경로 | 프론트 hook | 설명 |
 |--------|------|-----------|------|
 | GET | `/api/brick/gates/:gateId/result` | useGateResult | Gate 결과 조회 |
 | POST | `/api/brick/gates/:gateId/override` | useOverrideGate | Gate 수동 오버라이드 |
 
-### 3.6 Learning (3개)
+### 3.7 Learning (3개)
 
 | 메서드 | 경로 | 프론트 hook | 설명 |
 |--------|------|-----------|------|
@@ -187,31 +256,32 @@ app.post('/api/brick/block-types', (req, res) => {
 | POST | `/api/brick/learning/:id/approve` | useApproveProposal | 제안 승인 |
 | POST | `/api/brick/learning/:id/reject` | useRejectProposal | 제안 거부 |
 
-### 3.7 System (1개)
+### 3.8 System (1개)
 
 | 메서드 | 경로 | 프론트 hook | 설명 |
 |--------|------|-----------|------|
 | GET | `/api/brick/system/invariants` | useInvariants | INV-1~10 상태 |
 
-### 3.8 Review (2개)
+### 3.9 Review (2개)
 
 | 메서드 | 경로 | 프론트 hook | 설명 |
 |--------|------|-----------|------|
 | POST | `/api/brick/review/:executionId/:blockId/approve` | useApproveReview | 리뷰 승인 |
 | POST | `/api/brick/review/:executionId/:blockId/reject` | useRejectReview | 리뷰 거부 |
 
-### 3.9 Notify (1개)
+### 3.10 Notify (1개)
 
 | 메서드 | 경로 | 프론트 hook | 설명 |
 |--------|------|-----------|------|
 | POST | `/api/brick/notify/test` | useTestNotify | 알림 테스트 발송 |
 
-### 3.10 합계
+### 3.11 합계
 
 | 그룹 | 엔드포인트 수 |
 |------|-------------|
 | Block Types | 4 |
 | Teams | 10 |
+| **Links** | **5** |
 | Presets | 8 |
 | Executions + Workflows | 6 |
 | Gates | 2 |
@@ -220,9 +290,9 @@ app.post('/api/brick/block-types', (req, res) => {
 | Review | 2 |
 | Notify | 1 |
 | WebSocket | 1 |
-| **합계** | **38** |
+| **합계** | **43** |
 
-> **참고**: 프론트 hooks에서 실제 사용 중인 HTTP 엔드포인트는 25개 + WS 1개 = 26개. 나머지 12개(GET presets/:id, PUT/DELETE presets/:id, review 2개, notify 1개 등)는 프론트 Design 기준 필요하나 hooks 미구현 상태. 백엔드 구현 시 38개 전부 등록.
+> **참고**: 프론트 hooks에서 실제 사용 중인 HTTP 엔드포인트는 30개 + WS 1개 = 31개. 나머지 12개(GET presets/:id, PUT/DELETE presets/:id, review 2개, notify 1개 등)는 프론트 Design 기준 필요하나 hooks 미구현 상태. 백엔드 구현 시 43개 전부 등록.
 
 ---
 
@@ -275,6 +345,20 @@ export const brickPresets = sqliteTable('brick_presets', {
   yaml: text('yaml').notNull(),                     // 전체 YAML 문자열
   isCore: integer('is_core', { mode: 'boolean' }).default(false),
   labels: text('labels', { mode: 'json' }),         // {level: 'l2', type: 'standard'}
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// ── Links (블록 간 연결) ──
+export const brickLinks = sqliteTable('brick_links', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  workflowId: integer('workflow_id').references(() => brickPresets.id), // 프리셋(워크플로우) 소속
+  fromBlock: text('from_block').notNull(),            // 출발 블록 ID
+  toBlock: text('to_block').notNull(),                // 도착 블록 ID
+  linkType: text('link_type').notNull().default('sequential'), // 6종: sequential|parallel|compete|loop|cron|branch
+  condition: text('condition'),                       // 분기/경쟁 조건식
+  judge: text('judge'),                               // 경쟁 판정 기준
+  cron: text('cron'),                                 // cron 표현식 (type=cron일 때)
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
@@ -358,11 +442,15 @@ const CORE_BLOCK_TYPES = [
 export async function up(db: BetterSQLite3Database) {
   db.run(`CREATE TABLE IF NOT EXISTS brick_block_types (...)`);
   db.run(`CREATE TABLE IF NOT EXISTS brick_teams (...)`);
+  db.run(`CREATE TABLE IF NOT EXISTS brick_links (...)`);
   db.run(`CREATE TABLE IF NOT EXISTS brick_presets (...)`);
   db.run(`CREATE TABLE IF NOT EXISTS brick_executions (...)`);
   db.run(`CREATE TABLE IF NOT EXISTS brick_execution_logs (...)`);
   db.run(`CREATE TABLE IF NOT EXISTS brick_gate_results (...)`);
   db.run(`CREATE TABLE IF NOT EXISTS brick_learning_proposals (...)`);
+  // 인덱스: Link 조회 최적화
+  db.run(`CREATE INDEX IF NOT EXISTS idx_brick_links_workflow ON brick_links(workflow_id)`);
+  db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_brick_links_pair ON brick_links(workflow_id, from_block, to_block)`);
   // 시딩
   seedCoreBlockTypes(db);
 }
@@ -441,6 +529,11 @@ export function createBrickWebSocket(server: Server) {
 | useTeams.ts | useTeamMcp | GET /api/brick/teams/:id/mcp | ✅ |
 | useTeams.ts | useUpdateTeamModel | PUT /api/brick/teams/:id/model | ✅ |
 | useTeams.ts | useTeamStatus | GET /api/brick/teams/:id/status | ✅ |
+| useLinks.ts | useLinkTypes | GET /api/brick/link-types | ✅ |
+| useLinks.ts | useLinks(workflowId) | GET /api/brick/links?workflowId=:id | ✅ |
+| useLinks.ts | useCreateLink | POST /api/brick/links | ✅ |
+| useLinks.ts | useUpdateLink | PUT /api/brick/links/:id | ✅ |
+| useLinks.ts | useDeleteLink | DELETE /api/brick/links/:id | ✅ |
 | usePresets.ts | usePresets | GET /api/brick/presets | ✅ |
 | usePresets.ts | useCreatePreset | POST /api/brick/presets | ✅ |
 | usePresets.ts | usePreset | GET /api/brick/presets/:id | ✅ |
@@ -509,7 +602,7 @@ Smith님 지시 기반:
 
 | 순위 | 그룹 | 이유 |
 |------|------|------|
-| **P1** | Block Types + Teams + Presets (CRUD 22개) | 프론트 Phase 1~2 즉시 연동 가능 |
+| **P1** | Block Types + Teams + Links + Presets (CRUD 27개) | 프론트 Phase 1~2 즉시 연동 가능 |
 | **P1** | WebSocket /api/brick/ws | 실시간 모니터링 기반 |
 | **P2** | Executions (6개) | 프론트 Phase 3~4 연동 |
 | **P2** | Gates + Review (4개) | 프론트 Phase 4~5 연동 |
@@ -547,6 +640,22 @@ Smith님 지시 기반:
 | BA-22 | GET /api/brick/presets/:id/export → YAML 다운로드 | §3.3 | content-type: text/yaml |
 | BA-23 | POST /api/brick/presets/import → 201 + 파싱 | §3.3 | YAML 파싱 + DB 저장 |
 | BA-23b | POST /api/brick/presets/:id/apply → 200 + 캔버스 로드 | §3.3 | 프리셋 YAML → 노드/엣지 변환 |
+
+### Links
+
+| ID | 테스트 | Design 섹션 | 검증 |
+|----|--------|------------|------|
+| BA-54 | GET /api/brick/link-types → 200 + 6종 | §3.3 | length=6, sequential/parallel/compete/loop/cron/branch |
+| BA-55 | GET /api/brick/links?workflowId=1 → 200 + 목록 | §3.3 | status=200, 해당 workflow만 반환 |
+| BA-56 | GET /api/brick/links (workflowId 없음) → 400 | §3.3 | 필수 파라미터 누락 |
+| BA-57 | POST /api/brick/links → 201 + 생성 | §3.3 | fromBlock, toBlock, linkType 포함 |
+| BA-58 | POST /api/brick/links 자기참조 (from=to) → 400 | §3.3 | 자기참조 차단 |
+| BA-59 | POST /api/brick/links DAG 순환 → 400 | §3.3 | A→B→C→A 순환 감지 (INV-7) |
+| BA-60 | POST /api/brick/links 중복 (같은 from+to+workflow) → 409 | §3.3 | UNIQUE 제약 |
+| BA-61 | PUT /api/brick/links/:id → 200 + 수�� | §3.3 | linkType 변경 반영 |
+| BA-62 | PUT /api/brick/links/:id (존재하지 않는 ID) → 404 | §3.3 | 에러 메시지 |
+| BA-63 | DELETE /api/brick/links/:id → 204 | §3.3 | DB 삭제 확인 |
+| BA-64 | DELETE /api/brick/links/:id (존재하지 않는 ID) → 404 | §3.3 | 에러 메시지 |
 
 ### Execution / Gates / Review
 
@@ -587,7 +696,7 @@ Smith님 지시 기반:
 
 | ID | 테스트 | Design 섹션 | 검증 |
 |----|--------|------------|------|
-| BA-44 | 마이그레이션: 7개 테이블 생성 | §4.1 | 테이블 존재 확인 |
+| BA-44 | 마이그레이션: 8개 테이블 생성 | §4.1 | 테이블 존재 확인 |
 | BA-45 | 시딩: 내장 블록 타입 10종 삽입 | §4.2 | 10건 + isCore=true |
 | BA-46 | Core 블록 타입 삭제 시도 → 차단 | §4.2 | isCore=true → 403 |
 | BA-47 | Core 프리셋 수정 시도 → 차단 | §4.2 | isCore=true → 403 |
@@ -614,18 +723,19 @@ Smith님 지시 기반:
 |------------|---------|----------|
 | §3.1 Block Types | BA-01~06 | 6 |
 | §3.2 Teams | BA-07~16 | 10 |
-| §3.3 Presets | BA-17~23b | 8 |
-| §3.4 Executions | BA-24~30 | 7 |
-| §3.5 Gates | BA-31~32 | 2 |
-| §3.6 Learning | BA-35~37 | 3 |
-| §3.7 System | BA-38, BA-51~52 | 3 |
-| §3.8 Review | BA-33~34 | 2 |
-| §3.9 Notify | BA-39 | 1 |
+| §3.3 Links | BA-54~64 | 11 |
+| §3.4 Presets | BA-17~23b | 8 |
+| §3.5 Executions | BA-24~30 | 7 |
+| §3.6 Gates | BA-31~32 | 2 |
+| §3.7 Learning | BA-35~37 | 3 |
+| §3.8 System | BA-38, BA-51~52 | 3 |
+| §3.9 Review | BA-33~34 | 2 |
+| §3.10 Notify | BA-39 | 1 |
 | §4 DB 스키마 | BA-44~47 | 4 |
 | §5 WebSocket | BA-40~43 | 4 |
 | §7 파일 동기화 | BA-48~50 | 3 |
-| §3.3 Validation | BA-53 | 1 |
-| **합계** | | **54** |
+| Validation | BA-53 | 1 |
+| **합계** | | **65** |
 
 **Gap 0%**: 모든 API 엔드포인트, DB 테이블, WebSocket 이벤트에 대응 TDD 존재.
 
@@ -661,6 +771,7 @@ dashboard/
 │   └── brick/                          # (신규) TDD 테스트
 │       ├── block-types.test.ts
 │       ├── teams.test.ts
+│       ├── links.test.ts
 │       ├── presets.test.ts
 │       ├── executions.test.ts
 │       ├── gates.test.ts

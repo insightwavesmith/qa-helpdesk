@@ -16,7 +16,7 @@
 | 시작일 | 2026-04-02 |
 | 기술 | React Flow + zustand + Monaco Editor + dagre |
 | Phase | 5단계 (기반→CRUD→인터랙션→실시간→Review+Learning) |
-| TDD 케이스 | BF-001 ~ BF-145 (145건) |
+| TDD 케이스 | BF-001 ~ BF-145 + BF-055a~f (151건) |
 
 | 관점 | 내용 |
 |------|------|
@@ -465,6 +465,86 @@ export function useCreateBlockType() {
 // 동일 패턴: useTeams, usePresets, useExecutions, useLearning 등
 ```
 
+### 5.2 useLinks.ts — Link 독립 CRUD hooks
+
+> **Smith님 결정 (2026-04-03)**: Link도 Block/Team과 동등한 독립 CRUD. 기존 useLinkTypes(카탈로그)에 인스턴스 CRUD 추가.
+
+```typescript
+// dashboard/src/hooks/brick/useLinks.ts
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useApi } from '../useApi';
+
+/** Link 타입 카탈로그 (6종 — 읽기전용) */
+export function useLinkTypes() {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['brick', 'linkTypes'],
+    queryFn: () => api.get('/api/brick/link-types'),
+    staleTime: Infinity, // 6종 고정값, 리페치 불필요
+  });
+}
+
+/** 워크플로우의 Link 인스턴스 목록 */
+export function useLinks(workflowId: number | null) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['brick', 'links', workflowId],
+    queryFn: () => api.get(`/api/brick/links?workflowId=${workflowId}`),
+    enabled: workflowId !== null,
+  });
+}
+
+/** Link 생성 */
+export function useCreateLink() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      workflowId: number;
+      fromBlock: string;
+      toBlock: string;
+      linkType?: string;
+      condition?: string;
+      judge?: string;
+      cron?: string;
+    }) => api.post('/api/brick/links', data),
+    onSuccess: (_data, variables) =>
+      qc.invalidateQueries({ queryKey: ['brick', 'links', variables.workflowId] }),
+  });
+}
+
+/** Link 수정 (타입 변경, 조건 변경) */
+export function useUpdateLink() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: {
+      id: number;
+      workflowId: number;
+      linkType?: string;
+      condition?: string;
+      judge?: string;
+      cron?: string;
+    }) => api.put(`/api/brick/links/${id}`, data),
+    onSuccess: (_data, variables) =>
+      qc.invalidateQueries({ queryKey: ['brick', 'links', variables.workflowId] }),
+  });
+}
+
+/** Link 삭제 */
+export function useDeleteLink() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, workflowId }: { id: number; workflowId: number }) =>
+      api.delete(`/api/brick/links/${id}`),
+    onSuccess: (_data, variables) =>
+      qc.invalidateQueries({ queryKey: ['brick', 'links', variables.workflowId] }),
+  });
+}
+```
+
 ### 5.1 API 연동 매핑 테이블
 
 | 그룹 | Hook | API | Method |
@@ -491,7 +571,11 @@ export function useCreateBlockType() {
 | Team | useTeamModel(name) | /api/v1/teams/:name/model | GET |
 | Team | useSetModel | /api/v1/teams/:name/model | PUT |
 | Team | useTeamStatus(name) | /api/v1/teams/:name/status | GET |
-| Catalog | useLinkTypes | /api/v1/link-types | GET |
+| Link | useLinkTypes | /api/brick/link-types | GET |
+| Link | useLinks(workflowId) | /api/brick/links?workflowId=:id | GET |
+| Link | useCreateLink | /api/brick/links | POST |
+| Link | useUpdateLink | /api/brick/links/:id | PUT |
+| Link | useDeleteLink | /api/brick/links/:id | DELETE |
 | Catalog | useGateTypes | /api/v1/gate-types | GET |
 | Catalog | useAdapterTypes | /api/v1/adapter-types | GET |
 | Preset | usePresets | /api/v1/presets | GET |
@@ -1195,6 +1279,7 @@ dashboard/
 │   │   ├── brick/
 │   │   │   ├── useBlockTypes.ts        — BlockType CRUD hooks
 │   │   │   ├── useTeams.ts             — Team CRUD hooks
+│   │   │   ├── useLinks.ts             — Link CRUD hooks (§5.2)
 │   │   │   ├── usePresets.ts           — Preset CRUD hooks
 │   │   │   ├── useExecutions.ts        — Execution hooks
 │   │   │   ├── useGates.ts             — Gate hooks
@@ -1223,6 +1308,7 @@ dashboard/
         ├── panels/BlockDetailPanel.test.tsx
         ├── hooks/useBlockTypes.test.ts
         ├── hooks/useTeams.test.ts
+        ├── hooks/useLinks.test.ts
         ├── hooks/useExecutions.test.ts
         ├── pages/BrickCanvasPage.test.tsx
         ├── pages/TeamDetailPage.test.tsx
@@ -1297,6 +1383,12 @@ dashboard/
 | BF-053 | §6.1 | useImportPreset — POST /api/brick/presets/import 호출 | usePresets.ts |
 | BF-054 | §6.1 | useApplyPreset — POST 호출 후 캔버스 갱신 | usePresets.ts |
 | BF-055 | §8.5 | useTeamStatus — 실시간 상태 배지 (idle/running/stuck/dead) | useTeams.ts |
+| BF-055a | §5.2 | useLinkTypes — GET /api/brick/link-types → 6종 카탈로그 반환 | useLinks.ts |
+| BF-055b | §5.2 | useLinks(workflowId) — GET /api/brick/links?workflowId=1 → 해당 워크플로우 Link 목록 | useLinks.ts |
+| BF-055c | §5.2 | useLinks(null) — enabled=false로 쿼리 스킵 | useLinks.ts |
+| BF-055d | §5.2 | useCreateLink — POST /api/brick/links → 201 + queryKey 무효화 | useLinks.ts |
+| BF-055e | §5.2 | useUpdateLink — PUT /api/brick/links/:id → 200 + queryKey 무효화 | useLinks.ts |
+| BF-055f | §5.2 | useDeleteLink — DELETE /api/brick/links/:id → 204 + queryKey 무효화 | useLinks.ts |
 
 ### Phase 3: 캔버스 인터랙션 (BF-056 ~ BF-080)
 
