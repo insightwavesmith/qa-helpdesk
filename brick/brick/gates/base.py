@@ -78,3 +78,6 @@ class GateExecutor:
 
     async def _run_agent(self, handler: GateHandler, context: dict) -> GateResult:
         raise NotImplementedError("Agent gate not implemented in base")
+
+    async def _run_review(self, handler: GateHandler, context: dict) -> GateResult:
+        raise NotImplementedError("Review gate not implemented in base")
