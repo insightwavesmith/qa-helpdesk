@@ -127,6 +127,22 @@ export interface ReviewNodeData extends BlockNodeData {
   [key: string]: unknown;
 }
 
+// ── 알림 채널 & 이벤트 ──
+export type NotifyChannel = 'slack' | 'telegram' | 'discord' | 'webhook';
+export type NotifyEvent = 'start' | 'complete' | 'fail';
+
+// ── NotifyNode 데이터 (BlockNode 확장) ──
+export interface NotifyNodeData extends BlockNodeData {
+  blockType: 'notify';
+  channel: NotifyChannel;
+  target: string;
+  events: NotifyEvent[];
+  payloadTemplate?: string;
+  lastSentAt?: string;
+  lastResult?: 'success' | 'failed';
+  [key: string]: unknown;
+}
+
 // ── 링크 타입 (6종) ──
 export const LINK_TYPES = [
   'sequential', 'parallel', 'compete', 'loop', 'cron', 'branch',
@@ -144,5 +160,5 @@ export interface LinkEdgeData {
 }
 
 // ── React Flow 노드/엣지 타입 ──
-export type BrickNode = Node<BlockNodeData, 'block'> | Node<ReviewNodeData, 'review'>;
+export type BrickNode = Node<BlockNodeData, 'block'> | Node<ReviewNodeData, 'review'> | Node<NotifyNodeData, 'notify'>;
 export type BrickEdge = Edge<LinkEdgeData>;

@@ -1,11 +1,8 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-02T08:21:11.791Z",
-  "activeFeatures": [
-    "bscamp",
-    "dashboard"
-  ],
-  "primaryFeature": "bscamp",
+  "lastUpdated": "2026-04-02T16:23:31.437Z",
+  "activeFeatures": [],
+  "primaryFeature": null,
   "features": {
     "hook-hardening-v2": {
       "phase": "completed",
@@ -63,32 +60,6 @@
       },
       "phaseTimestamps": {},
       "automationLevel": 2
-    },
-    "bscamp": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-04-02T08:12:54.462Z",
-        "lastUpdated": "2026-04-02T08:12:56.027Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/src/lib/ad-creative-embedder.ts"
-    },
-    "dashboard": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-04-02T08:20:59.889Z",
-        "lastUpdated": "2026-04-02T08:21:11.791Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/brick/brick/dashboard/plugin_manager.py"
     }
   },
   "pipeline": {
@@ -97,42 +68,11 @@
     "phaseHistory": []
   },
   "session": {
-    "startedAt": "2026-04-02T07:24:43.520Z",
+    "startedAt": "2026-04-02T16:23:31.437Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-02T08:21:11.791Z"
+    "lastActivity": "2026-04-02T16:23:31.437Z"
   },
-  "history": [
-    {
-      "timestamp": "2026-04-02T08:12:54.462Z",
-      "feature": "bscamp",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-02T08:12:55.184Z",
-      "feature": "bscamp",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-02T08:12:56.027Z",
-      "feature": "bscamp",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-02T08:20:59.889Z",
-      "feature": "dashboard",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-02T08:21:11.791Z",
-      "feature": "dashboard",
-      "phase": "do",
-      "action": "updated"
-    }
-  ],
+  "history": [],
   "stateMachine": {
     "defaultWorkflow": "default",
     "activeWorkflows": {},
