@@ -2310,6 +2310,10 @@ brick-dashboard/                    # 별도 패키지 또는 brick 패키지 �
     ├── test_api_workflows.py
     ├── test_api_gates.py
     ├── test_websocket.py
+    ├── test_pattern_detector.py
+    ├── test_rule_applicator.py
+    ├── test_proposal_store.py
+    ├── test_learning_api.py
     └── test_integration.py
 ```
 

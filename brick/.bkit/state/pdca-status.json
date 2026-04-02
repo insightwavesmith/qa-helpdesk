@@ -1,9 +1,10 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-02T01:19:39.363Z",
+  "lastUpdated": "2026-04-02T01:19:48.092Z",
   "activeFeatures": [
     "adapters",
-    "gates"
+    "gates",
+    "links"
   ],
   "primaryFeature": "adapters",
   "features": {
@@ -32,6 +33,19 @@
         "lastUpdated": "2026-04-02T01:19:39.363Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/brick/brick/gates/concrete.py"
+    },
+    "links": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-02T01:19:48.092Z",
+        "lastUpdated": "2026-04-02T01:19:48.092Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/brick/brick/links/sequential.py"
     }
   },
   "pipeline": {
@@ -42,7 +56,7 @@
   "session": {
     "startedAt": "2026-04-02T01:17:53.365Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-02T01:19:39.363Z"
+    "lastActivity": "2026-04-02T01:19:48.092Z"
   },
   "history": [
     {
@@ -120,6 +134,12 @@
     {
       "timestamp": "2026-04-02T01:19:39.363Z",
       "feature": "gates",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-02T01:19:48.092Z",
+      "feature": "links",
       "phase": "do",
       "action": "updated"
     }
