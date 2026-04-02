@@ -1953,7 +1953,7 @@ applied_at: "2026-04-01T15:30:05Z"
 
 ## 12. 심층 분석 — 엣지케이스
 
-### 11.1 동시 편집 충돌 (File Conflict)
+### 12.1 동시 편집 충돌 (File Conflict)
 
 **문제**: Smith가 Dashboard에서 편집 중, COO가 CLI로 같은 파일 수정.
 
