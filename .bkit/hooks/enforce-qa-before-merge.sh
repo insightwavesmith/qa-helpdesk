@@ -7,7 +7,7 @@ trap _bl_trap EXIT
 # exit 2 = 차단 (게이트), 에러 시 기본값 = exit 2 (안전 실패)
 
 # 안전 실패: 스크립트 에러 시 차단
-# ERR trap disabled for debugging
+trap 'exit 2' ERR
 
 # 팀원은 PDCA 게이팅 패스 (리더 전용 검증)
 source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
