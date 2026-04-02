@@ -2213,7 +2213,27 @@ Slack Interactive Message → API Server → Engine. Dashboard와 동일 API 사
   - Phase 3 + TeamManagementAdapter 구현
 ```
 
-### Phase 5: 확장
+### Phase 5: Learning Harness
+
+```
+범위:
+  - PatternDetector (이벤트 히스토리 분석)
+  - 규칙 제안 생성 (LLM 분석)
+  - 규칙 제안 목록/상세/승인/거부/수정 UI
+  - RuleApplicator (파일 자동 반영)
+  - 학습 히스토리 + 3축별 현황 대시보드
+  - 자동 감지 트리거 (이벤트/크론/수동)
+  
+기술:
+  - PatternDetector (Python)
+  - LLM 분석 (Sonnet)
+  - ruamel.yaml (YAML 패치)
+  
+의존:
+  - Phase 3 (EventBus 이벤트 히스토리) + Phase 4 (Team 관리)
+```
+
+### Phase 6: 확장
 
 ```
 범위:
@@ -2222,9 +2242,10 @@ Slack Interactive Message → API Server → Engine. Dashboard와 동일 API 사
   - 메트릭 대시보드 (완료 시간, 재시도 횟수 등)
   - 감사 로그 (누가 언제 뭘 바꿨는지)
   - bscamp.app 통합 (공통 인증)
+  - Learning Harness 고도화 (거부 학습, 규칙 충돌 감지)
   
 의존:
-  - Phase 4 완료
+  - Phase 5 완료
 ```
 
 ---
