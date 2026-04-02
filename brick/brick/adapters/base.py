@@ -37,30 +37,3 @@ class TeamAdapter(ABC):
 
     async def get_logs(self, execution_id: str) -> str:
         return ""
-
-    async def list_members(self) -> list[dict]:
-        return []
-
-    async def add_member(self, member: dict) -> str:
-        return ""
-
-    async def list_skills(self) -> list[dict]:
-        return []
-
-    async def update_skill(self, skill_id: str, config: dict) -> None:
-        pass
-
-    async def list_mcp_servers(self) -> list[dict]:
-        return []
-
-    async def configure_mcp(self, server_id: str, config: dict) -> None:
-        pass
-
-    async def get_model_config(self) -> dict:
-        return {}
-
-    async def set_model_config(self, config: dict) -> None:
-        pass
-
-    async def get_team_status(self) -> dict:
-        return {}
