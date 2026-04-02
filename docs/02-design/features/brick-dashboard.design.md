@@ -2046,7 +2046,7 @@ function useWebSocket(url: string) {
 - YAML 에디터: Monaco의 `model.updateOptions({ tabSize: 2 })` + folding
 - API: 프리셋 상세 요청 시 `?fields=blocks,links` 로 필요 필드만
 
-### 11.5 Adapter 없는 상태에서 팀 관리 시도
+### 12.5 Adapter 없는 상태에서 팀 관리 시도
 
 **문제**: Claude Agent Teams adapter가 미설치 상태에서 팀 스킬 편집 시도.
 
