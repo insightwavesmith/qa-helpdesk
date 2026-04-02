@@ -16,18 +16,62 @@
 | 시작일 | 2026-04-02 |
 | 기술 | React Flow + zustand + Monaco Editor + dagre |
 | Phase | 5단계 (기반→CRUD→인터랙션→실시간→Review+Learning) |
-| TDD 케이스 | BF-001 ~ BF-120 (120건) |
+| TDD 케이스 | BF-001 ~ BF-145 (145건) |
 
 | 관점 | 내용 |
 |------|------|
 | **문제** | Brick 워크플로우를 CLI로만 관리 가능 — 시각적 편집/모니터링 불가 |
 | **해결** | React Flow 캔버스 에디터 + 3축 CRUD UI + 실시간 모니터링 |
 | **기능/UX** | 블록 드래그&드롭, 링크 연결, Gate 설정, Review 승인, 실행 제어 |
-| **핵심 가치** | "CLI 등가" — CLI로 할 수 있는 모든 것을 브라우저에서 |
+| **핵심 가치** | "Scratch처럼 쉽고, n8n처럼 강력하게" — 비개발자 5분 첫 워크플로우 |
 
 ---
 
-## 1. 아키텍처 개요
+## 1. UX 철학: "Scratch처럼 쉽고, n8n처럼 강력하게"
+
+> **Smith님 지시 (필수)**: MIT Scratch 3대 원칙 + Papert 프레임워크 전체 적용.
+
+### 1.1 Scratch 3대 원칙
+
+| 원칙 | 의미 | Brick 적용 |
+|------|------|-----------|
+| **Tinkerable** | 드래그하면 바로 실행. 설명서 불필요 | 블록 팔레트 → 드래그&드롭 → 선 연결 → 끝. YAML 직접 작성 절대 불필요 |
+| **Meaningful** | 만든 게 바로 눈에 보임 | 실행 중 블록 하이라이트 + 실시간 프리뷰 + 즉시 피드백 |
+| **Social** | 남이 만든 거 복사해서 커스텀 | 프리셋 Remix — 공유 프리셋 복제 → 내 것으로 수정 |
+
+### 1.2 Papert 프레임워크
+
+| 차원 | 의미 | Brick 보장 |
+|------|------|-----------|
+| **Low Floor** | 비개발자도 5분 안에 첫 워크플로우 생성 | 블록 3개 드래그 + 선 2개 연결 = 워크플로우 완성 |
+| **High Ceiling** | 복잡한 조합 가능 | PDCA + Gate 5종 + 병렬/경쟁/분기 + Learning Harness |
+| **Wide Walls** | 다양한 방식으로 같은 목표 달성 | 프리셋 기반 / 빈 캔버스 / YAML 임포트 모두 지원 |
+
+### 1.3 구체 적용 규칙 (구현 시 강제)
+
+1. **YAML 직접 작성 절대 불필요** — 모든 설정은 GUI에서 완결. Monaco 편집은 고급 사용자 옵션일 뿐
+2. **블록 팔레트 → 드래그&드롭 → 선 연결 → 끝** — 3단계로 워크플로우 완성
+3. **팀 배정**: 블록 우클릭 → 드롭다운 선택 (DetailPanel 열 필요 없이 즉시 가능)
+4. **Gate 설정**: 체크박스 + 슬라이더 (threshold) — 코드/JSON 입력 없음
+5. **맞는 것만 연결됨** — 유효하지 않은 Link는 스냅 안 됨 (isValidConnection 강제)
+6. **실행 중 블록 하이라이트** — running 블록 즉시 시각 피드백
+7. **프리셋 Remix** — "이 프리셋 복제" 버튼 → 내 프리셋으로 즉시 복사 → 수정
+
+### 1.4 블록 카테고리 색상 체계
+
+| 카테고리 | 블록 타입 | 팔레트 배경색 | 노드 기본 배경 |
+|---------|----------|-------------|--------------|
+| **Plan** (계획) | plan, design | #DBEAFE (파랑) | #EFF6FF |
+| **Do** (실행) | implement, deploy | #DCFCE7 (초록) | #F0FDF4 |
+| **Check** (검증) | test, review, monitor | #FEF9C3 (노랑) | #FEFCE8 |
+| **Act** (조치) | rollback, custom | #F3E8FF (보라) | #FAF5FF |
+| **Notify** (알림) | notify | #E0F2FE (남색) | #F0F9FF |
+
+> 블록 테두리 색은 **상태(§2.3)**가 우선. 카테고리 색은 **배경**에만 적용.
+
+---
+
+## 2. 아키텍처 개요
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -54,7 +98,7 @@
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 1.1 상태 관리 분리
+### 2.1 상태 관리 분리
 
 | 상태 유형 | 저장소 | 예시 |
 |----------|--------|------|
@@ -65,9 +109,9 @@
 
 ---
 
-## 2. 캔버스 설계
+## 3. 캔버스 설계
 
-### 2.1 커스텀 노드 타입
+### 3.1 커스텀 노드 타입
 
 ```typescript
 // dashboard/src/components/brick/nodes/types.ts
@@ -88,7 +132,7 @@ interface BlockNodeData {
 type BlockTypeName =
   | 'plan' | 'design' | 'implement' | 'test'
   | 'review' | 'deploy' | 'monitor' | 'rollback'
-  | 'custom';
+  | 'notify' | 'custom';
 
 type BlockStatus =
   | 'idle' | 'queued' | 'running' | 'paused'
@@ -108,27 +152,43 @@ interface ReviewNodeData extends BlockNodeData {
   checklistProgress: number; // 0~100
   reviewStatus: 'pending' | 'approved' | 'changes_requested' | 'rejected';
 }
+
+/** Notify 블록 전용 데이터 */
+interface NotifyNodeData extends BlockNodeData {
+  blockType: 'notify';
+  channel: NotifyChannel;
+  target: string;           // 채널ID, chatID, webhook URL
+  events: NotifyEvent[];    // 트리거 이벤트 목록
+  payloadTemplate?: string; // 커스텀 페이로드 (Handlebars 템플릿)
+  lastSentAt?: string;      // 마지막 발송 시각
+  lastResult?: 'success' | 'failed';
+}
+
+type NotifyChannel = 'slack' | 'telegram' | 'discord' | 'webhook';
+type NotifyEvent = 'start' | 'complete' | 'fail';
 ```
 
-### 2.2 노드 타입별 등록
+### 3.2 노드 타입별 등록
 
 ```typescript
 // dashboard/src/components/brick/nodes/index.ts
 
 import { BlockNode } from './BlockNode';
 import { ReviewNode } from './ReviewNode';
+import { NotifyNode } from './NotifyNode';
 import { StartNode } from './StartNode';
 import { EndNode } from './EndNode';
 
 export const brickNodeTypes = {
   block: BlockNode,
   review: ReviewNode,
+  notify: NotifyNode,
   start: StartNode,
   end: EndNode,
 } as const;
 ```
 
-### 2.3 BlockNode 렌더링 사양
+### 3.3 BlockNode 렌더링 사양
 
 ```
 ┌─────────────────────────────────┐
@@ -152,7 +212,7 @@ export const brickNodeTypes = {
 | failed | #EF4444 (빨강) | #FEF2F2 | ✕ |
 | skipped | #9CA3AF (연회색) | 흰색 | ─ |
 
-### 2.4 ReviewNode 렌더링 사양
+### 3.4 ReviewNode 렌더링 사양
 
 ```
 ┌─────────────────────────────────┐
@@ -167,7 +227,34 @@ export const brickNodeTypes = {
 └─────────────────────────────────┘
 ```
 
-### 2.5 커스텀 엣지 타입
+### 3.5 NotifyNode 렌더링 사양
+
+```
+┌─────────────────────────────────┐
+│ ▼ (입력 핸들)                    │
+├──── 남색 테두리 #0EA5E9 ────────┤
+│ [🔔] 알림: {이름}          [상태]│
+│ 채널: [Slack 아이콘] #channel    │
+│ 이벤트: ✓시작 ✓완료 ✗실패       │
+│ 최근: ✓ 10:30 발송 성공          │
+├─────────────────────────────────┤
+│ ▼ (출력 핸들)                    │
+└─────────────────────────────────┘
+```
+
+| 상태 | 노드 테두리 | 배경 |
+|------|-----------|------|
+| idle | #0EA5E9 (남색) | 흰색 |
+| running | #0EA5E9 + pulse 애니메이션 | #F0F9FF |
+| done (발송 성공) | #10B981 (초록) | #ECFDF5 |
+| failed (발송 실패) | #EF4444 (빨강) | #FEF2F2 |
+
+**채널 아이콘**: Slack=#4A154B, Telegram=#0088CC, Discord=#5865F2, Webhook=#6B7280
+
+> 알림 = 블록. 체인에 끼워넣어 이전 블록 완료 → Notify 실행 → 다음 블록 진행.
+> 알림 블록이 실행됐으면 = 이전 블록 완료 확인. 알림 안 왔으면 = 체인 끊김.
+
+### 3.6 커스텀 엣지 타입
 
 ```typescript
 interface LinkEdgeData {
@@ -191,7 +278,7 @@ type LinkType =
 | cron | smoothstep, 파선, 회색 | `⏰ {cron}` |
 | branch | bezier, 실선, 초록 | `⑂ {조건}` |
 
-### 2.6 자동 레이아웃 (dagre)
+### 3.7 자동 레이아웃 (dagre)
 
 ```typescript
 // dashboard/src/lib/brick/layout.ts
@@ -202,6 +289,7 @@ import type { Node, Edge } from '@xyflow/react';
 const NODE_WIDTH = 240;
 const NODE_HEIGHT = 100;
 const REVIEW_NODE_HEIGHT = 160;
+const NOTIFY_NODE_HEIGHT = 130;
 
 export function autoLayout(
   nodes: Node[],
@@ -212,7 +300,9 @@ export function autoLayout(
   g.setGraph({ rankdir: direction, nodesep: 60, ranksep: 80 });
 
   nodes.forEach((node) => {
-    const height = node.type === 'review' ? REVIEW_NODE_HEIGHT : NODE_HEIGHT;
+    const height = node.type === 'review' ? REVIEW_NODE_HEIGHT
+                 : node.type === 'notify' ? NOTIFY_NODE_HEIGHT
+                 : NODE_HEIGHT;
     g.setNode(node.id, { width: NODE_WIDTH, height });
   });
 
@@ -224,7 +314,9 @@ export function autoLayout(
 
   return nodes.map((node) => {
     const pos = g.node(node.id);
-    const height = node.type === 'review' ? REVIEW_NODE_HEIGHT : NODE_HEIGHT;
+    const height = node.type === 'review' ? REVIEW_NODE_HEIGHT
+                 : node.type === 'notify' ? NOTIFY_NODE_HEIGHT
+                 : NODE_HEIGHT;
     return {
       ...node,
       position: {
@@ -238,7 +330,7 @@ export function autoLayout(
 
 ---
 
-## 3. zustand 캔버스 스토어
+## 4. zustand 캔버스 스토어
 
 ```typescript
 // dashboard/src/lib/brick/canvas-store.ts
@@ -344,7 +436,7 @@ export const useCanvasStore = create<CanvasState>()(
 
 ---
 
-## 4. API hooks 설계
+## 5. API hooks 설계
 
 ```typescript
 // dashboard/src/hooks/brick/useBlockTypes.ts
@@ -373,62 +465,70 @@ export function useCreateBlockType() {
 // 동일 패턴: useTeams, usePresets, useExecutions, useLearning 등
 ```
 
-### 4.1 API 연동 매핑 테이블
+### 5.1 API 연동 매핑 테이블
 
 | 그룹 | Hook | API | Method |
 |------|------|-----|--------|
-| BlockType | useBlockTypes | /api/brick/block-types | GET |
-| BlockType | useBlockType(id) | /api/brick/block-types/:id | GET |
-| BlockType | useCreateBlockType | /api/brick/block-types | POST |
-| BlockType | useUpdateBlockType | /api/brick/block-types/:id | PUT |
-| BlockType | useDeleteBlockType | /api/brick/block-types/:id | DELETE |
-| Team | useTeams | /api/brick/teams | GET |
-| Team | useTeam(id) | /api/brick/teams/:id | GET |
-| Team | useCreateTeam | /api/brick/teams | POST |
-| Team | useUpdateTeam | /api/brick/teams/:id | PUT |
-| Team | useDeleteTeam | /api/brick/teams/:id | DELETE |
-| Team | useTeamMembers(id) | /api/brick/teams/:id/members | GET |
-| Team | useAddMember | /api/brick/teams/:id/members | POST |
-| Team | useRemoveMember | /api/brick/teams/:id/members/:mid | DELETE |
-| Team | useTeamSkills(id) | /api/brick/teams/:id/skills | GET |
-| Team | useUpdateSkill | /api/brick/teams/:id/skills | PUT |
-| Team | useTeamMcpServers(id) | /api/brick/teams/:id/mcp | GET |
-| Team | useConfigureMcp | /api/brick/teams/:id/mcp | PUT |
-| Team | useTeamModel(id) | /api/brick/teams/:id/model | GET |
-| Team | useSetModel | /api/brick/teams/:id/model | PUT |
-| Team | useTeamStatus(id) | /api/brick/teams/:id/status | GET |
-| Link | useLinks(presetId) | /api/brick/presets/:id/links | GET |
-| Link | useCreateLink | /api/brick/links | POST |
-| Link | useUpdateLink | /api/brick/links/:id | PUT |
-| Link | useDeleteLink | /api/brick/links/:id | DELETE |
-| Preset | usePresets | /api/brick/presets | GET |
-| Preset | usePreset(id) | /api/brick/presets/:id | GET |
-| Preset | useCreatePreset | /api/brick/presets | POST |
-| Preset | useUpdatePreset | /api/brick/presets/:id | PUT |
-| Preset | useDeletePreset | /api/brick/presets/:id | DELETE |
-| Preset | useExportPreset | /api/brick/presets/:id/export | GET |
-| Preset | useImportPreset | /api/brick/presets/import | POST |
-| Preset | useApplyPreset | /api/brick/presets/:id/apply | POST |
-| Execution | useStartExecution | /api/brick/executions | POST |
-| Execution | usePauseExecution | /api/brick/executions/:id/pause | POST |
-| Execution | useResumeExecution | /api/brick/executions/:id/resume | POST |
-| Execution | useCancelExecution | /api/brick/executions/:id/cancel | POST |
-| Execution | useExecutionStatus | /api/brick/executions/:id | GET |
-| Execution | useExecutionLogs | /api/brick/executions/:id/logs | GET |
-| Gate | useGateResult(id) | /api/brick/gates/:id/result | GET |
-| Gate | useOverrideGate | /api/brick/gates/:id/override | POST |
-| Gate | useRetryGate | /api/brick/gates/:id/retry | POST |
-| Learning | useLearningProposals | /api/brick/learning/proposals | GET |
-| Learning | useApproveProposal | /api/brick/learning/:id/approve | POST |
-| Learning | useRejectProposal | /api/brick/learning/:id/reject | POST |
-| System | useInvariants | /api/brick/system/invariants | GET |
-| System | useSystemHealth | /api/brick/system/health | GET |
+| BlockType | useBlockTypes | /api/v1/block-types | GET |
+| BlockType | useBlockType(name) | /api/v1/block-types/:name | GET |
+| BlockType | useCreateBlockType | /api/v1/block-types | POST |
+| BlockType | useUpdateBlockType | /api/v1/block-types/:name | PUT |
+| BlockType | useDeleteBlockType | /api/v1/block-types/:name | DELETE |
+| Team | useTeams | /api/v1/teams | GET |
+| Team | useTeam(name) | /api/v1/teams/:name | GET |
+| Team | useCreateTeam | /api/v1/teams | POST |
+| Team | useUpdateTeam | /api/v1/teams/:name | PUT |
+| Team | useDeleteTeam | /api/v1/teams/:name | DELETE |
+| Team | useTeamMembers(name) | /api/v1/teams/:name/members | GET |
+| Team | useAddMember | /api/v1/teams/:name/members | POST |
+| Team | useUpdateMemberRole | /api/v1/teams/:name/members/:mid | PUT |
+| Team | useRemoveMember | /api/v1/teams/:name/members/:mid | DELETE |
+| Team | useTeamSkills(name) | /api/v1/teams/:name/skills | GET |
+| Team | useSkillContent(name, sid) | /api/v1/teams/:name/skills/:sid | GET |
+| Team | useUpdateSkill | /api/v1/teams/:name/skills/:sid | PUT |
+| Team | useTeamMcpServers(name) | /api/v1/teams/:name/mcp | GET |
+| Team | useConfigureMcp | /api/v1/teams/:name/mcp/:sid | PUT |
+| Team | useTeamModel(name) | /api/v1/teams/:name/model | GET |
+| Team | useSetModel | /api/v1/teams/:name/model | PUT |
+| Team | useTeamStatus(name) | /api/v1/teams/:name/status | GET |
+| Catalog | useLinkTypes | /api/v1/link-types | GET |
+| Catalog | useGateTypes | /api/v1/gate-types | GET |
+| Catalog | useAdapterTypes | /api/v1/adapter-types | GET |
+| Preset | usePresets | /api/v1/presets | GET |
+| Preset | usePreset(name) | /api/v1/presets/:name | GET |
+| Preset | useCreatePreset | /api/v1/presets | POST |
+| Preset | useUpdatePreset | /api/v1/presets/:name | PUT |
+| Preset | useDeletePreset | /api/v1/presets/:name | DELETE |
+| Preset | useValidatePreset | /api/v1/presets/:name/validate | POST |
+| Workflow | useWorkflows | /api/v1/workflows | GET |
+| Workflow | useStartWorkflow | /api/v1/workflows | POST |
+| Workflow | useWorkflowStatus | /api/v1/workflows/:id | GET |
+| Workflow | useWorkflowEvents | /api/v1/workflows/:id/events | GET |
+| Workflow | useBlockDetail | /api/v1/workflows/:id/blocks/:bid | GET |
+| Workflow | useCompleteBlock | /api/v1/workflows/:id/blocks/:bid/complete | POST |
+| Workflow | useApproveBlock | /api/v1/workflows/:id/blocks/:bid/approve | POST |
+| Workflow | useRejectBlock | /api/v1/workflows/:id/blocks/:bid/reject | POST |
+| Workflow | useCancelWorkflow | /api/v1/workflows/:id/cancel | POST |
+| Workflow | useResumeWorkflow | /api/v1/workflows/:id/resume | POST |
+| Learning | useLearningProposals | /api/v1/learning/proposals | GET |
+| Learning | useProposalDetail | /api/v1/learning/proposals/:id | GET |
+| Learning | useApproveProposal | /api/v1/learning/proposals/:id/approve | POST |
+| Learning | useRejectProposal | /api/v1/learning/proposals/:id/reject | POST |
+| Learning | useModifyProposal | /api/v1/learning/proposals/:id/modify | POST |
+| Learning | useLearningHistory | /api/v1/learning/history | GET |
+| Learning | useLearningStats | /api/v1/learning/stats | GET |
+| Learning | useDetectPatterns | /api/v1/learning/detect | POST |
+| Validate | useValidatePresetYaml | /api/v1/validate/preset | POST |
+| Validate | useValidateBlockType | /api/v1/validate/block-type | POST |
+| Validate | useValidateGraph | /api/v1/validate/workflow-graph | POST |
+| System | useInvariants | /api/v1/invariants | GET |
+| Resource | useResources | /api/v1/resources | GET |
 
 ---
 
-## 5. WebSocket 이벤트 처리
+## 6. WebSocket 이벤트 처리
 
-### 5.1 useLiveUpdates 확장
+### 6.1 useLiveUpdates 확장
 
 ```typescript
 // useLiveUpdates.ts 기존 switch에 추가
@@ -466,6 +566,18 @@ case 'learning_proposal':
   showLearningToast(msg.data);
   break;
 
+case 'notify':
+  queryClient.invalidateQueries({ queryKey: ['brick', 'executions'] });
+  // Notify 블록 발송 결과 → 노드 상태 업데이트
+  if (msg.data?.blockId && msg.data?.result) {
+    useCanvasStore.getState().updateBlockStatus(
+      msg.data.blockId,
+      msg.data.result === 'success' ? 'done' : 'failed'
+    );
+    showNotifyToast(msg.data);
+  }
+  break;
+
 case 'execution':
   queryClient.invalidateQueries({ queryKey: ['brick', 'executions'] });
   if (msg.data?.status === 'completed' || msg.data?.status === 'failed') {
@@ -474,7 +586,7 @@ case 'execution':
   break;
 ```
 
-### 5.2 WebSocket 메시지 스로틀
+### 6.2 WebSocket 메시지 스로틀
 
 ```typescript
 // dashboard/src/lib/brick/ws-throttle.ts
@@ -499,9 +611,9 @@ export function throttledBlockUpdate(blockId: string, status: BlockStatus) {
 
 ---
 
-## 6. YAML ↔ React Flow 직렬화
+## 7. YAML ↔ React Flow 직렬화
 
-### 6.1 YAML → React Flow 변환
+### 7.1 YAML → React Flow 변환
 
 ```typescript
 // dashboard/src/lib/brick/serializer.ts
@@ -527,7 +639,9 @@ export function yamlToFlow(yaml: PresetYaml): { nodes: Node[]; edges: Edge[] } {
   
   const nodes: Node[] = blockEntries.map(([id, block], index) => ({
     id,
-    type: block.type === 'review' ? 'review' : 'block',
+    type: block.type === 'review' ? 'review'
+        : block.type === 'notify' ? 'notify'
+        : 'block',
     position: { x: 0, y: index * 150 }, // dagre가 재배치
     data: {
       blockId: id,
@@ -585,9 +699,9 @@ export function flowToYaml(nodes: Node[], edges: Edge[]): PresetYaml {
 
 ---
 
-## 7. 화면별 상세 설계
+## 8. 화면별 상세 설계
 
-### 7.1 BrickCanvasPage 레이아웃
+### 8.1 BrickCanvasPage 레이아웃
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -612,7 +726,7 @@ export function flowToYaml(nodes: Node[], edges: Edge[]): PresetYaml {
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 7.2 BlockSidebar 드래그&드롭
+### 8.2 BlockSidebar 드래그&드롭
 
 ```typescript
 // dashboard/src/components/brick/sidebar/BlockSidebar.tsx
@@ -626,6 +740,7 @@ const BLOCK_TYPES = [
   { type: 'deploy',    icon: '🚀', label: '배포' },
   { type: 'monitor',   icon: '📊', label: '모니터' },
   { type: 'rollback',  icon: '⏪', label: '롤백' },
+  { type: 'notify',    icon: '🔔', label: '알림' },
   { type: 'custom',    icon: '⚙️', label: '커스텀' },
 ] as const;
 
@@ -649,7 +764,7 @@ function BlockSidebarItem({ type, icon, label }: BlockTypeInfo) {
 }
 ```
 
-### 7.3 DetailPanel 구조
+### 8.3 DetailPanel 구조
 
 ```typescript
 // 선택된 노드/엣지에 따라 다른 패널 렌더링
@@ -659,6 +774,7 @@ function DetailPanel() {
   if (selectedNodeId) {
     const node = useCanvasStore.getState().nodes.find(n => n.id === selectedNodeId);
     if (node?.type === 'review') return <ReviewDetailPanel nodeId={selectedNodeId} />;
+    if (node?.type === 'notify') return <NotifyConfigPanel nodeId={selectedNodeId} />;
     return <BlockDetailPanel nodeId={selectedNodeId} />;
   }
   
@@ -668,7 +784,7 @@ function DetailPanel() {
 }
 ```
 
-### 7.4 GateConfigPanel — Gate 5종 설정 UI
+### 8.4 GateConfigPanel — Gate 5종 설정 UI
 
 ```
 ┌─────────────────────────────────┐
@@ -704,7 +820,7 @@ function DetailPanel() {
 └─────────────────────────────────┘
 ```
 
-### 7.5 TeamDetailPage 레이아웃
+### 8.5 TeamDetailPage 레이아웃
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -743,7 +859,7 @@ function DetailPanel() {
 └─────────────────────────────────────────────┘
 ```
 
-### 7.6 LearningHarnessPage
+### 8.6 LearningHarnessPage
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -777,7 +893,7 @@ function DetailPanel() {
 
 ---
 
-## 8. 연결 유효성 검증
+## 9. 연결 유효성 검증
 
 ```typescript
 // dashboard/src/lib/brick/connection-validator.ts
@@ -842,9 +958,9 @@ function wouldCreateCycle(
 
 ---
 
-## 9. System Layer 표현
+## 10. System Layer 표현
 
-### 9.1 INV 위반 경고 UI
+### 10.1 INV 위반 경고 UI
 
 | INV | 규칙 | UI 표현 |
 |-----|------|---------|
@@ -855,7 +971,7 @@ function wouldCreateCycle(
 | INV-5 | Core 프리셋 수정 차단 | readonly 노드 (회색 잠금 아이콘), 드래그/삭제 불가 |
 | INV-6~10 | 기타 불변 규칙 | 배너 경고: "⚠ INV-{N} 위반: {설명}" |
 
-### 9.2 Core 프리셋 보호
+### 10.2 Core 프리셋 보호
 
 ```typescript
 // Core 프리셋 블록은 수정 불가
@@ -874,7 +990,151 @@ const onNodesDelete = useCallback((deleted: Node[]) => {
 
 ---
 
-## 10. 파일 구조
+## 11. Notify 블록 + Channel Adapter
+
+> **핵심 원칙**: 알림 = 블록. 체인의 시작/완료/실패 이벤트를 외부로 전달하는 것도 블록으로 표현한다.
+
+### 11.1 Channel Adapter 타입 정의
+
+```typescript
+// dashboard/src/lib/brick/channel-adapter.ts
+
+/** Channel Adapter 공통 인터페이스 */
+interface ChannelAdapterConfig {
+  type: NotifyChannel;
+  name: string;         // 어댑터 표시명
+  icon: string;         // 채널 아이콘
+  color: string;        // 채널 브랜드 색상
+}
+
+/** Slack Adapter */
+interface SlackAdapterConfig extends ChannelAdapterConfig {
+  type: 'slack';
+  webhookUrl?: string;        // Incoming Webhook URL
+  botToken?: string;          // Bot API Token (대안)
+  defaultChannel?: string;    // 기본 채널 (#general)
+}
+
+/** Telegram Adapter */
+interface TelegramAdapterConfig extends ChannelAdapterConfig {
+  type: 'telegram';
+  botToken: string;           // Bot API Token
+  chatId: string;             // Chat ID (그룹/개인)
+}
+
+/** Discord Adapter */
+interface DiscordAdapterConfig extends ChannelAdapterConfig {
+  type: 'discord';
+  webhookUrl: string;         // Discord Webhook URL
+}
+
+/** Generic Webhook Adapter */
+interface WebhookAdapterConfig extends ChannelAdapterConfig {
+  type: 'webhook';
+  url: string;                // POST 대상 URL
+  headers?: Record<string, string>; // 커스텀 헤더
+  payloadTemplate?: string;   // Handlebars 템플릿
+}
+
+type AnyAdapterConfig =
+  | SlackAdapterConfig
+  | TelegramAdapterConfig
+  | DiscordAdapterConfig
+  | WebhookAdapterConfig;
+
+/** Channel Adapter 레지스트리 */
+const CHANNEL_ADAPTERS: Record<NotifyChannel, ChannelAdapterConfig> = {
+  slack:    { type: 'slack',    name: 'Slack',    icon: 'slack',    color: '#4A154B' },
+  telegram: { type: 'telegram', name: 'Telegram', icon: 'send',     color: '#0088CC' },
+  discord:  { type: 'discord',  name: 'Discord',  icon: 'message-circle', color: '#5865F2' },
+  webhook:  { type: 'webhook',  name: 'Webhook',  icon: 'globe',    color: '#6B7280' },
+};
+```
+
+### 11.2 Notify 블록 실행 흐름
+
+```
+이전 블록 완료
+     │
+     ▼
+┌──────────┐
+│ Notify   │  1. config에서 channel + target 읽기
+│ 블록     │  2. Channel Adapter 인스턴스 생성
+│          │  3. 페이로드 조립 (템플릿 + 컨텍스트)
+│          │  4. adapter.send(target, payload)
+│          │  5. 결과 기록 (lastSentAt, lastResult)
+└──────┬───┘
+       │
+       ▼
+  다음 블록 진행
+```
+
+**YAML 사용 예시**:
+```yaml
+blocks:
+  - id: do
+    type: implement
+    team: cto-team
+  - id: notify-done
+    type: notify
+    config:
+      channel: slack
+      target: C0AN7ATS4DD
+      events: [complete, fail]
+  - id: qa
+    type: test
+    team: qa-team
+
+links:
+  - { from: do, to: notify-done, type: sequential }
+  - { from: notify-done, to: qa, type: sequential }
+```
+
+### 11.3 NotifyConfigPanel 와이어프레임
+
+```
+┌─────────────────────────────────┐
+│ 알림 설정                        │
+├─────────────────────────────────┤
+│ 채널 선택:                       │
+│ ┌────┐ ┌────┐ ┌────┐ ┌────┐   │
+│ │Slack│ │Tele│ │Disc│ │Hook│   │
+│ │ ●  │ │ ○  │ │ ○  │ │ ○  │   │
+│ └────┘ └────┘ └────┘ └────┘   │
+│                                 │
+│ ┌─ Slack 설정 ───────────────┐  │
+│ │ 대상: [C0AN7ATS4DD      ]  │  │
+│ │ 방식: ◉ Webhook ○ Bot API  │  │
+│ │ URL:  [https://hooks.sl...] │  │
+│ └────────────────────────────┘  │
+│                                 │
+│ 트리거 이벤트:                    │
+│ ☑ 시작 (이전 블록 시작 시)        │
+│ ☑ 완료 (이전 블록 완료 시)        │
+│ ☑ 실패 (이전 블록 실패 시)        │
+│                                 │
+│ 페이로드 템플릿: (선택)           │
+│ ┌─ 편집기 ───────────────────┐  │
+│ │ {{blockName}} {{status}}   │  │
+│ │ 실행: {{executionId}}       │  │
+│ └────────────────────────────┘  │
+│                                 │
+│ [테스트 발송]        [적용]      │
+└─────────────────────────────────┘
+```
+
+### 11.4 체인 모니터링 관점
+
+| 상황 | 의미 | UI 표현 |
+|------|------|---------|
+| Notify 블록 done | 이전 블록 완료 확인 + 알림 발송 성공 | 초록 테두리 + ✓ |
+| Notify 블록 failed | 알림 발송 실패 (채널 오류) | 빨간 테두리 + 재시도 버튼 |
+| Notify 블록 idle | 아직 도달하지 않음 = 이전 블록 미완료 | 남색 테두리 |
+| 알림 안 옴 | 체인 끊김 (이전 블록에서 멈춤) | 타임라인에 ⚠ 경고 |
+
+---
+
+## 12. 파일 구조
 
 ```
 dashboard/
@@ -897,6 +1157,7 @@ dashboard/
 │   │   │   ├── nodes/
 │   │   │   │   ├── BlockNode.tsx        — 블록 노드 컴포넌트
 │   │   │   │   ├── ReviewNode.tsx       — 리뷰 노드 컴포넌트
+│   │   │   │   ├── NotifyNode.tsx       — 알림 노드 컴포넌트
 │   │   │   │   ├── StartNode.tsx        — 시작 노드
 │   │   │   │   ├── EndNode.tsx          — 종료 노드
 │   │   │   │   ├── types.ts            — 노드 타입 정의
@@ -912,6 +1173,7 @@ dashboard/
 │   │   │   │   ├── BlockDetailPanel.tsx — 블록 상세 편집
 │   │   │   │   ├── LinkDetailPanel.tsx  — 링크 조건 편집
 │   │   │   │   ├── GateConfigPanel.tsx  — Gate 5종 설정
+│   │   │   │   ├── NotifyConfigPanel.tsx — 알림 채널 설정
 │   │   │   │   ├── TeamAssignPanel.tsx  — 팀 배정
 │   │   │   │   └── ReviewDetailPanel.tsx — 리뷰 상세
 │   │   │   ├── toolbar/
@@ -944,6 +1206,7 @@ dashboard/
 │           ├── serializer.ts            — YAML ↔ React Flow 변환
 │           ├── layout.ts                — dagre 자동 레이아웃
 │           ├── connection-validator.ts   — 연결 유효성 검증
+│           ├── channel-adapter.ts       — Channel Adapter 타입 + 레지스트리
 │           └── ws-throttle.ts           — WebSocket 스로틀
 └── __tests__/
     └── brick/
@@ -953,8 +1216,10 @@ dashboard/
         ├── connection-validator.test.ts
         ├── nodes/BlockNode.test.tsx
         ├── nodes/ReviewNode.test.tsx
+        ├── nodes/NotifyNode.test.tsx
         ├── edges/LinkEdge.test.tsx
         ├── panels/GateConfigPanel.test.tsx
+        ├── panels/NotifyConfigPanel.test.tsx
         ├── panels/BlockDetailPanel.test.tsx
         ├── hooks/useBlockTypes.test.ts
         ├── hooks/useTeams.test.ts
@@ -966,34 +1231,34 @@ dashboard/
 
 ---
 
-## 11. TDD 매핑 테이블
+## 13. TDD 매핑 테이블
 
 ### Phase 1: 기반 구축 (BF-001 ~ BF-025)
 
 | ID | 섹션 | 테스트 케이스 | 검증 대상 |
 |----|------|-------------|----------|
-| BF-001 | §2.1 | BlockNode 렌더링 — 9종 블록 타입별 아이콘+이름 표시 | BlockNode.tsx |
-| BF-002 | §2.3 | BlockNode 상태별 테두리 색상 변경 (7가지 상태) | BlockNode.tsx |
-| BF-003 | §2.3 | BlockNode running 상태 시 회전 아이콘 애니메이션 | BlockNode.tsx |
-| BF-004 | §2.4 | ReviewNode 보라색 테두리 #8B5CF6 렌더링 | ReviewNode.tsx |
-| BF-005 | §2.4 | ReviewNode 체크리스트 진행률 바 표시 | ReviewNode.tsx |
-| BF-006 | §2.4 | ReviewNode 리뷰어 아바타 표시 | ReviewNode.tsx |
-| BF-007 | §2.4 | ReviewNode 승인/변경요청/거부 버튼 렌더링 | ReviewNode.tsx |
-| BF-008 | §2.5 | LinkEdge 6종 타입별 스타일 (실선/점선/색상) | LinkEdge.tsx |
-| BF-009 | §2.5 | LinkEdge 라벨 표시 (sequential=없음, parallel=∥, compete=⚔) | LinkEdge.tsx |
-| BF-010 | §2.5 | LinkEdge isActive=true 시 애니메이션 | LinkEdge.tsx |
-| BF-011 | §2.6 | autoLayout TB 방향 노드 배치 | layout.ts |
-| BF-012 | §2.6 | autoLayout LR 방향 노드 배치 | layout.ts |
-| BF-013 | §2.6 | autoLayout ReviewNode 높이 차이 반영 (160px vs 100px) | layout.ts |
-| BF-014 | §7.1 | BrickCanvasPage 4영역 레이아웃 (toolbar/sidebar/canvas/timeline) | BrickCanvasPage.tsx |
-| BF-015 | §7.2 | BlockSidebar 9종 블록 타입 드래그 가능 | BlockSidebar.tsx |
-| BF-016 | §7.2 | 캔버스에 드롭 시 새 노드 생성 | BrickCanvasPage.tsx |
-| BF-017 | §7.2 | 드롭 위치 → screenToFlowPosition 변환 | BrickCanvasPage.tsx |
-| BF-018 | §2.2 | brickNodeTypes 4종 등록 (block/review/start/end) | nodes/index.ts |
-| BF-019 | §2.5 | brickEdgeTypes 1종 등록 (link) | edges/index.ts |
-| BF-020 | §7.1 | MiniMap 렌더링 | BrickCanvasPage.tsx |
-| BF-021 | §7.1 | Controls (줌인/줌아웃) 렌더링 | BrickCanvasPage.tsx |
-| BF-022 | §7.1 | Background (도트 그리드) 렌더링 | BrickCanvasPage.tsx |
+| BF-001 | §3.1 | BlockNode 렌더링 — 10종 블록 타입별 아이콘+이름 표시 (notify 포함) | BlockNode.tsx |
+| BF-002 | §3.3 | BlockNode 상태별 테두리 색상 변경 (7가지 상태) | BlockNode.tsx |
+| BF-003 | §3.3 | BlockNode running 상태 시 회전 아이콘 애니메이션 | BlockNode.tsx |
+| BF-004 | §3.4 | ReviewNode 보라색 테두리 #8B5CF6 렌더링 | ReviewNode.tsx |
+| BF-005 | §3.4 | ReviewNode 체크리스트 진행률 바 표시 | ReviewNode.tsx |
+| BF-006 | §3.4 | ReviewNode 리뷰어 아바타 표시 | ReviewNode.tsx |
+| BF-007 | §3.4 | ReviewNode 승인/변경요청/거부 버튼 렌더링 | ReviewNode.tsx |
+| BF-008 | §3.5 | LinkEdge 6종 타입별 스타일 (실선/점선/색상) | LinkEdge.tsx |
+| BF-009 | §3.5 | LinkEdge 라벨 표시 (sequential=없음, parallel=∥, compete=⚔) | LinkEdge.tsx |
+| BF-010 | §3.5 | LinkEdge isActive=true 시 애니메이션 | LinkEdge.tsx |
+| BF-011 | §3.7 | autoLayout TB 방향 노드 배치 | layout.ts |
+| BF-012 | §3.7 | autoLayout LR 방향 노드 배치 | layout.ts |
+| BF-013 | §3.7 | autoLayout ReviewNode 높이 차이 반영 (160px vs 100px) | layout.ts |
+| BF-014 | §8.1 | BrickCanvasPage 4영역 레이아웃 (toolbar/sidebar/canvas/timeline) | BrickCanvasPage.tsx |
+| BF-015 | §8.2 | BlockSidebar 10종 블록 타입 드래그 가능 (notify 포함) | BlockSidebar.tsx |
+| BF-016 | §8.2 | 캔버스에 드롭 시 새 노드 생성 | BrickCanvasPage.tsx |
+| BF-017 | §8.2 | 드롭 위치 → screenToFlowPosition 변환 | BrickCanvasPage.tsx |
+| BF-018 | §3.2 | brickNodeTypes 5종 등록 (block/review/notify/start/end) | nodes/index.ts |
+| BF-019 | §3.5 | brickEdgeTypes 1종 등록 (link) | edges/index.ts |
+| BF-020 | §8.1 | MiniMap 렌더링 | BrickCanvasPage.tsx |
+| BF-021 | §8.1 | Controls (줌인/줌아웃) 렌더링 | BrickCanvasPage.tsx |
+| BF-022 | §8.1 | Background (도트 그리드) 렌더링 | BrickCanvasPage.tsx |
 | BF-023 | §10 | 라우트 /brick/canvas/:id 접근 가능 | App.tsx |
 | BF-024 | §10 | 라우트 /brick 접근 가능 | App.tsx |
 | BF-025 | §3.1 | 사이드바에 Brick 섹션 메뉴 표시 | Layout.tsx |
@@ -1002,139 +1267,177 @@ dashboard/
 
 | ID | 섹션 | 테스트 케이스 | 검증 대상 |
 |----|------|-------------|----------|
-| BF-026 | §4.1 | useBlockTypes — GET /api/brick/block-types 호출 | useBlockTypes.ts |
-| BF-027 | §4.1 | useCreateBlockType — POST /api/brick/block-types 호출 | useBlockTypes.ts |
-| BF-028 | §4.1 | useUpdateBlockType — PUT 호출 후 queryKey 무효화 | useBlockTypes.ts |
-| BF-029 | §4.1 | useDeleteBlockType — DELETE 호출 후 queryKey 무효화 | useBlockTypes.ts |
-| BF-030 | §7 | BlockCatalogPage 블록 타입 그리드 렌더링 | BlockCatalogPage.tsx |
-| BF-031 | §7 | BlockCatalogPage 생성 모달 열기/닫기 | BlockCatalogPage.tsx |
-| BF-032 | §4.1 | useTeams — GET /api/brick/teams 호출 | useTeams.ts |
-| BF-033 | §4.1 | useCreateTeam — POST /api/brick/teams 호출 | useTeams.ts |
-| BF-034 | §4.1 | useDeleteTeam — DELETE 후 무효화 | useTeams.ts |
-| BF-035 | §7.5 | TeamManagePage 팀 목록 카드 렌더링 | TeamManagePage.tsx |
-| BF-036 | §7.5 | TeamDetailPage 4탭 렌더링 (팀원/스킬/MCP/모델) | TeamDetailPage.tsx |
-| BF-037 | §7.5 | TeamMemberList 팀원 추가/제거 | TeamMemberList.tsx |
-| BF-038 | §7.5 | SkillEditor Monaco 에디터 렌더링 + 저장 | SkillEditor.tsx |
-| BF-039 | §7.5 | McpServerList 토글 ON/OFF | McpServerList.tsx |
-| BF-040 | §7.5 | ModelSelector 라디오 버튼 선택 | ModelSelector.tsx |
-| BF-041 | §7.5 | AdapterSelector 드롭다운 선택 | AdapterSelector.tsx |
-| BF-042 | §4.1 | useTeamMembers — GET /api/brick/teams/:id/members 호출 | useTeams.ts |
-| BF-043 | §4.1 | useAddMember — POST 호출 | useTeams.ts |
-| BF-044 | §4.1 | useRemoveMember — DELETE 호출 | useTeams.ts |
-| BF-045 | §4.1 | useUpdateSkill — PUT /api/brick/teams/:id/skills 호출 | useTeams.ts |
-| BF-046 | §4.1 | useConfigureMcp — PUT /api/brick/teams/:id/mcp 호출 | useTeams.ts |
-| BF-047 | §4.1 | useSetModel — PUT /api/brick/teams/:id/model 호출 | useTeams.ts |
-| BF-048 | §4.1 | usePresets — GET /api/brick/presets 호출 | usePresets.ts |
-| BF-049 | §4.1 | useCreatePreset — POST 호출 | usePresets.ts |
-| BF-050 | §7 | PresetListPage 프리셋 카드 그리드 렌더링 | PresetListPage.tsx |
-| BF-051 | §7 | PresetEditorPage Monaco YAML 에디터 렌더링 | PresetEditorPage.tsx |
-| BF-052 | §4.1 | useExportPreset — GET /api/brick/presets/:id/export 호출 | usePresets.ts |
-| BF-053 | §4.1 | useImportPreset — POST /api/brick/presets/import 호출 | usePresets.ts |
-| BF-054 | §4.1 | useApplyPreset — POST 호출 후 캔버스 갱신 | usePresets.ts |
-| BF-055 | §7.5 | useTeamStatus — 실시간 상태 배지 (idle/running/stuck/dead) | useTeams.ts |
+| BF-026 | §6.1 | useBlockTypes — GET /api/brick/block-types 호출 | useBlockTypes.ts |
+| BF-027 | §6.1 | useCreateBlockType — POST /api/brick/block-types 호출 | useBlockTypes.ts |
+| BF-028 | §6.1 | useUpdateBlockType — PUT 호출 후 queryKey 무효화 | useBlockTypes.ts |
+| BF-029 | §6.1 | useDeleteBlockType — DELETE 호출 후 queryKey 무효화 | useBlockTypes.ts |
+| BF-030 | §9 | BlockCatalogPage 블록 타입 그리드 렌더링 | BlockCatalogPage.tsx |
+| BF-031 | §9 | BlockCatalogPage 생성 모달 열기/닫기 | BlockCatalogPage.tsx |
+| BF-032 | §6.1 | useTeams — GET /api/brick/teams 호출 | useTeams.ts |
+| BF-033 | §6.1 | useCreateTeam — POST /api/brick/teams 호출 | useTeams.ts |
+| BF-034 | §6.1 | useDeleteTeam — DELETE 후 무효화 | useTeams.ts |
+| BF-035 | §8.5 | TeamManagePage 팀 목록 카드 렌더링 | TeamManagePage.tsx |
+| BF-036 | §8.5 | TeamDetailPage 4탭 렌더링 (팀원/스킬/MCP/모델) | TeamDetailPage.tsx |
+| BF-037 | §8.5 | TeamMemberList 팀원 추가/제거 | TeamMemberList.tsx |
+| BF-038 | §8.5 | SkillEditor Monaco 에디터 렌더링 + 저장 | SkillEditor.tsx |
+| BF-039 | §8.5 | McpServerList 토글 ON/OFF | McpServerList.tsx |
+| BF-040 | §8.5 | ModelSelector 라디오 버튼 선택 | ModelSelector.tsx |
+| BF-041 | §8.5 | AdapterSelector 드롭다운 선택 | AdapterSelector.tsx |
+| BF-042 | §6.1 | useTeamMembers — GET /api/brick/teams/:id/members 호출 | useTeams.ts |
+| BF-043 | §6.1 | useAddMember — POST 호출 | useTeams.ts |
+| BF-044 | §6.1 | useRemoveMember — DELETE 호출 | useTeams.ts |
+| BF-045 | §6.1 | useUpdateSkill — PUT /api/brick/teams/:id/skills 호출 | useTeams.ts |
+| BF-046 | §6.1 | useConfigureMcp — PUT /api/brick/teams/:id/mcp 호출 | useTeams.ts |
+| BF-047 | §6.1 | useSetModel — PUT /api/brick/teams/:id/model 호출 | useTeams.ts |
+| BF-048 | §6.1 | usePresets — GET /api/brick/presets 호출 | usePresets.ts |
+| BF-049 | §6.1 | useCreatePreset — POST 호출 | usePresets.ts |
+| BF-050 | §9 | PresetListPage 프리셋 카드 그리드 렌더링 | PresetListPage.tsx |
+| BF-051 | §9 | PresetEditorPage Monaco YAML 에디터 렌더링 | PresetEditorPage.tsx |
+| BF-052 | §6.1 | useExportPreset — GET /api/brick/presets/:id/export 호출 | usePresets.ts |
+| BF-053 | §6.1 | useImportPreset — POST /api/brick/presets/import 호출 | usePresets.ts |
+| BF-054 | §6.1 | useApplyPreset — POST 호출 후 캔버스 갱신 | usePresets.ts |
+| BF-055 | §8.5 | useTeamStatus — 실시간 상태 배지 (idle/running/stuck/dead) | useTeams.ts |
 
 ### Phase 3: 캔버스 인터랙션 (BF-056 ~ BF-080)
 
 | ID | 섹션 | 테스트 케이스 | 검증 대상 |
 |----|------|-------------|----------|
-| BF-056 | §7.3 | DetailPanel 노드 선택 시 BlockDetailPanel 표시 | DetailPanel.tsx |
-| BF-057 | §7.3 | DetailPanel 엣지 선택 시 LinkDetailPanel 표시 | DetailPanel.tsx |
-| BF-058 | §7.3 | DetailPanel 리뷰 노드 선택 시 ReviewDetailPanel 표시 | DetailPanel.tsx |
-| BF-059 | §7.3 | DetailPanel 선택 해제 시 EmptyDetailPanel 표시 | DetailPanel.tsx |
-| BF-060 | §7.4 | GateConfigPanel Gate 추가 버튼 | GateConfigPanel.tsx |
-| BF-061 | §7.4 | GateConfigPanel command Gate 설정 (명령어/타임아웃/실패시) | GateConfigPanel.tsx |
-| BF-062 | §7.4 | GateConfigPanel http Gate 설정 (URL/메서드/상태코드) | GateConfigPanel.tsx |
-| BF-063 | §7.4 | GateConfigPanel prompt Gate 설정 (프롬프트/모델/신뢰도/투표) | GateConfigPanel.tsx |
-| BF-064 | §7.4 | GateConfigPanel agent Gate 설정 (프롬프트/도구/최대턴) | GateConfigPanel.tsx |
-| BF-065 | §7.4 | GateConfigPanel review Gate 설정 (리뷰어/전략/타임아웃) | GateConfigPanel.tsx |
-| BF-066 | §7.4 | GateConfigPanel Gate 삭제 | GateConfigPanel.tsx |
-| BF-067 | §7.4 | GateConfigPanel auto 실행 방식 선택 (sequential/parallel/voting) | GateConfigPanel.tsx |
-| BF-068 | §8 | 연결 시 Link 타입 선택 다이얼로그 | BrickCanvasPage.tsx |
-| BF-069 | §8 | validateConnection DAG 순환 방지 (INV-1) | connection-validator.ts |
-| BF-070 | §8 | validateConnection 자기 참조 방지 (INV-2) | connection-validator.ts |
-| BF-071 | §8 | validateConnection 중복 연결 방지 (INV-3) | connection-validator.ts |
-| BF-072 | §6 | yamlToFlow — YAML → Node/Edge 변환 | serializer.ts |
-| BF-073 | §6 | flowToYaml — Node/Edge → YAML 변환 | serializer.ts |
-| BF-074 | §6 | yamlToFlow + flowToYaml 왕복 일관성 | serializer.ts |
-| BF-075 | §3 | useCanvasStore undo — 노드 추가 후 undo 시 복원 | canvas-store.ts |
-| BF-076 | §3 | useCanvasStore redo — undo 후 redo 시 재적용 | canvas-store.ts |
-| BF-077 | §3 | useCanvasStore isDirty — 변경 시 true, 저장 후 false | canvas-store.ts |
-| BF-078 | §7.1 | 캔버스 저장 버튼 클릭 → flowToYaml → PUT API | BrickCanvasPage.tsx |
-| BF-079 | §7.1 | 캔버스 로드 → GET API → yamlToFlow → 노드/엣지 세팅 | BrickCanvasPage.tsx |
-| BF-080 | §9.2 | Core 프리셋 블록 삭제 시도 → 차단 + 토스트 | BrickCanvasPage.tsx |
+| BF-056 | §8.3 | DetailPanel 노드 선택 시 BlockDetailPanel 표시 | DetailPanel.tsx |
+| BF-057 | §8.3 | DetailPanel 엣지 선택 시 LinkDetailPanel 표시 | DetailPanel.tsx |
+| BF-058 | §8.3 | DetailPanel 리뷰 노드 선택 시 ReviewDetailPanel 표시 | DetailPanel.tsx |
+| BF-059 | §8.3 | DetailPanel 선택 해제 시 EmptyDetailPanel 표시 | DetailPanel.tsx |
+| BF-060 | §8.4 | GateConfigPanel Gate 추가 버튼 | GateConfigPanel.tsx |
+| BF-061 | §8.4 | GateConfigPanel command Gate 설정 (명령어/타임아웃/실패시) | GateConfigPanel.tsx |
+| BF-062 | §8.4 | GateConfigPanel http Gate 설정 (URL/메서드/상태코드) | GateConfigPanel.tsx |
+| BF-063 | §8.4 | GateConfigPanel prompt Gate 설정 (프롬프트/모델/신뢰도/투표) | GateConfigPanel.tsx |
+| BF-064 | §8.4 | GateConfigPanel agent Gate 설정 (프롬프트/도구/최대턴) | GateConfigPanel.tsx |
+| BF-065 | §8.4 | GateConfigPanel review Gate 설정 (리뷰어/전략/타임아웃) | GateConfigPanel.tsx |
+| BF-066 | §8.4 | GateConfigPanel Gate 삭제 | GateConfigPanel.tsx |
+| BF-067 | §8.4 | GateConfigPanel auto 실행 방식 선택 (sequential/parallel/voting) | GateConfigPanel.tsx |
+| BF-068 | §9 | 연결 시 Link 타입 선택 다이얼로그 | BrickCanvasPage.tsx |
+| BF-069 | §9 | validateConnection DAG 순환 방지 (INV-1) | connection-validator.ts |
+| BF-070 | §9 | validateConnection 자기 참조 방지 (INV-2) | connection-validator.ts |
+| BF-071 | §9 | validateConnection 중복 연결 방지 (INV-3) | connection-validator.ts |
+| BF-072 | §9 | yamlToFlow — YAML → Node/Edge 변환 | serializer.ts |
+| BF-073 | §9 | flowToYaml — Node/Edge → YAML 변환 | serializer.ts |
+| BF-074 | §9 | yamlToFlow + flowToYaml 왕복 일관성 | serializer.ts |
+| BF-075 | §4 | useCanvasStore undo — 노드 추가 후 undo 시 복원 | canvas-store.ts |
+| BF-076 | §4 | useCanvasStore redo — undo 후 redo 시 재적용 | canvas-store.ts |
+| BF-077 | §4 | useCanvasStore isDirty — 변경 시 true, 저장 후 false | canvas-store.ts |
+| BF-078 | §8.1 | 캔버스 저장 버튼 클릭 → flowToYaml → PUT API | BrickCanvasPage.tsx |
+| BF-079 | §8.1 | 캔버스 로드 → GET API → yamlToFlow → 노드/엣지 세팅 | BrickCanvasPage.tsx |
+| BF-080 | §10.2 | Core 프리셋 블록 삭제 시도 → 차단 + 토스트 | BrickCanvasPage.tsx |
 
 ### Phase 4: 실시간 모니터링 (BF-081 ~ BF-100)
 
 | ID | 섹션 | 테스트 케이스 | 검증 대상 |
 |----|------|-------------|----------|
-| BF-081 | §5.1 | WebSocket block 메시지 → updateBlockStatus 호출 | useLiveUpdates.ts |
-| BF-082 | §5.1 | WebSocket gate 메시지 → Gate 토스트 표시 | useLiveUpdates.ts |
-| BF-083 | §5.1 | WebSocket team 메시지 → teams 쿼리 무효화 | useLiveUpdates.ts |
-| BF-084 | §5.1 | WebSocket review_requested → 리뷰 알림 팝업 | useLiveUpdates.ts |
-| BF-085 | §5.1 | WebSocket learning_proposal → 학습 토스트 | useLiveUpdates.ts |
-| BF-086 | §5.1 | WebSocket execution completed → isExecuting false | useLiveUpdates.ts |
-| BF-087 | §5.2 | throttledBlockUpdate — 16ms 내 배치 처리 | ws-throttle.ts |
-| BF-088 | §7.1 | CanvasToolbar 실행 버튼 → useStartExecution 호출 | CanvasToolbar.tsx |
-| BF-089 | §7.1 | CanvasToolbar 일시정지 버튼 → usePauseExecution 호출 | CanvasToolbar.tsx |
-| BF-090 | §7.1 | CanvasToolbar 재개 버튼 → useResumeExecution 호출 | CanvasToolbar.tsx |
-| BF-091 | §7.1 | CanvasToolbar 중지 버튼 → useCancelExecution 호출 | CanvasToolbar.tsx |
-| BF-092 | §7.1 | 실행 중 블록 상태 변경 시 노드 색상 실시간 변경 | BrickCanvasPage.tsx |
-| BF-093 | §7.1 | 실행 중 활성 링크 isActive=true → 애니메이션 | BrickCanvasPage.tsx |
-| BF-094 | §7.1 | ExecutionTimeline 블록 완료 이벤트 표시 | ExecutionTimeline.tsx |
-| BF-095 | §7.1 | ExecutionTimeline 에러 이벤트 빨간 표시 | ExecutionTimeline.tsx |
-| BF-096 | §9.1 | INV 위반 시 빨간 테두리 + 경고 배너 | BrickCanvasPage.tsx |
-| BF-097 | §4.1 | useExecutionStatus — GET /api/brick/executions/:id 호출 | useExecutions.ts |
-| BF-098 | §4.1 | useExecutionLogs — GET /api/brick/executions/:id/logs 호출 | useExecutions.ts |
-| BF-099 | §7 | RunHistoryPage 실행 이력 목록 렌더링 | RunHistoryPage.tsx |
-| BF-100 | §7 | RunDetailPage 실행 상세 + 로그 표시 | RunDetailPage.tsx |
+| BF-081 | §6.1 | WebSocket block 메시지 → updateBlockStatus 호출 | useLiveUpdates.ts |
+| BF-082 | §6.1 | WebSocket gate 메시지 → Gate 토스트 표시 | useLiveUpdates.ts |
+| BF-083 | §6.1 | WebSocket team 메시지 → teams 쿼리 무효화 | useLiveUpdates.ts |
+| BF-084 | §6.1 | WebSocket review_requested → 리뷰 알림 팝업 | useLiveUpdates.ts |
+| BF-085 | §6.1 | WebSocket learning_proposal → 학습 토스트 | useLiveUpdates.ts |
+| BF-086 | §6.1 | WebSocket execution completed → isExecuting false | useLiveUpdates.ts |
+| BF-087 | §6.2 | throttledBlockUpdate — 16ms 내 배치 처리 | ws-throttle.ts |
+| BF-088 | §8.1 | CanvasToolbar 실행 버튼 → useStartExecution 호출 | CanvasToolbar.tsx |
+| BF-089 | §8.1 | CanvasToolbar 일시정지 버튼 → usePauseExecution 호출 | CanvasToolbar.tsx |
+| BF-090 | §8.1 | CanvasToolbar 재개 버튼 → useResumeExecution 호출 | CanvasToolbar.tsx |
+| BF-091 | §8.1 | CanvasToolbar 중지 버튼 → useCancelExecution 호출 | CanvasToolbar.tsx |
+| BF-092 | §8.1 | 실행 중 블록 상태 변경 시 노드 색상 실시간 변경 | BrickCanvasPage.tsx |
+| BF-093 | §8.1 | 실행 중 활성 링크 isActive=true → 애니메이션 | BrickCanvasPage.tsx |
+| BF-094 | §8.1 | ExecutionTimeline 블록 완료 이벤트 표시 | ExecutionTimeline.tsx |
+| BF-095 | §8.1 | ExecutionTimeline 에러 이벤트 빨간 표시 | ExecutionTimeline.tsx |
+| BF-096 | §11.1 | INV 위반 시 빨간 테두리 + 경고 배너 | BrickCanvasPage.tsx |
+| BF-097 | §6.1 | useExecutionStatus — GET /api/brick/executions/:id 호출 | useExecutions.ts |
+| BF-098 | §6.1 | useExecutionLogs — GET /api/brick/executions/:id/logs 호출 | useExecutions.ts |
+| BF-099 | §9 | RunHistoryPage 실행 이력 목록 렌더링 | RunHistoryPage.tsx |
+| BF-100 | §9 | RunDetailPage 실행 상세 + 로그 표시 | RunDetailPage.tsx |
 
 ### Phase 5: Review + Learning + 마무리 (BF-101 ~ BF-120)
 
 | ID | 섹션 | 테스트 케이스 | 검증 대상 |
 |----|------|-------------|----------|
-| BF-101 | §7.4 | ReviewDetailPanel 체크리스트 항목 체크/언체크 | ReviewDetailPanel.tsx |
-| BF-102 | §7.4 | ReviewDetailPanel 산출물 diff 뷰 | ReviewDetailPanel.tsx |
-| BF-103 | §7.4 | ReviewDetailPanel 인라인 코멘트 작성 | ReviewDetailPanel.tsx |
-| BF-104 | §7.4 | ReviewDetailPanel 승인 → API 호출 + 상태 변경 | ReviewDetailPanel.tsx |
-| BF-105 | §7.4 | ReviewDetailPanel 거부 → 사유 입력 + 팀 컨텍스트 주입 | ReviewDetailPanel.tsx |
-| BF-106 | §7.4 | ReviewDetailPanel 변경요청 → 코멘트 목록 | ReviewDetailPanel.tsx |
-| BF-107 | §2.4 | ReviewNode 승인 시 초록 테두리 전환 | ReviewNode.tsx |
-| BF-108 | §2.4 | ReviewNode 거부 시 빨간 테두리 전환 | ReviewNode.tsx |
-| BF-109 | §7.6 | LearningHarnessPage 제안 목록 렌더링 | LearningHarnessPage.tsx |
-| BF-110 | §7.6 | ProposalDetail 변경 전/후 diff 표시 | ProposalDetail.tsx |
-| BF-111 | §7.6 | ProposalDetail 근거 텍스트 표시 | ProposalDetail.tsx |
-| BF-112 | §7.6 | ApproveRejectForm 승인 + 코멘트 → API 호출 | ApproveRejectForm.tsx |
-| BF-113 | §7.6 | ApproveRejectForm 거부 + 사유 → API 호출 | ApproveRejectForm.tsx |
-| BF-114 | §4.1 | useLearningProposals — GET /api/brick/learning/proposals | useLearning.ts |
-| BF-115 | §4.1 | useApproveProposal — POST /api/brick/learning/:id/approve | useLearning.ts |
-| BF-116 | §4.1 | useRejectProposal — POST /api/brick/learning/:id/reject | useLearning.ts |
-| BF-117 | §4.1 | useGateResult — GET /api/brick/gates/:id/result | useGates.ts |
-| BF-118 | §4.1 | useOverrideGate — POST /api/brick/gates/:id/override | useGates.ts |
-| BF-119 | §4.1 | useInvariants — GET /api/brick/system/invariants | hooks |
-| BF-120 | §7 | BrickOverviewPage 워크플로우 목록 + 상태 배지 | BrickOverviewPage.tsx |
+| BF-101 | §8.4 | ReviewDetailPanel 체크리스트 항목 체크/언체크 | ReviewDetailPanel.tsx |
+| BF-102 | §8.4 | ReviewDetailPanel 산출물 diff 뷰 | ReviewDetailPanel.tsx |
+| BF-103 | §8.4 | ReviewDetailPanel 인라인 코멘트 작성 | ReviewDetailPanel.tsx |
+| BF-104 | §8.4 | ReviewDetailPanel 승인 → API 호출 + 상태 변경 | ReviewDetailPanel.tsx |
+| BF-105 | §8.4 | ReviewDetailPanel 거부 → 사유 입력 + 팀 컨텍스트 주입 | ReviewDetailPanel.tsx |
+| BF-106 | §8.4 | ReviewDetailPanel 변경요청 → 코멘트 목록 | ReviewDetailPanel.tsx |
+| BF-107 | §3.4 | ReviewNode 승인 시 초록 테두리 전환 | ReviewNode.tsx |
+| BF-108 | §3.4 | ReviewNode 거부 시 빨간 테두리 전환 | ReviewNode.tsx |
+| BF-109 | §8.6 | LearningHarnessPage 제안 목록 렌더링 | LearningHarnessPage.tsx |
+| BF-110 | §8.6 | ProposalDetail 변경 전/후 diff 표시 | ProposalDetail.tsx |
+| BF-111 | §8.6 | ProposalDetail 근거 텍스트 표시 | ProposalDetail.tsx |
+| BF-112 | §8.6 | ApproveRejectForm 승인 + 코멘트 → API 호출 | ApproveRejectForm.tsx |
+| BF-113 | §8.6 | ApproveRejectForm 거부 + 사유 → API 호출 | ApproveRejectForm.tsx |
+| BF-114 | §6.1 | useLearningProposals — GET /api/brick/learning/proposals | useLearning.ts |
+| BF-115 | §6.1 | useApproveProposal — POST /api/brick/learning/:id/approve | useLearning.ts |
+| BF-116 | §6.1 | useRejectProposal — POST /api/brick/learning/:id/reject | useLearning.ts |
+| BF-117 | §6.1 | useGateResult — GET /api/brick/gates/:id/result | useGates.ts |
+| BF-118 | §6.1 | useOverrideGate — POST /api/brick/gates/:id/override | useGates.ts |
+| BF-119 | §6.1 | useInvariants — GET /api/brick/system/invariants | hooks |
+| BF-120 | §9 | BrickOverviewPage 워크플로우 목록 + 상태 배지 | BrickOverviewPage.tsx |
+
+### Phase 6: Notify 블록 + Channel Adapter (BF-121 ~ BF-135)
+
+| ID | 섹션 | 테스트 케이스 | 검증 대상 |
+|----|------|-------------|----------|
+| BF-121 | §3.5 | NotifyNode 남색 테두리 #0EA5E9 렌더링 | NotifyNode.tsx |
+| BF-122 | §3.5 | NotifyNode 채널 아이콘 표시 (Slack/Telegram/Discord/Webhook) | NotifyNode.tsx |
+| BF-123 | §3.5 | NotifyNode 이벤트 체크마크 표시 (시작/완료/실패) | NotifyNode.tsx |
+| BF-124 | §3.5 | NotifyNode 발송 성공 시 초록 테두리 전환 | NotifyNode.tsx |
+| BF-125 | §3.5 | NotifyNode 발송 실패 시 빨간 테두리 + 재시도 버튼 | NotifyNode.tsx |
+| BF-126 | §3.5 | NotifyNode running 상태 시 pulse 애니메이션 | NotifyNode.tsx |
+| BF-127 | §11.1 | CHANNEL_ADAPTERS 4종 레지스트리 (slack/telegram/discord/webhook) | channel-adapter.ts |
+| BF-128 | §11.3 | NotifyConfigPanel 채널 선택 라디오 4종 | NotifyConfigPanel.tsx |
+| BF-129 | §11.3 | NotifyConfigPanel Slack 설정 — 대상 + Webhook/Bot 방식 | NotifyConfigPanel.tsx |
+| BF-130 | §11.3 | NotifyConfigPanel Telegram 설정 — Bot Token + Chat ID | NotifyConfigPanel.tsx |
+| BF-131 | §11.3 | NotifyConfigPanel Discord 설정 — Webhook URL | NotifyConfigPanel.tsx |
+| BF-132 | §11.3 | NotifyConfigPanel Webhook 설정 — URL + 헤더 + 페이로드 템플릿 | NotifyConfigPanel.tsx |
+| BF-133 | §11.3 | NotifyConfigPanel 이벤트 체크박스 (시작/완료/실패) | NotifyConfigPanel.tsx |
+| BF-134 | §11.3 | NotifyConfigPanel 테스트 발송 버튼 → API 호출 | NotifyConfigPanel.tsx |
+| BF-135 | §3.7 | autoLayout NotifyNode 높이 130px 반영 | layout.ts |
+
+### Phase 7: Scratch UX 원칙 (BF-136 ~ BF-145)
+
+| ID | 섹션 | 테스트 케이스 | 검증 대상 |
+|----|------|-------------|----------|
+| BF-136 | §1.3 | 블록 우클릭 → 팀 배정 드롭다운 즉시 표시 | BlockNode.tsx |
+| BF-137 | §1.3 | 유효하지 않은 연결 시 스냅 안 됨 (isValidConnection 반환 false) | BrickCanvasPage.tsx |
+| BF-138 | §1.4 | Plan 카테고리 블록 (plan/design) 배경색 #DBEAFE | BlockNode.tsx |
+| BF-139 | §1.4 | Do 카테고리 블록 (implement/deploy) 배경색 #DCFCE7 | BlockNode.tsx |
+| BF-140 | §1.4 | Check 카테고리 블록 (test/review/monitor) 배경색 #FEF9C3 | BlockNode.tsx |
+| BF-141 | §1.4 | Act 카테고리 블록 (rollback/custom) 배경색 #F3E8FF | BlockNode.tsx |
+| BF-142 | §1.4 | Notify 카테고리 블록 배경색 #E0F2FE | NotifyNode.tsx |
+| BF-143 | §1.3 | 프리셋 Remix — "복제" 버튼 → 새 프리셋으로 복사 | PresetListPage.tsx |
+| BF-144 | §1.3 | Gate threshold 슬라이더 UI (코드 입력 없음) | GateConfigPanel.tsx |
+| BF-145 | §1.2 | 빈 캔버스 시작 시 온보딩 가이드 표시 (Low Floor) | BrickCanvasPage.tsx |
 
 ---
 
-## 12. Gap 검증 체크리스트
+## 14. Gap 검증 체크리스트
 
 | 섹션 | 내용 | TDD 커버 | 상태 |
 |------|------|----------|------|
-| §1 아키텍처 | zustand/React Query/WebSocket 분리 | BF-075~077, 081~087 | ✅ |
-| §2 커스텀 노드 | BlockNode 9종 + ReviewNode + 엣지 6종 | BF-001~010 | ✅ |
-| §3 zustand 스토어 | undo/redo, isDirty, 상태 관리 | BF-075~077 | ✅ |
-| §4 API hooks | 37개 엔드포인트 연동 | BF-026~055, 097~098, 114~119 | ✅ |
-| §5 WebSocket | 6종 이벤트 처리 + 스로틀 | BF-081~087 | ✅ |
-| §6 직렬화 | YAML↔Flow 양방향 + 왕복 | BF-072~074 | ✅ |
-| §7 화면 설계 | 10개 페이지 + 패널 | BF-014~025, 030~031, 035~041, 050~051, 056~068, 094~095, 099~100, 109~113, 120 | ✅ |
-| §8 연결 검증 | INV-1~3 + 순환/자기참조/중복 | BF-069~071 | ✅ |
-| §9 System Layer | INV 경고 + Core readonly | BF-080, 096 | ✅ |
-| §10 파일 구조 | 디렉토리 + 파일 목록 | 구조적 — 구현 시 확인 | ✅ |
-| 자동 레이아웃 | dagre TB/LR + ReviewNode 높이 | BF-011~013 | ✅ |
+| §1 UX 철학 | Scratch 3원칙 + Papert + 카테고리 색상 | 설계 원칙 — 구현 시 적용 | ✅ |
+| §2 아키텍처 | zustand/React Query/WebSocket 분리 | BF-075~077, 081~087 | ✅ |
+| §3 커스텀 노드 | BlockNode 10종 + ReviewNode + NotifyNode + 엣지 6종 | BF-001~010, 121~126 | ✅ |
+| §4 zustand 스토어 | undo/redo, isDirty, 상태 관리 | BF-075~077 | ✅ |
+| §5 API hooks | 53개 엔드포인트 연동 | BF-026~055, 097~098, 114~119 | ✅ |
+| §6 WebSocket | 6종 이벤트 처리 + 스로틀 | BF-081~087 | ✅ |
+| §7 직렬화 | YAML↔Flow 양방향 + 왕복 | BF-072~074 | ✅ |
+| §8 화면 설계 | 10개 페이지 + 패널 | BF-014~025, 030~031, 035~041, 050~051, 056~068, 094~095, 099~100, 109~113, 120 | ✅ |
+| §9 연결 검증 | INV-1~3 + 순환/자기참조/중복 | BF-069~071 | ✅ |
+| §10 System Layer | INV 경고 + Core readonly | BF-080, 096 | ✅ |
+| §11 Notify+Adapter | NotifyNode + Channel 4종 + 체인 모니터링 | BF-121~135 | ✅ |
+| §12 파일 구조 | 디렉토리 + 파일 목록 | 구조적 — 구현 시 확인 | ✅ |
+| 자동 레이아웃 | dagre TB/LR + ReviewNode/NotifyNode 높이 | BF-011~013, 135 | ✅ |
 | 실행 제어 | 실행/일시정지/재개/중지 | BF-088~093 | ✅ |
 | Review 블록 | 체크리스트/diff/코멘트/승인/거부 | BF-101~108 | ✅ |
 | Learning Harness | 제안/상세/승인/거부 | BF-109~116 | ✅ |
+| Scratch UX | 카테고리 색상/우클릭 팀배정/Remix/온보딩 | BF-136~145 | ✅ |
 
-**전체 TDD: 120건, 섹션 커버: 14/14 = Gap 0%**
+**전체 TDD: 145건, 섹션 커버: 17/17 = Gap 0%**
 
 ---
 
