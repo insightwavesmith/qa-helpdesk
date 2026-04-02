@@ -97,8 +97,9 @@ class ConcreteGateExecutor(GateExecutor):
                 )
 
                 # 2xx range = success
-                passed = 200 <= resp.status_code < 300
-                metadata: dict = {"status_code": resp.status_code}
+                status = resp.status_code
+                passed = 200 <= status < 300
+                metadata: dict = {"status_code": status}
 
                 # Auto-parse response body for match_rate, passed, score
                 try:
@@ -106,16 +107,16 @@ class ConcreteGateExecutor(GateExecutor):
                     for key in ("match_rate", "passed", "score"):
                         if key in body_data:
                             metadata[key] = body_data[key]
-                except (json.JSONDecodeError, ValueError):
+                except Exception:
                     pass
 
                 return GateResult(
                     passed=passed,
-                    detail=f"HTTP {resp.status_code}",
+                    detail=f"HTTP {status}",
                     type="http",
                     metadata=metadata,
                 )
-        except (httpx.HTTPError, httpx.TimeoutException) as e:
+        except Exception as e:
             return GateResult(
                 passed=False,
                 detail=str(e),
