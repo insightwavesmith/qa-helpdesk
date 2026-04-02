@@ -46,8 +46,6 @@ class ConcreteGateExecutor(GateExecutor):
         )
 
     async def _run_http(self, handler: GateHandler, context: dict) -> GateResult:
-        import httpx
-
         url = handler.url or ""
         if context:
             try:
