@@ -2284,7 +2284,7 @@ Engine V2 §14 브랜딩 적용. Dashboard 고유 추가사항:
 
 ---
 
-## 15. TDD 케이스 + 매핑 테이블
+## 16. TDD 케이스 + 매핑 테이블
 
 ### API / FileStore
 
