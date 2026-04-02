@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-02T22:57:23.634Z",
+  "lastUpdated": "2026-04-02T22:57:33.094Z",
   "activeFeatures": [
     "run-prescription",
     "video-saliency"
@@ -86,7 +86,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-02T22:57:23.634Z",
-        "lastUpdated": "2026-04-02T22:57:23.634Z"
+        "lastUpdated": "2026-04-02T22:57:33.093Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/video-saliency/route.ts"
     }
@@ -99,7 +99,7 @@
   "session": {
     "startedAt": "2026-04-02T17:03:00.193Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-02T22:57:23.634Z"
+    "lastActivity": "2026-04-02T22:57:33.094Z"
   },
   "history": [
     {
@@ -110,6 +110,12 @@
     },
     {
       "timestamp": "2026-04-02T22:57:23.634Z",
+      "feature": "video-saliency",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-02T22:57:33.093Z",
       "feature": "video-saliency",
       "phase": "do",
       "action": "updated"

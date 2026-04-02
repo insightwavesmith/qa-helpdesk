@@ -322,6 +322,17 @@ export async function GET(req: NextRequest) {
       `[video-saliency] 완료: ${totalVideos}건 처리, ${synced}건 동기화, ${elapsed}s`,
     );
 
+    // triggerNext 체인 — video-scene-analysis
+    const searchParams = new URL(req.url).searchParams;
+    const isChain = searchParams.get("chain") === "true";
+    const processedCount = synced + preSynced;
+    let chainTriggered = false;
+    if (isChain && processedCount > 0) {
+      await triggerNext("video-scene-analysis");
+      console.log("[video-saliency] chain → video-scene-analysis triggered");
+      chainTriggered = true;
+    }
+
     return NextResponse.json({
       message: "video-saliency 완료",
       elapsed: `${elapsed}s`,
@@ -331,6 +342,7 @@ export async function GET(req: NextRequest) {
       accounts: accountList.length,
       results,
       synced,
+      chainTriggered,
     });
   } catch (e) {
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
