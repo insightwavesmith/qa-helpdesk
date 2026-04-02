@@ -1,0 +1,7 @@
+kind: Team
+name: cto
+spec:
+  adapter: claude_agent_teams
+  config:
+    session: sdk-cto
+    role: CTO_LEADER

@@ -1,0 +1,6 @@
+kind: BlockType
+name: Plan
+spec:
+  default_what: "요구사항 분석 + Plan 문서 작성"
+  default_done:
+    artifacts: ["docs/01-plan/features/{feature}.plan.md"]
