@@ -2000,7 +2000,7 @@ class CanvasToPresetConverter:
             return self._fresh_yaml(canvas)
 ```
 
-### 11.3 WebSocket 재연결 시 상태 불일치
+### 12.3 WebSocket 재연결 시 상태 불일치
 
 **문제**: 네트워크 끊김 → 재연결 → 그 사이 발생한 이벤트 누락.
 
