@@ -17,6 +17,8 @@ import { TeamManagePage } from './pages/brick/TeamManagePage';
 import { TeamDetailPage } from './pages/brick/TeamDetailPage';
 import { PresetListPage } from './pages/brick/PresetListPage';
 import { PresetEditorPage } from './pages/brick/PresetEditorPage';
+import { RunHistoryPage } from './pages/brick/RunHistoryPage';
+import { RunDetailPage } from './pages/brick/RunDetailPage';
 import { useLiveUpdates } from './hooks/useLiveUpdates';
 
 const queryClient = new QueryClient({
@@ -59,6 +61,8 @@ export default function App() {
             <Route path="brick/teams/:id" element={<TeamDetailPage />} />
             <Route path="brick/presets" element={<PresetListPage />} />
             <Route path="brick/presets/:id" element={<PresetEditorPage />} />
+            <Route path="brick/runs" element={<RunHistoryPage />} />
+            <Route path="brick/runs/:id" element={<RunDetailPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

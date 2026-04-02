@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -16,10 +16,11 @@ import '@xyflow/react/dist/style.css';
 import { brickNodeTypes } from '../../components/brick/nodes';
 import { brickEdgeTypes } from '../../components/brick/edges';
 import { BlockSidebar } from '../../components/brick/BlockSidebar';
-import { LINK_TYPES, type BlockType, type LinkType } from '../../components/brick/nodes/types';
+import { LINK_TYPES, STATUS_BORDER_COLORS, type BlockType, type BlockStatus, type LinkType } from '../../components/brick/nodes/types';
 import { validateConnection } from '../../lib/brick/connection-validator';
 import { yamlToFlow, flowToYaml } from '../../lib/brick/serializer';
 import { DetailPanel } from '../../components/brick/panels/DetailPanel';
+import { ExecutionTimeline, type TimelineEvent } from '../../components/brick/timeline/ExecutionTimeline';
 
 const LINK_TYPE_LABELS: Record<LinkType, string> = {
   sequential: '순차',
@@ -41,8 +42,44 @@ function BrickCanvasInner() {
   const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
 
+  // 실행 상태
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
+
   // 프리셋 ID (URL에서 가져올 수 있음)
   const presetId = 'default';
+
+  // BF-092: 실행 중 블록 상태 변경 시 노드 테두리 색상 실시간 반영
+  const styledNodes = useMemo(() => {
+    return nodes.map((node) => {
+      const status = (node.data as Record<string, unknown>).status as BlockStatus | undefined;
+      if (status && STATUS_BORDER_COLORS[status]) {
+        return {
+          ...node,
+          style: {
+            ...node.style,
+            borderColor: STATUS_BORDER_COLORS[status],
+            borderWidth: 2,
+            borderStyle: 'solid' as const,
+          },
+        };
+      }
+      return node;
+    });
+  }, [nodes]);
+
+  // BF-093: 실행 중 활성 링크 isActive 설정
+  const styledEdges = useMemo(() => {
+    if (!isExecuting) return edges;
+    return edges.map((edge) => {
+      const data = edge.data as Record<string, unknown> | undefined;
+      if (data?.isActive) {
+        return { ...edge, animated: true };
+      }
+      return edge;
+    });
+  }, [edges, isExecuting]);
 
   // 캔버스 로드 (BF-079)
   useEffect(() => {
@@ -175,6 +212,13 @@ function BrickCanvasInner() {
       <BlockSidebar />
 
       <div className="flex-1 flex flex-col">
+        {/* BF-096: INV 위반 경고 배너 */}
+        {validationErrors.length > 0 && (
+          <div data-testid="inv-warning-banner" className="px-4 py-2 text-sm text-white" style={{ backgroundColor: '#DC2626' }}>
+            INV 위반: {validationErrors.join(', ')}
+          </div>
+        )}
+
         {/* 툴바 */}
         <div data-testid="toolbar" className="h-12 border-b border-gray-200 bg-white flex items-center px-4 gap-2">
           <button className="px-3 py-1 text-sm rounded bg-green-500 text-white hover:bg-green-600">실행</button>
@@ -190,10 +234,14 @@ function BrickCanvasInner() {
         </div>
 
         {/* 캔버스 */}
-        <div data-testid="canvas" className="flex-1">
+        <div
+          data-testid="canvas"
+          className="flex-1"
+          style={validationErrors.length > 0 ? { border: '2px solid #DC2626' } : undefined}
+        >
           <ReactFlow
-            nodes={nodes}
-            edges={edges}
+            nodes={styledNodes}
+            edges={styledEdges}
             onNodesChange={handleNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
@@ -214,7 +262,7 @@ function BrickCanvasInner() {
 
         {/* 타임라인 */}
         <div data-testid="timeline" className="h-24 border-t border-gray-200 bg-white px-4 py-2">
-          <span className="text-xs text-gray-400">실행 타임라인</span>
+          <ExecutionTimeline events={timelineEvents} />
         </div>
       </div>
 
