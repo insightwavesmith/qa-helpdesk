@@ -73,14 +73,7 @@
         ]
       }
     ],
-    "Stop": [
-      {
-        "hooks": [
-          { "type": "command", "command": "bash .bkit/hooks/auto-shutdown.sh", "timeout": 10000 },
-          { "type": "command", "command": "bash .bkit/hooks/auto-team-cleanup.sh", "timeout": 10000 }
-        ]
-      }
-    ]
+    "Stop": []
   },
   "permissionMode": "bypassPermissions"
 }
