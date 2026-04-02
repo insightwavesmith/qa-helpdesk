@@ -9,7 +9,7 @@
  *   node scripts/compute-andromeda-similarity.mjs [--limit N] [--dry-run] [--account-id UUID]
  */
 
-import { sbGet, sbPatch } from "./lib/db-helpers.mjs";
+import { sbGet, sbPatch, rawQuery } from "./lib/db-helpers.mjs";
 
 // ── CLI 옵션 ──
 const DRY_RUN = process.argv.includes("--dry-run");
@@ -89,11 +89,17 @@ async function main() {
   let offset = 0;
 
   while (true) {
-    let q =
-      `/creative_media?select=id,creative_id,analysis_json,media_type,creatives!inner(account_id)` +
-      `&order=id.asc&offset=${offset}&limit=${PAGE_SIZE}`;
-    if (FILTER_ACCOUNT) q += `&creatives.account_id=eq.${FILTER_ACCOUNT}`;
-    const batch = await sbGet(q);
+    const params = [offset, PAGE_SIZE];
+    let accountFilter = '';
+    if (FILTER_ACCOUNT) { accountFilter = ' WHERE c.account_id = $3'; params.push(FILTER_ACCOUNT); }
+    const batch = await rawQuery(`
+      SELECT cm.id, cm.creative_id, cm.analysis_json, cm.media_type, c.account_id
+      FROM creative_media cm
+      INNER JOIN creatives c ON cm.creative_id = c.id
+      ${accountFilter}
+      ORDER BY cm.id ASC
+      OFFSET $1 LIMIT $2
+    `, params);
 
     // andromeda_signals 있는 것만 필터 (PostgREST JSON 필터 문법 호환성 위해 클라이언트 필터)
     const filtered = batch.filter(
@@ -115,7 +121,7 @@ async function main() {
   // 2. account_id별로 그룹핑
   const byAccount = {};
   for (const row of cmRows) {
-    const accountId = row.creatives?.account_id;
+    const accountId = row.account_id;
     if (!accountId) continue;
     if (!byAccount[accountId]) byAccount[accountId] = [];
     byAccount[accountId].push(row);

@@ -26,7 +26,7 @@
  * B11 수정: scripts/lib/env.mjs 공용 파서 사용
  */
 
-import { sbGet, sbPatch } from "./lib/db-helpers.mjs";
+import { sbGet, sbPatch, rawQuery } from "./lib/db-helpers.mjs";
 
 // ── CLI 옵션 ──
 const DRY_RUN = process.argv.includes("--dry-run");
@@ -84,14 +84,18 @@ async function loadAccountEmbeddings(accountId, PAGE_SIZE) {
   const embeddingMap = new Map();
   let offset = 0;
   while (true) {
-    const q =
-      `/creative_media?select=creative_id,embedding,creatives!inner(ad_id,account_id)` +
-      `&creatives.account_id=eq.${accountId}&embedding=not.is.null&order=creative_id.asc&offset=${offset}&limit=${PAGE_SIZE}`;
-    const batch = await sbGet(q);
+    const batch = await rawQuery(`
+      SELECT cm.creative_id, cm.embedding, c.ad_id, c.account_id
+      FROM creative_media cm
+      INNER JOIN creatives c ON cm.creative_id = c.id
+      WHERE c.account_id = $1 AND cm.embedding IS NOT NULL
+      ORDER BY cm.creative_id ASC
+      OFFSET $2 LIMIT $3
+    `, [accountId, offset, PAGE_SIZE]);
     for (const r of batch) {
       const vec = parseEmbedding(r.embedding);
       // B5: String 강제 변환으로 타입 불일치 방지
-      if (vec && r.creatives?.ad_id) embeddingMap.set(String(r.creatives.ad_id), vec);
+      if (vec && r.ad_id) embeddingMap.set(String(r.ad_id), vec);
     }
     if (batch.length < PAGE_SIZE) break;
     offset += PAGE_SIZE;
@@ -115,11 +119,17 @@ async function main() {
 
   try {
     while (true) {
-      let q =
-        `/creative_media?select=id,analysis_json,is_active,creatives!inner(ad_id,account_id)` +
-        `&analysis_json=not.is.null&is_active=eq.true&order=id.asc&offset=${offset}&limit=${PAGE_SIZE}`;
-      if (FILTER_ACCOUNT) q += `&creatives.account_id=eq.${FILTER_ACCOUNT}`;
-      const batch = await sbGet(q);
+      const params = [offset, PAGE_SIZE];
+      let accountFilter = '';
+      if (FILTER_ACCOUNT) { accountFilter = ' AND c.account_id = $3'; params.push(FILTER_ACCOUNT); }
+      const batch = await rawQuery(`
+        SELECT cm.id, cm.analysis_json, cm.is_active, c.ad_id, c.account_id
+        FROM creative_media cm
+        INNER JOIN creatives c ON cm.creative_id = c.id
+        WHERE cm.analysis_json IS NOT NULL AND cm.is_active = true${accountFilter}
+        ORDER BY cm.id ASC
+        OFFSET $1 LIMIT $2
+      `, params);
       cmRows.push(...batch);
       if (batch.length < PAGE_SIZE) break;
       offset += PAGE_SIZE;
@@ -132,11 +142,17 @@ async function main() {
       offset = 0;
       try {
         while (true) {
-          let q =
-            `/creative_media?select=id,creatives!inner(ad_id,account_id)` +
-            `&storage_url=not.is.null&order=id.asc&offset=${offset}&limit=${PAGE_SIZE}`;
-          if (FILTER_ACCOUNT) q += `&creatives.account_id=eq.${FILTER_ACCOUNT}`;
-          const batch = await sbGet(q);
+          const fbParams = [offset, PAGE_SIZE];
+          let fbAccountFilter = '';
+          if (FILTER_ACCOUNT) { fbAccountFilter = ' AND c.account_id = $3'; fbParams.push(FILTER_ACCOUNT); }
+          const batch = await rawQuery(`
+            SELECT cm.id, c.ad_id, c.account_id
+            FROM creative_media cm
+            INNER JOIN creatives c ON cm.creative_id = c.id
+            WHERE cm.storage_url IS NOT NULL${fbAccountFilter}
+            ORDER BY cm.id ASC
+            OFFSET $1 LIMIT $2
+          `, fbParams);
           cmRows.push(...batch);
           if (batch.length < PAGE_SIZE) break;
           offset += PAGE_SIZE;
@@ -160,13 +176,13 @@ async function main() {
   // 2. account_id별로 그룹핑
   const byAccount = {};
   for (const row of cmRows) {
-    const accountId = row.creatives?.account_id;
+    const accountId = row.account_id;
     if (!accountId) continue;
     if (!byAccount[accountId]) byAccount[accountId] = [];
     byAccount[accountId].push({
       id: row.id,
       // B5: String 강제 변환
-      adId: String(row.creatives?.ad_id ?? ""),
+      adId: String(row.ad_id ?? ""),
       analysis_json: row.analysis_json,
     });
   }

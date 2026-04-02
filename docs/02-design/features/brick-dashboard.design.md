@@ -19,7 +19,7 @@
 | **기술 스택** | FastAPI (Python) API + React (React Flow) 프론트엔드 |
 | **Engine 연동** | EventBus → WebSocket 실시간 + REST API → FileStore → Engine |
 | **Learning Harness** | 반복 실패 패턴 감지 → 규칙 제안 → 승인 시 자동 반영 (진화적 하네스) |
-| **TDD** | 100건, Gap 0% |
+| **TDD** | 150건, Gap 0% |
 
 ### 이것은 모니터링 도구가 아니다
 
@@ -1338,6 +1338,471 @@ ValidationPipeline: 변경된 리소스 검증
 └──────────────────────────────────────────────────────────┘
 ```
 
+### 6.12 Gate 5종 상세 동작
+
+Engine V2의 Gate = auto 4종(command/http/prompt/agent) + review 1종. Dashboard에서 각 타입별 UI 동작을 정의한다.
+
+#### 6.12.1 Gate 타입 분류
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Gate 5종 분류                              │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ── Auto Gate (기계 판정) ──                                 │
+│                                                             │
+│  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐  │
+│  │ command   │ │ http      │ │ prompt    │ │ agent     │  │
+│  │           │ │           │ │           │ │           │  │
+│  │ 셸 명령   │ │ HTTP 호출  │ │ LLM 1턴   │ │ LLM 멀티턴 │  │
+│  │ exit 0    │ │ status 200│ │ yes/no    │ │ 도구 사용   │  │
+│  │ = pass    │ │ = pass    │ │ 판정      │ │ 구조화 결과 │  │
+│  └───────────┘ └───────────┘ └───────────┘ └───────────┘  │
+│                                                             │
+│  ── Review Gate (사람 판정) ──                                │
+│                                                             │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │ review                                                │  │
+│  │ 검토자 지정 → 알림 → 산출물 확인 → 승인/거부            │  │
+│  │ 타임아웃 → auto_approve / escalate / fail              │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                                                             │
+│  실행 순서: auto 4종 순차/병렬 실행 → 전부 pass → review    │
+│           auto 실패 시 review 도달 안 함                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 6.12.2 command Gate — 셸 명령 실행
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ ① command Gate 설정                                       │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  명령:   [test -f docs/02-design/features/{feature}...] │
+│  타임아웃: [30] 초                                        │
+│  실패 시: [fail ▾]  (fail / warn / skip)                 │
+│  환경 변수:                                               │
+│    BRICK_BLOCK_ID = {block_id}                           │
+│    BRICK_FEATURE  = {feature}                            │
+│    BRICK_WORKFLOW = {workflow_id}                         │
+│                                                          │
+│  ── 실행 결과 표시 ──                                     │
+│                                                          │
+│  ✅ exit code: 0  │  소요: 0.3초                          │
+│  stdout: (없음)                                          │
+│  stderr: (없음)                                          │
+│                                                          │
+│  또는                                                     │
+│                                                          │
+│  ❌ exit code: 1  │  소요: 2.1초                          │
+│  stdout: "FAIL: file not found"                          │
+│  stderr: "test: docs/02-design/... No such file"         │
+│  [전체 로그 보기]                                          │
+└──────────────────────────────────────────────────────────┘
+```
+
+**동작 명세**:
+- `{feature}`, `{block_id}`, `{workflow_id}` 등 context 변수 자동 치환
+- exit code 0 = pass, 그 외 = fail
+- stdout/stderr를 캡처하여 결과 표시 (최대 500줄, 초과 시 "전체 보기" 링크)
+- 타임아웃 초과 시 SIGTERM → 5초 대기 → SIGKILL
+
+#### 6.12.3 http Gate — HTTP 엔드포인트 체크
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ ② http Gate 설정                                          │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  URL:    [http://localhost:18789/gate/match-rate       ] │
+│  메서드: [POST ▾]                                         │
+│  헤더:                                                    │
+│    Content-Type: application/json                        │
+│    + 헤더 추가                                            │
+│  본문:                                                    │
+│    ┌──────────────────────────────────────────────────┐  │
+│    │ {"workflow_id": "{workflow_id}",                 │  │
+│    │  "block_id": "{block_id}",                      │  │
+│    │  "artifacts": "{artifacts}"}                     │  │
+│    └──────────────────────────────────────────────────┘  │
+│  타임아웃: [30] 초                                        │
+│  성공 조건: [status 2xx ▾]  (2xx / 200 only / custom)    │
+│  실패 시:   [fail ▾]                                      │
+│                                                          │
+│  ── 실행 결과 표시 ──                                     │
+│                                                          │
+│  ✅ HTTP 200 OK  │  소요: 1.2초                           │
+│  응답:                                                    │
+│    {"match_rate": 0.95, "details": "..."}                │
+│                                                          │
+│  또는                                                     │
+│                                                          │
+│  ❌ HTTP 502 Bad Gateway  │  소요: 30초 (타임아웃)         │
+│  응답: (없음)                                             │
+│  [재시도]                                                 │
+└──────────────────────────────────────────────────────────┘
+```
+
+**동작 명세**:
+- URL에 context 변수 치환 지원 (`{workflow_id}` 등)
+- 본문도 변수 치환 + JSON 자동 포맷팅
+- 응답 본문의 `match_rate`, `passed`, `score` 필드를 자동 파싱하여 표시
+- TLS 검증 옵션 (내부 서비스용 skip 가능)
+
+#### 6.12.4 prompt Gate — LLM 단일 턴 평가
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ ③ prompt Gate 설정                                        │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  프롬프트:                                                │
+│  ┌──────────────────────────────────────────────────┐    │
+│  │ 다음 Design 문서가 TASK 요구사항을 충족하는지       │    │
+│  │ 평가하라.                                         │    │
+│  │                                                   │    │
+│  │ TASK: {task_content}                              │    │
+│  │ Design: {artifact_content}                        │    │
+│  │                                                   │    │
+│  │ 다음 기준으로 판정:                                │    │
+│  │ 1. 모든 요구사항이 Design에 반영되었는가           │    │
+│  │ 2. TDD 케이스가 Design 섹션과 1:1 매핑인가        │    │
+│  │ 3. 심층 분석이 충분한가                            │    │
+│  │                                                   │    │
+│  │ JSON으로 응답: {"pass": bool, "confidence": 0~1,  │    │
+│  │  "reasoning": "..."}                              │    │
+│  └──────────────────────────────────────────────────┘    │
+│                                                          │
+│  모델:        [Haiku ▾]  (Haiku / Sonnet / Opus)         │
+│  확신도 임계값: [0.8]                                     │
+│  다수결 횟수:  [3]  (1 = 단일 판정, 3 = 3회 중 과반)     │
+│  확신도 미달 시: [review로 에스컬레이트 ▾]                │
+│                                                          │
+│  ── 실행 결과 표시 ──                                     │
+│                                                          │
+│  ✅ 판정: pass  │  확신도: 0.92                           │
+│  이유: "모든 요구사항 반영 확인. TDD 100건 매핑 완료."     │
+│                                                          │
+│  다수결 상세 (3회):                                       │
+│    #1: pass (0.92)  #2: pass (0.88)  #3: pass (0.95)    │
+│    최종: pass (평균 0.92, 3/3 통과)                       │
+│                                                          │
+│  또는                                                     │
+│                                                          │
+│  ⚠ 판정: 보류  │  확신도: 0.72 (임계값 0.8 미달)         │
+│  이유: "TDD 섹션 존재하나 §12 심층 분석 매핑 불분명"      │
+│  → review gate로 에스컬레이트됨                           │
+└──────────────────────────────────────────────────────────┘
+```
+
+**동작 명세**:
+- `{task_content}`, `{artifact_content}` 등 context 변수를 실제 파일 내용으로 치환
+- 다수결 모드: N회 독립 실행 → 과반수 pass이면 통과. 과반수 미달이면 fail
+- 확신도 미달(threshold 미만) 시 3가지 선택: `review`(에스컬레이트), `fail`, `retry`
+- 응답 JSON 파싱 실패 시 retry (최대 2회), 그래도 실패 시 `fail`
+- 비용 표시: "Haiku 3회 × ~500 토큰 = ~$0.003"
+
+#### 6.12.5 agent Gate — 멀티 턴 에이전트 평가
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ ④ agent Gate 설정                                         │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  에이전트 프롬프트:                                        │
+│  ┌──────────────────────────────────────────────────┐    │
+│  │ 변경된 파일의 테스트 커버리지를 확인하라.           │    │
+│  │                                                   │    │
+│  │ 워크플로우: {workflow_id}                          │    │
+│  │ 변경 파일: {changed_files}                        │    │
+│  │                                                   │    │
+│  │ 각 파일에 대해:                                    │    │
+│  │ 1. 대응하는 __tests__/ 파일이 존재하는지 확인      │    │
+│  │ 2. 테스트가 주요 함수를 커버하는지 확인             │    │
+│  │ 3. match_rate를 계산 (커버된 함수 / 전체 함수)     │    │
+│  │                                                   │    │
+│  │ JSON: {"pass": bool, "match_rate": 0~1,           │    │
+│  │  "uncovered": ["함수명", ...]}                    │    │
+│  └──────────────────────────────────────────────────┘    │
+│                                                          │
+│  모델:      [Sonnet ▾]                                    │
+│  허용 도구: [✅ Read] [✅ Grep] [✅ Glob] [☐ Bash]        │
+│  최대 턴:  [20]                                           │
+│  타임아웃: [300] 초                                       │
+│  실패 시:  [fail ▾]                                       │
+│                                                          │
+│  ── 실행 결과 표시 ──                                     │
+│                                                          │
+│  ✅ 판정: pass  │  match_rate: 0.94  │  12턴 │  45초      │
+│                                                          │
+│  에이전트 실행 로그:                                       │
+│    턴 1: Read src/components/SignupForm.tsx               │
+│    턴 2: Glob __tests__/**/SignupForm*                    │
+│    턴 3: Read __tests__/features/signup/SignupForm.test.ts│
+│    턴 4: Grep "describe|test|it" __tests__/...           │
+│    ...                                                    │
+│    턴 12: 판정 완료                                       │
+│  [전체 로그 보기]                                          │
+│                                                          │
+│  미커버 함수: validateEmail (warn)                        │
+│                                                          │
+│  비용: Sonnet 12턴 × ~2000 토큰 = ~$0.15                 │
+└──────────────────────────────────────────────────────────┘
+```
+
+**동작 명세**:
+- 에이전트가 도구(Read, Grep, Glob 등)를 사용하여 코드베이스 실제 분석
+- 각 턴의 도구 호출을 로그로 기록 → Dashboard에서 확인 가능
+- 최대 턴 수 초과 시 현재까지의 분석 결과로 판정 (불완전 판정 경고)
+- Bash 도구는 기본 비활성 (보안) — 명시적 활성화 필요
+- 비용이 가장 높으므로 사용 시 예상 비용 표시 + 확인 팝업 (선택적)
+
+#### 6.12.6 review Gate — 사람 검토
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ ⑤ review Gate 설정                                        │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  검토자:                                                  │
+│    [✅ COO (모찌)]  [☐ Smith님]  [☐ 추가...]             │
+│                                                          │
+│  검토 조건:                                               │
+│    필수 승인 수: [1]  (전원 / 과반수 / N명)               │
+│    auto gate 전부 pass 후에만 review 시작: [ON]           │
+│                                                          │
+│  타임아웃:                                                │
+│    제한 시간: [3600] 초  (0 = 무제한)                     │
+│    타임아웃 시: [escalate ▾]                               │
+│      (auto_approve / escalate / fail)                    │
+│    에스컬레이션 대상: [Smith님 ▾]                          │
+│                                                          │
+│  알림 채널:                                               │
+│    [✅ Dashboard 알림]                                    │
+│    [✅ Slack]  채널: [#brick-gates]                       │
+│    [☐ 이메일]                                             │
+│                                                          │
+│  거부 시 행동:                                             │
+│    [이전 블록으로 ▾]                                      │
+│      (이전 블록으로 / 같은 블록 재실행 / 워크플로우 중단)  │
+│    거부 사유 필수: [ON]                                    │
+│    거부 사유 → 팀 컨텍스트에 자동 주입: [ON]               │
+│                                                          │
+│  ── 검토 히스토리 ──                                      │
+│                                                          │
+│  #1  ❌ 거부  COO  4/01 15:20  "TDD 섹션 40건 부족"      │
+│      → Act: PM팀 TDD 보충 후 재제출                       │
+│  #2  ✅ 승인  COO  4/02 10:15                             │
+│      코멘트: "100건 확인. LGTM"                           │
+└──────────────────────────────────────────────────────────┘
+```
+
+**동작 명세**:
+- auto gate 4종이 모두 pass한 후에만 review gate 활성화 (순서 보장)
+- 검토 요청 시 Slack Interactive Message 전송 (§12.7 연동)
+- 검토자가 거부하면 `reject_reason`이 다음 실행 팀에 context로 자동 주입
+- 검토 히스토리 전체 보존 — 같은 블록을 몇 번 거부/승인했는지 추적
+- 다수 검토자 모드: 전원 승인 / 과반수 승인 / N명 이상 승인 선택 가능
+
+#### 6.12.7 Gate 5종 조합 실행 순서
+
+```
+Gate 실행 흐름:
+
+  블록 완료 신호
+       │
+       ▼
+  ┌─ auto gates ─────────────────────────────┐
+  │                                           │
+  │  순차 모드 (기본):                         │
+  │  command → http → prompt → agent          │
+  │  (앞이 fail이면 뒤는 실행 안 함)           │
+  │                                           │
+  │  병렬 모드:                                │
+  │  command ─┬─ 전부 pass → 다음              │
+  │  http    ─┤                               │
+  │  prompt  ─┤  하나라도 fail → 전체 fail     │
+  │  agent   ─┘                               │
+  │                                           │
+  │  투표 모드:                                │
+  │  N개 handler 중 과반수 pass → 전체 pass    │
+  │                                           │
+  └─────────────┬─────────────────────────────┘
+                │ 전부 pass
+                ▼
+  ┌─ review gate ────────────────────────────┐
+  │  검토자에게 알림 → 승인 대기               │
+  │  승인 → gate 통과                         │
+  │  거부 → on_review_reject 행동 실행         │
+  │  타임아웃 → on_timeout 행동 실행           │
+  └──────────────────────────────────────────┘
+                │ 통과
+                ▼
+          다음 블록 시작
+```
+
+**Dashboard 통합 표시 (GateIndicator)**:
+
+```
+캔버스 노드 내 Gate 표시:
+
+  ┌──────────────────┐
+  │ 📐 Design        │
+  │ PM팀             │
+  │                  │
+  │ gate:            │
+  │  ✅ cmd  ✅ http │   ← auto 개별 결과
+  │  ✅ prmt ☐ agnt │
+  │  ⏳ review (COO) │   ← review 대기 중
+  └──────────────────┘
+
+상태 아이콘:
+  ✅ = pass    ❌ = fail    ⏳ = 대기/실행 중
+  ☐ = 미실행  ⚠ = warn    🔒 = 비활성
+```
+
+### 6.13 Review 블록 전용 UX
+
+내장 9종 중 Review 블록은 **코드 리뷰, 설계 리뷰, 보안 감사** 등 사람의 검토가 핵심인 블록. 다른 블록(Plan, Do 등)과 달리 Dashboard에서 전용 UX를 제공한다.
+
+#### 6.13.1 Review 블록 vs 일반 블록
+
+| 항목 | 일반 블록 (Plan, Do 등) | Review 블록 |
+|------|----------------------|------------|
+| 실행 주체 | Team (adapter) 자동 실행 | **사람** 또는 **agent gate 조합** |
+| 산출물 | 파일 생성/수정 | **리뷰 코멘트 + 판정** |
+| 완료 조건 | done.artifacts 존재 | **리뷰어 승인** |
+| Dashboard UX | 상태 모니터링 위주 | **리뷰 인터페이스** (diff + 코멘트 + 체크리스트) |
+| 캔버스 표시 | 팀 배지 | **리뷰어 아바타** |
+
+#### 6.13.2 Review 블록 상세 화면
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ 👀 Review: design-review  │  워크플로우: signup-fix       │
+│                                                          │
+│  [산출물] [체크리스트] [코멘트] [히스토리]                 │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  ── 산출물 탭 ──                                          │
+│                                                          │
+│  대상 블록: design (이전 블록)                             │
+│  산출물 파일 목록:                                         │
+│                                                          │
+│  ┌────────────────────────────────────────────────────┐  │
+│  │ 📄 brick-dashboard.design.md                       │  │
+│  │    2,530줄  │  변경: +1,200 / -340                 │  │
+│  │    [전체 보기] [diff 보기] [다운로드]                │  │
+│  ├────────────────────────────────────────────────────┤  │
+│  │ 📄 brick-dashboard.tdd-mapping.md                  │  │
+│  │    120줄   │  신규                                  │  │
+│  │    [전체 보기] [다운로드]                             │  │
+│  └────────────────────────────────────────────────────┘  │
+│                                                          │
+│  ── 체크리스트 탭 ── (리뷰어가 체크)                      │
+│                                                          │
+│  ☑ 요구사항 반영 완료                                     │
+│  ☑ 3축(Block/Team/Link) 관리 기능 포함                   │
+│  ☑ API 설계 (REST + WebSocket) 명세                      │
+│  ☐ TDD 케이스 Gap 0% 확인                                │
+│  ☐ 심층 분석 엣지케이스 충분                               │
+│  ☐ 브랜딩 가이드 적용                                     │
+│                                                          │
+│  진행률: ████████░░░░░░░░ 50% (3/6)                      │
+│                                                          │
+│  ── 코멘트 탭 ──                                          │
+│                                                          │
+│  COO (모찌) — 4/02 10:15                                  │
+│  > §10 Learning Harness 부분 독창적. 다만 §16 TDD에       │
+│  > Gate 5종별 테스트가 부족합니다. 보충 필요.              │
+│                                                          │
+│  PM팀 — 4/02 11:30                                       │
+│  > Gate 5종 + Review 블록 보충 완료. 재확인 요청.         │
+│                                                          │
+│  [코멘트 추가]                                            │
+│                                                          │
+│  ── 판정 ──                                               │
+│                                                          │
+│  체크리스트 미완료 항목: 3건                               │
+│  ⚠ 전체 체크 완료 전에는 승인할 수 없습니다               │
+│                                                          │
+│  [승인 ✅]  [거부 ❌]  [수정 요청 🔄]                     │
+│                                                          │
+│  거부/수정 요청 시 사유: [________________]                │
+└──────────────────────────────────────────────────────────┘
+```
+
+#### 6.13.3 Review 블록 YAML 정의
+
+```yaml
+# Review 블록 타입 — 프리셋 내 정의
+- id: design-review
+  type: Review
+  what: "Design 문서 COO 검토"
+  done:
+    approval: true                  # 리뷰어 승인이 완료 조건
+  review:
+    reviewers: [coo]                # 검토자 목록
+    checklist:                      # 체크리스트 (선택사항)
+      - "요구사항 반영 완료"
+      - "TDD Gap 0% 확인"
+      - "심층 분석 엣지케이스 충분"
+    require_all_checked: true       # 전체 체크 필수
+    allow_comments: true            # 코멘트 허용
+  input:
+    from_block: design              # 리뷰 대상 블록
+    artifacts:
+      - "docs/02-design/features/{feature}.design.md"
+  gate:                             # Review 블록 자체의 gate (선택)
+    handlers: []                    # 보통 비어있음 (review가 곧 gate)
+```
+
+#### 6.13.4 Review 블록 캔버스 노드
+
+```
+일반 블록 노드:              Review 블록 노드:
+
+┌──────────────────┐         ┌──────────────────┐
+│ 📐 Design        │         │ 👀 Design Review  │
+│ PM팀     ● 실행중 │  ────→  │ COO       ⏳ 대기 │
+│ gate: ✅✅⏳     │         │                  │
+└──────────────────┘         │ 체크: 3/6 ██░░░  │
+                             │ 코멘트: 2건       │
+                             └──────────────────┘
+
+차이점:
+- 팀 배지 대신 검토자 아바타
+- gate 대신 체크리스트 진행률
+- 코멘트 카운트 표시
+- 노드 색상: 테두리 #8B5CF6 (보라) — 리뷰 전용 색
+```
+
+#### 6.13.5 Review 블록 흐름
+
+```
+이전 블록 완료 (예: Design)
+    │
+    ▼
+Review 블록 시작
+    │
+    ├──→ Dashboard: Review 패널 표시 (산출물 + 체크리스트)
+    ├──→ Slack: "Design 리뷰 요청" 메시지 전송
+    │
+    ▼
+리뷰어 검토 중
+    │
+    ├── 코멘트 추가 → 팀 컨텍스트에 실시간 반영
+    ├── 체크리스트 체크 → 진행률 업데이트
+    │
+    ▼
+판정
+    │
+    ├── 승인 → done.approval = true → 다음 블록
+    ├── 수정 요청 → 이전 블록(Design) 팀에 사유 전달 → 재작업
+    └── 거부 → 워크플로우 중단 또는 에스컬레이션
+```
+
 ---
 
 ## 7. TeamManagementAdapter — 관리 인터페이스
@@ -2502,6 +2967,76 @@ Engine V2 §14 브랜딩 적용. Dashboard 고유 추가사항:
 | BD-99 | POST /api/v1/learning/detect → 수동 패턴 감지 | §3.2 | 신규 proposals 반환 |
 | BD-100 | POST .../rollback → 200 + 규칙 되돌리기 | §12.10 | status=rolled_back |
 
+### Gate 5종 상세 동작
+
+| ID | 테스트 | Design 섹션 | 검증 |
+|----|--------|------------|------|
+| BD-101 | command gate: exit 0 → pass 판정 | §6.12.2 | GateResult(passed=true, type="command") |
+| BD-102 | command gate: exit 1 → fail 판정 + stdout/stderr 캡처 | §6.12.2 | passed=false, detail에 출력 포함 |
+| BD-103 | command gate: 타임아웃 초과 → SIGTERM + fail | §6.12.2 | passed=false, timeout 에러 |
+| BD-104 | command gate: context 변수 치환 ({feature} 등) | §6.12.2 | 치환된 명령 실행 |
+| BD-105 | http gate: 200 OK → pass 판정 | §6.12.3 | passed=true, type="http" |
+| BD-106 | http gate: 502 → fail 판정 | §6.12.3 | passed=false, status_code=502 |
+| BD-107 | http gate: 타임아웃 → fail | §6.12.3 | passed=false, timeout |
+| BD-108 | http gate: 응답 본문 match_rate 자동 파싱 | §6.12.3 | detail에 match_rate 포함 |
+| BD-109 | http gate: URL context 변수 치환 | §6.12.3 | 치환된 URL 호출 |
+| BD-110 | prompt gate: pass 판정 + 확신도 0.9 | §6.12.4 | passed=true, confidence=0.9 |
+| BD-111 | prompt gate: 확신도 0.6 (임계값 0.8 미달) → 에스컬레이트 | §6.12.4 | status="escalated", review로 전환 |
+| BD-112 | prompt gate: 다수결 3회 중 2회 pass → 전체 pass | §6.12.4 | passed=true, votes=[pass,fail,pass] |
+| BD-113 | prompt gate: 다수결 3회 중 2회 fail → 전체 fail | §6.12.4 | passed=false, votes=[fail,pass,fail] |
+| BD-114 | prompt gate: JSON 파싱 실패 → retry 2회 후 fail | §6.12.4 | retry_count=2, passed=false |
+| BD-115 | prompt gate: context 변수 치환 (task_content 등) | §6.12.4 | 치환된 프롬프트로 LLM 호출 |
+| BD-116 | agent gate: 도구 사용 → 판정 반환 | §6.12.5 | passed=true, turns > 0, tools_used 기록 |
+| BD-117 | agent gate: 최대 턴 초과 → 불완전 판정 경고 | §6.12.5 | warning="max_turns_exceeded" |
+| BD-118 | agent gate: Bash 도구 비활성 기본값 확인 | §6.12.5 | Bash 미포함 검증 |
+| BD-119 | agent gate: 실행 로그 (턴별 도구 호출) 기록 | §6.12.5 | log entries 존재 |
+| BD-120 | review gate: 검토자 승인 → gate 통과 | §6.12.6 | passed=true, reviewed_by 기록 |
+| BD-121 | review gate: 검토자 거부 → fail + 사유 기록 | §6.12.6 | passed=false, reject_reason 존재 |
+| BD-122 | review gate: 타임아웃 → escalate 동작 | §6.12.6 | escalated_to 호출 |
+| BD-123 | review gate: 타임아웃 → auto_approve 동작 | §6.12.6 | passed=true, auto_approved=true |
+| BD-124 | review gate: 다수 검토자 과반수 승인 | §6.12.6 | 2/3 승인 → passed=true |
+| BD-125 | review gate: 거부 사유 → 팀 컨텍스트 자동 주입 | §6.12.6 | context에 reject_reason 포함 |
+| BD-126 | Gate 조합: auto 순차 — 앞 fail이면 뒤 미실행 | §6.12.7 | 2번째 handler 미실행 확인 |
+| BD-127 | Gate 조합: auto 병렬 — 전부 pass → 전체 pass | §6.12.7 | 4종 동시 실행, passed=true |
+| BD-128 | Gate 조합: auto 병렬 — 하나 fail → 전체 fail | §6.12.7 | passed=false |
+| BD-129 | Gate 조합: auto pass 후 review gate 활성화 | §6.12.7 | auto 4종 pass → review 상태 "waiting" |
+| BD-130 | Gate 조합: auto fail 시 review 도달 안 함 | §6.12.7 | review 상태 "not_reached" |
+| BD-131 | GateIndicator: 5종 개별 상태 표시 렌더링 | §6.12.7 | 각 타입별 아이콘 확인 |
+
+### Review 블록 전용 UX
+
+| ID | 테스트 | Design 섹션 | 검증 |
+|----|--------|------------|------|
+| BD-132 | Review 블록: 이전 블록 산출물 목록 표시 | §6.13.2 | artifacts[] from input.from_block |
+| BD-133 | Review 블록: 체크리스트 렌더링 + 체크 상태 저장 | §6.13.2 | checked 상태 persist |
+| BD-134 | Review 블록: 전체 체크 미완료 시 승인 버튼 비활성 | §6.13.2 | require_all_checked=true → disabled |
+| BD-135 | Review 블록: 코멘트 추가 → 저장 + 팀 컨텍스트 주입 | §6.13.2 | comment 생성, context 반영 |
+| BD-136 | Review 블록: 승인 → done.approval=true → 완료 | §6.13.5 | status=completed |
+| BD-137 | Review 블록: 수정 요청 → 이전 블록 재실행 | §6.13.5 | 이전 블록 status=running, 사유 전달 |
+| BD-138 | Review 블록: 거부 → 워크플로우 중단 | §6.13.5 | workflow status=suspended |
+| BD-139 | Review 블록: 캔버스 노드 전용 렌더링 (보라 테두리) | §6.13.4 | borderColor=#8B5CF6 |
+| BD-140 | Review 블록: 체크리스트 진행률 노드 내 표시 | §6.13.4 | progressBar 렌더링 |
+
+### Plugin-driven UI
+
+| ID | 테스트 | Design 섹션 | 검증 |
+|----|--------|------------|------|
+| BD-141 | GET /api/v1/adapter-types → config_schema 포함 | §9.2 | JSON Schema 구조 검증 |
+| BD-142 | DynamicConfigForm: config_schema → React 폼 렌더링 | §9.3 | 필드 수 = properties 수 |
+| BD-143 | DynamicConfigForm: required 필드 빈값 → 검증 에러 | §9.3 | validation error |
+| BD-144 | 새 플러그인 entry_point 등록 → adapter-types에 자동 포함 | §9.1 | 신규 adapter 노출 |
+| BD-145 | PluginMetadata: display_name/icon/description 반환 | §9.2 | 메타데이터 완전성 |
+
+### 심층 분석 보충
+
+| ID | 테스트 | Design 섹션 | 검증 |
+|----|--------|------------|------|
+| BD-146 | Adapter 미설치 시 팀 생성 → 적절한 에러 메시지 | §12.5 | "adapter 미설치" 안내 |
+| BD-147 | 관리 미지원 adapter 선택 시 스킬/MCP 탭 자동 숨김 | §12.5 | §7.3 매트릭스 기반 UI 조건 |
+| BD-148 | Slack Gate 승인: webhook → API approve 호출 | §12.7 | POST .../approve 성공 |
+| BD-149 | LH 규칙 충돌: 승인 시 ValidationPipeline 경고 | §12.9 | warning 반환 |
+| BD-150 | 오프라인 편집 후 brick serve → 전체 파일 풀 스캔 동기화 | §12.11 | 리소스 캐시 = 파일 내용 |
+
 ### 매핑 테이블 요약
 
 | Design 섹션 | TDD 범위 | 케이스 수 |
@@ -2511,13 +3046,40 @@ Engine V2 §14 브랜딩 적용. Dashboard 고유 추가사항:
 | §3.5 Validation | BD-09~17 | 9 |
 | §4.4 Canvas 변환 | BD-48~56 | 9 |
 | §5 데이터 흐름 | BD-57~63 | 7 |
+| §6.12 Gate 5종 상세 | BD-101~131 | 31 |
+| §6.13 Review 블록 | BD-132~140 | 9 |
 | §7 ManagementAdapter | BD-64~75 | 12 |
 | §8 System Layer | BD-76~78 | 3 |
+| §9 Plugin-driven UI | BD-141~145 | 5 |
 | §10 Learning Harness | BD-81~100 | 20 |
-| §12 심층 분석 | BD-79~80 | 2 |
-| **합계** | | **100** |
+| §12 심층 분석 | BD-79~80, BD-146~150 | 7 |
+| **합계** | | **150** |
 
-**Gap 0%**: 모든 Design 섹션에 대응 TDD 케이스 존재. 매핑 테이블로 1:1 추적 가능.
+**Gap 0%**: 모든 Design 섹션에 대응 TDD 케이스 존재. 총 150건, 매핑 테이블로 1:1 추적 가능.
+
+### Gap 검증 체크리스트
+
+| Design 섹션 | TDD 커버 여부 | 비고 |
+|------------|:------------:|------|
+| §1 아키텍처 개요 | — | 개념 설계 (테스트 불필요) |
+| §2 Resource Model | ✅ | BD-01~08 (8건) |
+| §3 API 설계 | ✅ | BD-09~47 (39건) |
+| §4 프론트엔드 아키텍처 | ✅ | BD-48~56 (9건) |
+| §5 데이터 흐름 | ✅ | BD-57~63 (7건) |
+| §6 화면 설계 (6.1~6.8) | — | 와이어프레임 (시각 검증) |
+| §6.9~6.11 Learning UI | ✅ | BD-92~100에서 API 커버 |
+| §6.12 Gate 5종 상세 | ✅ | BD-101~131 (31건) |
+| §6.13 Review 블록 | ✅ | BD-132~140 (9건) |
+| §7 ManagementAdapter | ✅ | BD-64~75 (12건) |
+| §8 System Layer | ✅ | BD-76~78 (3건) |
+| §9 Plugin-driven UI | ✅ | BD-141~145 (5건) |
+| §10 Learning Harness | ✅ | BD-81~100 (20건) |
+| §11 비교 분석 | — | 분석 문서 (테스트 불필요) |
+| §12 심층 분석 | ✅ | BD-79~80, BD-146~150 (7건) |
+| §13 단계별 전달 | — | 로드맵 (테스트 불필요) |
+| §14 파일 구조 | — | 구조 정의 (테스트 불필요) |
+| §15 브랜딩 | — | 시각 스펙 (테스트 불필요) |
+| **Gap** | **0건** | 모든 동작 섹션 커버 완료 |
 
 ---
 

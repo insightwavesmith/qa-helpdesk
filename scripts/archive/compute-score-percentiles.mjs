@@ -20,7 +20,7 @@
  * B11 수정: scripts/lib/env.mjs 공용 파서 사용
  */
 
-import { sbGet, sbPatch } from "./lib/db-helpers.mjs";
+import { sbGet, sbPatch, rawQuery } from "./lib/db-helpers.mjs";
 
 // ── CLI 옵션 ──
 const DRY_RUN = process.argv.includes("--dry-run");
@@ -104,10 +104,14 @@ async function main() {
   let hasAnalysisCol = true;
   try {
     while (true) {
-      const q =
-        `/creative_media?select=id,analysis_json,creatives!inner(ad_id,account_id)` +
-        `&analysis_json=not.is.null&order=id.asc&offset=${offset}&limit=${PAGE_SIZE}`;
-      const batch = await sbGet(q);
+      const batch = await rawQuery(`
+        SELECT cm.id, cm.analysis_json, c.ad_id, c.account_id
+        FROM creative_media cm
+        INNER JOIN creatives c ON cm.creative_id = c.id
+        WHERE cm.analysis_json IS NOT NULL
+        ORDER BY cm.id ASC
+        OFFSET $1 LIMIT $2
+      `, [offset, PAGE_SIZE]);
       cmRows.push(...batch);
       if (batch.length < PAGE_SIZE) break;
       offset += PAGE_SIZE;
@@ -134,11 +138,16 @@ async function main() {
   const accountCategoryMap = new Map();
   let aaOffset = 0;
   while (true) {
-    const q = `/ad_accounts?select=account_id,profiles(category)&order=id.asc&offset=${aaOffset}&limit=${PAGE_SIZE}`;
-    const batch = await sbGet(q);
+    const batch = await rawQuery(`
+      SELECT aa.account_id, p.category
+      FROM ad_accounts aa
+      LEFT JOIN profiles p ON aa.user_id = p.id
+      ORDER BY aa.id ASC
+      OFFSET $1 LIMIT $2
+    `, [aaOffset, PAGE_SIZE]);
     for (const r of batch) {
       // B7: profiles가 null이면 (LEFT JOIN), "기타"로 폴백
-      const cat = r.profiles?.category || "기타";
+      const cat = r.category || "기타";
       accountCategoryMap.set(String(r.account_id), cat);
     }
     if (batch.length < PAGE_SIZE) break;
@@ -149,7 +158,7 @@ async function main() {
   // B7: 매핑 안 된 계정 진단
   const unmappedAccounts = new Set();
   for (const row of cmRows) {
-    const aid = String(row.creatives?.account_id || "");
+    const aid = String(row.account_id || "");
     if (aid && !accountCategoryMap.has(aid)) unmappedAccounts.add(aid);
   }
   if (unmappedAccounts.size > 0) {
@@ -160,7 +169,7 @@ async function main() {
   const byCategory = {};
 
   for (const row of cmRows) {
-    const accountId = String(row.creatives?.account_id || "");
+    const accountId = String(row.account_id || "");
     const category = accountCategoryMap.get(accountId) || "기타";
 
     if (FILTER_CATEGORY && category !== FILTER_CATEGORY) continue;
@@ -225,7 +234,7 @@ async function main() {
   for (let i = 0; i < targetRows.length; i++) {
     const row = targetRows[i];
     const a = row.analysis_json;
-    const accountId = String(row.creatives?.account_id || "");
+    const accountId = String(row.account_id || "");
     const category = accountCategoryMap.get(accountId) || "기타";
 
     const vi = computeVisualImpact(a);
