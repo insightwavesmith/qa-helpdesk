@@ -88,13 +88,20 @@ class ConcreteGateExecutor(GateExecutor):
 
         try:
             async with httpx.AsyncClient() as client:
-                resp = await client.request(
-                    method=method,
-                    url=url,
-                    headers=handler.headers or {},
-                    timeout=handler.timeout,
-                    json=body,
-                )
+                if method.upper() == "GET":
+                    resp = await client.get(
+                        url,
+                        headers=handler.headers or {},
+                        timeout=handler.timeout,
+                    )
+                else:
+                    resp = await client.request(
+                        method=method,
+                        url=url,
+                        headers=handler.headers or {},
+                        timeout=handler.timeout,
+                        json=body,
+                    )
 
                 # 2xx range = success
                 status = resp.status_code
