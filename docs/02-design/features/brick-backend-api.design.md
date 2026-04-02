@@ -12,18 +12,18 @@
 
 | 항목 | 내용 |
 |------|------|
-| **목표** | 프론트엔드 hooks가 호출하는 37개+ API 엔드포인트를 Express 서버에 구현 |
+| **목표** | 프론트엔드 hooks가 호출하는 38개 API 엔드포인트를 Express 서버에 구현 |
 | **핵심 변경** | API 경로 `/api/v1/*` → `/api/brick/*` 통일 |
 | **기술 스택** | Express 4 + better-sqlite3 + Drizzle ORM (기존 dashboard/ 패턴) |
-| **현재 Gap** | 프론트 hooks 100% 완성, 백엔드 라우트 **0%** (37개 전부 미구현) |
-| **TDD** | 80건 (원본 BD-01~150 중 API/DB 관련 추출 + Express 컨텍스트 적용) |
+| **현재 Gap** | 프론트 hooks 100% 완성, 백엔드 라우트 **0%** (38개 전부 미구현) |
+| **TDD** | 53건 |
 
 ### Value Delivered
 
 | 관점 | 내용 |
 |------|------|
 | **Problem** | 프론트에서 /api/brick/* 호출 시 전부 404. Brick 기능 전체 미동작 |
-| **Solution** | Express 라우트 37개 등록 + SQLite 스키마 + WebSocket 핸들러 |
+| **Solution** | Express 라우트 38개 등록 + SQLite 스키마 + WebSocket 핸들러 |
 | **Function UX Effect** | Brick 캔버스, 블록 카탈로그, 팀 관리, 프리셋 편집 전부 실동작 |
 | **Core Value** | "AI한텐 강제, 나한텐 자유" 비전의 GUI가 실제로 작동하게 됨 |
 
@@ -70,7 +70,8 @@ dashboard/server/routes/brick/
 ├── block-types.ts        # /api/brick/block-types
 ├── teams.ts              # /api/brick/teams (+ 하위 리소스)
 ├── presets.ts            # /api/brick/presets
-├── executions.ts         # /api/brick/executions (워크플로우 실행)
+├── executions.ts         # /api/brick/executions (start, pause, status, logs)
+├── workflows.ts          # /api/brick/workflows (resume, cancel — hooks 경로 호환)
 ├── gates.ts              # /api/brick/gates
 ├── learning.ts           # /api/brick/learning
 ├── system.ts             # /api/brick/system (invariants)
@@ -91,6 +92,7 @@ export function registerBrickRoutes(app: Application, db: BetterSQLite3Database)
   registerTeamRoutes(app, db);
   registerPresetRoutes(app, db);
   registerExecutionRoutes(app, db);
+  registerWorkflowRoutes(app, db);  // resume/cancel (hooks 경로 호환)
   registerGateRoutes(app, db);
   registerLearningRoutes(app, db);
   registerSystemRoutes(app, db);
@@ -144,7 +146,7 @@ app.post('/api/brick/block-types', (req, res) => {
 | PUT | `/api/brick/teams/:id/model` | useUpdateTeamModel | 모델 변경 |
 | GET | `/api/brick/teams/:id/status` | useTeamStatus | 실시간 상태 |
 
-### 3.3 Presets (7개)
+### 3.3 Presets (8개)
 
 | 메서드 | 경로 | 프론트 hook | 설명 |
 |--------|------|-----------|------|
@@ -153,34 +155,37 @@ app.post('/api/brick/block-types', (req, res) => {
 | GET | `/api/brick/presets/:id` | usePreset(id) | 프리셋 상세 (YAML 포함) |
 | PUT | `/api/brick/presets/:id` | useUpdatePreset | 프리셋 수정 (core 차단) |
 | DELETE | `/api/brick/presets/:id` | useDeletePreset | 프리셋 삭제 (core 차단) |
-| POST | `/api/brick/presets/:id/export` | useExportPreset | YAML 내보내기 |
+| GET | `/api/brick/presets/:id/export` | useExportPreset | YAML 내보내기 |
 | POST | `/api/brick/presets/import` | useImportPreset | YAML 가져오기 |
+| POST | `/api/brick/presets/:presetId/apply` | useApplyPreset | 프리셋 적용 (캔버스에 로드) |
 
-### 3.4 Executions (6개)
+### 3.4 Executions + Workflows (6개)
 
 | 메서드 | 경로 | 프론트 hook | 설명 |
 |--------|------|-----------|------|
 | POST | `/api/brick/executions` | useStartExecution | 워크플로우 실행 시작 |
 | POST | `/api/brick/executions/:id/pause` | usePauseExecution | 일시정지 |
-| POST | `/api/brick/executions/:id/resume` | useResumeExecution | 재개 |
-| POST | `/api/brick/executions/:id/cancel` | useCancelExecution | 취소 |
-| GET | `/api/brick/executions/:id/status` | useExecutionStatus | 실행 상태 조회 |
+| POST | `/api/brick/workflows/:workflowId/resume` | useResumeExecution | 재개 (⚠️ workflows prefix) |
+| POST | `/api/brick/workflows/:workflowId/cancel` | useCancelExecution | 취소 (⚠️ workflows prefix) |
+| GET | `/api/brick/executions/:id` | useExecutionStatus | 실행 상태 조회 |
 | GET | `/api/brick/executions/:id/logs` | useExecutionLogs | 실행 로그 |
+
+> **주의**: 프론트 hooks에서 resume/cancel은 `/api/brick/workflows/` prefix를 사용하고, start/pause/status/logs는 `/api/brick/executions/` prefix를 사용함. 백엔드 구현 시 두 라우트 그룹 모두 등록 필요. (`executions.ts` + `workflows.ts` 또는 executions.ts에서 workflows 경로도 함께 등록)
 
 ### 3.5 Gates (2개)
 
 | 메서드 | 경로 | 프론트 hook | 설명 |
 |--------|------|-----------|------|
-| GET | `/api/brick/gates/:executionId/:blockId/result` | useGateResult | Gate 결과 조회 |
-| POST | `/api/brick/gates/:executionId/:blockId/override` | useGateOverride | Gate 수동 오버라이드 |
+| GET | `/api/brick/gates/:gateId/result` | useGateResult | Gate 결과 조회 |
+| POST | `/api/brick/gates/:gateId/override` | useOverrideGate | Gate 수동 오버라이드 |
 
 ### 3.6 Learning (3개)
 
 | 메서드 | 경로 | 프론트 hook | 설명 |
 |--------|------|-----------|------|
 | GET | `/api/brick/learning/proposals` | useLearningProposals | 규칙 제안 목록 |
-| POST | `/api/brick/learning/proposals/:id/approve` | useApproveProposal | 제안 승인 |
-| POST | `/api/brick/learning/proposals/:id/reject` | useRejectProposal | 제안 거부 |
+| POST | `/api/brick/learning/:id/approve` | useApproveProposal | 제안 승인 |
+| POST | `/api/brick/learning/:id/reject` | useRejectProposal | 제안 거부 |
 
 ### 3.7 System (1개)
 
@@ -207,15 +212,17 @@ app.post('/api/brick/block-types', (req, res) => {
 |------|-------------|
 | Block Types | 4 |
 | Teams | 10 |
-| Presets | 7 |
-| Executions | 6 |
+| Presets | 8 |
+| Executions + Workflows | 6 |
 | Gates | 2 |
 | Learning | 3 |
 | System | 1 |
 | Review | 2 |
 | Notify | 1 |
 | WebSocket | 1 |
-| **합계** | **37** |
+| **합계** | **38** |
+
+> **참고**: 프론트 hooks에서 실제 사용 중인 HTTP 엔드포인트는 25개 + WS 1개 = 26개. 나머지 12개(GET presets/:id, PUT/DELETE presets/:id, review 2개, notify 1개 등)는 프론트 Design 기준 필요하나 hooks 미구현 상태. 백엔드 구현 시 38개 전부 등록.
 
 ---
 
@@ -439,19 +446,20 @@ export function createBrickWebSocket(server: Server) {
 | usePresets.ts | usePreset | GET /api/brick/presets/:id | ✅ |
 | usePresets.ts | useUpdatePreset | PUT /api/brick/presets/:id | ✅ |
 | usePresets.ts | useDeletePreset | DELETE /api/brick/presets/:id | ✅ |
-| usePresets.ts | useExportPreset | POST /api/brick/presets/:id/export | ✅ |
+| usePresets.ts | useExportPreset | GET /api/brick/presets/:id/export | ✅ |
 | usePresets.ts | useImportPreset | POST /api/brick/presets/import | ✅ |
+| usePresets.ts | useApplyPreset | POST /api/brick/presets/:presetId/apply | ✅ |
 | useExecutions.ts | useStartExecution | POST /api/brick/executions | ✅ |
 | useExecutions.ts | usePauseExecution | POST /api/brick/executions/:id/pause | ✅ |
-| useExecutions.ts | useResumeExecution | POST /api/brick/executions/:id/resume | ✅ |
-| useExecutions.ts | useCancelExecution | POST /api/brick/executions/:id/cancel | ✅ |
-| useExecutions.ts | useExecutionStatus | GET /api/brick/executions/:id/status | ✅ |
+| useExecutions.ts | useResumeExecution | POST /api/brick/workflows/:workflowId/resume | ✅ |
+| useExecutions.ts | useCancelExecution | POST /api/brick/workflows/:workflowId/cancel | ✅ |
+| useExecutions.ts | useExecutionStatus | GET /api/brick/executions/:id | ✅ |
 | useExecutions.ts | useExecutionLogs | GET /api/brick/executions/:id/logs | ✅ |
-| useGates.ts | useGateResult | GET /api/brick/gates/:eid/:bid/result | ✅ |
-| useGates.ts | useGateOverride | POST /api/brick/gates/:eid/:bid/override | ✅ |
+| useGates.ts | useGateResult | GET /api/brick/gates/:gateId/result | ✅ |
+| useGates.ts | useOverrideGate | POST /api/brick/gates/:gateId/override | ✅ |
 | useLearning.ts | useLearningProposals | GET /api/brick/learning/proposals | ✅ |
-| useLearning.ts | useApproveProposal | POST /api/brick/learning/proposals/:id/approve | ✅ |
-| useLearning.ts | useRejectProposal | POST /api/brick/learning/proposals/:id/reject | ✅ |
+| useLearning.ts | useApproveProposal | POST /api/brick/learning/:id/approve | ✅ |
+| useLearning.ts | useRejectProposal | POST /api/brick/learning/:id/reject | ✅ |
 | useSystem.ts | useInvariants | GET /api/brick/system/invariants | ✅ |
 | useBrickLiveUpdates.ts | useBrickLiveUpdates | WS /api/brick/ws | ✅ |
 
@@ -501,7 +509,7 @@ Smith님 지시 기반:
 
 | 순위 | 그룹 | 이유 |
 |------|------|------|
-| **P1** | Block Types + Teams + Presets (CRUD 21개) | 프론트 Phase 1~2 즉시 연동 가능 |
+| **P1** | Block Types + Teams + Presets (CRUD 22개) | 프론트 Phase 1~2 즉시 연동 가능 |
 | **P1** | WebSocket /api/brick/ws | 실시간 모니터링 기반 |
 | **P2** | Executions (6개) | 프론트 Phase 3~4 연동 |
 | **P2** | Gates + Review (4개) | 프론트 Phase 4~5 연동 |
@@ -536,8 +544,9 @@ Smith님 지시 기반:
 | BA-19 | GET /api/brick/presets/:id → 200 + YAML 포함 | §3.3 | yaml 필드 |
 | BA-20 | PUT /api/brick/presets/:id (core) → 403 | §3.3 | isCore=true 차단 |
 | BA-21 | DELETE /api/brick/presets/:id → 204 | §3.3 | status=204 |
-| BA-22 | POST /api/brick/presets/:id/export → YAML 다운로드 | §3.3 | content-type: text/yaml |
+| BA-22 | GET /api/brick/presets/:id/export → YAML 다운로드 | §3.3 | content-type: text/yaml |
 | BA-23 | POST /api/brick/presets/import → 201 + 파싱 | §3.3 | YAML 파싱 + DB 저장 |
+| BA-23b | POST /api/brick/presets/:id/apply → 200 + 캔버스 로드 | §3.3 | 프리셋 YAML → 노드/엣지 변환 |
 
 ### Execution / Gates / Review
 
@@ -545,13 +554,13 @@ Smith님 지시 기반:
 |----|--------|------------|------|
 | BA-24 | POST /api/brick/executions → 201 + 실행 시작 | §3.4 | status='running' |
 | BA-25 | POST /api/brick/executions/:id/pause → 200 | §3.4 | status='paused' |
-| BA-26 | POST /api/brick/executions/:id/resume → 200 | §3.4 | status='running' |
-| BA-27 | POST /api/brick/executions/:id/cancel → 200 | §3.4 | status='cancelled' |
-| BA-28 | GET /api/brick/executions/:id/status → 200 + 상태 | §3.4 | blocksState 포함 |
+| BA-26 | POST /api/brick/workflows/:workflowId/resume → 200 | §3.4 | status='running' |
+| BA-27 | POST /api/brick/workflows/:workflowId/cancel → 200 | §3.4 | status='cancelled' |
+| BA-28 | GET /api/brick/executions/:id → 200 + 상태 | §3.4 | blocksState 포함 |
 | BA-29 | GET /api/brick/executions/:id/logs → 200 + 로그 | §3.4 | logs[] 시간순 |
 | BA-30 | 실행 시작 → execution_logs에 block.started 기록 | §3.4 | eventType='block.started' |
-| BA-31 | GET /api/brick/gates/:eid/:bid/result → 200 | §3.5 | passed, handlerType 포함 |
-| BA-32 | POST /api/brick/gates/:eid/:bid/override → 200 | §3.5 | 강제 pass 처리 |
+| BA-31 | GET /api/brick/gates/:gateId/result → 200 | §3.5 | passed, handlerType 포함 |
+| BA-32 | POST /api/brick/gates/:gateId/override → 200 | §3.5 | 강제 pass 처리 |
 | BA-33 | POST /api/brick/review/:eid/:bid/approve → 200 | §3.8 | gate 통과 기록 |
 | BA-34 | POST /api/brick/review/:eid/:bid/reject → 200 + 사유 | §3.8 | rejectReason 저장 |
 
@@ -605,7 +614,7 @@ Smith님 지시 기반:
 |------------|---------|----------|
 | §3.1 Block Types | BA-01~06 | 6 |
 | §3.2 Teams | BA-07~16 | 10 |
-| §3.3 Presets | BA-17~23 | 7 |
+| §3.3 Presets | BA-17~23b | 8 |
 | §3.4 Executions | BA-24~30 | 7 |
 | §3.5 Gates | BA-31~32 | 2 |
 | §3.6 Learning | BA-35~37 | 3 |
@@ -616,7 +625,7 @@ Smith님 지시 기반:
 | §5 WebSocket | BA-40~43 | 4 |
 | §7 파일 동기화 | BA-48~50 | 3 |
 | §3.3 Validation | BA-53 | 1 |
-| **합계** | | **53** |
+| **합계** | | **54** |
 
 **Gap 0%**: 모든 API 엔드포인트, DB 테이블, WebSocket 이벤트에 대응 TDD 존재.
 
@@ -641,6 +650,7 @@ dashboard/
 │           ├── teams.ts
 │           ├── presets.ts
 │           ├── executions.ts
+│           ├── workflows.ts           # resume/cancel (hooks 경로 호환)
 │           ├── gates.ts
 │           ├── learning.ts
 │           ├── system.ts
