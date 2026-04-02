@@ -14,7 +14,7 @@ source "$(dirname "$0")/helpers/hook-self-register.sh" 2>/dev/null
 auto_register_peer 2>/dev/null
 
 SLACK_CHANNEL="C0AN7ATS4DD"
-SMITH_DM="D09V1NX98SK"
+# SMITH_DM="D09V1NX98SK"  # disabled — Smith님 DM 비활성화
 WEBHOOK_URL="${COO_WEBHOOK_URL:-http://localhost:18789}"
 
 # stdin JSON에서 TASK 정보 추출
@@ -117,12 +117,12 @@ if [ -n "${SLACK_BOT_TOKEN:-}" ]; then
         log_error "channel" "000"
     fi
 
-    if send_slack "$SMITH_DM" "smith-dm"; then
-        RESULT_DM="ok"
-    else
-        RESULT_DM="failed"
-        log_error "smith-dm" "000"
-    fi
+    #     if send_slack "$SMITH_DM" "smith-dm"; then
+    #         RESULT_DM="ok"
+    #     else
+    #         RESULT_DM="failed"
+    #         log_error "smith-dm" "000"
+    #     fi
 
     if send_webhook; then
         RESULT_WEBHOOK="ok"
