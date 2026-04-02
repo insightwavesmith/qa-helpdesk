@@ -2073,7 +2073,7 @@ gate:
     escalate_to: smith     # 에스컬레이션 대상
 ```
 
-### 11.7 Slack Gate 승인 (확장)
+### 12.7 Slack Gate 승인 (확장)
 
 **문제 아님, 기회**: Gate 승인을 브라우저 외에 Slack에서도 가능하면 편의 극대화.
 
