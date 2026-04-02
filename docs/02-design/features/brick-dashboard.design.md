@@ -1925,7 +1925,7 @@ applied_at: "2026-04-01T15:30:05Z"
 
 ---
 
-## 11. 비교 분석
+## 11. 비교 분석 (Learning Harness 포함)
 
 | 항목 | **Brick Dashboard** | n8n Editor | K8s Dashboard | Backstage | Retool |
 |------|---------------------|-----------|---------------|-----------|--------|
