@@ -325,6 +325,7 @@ async def test_bd107_http_gate_timeout_fail():
         mock_client = AsyncMock()
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_client.get = AsyncMock(side_effect=_httpx.TimeoutException("timed out"))
         mock_client.request = AsyncMock(side_effect=_httpx.TimeoutException("timed out"))
         mock_client_cls.return_value = mock_client
 
