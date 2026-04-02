@@ -2200,7 +2200,7 @@ Slack Interactive Message → API Server → Engine. Dashboard와 동일 API 사
 
 ---
 
-## 13. 파일 구조
+## 14. 파일 구조
 
 ```
 brick-dashboard/                    # 별도 패키지 또는 brick 패키지 하위
