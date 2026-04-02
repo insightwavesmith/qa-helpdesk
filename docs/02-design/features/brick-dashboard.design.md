@@ -1938,6 +1938,7 @@ applied_at: "2026-04-01T15:30:05Z"
 | **검증** | ✅ INV + Schema + DAG | ⚠️ 노드 호환성만 | ✅ Admission Webhook | ⚠️ 스키마만 | ❌ 없음 |
 | **플러그인 UI** | ✅ config_schema 동적 폼 | ✅ 노드 패키지 | ⚠️ 제한적 | ✅ Plugin 시스템 | ✅ 커스텀 컴포넌트 |
 | **오프라인** | ✅ 파일 직접 편집 | ❌ 서버 필수 | ❌ 서버 필수 | ❌ 서버 필수 | ❌ 서버 필수 |
+| **자가 학습** | ✅ Learning Harness | ❌ 없음 | ❌ 없음 | ❌ 없음 | ❌ 없음 |
 
 ### Brick Dashboard 고유 차별점
 
@@ -1946,6 +1947,7 @@ applied_at: "2026-04-01T15:30:05Z"
 3. **Team Deep Management**: 팀원, 스킬, MCP, 모델까지 관리하는 대시보드는 없음. Brick이 유일
 4. **AI-Native Gate 승인 UI**: LLM gate 결과를 시각화하고, 확신도 표시, 수동 승인 가능
 5. **Adapter-Agnostic**: 팀 UI가 adapter에 무관. 새 adapter 추가 시 UI 자동 반영
+6. **Learning Harness**: 반복 실패 → 패턴 감지 → 규칙 제안 → 승인 → 자동 반영. 시간이 지날수록 견고해지는 진화적 시스템. 다른 워크플로우 도구에 없는 개념
 
 ---
 
