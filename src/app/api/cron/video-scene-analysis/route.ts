@@ -15,6 +15,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/db";
+import { triggerNext } from "@/lib/pipeline-chain";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

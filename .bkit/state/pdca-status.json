@@ -1,9 +1,10 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-02T22:57:33.094Z",
+  "lastUpdated": "2026-04-02T22:57:38.233Z",
   "activeFeatures": [
     "run-prescription",
-    "video-saliency"
+    "video-saliency",
+    "video-scene-analysis"
   ],
   "primaryFeature": "run-prescription",
   "features": {
@@ -89,6 +90,19 @@
         "lastUpdated": "2026-04-02T22:57:33.093Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/video-saliency/route.ts"
+    },
+    "video-scene-analysis": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-02T22:57:38.233Z",
+        "lastUpdated": "2026-04-02T22:57:38.233Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/video-scene-analysis/route.ts"
     }
   },
   "pipeline": {
@@ -99,7 +113,7 @@
   "session": {
     "startedAt": "2026-04-02T17:03:00.193Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-02T22:57:33.094Z"
+    "lastActivity": "2026-04-02T22:57:38.233Z"
   },
   "history": [
     {
@@ -117,6 +131,12 @@
     {
       "timestamp": "2026-04-02T22:57:33.093Z",
       "feature": "video-saliency",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-02T22:57:38.233Z",
+      "feature": "video-scene-analysis",
       "phase": "do",
       "action": "updated"
     }
