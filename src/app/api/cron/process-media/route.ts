@@ -180,7 +180,7 @@ export async function GET(req: NextRequest) {
       if (videoId) allVideoIdSet.add(videoId);
     }
 
-    let globalVideoSources = new Map<string, string>();
+    const globalVideoSources = new Map<string, string>();
     if (allVideoIdSet.size > 0) {
       const allVids = [...allVideoIdSet];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

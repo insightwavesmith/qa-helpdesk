@@ -22,6 +22,10 @@ function timeAgo(ts: string): string {
   return `${days}일 전`;
 }
 
+function isTimestampOverdue(ts: string): boolean {
+  return Date.now() - new Date(ts).getTime() > 86400000;
+}
+
 export function ChainStatusBadge() {
   const [status, setStatus] = useState<ChainStatus | null>(null);
 
@@ -31,6 +35,8 @@ export function ChainStatusBadge() {
       .then((data: ChainStatus) => setStatus(data))
       .catch(() => setStatus({ ts: null }));
   }, []);
+
+  const isOverdue = status?.ts ? isTimestampOverdue(status.ts) : false;
 
   if (!status) return null;
 
@@ -42,9 +48,6 @@ export function ChainStatusBadge() {
       </div>
     );
   }
-
-  const diff = Date.now() - new Date(status.ts).getTime();
-  const isOverdue = diff > 86400000;
 
   return (
     <div
