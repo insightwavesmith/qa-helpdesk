@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "brick-engine"
+version = "2.0.0"
+description = "Brick — Build it. Block by Block. Universal workflow engine."
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.0",
+    "httpx>=0.24",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "pytest-cov>=4.0",
+]
+
+[project.scripts]
+brick = "brick.cli:cli"
+
+[project.entry-points."brick.adapters"]
+claude_agent_teams = "brick.adapters.claude_agent_teams:ClaudeAgentTeamsAdapter"
+claude_code = "brick.adapters.claude_code:SingleClaudeCodeAdapter"
+human = "brick.adapters.human:HumanAdapter"
+webhook = "brick.adapters.webhook:WebhookAdapter"
+
+[project.entry-points."brick.gates"]
+artifact_exists = "brick.gates.artifact_exists:ArtifactExistsGate"
+match_rate = "brick.gates.match_rate:MatchRateGate"
+prompt_eval = "brick.gates.prompt_eval:PromptEvalGate"
+agent_eval = "brick.gates.agent_eval:AgentEvalGate"
+
+[project.entry-points."brick.links"]
+sequential = "brick.links.sequential:SequentialLink"
+parallel = "brick.links.parallel:ParallelLink"
+compete = "brick.links.compete:CompeteLink"
+
+[tool.hatch.build.targets.wheel]
+packages = ["brick"]
+
+[tool.pytest.ini_options]
+testpaths = ["brick/tests"]
+asyncio_mode = "auto"
