@@ -14,6 +14,10 @@ source "$(dirname "$0")/helpers/hook-self-register.sh" 2>/dev/null
 auto_register_peer 2>/dev/null
 
 SLACK_CHANNEL="C0AN7ATS4DD"
+
+# 팀원은 알림 스킵 (리더 완료만 알림)
+source "$(dirname "$0")/is-teammate.sh" 2>/dev/null
+[ "$IS_TEAMMATE" = "true" ] && exit 0
 # SMITH_DM="D09V1NX98SK"  # disabled — Smith님 DM 비활성화
 WEBHOOK_URL="${COO_WEBHOOK_URL:-http://localhost:18789}"
 
