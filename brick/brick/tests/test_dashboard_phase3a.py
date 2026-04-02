@@ -384,9 +384,10 @@ async def test_bd109_http_gate_url_context_substitution():
         result = await executor.execute(handler, {"workflow_id": "wf-42"})
 
     assert result.passed is True
-    # verify URL was substituted
-    call_args = mock_client.request.call_args
-    assert "wf-42" in call_args[1].get("url", call_args[0][1] if len(call_args[0]) > 1 else "")
+    # verify URL was substituted (GET uses client.get)
+    call_args = mock_client.get.call_args
+    called_url = call_args[0][0] if call_args[0] else call_args[1].get("url", "")
+    assert "wf-42" in called_url
 
 
 # ══════════════════════════════════════════════════════════════
