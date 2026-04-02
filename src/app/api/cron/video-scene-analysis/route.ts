@@ -793,7 +793,15 @@ export async function GET(req: NextRequest) {
       `[video-scene-analysis] 완료: total=${rows.length} analyzed=${analyzed} skipped=${skipped} errors=${errors} ${elapsed}s`,
     );
 
-    // 파이프라인 마지막 단계 — triggerNext() 없음
+    // triggerNext 체인 — run-prescription (배치 모드)
+    const isChain = searchParams.get("chain") === "true";
+    let chainTriggered = false;
+    if (isChain && analyzed > 0) {
+      await triggerNext("run-prescription", { batch: "true" });
+      console.log("[video-scene-analysis] chain → run-prescription triggered");
+      chainTriggered = true;
+    }
+
     return NextResponse.json({
       message: "video-scene-analysis 완료",
       elapsed: `${elapsed}s`,
@@ -801,6 +809,7 @@ export async function GET(req: NextRequest) {
       analyzed,
       skipped,
       errors,
+      chainTriggered,
     });
   } catch (e) {
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
