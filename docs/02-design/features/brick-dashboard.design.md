@@ -1977,7 +1977,7 @@ class FileStore:
         self._write_yaml(resource)
 ```
 
-### 11.2 Canvas ↔ YAML 동기화 손실
+### 12.2 Canvas ↔ YAML 동기화 손실
 
 **문제**: YAML에 직접 추가한 커스텀 필드가 Canvas → YAML 변환 시 유실.
 
