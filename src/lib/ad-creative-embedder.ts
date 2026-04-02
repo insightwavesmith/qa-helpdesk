@@ -137,7 +137,7 @@ export async function embedMissingCreatives(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rows, error } = await (db as any)
     .from("creative_media")
-    .select("id, creative_id, media_url, ad_copy, embedding, text_embedding")
+    .select("id, creative_id, media_url, storage_url, ad_copy, embedding, text_embedding")
     .or("embedding.is.null,text_embedding.is.null")
     .eq("is_active", true)
     .not("media_url", "is", null)
@@ -156,10 +156,10 @@ export async function embedMissingCreatives(
     const updates: Record<string, any> = {};
 
     // 이미지 임베딩이 없으면 생성
-    if (!row.embedding && row.media_url) {
+    if (!row.embedding && (row.storage_url || row.media_url)) {
       try {
         updates.embedding = await generateEmbedding(
-          { imageUrl: row.media_url },
+          { imageUrl: row.storage_url || row.media_url },
           { taskType: "SEMANTIC_SIMILARITY" },
         );
       } catch (err) {
