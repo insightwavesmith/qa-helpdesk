@@ -13,6 +13,11 @@ import {
   Bell,
   ChevronRight,
   Repeat,
+  Blocks,
+  Workflow,
+  Box,
+  UserCog,
+  FileStack,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -24,6 +29,13 @@ const NAV_ITEMS = [
   { to: '/chains', label: '체인', icon: LinkIcon },
   { to: '/routines', label: '루틴', icon: Repeat },
   { to: '/activity', label: '활동', icon: Activity },
+];
+
+const BRICK_NAV_ITEMS = [
+  { to: '/brick', label: '워크플로우', icon: Workflow },
+  { to: '/brick/blocks', label: '블록 카탈로그', icon: Box },
+  { to: '/brick/teams', label: '팀 관리', icon: UserCog },
+  { to: '/brick/presets', label: '프리셋', icon: FileStack },
 ];
 
 const STATUS_DOT: Record<string, string> = {
@@ -72,6 +84,39 @@ export function Layout() {
               </NavLink>
             );
           })}
+
+          {/* Brick 섹션 */}
+          <div data-testid="brick-nav-section" className="mt-4 pt-4 border-t border-gray-100">
+            <div className="flex items-center gap-1 px-3 py-1.5">
+              <Blocks className="h-3 w-3 text-gray-400" />
+              <span className="text-[10px] font-medium uppercase tracking-widest text-gray-400">
+                Brick
+              </span>
+            </div>
+            <div className="space-y-0.5 mt-1">
+              {BRICK_NAV_ITEMS.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.to === '/brick'}
+                    className={({ isActive }) =>
+                      cn(
+                        'flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors',
+                        isActive
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+                      )
+                    }
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{item.label}</span>
+                  </NavLink>
+                );
+              })}
+            </div>
+          </div>
 
           {/* 에이전트 목록 (Collapsible) */}
           {agents && agents.length > 0 && (

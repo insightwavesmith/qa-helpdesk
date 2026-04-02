@@ -10,6 +10,13 @@ import { ChainsPage } from './pages/ChainsPage';
 import { AgentsPage } from './pages/AgentsPage';
 import { RoutinesPage } from './pages/RoutinesPage';
 import { WidgetPage } from './pages/WidgetPage';
+import { BrickOverviewPage } from './pages/brick/BrickOverviewPage';
+import { BrickCanvasPage } from './pages/brick/BrickCanvasPage';
+import { BlockCatalogPage } from './pages/brick/BlockCatalogPage';
+import { TeamManagePage } from './pages/brick/TeamManagePage';
+import { TeamDetailPage } from './pages/brick/TeamDetailPage';
+import { PresetListPage } from './pages/brick/PresetListPage';
+import { PresetEditorPage } from './pages/brick/PresetEditorPage';
 import { useLiveUpdates } from './hooks/useLiveUpdates';
 
 const queryClient = new QueryClient({
@@ -45,6 +52,13 @@ export default function App() {
             <Route path="chains" element={<ChainsPage />} />
             <Route path="agents" element={<AgentsPage />} />
             <Route path="routines" element={<RoutinesPage />} />
+            <Route path="brick" element={<BrickOverviewPage />} />
+            <Route path="brick/canvas/:id" element={<BrickCanvasPage />} />
+            <Route path="brick/blocks" element={<BlockCatalogPage />} />
+            <Route path="brick/teams" element={<TeamManagePage />} />
+            <Route path="brick/teams/:id" element={<TeamDetailPage />} />
+            <Route path="brick/presets" element={<PresetListPage />} />
+            <Route path="brick/presets/:id" element={<PresetEditorPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
