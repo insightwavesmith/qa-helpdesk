@@ -65,11 +65,38 @@ class ClaudeAgentTeamsAdapter(TeamAdapter, TeamManagementAdapter):
         await proc.communicate()
         return proc.returncode == 0
 
-    async def list_members(self) -> list[dict]:
+    async def list_members(self, team_id: str = "") -> list[dict]:
         config_path = Path(f"~/.claude/teams/{self.session}/config.json").expanduser()
         if config_path.exists():
             return json.loads(config_path.read_text()).get("members", [])
         return []
 
-    async def get_team_status(self) -> dict:
+    async def add_member(self, team_id: str, config: dict) -> dict:
+        return config
+
+    async def remove_member(self, team_id: str, member_id: str) -> bool:
+        return True
+
+    async def list_skills(self, team_id: str = "") -> list[dict]:
+        return []
+
+    async def get_skill_content(self, team_id: str, skill_id: str) -> str:
+        return ""
+
+    async def update_skill(self, team_id: str, skill_id: str, content: str) -> dict:
+        return {"skill_id": skill_id}
+
+    async def list_mcp_servers(self, team_id: str = "") -> list[dict]:
+        return []
+
+    async def configure_mcp(self, team_id: str, server_id: str, enabled: bool) -> dict:
+        return {"server_id": server_id, "enabled": enabled}
+
+    async def get_model_config(self, team_id: str = "") -> dict:
+        return {}
+
+    async def set_model_config(self, team_id: str, config: dict) -> dict:
+        return config
+
+    async def get_team_status(self, team_id: str = "") -> dict:
         return {"session": self.session, "role": self.peer_role, "status": "active"}
