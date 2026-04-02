@@ -1,8 +1,11 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-02T17:03:00.193Z",
-  "activeFeatures": [],
-  "primaryFeature": null,
+  "lastUpdated": "2026-04-02T22:57:23.634Z",
+  "activeFeatures": [
+    "run-prescription",
+    "video-saliency"
+  ],
+  "primaryFeature": "run-prescription",
   "features": {
     "hook-hardening-v2": {
       "phase": "completed",
@@ -60,6 +63,32 @@
       },
       "phaseTimestamps": {},
       "automationLevel": 2
+    },
+    "run-prescription": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-02T22:57:12.168Z",
+        "lastUpdated": "2026-04-02T22:57:12.168Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/run-prescription/route.ts"
+    },
+    "video-saliency": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-02T22:57:23.634Z",
+        "lastUpdated": "2026-04-02T22:57:23.634Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/video-saliency/route.ts"
     }
   },
   "pipeline": {
@@ -70,9 +99,22 @@
   "session": {
     "startedAt": "2026-04-02T17:03:00.193Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-02T17:03:00.193Z"
+    "lastActivity": "2026-04-02T22:57:23.634Z"
   },
-  "history": [],
+  "history": [
+    {
+      "timestamp": "2026-04-02T22:57:12.168Z",
+      "feature": "run-prescription",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-02T22:57:23.634Z",
+      "feature": "video-saliency",
+      "phase": "do",
+      "action": "updated"
+    }
+  ],
   "stateMachine": {
     "defaultWorkflow": "default",
     "activeWorkflows": {},
