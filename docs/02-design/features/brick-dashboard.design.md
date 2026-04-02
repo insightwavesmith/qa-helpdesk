@@ -2095,7 +2095,7 @@ Engine: block.gate_review_requested 이벤트
 
 Slack Interactive Message → API Server → Engine. Dashboard와 동일 API 사용.
 
-### 11.8 오프라인 편집과 온라인 동기화
+### 12.8 오프라인 편집과 온라인 동기화
 
 **문제**: API 서버 없이 파일 직접 편집 → 나중에 `brick serve` 시작 시 동기화.
 
