@@ -1,11 +1,12 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-02T01:20:50.953Z",
+  "lastUpdated": "2026-04-02T01:21:16.450Z",
   "activeFeatures": [
     "adapters",
     "gates",
     "links",
-    "engine"
+    "engine",
+    "brick"
   ],
   "primaryFeature": "adapters",
   "features": {
@@ -60,6 +61,19 @@
         "lastUpdated": "2026-04-02T01:20:50.953Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/brick/brick/engine/learning.py"
+    },
+    "brick": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-02T01:21:16.450Z",
+        "lastUpdated": "2026-04-02T01:21:16.450Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/brick/brick/cli.py"
     }
   },
   "pipeline": {
@@ -70,7 +84,7 @@
   "session": {
     "startedAt": "2026-04-02T01:17:53.365Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-02T01:20:50.953Z"
+    "lastActivity": "2026-04-02T01:21:16.450Z"
   },
   "history": [
     {
@@ -196,6 +210,12 @@
     {
       "timestamp": "2026-04-02T01:20:50.953Z",
       "feature": "engine",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-02T01:21:16.450Z",
+      "feature": "brick",
       "phase": "do",
       "action": "updated"
     }
