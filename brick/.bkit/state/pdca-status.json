@@ -1,10 +1,11 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-02T01:20:03.324Z",
+  "lastUpdated": "2026-04-02T01:20:37.496Z",
   "activeFeatures": [
     "adapters",
     "gates",
-    "links"
+    "links",
+    "engine"
   ],
   "primaryFeature": "adapters",
   "features": {
@@ -46,6 +47,19 @@
         "lastUpdated": "2026-04-02T01:20:03.324Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/brick/brick/links/branch.py"
+    },
+    "engine": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-02T01:20:37.496Z",
+        "lastUpdated": "2026-04-02T01:20:37.496Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/brick/brick/engine/executor.py"
     }
   },
   "pipeline": {
@@ -56,7 +70,7 @@
   "session": {
     "startedAt": "2026-04-02T01:17:53.365Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-02T01:20:03.324Z"
+    "lastActivity": "2026-04-02T01:20:37.496Z"
   },
   "history": [
     {
@@ -170,6 +184,12 @@
     {
       "timestamp": "2026-04-02T01:20:03.324Z",
       "feature": "links",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-02T01:20:37.496Z",
+      "feature": "engine",
       "phase": "do",
       "action": "updated"
     }
