@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 
+import httpx
+
 from brick.gates.base import GateExecutor
 from brick.gates.prompt_eval import PromptEvalGate
 from brick.gates.agent_eval import AgentEvalGate
