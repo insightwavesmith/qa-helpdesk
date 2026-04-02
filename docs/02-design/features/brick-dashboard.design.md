@@ -18,7 +18,8 @@
 | **아키텍처** | ECS 패턴 (축 독립) + K8s Resource Model (선언적 CRUD) + n8n Canvas (시각적 조합) |
 | **기술 스택** | FastAPI (Python) API + React (React Flow) 프론트엔드 |
 | **Engine 연동** | EventBus → WebSocket 실시간 + REST API → FileStore → Engine |
-| **TDD** | 80건, Gap 0% |
+| **Learning Harness** | 반복 실패 패턴 감지 → 규칙 제안 → 승인 시 자동 반영 (진화적 하네스) |
+| **TDD** | 100건, Gap 0% |
 
 ### 이것은 모니터링 도구가 아니다
 
