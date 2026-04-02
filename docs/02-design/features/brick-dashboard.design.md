@@ -606,6 +606,14 @@ src/
 │   │   ├── GateConfigEditor.tsx    # Gate 4타입 편집기
 │   │   ├── TeamConfigEditor.tsx    # 팀 설정 편집기
 │   │   └── PresetEditor.tsx        # 프리셋 비주얼+YAML 편집
+│   ├── learning/
+│   │   ├── ProposalList.tsx        # 규칙 제안 목록
+│   │   ├── ProposalCard.tsx        # 제안 카드 (패턴+diff)
+│   │   ├── ProposalDetail.tsx      # 제안 상세 + 승인/거부/수정
+│   │   ├── DiffViewer.tsx          # YAML diff 뷰어
+│   │   ├── LearningHistory.tsx     # 학습 이력
+│   │   ├── AxisLearningStats.tsx   # 3축별 학습 현황
+│   │   └── PatternEvidence.tsx     # 실패 패턴 증거 (이벤트 링크)
 │   ├── panels/
 │   │   ├── DetailPanel.tsx         # 우측 상세 패널
 │   │   ├── GateApprovalPanel.tsx   # 게이트 승인 패널
