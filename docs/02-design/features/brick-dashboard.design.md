@@ -2464,8 +2464,43 @@ Engine V2 §14 브랜딩 적용. Dashboard 고유 추가사항:
 
 | ID | 테스트 | Design 섹션 | 검증 |
 |----|--------|------------|------|
-| BD-79 | 동시 편집: 외부 변경 시 알림 | §11.1 | conflict 이벤트 |
-| BD-80 | Gate 타임아웃: 시간 초과 → 에스컬레이션 | §11.6 | escalate_to 호출 |
+| BD-79 | 동시 편집: 외부 변경 시 알림 | §12.1 | conflict 이벤트 |
+| BD-80 | Gate 타임아웃: 시간 초과 → 에스컬레이션 | §12.6 | escalate_to 호출 |
+
+### Learning Harness — PatternDetector
+
+| ID | 테스트 | Design 섹션 | 검증 |
+|----|--------|------------|------|
+| BD-81 | detect: gate_failed 3회 반복 → 패턴 감지 | §10.4 | patterns 1건 반환 |
+| BD-82 | detect: 2회만 반복 → 미감지 (threshold 미달) | §10.4 | patterns 0건 |
+| BD-83 | detect: 다른 block_id → 별도 패턴 | §10.4 | patterns 2건 (각각) |
+| BD-84 | detect: window 밖 이벤트 → 제외 | §10.4 | 7일 이전 무시 |
+| BD-85 | propose: 패턴 → LLM 분석 → LearningProposal 생성 | §10.4 | axis/title/diff 존재 |
+| BD-86 | propose: confidence < 0.7 → status=hold (자동 보류) | §12.8 | status="hold" |
+
+### Learning Harness — RuleApplicator
+
+| ID | 테스트 | Design 섹션 | 검증 |
+|----|--------|------------|------|
+| BD-87 | apply(block): 프리셋 YAML gates 섹션 패치 | §10.5 | 파일 변경 확인 |
+| BD-88 | apply(team): SKILL.md에 규칙 추가 | §10.5 | 마커 섹션 존재 |
+| BD-89 | apply(link): 프리셋 YAML links 파라미터 변경 | §10.5 | max_retries 변경 |
+| BD-90 | apply: 검증 실패 시 롤백 | §10.5 | 원본 복원 |
+| BD-91 | apply: modified_diff 우선 적용 | §10.5 | 수정 diff 반영 |
+
+### Learning Harness — API
+
+| ID | 테스트 | Design 섹션 | 검증 |
+|----|--------|------------|------|
+| BD-92 | GET /api/v1/learning/proposals → 200 + 목록 | §3.2 | status=200, proposals[] |
+| BD-93 | GET /api/v1/learning/proposals/:id → 200 + 상세 | §3.2 | pattern + diff 포함 |
+| BD-94 | POST .../approve → 200 + 파일 자동 반영 | §3.2 | status=approved, applied_at |
+| BD-95 | POST .../reject → 200 + 사유 기록 | §3.2 | status=rejected, reason |
+| BD-96 | POST .../modify → 200 + 수정 diff 적용 | §3.2 | modified_diff 반영 |
+| BD-97 | GET /api/v1/learning/history → 200 + 이력 | §3.2 | 시간순 |
+| BD-98 | GET /api/v1/learning/stats → 200 + 3축 통계 | §3.2 | block/team/link 수 |
+| BD-99 | POST /api/v1/learning/detect → 수동 패턴 감지 | §3.2 | 신규 proposals 반환 |
+| BD-100 | POST .../rollback → 200 + 규칙 되돌리기 | §12.10 | status=rolled_back |
 
 ### 매핑 테이블 요약
 
@@ -2478,8 +2513,9 @@ Engine V2 §14 브랜딩 적용. Dashboard 고유 추가사항:
 | §5 데이터 흐름 | BD-57~63 | 7 |
 | §7 ManagementAdapter | BD-64~75 | 12 |
 | §8 System Layer | BD-76~78 | 3 |
-| §11 심층 분석 | BD-79~80 | 2 |
-| **합계** | | **80** |
+| §10 Learning Harness | BD-81~100 | 20 |
+| §12 심층 분석 | BD-79~80 | 2 |
+| **합계** | | **100** |
 
 **Gap 0%**: 모든 Design 섹션에 대응 TDD 케이스 존재. 매핑 테이블로 1:1 추적 가능.
 
