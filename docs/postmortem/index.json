@@ -71,6 +71,18 @@
       "preventionTdd": [],
       "relatedFiles": ["docs/adr/ADR-002-service-context.md"],
       "tags": ["config", "vercel", "cloud-run", "documentation"]
+    },
+    {
+      "id": "PM-007",
+      "date": "2026-04-03",
+      "slug": "design-task-gap",
+      "title": "Design → TASK 변환 시 백엔드 누락",
+      "severity": "critical",
+      "category": "process",
+      "status": "resolved",
+      "preventionTdd": [],
+      "relatedFiles": ["docs/02-design/features/brick-dashboard.design.md", "docs/02-design/features/brick-backend-api.design.md"],
+      "tags": ["design-task-gap", "brick", "backend", "coo-process"]
     }
   ],
   "categories": [
@@ -78,9 +90,9 @@
     "data-loss", "performance", "security", "infra", "process"
   ],
   "stats": {
-    "total": 6,
-    "resolved": 6,
+    "total": 7,
+    "resolved": 7,
     "open": 0,
-    "lastUpdated": "2026-03-30"
+    "lastUpdated": "2026-04-03"
   }
 }
