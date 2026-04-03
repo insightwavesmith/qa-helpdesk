@@ -74,6 +74,12 @@ get_my_role() {
 # peer-map.json에 자동 등록 (멱등)
 # 성공 시 return 0, 실패해도 호출 hook 중단하지 않음
 auto_register_peer() {
+    # 전체 함수를 stderr 억제로 감싸서 hook error 표시 방지
+    _auto_register_peer_impl "$@" 2>/dev/null
+    return 0
+}
+
+_auto_register_peer_impl() {
     # jq 필수
     command -v jq >/dev/null 2>&1 || return 0
 

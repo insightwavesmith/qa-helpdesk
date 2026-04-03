@@ -34,8 +34,8 @@ function isValidSession(token: string): boolean {
  * POST /api/brick/auth/login { password: string }
  * → Set-Cookie: brick_session=<token>
  */
-export function registerBrickAuthRoutes(app: import('express').Express): void {
-  app.post('/api/brick/auth/login', (req, res) => {
+export function registerBrickAuthRoutes(app: import('express').Application): void {
+  app.post('/api/brick/auth/login', (req: Request, res: Response) => {
     const { password } = req.body;
 
     if (!BRICK_DASHBOARD_PASSWORD) {
@@ -64,7 +64,7 @@ export function registerBrickAuthRoutes(app: import('express').Express): void {
     res.json({ ok: true });
   });
 
-  app.post('/api/brick/auth/logout', (req, res) => {
+  app.post('/api/brick/auth/logout', (req: Request, res: Response) => {
     const token = req.cookies?.brick_session;
     if (token) activeSessions.delete(token);
     res.clearCookie('brick_session');
@@ -100,10 +100,10 @@ export function requireBrickAuth(req: Request, res: Response, next: NextFunction
 
   // 경로 2: API Key (서버간)
   if (BRICK_API_KEY) {
-    const apiKey = req.headers['x-brick-api-key'] as string
-      || (req.headers.authorization?.startsWith('Bearer ')
-        ? req.headers.authorization.slice(7)
-        : '');
+    const headerKey = req.headers['x-brick-api-key'] as string | undefined;
+    const authHeader = req.headers['authorization'] as string | undefined;
+    const apiKey = headerKey
+      || (authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : '');
     if (apiKey === BRICK_API_KEY) {
       return next();
     }

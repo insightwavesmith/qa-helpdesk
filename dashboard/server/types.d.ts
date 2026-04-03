@@ -5,12 +5,17 @@ declare module 'express' {
     body: any;
     params: Record<string, string>;
     query: Record<string, string | string[] | undefined>;
+    cookies: Record<string, string>;
+    path: string;
+    method: string;
   }
 
   interface Response extends ServerResponse {
     json(body: unknown): Response;
     status(code: number): Response;
     send(body?: unknown): Response;
+    cookie(name: string, val: string, options?: Record<string, unknown>): Response;
+    clearCookie(name: string, options?: Record<string, unknown>): Response;
   }
 
   type NextFunction = (err?: any) => void;
@@ -42,6 +47,11 @@ declare module 'express' {
 declare module 'cors' {
   function cors(options?: Record<string, unknown>): any;
   export default cors;
+}
+
+declare module 'cookie-parser' {
+  function cookieParser(secret?: string, options?: Record<string, unknown>): any;
+  export default cookieParser;
 }
 
 declare module 'ws' {
