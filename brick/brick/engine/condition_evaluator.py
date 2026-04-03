@@ -43,7 +43,7 @@ def _evaluate_str_condition(condition: str, context: dict) -> bool:
     """문자열 condition 평가. 예: 'match_rate < 90'"""
     match = _PATTERN.match(condition)
     if not match:
-        return True  # 파싱 실패 시 통과 (안전 기본값)
+        return False  # 파싱 불가 조건은 차단 (안전한 기본값)
 
     var_name, op_str, raw_value = match.groups()
     actual = context.get(var_name)

@@ -10,6 +10,7 @@ import yaml
 
 from brick.engine.checkpoint import CheckpointStore
 from brick.engine.event_bus import EventBus
+from brick.engine.preset_validator import PresetValidator
 from brick.engine.state_machine import StateMachine
 from brick.engine.validator import Validator
 from brick.gates.base import GateExecutor
@@ -236,6 +237,20 @@ class WorkflowExecutor:
 
         workflow_def = self.preset_loader.load(preset_name)
 
+        # 프리셋 스키마 검증
+        preset_validator = PresetValidator()
+        validation_errors = preset_validator.validate(workflow_def)
+        real_errors = [e for e in validation_errors if e.severity == "error"]
+        if real_errors:
+            error_msg = "; ".join(f"{e.field}: {e.message}" for e in real_errors)
+            raise ValueError(f"프리셋 검증 실패: {error_msg}")
+
+        warnings = [e for e in validation_errors if e.severity == "warning"]
+        for w in warnings:
+            self.event_bus.publish(Event(type="preset.validation_warning", data={
+                "field": w.field, "message": w.message,
+            }))
+
         if self.validator:
             errors = self.validator.validate_workflow(workflow_def)
             if errors:
@@ -344,12 +359,16 @@ class WorkflowExecutor:
                 return instance
 
             try:
+                team_def = instance.definition.teams.get(cmd.block_id)
+                team_config = team_def.config if team_def else {}
+
                 execution_id = await adapter.start_block(block_inst.block, {
                     "workflow_id": instance.id,
                     "block_id": cmd.block_id,
                     "block_what": block_inst.block.what,
                     "block_type": block_inst.block.type,
                     "project_context": instance.context,
+                    "team_config": team_config,
                 })
                 block_inst.execution_id = execution_id
 
