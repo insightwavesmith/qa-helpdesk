@@ -36,7 +36,7 @@ import { PrescriptionError } from '@/types/prescription';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = 'gemini-3-pro-preview';
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
-const TIMEOUT_MS = 90_000; // v3 프롬프트 확장으로 60→90초
+const TIMEOUT_MS = 120_000; // V3: 영상 File API 업로드 포함 120초
 const MAX_RETRIES = 2;
 
 // ── STEP 1: 소재 원본 + 메타데이터 조회 ─────────────────────────────
@@ -548,6 +548,7 @@ export async function generatePrescription(
     andromeda_analyzed: true,
     has_performance_data: hasPerformanceData,
     analysis_source: media.analysis_json ? 'existing' : 'fresh',
+    video_multimodal: media.media_type === 'VIDEO',
   };
 
   // STEP 13: 최종 조립

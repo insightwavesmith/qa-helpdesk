@@ -291,6 +291,7 @@ export interface PrescriptionResponse {
     has_performance_data: boolean;
     analysis_source?: 'existing' | 'fresh';
     scene_analysis_injected?: boolean;
+    video_multimodal?: boolean;
   };
 }
 

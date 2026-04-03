@@ -4,6 +4,7 @@
  */
 
 import { PRESCRIPTION_GUIDE_TEXT } from './prescription-guide';
+import { uploadVideoToGemini } from './gemini-file-uploader';
 import type {
   AnalysisJsonV3,
   PerformanceBacktrackInput,
@@ -459,26 +460,37 @@ async function buildMediaPart(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   media: any
 ): Promise<object | null> {
-  const url = media.media_url || media.storage_url;
+  const url = media.storage_url || media.media_url;
   if (!url) return null;
 
   try {
-    const mediaType = media.media_type === 'VIDEO' ? 'video/mp4' : null;
-
-    // 이미지만 inline_data로 전송 (영상은 URL 참조)
-    if (!mediaType) {
-      const res = await fetch(url);
-      if (!res.ok) return null;
-      const contentType = res.headers.get('content-type') || 'image/jpeg';
-      const mimeType = contentType.startsWith('image/') ? contentType.split(';')[0] : 'image/jpeg';
-      const arrayBuffer = await res.arrayBuffer();
-      const base64Data = Buffer.from(arrayBuffer).toString('base64');
-      return { inline_data: { mime_type: mimeType, data: base64Data } };
+    if (media.media_type === 'VIDEO') {
+      // V3: File API로 영상 업로드 → file_uri 참조
+      const fileRef = await uploadVideoToGemini(url);
+      return {
+        file_data: {
+          mime_type: fileRef.mimeType,
+          file_uri: fileRef.uri,
+        },
+      };
     }
 
-    // 영상: URL 텍스트로 전달
-    return { text: `[영상 소재 URL: ${url}]` };
-  } catch {
+    // 이미지: 기존 inline_data 유지
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const contentType = res.headers.get('content-type') || 'image/jpeg';
+    const mimeType = contentType.startsWith('image/')
+      ? contentType.split(';')[0]
+      : 'image/jpeg';
+    const arrayBuffer = await res.arrayBuffer();
+    const base64Data = Buffer.from(arrayBuffer).toString('base64');
+    return { inline_data: { mime_type: mimeType, data: base64Data } };
+  } catch (err) {
+    console.error('[buildMediaPart] 미디어 로드 실패:', err);
+    // 영상 업로드 실패 시 기존 URL 텍스트 폴백
+    if (media.media_type === 'VIDEO') {
+      return { text: `[영상 소재 URL: ${url}] (영상 직접 분석 불가 — URL 참조)` };
+    }
     return null;
   }
 }
