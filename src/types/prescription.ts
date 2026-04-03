@@ -289,6 +289,8 @@ export interface PrescriptionResponse {
     similar_count: number;
     andromeda_analyzed: boolean;
     has_performance_data: boolean;
+    analysis_source?: 'existing' | 'fresh';
+    scene_analysis_injected?: boolean;
   };
 }
 
@@ -552,6 +554,9 @@ export interface SimilarBenchmark {
   analysis_json: AnalysisJsonV3 | null;
   performance: Record<string, number> | null;
 }
+
+// ── 씬분석 데이터 타입 alias ────────────────────────────────────────
+export type SceneAnalysisData = NonNullable<AnalysisJsonV3['scene_analysis']>;
 
 // ── 에러 클래스 ───────────────────────────────────────────────────────
 

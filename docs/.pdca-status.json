@@ -1,10 +1,10 @@
 {
-  "feature": "pipeline-phase1-collection",
-  "phase": "check",
-  "status": "completed",
-  "updatedAt": "2026-04-03T07:51:17.093953",
-  "notes": "Pipeline Phase 1 수집 정상화 완료. Match Rate 90%.",
-  "matchRate": 90,
+  "feature": "prescription-pipeline-v3",
+  "phase": "do",
+  "status": "in_progress",
+  "updatedAt": "2026-04-03T09:00:00.000000",
+  "notes": "처방 파이프라인 V3 Phase 1: 씬분석 주입 + 버그 수정 (PV3-001~012) 구현 중",
+  "matchRate": null,
   "features": {
     "hook-hardening-v2": {
       "phase": "completed",
@@ -64,7 +64,7 @@
       "automationLevel": 2
     }
   },
-  "primaryFeature": "pipeline-phase1-collection",
-  "lastUpdated": "2026-04-03T07:51:17.093957",
+  "primaryFeature": "prescription-pipeline-v3",
+  "lastUpdated": "2026-04-03T09:00:00.000000",
   "_autoSyncNote": "auto-synced at 2026-04-03 02:02:42, last commit: 7ced1538"
 }

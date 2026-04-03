@@ -53,14 +53,6 @@ async function step1_fetchCreativeMedia(svc: DbClient, creativeMediaId: string) 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const media = data as any;
 
-  if (!media.analysis_json) {
-    throw new PrescriptionError(
-      '이 소재는 아직 분석되지 않았습니다. 분석 완료 후 처방을 받을 수 있습니다.',
-      422,
-      'NO_ANALYSIS'
-    );
-  }
-
   // creative → account_id, category 조회
   const { data: creative } = await svc
     .from('creatives')
@@ -73,7 +65,7 @@ async function step1_fetchCreativeMedia(svc: DbClient, creativeMediaId: string) 
 
 // ── STEP 2: 시선 데이터 조회 (DeepGaze) ─────────────────────────────
 
-async function step2_fetchSaliencyData(svc: DbClient, creativeMediaId: string, mediaType: string) {
+async function step2_fetchSaliencyData(svc: DbClient, creativeMediaId: string, mediaType: string, analysisJson: AnalysisJsonV3 | null) {
   const { data: saliency } = await svc
     .from('creative_saliency')
     .select('cta_attention_score, cognitive_load, top_fixations, attention_map_url, saliency_data')
@@ -84,14 +76,7 @@ async function step2_fetchSaliencyData(svc: DbClient, creativeMediaId: string, m
   let sceneAnalysis = null;
 
   if (mediaType === 'VIDEO') {
-    const { data: videoData } = await svc
-      .from('creative_media')
-      .select('video_analysis')
-      .eq('id', creativeMediaId)
-      .single();
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    sceneAnalysis = (videoData as any)?.video_analysis?.scene_analysis ?? null;
+    sceneAnalysis = analysisJson?.scene_analysis ?? null;
 
     const { data: frames } = await svc
       .from('video_saliency_frames')
@@ -460,7 +445,7 @@ export async function generatePrescription(
   // STEP 1: 소재 원본 조회
   const { media, creative } = await step1_fetchCreativeMedia(svc, creativeMediaId);
   const category = creative?.category ?? null;
-  const analysisJson = media.analysis_json as AnalysisJsonV3;
+  const analysisJson = (media.analysis_json ?? {}) as AnalysisJsonV3;
 
   // 캐시 체크 (force_refresh=false이고 top3_prescriptions가 이미 있으면 캐시 반환)
   if (!forceRefresh && analysisJson.top3_prescriptions && analysisJson.top3_prescriptions.length > 0 && analysisJson.meta) {
@@ -481,7 +466,7 @@ export async function generatePrescription(
 
   // STEP 2: 시선 데이터 조회
   const { saliency, videoSaliency, sceneAnalysis } = await step2_fetchSaliencyData(
-    svc, creativeMediaId, media.media_type
+    svc, creativeMediaId, media.media_type, analysisJson
   );
 
   // STEP 3: 성과 데이터 조회
@@ -534,6 +519,7 @@ export async function generatePrescription(
   const promptParts = await buildPrescriptionPrompt({
     media,
     saliency,
+    sceneAnalysis,
     performanceBacktrack,
     patterns,
     globalBenchmarks,
@@ -561,6 +547,7 @@ export async function generatePrescription(
     similar_count: similarBenchmarks.length,
     andromeda_analyzed: true,
     has_performance_data: hasPerformanceData,
+    analysis_source: media.analysis_json ? 'existing' : 'fresh',
   };
 
   // STEP 13: 최종 조립

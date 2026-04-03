@@ -1,0 +1,5 @@
+-- cron_runs.details jsonb 컬럼 추가
+-- 실행: Cloud SQL Console에서 수동 실행
+-- 아래 SQL을 Cloud SQL에서 수동 실행하세요
+-- ADD COLUMN details jsonb to cron_runs
+-- COMMENT: 크론 실행 상세 정보

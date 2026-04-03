@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-03T00:06:03.673Z",
+  "lastUpdated": "2026-04-03T00:22:21.748Z",
   "activeFeatures": [
     "run-prescription",
     "video-saliency",
@@ -25,7 +25,10 @@
     "embed-creatives",
     "crawl-lps",
     "creative-saliency",
-    "track-performance"
+    "track-performance",
+    "health",
+    "protractor",
+    "prescription"
   ],
   "primaryFeature": "run-prescription",
   "features": {
@@ -186,9 +189,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-03T00:00:40.681Z",
-        "lastUpdated": "2026-04-03T00:01:21.754Z"
+        "lastUpdated": "2026-04-03T00:21:17.289Z"
       },
-      "lastFile": "/Users/smith/projects/bscamp/src/lib/cron-logger.ts"
+      "lastFile": "/Users/smith/projects/bscamp/src/types/prescription.ts"
     },
     "organic-benchmark": {
       "phase": "do",
@@ -397,6 +400,45 @@
         "lastUpdated": "2026-04-03T00:05:11.743Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/track-performance/route.ts"
+    },
+    "health": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:08:39.251Z",
+        "lastUpdated": "2026-04-03T00:09:35.026Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/health/route.ts"
+    },
+    "protractor": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:20:54.207Z",
+        "lastUpdated": "2026-04-03T00:21:15.583Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/lib/protractor/prescription-prompt.ts"
+    },
+    "prescription": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:22:21.748Z",
+        "lastUpdated": "2026-04-03T00:22:21.748Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/__tests__/prescription/pv3-phase2.test.ts"
     }
   },
   "pipeline": {
@@ -407,7 +449,7 @@
   "session": {
     "startedAt": "2026-04-02T17:03:00.193Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-03T00:06:03.673Z"
+    "lastActivity": "2026-04-03T00:22:21.748Z"
   },
   "history": [
     {
@@ -899,6 +941,72 @@
     {
       "timestamp": "2026-04-03T00:06:03.673Z",
       "feature": "collect-daily-4",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:08:39.251Z",
+      "feature": "health",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:09:35.026Z",
+      "feature": "health",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:20:54.207Z",
+      "feature": "protractor",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:20:55.741Z",
+      "feature": "protractor",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:20:56.626Z",
+      "feature": "protractor",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:21:03.522Z",
+      "feature": "protractor",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:21:07.285Z",
+      "feature": "protractor",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:21:11.930Z",
+      "feature": "protractor",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:21:15.583Z",
+      "feature": "protractor",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:21:17.289Z",
+      "feature": "bscamp",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:22:21.748Z",
+      "feature": "prescription",
       "phase": "do",
       "action": "updated"
     }

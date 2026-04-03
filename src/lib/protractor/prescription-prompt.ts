@@ -13,6 +13,7 @@ import type {
   SimilarBenchmark,
   EarAnalysis,
   GeminiPromptParts,
+  SceneAnalysisData,
 } from '@/types/prescription';
 
 // ── 시스템 프롬프트 (금지 규칙 포함) ────────────────────────────────
@@ -28,6 +29,12 @@ export const PRESCRIPTION_SYSTEM_PROMPT = `
 4. "더 좋게 하세요" 같은 추상적 처방 금지
 5. 입력 데이터에 없는 수치 인용 금지
 6. 광고비/예산 관련 처방 금지
+7. 영상 소재가 첨부된 경우 반드시 영상을 직접 시청하고 분석하세요.
+   URL 텍스트만 있는 경우 시각 분석은 DeepGaze 데이터에 의존하세요.
+8. SECTION 2에 사전 분석된 씬 데이터가 있으면 이를 참조하되,
+   직접 시청한 결과와 다른 부분이 있으면 직접 시청 결과를 우선하세요.
+9. 성과 데이터가 없는 신규 소재도 분석 가능합니다.
+   이 경우 축1(원론)과 축3(글로벌 벤치마크) 기반으로 처방하세요.
 
 추가 분석 지시:
 1. ad_axis: 5축 분석 결과를 바탕으로 광고 소재의 카테고리를 분류하세요. format(포맷), hook_type(훅 유형), messaging_strategy(메시징 전략), target_persona(타겟 페르소나+인식 단계), category(카테고리 배열), structure(영상 구조 → 연결), persuasion(설득 전략), offer(오퍼), andromeda_code(속성 조합 코드), pda_code(persona×desire×awareness).
@@ -272,7 +279,9 @@ function buildSection2_Evidence(input: {
   media: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   saliency: any;
+  sceneAnalysis: SceneAnalysisData | null;
   hasPerformanceData: boolean;
+  noPerformanceNote?: string;
 }): string {
   const lines: string[] = [
     '## [SECTION 2: 증거 자료]',
@@ -304,6 +313,43 @@ function buildSection2_Evidence(input: {
       lines.push(`- 인지 부하: ${input.saliency.cognitive_load}`);
     }
     lines.push('');
+  }
+
+  // 성과 데이터 없는 신규 소재 안내
+  if (input.noPerformanceNote) {
+    lines.push('### 분석 안내');
+    lines.push(input.noPerformanceNote);
+    lines.push('');
+  }
+
+  // 씬분석 데이터 (VIDEO만 — 이미 분석된 데이터 참조)
+  if (input.sceneAnalysis && input.sceneAnalysis.scenes?.length > 0) {
+    lines.push('### 사전 분석된 씬 데이터 (참조용)');
+    lines.push('아래는 이 영상을 사전 분석한 결과입니다. 참고하여 더 정확하게 분석하세요.');
+    lines.push('');
+
+    for (const scene of input.sceneAnalysis.scenes) {
+      lines.push(`**${scene.time}** [${scene.type}]`);
+      lines.push(`- 설명: ${scene.desc}`);
+      if (scene.analysis) {
+        lines.push(`- 훅 강도: ${(scene.analysis.hook_strength * 100).toFixed(0)}%`);
+        lines.push(`- 주목도: ${scene.analysis.attention_quality}`);
+        lines.push(`- 메시지 명확도: ${scene.analysis.message_clarity}`);
+        if (scene.analysis.improvement) {
+          lines.push(`- 개선 제안: ${scene.analysis.improvement}`);
+        }
+      }
+      if (scene.deepgaze) {
+        const dg = scene.deepgaze;
+        lines.push(`- DeepGaze 시선: ${dg.dominant_region} (고정점 ${dg.fixation_count}개, CTA 가시: ${dg.cta_visible ? '예' : '아니오'})`);
+      }
+      lines.push('');
+    }
+
+    if (input.sceneAnalysis.overall) {
+      lines.push(`**전체**: ${input.sceneAnalysis.overall.total_scenes}개 씬, 훅 효과=${input.sceneAnalysis.overall.hook_effective ? '유효' : '미흡'}, CTA 도달=${input.sceneAnalysis.overall.cta_reached ? '도달' : '미도달'}`);
+      lines.push('');
+    }
   }
 
   return lines.join('\n');
@@ -444,6 +490,7 @@ export async function buildPrescriptionPrompt(input: {
   media: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   saliency: any;
+  sceneAnalysis: SceneAnalysisData | null;
   performanceBacktrack: PerformanceBacktrackInput | null;
   patterns: PrescriptionPattern[];
   globalBenchmarks: PrescriptionBenchmark[];
@@ -463,7 +510,11 @@ export async function buildPrescriptionPrompt(input: {
   sections.push(buildSection2_Evidence({
     media: input.media,
     saliency: input.saliency,
+    sceneAnalysis: input.sceneAnalysis,
     hasPerformanceData: input.hasPerformanceData,
+    noPerformanceNote: !input.hasPerformanceData
+      ? '이 소재는 아직 성과 데이터가 없습니다. 소재 자체의 시각/메시지/구조 분석에 집중하세요. 성과 역추적 없이 축1(원론) + 축3(글로벌 벤치마크) 기반으로 처방하세요.'
+      : undefined,
   }));
 
   // SECTION 3: 처방 근거 (3축)
