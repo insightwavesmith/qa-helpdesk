@@ -107,14 +107,32 @@ class ClaudeAgentTeamsAdapter(TeamAdapter, TeamManagementAdapter):
 
     async def check_status(self, execution_id: str) -> AdapterStatus:
         state_file = self.team_context_dir / f"task-state-{execution_id}.json"
-        if state_file.exists():
-            data = json.loads(state_file.read_text())
-            return AdapterStatus(
-                status=data.get("status", "running"),
-                progress=data.get("progress"),
-                message=data.get("message"),
-            )
-        return AdapterStatus(status="running")
+
+        if not state_file.exists():
+            # 파일 미존재 시 생성 시간 기반 staleness 판단
+            # execution_id 형식: "{block_id}-{unix_timestamp}"
+            try:
+                start_ts = float(execution_id.rsplit("-", 1)[-1])
+                elapsed = time.time() - start_ts
+                if elapsed > 600:  # 10분 초과
+                    return AdapterStatus(
+                        status="failed",
+                        error=f"상태 파일 미생성 (경과: {int(elapsed)}초)",
+                    )
+            except (ValueError, IndexError):
+                pass
+            return AdapterStatus(status="running")
+
+        # 기존: 파일 읽어서 상태 반환
+        data = json.loads(state_file.read_text())
+        return AdapterStatus(
+            status=data.get("status", "running"),
+            progress=data.get("progress"),
+            message=data.get("message"),
+            metrics=data.get("metrics"),
+            artifacts=data.get("artifacts"),
+            error=data.get("error"),
+        )
 
     async def get_artifacts(self, execution_id: str) -> list[str]:
         state_file = self.team_context_dir / f"task-state-{execution_id}.json"

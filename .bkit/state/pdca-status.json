@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-03T17:08:08.866Z",
+  "lastUpdated": "2026-04-03T17:10:43.342Z",
   "activeFeatures": [
     "gates",
     "middleware",
@@ -8,7 +8,8 @@
     "engine",
     "server",
     "dashboard",
-    "brick"
+    "brick",
+    "adapters"
   ],
   "primaryFeature": "gates",
   "features": {
@@ -117,7 +118,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-03T17:05:25.630Z",
-        "lastUpdated": "2026-04-03T17:08:08.866Z"
+        "lastUpdated": "2026-04-03T17:10:43.342Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/brick/brick/engine/executor.py"
     },
@@ -156,9 +157,22 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-03T17:07:08.718Z",
-        "lastUpdated": "2026-04-03T17:07:08.718Z"
+        "lastUpdated": "2026-04-03T17:10:11.041Z"
       },
-      "lastFile": "/Users/smith/projects/bscamp/brick/brick/models/events.py"
+      "lastFile": "/Users/smith/projects/bscamp/brick/brick/models/team.py"
+    },
+    "adapters": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T17:09:45.464Z",
+        "lastUpdated": "2026-04-03T17:09:45.464Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/brick/brick/adapters/claude_agent_teams.py"
     }
   },
   "pipeline": {
@@ -169,7 +183,7 @@
   "session": {
     "startedAt": "2026-04-03T16:06:10.313Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-03T17:08:08.866Z"
+    "lastActivity": "2026-04-03T17:10:43.342Z"
   },
   "history": [
     {
@@ -264,6 +278,66 @@
     },
     {
       "timestamp": "2026-04-03T17:08:08.866Z",
+      "feature": "engine",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:08:26.390Z",
+      "feature": "engine",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:08:33.749Z",
+      "feature": "engine",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:08:51.108Z",
+      "feature": "engine",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:08:58.586Z",
+      "feature": "engine",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:09:07.417Z",
+      "feature": "engine",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:09:32.135Z",
+      "feature": "engine",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:09:45.464Z",
+      "feature": "adapters",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:10:11.041Z",
+      "feature": "brick",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:10:29.814Z",
+      "feature": "engine",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:10:43.342Z",
       "feature": "engine",
       "phase": "do",
       "action": "updated"

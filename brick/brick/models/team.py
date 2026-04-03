@@ -52,3 +52,6 @@ class AdapterStatus:
     status: str  # "running", "completed", "failed", "waiting_human"
     progress: float | None = None
     message: str | None = None
+    metrics: dict | None = None
+    artifacts: list[str] | None = None
+    error: str | None = None

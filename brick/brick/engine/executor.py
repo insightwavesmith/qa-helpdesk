@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import time
 from pathlib import Path
 
 import yaml
@@ -226,6 +228,7 @@ class WorkflowExecutor:
         self.adapter_pool = adapter_pool or {}
         self.preset_loader = preset_loader
         self.validator = validator
+        self._checkpoint_lock = asyncio.Lock()  # parallel 블록 checkpoint 경합 방지
 
     async def start(self, preset_name: str, feature: str, task: str, initial_context: dict | None = None) -> str:
         if not self.preset_loader:
@@ -357,18 +360,19 @@ class WorkflowExecutor:
                 self.event_bus.publish(event)
                 await self._execute_commands(instance, cmds)
 
-                # 핸드오프 이벤트: 팀 전환 감지
-                if block_inst.block.team != self._get_previous_team(instance, cmd.block_id):
+                # 핸드오프 이벤트: 팀(adapter) 전환 감지
+                prev_team = self._get_previous_team(instance, cmd.block_id)
+                current_team = block_inst.adapter
+                if current_team != prev_team and prev_team is not None:
                     self.event_bus.publish(Event(type="block.handoff", data={
                         "workflow_id": instance.id,
                         "from_block": self._get_previous_block_id(instance, cmd.block_id),
                         "to_block": cmd.block_id,
-                        "from_team": self._get_previous_team(instance, cmd.block_id),
-                        "to_team": block_inst.block.team,
+                        "from_team": prev_team,
+                        "to_team": current_team,
                     }))
 
                 # 모니터링 시작
-                import asyncio
                 asyncio.create_task(self._monitor_block(instance, cmd.block_id))
 
             except Exception as e:
@@ -382,7 +386,6 @@ class WorkflowExecutor:
 
         elif isinstance(cmd, RetryAdapterCommand):
             # 지수 백오프 대기
-            import asyncio
             await asyncio.sleep(cmd.delay)
 
             adapter = self.adapter_pool.get(cmd.adapter)
@@ -417,8 +420,7 @@ class WorkflowExecutor:
                 await self._execute_commands(instance, cmds)
 
                 # 모니터링 재시작
-                import asyncio as _asyncio
-                _asyncio.create_task(self._monitor_block(instance, cmd.block_id))
+                asyncio.create_task(self._monitor_block(instance, cmd.block_id))
 
             except Exception as e:
                 event = Event(type="block.adapter_failed", data={
@@ -445,3 +447,101 @@ class WorkflowExecutor:
         for cmd in commands:
             instance = await self._execute_command(instance, cmd)
         return instance
+
+    async def _monitor_block(self, instance: WorkflowInstance, block_id: str):
+        """어댑터 완료 폴링. 10초 간격. staleness 감지 + 실패 처리."""
+        POLL_INTERVAL = 10
+        STALE_THRESHOLD = 300       # 5분 — 경고 이벤트
+        STALE_HARD_TIMEOUT = 600    # 10분 — adapter_failed 발행 → 재시도 진입
+
+        last_change_time = time.time()
+        last_status = None
+
+        while True:
+            await asyncio.sleep(POLL_INTERVAL)
+
+            # 최신 인스턴스 로드
+            instance = self.checkpoint.load(instance.id)
+            if not instance:
+                break
+            block_inst = instance.blocks.get(block_id)
+            if not block_inst or block_inst.status != BlockStatus.RUNNING:
+                break
+            if not block_inst.execution_id:
+                break
+
+            adapter = self.adapter_pool.get(block_inst.adapter)
+            if not adapter:
+                break
+
+            try:
+                status = await adapter.check_status(block_inst.execution_id)
+
+                # staleness 감지
+                if status.status != last_status:
+                    last_status = status.status
+                    last_change_time = time.time()
+                elif time.time() - last_change_time > STALE_THRESHOLD:
+                    # 5분 경고
+                    self.event_bus.publish(Event(type="block.stale", data={
+                        "workflow_id": instance.id,
+                        "block_id": block_id,
+                        "last_status": last_status,
+                        "stale_seconds": int(time.time() - last_change_time),
+                    }))
+
+                # 10분 초과 → adapter_failed로 재시도 태움 (경고만 하고 끝내기 금지)
+                if time.time() - last_change_time > STALE_HARD_TIMEOUT:
+                    event = Event(type="block.adapter_failed", data={
+                        "block_id": block_id,
+                        "error": f"Stale 타임아웃: {int(time.time() - last_change_time)}초 간 상태 변화 없음",
+                    })
+                    async with self._checkpoint_lock:
+                        instance, cmds = self.state_machine.transition(instance, event)
+                        self.checkpoint.save(instance.id, instance)
+                    await self._execute_commands(instance, cmds)
+                    break
+
+                if status.status == "completed":
+                    try:
+                        # checkpoint 경합 방지 — Lock 내에서 complete_block
+                        async with self._checkpoint_lock:
+                            await self.complete_block(
+                                instance.id,
+                                block_id,
+                            )
+                    except Exception as e:
+                        # complete_block 실패 (gate 실패 등) → 로그만
+                        self.event_bus.publish(Event(type="block.monitor_error", data={
+                            "workflow_id": instance.id,
+                            "block_id": block_id,
+                            "error": str(e),
+                        }))
+                    break
+
+                elif status.status == "failed":
+                    event = Event(type="block.adapter_failed", data={
+                        "block_id": block_id,
+                        "error": status.error or "Adapter reported failure",
+                    })
+                    async with self._checkpoint_lock:
+                        instance, cmds = self.state_machine.transition(instance, event)
+                        self.checkpoint.save(instance.id, instance)
+                    await self._execute_commands(instance, cmds)
+                    break
+
+            except Exception:
+                pass  # 네트워크 에러 등 — 다음 폴링에서 재시도
+
+    def _get_previous_block_id(self, instance: WorkflowInstance, current_block_id: str) -> str | None:
+        """링크를 역추적하여 이전 블록 ID 반환."""
+        for link in instance.definition.links:
+            if link.to_block == current_block_id:
+                return link.from_block
+        return None
+
+    def _get_previous_team(self, instance: WorkflowInstance, current_block_id: str) -> str | None:
+        prev_id = self._get_previous_block_id(instance, current_block_id)
+        if prev_id and prev_id in instance.blocks:
+            return instance.blocks[prev_id].adapter
+        return None
