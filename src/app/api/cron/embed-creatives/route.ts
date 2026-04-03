@@ -120,6 +120,38 @@ export async function GET(req: NextRequest) {
           ? await fetchCreativeDetails(adIds)
           : new Map();
 
+        // creative_media에서 기존 storage_url 조회 (Meta CDN 만료 대비)
+        const storageUrlMap = new Map<string, Map<number, string>>();
+        if (adIds.length > 0) {
+          // 1) creatives에서 ad_id → id 매핑
+          const { data: creativeRows } = await db
+            .from("creatives")
+            .select("id, ad_id")
+            .in("ad_id", adIds);
+          const creativeIdToAdId = new Map<string, string>();
+          const creativeIds: string[] = [];
+          for (const row of creativeRows ?? []) {
+            const r = row as { id: string; ad_id: string };
+            creativeIdToAdId.set(r.id, r.ad_id);
+            creativeIds.push(r.id);
+          }
+          // 2) creative_media에서 storage_url 조회
+          if (creativeIds.length > 0) {
+            const { data: mediaRows } = await db
+              .from("creative_media")
+              .select("creative_id, position, storage_url")
+              .in("creative_id", creativeIds);
+            for (const row of mediaRows ?? []) {
+              const m = row as { creative_id: string; position: number; storage_url: string | null };
+              if (!m.storage_url) continue;
+              const adId = creativeIdToAdId.get(m.creative_id);
+              if (!adId) continue;
+              if (!storageUrlMap.has(adId)) storageUrlMap.set(adId, new Map());
+              storageUrlMap.get(adId)!.set(m.position ?? 0, m.storage_url);
+            }
+          }
+        }
+
         // 3. creative_media에 upsert (via embedCreative)
         const BATCH_SIZE = 50;
         for (let i = 0; i < ads.length; i += BATCH_SIZE) {
@@ -133,8 +165,10 @@ export async function GET(req: NextRequest) {
             const creative = (ad as any).creative;
             const detail = creativeDetails.get(adId);
 
-            // 이미지 URL: detail → hashToUrl → null
+            // storage_url 우선 → Meta API detail → hashToUrl → null
+            const storageUrl = storageUrlMap.get(adId)?.get(0) ?? null;
             const imageUrl =
+              storageUrl ||
               detail?.imageUrl ||
               (creative?.image_hash ? hashToUrl.get(creative.image_hash) : null) ||
               null;
@@ -151,7 +185,9 @@ export async function GET(req: NextRequest) {
                 : [{ position: 0, imageHash: creative?.image_hash || null, imageUrl, videoId: null, lpUrl: detail?.lpUrl || null }];
 
               for (const card of cardList) {
+                const cardStorageUrl = storageUrlMap.get(adId)?.get(card.position) ?? null;
                 const cardImageUrl =
+                  cardStorageUrl ||
                   card.imageUrl ||
                   (card.imageHash ? hashToUrl.get(card.imageHash) || null : null);
 
