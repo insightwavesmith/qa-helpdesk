@@ -44,8 +44,14 @@ class PresetLoader:
         return defn
 
     def _parse_preset(self, data: dict) -> WorkflowDefinition:
+        # Spec wrapper detection: kind+spec -> read content from spec
+        if "kind" in data and "spec" in data:
+            inner = data["spec"]
+        else:
+            inner = data
+
         blocks = []
-        for b in data.get("blocks", []):
+        for b in inner.get("blocks", []):
             done_data = b.get("done", {})
             blocks.append(
                 Block(
@@ -61,7 +67,7 @@ class PresetLoader:
                 )
             )
         links = []
-        for link in data.get("links", []):
+        for link in inner.get("links", []):
             links.append(
                 LinkDefinition(
                     from_block=link["from"],
@@ -76,12 +82,35 @@ class PresetLoader:
                 )
             )
         teams: dict[str, TeamDefinition] = {}
-        for block_id, team_data in data.get("teams", {}).items():
-            teams[block_id] = TeamDefinition(
-                block_id=block_id,
-                adapter=team_data.get("adapter", "human"),
-                config=team_data.get("config", {}),
-            )
+        for block_id, team_data in inner.get("teams", {}).items():
+            if team_data is None:
+                continue
+            if isinstance(team_data, str):
+                teams[block_id] = TeamDefinition(
+                    block_id=block_id,
+                    adapter=team_data,
+                    config={},
+                )
+            else:
+                teams[block_id] = TeamDefinition(
+                    block_id=block_id,
+                    adapter=team_data.get("team", team_data.get("adapter", "human")),
+                    config=team_data.get("config", team_data.get("override", {})),
+                )
+
+        # Level: root > labels.level (e.g. "l2" -> 2) > inner > default(2)
+        level = data.get("level")
+        if level is None:
+            labels = data.get("labels", {})
+            level_label = labels.get("level", "")
+            if isinstance(level_label, str) and level_label.startswith("l"):
+                try:
+                    level = int(level_label[1:])
+                except ValueError:
+                    level = inner.get("level", 2)
+            else:
+                level = inner.get("level", 2)
+
         return WorkflowDefinition(
             name=data.get("name", ""),
             description=data.get("description", ""),
@@ -91,7 +120,7 @@ class PresetLoader:
             schema=data.get("$schema", "brick/preset-v2"),
             extends=data.get("extends"),
             overrides=data.get("overrides", {}),
-            level=data.get("level", 2),
+            level=level,
         )
 
     def _merge(
