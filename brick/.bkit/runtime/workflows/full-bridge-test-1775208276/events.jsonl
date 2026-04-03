@@ -1,0 +1,3 @@
+{"type": "block.started", "data": {"block_id": "plan"}, "timestamp": 1775208285.93739, "id": "dd73b3f7-1501-4b6b-a90b-6ff28a5b3e9a"}
+{"type": "block.completed", "data": {"block_id": "plan"}, "timestamp": 1775208285.937859, "id": "873482b3-0809-4bad-9973-b8004c72cb32"}
+{"type": "block.gate_passed", "data": {"block_id": "plan"}, "timestamp": 1775208285.938265, "id": "75e7d559-7e72-41ac-93d3-f03c8ec183b2"}

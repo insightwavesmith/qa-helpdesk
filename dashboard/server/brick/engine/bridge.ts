@@ -9,7 +9,7 @@ export interface BridgeConfig {
 }
 
 const DEFAULT_CONFIG: BridgeConfig = {
-  baseUrl: 'http://localhost:18700',
+  baseUrl: process.env.BRICK_ENGINE_URL || 'http://localhost:3202',
   timeout: 30000,
   retryCount: 2,
   retryDelay: 1000,

@@ -26,6 +26,18 @@
 
 ---
 
+## 0. 프로젝트 제약 조건
+
+| 항목 | 값 |
+|------|-----|
+| **DB** | SQLite (better-sqlite3 + drizzle-orm) — `dashboard/server/db/index.ts` |
+| **Express 포트** | 3200 |
+| **Python 엔진 포트** | 3202 |
+| **기존 불변식** | INV-EB-1~11 (engine-bridge Design 정의). 이 Design은 INV-EB-3을 9가지로 갱신 (§11.1) |
+| **Slack 채널** | #brick-approvals: `C0AN7ATS4DD`, Smith님 DM: `D09V1NX98SK` |
+
+---
+
 ## 1. 현행 흐름 vs 목표 흐름
 
 ### 1.1 현행 (t-pdca-l2)
@@ -63,7 +75,7 @@ class ApprovalConfig:
     """승인 Gate 전용 설정."""
     approver: str = ""                  # 승인자 식별자: "smith", "ceo", 이메일 등
     channel: str = "slack"              # 알림 채널: "slack" | "dashboard" | "both"
-    slack_channel: str = "#brick-approvals"  # Slack 채널 (channel=slack일 때)
+    slack_channel: str = "C0AN7ATS4DD"        # Slack 채널 ID (#brick-approvals)
     dashboard_url: str = ""             # 대시보드 승인 URL 템플릿
     timeout_seconds: int = 86400        # 승인 대기 타임아웃 (기본 24시간)
     on_timeout: str = "escalate"        # 타임아웃 시: "escalate" | "auto_approve" | "reject"
@@ -166,7 +178,7 @@ Smith님이 반려 (사유 포함)
 ```
 24시간 초과
   → on_timeout 정책 실행:
-    - "escalate" (기본): Slack DM으로 긴급 리마인더 전송
+    - "escalate" (기본): Smith님 DM (D09V1NX98SK)으로 긴급 리마인더 전송
     - "auto_approve": 자동 승인 (비권장, L0/L1 핫픽스 전용)
     - "reject": 자동 반려
 ```
@@ -247,10 +259,11 @@ async def _run_approval(self, handler: GateHandler, context: dict) -> GateResult
                 type="approval",
                 metadata={"status": "timeout_rejected"},
             )
-        # escalate (기본)
+        # escalate (기본) — Smith님 DM으로 긴급 알림
+        await self._notify_slack_dm(context, f"⚠️ [긴급] {context.get('feature','')} 승인 요청 타임아웃. 확인 바랍니다.")
         return GateResult(
             passed=False,
-            detail="타임아웃 — 긴급 에스컬레이션",
+            detail="타임아웃 — 긴급 에스컬레이션 (DM D09V1NX98SK)",
             type="approval",
             metadata={"status": "escalated"},
         )
@@ -282,13 +295,64 @@ async def _send_approval_notification(
 
 async def _notify_slack(self, config: ApprovalConfig, context: dict) -> None:
     """Slack 채널에 승인 요청 메시지 전송."""
-    # 구현: Slack Webhook 호출
-    pass
+    # Slack 채널 ID:
+    #   승인 요청 채널: C0AN7ATS4DD (#brick-approvals)
+    #   Smith님 DM (escalate/긴급 리마인더): D09V1NX98SK
+    import httpx
+    execution_id = context.get("execution_id", "")
+    feature = context.get("feature", "")
+    summary = context.get("summary", "")
+
+    target_channel = config.slack_channel  # 기본: C0AN7ATS4DD
+    payload = {
+        "channel": target_channel,
+        "text": f"📋 [CEO 승인 요청] {feature}",
+        "blocks": [
+            {"type": "header", "text": {"type": "plain_text", "text": f"📋 CEO 승인 요청: {feature}"}},
+            {"type": "section", "text": {"type": "mrkdwn", "text": f"*요약*\n{summary}"}},
+            {"type": "actions", "elements": [
+                {"type": "button", "text": {"type": "plain_text", "text": "✅ 승인"},
+                 "action_id": "approve", "value": execution_id, "style": "primary"},
+                {"type": "button", "text": {"type": "plain_text", "text": "❌ 반려"},
+                 "action_id": "reject", "value": execution_id, "style": "danger"},
+            ]},
+        ],
+    }
+    slack_token = os.environ.get("SLACK_BOT_TOKEN", "")
+    async with httpx.AsyncClient() as client:
+        await client.post(
+            "https://slack.com/api/chat.postMessage",
+            json=payload,
+            headers={"Authorization": f"Bearer {slack_token}"},
+        )
+
+async def _notify_slack_dm(self, context: dict, message: str) -> None:
+    """Smith님 DM으로 긴급/에스컬레이션 메시지 전송."""
+    import httpx
+    payload = {"channel": "D09V1NX98SK", "text": message}
+    slack_token = os.environ.get("SLACK_BOT_TOKEN", "")
+    async with httpx.AsyncClient() as client:
+        await client.post(
+            "https://slack.com/api/chat.postMessage",
+            json=payload,
+            headers={"Authorization": f"Bearer {slack_token}"},
+        )
 
 async def _notify_dashboard(self, config: ApprovalConfig, context: dict) -> None:
     """대시보드에 승인 대기 상태 기록."""
-    # 구현: Dashboard API 호출 — /api/brick/approvals POST
-    pass
+    # Dashboard API 호출 — POST /api/brick/approvals
+    # Express 서버 (localhost:3200)에 승인 레코드 생성
+    import httpx
+    payload = {
+        "execution_id": context.get("execution_id", ""),
+        "feature": context.get("feature", ""),
+        "approver": config.approver,
+        "artifacts": config.context_artifacts,
+        "summary": context.get("summary", ""),
+        "timeout_at": context.get("timeout_at", ""),
+    }
+    async with httpx.AsyncClient() as client:
+        await client.post("http://localhost:3200/api/brick/approvals", json=payload)
 ```
 
 ### 4.2 GateExecutor.execute 확장
@@ -373,7 +437,7 @@ blocks:
           approval:
             approver: smith
             channel: both
-            slack_channel: "#brick-approvals"
+            slack_channel: "C0AN7ATS4DD"       # #brick-approvals
             dashboard_url: "/approvals"
             timeout_seconds: 86400
             on_timeout: escalate
@@ -510,39 +574,40 @@ Response: { approvals: [{ execution_id, feature, created_at, timeout_at, summary
 
 ### 8.1 brick_approvals 테이블
 
+> **DB**: SQLite (better-sqlite3 + drizzle-orm). UUID는 `uuid` npm 패키지로 앱 레이어 생성. JSONB → TEXT (JSON 문자열). RLS 없음 (SQLite 미지원, 앱 레이어에서 권한 검증).
+
 ```sql
-CREATE TABLE brick_approvals (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  execution_id UUID NOT NULL REFERENCES brick_executions(id),
+-- dashboard/server/db/create-schema.ts에 추가
+CREATE TABLE IF NOT EXISTS brick_approvals (
+  id TEXT PRIMARY KEY,                                          -- uuid() 앱 레이어 생성
+  execution_id INTEGER NOT NULL REFERENCES brick_executions(id),
   block_id TEXT NOT NULL,
   approver TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'waiting',  -- waiting, approved, rejected, escalated, timeout
+  status TEXT NOT NULL DEFAULT 'waiting'
+    CHECK(status IN ('waiting','approved','rejected','escalated','timeout')),
   summary TEXT,
-  artifacts JSONB DEFAULT '[]',
+  artifacts TEXT DEFAULT '[]',                                  -- JSON 문자열
   reject_reason TEXT,
   comment TEXT,
-  reminder_count INT DEFAULT 0,
-  timeout_at TIMESTAMPTZ NOT NULL,
-  resolved_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  reminder_count INTEGER DEFAULT 0,
+  timeout_at TEXT NOT NULL,                                     -- ISO8601 문자열
+  resolved_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- RLS 정책
-ALTER TABLE brick_approvals ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "approver_can_read_own"
-  ON brick_approvals FOR SELECT
-  USING (approver = current_setting('app.current_user', true));
-
-CREATE POLICY "approver_can_update_own"
-  ON brick_approvals FOR UPDATE
-  USING (approver = current_setting('app.current_user', true));
-
 -- 인덱스
-CREATE INDEX idx_brick_approvals_status ON brick_approvals(status);
-CREATE INDEX idx_brick_approvals_execution ON brick_approvals(execution_id);
+CREATE INDEX IF NOT EXISTS idx_brick_approvals_status ON brick_approvals(status);
+CREATE INDEX IF NOT EXISTS idx_brick_approvals_execution ON brick_approvals(execution_id);
 ```
+
+**PostgreSQL과의 차이 (참조용)**:
+| PostgreSQL | SQLite (이 프로젝트) |
+|------------|---------------------|
+| `UUID DEFAULT gen_random_uuid()` | `TEXT` + 앱에서 `uuid()` |
+| `JSONB` | `TEXT` (JSON 문자열, `JSON.parse()` 사용) |
+| `TIMESTAMPTZ DEFAULT NOW()` | `TEXT DEFAULT (datetime('now'))` |
+| RLS 정책 | 미지원 — Express 미들웨어에서 `approver` 검증 |
 
 ---
 
@@ -610,6 +675,25 @@ CREATE INDEX idx_brick_approvals_execution ON brick_approvals(execution_id);
 | **INV-2** Gate 통과 없이 다음 블록 불가 | approval Gate failed → Do 진행 불가 |
 | **INV-3** 팀 경계 불침범 | ceo_approval은 `adapter: human` — 에이전트 우회 불가 |
 | **HP-004** 도구=권한 | approval 블록에 에이전트 도구 없음 — 사람만 결정 |
+
+### 11.1 INV-EB-3 갱신 (BlockStatus 확장)
+
+이 Design은 `BlockStatus`에 `WAITING_APPROVAL`, `REJECTED` 2개를 추가한다 (§5).
+engine-bridge Design의 **INV-EB-3**은 현재 "BlockStatus 7가지만 허용"으로 정의되어 있으므로, 이 Design 구현 시 반드시 INV-EB-3을 아래와 같이 갱신해야 한다.
+
+| 변경 전 (INV-EB-3) | 변경 후 (INV-EB-3) |
+|----|----|
+| blocksState의 status 값은 Python BlockStatus enum의 **7가지**만 허용 | blocksState의 status 값은 Python BlockStatus enum의 **9가지**만 허용 |
+
+**갱신 후 9가지 허용값:**
+`pending`, `queued`, `running`, `gate_checking`, `completed`, `failed`, `suspended`, **`waiting_approval`**, **`rejected`**
+
+**갱신 대상 파일:**
+- `docs/02-design/features/brick-engine-bridge.design.md` — INV-EB-3 행 수정
+- `brick/brick/models/events.py` — BlockStatus enum에 2개 추가
+- engine-bridge TDD EB-043 — 검증 대상 status 목록에 2개 추가
+
+**구현 순서:** 이 피처 구현 시 BlockStatus 확장을 **첫 번째 커밋**으로 수행한 뒤, approval Gate 로직을 구현한다. 역순 시 EB-043 테스트가 실패한다.
 
 ---
 

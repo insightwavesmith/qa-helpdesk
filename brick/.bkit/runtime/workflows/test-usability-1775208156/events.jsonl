@@ -1,0 +1,12 @@
+{"type": "block.started", "data": {"block_id": "plan"}, "timestamp": 1775208162.527338, "id": "ee5126ee-b730-4df9-813e-88865062565f"}
+{"type": "block.completed", "data": {"block_id": "plan"}, "timestamp": 1775208162.5278468, "id": "acda8450-a646-4d88-a855-e95a2a638b84"}
+{"type": "block.gate_passed", "data": {"block_id": "plan"}, "timestamp": 1775208162.528306, "id": "f762abf4-bef1-46da-b1b3-d4cb93e8990e"}
+{"type": "block.started", "data": {"block_id": "design"}, "timestamp": 1775208172.971456, "id": "cf0f1d1f-33b5-4a9b-a963-1d2521c63ca9"}
+{"type": "block.completed", "data": {"block_id": "design"}, "timestamp": 1775208172.9719648, "id": "4c3555b9-0e82-4c84-9451-b0e777725292"}
+{"type": "block.gate_passed", "data": {"block_id": "design"}, "timestamp": 1775208172.972435, "id": "102144ca-b569-4318-8321-0b1b894901b8"}
+{"type": "block.started", "data": {"block_id": "do"}, "timestamp": 1775208172.9892669, "id": "6e87d158-85ee-4d04-bed2-955421535484"}
+{"type": "block.completed", "data": {"block_id": "do"}, "timestamp": 1775208172.9897358, "id": "ea13a432-30ff-408e-94d1-3c9fbd2007a0"}
+{"type": "block.gate_passed", "data": {"block_id": "do"}, "timestamp": 1775208172.990133, "id": "da744085-2353-40c1-9cfd-6834e0484993"}
+{"type": "block.started", "data": {"block_id": "check"}, "timestamp": 1775208173.006491, "id": "2b84870f-f08d-4c36-9d2c-2720e459a7d1"}
+{"type": "block.completed", "data": {"block_id": "check"}, "timestamp": 1775208173.007017, "id": "6828669e-5588-4b3d-ab55-697f4db5b9ae"}
+{"type": "block.gate_passed", "data": {"block_id": "check"}, "timestamp": 1775208173.007471, "id": "60fe44db-b916-4e5d-a30e-5628e599c433"}

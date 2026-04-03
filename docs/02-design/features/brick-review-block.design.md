@@ -26,6 +26,17 @@
 
 ---
 
+## 0. 프로젝트 제약 조건
+
+| 항목 | 값 |
+|------|-----|
+| **DB** | SQLite (better-sqlite3 + drizzle-orm) — `dashboard/server/db/index.ts` |
+| **Express 포트** | 3200 |
+| **Python 엔진 포트** | 3202 |
+| **기존 불변식** | INV-EB-1~11 (engine-bridge Design 정의). 이 Design은 기존 INV를 변경하지 않음 |
+
+---
+
 ## 1. 현행 문제 분석
 
 ### 1.1 현행 PDCA 종료 흐름
