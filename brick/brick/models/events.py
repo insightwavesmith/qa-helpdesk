@@ -78,3 +78,11 @@ class RetryAdapterCommand(Command):
 class NotifyCommand(Command):
     type: str = "notify"
     data: dict = field(default_factory=dict)
+
+
+@dataclass
+class CompeteStartCommand(Command):
+    type: str = "compete_start"
+    block_id: str = ""
+    teams: list[str] = field(default_factory=list)
+    judge: dict = field(default_factory=dict)

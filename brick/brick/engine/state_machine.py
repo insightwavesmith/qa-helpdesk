@@ -8,7 +8,7 @@ import time
 from brick.models.events import (
     Event, Command, StartBlockCommand, CheckGateCommand,
     EmitEventCommand, SaveCheckpointCommand,
-    RetryAdapterCommand, NotifyCommand,
+    RetryAdapterCommand, NotifyCommand, CompeteStartCommand,
     WorkflowStatus, BlockStatus,
 )
 from brick.models.workflow import WorkflowInstance, BlockInstance
@@ -98,7 +98,13 @@ class StateMachine:
                 block_inst.completed_at = time.time()
 
                 # Find next block via links
+                self._compete_commands = []
                 next_blocks = self._find_next_blocks(wf, block_id)
+
+                # compete commands 추가
+                for cc in self._compete_commands:
+                    commands.append(cc)
+
                 if next_blocks:
                     for next_id in next_blocks:
                         next_block = wf.blocks[next_id]
@@ -108,7 +114,7 @@ class StateMachine:
                             block_id=next_id,
                             adapter=next_block.adapter,
                         ))
-                else:
+                elif not self._compete_commands:
                     # Check if all blocks completed
                     if self._all_blocks_completed(wf):
                         wf.status = WorkflowStatus.COMPLETED
@@ -224,7 +230,20 @@ class StateMachine:
                 next_ids.append(link.to_block)
 
             elif link.type == "compete":
-                next_ids.append(link.to_block)
+                if link.teams:
+                    # compete: 여러 팀 경쟁 → CompeteStartCommand 발행
+                    # _compete_commands에 저장 (호출부에서 처리)
+                    if not hasattr(self, '_compete_commands'):
+                        self._compete_commands = []
+                    self._compete_commands.append(CompeteStartCommand(
+                        block_id=link.to_block,
+                        teams=link.teams,
+                        judge=link.judge or {},
+                    ))
+                    # next_ids에 추가하지 않음 — CompeteStartCommand가 별도 처리
+                else:
+                    # teams 미지정 → sequential과 동일 (하위호환)
+                    next_ids.append(link.to_block)
 
             elif link.type == "cron":
                 # cron은 즉시 큐잉하지 않음 → 스케줄러에 등록

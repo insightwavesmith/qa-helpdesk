@@ -16,6 +16,8 @@ from brick.engine.state_machine import StateMachine
 from brick.engine.validator import Validator
 from brick.gates.base import GateExecutor
 from brick.models.block import Block, DoneCondition, GateHandler, GateConfig
+from dataclasses import dataclass, asdict
+
 from brick.models.events import (
     BlockStatus,
     Event,
@@ -25,8 +27,27 @@ from brick.models.events import (
     SaveCheckpointCommand,
     RetryAdapterCommand,
     NotifyCommand,
+    CompeteStartCommand,
     WorkflowStatus,
 )
+
+
+@dataclass
+class CompeteExecution:
+    adapter: str
+    execution_id: str | None = None
+    status: str = "pending"  # pending | running | completed | cancelled
+
+
+@dataclass
+class CompeteGroup:
+    block_id: str
+    executions: list[CompeteExecution] | None = None
+    winner: str | None = None  # 승자 adapter
+
+    def __post_init__(self):
+        if self.executions is None:
+            self.executions = []
 from brick.models.link import LinkDefinition
 from brick.models.team import TeamDefinition
 from brick.models.workflow import WorkflowDefinition, WorkflowInstance
@@ -482,6 +503,47 @@ class WorkflowExecutor:
                 self.checkpoint.save(instance.id, instance)
                 await self._execute_commands(instance, cmds)
 
+        elif isinstance(cmd, CompeteStartCommand):
+            block_inst = instance.blocks.get(cmd.block_id)
+            if not block_inst:
+                return instance
+
+            # CompeteGroup 생성
+            compete_group = CompeteGroup(
+                block_id=cmd.block_id,
+                executions=[CompeteExecution(adapter=team) for team in cmd.teams],
+            )
+
+            # 각 팀으로 블록 시작
+            for i, comp_exec in enumerate(compete_group.executions):
+                adapter = self.adapter_pool.get(comp_exec.adapter)
+                if not adapter:
+                    comp_exec.status = "failed"
+                    continue
+
+                try:
+                    eid = await adapter.start_block(block_inst.block, {
+                        "workflow_id": instance.id,
+                        "block_id": cmd.block_id,
+                        "block_what": block_inst.block.what,
+                        "compete_index": i,
+                        "compete_total": len(cmd.teams),
+                        "project_context": instance.context,
+                    })
+                    comp_exec.execution_id = eid
+                    comp_exec.status = "running"
+                except Exception:
+                    comp_exec.status = "failed"
+
+            # 블록 상태 → RUNNING, compete_group을 metadata에 저장
+            block_inst.status = BlockStatus.RUNNING
+            block_inst.block.metadata["compete_group"] = asdict(compete_group)
+            async with self._checkpoint_lock:
+                self.checkpoint.save(instance.id, instance)
+
+            # compete 전용 모니터링 시작
+            asyncio.create_task(self._monitor_compete(instance, cmd.block_id))
+
         elif isinstance(cmd, NotifyCommand):
             self.event_bus.publish(Event(type=cmd.type, data=cmd.data))
             self.checkpoint.save(instance.id, instance)
@@ -583,6 +645,94 @@ class WorkflowExecutor:
 
             except Exception:
                 pass  # 네트워크 에러 등 — 다음 폴링에서 재시도
+
+    async def _monitor_compete(self, instance: WorkflowInstance, block_id: str):
+        """compete 블록 모니터링. 1등 완료 시 나머지 취소."""
+        POLL_INTERVAL = 5  # compete는 더 빈번하게
+
+        while True:
+            await asyncio.sleep(POLL_INTERVAL)
+
+            instance = self.checkpoint.load(instance.id)
+            if not instance:
+                break
+            block_inst = instance.blocks.get(block_id)
+            if not block_inst or block_inst.status != BlockStatus.RUNNING:
+                break
+
+            group_data = block_inst.block.metadata.get("compete_group")
+            if not group_data:
+                break
+
+            executions_data = group_data.get("executions", [])
+            executions = [CompeteExecution(**e) for e in executions_data]
+            group = CompeteGroup(
+                block_id=group_data["block_id"],
+                executions=executions,
+                winner=group_data.get("winner"),
+            )
+
+            winner = None
+            for comp_exec in group.executions:
+                if comp_exec.status != "running" or not comp_exec.execution_id:
+                    continue
+
+                adapter = self.adapter_pool.get(comp_exec.adapter)
+                if not adapter:
+                    continue
+
+                try:
+                    status = await adapter.check_status(comp_exec.execution_id)
+                    if status.status == "completed":
+                        winner = comp_exec
+                        break
+                    elif status.status == "failed":
+                        comp_exec.status = "failed"
+                except Exception:
+                    pass
+
+            if winner:
+                # 승자 결정 → 나머지 취소
+                group.winner = winner.adapter
+                for comp_exec in group.executions:
+                    if comp_exec != winner and comp_exec.status == "running":
+                        adapter = self.adapter_pool.get(comp_exec.adapter)
+                        if adapter and comp_exec.execution_id:
+                            try:
+                                await adapter.cancel(comp_exec.execution_id)
+                            except Exception:
+                                pass
+                        comp_exec.status = "cancelled"
+
+                winner.status = "completed"
+                block_inst.block.metadata["compete_group"] = asdict(group)
+                block_inst.execution_id = winner.execution_id
+
+                # complete_block으로 gate 실행 → 다음 블록 진행
+                try:
+                    async with self._checkpoint_lock:
+                        await self.complete_block(instance.id, block_id)
+                except Exception:
+                    pass
+                break
+
+            # 전부 실패?
+            all_done = all(e.status != "running" for e in group.executions)
+            if all_done:
+                event = Event(type="block.failed", data={
+                    "block_id": block_id,
+                    "error": "Compete: 모든 팀 실패",
+                })
+                async with self._checkpoint_lock:
+                    instance, cmds = self.state_machine.transition(instance, event)
+                    self.checkpoint.save(instance.id, instance)
+                await self._execute_commands(instance, cmds)
+                break
+
+            # group 상태 저장
+            block_inst.block.metadata["compete_group"] = asdict(group)
+            async with self._checkpoint_lock:
+                self.checkpoint.save(instance.id, instance)
 
     def _get_previous_block_id(self, instance: WorkflowInstance, current_block_id: str) -> str | None:
         """링크를 역추적하여 이전 블록 ID 반환."""
