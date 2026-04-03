@@ -97,6 +97,7 @@ export class EngineBridge {
     presetName: string,
     feature: string,
     task: string,
+    initialContext?: Record<string, unknown>,
   ): Promise<EngineResponse<StartResult>> {
     return this.retry(
       () =>
@@ -104,6 +105,7 @@ export class EngineBridge {
           preset_name: presetName,
           feature,
           task,
+          initial_context: initialContext ?? null,
         }),
       this.config.retryCount,
     );

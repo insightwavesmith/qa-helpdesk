@@ -1,5 +1,6 @@
-// dashboard/server/db/schema/brick.ts — Brick 도메인 8개 테이블
+// dashboard/server/db/schema/brick.ts — Brick 도메인 11개 테이블
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { primaryKey } from 'drizzle-orm/sqlite-core';
 
 // ── Block Types ──
 export const brickBlockTypes = sqliteTable('brick_block_types', {
@@ -70,6 +71,7 @@ export const brickExecutions = sqliteTable('brick_executions', {
   currentBlock: text('current_block'),
   blocksState: text('blocks_state', { mode: 'json' }),
   engineWorkflowId: text('engine_workflow_id'),  // Python 엔진 ID 매핑
+  projectId: text('project_id').references(() => brickProjects.id),  // 프로젝트 FK (nullable — 하위호환)
   startedAt: text('started_at'),
   completedAt: text('completed_at'),
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
@@ -129,4 +131,50 @@ export const brickApprovals = sqliteTable('brick_approvals', {
   resolvedAt: text('resolved_at'),
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// ── Projects ──
+export const brickProjects = sqliteTable('brick_projects', {
+  id: text('id').primaryKey(),  // "bscamp"
+  name: text('name').notNull(),
+  description: text('description'),
+  infrastructure: text('infrastructure').notNull().default('{}'),  // JSON
+  config: text('config').notNull().default('{}'),                  // JSON
+  active: integer('active').notNull().default(1),
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// ── Invariants ──
+export const brickInvariants = sqliteTable('brick_invariants', {
+  id: text('id').notNull(),
+  projectId: text('project_id').notNull().references(() => brickProjects.id),
+  designSource: text('design_source').notNull(),
+  description: text('description').notNull(),
+  constraintType: text('constraint_type', {
+    enum: ['enum_values', 'port', 'syntax', 'count', 'rule'] as const,
+  }).notNull(),
+  constraintValue: text('constraint_value').notNull().default('{}'),
+  status: text('status', {
+    enum: ['active', 'deprecated', 'superseded'] as const,
+  }).notNull().default('active'),
+  supersededBy: text('superseded_by'),
+  version: integer('version').notNull().default(1),
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.id, table.projectId] }),
+}));
+
+// ── Invariant History ──
+export const brickInvariantHistory = sqliteTable('brick_invariant_history', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  invariantId: text('invariant_id').notNull(),
+  projectId: text('project_id').notNull(),
+  version: integer('version').notNull(),
+  previousValue: text('previous_value'),
+  newValue: text('new_value').notNull(),
+  changeReason: text('change_reason').notNull(),
+  changedBy: text('changed_by').notNull(),
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
 });

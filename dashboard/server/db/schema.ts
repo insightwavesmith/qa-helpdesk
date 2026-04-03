@@ -343,6 +343,9 @@ export {
   brickExecutionLogs,
   brickGateResults,
   brickLearningProposals,
+  brickProjects,
+  brickInvariants,
+  brickInvariantHistory,
 } from './schema/brick.js';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

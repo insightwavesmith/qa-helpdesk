@@ -3,9 +3,19 @@
 import type { Application } from 'express';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { eq, desc, sql } from 'drizzle-orm';
-import { brickExecutions, brickExecutionLogs, brickPresets, brickGateResults } from '../../db/schema/brick.js';
+import { brickExecutions, brickExecutionLogs, brickPresets, brickGateResults, brickProjects } from '../../db/schema/brick.js';
 import { emitThinkLog } from '../../brick/engine/executor.js';
+import { ProjectContextBuilder } from '../../brick/project/context-builder.js';
 import { EngineBridge } from '../../brick/engine/bridge.js';
+
+function getDefaultProjectId(db: BetterSQLite3Database): string | null {
+  const row = db.select({ id: brickProjects.id })
+    .from(brickProjects)
+    .where(eq(brickProjects.active, 1))
+    .limit(1)
+    .get();
+  return row?.id ?? null;
+}
 
 export function registerExecutionRoutes(app: Application, db: BetterSQLite3Database) {
   const bridge = new EngineBridge();
@@ -45,7 +55,7 @@ export function registerExecutionRoutes(app: Application, db: BetterSQLite3Datab
   // POST /api/brick/executions — 실행 시작 (Python 엔진 프록시)
   app.post('/api/brick/executions', async (req, res) => {
     try {
-      const { presetId, feature } = req.body;
+      const { presetId, feature, projectId } = req.body;
 
       if (!presetId || !feature) {
         return res.status(400).json({ error: 'presetId, feature 필수' });
@@ -60,8 +70,20 @@ export function registerExecutionRoutes(app: Application, db: BetterSQLite3Datab
         return res.status(404).json({ error: '프리셋 없음' });
       }
 
+      // 프로젝트 컨텍스트 빌드
+      const resolvedProjectId = projectId ?? getDefaultProjectId(db);
+      let initialContext: Record<string, unknown> | undefined;
+      if (resolvedProjectId) {
+        try {
+          const builder = new ProjectContextBuilder();
+          initialContext = builder.build(resolvedProjectId) as unknown as Record<string, unknown>;
+        } catch {
+          // 프로젝트 없으면 컨텍스트 없이 진행
+        }
+      }
+
       // Python 엔진에 실행 요청
-      const result = await bridge.startWorkflow(preset.name, feature, feature);
+      const result = await bridge.startWorkflow(preset.name, feature, feature, initialContext);
       if (!result.ok) {
         return res.status(502).json({
           error: 'engine_unavailable',
@@ -77,6 +99,7 @@ export function registerExecutionRoutes(app: Application, db: BetterSQLite3Datab
         currentBlock: result.data!.current_block_id,
         blocksState: JSON.stringify(result.data!.blocks_state),
         engineWorkflowId: result.data!.workflow_id,
+        projectId: resolvedProjectId ?? null,
         startedAt: new Date().toISOString(),
       }).returning().get();
 

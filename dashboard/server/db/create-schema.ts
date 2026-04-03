@@ -332,6 +332,48 @@ const createTableStatements = [
     created_at TEXT NOT NULL
   )`,
 
+
+  // BP1: brick_projects
+  `CREATE TABLE IF NOT EXISTS brick_projects (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    infrastructure TEXT NOT NULL DEFAULT '{}',
+    config TEXT NOT NULL DEFAULT '{}',
+    active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
+
+  // BP2: brick_invariants
+  `CREATE TABLE IF NOT EXISTS brick_invariants (
+    id TEXT NOT NULL,
+    project_id TEXT NOT NULL REFERENCES brick_projects(id),
+    design_source TEXT NOT NULL,
+    description TEXT NOT NULL,
+    constraint_type TEXT NOT NULL CHECK(constraint_type IN ('enum_values','port','syntax','count','rule')),
+    constraint_value TEXT NOT NULL DEFAULT '{}',
+    status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','deprecated','superseded')),
+    superseded_by TEXT,
+    version INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (id, project_id)
+  )`,
+
+  // BP3: brick_invariant_history
+  `CREATE TABLE IF NOT EXISTS brick_invariant_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    invariant_id TEXT NOT NULL,
+    project_id TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    previous_value TEXT,
+    new_value TEXT NOT NULL,
+    change_reason TEXT NOT NULL,
+    changed_by TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (invariant_id, project_id) REFERENCES brick_invariants(id, project_id)
+  )`,
   // B9: brick_approvals
   `CREATE TABLE IF NOT EXISTS brick_approvals (
     id TEXT PRIMARY KEY,
@@ -369,6 +411,10 @@ const createIndexStatements = [
   `CREATE INDEX IF NOT EXISTS idx_brick_links_workflow ON brick_links(workflow_id)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_brick_links_pair ON brick_links(workflow_id, from_block, to_block)`,
 
+
+  // Project + Invariant 인덱스
+  `CREATE INDEX IF NOT EXISTS idx_brick_invariants_project_status ON brick_invariants(project_id, status)`,
+  `CREATE INDEX IF NOT EXISTS idx_brick_executions_project ON brick_executions(project_id)`,
   // Approval 인덱스
   `CREATE INDEX IF NOT EXISTS idx_brick_approvals_status ON brick_approvals(status)`,
   `CREATE INDEX IF NOT EXISTS idx_brick_approvals_execution ON brick_approvals(execution_id)`,
@@ -381,4 +427,11 @@ export function createSchema(sqlite: { exec: (sql: string) => void }) {
   for (const stmt of createIndexStatements) {
     sqlite.exec(stmt);
   }
+  // 마이그레이션: brick_executions에 project_id 추가 (이미 존재하면 무시)
+  try {
+    sqlite.exec('ALTER TABLE brick_executions ADD COLUMN project_id TEXT REFERENCES brick_projects(id)');
+  } catch { /* 이미 존재 */ }
+  try {
+    sqlite.exec('CREATE INDEX IF NOT EXISTS idx_brick_executions_project ON brick_executions(project_id)');
+  } catch { /* 이미 존재 */ }
 }

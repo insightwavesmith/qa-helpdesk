@@ -14,6 +14,8 @@ import { registerSystemRoutes } from './system.js';
 import { registerReviewRoutes } from './review.js';
 import { registerNotifyRoutes } from './notify.js';
 import { registerApprovalRoutes } from './approvals.js';
+import { registerProjectRoutes } from './projects.js';
+import { registerInvariantRoutes } from './invariants.js';
 
 export function registerBrickRoutes(app: Application, db: BetterSQLite3Database) {
   registerBlockTypeRoutes(app, db);
@@ -28,4 +30,6 @@ export function registerBrickRoutes(app: Application, db: BetterSQLite3Database)
   registerReviewRoutes(app, db);
   registerNotifyRoutes(app, db);
   registerApprovalRoutes(app, db);
+  registerProjectRoutes(app, db);
+  registerInvariantRoutes(app, db);
 }

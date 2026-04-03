@@ -225,7 +225,7 @@ class WorkflowExecutor:
         self.preset_loader = preset_loader
         self.validator = validator
 
-    async def start(self, preset_name: str, feature: str, task: str) -> str:
+    async def start(self, preset_name: str, feature: str, task: str, initial_context: dict | None = None) -> str:
         if not self.preset_loader:
             raise ValueError("No preset loader configured")
 
@@ -237,6 +237,10 @@ class WorkflowExecutor:
                 raise ValueError(f"Validation errors: {errors}")
 
         instance = WorkflowInstance.from_definition(workflow_def, feature, task)
+
+        # 프로젝트 컨텍스트 주입 (신규) — project 키 아래 네임스페이스로 병합
+        if initial_context:
+            instance.context["project"] = initial_context
 
         event = Event(type="workflow.start")
         instance, commands = self.state_machine.transition(instance, event)

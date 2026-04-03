@@ -36,6 +36,7 @@ class StartRequest(BaseModel):
     preset_name: str
     feature: str
     task: str
+    initial_context: dict | None = None
 
 
 class CompleteBlockRequest(BaseModel):
@@ -143,7 +144,7 @@ async def start_workflow(req: StartRequest):
         raise HTTPException(status_code=500, detail="Engine not initialized")
 
     try:
-        workflow_id = await executor.start(req.preset_name, req.feature, req.task)
+        workflow_id = await executor.start(req.preset_name, req.feature, req.task, initial_context=req.initial_context)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="preset_not_found")
     except ValueError as e:

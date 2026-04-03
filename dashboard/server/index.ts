@@ -4,9 +4,14 @@ import { setupWebSocket } from './realtime/ws.js';
 import { AgentPoller } from './services/agent-poller.js';
 import { db } from './db/index.js';
 import { seed } from './db/seed.js';
+import { syncProjectYaml } from './brick/project/sync.js';
+import { seedInvariants } from './db/seed-invariants.js';
 
 // DB seed (기본 데이터 삽입, 중복 무시)
 seed();
+// 프로젝트 YAML 동기화 + 불변식 시드
+syncProjectYaml();
+seedInvariants('bscamp');
 
 const PORT = Number(process.env.PORT) || 3200;
 const server = createServer(app);
