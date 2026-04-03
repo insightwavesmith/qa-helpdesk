@@ -1,0 +1,17 @@
+{
+  "devFiles": [],
+  "ampDevFiles": [],
+  "polyfillFiles": [],
+  "lowPriorityFiles": [],
+  "rootMainFiles": [],
+  "pages": {
+    "/OrgChartPage": [
+      "static/chunks/2c506114b54778c7.js",
+      "static/chunks/ddaf5f5a27815fba.js",
+      "static/chunks/c710dc2e41e45450.js",
+      "static/chunks/3f341701ad841523.js",
+      "static/chunks/turbopack-ba8b343a47febfe2.js"
+    ]
+  },
+  "ampFirstPages": []
+}

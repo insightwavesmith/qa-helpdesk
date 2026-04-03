@@ -1,7 +1,7 @@
 // dashboard/server/routes/brick/projects.ts — 프로젝트 CRUD + 대시보드
 import type { Application } from 'express';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { brickProjects, brickInvariants, brickExecutions, brickInvariantHistory } from '../../db/schema/brick.js';
 import { syncProjectYaml } from '../../brick/project/sync.js';
 
@@ -97,6 +97,62 @@ export function registerProjectRoutes(app: Application, db: BetterSQLite3Databas
       syncProjectYaml();
       const projects = db.select().from(brickProjects).all();
       res.json({ ok: true, projects });
+    } catch (e) {
+      res.status(500).json({ error: String(e) });
+    }
+  });
+
+  // DELETE /api/brick/projects/:id — 삭제 (트랜잭션)
+  app.delete('/api/brick/projects/:id', (req, res) => {
+    try {
+      const project = db.select({ id: brickProjects.id }).from(brickProjects)
+        .where(eq(brickProjects.id, req.params.id)).get();
+      if (!project) return res.status(404).json({ error: '프로젝트 없음' });
+
+      db.transaction((tx) => {
+        // 1. invariant_history 삭제
+        const invIds = tx.select({ id: brickInvariants.id }).from(brickInvariants)
+          .where(eq(brickInvariants.projectId, req.params.id)).all();
+        for (const inv of invIds) {
+          tx.delete(brickInvariantHistory)
+            .where(and(
+              eq(brickInvariantHistory.invariantId, inv.id),
+              eq(brickInvariantHistory.projectId, req.params.id),
+            )).run();
+        }
+        // 2. invariants 삭제
+        tx.delete(brickInvariants).where(eq(brickInvariants.projectId, req.params.id)).run();
+        // 3. executions.project_id → NULL (이력 보존)
+        tx.update(brickExecutions).set({ projectId: null })
+          .where(eq(brickExecutions.projectId, req.params.id)).run();
+        // 4. 프로젝트 삭제
+        tx.delete(brickProjects).where(eq(brickProjects.id, req.params.id)).run();
+      });
+
+      console.log('[brick-projects] 프로젝트 삭제:', req.params.id);
+      res.status(204).end();
+    } catch (e) {
+      res.status(500).json({ error: String(e) });
+    }
+  });
+
+  // GET /api/brick/projects/:id/invariants — 불변식 목록
+  app.get('/api/brick/projects/:id/invariants', (req, res) => {
+    try {
+      const project = db.select({ id: brickProjects.id }).from(brickProjects)
+        .where(eq(brickProjects.id, req.params.id)).get();
+      if (!project) return res.status(404).json({ error: '프로젝트 없음' });
+
+      const status = req.query.status as 'active' | 'deprecated' | 'superseded' | undefined;
+      let results;
+      if (status) {
+        results = db.select().from(brickInvariants)
+          .where(and(eq(brickInvariants.projectId, req.params.id), eq(brickInvariants.status, status))).all();
+      } else {
+        results = db.select().from(brickInvariants)
+          .where(eq(brickInvariants.projectId, req.params.id)).all();
+      }
+      res.json({ invariants: results });
     } catch (e) {
       res.status(500).json({ error: String(e) });
     }

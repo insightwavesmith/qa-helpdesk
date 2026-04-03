@@ -5,7 +5,7 @@ import type { Server } from 'http';
 const clients = new Set<any>();
 
 export function createBrickWebSocket(server: Server) {
-  const wss = new WebSocketServer({ server, path: '/api/brick/ws' });
+  const wss = new WebSocketServer({ server, path: '/api/brick/ws' } as ConstructorParameters<typeof WebSocketServer>[0]);
 
   wss.on('connection', (ws) => {
     clients.add(ws);

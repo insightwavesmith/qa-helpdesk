@@ -14,12 +14,15 @@ const LINK_TYPES = [
   { name: 'branch', displayName: '분기', style: 'solid', color: '#10B981' },
 ];
 
+const VALID_LINK_TYPE_NAMES = LINK_TYPES.map(t => t.name);
+
 /** DAG 순환 검증: 새 link 추가 시 순환 발생 여부 체크 */
 function hasCycle(db: BetterSQLite3Database, workflowId: number, fromBlock: string, toBlock: string): boolean {
   const links = db.select().from(brickLinks).where(eq(brickLinks.workflowId, workflowId)).all();
-  // 인접 리스트 구성 (기존 link + 새 link)
+  // 인접 리스트 구성 (기존 link + 새 link, loop 링크 제외)
   const adj = new Map<string, string[]>();
   for (const link of links) {
+    if (link.linkType === 'loop') continue;  // loop 링크는 DAG 검사 제외
     if (!adj.has(link.fromBlock)) adj.set(link.fromBlock, []);
     adj.get(link.fromBlock)!.push(link.toBlock);
   }
@@ -71,8 +74,12 @@ export function registerLinkRoutes(app: Application, db: BetterSQLite3Database) 
       if (fromBlock === toBlock) {
         return res.status(400).json({ error: '자기참조 불가: fromBlock과 toBlock이 같습니다' });
       }
-      // DAG 순환 검증
-      if (hasCycle(db, Number(workflowId), fromBlock, toBlock)) {
+      // linkType 유효성 검증
+      if (linkType && !VALID_LINK_TYPE_NAMES.includes(linkType)) {
+        return res.status(400).json({ error: `잘못된 linkType: '${linkType}'`, validTypes: VALID_LINK_TYPE_NAMES });
+      }
+      // DAG 순환 검증 (loop 타입은 면제)
+      if (linkType !== 'loop' && hasCycle(db, Number(workflowId), fromBlock, toBlock)) {
         return res.status(400).json({ error: 'DAG 순환 감지: 이 Link를 추가하면 순환이 발생합니다' });
       }
       const result = db.insert(brickLinks).values({
@@ -104,6 +111,9 @@ export function registerLinkRoutes(app: Application, db: BetterSQLite3Database) 
         return res.status(404).json({ error: 'Link 없음' });
       }
       const { linkType, condition, judge, cron } = req.body;
+      if (linkType !== undefined && !VALID_LINK_TYPE_NAMES.includes(linkType)) {
+        return res.status(400).json({ error: `잘못된 linkType: '${linkType}'`, validTypes: VALID_LINK_TYPE_NAMES });
+      }
       const updated = db.update(brickLinks)
         .set({
           ...(linkType !== undefined && { linkType }),

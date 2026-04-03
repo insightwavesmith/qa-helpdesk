@@ -4,15 +4,12 @@ import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { eq } from 'drizzle-orm';
 import { brickPresets } from '../../db/schema/brick.js';
 
-/** YAML 파싱 시도 — js-yaml 없으면 JSON.parse fallback */
+import { parse as yamlParse } from 'yaml';
+
 function parseYaml(raw: string): unknown {
   try {
-    // js-yaml이 있으면 사용
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const yaml = require('js-yaml');
-    return yaml.load(raw);
+    return yamlParse(raw);
   } catch {
-    // fallback: JSON으로 시도
     return JSON.parse(raw);
   }
 }

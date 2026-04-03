@@ -1,0 +1,5 @@
+__turbopack_load_page_chunks__("/brick/BrickOverviewPage", [
+  "static/chunks/794bdfe1ebfa32c5.js",
+  "static/chunks/3f341701ad841523.js",
+  "static/chunks/turbopack-f847d043ad62afcd.js"
+])

@@ -17,7 +17,8 @@ import { registerApprovalRoutes } from './approvals.js';
 import { registerProjectRoutes } from './projects.js';
 import { registerInvariantRoutes } from './invariants.js';
 
-export function registerBrickRoutes(app: Application, db: BetterSQLite3Database) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function registerBrickRoutes(app: Application, db: BetterSQLite3Database<any>) {
   registerBlockTypeRoutes(app, db);
   registerTeamRoutes(app, db);
   registerLinkRoutes(app, db);

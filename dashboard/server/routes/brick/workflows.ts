@@ -4,18 +4,31 @@ import type { Application } from 'express';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { eq } from 'drizzle-orm';
 import { brickExecutions, brickExecutionLogs } from '../../db/schema/brick.js';
+import { EngineBridge } from '../../brick/engine/bridge.js';
+
+const RESUMABLE = ['paused', 'cancelled', 'suspended'];
+const CANCELLABLE = ['pending', 'running', 'paused', 'suspended'];
 
 export function registerWorkflowRoutes(app: Application, db: BetterSQLite3Database) {
+  const bridge = new EngineBridge();
+
   // POST /api/brick/workflows/:workflowId/resume — 재개
-  app.post('/api/brick/workflows/:workflowId/resume', (req, res) => {
+  app.post('/api/brick/workflows/:workflowId/resume', async (req, res) => {
     try {
-      // workflowId로 실행 인스턴스 조회 (presetId 기준)
       const execution = db.select().from(brickExecutions)
-        .where(eq(brickExecutions.presetId, Number(req.params.workflowId)))
+        .where(eq(brickExecutions.id, Number(req.params.workflowId)))
         .get();
 
       if (!execution) {
         return res.status(404).json({ error: '실행 없음' });
+      }
+
+      if (!RESUMABLE.includes(execution.status)) {
+        return res.status(409).json({ error: `재개 불가: 현재 '${execution.status}'` });
+      }
+
+      if (execution.engineWorkflowId) {
+        await bridge.resumeWorkflow(execution.engineWorkflowId);
       }
 
       const updated = db.update(brickExecutions)
@@ -39,14 +52,22 @@ export function registerWorkflowRoutes(app: Application, db: BetterSQLite3Databa
   });
 
   // POST /api/brick/workflows/:workflowId/cancel — 취소
-  app.post('/api/brick/workflows/:workflowId/cancel', (req, res) => {
+  app.post('/api/brick/workflows/:workflowId/cancel', async (req, res) => {
     try {
       const execution = db.select().from(brickExecutions)
-        .where(eq(brickExecutions.presetId, Number(req.params.workflowId)))
+        .where(eq(brickExecutions.id, Number(req.params.workflowId)))
         .get();
 
       if (!execution) {
         return res.status(404).json({ error: '실행 없음' });
+      }
+
+      if (!CANCELLABLE.includes(execution.status)) {
+        return res.status(409).json({ error: `취소 불가: 현재 '${execution.status}'` });
+      }
+
+      if (execution.engineWorkflowId) {
+        await bridge.cancelWorkflow(execution.engineWorkflowId);
       }
 
       const updated = db.update(brickExecutions)

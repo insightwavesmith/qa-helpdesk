@@ -1,0 +1,7 @@
+__turbopack_load_page_chunks__("/CostsPage", [
+  "static/chunks/e0c112d2a4bc3d78.js",
+  "static/chunks/ddaf5f5a27815fba.js",
+  "static/chunks/c710dc2e41e45450.js",
+  "static/chunks/3f341701ad841523.js",
+  "static/chunks/turbopack-53bb3de4632b518d.js"
+])

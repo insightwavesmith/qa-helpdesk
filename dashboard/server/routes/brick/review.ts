@@ -2,13 +2,18 @@
 import type { Application } from 'express';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { and, eq } from 'drizzle-orm';
-import { brickGateResults } from '../../db/schema/brick.js';
+import { brickExecutions, brickGateResults } from '../../db/schema/brick.js';
 
 export function registerReviewRoutes(app: Application, db: BetterSQLite3Database) {
   // POST /api/brick/review/:executionId/:blockId/approve — 리뷰 승인
   app.post('/api/brick/review/:executionId/:blockId/approve', (req, res) => {
     try {
       const { executionId, blockId } = req.params;
+
+      // FK 존재 확인
+      const execution = db.select({ id: brickExecutions.id }).from(brickExecutions)
+        .where(eq(brickExecutions.id, Number(executionId))).get();
+      if (!execution) return res.status(404).json({ error: '실행 없음' });
 
       // gate 통과 기록 생성
       const result = db.insert(brickGateResults).values({
@@ -35,6 +40,11 @@ export function registerReviewRoutes(app: Application, db: BetterSQLite3Database
       if (!rejectReason) {
         return res.status(400).json({ error: '거부 사유 필수' });
       }
+
+      // FK 존재 확인
+      const execution = db.select({ id: brickExecutions.id }).from(brickExecutions)
+        .where(eq(brickExecutions.id, Number(executionId))).get();
+      if (!execution) return res.status(404).json({ error: '실행 없음' });
 
       const result = db.insert(brickGateResults).values({
         executionId: Number(executionId),

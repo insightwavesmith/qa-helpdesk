@@ -52,7 +52,7 @@ export class KnowledgeService {
   /** 에이전트별 학습 조회 */
   getByAgent(agentId: string, opts?: { category?: string; limit?: number }) {
     const conditions = opts?.category
-      ? and(eq(knowledgeEntries.agentId, agentId), eq(knowledgeEntries.category, opts.category))
+      ? and(eq(knowledgeEntries.agentId, agentId), eq(knowledgeEntries.category, opts.category as typeof knowledgeEntries.$inferSelect.category))
       : eq(knowledgeEntries.agentId, agentId);
 
     const query = this.db.select().from(knowledgeEntries)
@@ -68,7 +68,7 @@ export class KnowledgeService {
   /** 카테고리별 조회 */
   getByCategory(category: string, opts?: { limit?: number }) {
     const query = this.db.select().from(knowledgeEntries)
-      .where(eq(knowledgeEntries.category, category))
+      .where(eq(knowledgeEntries.category, category as typeof knowledgeEntries.$inferSelect.category))
       .orderBy(desc(knowledgeEntries.learnedAt));
 
     if (opts?.limit) {

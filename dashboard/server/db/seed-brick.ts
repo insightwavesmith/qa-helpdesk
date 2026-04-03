@@ -99,7 +99,8 @@ export function seedPdcaPresets(db: BetterSQLite3Database) {
   console.log('[seed-brick] PDCA 프리셋 4개 시딩 완료');
 }
 
-export function seedAll(db: BetterSQLite3Database) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function seedAll(db: BetterSQLite3Database<any>) {
   seedBrickBlockTypes(db);
   seedPdcaTeams(db);
   seedPdcaPresets(db);

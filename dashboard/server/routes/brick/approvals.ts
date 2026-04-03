@@ -2,10 +2,13 @@
 import type { Application } from 'express';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { eq } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
-import { brickApprovals } from '../../db/schema/brick.js';
+import { randomUUID } from 'node:crypto';
+import { brickApprovals, brickExecutions } from '../../db/schema/brick.js';
+import { EngineBridge } from '../../brick/engine/bridge.js';
 
 export function registerApprovalRoutes(app: Application, db: BetterSQLite3Database) {
+  const bridge = new EngineBridge();
+
   // 승인 요청 생성
   app.post('/api/brick/approvals', (req, res) => {
     try {
@@ -13,7 +16,7 @@ export function registerApprovalRoutes(app: Application, db: BetterSQLite3Databa
       if (!execution_id || !approver || !timeout_at) {
         return res.status(400).json({ error: 'execution_id, approver, timeout_at 필수' });
       }
-      const id = uuidv4();
+      const id = randomUUID();
       db.insert(brickApprovals).values({
         id,
         executionId: execution_id,
@@ -47,7 +50,7 @@ export function registerApprovalRoutes(app: Application, db: BetterSQLite3Databa
   });
 
   // 승인
-  app.post('/api/brick/approve/:executionId', (req, res) => {
+  app.post('/api/brick/approve/:executionId', async (req, res) => {
     try {
       const { executionId } = req.params;
       const { approver, comment } = req.body;
@@ -64,6 +67,28 @@ export function registerApprovalRoutes(app: Application, db: BetterSQLite3Databa
       if (updated.changes === 0) {
         return res.status(404).json({ error: '승인 요청을 찾을 수 없습니다' });
       }
+
+      // 엔진 연동
+      const execution = db.select().from(brickExecutions)
+        .where(eq(brickExecutions.id, Number(executionId))).get();
+      if (execution?.engineWorkflowId && execution.currentBlock) {
+        const result = await bridge.completeBlock(
+          execution.engineWorkflowId,
+          execution.currentBlock,
+          { approval_action: 'approve', approver: approver || 'ceo' },
+        );
+        if (result.ok && result.data) {
+          const allCompleted = Object.values(result.data.blocks_state).every(
+            (b: { status: string }) => b.status === 'completed'
+          );
+          db.update(brickExecutions).set({
+            blocksState: JSON.stringify(result.data.blocks_state),
+            currentBlock: result.data.next_blocks[0] || execution.currentBlock,
+            status: allCompleted ? 'completed' : 'running',
+          }).where(eq(brickExecutions.id, Number(executionId))).run();
+        }
+      }
+
       res.json({ status: 'approved' });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -71,7 +96,7 @@ export function registerApprovalRoutes(app: Application, db: BetterSQLite3Databa
   });
 
   // 반려
-  app.post('/api/brick/reject/:executionId', (req, res) => {
+  app.post('/api/brick/reject/:executionId', async (req, res) => {
     try {
       const { executionId } = req.params;
       const { approver, reason } = req.body;
@@ -91,6 +116,28 @@ export function registerApprovalRoutes(app: Application, db: BetterSQLite3Databa
       if (updated.changes === 0) {
         return res.status(404).json({ error: '승인 요청을 찾을 수 없습니다' });
       }
+
+      // 엔진 연동
+      const execution = db.select().from(brickExecutions)
+        .where(eq(brickExecutions.id, Number(executionId))).get();
+      if (execution?.engineWorkflowId && execution.currentBlock) {
+        const result = await bridge.completeBlock(
+          execution.engineWorkflowId,
+          execution.currentBlock,
+          { approval_action: 'reject', reject_reason: reason, approver: approver || 'ceo' },
+        );
+        if (result.ok && result.data) {
+          const allCompleted = Object.values(result.data.blocks_state).every(
+            (b: { status: string }) => b.status === 'completed'
+          );
+          db.update(brickExecutions).set({
+            blocksState: JSON.stringify(result.data.blocks_state),
+            currentBlock: result.data.next_blocks[0] || execution.currentBlock,
+            status: allCompleted ? 'completed' : 'running',
+          }).where(eq(brickExecutions.id, Number(executionId))).run();
+        }
+      }
+
       res.json({ status: 'rejected', reason });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
