@@ -1,12 +1,15 @@
 // dashboard/server/routes/brick/executions.ts — Brick 실행 API (5개 엔드포인트)
+// Step 6: Python 엔진 프록시 전환
 import type { Application } from 'express';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
-import { eq, desc, sql, and } from 'drizzle-orm';
-import { brickExecutions, brickExecutionLogs, brickPresets } from '../../db/schema/brick.js';
+import { eq, desc, sql } from 'drizzle-orm';
+import { brickExecutions, brickExecutionLogs, brickPresets, brickGateResults } from '../../db/schema/brick.js';
 import { emitThinkLog } from '../../brick/engine/executor.js';
-import { parse as parseYaml } from 'yaml';
+import { EngineBridge } from '../../brick/engine/bridge.js';
 
 export function registerExecutionRoutes(app: Application, db: BetterSQLite3Database) {
+  const bridge = new EngineBridge();
+
   // GET /api/brick/executions — 실행 목록
   app.get('/api/brick/executions', (req, res) => {
     try {
@@ -39,8 +42,8 @@ export function registerExecutionRoutes(app: Application, db: BetterSQLite3Datab
     }
   });
 
-  // POST /api/brick/executions — 실행 시작
-  app.post('/api/brick/executions', (req, res) => {
+  // POST /api/brick/executions — 실행 시작 (Python 엔진 프록시)
+  app.post('/api/brick/executions', async (req, res) => {
     try {
       const { presetId, feature } = req.body;
 
@@ -48,7 +51,7 @@ export function registerExecutionRoutes(app: Application, db: BetterSQLite3Datab
         return res.status(400).json({ error: 'presetId, feature 필수' });
       }
 
-      // 프리셋 로드
+      // 프리셋에서 name 조회
       const preset = db.select().from(brickPresets)
         .where(eq(brickPresets.id, Number(presetId)))
         .get();
@@ -57,46 +60,28 @@ export function registerExecutionRoutes(app: Application, db: BetterSQLite3Datab
         return res.status(404).json({ error: '프리셋 없음' });
       }
 
-      // 블록 목록에서 초기 상태 생성
-      let parsed: Record<string, unknown>;
-      try {
-        parsed = parseYaml(preset.yaml);
-      } catch {
-        return res.status(400).json({ error: 'YAML 파싱 실패' });
+      // Python 엔진에 실행 요청
+      const result = await bridge.startWorkflow(preset.name, feature, feature);
+      if (!result.ok) {
+        return res.status(502).json({
+          error: 'engine_unavailable',
+          detail: result.error?.detail,
+        });
       }
 
-      // spec wrapper 해제
-      const inner = (parsed.kind && parsed.spec)
-        ? parsed.spec as Record<string, unknown>
-        : parsed;
-      const blocks = (inner.blocks || []) as Array<{ id: string }>;
-
-      const blocksState: Record<string, { status: string }> = {};
-      blocks.forEach((b, i) => {
-        blocksState[b.id] = { status: i === 0 ? 'queued' : 'pending' };
-      });
-
-      const now = new Date().toISOString();
-
-      // 실행 인스턴스 생성
+      // 엔진 응답으로 DB 동기화
       const execution = db.insert(brickExecutions).values({
         presetId: Number(presetId),
         feature,
-        status: 'running',
-        blocksState: JSON.stringify(blocksState),
-        startedAt: now,
+        status: result.data!.status,
+        currentBlock: result.data!.current_block_id,
+        blocksState: JSON.stringify(result.data!.blocks_state),
+        engineWorkflowId: result.data!.workflow_id,
+        startedAt: new Date().toISOString(),
       }).returning().get();
 
-      // 첫 블록 시작 로그
-      const firstBlockId = blocks[0]?.id || 'unknown';
-      db.insert(brickExecutionLogs).values({
-        executionId: execution.id,
-        eventType: 'block.started',
-        blockId: firstBlockId,
-        data: JSON.stringify({ feature, startedAt: now }),
-      }).run();
-
       // ThinkLog 자동 발행 (HP-001: 항상 저장)
+      const firstBlockId = result.data!.current_block_id || 'unknown';
       emitThinkLog(db, {
         executionId: execution.id,
         blockId: firstBlockId,
@@ -104,7 +89,7 @@ export function registerExecutionRoutes(app: Application, db: BetterSQLite3Datab
         feature,
       }, `[${firstBlockId}] 실행 시작. 피처: ${feature}`, 0);
 
-      console.log('[brick-executions] 실행 시작:', execution.id, feature);
+      console.log('[brick-executions] 엔진 실행 시작:', execution.id, feature);
       res.status(201).json(execution);
     } catch (e) {
       res.status(500).json({ error: String(e) });
@@ -112,21 +97,26 @@ export function registerExecutionRoutes(app: Application, db: BetterSQLite3Datab
   });
 
   // POST /api/brick/executions/:id/pause — 일시정지
-  app.post('/api/brick/executions/:id/pause', (req, res) => {
+  app.post('/api/brick/executions/:id/pause', async (req, res) => {
     try {
+      const execution = db.select().from(brickExecutions)
+        .where(eq(brickExecutions.id, Number(req.params.id))).get();
+      if (!execution) return res.status(404).json({ error: '실행 없음' });
+
+      // 엔진에 suspend 요청 (있으면)
+      const engineId = execution.engineWorkflowId as string | null;
+      if (engineId) {
+        await bridge.suspendWorkflow(engineId);
+      }
+
       const updated = db.update(brickExecutions)
         .set({ status: 'paused' })
         .where(eq(brickExecutions.id, Number(req.params.id)))
         .returning()
         .get();
 
-      if (!updated) {
-        return res.status(404).json({ error: '실행 없음' });
-      }
-
-      // 일시정지 로그
       db.insert(brickExecutionLogs).values({
-        executionId: updated.id,
+        executionId: updated!.id,
         eventType: 'execution.paused',
         data: JSON.stringify({ pausedAt: new Date().toISOString() }),
       }).run();
@@ -171,45 +161,80 @@ export function registerExecutionRoutes(app: Application, db: BetterSQLite3Datab
     }
   });
 
-  // POST /api/brick/executions/:id/blocks/:blockId/complete — 블록 완료
-  app.post('/api/brick/executions/:id/blocks/:blockId/complete', (req, res) => {
+  // POST /api/brick/executions/:id/blocks/:blockId/complete — 블록 완료 (Python 엔진 프록시)
+  app.post('/api/brick/executions/:id/blocks/:blockId/complete', async (req, res) => {
     try {
       const execution = db.select().from(brickExecutions)
         .where(eq(brickExecutions.id, Number(req.params.id)))
         .get();
 
-      if (!execution) {
-        return res.status(404).json({ error: '실행 없음' });
+      if (!execution) return res.status(404).json({ error: '실행 없음' });
+
+      const engineWorkflowId = execution.engineWorkflowId as string | null;
+      if (!engineWorkflowId) {
+        return res.status(400).json({ error: '엔진 매핑 없음. 레거시 실행은 엔진 미지원.' });
       }
 
-      const blocksState = JSON.parse(
-        (typeof execution.blocksState === 'string' ? execution.blocksState : JSON.stringify(execution.blocksState)) || '{}',
-      ) as Record<string, { status: string }>;
       const blockId = req.params.blockId;
 
-      if (!blocksState[blockId]) {
-        return res.status(404).json({ error: '블록 없음' });
+      // 동시성 가드
+      const blocksState = JSON.parse(
+        (typeof execution.blocksState === 'string' ? execution.blocksState : JSON.stringify(execution.blocksState)) || '{}'
+      ) as Record<string, { status: string }>;
+      if (blocksState[blockId]?.status === 'completed' || blocksState[blockId]?.status === 'gate_checking') {
+        return res.status(409).json({
+          error: 'block_not_running',
+          detail: `블록 ${blockId}은 현재 ${blocksState[blockId]?.status} 상태`,
+        });
       }
 
-      // 상태 전이: → completed
-      blocksState[blockId].status = 'completed';
+      // Python 엔진에 블록 완료 요청
+      const { metrics, artifacts } = req.body || {};
+      const result = await bridge.completeBlock(engineWorkflowId, blockId, metrics, artifacts);
+      if (!result.ok) {
+        return res.status(502).json({ error: 'engine_unavailable', detail: result.error?.detail });
+      }
 
-      db.update(brickExecutions)
-        .set({ blocksState: JSON.stringify(blocksState) })
-        .where(eq(brickExecutions.id, Number(req.params.id)))
-        .run();
+      // 엔진 결과로 DB 동기화
+      const allCompleted = Object.values(result.data!.blocks_state).every(
+        (b: { status: string }) => b.status === 'completed'
+      );
 
-      // 로그 기록
-      const { metrics } = req.body || {};
+      db.update(brickExecutions).set({
+        blocksState: JSON.stringify(result.data!.blocks_state),
+        currentBlock: result.data!.next_blocks[0] || execution.currentBlock,
+        status: allCompleted ? 'completed' : 'running',
+      }).where(eq(brickExecutions.id, Number(req.params.id))).run();
+
+      // Gate 결과 저장
+      if (result.data!.gate_result) {
+        db.insert(brickGateResults).values({
+          executionId: execution.id,
+          blockId,
+          handlerType: result.data!.gate_result.type || 'unknown',
+          passed: result.data!.gate_result.passed,
+          detail: result.data!.gate_result as unknown as Record<string, unknown>,
+        }).run();
+      }
+
+      // 이벤트 로그
       db.insert(brickExecutionLogs).values({
         executionId: execution.id,
         eventType: 'block.completed',
         blockId,
-        data: JSON.stringify(metrics || {}),
+        data: JSON.stringify({
+          gate_result: result.data!.gate_result,
+          next_blocks: result.data!.next_blocks,
+          context: result.data!.context,
+        }),
       }).run();
 
-      console.log('[brick-executions] 블록 완료:', req.params.id, blockId);
-      res.json({ blocksState });
+      console.log('[brick-executions] 엔진 블록 완료:', req.params.id, blockId);
+      res.json({
+        blocksState: result.data!.blocks_state,
+        gateResult: result.data!.gate_result,
+        nextBlocks: result.data!.next_blocks,
+      });
     } catch (e) {
       res.status(500).json({ error: String(e) });
     }

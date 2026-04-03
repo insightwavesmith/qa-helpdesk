@@ -288,6 +288,7 @@ const createTableStatements = [
     status TEXT NOT NULL DEFAULT 'pending',
     current_block TEXT,
     blocks_state TEXT,
+    engine_workflow_id TEXT,
     started_at TEXT,
     completed_at TEXT,
     created_at TEXT NOT NULL

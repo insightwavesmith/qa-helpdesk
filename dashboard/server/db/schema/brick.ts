@@ -69,6 +69,7 @@ export const brickExecutions = sqliteTable('brick_executions', {
   status: text('status').notNull().default('pending'),
   currentBlock: text('current_block'),
   blocksState: text('blocks_state', { mode: 'json' }),
+  engineWorkflowId: text('engine_workflow_id'),  // Python 엔진 ID 매핑
   startedAt: text('started_at'),
   completedAt: text('completed_at'),
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
