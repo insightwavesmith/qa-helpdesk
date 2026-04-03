@@ -1,6 +1,0 @@
-__turbopack_load_page_chunks__("/brick/PresetListPage", [
-  "static/chunks/cf60078b8858f57f.js",
-  "static/chunks/3f341701ad841523.js",
-  "static/chunks/ddaf5f5a27815fba.js",
-  "static/chunks/turbopack-3fe78e8eadf40716.js"
-])

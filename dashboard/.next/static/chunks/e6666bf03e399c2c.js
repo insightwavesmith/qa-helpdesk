@@ -1,8 +1,0 @@
-__turbopack_load_page_chunks__("/brick/BrickCanvasPage", [
-  "static/chunks/6c576195b0e698d0.js",
-  "static/chunks/ddaf5f5a27815fba.js",
-  "static/chunks/ce991ca08521c664.js",
-  "static/chunks/3f341701ad841523.js",
-  "static/chunks/8a5bd6fe3abc8091.css",
-  "static/chunks/turbopack-51f33d80df598a6b.js"
-])

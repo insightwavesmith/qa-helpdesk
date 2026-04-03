@@ -1,6 +1,0 @@
-__turbopack_load_page_chunks__("/brick/RunHistoryPage", [
-  "static/chunks/14c55b08a857c4b8.js",
-  "static/chunks/3f341701ad841523.js",
-  "static/chunks/68e48b7c45d49ef2.js",
-  "static/chunks/turbopack-6a03721428e2cf10.js"
-])
