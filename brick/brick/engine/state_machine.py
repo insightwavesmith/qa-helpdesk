@@ -157,11 +157,44 @@ class StateMachine:
 
         return wf, commands
 
-    def _find_next_blocks(self, wf: WorkflowInstance, block_id: str) -> list[str]:
+    def _find_next_blocks(
+        self, wf: WorkflowInstance, block_id: str
+    ) -> list[str]:
+        """link type과 condition을 평가하여 다음 블록 결정."""
+        from brick.engine.condition_evaluator import evaluate_condition
+
         next_ids = []
+        context = wf.context
+
         for link in wf.definition.links:
-            if link.from_block == block_id:
+            if link.from_block != block_id:
+                continue
+
+            if link.type == "sequential":
                 next_ids.append(link.to_block)
+
+            elif link.type == "loop":
+                if evaluate_condition(link.condition, context):
+                    loop_key = f"_loop_{block_id}_{link.to_block}"
+                    loop_count = context.get(loop_key, 0)
+                    max_iter = link.max_retries
+                    if loop_count < max_iter:
+                        context[loop_key] = loop_count + 1
+                        next_ids.append(link.to_block)
+
+            elif link.type == "branch":
+                if evaluate_condition(link.condition, context):
+                    next_ids.append(link.to_block)
+
+            elif link.type == "parallel":
+                next_ids.append(link.to_block)
+
+            elif link.type == "compete":
+                next_ids.append(link.to_block)
+
+            elif link.type == "cron":
+                pass
+
         return next_ids
 
     def _all_blocks_completed(self, wf: WorkflowInstance) -> bool:

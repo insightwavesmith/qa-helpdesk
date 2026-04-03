@@ -1,6 +1,7 @@
 """Link models for Brick Engine."""
 
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass
@@ -8,7 +9,7 @@ class LinkDefinition:
     from_block: str
     to_block: str
     type: str = "sequential"  # sequential|parallel|compete|loop|cron|branch
-    condition: dict = field(default_factory=dict)
+    condition: str | dict = field(default_factory=dict)
     max_retries: int = 3
     merge_strategy: str = "all"  # all|any|n_of_m (for parallel)
     teams: list[str] = field(default_factory=list)  # for compete

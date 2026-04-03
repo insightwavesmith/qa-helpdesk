@@ -238,6 +238,10 @@ class WorkflowExecutor:
         # GATE_CHECKING 상태에서 Gate 실행
         gate_result = await self.gate_executor.run_gates(block_inst, instance.context)
 
+        # Gate 결과를 context에 반영 (condition 평가용)
+        if gate_result.metrics:
+            instance.context.update(gate_result.metrics)
+
         event_type = "block.gate_passed" if gate_result.passed else "block.gate_failed"
         gate_event = Event(type=event_type, data={"block_id": block_id})
 
