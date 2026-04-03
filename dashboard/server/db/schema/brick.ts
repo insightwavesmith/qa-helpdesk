@@ -11,6 +11,7 @@ export const brickBlockTypes = sqliteTable('brick_block_types', {
   category: text('category').notNull(),
   config: text('config', { mode: 'json' }),
   isCore: integer('is_core', { mode: 'boolean' }).default(false),
+  thinkLogRequired: integer('think_log_required', { mode: 'boolean' }).default(false),
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
@@ -27,6 +28,8 @@ export const brickTeams = sqliteTable('brick_teams', {
   mcpServers: text('mcp_servers', { mode: 'json' }),
   modelConfig: text('model_config', { mode: 'json' }),
   status: text('status').default('idle'),
+  allowedTools: text('allowed_tools', { mode: 'json' }),
+  maxDepth: integer('max_depth').default(0),
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
 });

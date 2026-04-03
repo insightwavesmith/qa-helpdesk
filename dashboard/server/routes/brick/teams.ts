@@ -18,7 +18,7 @@ export function registerTeamRoutes(app: Application, db: BetterSQLite3Database) 
   // POST /api/brick/teams — 생성
   app.post('/api/brick/teams', (req: Request, res: Response) => {
     try {
-      const { name, displayName, adapter, adapterConfig, members, skills, mcpServers, modelConfig } = req.body;
+      const { name, displayName, adapter, adapterConfig, members, skills, mcpServers, modelConfig, allowedTools, maxDepth } = req.body;
       if (!name) {
         return res.status(400).json({ error: '필수 필드 누락: name' });
       }
@@ -31,6 +31,8 @@ export function registerTeamRoutes(app: Application, db: BetterSQLite3Database) 
         skills,
         mcpServers,
         modelConfig,
+        allowedTools: allowedTools ?? null,
+        maxDepth: maxDepth ?? 0,
       }).returning().get();
       console.log(`[brick/teams] 생성: ${name}`);
       res.status(201).json(result);
@@ -60,7 +62,7 @@ export function registerTeamRoutes(app: Application, db: BetterSQLite3Database) 
       if (!existing) {
         return res.status(404).json({ error: '팀 없음' });
       }
-      const { name, displayName, adapter, adapterConfig, members, skills, mcpServers, modelConfig, status } = req.body;
+      const { name, displayName, adapter, adapterConfig, members, skills, mcpServers, modelConfig, status, allowedTools, maxDepth } = req.body;
       const updated = db.update(brickTeams)
         .set({
           ...(name !== undefined && { name }),
@@ -72,6 +74,8 @@ export function registerTeamRoutes(app: Application, db: BetterSQLite3Database) 
           ...(mcpServers !== undefined && { mcpServers }),
           ...(modelConfig !== undefined && { modelConfig }),
           ...(status !== undefined && { status }),
+          ...(allowedTools !== undefined && { allowedTools }),
+          ...(maxDepth !== undefined && { maxDepth }),
           updatedAt: new Date().toISOString(),
         })
         .where(eq(brickTeams.id, id))

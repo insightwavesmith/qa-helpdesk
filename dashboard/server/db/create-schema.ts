@@ -231,6 +231,7 @@ const createTableStatements = [
     category TEXT NOT NULL,
     config TEXT,
     is_core INTEGER DEFAULT 0,
+    think_log_required INTEGER DEFAULT 0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`,
@@ -247,6 +248,8 @@ const createTableStatements = [
     mcp_servers TEXT,
     model_config TEXT,
     status TEXT DEFAULT 'idle',
+    allowed_tools TEXT,
+    max_depth INTEGER DEFAULT 0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`,

@@ -18,7 +18,7 @@ export function registerBlockTypeRoutes(app: Application, db: BetterSQLite3Datab
   // POST /api/brick/block-types — 생성
   app.post('/api/brick/block-types', (req: Request, res: Response) => {
     try {
-      const { name, displayName, icon, color, category, config } = req.body;
+      const { name, displayName, icon, color, category, config, thinkLogRequired } = req.body;
       if (!name || !displayName || !icon || !color || !category) {
         return res.status(400).json({ error: '필수 필드 누락: name, displayName, icon, color, category' });
       }
@@ -29,6 +29,7 @@ export function registerBlockTypeRoutes(app: Application, db: BetterSQLite3Datab
       }
       const result = db.insert(brickBlockTypes).values({
         name, displayName, icon, color, category, config,
+        thinkLogRequired: thinkLogRequired ?? false,
       }).returning().get();
       console.log(`[brick/block-types] 생성: ${name}`);
       res.status(201).json(result);
@@ -48,7 +49,7 @@ export function registerBlockTypeRoutes(app: Application, db: BetterSQLite3Datab
       if (existing.isCore) {
         return res.status(403).json({ error: '내장 블록 타입은 수정할 수 없습니다' });
       }
-      const { displayName, icon, color, category, config } = req.body;
+      const { displayName, icon, color, category, config, thinkLogRequired } = req.body;
       const updated = db.update(brickBlockTypes)
         .set({
           ...(displayName !== undefined && { displayName }),
@@ -56,6 +57,7 @@ export function registerBlockTypeRoutes(app: Application, db: BetterSQLite3Datab
           ...(color !== undefined && { color }),
           ...(category !== undefined && { category }),
           ...(config !== undefined && { config }),
+          ...(thinkLogRequired !== undefined && { thinkLogRequired }),
           updatedAt: new Date().toISOString(),
         })
         .where(eq(brickBlockTypes.name, name))
