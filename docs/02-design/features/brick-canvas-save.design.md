@@ -7,6 +7,26 @@
 
 ---
 
+## 0. 프로젝트 제약 조건
+
+| 항목 | 값 |
+|------|-----|
+| **DB** | SQLite (better-sqlite3 + drizzle-orm) — `dashboard/server/db/index.ts` |
+| **Express 포트** | 3200 |
+| **Python 엔진 포트** | 3202 |
+| **프론트 dev 포트** | 3201 |
+| **기존 불변식** | INV-EB-1~11 (engine-bridge). 이 Design은 기존 INV를 변경하지 않음 |
+| **BlockStatus** | 9가지: pending, queued, running, gate_checking, waiting_approval, completed, failed, rejected, suspended |
+| **현재 구현 상태** | engine-bridge ✅ 완료, CEO 승인 Gate ✅ 구현, 프로젝트 레이어 🔄 구현 중 |
+
+### 0.1 캔버스 → 엔진 연결 참고
+
+- 캔버스 저장(PUT /presets/:id)은 Express(3200) 직접 DB 저장 — INV-EB-1 위반 아님 (프리셋 메타데이터는 엔진 경유 불필요)
+- 실행(POST /executions)은 반드시 Python 엔진(3202) 경유 — INV-EB-1 준수 필수
+- blocksState 폴링은 Express DB에서 읽기 — INV-EB-4 준수 (GET은 엔진 불필요)
+
+---
+
 ## 1. 현황 분석
 
 ### 1.1 현재 구현 상태

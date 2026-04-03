@@ -20,6 +20,35 @@
 
 ---
 
+## 0. 프로젝트 제약 조건
+
+| 항목 | 값 |
+|------|-----|
+| **DB** | SQLite (better-sqlite3 + drizzle-orm) — `dashboard/server/db/index.ts` |
+| **Express 포트** | 3200 |
+| **Python 엔진 포트** | 3202 |
+| **프론트 dev 포트** | 3201 |
+| **기존 불변식** | INV-EB-1~11 (engine-bridge). 이 Design은 기존 INV를 변경하지 않음 |
+| **BlockStatus** | 9가지: pending, queued, running, gate_checking, waiting_approval, completed, failed, rejected, suspended |
+| **우선순위** | **P0** — 좀비 팀원 수동 정리 중. TeammateLifecycleManager 완성 시급 |
+
+### 0.1 현재 구현 상태 (2026-04-03 기준)
+
+| 컴포넌트 | 파일 | 상태 | 비고 |
+|---------|------|------|------|
+| ClaudeAgentTeamsAdapter | `brick/brick/adapters/claude_agent_teams.py` | ✅ 구현 | MCP + tmux 폴백, suspend/terminate/resume |
+| MCPBridge | `claude_agent_teams.py` 내 | ✅ 구현 | find_peer, send_task, ACK 폴링 |
+| TeammateLifecycleManager | `brick/brick/engine/lifecycle.py` | ⚠️ 부분 | 정책 디스패치만 구현, idle 감지 루프 미구현 |
+| teammate-registry.json | `.bkit/runtime/` | ✅ 사용 중 | 파일 기반 팀원 상태 관리 |
+| 하트비트/좀비 감지 | - | ❌ 미구현 | 현재 수동 TeamDelete로 정리 |
+
+### 0.2 이 Design이 INV에 미치는 영향
+
+- INV-EB-9 (complete-block 후 TeamAdapter.start_block() 호출 필수): 이 Design의 핵심 구현 대상
+- INV-EB-10 (체크포인트 격리): teammate-registry.json은 워크플로우별이 아닌 전역 파일 → 충돌 가능성 낮음 (팀원명 유일)
+
+---
+
 ## 1. 현행 문제 분석
 
 ### 1.1 tmux send-keys의 한계
@@ -484,7 +513,101 @@ class TeammateLifecycleManager:
         pass
 ```
 
-### 4.4 idle_policy 적용 매트릭스
+### 4.4 구현 갭 (2026-04-03 기준)
+
+`lifecycle.py`의 `TeammateLifecycleManager`가 존재하지만, 다음 3개 갭이 남아있다:
+
+| # | 갭 | 현재 상태 | 필요 구현 |
+|---|---|---------|---------|
+| **LG-1** | idle 감지 루프 없음 | `_timers` dict가 존재하지만 아무 코드도 `_timers[name] = time.time()`을 호출하지 않음 | 백그라운드 `asyncio.Task`가 주기적으로 adapter의 팀원 상태를 체크하고, idle 감지 시 `on_teammate_idle()` 호출 |
+| **LG-2** | `_notify_leader()` 스텁 | 메서드 본문이 `pass` | MCPBridge를 통해 리더 세션에 `TEAMMATE_IDLE` 메시지 전송 |
+| **LG-3** | 하트비트/좀비 감지 없음 | tmux pane 존재 여부 확인 코드 없음 | 주기적으로 `tmux list-panes -t {session}` 실행, pane 소멸 = 좀비 → 자동 terminate |
+
+**LG-1 구현 명세 (idle 감지 루프):**
+
+```python
+# lifecycle.py에 추가
+
+class TeammateLifecycleManager:
+    # ... 기존 코드 ...
+
+    async def start_monitoring(self, team_def: TeamDefinition, poll_interval: int = 60):
+        """백그라운드 idle 감지 루프 시작."""
+        self._monitoring = True
+        while self._monitoring:
+            registry = self.adapter._load_registry()
+            for name, info in registry.items():
+                if info.get("state") != "active":
+                    continue
+                last_activity = info.get("last_activity_at", 0)
+                idle_seconds = time.time() - last_activity
+                if idle_seconds >= team_def.idle_policy.timeout_seconds:
+                    if name not in self._timers:
+                        self._timers[name] = time.time()
+                        await self.on_teammate_idle(name, team_def)
+            await asyncio.sleep(poll_interval)
+
+    def stop_monitoring(self):
+        self._monitoring = False
+```
+
+**LG-2 구현 명세 (_notify_leader):**
+
+```python
+async def _notify_leader(self, member_name: str, lifetime: str, action: str):
+    """리더에게 idle 알림. MCPBridge 사용."""
+    message = {
+        "protocol": "bscamp-team/v1",
+        "type": "TEAMMATE_IDLE",
+        "member": member_name,
+        "lifetime": lifetime,
+        "pending_action": action,
+    }
+    peer_id = await self.adapter.mcp.find_peer(self.adapter.session, self.adapter.peer_role)
+    if peer_id:
+        await self.adapter.mcp.send_task(peer_id, message, ack_required=False)
+```
+
+**LG-3 구현 명세 (좀비 감지):**
+
+```python
+async def check_zombies(self, team_def: TeamDefinition):
+    """tmux pane 소멸 감지 → 좀비 팀원 자동 terminate."""
+    registry = self.adapter._load_registry()
+    for name, info in registry.items():
+        if info.get("state") != "active":
+            continue
+        pane = info.get("tmux_pane")
+        if pane:
+            # tmux pane 존재 확인
+            proc = await asyncio.create_subprocess_exec(
+                "tmux", "has-session", "-t", pane,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            await proc.communicate()
+            if proc.returncode != 0:
+                # pane 소멸 = 좀비
+                await self.adapter.terminate_member(name)
+```
+
+### 추가 TDD 케이스 (LG-1~3 대응)
+
+| ID | 시나리오 | 기대 결과 |
+|----|---------|----------|
+| TA-031 | start_monitoring → idle 팀원 감지 | on_teammate_idle 호출됨 |
+| TA-032 | start_monitoring → 활성 팀원 무시 | on_teammate_idle 호출 안 됨 |
+| TA-033 | stop_monitoring → 루프 종료 | _monitoring=False |
+| TA-034 | _notify_leader → MCP 메시지 전송 | TEAMMATE_IDLE 메시지 전달 |
+| TA-035 | check_zombies → pane 소멸 감지 | terminate_member 호출 |
+| TA-036 | check_zombies → pane 정상 → 무시 | terminate 호출 안 됨 |
+| TA-037 | idle 감지 후 새 TASK → 타이머 리셋 | on_task_assigned로 타이머 제거 |
+| TA-038 | suspended 팀원 idle 감지 제외 | state=suspended → 스킵 |
+| TA-039 | registry 비어있을 때 monitoring | 에러 없이 스킵 |
+
+**갱신된 TDD 합계: TA-001~039 (39건)**
+
+### 4.5 idle_policy 적용 매트릭스
 
 | lifetime | idle_policy.action | 결과 |
 |---------|-------------------|------|
@@ -822,12 +945,13 @@ communication:
 |------------|---------|----------|
 | §3 MCP 전달 | TA-001~10 | 10 |
 | §3.4 프로토콜 | TA-011~15 | 5 |
-| §4 수명관리 | TA-016~23 | 8 |
+| §4 수명관리 (정책) | TA-016~23 | 8 |
+| §4.4 수명관리 (LG 갭) | TA-031~39 | 9 |
 | §2 모델 확장 | TA-024~28 | 5 |
 | §6 마이그레이션 | TA-029~30 | 2 |
-| **합계** | | **30** |
+| **합계** | | **39** |
 
-**Gap 0%**: MCP 전달, 프로토콜, 수명관리, 모델 확장, 호환성 전부 TDD 존재.
+**Gap 0%**: MCP 전달, 프로토콜, 수명관리(정책+LG갭), 모델 확장, 호환성 전부 TDD 존재.
 
 ---
 

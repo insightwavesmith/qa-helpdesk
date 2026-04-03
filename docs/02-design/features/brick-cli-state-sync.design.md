@@ -20,12 +20,33 @@
 
 ---
 
+## 0. 프로젝트 제약 조건
+
+| 항목 | 값 |
+|------|-----|
+| **DB** | SQLite (better-sqlite3 + drizzle-orm) — `dashboard/server/db/index.ts` |
+| **Express 포트** | 3200 |
+| **Python 엔진 포트** | 3202 |
+| **프론트 dev 포트** | 3201 |
+| **기존 불변식** | INV-EB-1~11 (engine-bridge). 이 Design은 기존 INV를 변경하지 않음 |
+| **BlockStatus** | 9가지: pending, queued, running, gate_checking, waiting_approval, completed, failed, rejected, suspended |
+| **현재 구현 상태** | executor.py complete_block + _execute_command ✅ 수정 완료, state_machine.py 변경 없음 |
+
+### 0.1 상태 전이와 BlockStatus 9가지
+
+이 Design의 상태 전이 체인(§1.1)은 기본 7가지 BlockStatus 경로를 다룬다.
+CEO 승인 Gate(brick-ceo-approval-gate)가 추가한 `WAITING_APPROVAL`, `REJECTED` 2가지는 approval Gate 전용이며, 이 Design의 수정 범위(executor.py)에 영향 없음:
+- `WAITING_APPROVAL`: approval Gate 진입 시 전이 (executor.py의 일반 complete_block 흐름 밖)
+- `REJECTED`: approval Gate 반려 시 전이 (executor.py의 일반 complete_block 흐름 밖)
+
+---
+
 ## 1. 버그 분석
 
 ### 1.1 정상 상태 전이 체인
 
 ```
-BlockStatus:
+BlockStatus (9가지):
 
   PENDING ──workflow.start──→ QUEUED ──block.started──→ RUNNING
      │                                                      │
@@ -38,6 +59,13 @@ BlockStatus:
      │                                    ▼                                     ▼
      │                               COMPLETED                              FAILED
      │                                                                   (or RETRY)
+     │
+     │  [CEO 승인 Gate 전용 — 이 Design 수정 범위 밖]
+     │  GATE_CHECKING ──approval_pending──→ WAITING_APPROVAL
+     │  WAITING_APPROVAL ──approved──→ COMPLETED
+     │  WAITING_APPROVAL ──rejected──→ REJECTED
+     │                                       │
+     │                                 SUSPENDED (수동 중단)
 ```
 
 **필수 이벤트 순서**: `workflow.start` → `block.started` → `block.completed` → `block.gate_passed`
@@ -337,6 +365,10 @@ EVENT_TO_STATUS = {
     "block.gate_passed": "completed",
     "block.gate_failed": "failed",  # or "running" (retry)
     "block.failed": "failed",
+    # CEO 승인 Gate 전용 (이 Design 수정 범위 밖, 참조용)
+    "block.approval_pending": "waiting_approval",
+    "block.approved": "completed",
+    "block.rejected": "rejected",
 }
 ```
 

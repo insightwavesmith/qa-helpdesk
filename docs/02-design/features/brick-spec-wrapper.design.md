@@ -7,6 +7,25 @@
 
 ---
 
+## 0. 프로젝트 제약 조건
+
+| 항목 | 값 |
+|------|-----|
+| **DB** | SQLite (better-sqlite3 + drizzle-orm) — `dashboard/server/db/index.ts` |
+| **Express 포트** | 3200 |
+| **Python 엔진 포트** | 3202 |
+| **프론트 dev 포트** | 3201 |
+| **기존 불변식** | INV-EB-1~11 (engine-bridge). 이 Design은 기존 INV를 변경하지 않음 |
+| **BlockStatus** | 9가지: pending, queued, running, gate_checking, waiting_approval, completed, failed, rejected, suspended |
+| **현재 구현 상태** | PresetLoader._parse_preset() ✅ spec wrapper 감지 구현 완료 |
+
+### 0.1 프리셋 YAML 형식 현황
+
+현재 `.bkit/presets/`의 모든 프리셋은 **flat 형식** (kind+spec 없음). `brick/preset-v2` 스키마 사용.
+spec wrapper 형식은 향후 kind: Preset + spec 구조로 전환 시 필요. 하위호환 필수.
+
+---
+
 ## 1. 문제 정의
 
 ### 1.1 증상

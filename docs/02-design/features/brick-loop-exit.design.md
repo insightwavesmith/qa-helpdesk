@@ -7,6 +7,26 @@
 
 ---
 
+## 0. 프로젝트 제약 조건
+
+| 항목 | 값 |
+|------|-----|
+| **DB** | SQLite (better-sqlite3 + drizzle-orm) — `dashboard/server/db/index.ts` |
+| **Express 포트** | 3200 |
+| **Python 엔진 포트** | 3202 |
+| **프론트 dev 포트** | 3201 |
+| **기존 불변식** | INV-EB-1~11 (engine-bridge). 이 Design은 기존 INV를 변경하지 않음 |
+| **BlockStatus** | 9가지: pending, queued, running, gate_checking, waiting_approval, completed, failed, rejected, suspended |
+| **현재 구현 상태** | engine-bridge ✅ 완료 (state_machine.py 21/21 TDD), condition_evaluator.py ✅ 구현 완료 |
+
+### 0.1 이 Design과 INV 관계
+
+- INV-EB-3 (BlockStatus 제한): 이 Design은 BlockStatus를 추가하지 않음. 기존 9가지 내에서 동작
+- INV-EB-8 (context 블록 간 전파): 이 Design의 핵심 의존. Gate metrics → context 반영이 condition 평가의 전제조건
+- INV-LE-1~6: 이 Design이 신규 추가하는 불변식 (§6 참조)
+
+---
+
 ## 1. 문제 정의
 
 ### 1.1 증상
