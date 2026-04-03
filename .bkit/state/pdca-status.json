@@ -1,8 +1,13 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-03T17:03:48.401Z",
+  "lastUpdated": "2026-04-03T17:05:57.445Z",
   "activeFeatures": [
-    "gates"
+    "gates",
+    "middleware",
+    "routes",
+    "engine",
+    "server",
+    "dashboard"
   ],
   "primaryFeature": "gates",
   "features": {
@@ -75,6 +80,71 @@
         "lastUpdated": "2026-04-03T17:03:48.401Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/brick/brick/gates/concrete.py"
+    },
+    "middleware": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T17:04:28.217Z",
+        "lastUpdated": "2026-04-03T17:04:54.833Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/brick/brick/dashboard/middleware/auth.py"
+    },
+    "routes": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T17:05:08.292Z",
+        "lastUpdated": "2026-04-03T17:05:16.067Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/brick/brick/dashboard/routes/engine_bridge.py"
+    },
+    "engine": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T17:05:25.630Z",
+        "lastUpdated": "2026-04-03T17:05:25.630Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/dashboard/server/brick/engine/bridge.ts"
+    },
+    "server": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T17:05:39.131Z",
+        "lastUpdated": "2026-04-03T17:05:39.131Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/dashboard/server/app.ts"
+    },
+    "dashboard": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T17:05:57.445Z",
+        "lastUpdated": "2026-04-03T17:05:57.445Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/dashboard/src/lib/brick-api.ts"
     }
   },
   "pipeline": {
@@ -85,7 +155,7 @@
   "session": {
     "startedAt": "2026-04-03T16:06:10.313Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-03T17:03:48.401Z"
+    "lastActivity": "2026-04-03T17:05:57.445Z"
   },
   "history": [
     {
@@ -103,6 +173,54 @@
     {
       "timestamp": "2026-04-03T17:03:48.401Z",
       "feature": "gates",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:04:28.217Z",
+      "feature": "middleware",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:04:52.180Z",
+      "feature": "middleware",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:04:54.833Z",
+      "feature": "middleware",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:05:08.292Z",
+      "feature": "routes",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:05:16.067Z",
+      "feature": "routes",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:05:25.630Z",
+      "feature": "engine",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:05:39.131Z",
+      "feature": "server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:05:57.445Z",
+      "feature": "dashboard",
       "phase": "do",
       "action": "updated"
     }

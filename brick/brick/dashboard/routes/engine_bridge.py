@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+
+from brick.dashboard.middleware.auth import verify_brick_api_key
 
 from brick.engine.checkpoint import CheckpointStore
 from brick.engine.event_bus import EventBus
@@ -21,7 +23,11 @@ from brick.models.events import (
 )
 from brick.models.workflow import WorkflowInstance
 
-router = APIRouter(prefix="/engine", tags=["engine-bridge"])
+router = APIRouter(
+    prefix="/engine",
+    tags=["engine-bridge"],
+    dependencies=[Depends(verify_brick_api_key)],
+)
 
 # Global instances — initialized via init_engine()
 executor: WorkflowExecutor | None = None

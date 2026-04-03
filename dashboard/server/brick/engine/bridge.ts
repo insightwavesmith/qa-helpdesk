@@ -208,10 +208,19 @@ export class EngineBridge {
   ): Promise<EngineResponse<T>> {
     const url = this.config.baseUrl + '/api/v1' + path;
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // API Key가 있으면 Python 엔진에도 전달
+    if (process.env.BRICK_API_KEY) {
+      headers['X-Brick-API-Key'] = process.env.BRICK_API_KEY;
+    }
+
     try {
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: body ? JSON.stringify(body) : undefined,
         signal: AbortSignal.timeout(this.config.timeout),
       });
