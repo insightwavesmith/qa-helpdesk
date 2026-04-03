@@ -1,0 +1,250 @@
+{
+  "id": "dashboard-test-1775231388",
+  "definition": {
+    "name": "T-PDCA L0 응급",
+    "description": "프로덕션 장애 — Do + QA only",
+    "blocks": [
+      {
+        "id": "do",
+        "what": "긴급 수정",
+        "done": {
+          "artifacts": [],
+          "metrics": {
+            "tsc_errors": 0,
+            "build_pass": true
+          },
+          "custom": []
+        },
+        "type": "Do",
+        "description": ""
+      },
+      {
+        "id": "qa",
+        "what": "빌드 확인",
+        "done": {
+          "artifacts": [],
+          "metrics": {
+            "build_pass": true
+          },
+          "custom": []
+        },
+        "type": "Check",
+        "description": ""
+      }
+    ],
+    "links": [
+      {
+        "from_block": "do",
+        "to_block": "qa",
+        "type": "sequential"
+      }
+    ],
+    "teams": {
+      "do": {
+        "block_id": "do",
+        "adapter": "claude_agent_teams",
+        "config": {
+          "session": "sdk-cto",
+          "role": "CTO_LEADER"
+        }
+      },
+      "qa": {
+        "block_id": "qa",
+        "adapter": "claude_agent_teams",
+        "config": {
+          "session": "sdk-cto",
+          "role": "CTO_LEADER"
+        }
+      }
+    },
+    "schema": "brick/preset-v2",
+    "level": 0
+  },
+  "feature": "dashboard-test",
+  "task": "dashboard-test",
+  "status": "running",
+  "blocks": {
+    "do": {
+      "block": {
+        "id": "do",
+        "what": "긴급 수정",
+        "done": {
+          "artifacts": [],
+          "metrics": {
+            "tsc_errors": 0,
+            "build_pass": true
+          },
+          "custom": []
+        },
+        "type": "Do",
+        "description": "",
+        "timeout": null,
+        "idempotent": true,
+        "metadata": {},
+        "fallback_adapter": null
+      },
+      "status": "queued",
+      "adapter": "claude_agent_teams",
+      "execution_id": null,
+      "artifacts": [],
+      "metrics": {},
+      "retry_count": 0,
+      "started_at": null,
+      "completed_at": null,
+      "error": null
+    },
+    "qa": {
+      "block": {
+        "id": "qa",
+        "what": "빌드 확인",
+        "done": {
+          "artifacts": [],
+          "metrics": {
+            "build_pass": true
+          },
+          "custom": []
+        },
+        "type": "Check",
+        "description": "",
+        "timeout": null,
+        "idempotent": true,
+        "metadata": {},
+        "fallback_adapter": null
+      },
+      "status": "pending",
+      "adapter": "claude_agent_teams",
+      "execution_id": null,
+      "artifacts": [],
+      "metrics": {},
+      "retry_count": 0,
+      "started_at": null,
+      "completed_at": null,
+      "error": null
+    }
+  },
+  "current_block_id": "do",
+  "created_at": 1775231388.44188,
+  "updated_at": 1775231388.441992,
+  "metrics": {},
+  "context": {
+    "project": {
+      "project_id": "bscamp",
+      "project_name": "자사몰사관학교",
+      "infrastructure": {
+        "db": {
+          "type": "sqlite",
+          "orm": "drizzle-orm",
+          "driver": "better-sqlite3",
+          "path": ".data/bkit.db",
+          "constraints": [
+            "UUID 컬럼은 TEXT 타입 + 앱에서 uuid() 생성",
+            "JSON 컬럼은 TEXT 타입 + JSON.parse() 사용",
+            "타임스탬프는 TEXT + datetime('now')",
+            "RLS 미지원 — Express 미들웨어에서 권한 검증"
+          ]
+        },
+        "services": [
+          {
+            "name": "dashboard",
+            "port": 3200,
+            "language": "typescript",
+            "framework": "express",
+            "description": "CRUD gateway + 프론트엔드 API"
+          },
+          {
+            "name": "engine",
+            "port": 3202,
+            "language": "python",
+            "framework": "fastapi",
+            "description": "브릭 실행 엔진 (상태 전이, Gate, Adapter)"
+          }
+        ],
+        "runtime": "cloud-run",
+        "cloud": {
+          "provider": "gcp",
+          "project_id": "modified-shape-477110-h8",
+          "services": [
+            "bscamp",
+            "bscamp-web",
+            "bscamp-cron",
+            "collect-daily"
+          ]
+        },
+        "languages": [
+          "typescript",
+          "python"
+        ]
+      },
+      "invariants": [
+        {
+          "id": "INV-EB-1",
+          "description": "POST /executions는 반드시 Python 엔진을 거쳐야 한다. DB 직접 상태 전이 금지",
+          "design_source": "brick-engine-bridge.design.md",
+          "constraint_value": "{\"rule\":\"engine_proxy_required\",\"endpoints\":[\"POST /executions\"]}"
+        },
+        {
+          "id": "INV-EB-2",
+          "description": "complete-block 시 Gate 결과가 brickGateResults에 반드시 저장되어야 한다",
+          "design_source": "brick-engine-bridge.design.md",
+          "constraint_value": "{\"rule\":\"gate_result_persistence\"}"
+        },
+        {
+          "id": "INV-EB-3",
+          "description": "blocksState의 status 값은 Python BlockStatus enum의 7가지만 허용",
+          "design_source": "brick-engine-bridge.design.md",
+          "constraint_value": "{\"allowed\":[\"pending\",\"queued\",\"running\",\"gate_checking\",\"completed\",\"failed\",\"suspended\"],\"note\":\"brick-ceo-approval-gate.design.md에서 9가지로 갱신 예정 (waiting_approval, rejected 추가)\"}"
+        },
+        {
+          "id": "INV-EB-4",
+          "description": "엔진 다운 시 GET(읽기)는 정상, POST(쓰기)는 502 반환",
+          "design_source": "brick-engine-bridge.design.md",
+          "constraint_value": "{\"rule\":\"graceful_degradation\"}"
+        },
+        {
+          "id": "INV-EB-5",
+          "description": "seed() 호출 시 Brick 테이블에 블록 타입 10종, 팀 3개, 프리셋 4개 존재",
+          "design_source": "brick-engine-bridge.design.md",
+          "constraint_value": "{\"block_types\":10,\"teams\":3,\"presets\":4}"
+        },
+        {
+          "id": "INV-EB-6",
+          "description": "Hook의 API 호출 경로와 Express 라우트 경로가 1:1 매칭",
+          "design_source": "brick-engine-bridge.design.md",
+          "constraint_value": "{\"rule\":\"hook_route_matching\"}"
+        },
+        {
+          "id": "INV-EB-7",
+          "description": "Express execution.id ↔ Python workflow_id 매핑이 engineWorkflowId 컬럼으로 항상 존재",
+          "design_source": "brick-engine-bridge.design.md",
+          "constraint_value": "{\"rule\":\"id_mapping_required\",\"column\":\"engineWorkflowId\"}"
+        },
+        {
+          "id": "INV-EB-8",
+          "description": "context는 블록 간 전파되어야 한다. 블록 A의 metrics가 블록 B의 Gate 조건에서 참조 가능",
+          "design_source": "brick-engine-bridge.design.md",
+          "constraint_value": "{\"rule\":\"context_propagation\"}"
+        },
+        {
+          "id": "INV-EB-9",
+          "description": "complete-block 후 다음 블록의 TeamAdapter.start_block() 호출 필수",
+          "design_source": "brick-engine-bridge.design.md",
+          "constraint_value": "{\"rule\":\"adapter_start_required\"}"
+        },
+        {
+          "id": "INV-EB-10",
+          "description": "동시 실행 워크플로우 간 체크포인트 파일 충돌 없음 (workflow_id별 독립 디렉토리)",
+          "design_source": "brick-engine-bridge.design.md",
+          "constraint_value": "{\"rule\":\"checkpoint_isolation\",\"path_pattern\":\".bkit/runtime/workflows/{workflow_id}/\"}"
+        },
+        {
+          "id": "INV-EB-11",
+          "description": "동일 블록에 대한 중복 complete-block 호출 시 상태 일관성 보장 (멱등 또는 거부)",
+          "design_source": "brick-engine-bridge.design.md",
+          "constraint_value": "{\"rule\":\"idempotent_complete\"}"
+        }
+      ],
+      "recent_failures": [],
+      "recent_artifacts": []
+    }
+  }
+}

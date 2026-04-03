@@ -2,7 +2,7 @@
   "feature": "brick-project-layer",
   "phase": "do",
   "status": "completed",
-  "updatedAt": "2026-04-04T00:17:14.085590",
+  "updatedAt": "2026-04-04T01:05:45.891783",
   "notes": "TASK 1: 프로젝트 레이어(PL-001~034) 완료. TASK 2: 프론트 Phase 6~7(BF-121~145) 100% 확인. 긴급수정 INV-EB-3 9가지 + ceo_approval Approval 타입 완료.",
   "matchRate": 100,
   "features": {
@@ -66,5 +66,5 @@
   },
   "primaryFeature": "prescription-pipeline-v3",
   "lastUpdated": "2026-04-03T19:49:58.529178",
-  "_autoSyncNote": "auto-synced at 2026-04-04 00:17:14, last commit: 30615fd0"
+  "_autoSyncNote": "auto-synced at 2026-04-04 01:05:45, last commit: 7948df29"
 }
