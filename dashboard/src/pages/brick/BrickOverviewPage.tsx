@@ -12,9 +12,9 @@ interface BrickOverviewPageProps {
 }
 
 const STATUS_BADGE_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  idle: { bg: 'bg-gray-100', text: 'text-gray-600', label: '대기' },
+  pending: { bg: 'bg-gray-100', text: 'text-gray-600', label: '대기' },
   running: { bg: 'bg-blue-100', text: 'text-blue-700', label: '실행중' },
-  done: { bg: 'bg-green-100', text: 'text-green-700', label: '완료' },
+  completed: { bg: 'bg-green-100', text: 'text-green-700', label: '완료' },
   failed: { bg: 'bg-red-100', text: 'text-red-700', label: '실패' },
 };
 
@@ -39,7 +39,7 @@ export function BrickOverviewPage({ workflows = [], onNewWorkflow }: BrickOvervi
       {workflows.length > 0 && (
         <div data-testid="workflow-list" className="space-y-2">
           {workflows.map((wf) => {
-            const badge = STATUS_BADGE_STYLES[wf.status] || STATUS_BADGE_STYLES.idle;
+            const badge = STATUS_BADGE_STYLES[wf.status] || STATUS_BADGE_STYLES.pending;
             return (
               <div
                 key={wf.id}
