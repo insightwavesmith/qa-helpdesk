@@ -414,7 +414,6 @@ const createIndexStatements = [
 
   // Project + Invariant 인덱스
   `CREATE INDEX IF NOT EXISTS idx_brick_invariants_project_status ON brick_invariants(project_id, status)`,
-  `CREATE INDEX IF NOT EXISTS idx_brick_executions_project ON brick_executions(project_id)`,
   // Approval 인덱스
   `CREATE INDEX IF NOT EXISTS idx_brick_approvals_status ON brick_approvals(status)`,
   `CREATE INDEX IF NOT EXISTS idx_brick_approvals_execution ON brick_approvals(execution_id)`,

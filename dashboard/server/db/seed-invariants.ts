@@ -21,12 +21,9 @@ const INITIAL_INVARIANTS = [
   {
     id: 'INV-EB-3',
     designSource: 'brick-engine-bridge.design.md',
-    description: 'blocksState의 status 값은 Python BlockStatus enum의 7가지만 허용',
+    description: 'blocksState의 status 값은 Python BlockStatus enum의 9가지만 허용',
     constraintType: 'enum_values' as const,
-    constraintValue: JSON.stringify({
-      allowed: ['pending', 'queued', 'running', 'gate_checking', 'completed', 'failed', 'suspended'],
-      note: 'brick-ceo-approval-gate.design.md에서 9가지로 갱신 예정 (waiting_approval, rejected 추가)',
-    }),
+    constraintValue: JSON.stringify({ allowed: ['pending','queued','running','gate_checking','completed','failed','suspended','waiting_approval','rejected'] }),
   },
   {
     id: 'INV-EB-4',

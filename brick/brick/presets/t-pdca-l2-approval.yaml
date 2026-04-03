@@ -29,7 +29,7 @@ blocks:
           timeout: 300
           on_fail: fail
   - id: ceo_approval
-    type: Check
+    type: Approval
     what: "CEO(Smith님) 방향성 승인"
     done:
       artifacts: []
