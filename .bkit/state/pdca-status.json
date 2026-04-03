@@ -1,8 +1,11 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-03T17:50:32.284Z",
+  "lastUpdated": "2026-04-03T18:08:00.227Z",
   "activeFeatures": [
-    "engine"
+    "engine",
+    "adapters",
+    "routes",
+    "brick"
   ],
   "primaryFeature": "engine",
   "features": {
@@ -75,6 +78,45 @@
         "lastUpdated": "2026-04-03T17:50:32.284Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/brick/brick/engine/executor.py"
+    },
+    "adapters": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T18:06:36.189Z",
+        "lastUpdated": "2026-04-03T18:07:17.791Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/brick/brick/adapters/claude_code.py"
+    },
+    "routes": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T18:07:29.016Z",
+        "lastUpdated": "2026-04-03T18:07:34.103Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/brick/brick/dashboard/routes/engine_bridge.py"
+    },
+    "brick": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T18:07:51.344Z",
+        "lastUpdated": "2026-04-03T18:08:00.227Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/dashboard/server/routes/brick/index.ts"
     }
   },
   "pipeline": {
@@ -85,7 +127,7 @@
   "session": {
     "startedAt": "2026-04-03T17:23:12.563Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-03T17:50:32.284Z"
+    "lastActivity": "2026-04-03T18:08:00.227Z"
   },
   "history": [
     {
@@ -115,6 +157,54 @@
     {
       "timestamp": "2026-04-03T17:50:32.284Z",
       "feature": "engine",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T18:06:36.189Z",
+      "feature": "adapters",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T18:06:52.598Z",
+      "feature": "adapters",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T18:07:17.791Z",
+      "feature": "adapters",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T18:07:29.016Z",
+      "feature": "routes",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T18:07:34.103Z",
+      "feature": "routes",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T18:07:51.344Z",
+      "feature": "brick",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T18:07:56.617Z",
+      "feature": "brick",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T18:08:00.227Z",
+      "feature": "brick",
       "phase": "do",
       "action": "updated"
     }

@@ -16,6 +16,7 @@ import { registerNotifyRoutes } from './notify.js';
 import { registerApprovalRoutes } from './approvals.js';
 import { registerProjectRoutes } from './projects.js';
 import { registerInvariantRoutes } from './invariants.js';
+import { registerHumanTaskRoutes } from './human-tasks.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function registerBrickRoutes(app: Application, db: BetterSQLite3Database<any>) {
@@ -33,4 +34,5 @@ export function registerBrickRoutes(app: Application, db: BetterSQLite3Database<
   registerApprovalRoutes(app, db);
   registerProjectRoutes(app, db);
   registerInvariantRoutes(app, db);
+  registerHumanTaskRoutes(app);
 }

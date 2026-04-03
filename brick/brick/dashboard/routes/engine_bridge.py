@@ -9,6 +9,10 @@ from pydantic import BaseModel
 
 from brick.dashboard.middleware.auth import verify_brick_api_key
 
+from brick.adapters.claude_agent_teams import ClaudeAgentTeamsAdapter
+from brick.adapters.claude_code import ClaudeCodeAdapter
+from brick.adapters.human import HumanAdapter
+from brick.adapters.webhook import WebhookAdapter
 from brick.engine.checkpoint import CheckpointStore
 from brick.engine.event_bus import EventBus
 from brick.engine.executor import PresetLoader, WorkflowExecutor
@@ -71,6 +75,13 @@ def init_engine(root: str = ".bkit/") -> None:
     val = Validator()
     pl = PresetLoader(presets_dir=root_path / "presets")
 
+    adapter_pool = {
+        "claude_agent_teams": ClaudeAgentTeamsAdapter({}),
+        "claude_code": ClaudeCodeAdapter({}),
+        "webhook": WebhookAdapter({}),
+        "human": HumanAdapter({}),
+    }
+
     we = WorkflowExecutor(
         state_machine=sm,
         event_bus=eb,
@@ -78,6 +89,7 @@ def init_engine(root: str = ".bkit/") -> None:
         gate_executor=ge,
         preset_loader=pl,
         validator=val,
+        adapter_pool=adapter_pool,
     )
 
     executor = we
