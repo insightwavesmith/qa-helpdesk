@@ -1,12 +1,25 @@
 {
-  "id": "backend-qa-test-1775214464",
+  "id": "cancel-test-1775214552",
   "definition": {
-    "name": "T-PDCA L0 응급",
-    "description": "프로덕션 장애 — Do + QA only",
+    "name": "T-PDCA L1 경량",
+    "description": "버그 원인 명확 — Design + Do + Check",
     "blocks": [
       {
+        "id": "design",
+        "what": "상황 설계",
+        "done": {
+          "artifacts": [
+            "docs/02-design/features/{feature}.design.md"
+          ],
+          "metrics": {},
+          "custom": []
+        },
+        "type": "Design",
+        "description": ""
+      },
+      {
         "id": "do",
-        "what": "긴급 수정",
+        "what": "구현",
         "done": {
           "artifacts": [],
           "metrics": {
@@ -19,8 +32,8 @@
         "description": ""
       },
       {
-        "id": "qa",
-        "what": "빌드 확인",
+        "id": "check",
+        "what": "결과 확인",
         "done": {
           "artifacts": [],
           "metrics": {
@@ -34,12 +47,25 @@
     ],
     "links": [
       {
+        "from_block": "design",
+        "to_block": "do",
+        "type": "sequential"
+      },
+      {
         "from_block": "do",
-        "to_block": "qa",
+        "to_block": "check",
         "type": "sequential"
       }
     ],
     "teams": {
+      "design": {
+        "block_id": "design",
+        "adapter": "claude_agent_teams",
+        "config": {
+          "session": "sdk-pm",
+          "role": "PM_LEADER"
+        }
+      },
       "do": {
         "block_id": "do",
         "adapter": "claude_agent_teams",
@@ -48,8 +74,8 @@
           "role": "CTO_LEADER"
         }
       },
-      "qa": {
-        "block_id": "qa",
+      "check": {
+        "block_id": "check",
         "adapter": "claude_agent_teams",
         "config": {
           "session": "sdk-cto",
@@ -58,16 +84,44 @@
       }
     },
     "schema": "brick/preset-v2",
-    "level": 0
+    "level": 1
   },
-  "feature": "backend-qa-test",
-  "task": "backend-qa-test",
-  "status": "completed",
+  "feature": "cancel-test",
+  "task": "cancel-test",
+  "status": "running",
   "blocks": {
+    "design": {
+      "block": {
+        "id": "design",
+        "what": "상황 설계",
+        "done": {
+          "artifacts": [
+            "docs/02-design/features/{feature}.design.md"
+          ],
+          "metrics": {},
+          "custom": []
+        },
+        "type": "Design",
+        "description": "",
+        "timeout": null,
+        "idempotent": true,
+        "metadata": {},
+        "fallback_adapter": null
+      },
+      "status": "queued",
+      "adapter": "claude_agent_teams",
+      "execution_id": null,
+      "artifacts": [],
+      "metrics": {},
+      "retry_count": 0,
+      "started_at": null,
+      "completed_at": null,
+      "error": null
+    },
     "do": {
       "block": {
         "id": "do",
-        "what": "긴급 수정",
+        "what": "구현",
         "done": {
           "artifacts": [],
           "metrics": {
@@ -83,20 +137,20 @@
         "metadata": {},
         "fallback_adapter": null
       },
-      "status": "completed",
+      "status": "pending",
       "adapter": "claude_agent_teams",
       "execution_id": null,
       "artifacts": [],
       "metrics": {},
       "retry_count": 0,
-      "started_at": 1775214500.037449,
-      "completed_at": 1775214500.039093,
+      "started_at": null,
+      "completed_at": null,
       "error": null
     },
-    "qa": {
+    "check": {
       "block": {
-        "id": "qa",
-        "what": "빌드 확인",
+        "id": "check",
+        "what": "결과 확인",
         "done": {
           "artifacts": [],
           "metrics": {
@@ -111,23 +165,20 @@
         "metadata": {},
         "fallback_adapter": null
       },
-      "status": "completed",
+      "status": "pending",
       "adapter": "claude_agent_teams",
       "execution_id": null,
       "artifacts": [],
       "metrics": {},
       "retry_count": 0,
-      "started_at": 1775214534.15552,
-      "completed_at": 1775214534.156139,
+      "started_at": null,
+      "completed_at": null,
       "error": null
     }
   },
-  "current_block_id": "qa",
-  "created_at": 1775214464.546447,
-  "updated_at": 1775214534.156138,
+  "current_block_id": "design",
+  "created_at": 1775214552.948587,
+  "updated_at": 1775214552.948867,
   "metrics": {},
-  "context": {
-    "duration_sec": 120,
-    "pass_rate": 100
-  }
+  "context": {}
 }
