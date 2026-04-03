@@ -25,16 +25,16 @@ const CHANNEL_ICONS: Record<string, string> = {
 
 export function NotifyNode({ data }: NodeProps) {
   const d = data as NotifyNodeData;
-  const status = d.status ?? 'idle';
+  const status = d.status ?? 'pending';
 
   // failed 상태에서 lastResult도 failed이면 failed 스타일
-  const styleKey = d.lastResult === 'success' && status === 'done'
-    ? 'done'
+  const styleKey = d.lastResult === 'success' && status === 'completed'
+    ? 'completed'
     : d.lastResult === 'failed' || status === 'failed'
       ? 'failed'
       : status === 'running'
         ? 'running'
-        : 'idle';
+        : 'pending';
 
   const styles = NOTIFY_STATUS_STYLES[styleKey] ?? NOTIFY_STATUS_STYLES.idle;
   const adapter = d.channel ? CHANNEL_ADAPTERS[d.channel] : null;
@@ -61,7 +61,7 @@ export function NotifyNode({ data }: NodeProps) {
             </span>
           </div>
           <span data-testid="notify-status">{
-            status === 'done' ? '✓' : status === 'failed' ? '✕' : status === 'running' ? '◉' : '○'
+            status === 'completed' ? '✓' : status === 'failed' ? '✕' : status === 'running' ? '◉' : '○'
           }</span>
         </div>
 

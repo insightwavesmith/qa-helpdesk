@@ -31,7 +31,7 @@ export function yamlToFlow(preset: PresetYaml): { nodes: Node[]; edges: Edge[] }
       name: block.what || block.id,
       blockType: block.type,
       teamId: block.team || null,
-      status: 'idle',
+      status: 'pending',
       gates:
         block.gates?.map((g, gi) => ({
           gateId: `${block.id}-gate-${gi}`,

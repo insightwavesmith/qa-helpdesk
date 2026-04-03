@@ -1,10 +1,10 @@
-// server/brick/engine/executor.ts — Brick 블록 실행 엔진
+// server/brick/engine/executor.ts — Brick ThinkLog 유틸
+// startBlock/completeBlock 제거 (Step 7: Python 엔진으로 이관)
 // ThinkLog 이벤트 자동 발행 (HP-001)
 // think_log는 항상 저장. think_log_required는 Gate 검증용으로만 사용.
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { eq } from 'drizzle-orm';
 import {
-  brickExecutions,
   brickExecutionLogs,
   brickBlockTypes,
 } from '../../db/schema/brick.js';
@@ -25,7 +25,7 @@ export interface ThinkLogEntry {
 }
 
 /**
- * 블록 실행 시작 시 ThinkLog 이벤트 자동 발행
+ * 블록 실행 시 ThinkLog 이벤트 자동 발행
  * - 모든 블록 실행 시작 시 eventType='think_log' 자동 생성
  * - think_log는 항상 저장 (on/off 없음)
  */
@@ -52,60 +52,6 @@ export function emitThinkLog(
   }).run();
 
   return entry;
-}
-
-/**
- * 블록 실행 시작 — think_log 자동 발행 + block.started 이벤트
- */
-export function startBlock(
-  db: BetterSQLite3Database,
-  executionId: number,
-  blockId: string,
-  blockType: string,
-  feature: string,
-  initialThought?: string,
-) {
-  const now = new Date().toISOString();
-  const ctx: BlockContext = { executionId, blockId, blockType, feature };
-
-  // 1. block.started 이벤트
-  db.insert(brickExecutionLogs).values({
-    executionId,
-    eventType: 'block.started',
-    blockId,
-    data: { feature, blockType, startedAt: now },
-  }).run();
-
-  // 2. ThinkLog 자동 발행 (항상 저장)
-  const thought = initialThought ?? `[${blockId}] 블록 실행 시작. 블록 타입: ${blockType}, 피처: ${feature}`;
-  emitThinkLog(db, ctx, thought, 0);
-
-  // 3. execution 상태 업데이트
-  db.update(brickExecutions)
-    .set({ currentBlock: blockId, status: 'running' })
-    .where(eq(brickExecutions.id, executionId))
-    .run();
-
-  return ctx;
-}
-
-/**
- * 블록 완료 — block.completed 이벤트
- */
-export function completeBlock(
-  db: BetterSQLite3Database,
-  executionId: number,
-  blockId: string,
-  result?: Record<string, unknown>,
-) {
-  const now = new Date().toISOString();
-
-  db.insert(brickExecutionLogs).values({
-    executionId,
-    eventType: 'block.completed',
-    blockId,
-    data: { completedAt: now, ...result },
-  }).run();
 }
 
 /**

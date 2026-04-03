@@ -13,13 +13,13 @@ export interface ExecutionTimelineProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  done: 'text-green-600',
+  completed: 'text-green-600',
   running: 'text-blue-500',
   failed: 'text-red-600',
   queued: 'text-yellow-500',
-  paused: 'text-amber-500',
-  idle: 'text-gray-400',
-  skipped: 'text-gray-400',
+  gate_checking: 'text-purple-500',
+  suspended: 'text-amber-500',
+  pending: 'text-gray-400',
 };
 
 export function ExecutionTimeline({ events }: ExecutionTimelineProps) {

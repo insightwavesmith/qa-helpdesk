@@ -26,7 +26,7 @@ export function RunDetailPage() {
   const timelineEvents: TimelineEvent[] = (logs ?? []).map((log: Record<string, unknown>) => ({
     timestamp: String(log.timestamp ?? ''),
     blockName: String(log.blockName ?? ''),
-    status: (log.status as TimelineEvent['status']) ?? 'idle',
+    status: (log.status as TimelineEvent['status']) ?? 'pending',
     error: log.error ? String(log.error) : undefined,
   }));
 

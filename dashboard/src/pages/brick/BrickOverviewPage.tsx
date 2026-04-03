@@ -2,7 +2,7 @@ interface WorkflowItem {
   id: string;
   name: string;
   description: string;
-  status: 'idle' | 'running' | 'done' | 'failed';
+  status: 'pending' | 'running' | 'completed' | 'failed';
   lastRunAt?: string;
 }
 

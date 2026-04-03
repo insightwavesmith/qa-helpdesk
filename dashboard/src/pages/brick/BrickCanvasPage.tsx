@@ -34,15 +34,15 @@ const LINK_TYPE_LABELS: Record<LinkType, string> = {
   branch: '분기',
 };
 
-// 백엔드 → 프론트엔드 블록 상태 매핑
+// 백엔드 상태 → BlockStatus 직접 매핑 (통일 완료)
 const BACKEND_STATUS_MAP: Record<string, BlockStatus> = {
-  pending: 'idle',
+  pending: 'pending',
   queued: 'queued',
   running: 'running',
-  gate_checking: 'running',
-  completed: 'done',
+  gate_checking: 'gate_checking',
+  completed: 'completed',
   failed: 'failed',
-  suspended: 'paused',
+  suspended: 'suspended',
 };
 
 function BrickCanvasInner() {
@@ -139,7 +139,7 @@ function BrickCanvasInner() {
         const blockState = blocksState[blockId];
         if (!blockState) return node;
 
-        const frontStatus = BACKEND_STATUS_MAP[blockState.status] || 'idle';
+        const frontStatus = BACKEND_STATUS_MAP[blockState.status] || 'pending';
         return {
           ...node,
           data: { ...node.data, status: frontStatus },
@@ -192,9 +192,9 @@ function BrickCanvasInner() {
 
     const statusMap: Record<string, BlockStatus> = {
       'block.started': 'running',
-      'block.completed': 'done',
+      'block.completed': 'completed',
       'block.failed': 'failed',
-      'block.gate_passed': 'done',
+      'block.gate_passed': 'completed',
       'block.gate_failed': 'failed',
     };
 
@@ -207,7 +207,7 @@ function BrickCanvasInner() {
     }) => ({
       timestamp: log.timestamp,
       blockName: log.blockId || '',
-      status: statusMap[log.eventType] || 'idle',
+      status: statusMap[log.eventType] || 'pending',
     }));
 
     setTimelineEvents(events);
@@ -340,7 +340,7 @@ function BrickCanvasInner() {
         id: `node-${Date.now()}`,
         type: 'block',
         position,
-        data: { blockType, label: blockType, status: 'idle', isCore: false },
+        data: { blockType, label: blockType, status: 'pending', isCore: false },
       };
 
       setNodes((nds) => [...nds, newNode]);

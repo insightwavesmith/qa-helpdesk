@@ -9,30 +9,30 @@ export type BlockType = (typeof BLOCK_TYPES)[number];
 
 // ── 블록 상태 (7종) ──
 export const BLOCK_STATUSES = [
-  'idle', 'queued', 'running', 'paused', 'done', 'failed', 'skipped',
+  'pending', 'queued', 'running', 'gate_checking', 'completed', 'failed', 'suspended',
 ] as const;
 export type BlockStatus = (typeof BLOCK_STATUSES)[number];
 
 // ── 상태별 테두리 색상 ──
 export const STATUS_BORDER_COLORS: Record<BlockStatus, string> = {
-  idle: '#D1D5DB',
+  pending: '#D1D5DB',
   queued: '#FCD34D',
   running: '#3B82F6',
-  paused: '#F59E0B',
-  done: '#10B981',
+  gate_checking: '#8B5CF6',
+  completed: '#10B981',
   failed: '#EF4444',
-  skipped: '#9CA3AF',
+  suspended: '#F59E0B',
 };
 
 // ── 상태별 아이콘 ──
 export const STATUS_ICONS: Record<BlockStatus, string> = {
-  idle: '○',
+  pending: '○',
   queued: '◷',
   running: '◉',
-  paused: '⏸',
-  done: '✓',
+  gate_checking: '⚖',
+  completed: '✓',
   failed: '✕',
-  skipped: '─',
+  suspended: '⏸',
 };
 
 // ── 블록 타입별 아이콘 ──
