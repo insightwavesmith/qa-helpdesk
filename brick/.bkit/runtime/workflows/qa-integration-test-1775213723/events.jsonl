@@ -1,0 +1,3 @@
+{"type": "block.started", "data": {"block_id": "do"}, "timestamp": 1775213732.706649, "id": "8be30f21-e5ab-4af3-a04d-e7a55e097489"}
+{"type": "block.completed", "data": {"block_id": "do"}, "timestamp": 1775213732.708236, "id": "9ae268fb-3009-4560-93ba-7a4aea1d0af0"}
+{"type": "block.gate_passed", "data": {"block_id": "do"}, "timestamp": 1775213732.70948, "id": "bd0bc579-b92c-44df-86e6-ade39c1a34f1"}
