@@ -1,10 +1,10 @@
 {
-  "feature": "pipeline-phase1-collection",
+  "feature": "prescription-pipeline-v3",
   "phase": "check",
   "status": "completed",
-  "updatedAt": "2026-04-03T07:51:02.878781",
-  "notes": "Pipeline Phase 1 수집 정상화 완료. Match Rate 90%. 크론 에러 6건→0건, Jobs 5개 정상화, 임베딩 45건.",
-  "matchRate": 90,
+  "updatedAt": "2026-04-03T10:30:00.000000",
+  "notes": "처방 파이프라인 V3 전체 완료. Phase 1~3 구현 + TDD 35/35 통과. Gap 0%.",
+  "matchRate": 100,
   "features": {
     "hook-hardening-v2": {
       "phase": "completed",
