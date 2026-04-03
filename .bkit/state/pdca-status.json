@@ -1,8 +1,9 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-03T04:58:51.918Z",
+  "lastUpdated": "2026-04-03T05:00:10.199Z",
   "activeFeatures": [
-    "embed-creatives"
+    "embed-creatives",
+    "scripts"
   ],
   "primaryFeature": "embed-creatives",
   "features": {
@@ -75,6 +76,19 @@
         "lastUpdated": "2026-04-03T04:58:51.918Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/embed-creatives/route.ts"
+    },
+    "scripts": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T04:59:51.896Z",
+        "lastUpdated": "2026-04-03T05:00:10.199Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/scripts/fix-ghost-users.ts"
     }
   },
   "pipeline": {
@@ -85,7 +99,7 @@
   "session": {
     "startedAt": "2026-04-03T04:41:36.406Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-03T04:58:51.918Z"
+    "lastActivity": "2026-04-03T05:00:10.199Z"
   },
   "history": [
     {
@@ -103,6 +117,18 @@
     {
       "timestamp": "2026-04-03T04:58:51.918Z",
       "feature": "embed-creatives",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T04:59:51.896Z",
+      "feature": "scripts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T05:00:10.199Z",
+      "feature": "scripts",
       "phase": "do",
       "action": "updated"
     }
