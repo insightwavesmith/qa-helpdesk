@@ -2,7 +2,7 @@
   "feature": "prescription-pipeline-v3",
   "phase": "check",
   "status": "completed",
-  "updatedAt": "2026-04-03T10:30:00.000000",
+  "updatedAt": "2026-04-03T13:27:54.276530",
   "notes": "처방 파이프라인 V3 전체 완료. Phase 1~3 구현 + TDD 35/35 통과. Gap 0%.",
   "matchRate": 100,
   "features": {
@@ -62,31 +62,9 @@
       },
       "phaseTimestamps": {},
       "automationLevel": 2
-    },
-    "pipeline-phase1-collection": {
-      "phase": "check",
-      "design": {
-        "team": "cto",
-        "done": true,
-        "doc": "docs/02-design/features/pipeline-phase1-collection.design.md",
-        "at": "2026-04-02"
-      },
-      "do": {
-        "team": "cto",
-        "done": true,
-        "at": "2026-04-03"
-      },
-      "check": {
-        "team": "cto",
-        "done": true,
-        "doc": "docs/03-analysis/pipeline-phase1-collection.analysis.md",
-        "matchRate": 90
-      },
-      "notes": "L2 OPS. META_ACCESS_TOKEN 교체 + 크론 에러 해소 + 커버리지 정상화.",
-      "updatedAt": "2026-04-03"
     }
   },
-  "primaryFeature": "pipeline-phase1-collection",
-  "lastUpdated": "2026-04-03T07:51:02.878788",
-  "_autoSyncNote": "auto-synced at 2026-04-03 02:02:42, last commit: 7ced1538"
+  "primaryFeature": "prescription-pipeline-v3",
+  "lastUpdated": "2026-04-03T09:00:00.000000",
+  "_autoSyncNote": "auto-synced at 2026-04-03 13:27:54, last commit: a180795b"
 }
