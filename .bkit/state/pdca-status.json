@@ -1,11 +1,10 @@
 {
-  "version": "3.0",
-  "lastUpdated": "2026-04-03T08:44:26.166Z",
-  "activeFeatures": [
-    "db",
-    "brick"
-  ],
-  "primaryFeature": "db",
+  "feature": "prescription-pipeline-v3",
+  "phase": "check",
+  "status": "completed",
+  "updatedAt": "2026-04-03T17:58:12.900401",
+  "notes": "처방 파이프라인 V3 전체 완료. Phase 1~3 구현 + TDD 35/35 통과. Gap 0%.",
+  "matchRate": 100,
   "features": {
     "hook-hardening-v2": {
       "phase": "completed",
@@ -63,108 +62,9 @@
       },
       "phaseTimestamps": {},
       "automationLevel": 2
-    },
-    "db": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-04-03T08:43:34.742Z",
-        "lastUpdated": "2026-04-03T08:43:38.138Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/dashboard/server/db/seed.ts"
-    },
-    "brick": {
-      "phase": "do",
-      "phaseNumber": 3,
-      "matchRate": null,
-      "iterationCount": 0,
-      "requirements": [],
-      "documents": {},
-      "timestamps": {
-        "started": "2026-04-03T08:43:49.330Z",
-        "lastUpdated": "2026-04-03T08:44:26.166Z"
-      },
-      "lastFile": "/Users/smith/projects/bscamp/dashboard/src/hooks/brick/useExecutions.ts"
     }
   },
-  "pipeline": {
-    "currentPhase": 1,
-    "level": "Dynamic",
-    "phaseHistory": []
-  },
-  "session": {
-    "startedAt": "2026-04-03T06:41:44.483Z",
-    "onboardingCompleted": false,
-    "lastActivity": "2026-04-03T08:44:26.166Z"
-  },
-  "history": [
-    {
-      "timestamp": "2026-04-03T08:43:34.742Z",
-      "feature": "db",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-03T08:43:38.138Z",
-      "feature": "db",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-03T08:43:49.330Z",
-      "feature": "brick",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-03T08:43:53.215Z",
-      "feature": "brick",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-03T08:43:55.385Z",
-      "feature": "brick",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-03T08:43:56.532Z",
-      "feature": "brick",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-03T08:44:01.627Z",
-      "feature": "brick",
-      "phase": "do",
-      "action": "updated"
-    },
-    {
-      "timestamp": "2026-04-03T08:44:26.166Z",
-      "feature": "brick",
-      "phase": "do",
-      "action": "updated"
-    }
-  ],
-  "stateMachine": {
-    "defaultWorkflow": "default",
-    "activeWorkflows": {},
-    "totalTransitions": 0
-  },
-  "automation": {
-    "globalLevel": 2,
-    "trustScore": 40,
-    "pendingApprovals": 0,
-    "lastGateResult": null
-  },
-  "team": {
-    "enabled": true,
-    "stateFile": ".bkit/runtime/agent-state.json",
-    "eventsFile": ".bkit/runtime/agent-events.jsonl"
-  }
+  "primaryFeature": "prescription-pipeline-v3",
+  "lastUpdated": "2026-04-03T14:34:00.000000",
+  "_autoSyncNote": "auto-synced at 2026-04-03 17:58:12, last commit: 98b0db1c"
 }
