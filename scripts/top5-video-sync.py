@@ -16,9 +16,9 @@ Usage:
 
 import os, sys, json, time, argparse, tempfile, requests, psycopg2
 
-META_TOKEN  = "EAASaQhv8Y9YBRNjXPdCbd8Dx6ZCufvseeCKfA9uOmSyuR13iFDrZBZBaEyD9aLRYgzAZCS8kJTZA7WZANSxLcUVQDJgJZCIQA7GXHFFEwGc3RYWXLjwRgFrruaNbijWeoiT6pKh8t6KULmJkZBoB3CzNL7Eo8TX9Qip7N3ByTIlJjagiR3SxkjpeZAQBgJLwuD2yNAAoK"
-SEARCH_KEY  = "9gktBh99iM2wJbkHJ9GeQw3K"
-DB_URL      = "postgresql://postgres:BsCamp2026Gcp@34.50.5.237:5432/bscamp"
+META_TOKEN  = os.environ.get("META_ACCESS_TOKEN", "")
+SEARCH_KEY  = os.environ.get("SEARCH_API_KEY", "")
+DB_URL      = os.environ.get("DATABASE_URL", "")
 GCS_BUCKET  = "bscamp-storage"
 META_BASE   = "https://graph.facebook.com/v22.0"
 SEARCHAPI   = "https://www.searchapi.io/api/v1/search"
@@ -337,6 +337,12 @@ def print_report(conn):
 # ── main ──────────────────────────────────────────────────
 
 def main():
+    if not META_TOKEN:
+        print("ERROR: META_ACCESS_TOKEN 환경변수 필요", file=sys.stderr)
+        sys.exit(1)
+    if not DB_URL:
+        print("ERROR: DATABASE_URL 환경변수 필요", file=sys.stderr)
+        sys.exit(1)
     conn = psycopg2.connect(DB_URL)
 
     if args.report_only:

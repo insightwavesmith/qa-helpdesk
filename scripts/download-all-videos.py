@@ -29,8 +29,8 @@ import requests
 import psycopg2
 from google.cloud import storage as gcs_storage
 
-META_TOKEN = "EAASaQhv8Y9YBRNjXPdCbd8Dx6ZCufvseeCKfA9uOmSyuR13iFDrZBZBaEyD9aLRYgzAZCS8kJTZA7WZANSxLcUVQDJgJZCIQA7GXHFFEwGc3RYWXLjwRgFrruaNbijWeoiT6pKh8t6KULmJkZBoB3CzNL7Eo8TX9Qip7N3ByTIlJjagiR3SxkjpeZAQBgJLwuD2yNAAoK"
-DB_URL = "postgresql://postgres:BsCamp2026Gcp@34.50.5.237:5432/bscamp"
+META_TOKEN = os.environ.get("META_ACCESS_TOKEN", "")
+DB_URL = os.environ.get("DATABASE_URL", "")
 GCS_BUCKET = "bscamp-storage"
 META_API_BASE = "https://graph.facebook.com/v21.0"
 DOWNLOAD_TIMEOUT = 300
@@ -401,6 +401,12 @@ def phase3_catalog_to_video(conn, downloaded_map):
 # ── main ──
 
 def main():
+    if not META_TOKEN:
+        print("ERROR: META_ACCESS_TOKEN 환경변수 필요", file=sys.stderr)
+        sys.exit(1)
+    if not DB_URL:
+        print("ERROR: DATABASE_URL 환경변수 필요", file=sys.stderr)
+        sys.exit(1)
     print(f"=== VIDEO 전체 수집 시작 ===", flush=True)
     print(f"  dry_run={args.dry_run} phase={args.phase or '전체'}", flush=True)
 

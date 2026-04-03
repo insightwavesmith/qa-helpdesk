@@ -1,8 +1,9 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-03T05:33:19.493Z",
+  "lastUpdated": "2026-04-03T05:37:31.943Z",
   "activeFeatures": [
-    "tests"
+    "tests",
+    "scripts"
   ],
   "primaryFeature": "tests",
   "features": {
@@ -75,6 +76,19 @@
         "lastUpdated": "2026-04-03T05:33:19.493Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/brick/brick/tests/test_team_adapter.py"
+    },
+    "scripts": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T05:37:24.742Z",
+        "lastUpdated": "2026-04-03T05:37:31.943Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/scripts/download-all-videos.py"
     }
   },
   "pipeline": {
@@ -85,12 +99,36 @@
   "session": {
     "startedAt": "2026-04-03T05:27:16.079Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-03T05:33:19.493Z"
+    "lastActivity": "2026-04-03T05:37:31.943Z"
   },
   "history": [
     {
       "timestamp": "2026-04-03T05:33:19.493Z",
       "feature": "tests",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T05:37:24.742Z",
+      "feature": "scripts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T05:37:26.672Z",
+      "feature": "scripts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T05:37:29.183Z",
+      "feature": "scripts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T05:37:31.943Z",
+      "feature": "scripts",
       "phase": "do",
       "action": "updated"
     }
