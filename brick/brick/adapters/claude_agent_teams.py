@@ -1,4 +1,4 @@
-"""ClaudeAgentTeamsAdapter — drives Claude Agent Teams via tmux."""
+"""ClaudeAgentTeamsAdapter — drives Claude Agent Teams via MCP/tmux."""
 
 from __future__ import annotations
 
@@ -9,12 +9,13 @@ from pathlib import Path
 
 from brick.adapters.base import TeamAdapter
 from brick.adapters.management import TeamManagementAdapter
+from brick.adapters.mcp_bridge import MCPBridge
 from brick.models.block import Block
-from brick.models.team import AdapterStatus
+from brick.models.team import AdapterStatus, CommunicationConfig
 
 
 class ClaudeAgentTeamsAdapter(TeamAdapter, TeamManagementAdapter):
-    """Execute blocks via Claude Agent Teams (tmux session)."""
+    """Execute blocks via Claude Agent Teams (MCP or tmux)."""
 
     def __init__(self, config: dict | None = None, root_dir: str = "."):
         config = config or {}
@@ -24,8 +25,74 @@ class ClaudeAgentTeamsAdapter(TeamAdapter, TeamManagementAdapter):
         self.peer_role = config.get("peer_role", "CTO_LEADER")
         self.team_context_dir = Path(config.get("team_context_dir", ".bkit/runtime"))
 
+        # Communication config
+        comm = config.get("communication", {})
+        if isinstance(comm, dict):
+            self.comm_method = comm.get("method", "mcp")
+            self.ack_required = comm.get("ack_required", True)
+            self.ack_timeout = comm.get("ack_timeout", 30)
+            self.retry_count = comm.get("retry_count", 3)
+            self.fallback_to_tmux = comm.get("fallback_to_tmux", True)
+        elif isinstance(comm, CommunicationConfig):
+            self.comm_method = comm.method
+            self.ack_required = comm.ack_required
+            self.ack_timeout = comm.ack_timeout
+            self.retry_count = comm.retry_count
+            self.fallback_to_tmux = comm.fallback_to_tmux
+        else:
+            self.comm_method = "mcp"
+            self.ack_required = True
+            self.ack_timeout = 30
+            self.retry_count = 3
+            self.fallback_to_tmux = True
+
+        # MCP Bridge
+        self.mcp = MCPBridge(
+            broker_port=self.broker_port,
+            cache_dir=self.team_context_dir,
+        )
+
     async def start_block(self, block: Block, context: dict) -> str:
         execution_id = f"{block.id}-{int(time.time())}"
+
+        if self.comm_method == "mcp":
+            return await self._start_via_mcp(block, context, execution_id)
+        else:
+            return await self._start_via_tmux(block, context, execution_id)
+
+    async def _start_via_mcp(
+        self, block: Block, context: dict, execution_id: str
+    ) -> str:
+        """MCP 경유 TASK 전달 (retry + fallback)."""
+        peer_id = await self.mcp.find_peer(self.session, self.peer_role)
+
+        if peer_id:
+            message = {
+                "protocol": "bscamp-team/v1",
+                "type": "BLOCK_TASK",
+                "execution_id": execution_id,
+                "block_id": block.id,
+                "what": block.what,
+                "context": context,
+            }
+
+            for _ in range(self.retry_count):
+                success, result = await self.mcp.send_task(
+                    peer_id, message, ack_timeout=self.ack_timeout
+                )
+                if success:
+                    return result or execution_id
+
+        # MCP 실패 → fallback
+        if self.fallback_to_tmux:
+            return await self._start_via_tmux(block, context, execution_id)
+
+        raise RuntimeError("MCP 전달 실패")
+
+    async def _start_via_tmux(
+        self, block: Block, context: dict, execution_id: str
+    ) -> str:
+        """기존 tmux send-keys 방식."""
         cmd = [
             "tmux", "send-keys", "-t", self.session,
             f"TASK: {block.what}", "Enter",
@@ -65,6 +132,41 @@ class ClaudeAgentTeamsAdapter(TeamAdapter, TeamManagementAdapter):
         )
         await proc.communicate()
         return proc.returncode == 0
+
+    # ── Lifecycle methods ──────────────────────────────────────
+
+    async def suspend_member(self, member_name: str) -> bool:
+        """팀원 suspend → registry 상태 업데이트."""
+        registry_path = self.team_context_dir / "teammate-registry.json"
+        if registry_path.exists():
+            data = json.loads(registry_path.read_text())
+            if member_name in data:
+                data[member_name]["state"] = "suspended"
+                registry_path.write_text(json.dumps(data, indent=2))
+                return True
+        return False
+
+    async def terminate_member(self, member_name: str) -> bool:
+        """팀원 terminate → registry에서 제거."""
+        registry_path = self.team_context_dir / "teammate-registry.json"
+        if registry_path.exists():
+            data = json.loads(registry_path.read_text())
+            if member_name in data:
+                del data[member_name]
+                registry_path.write_text(json.dumps(data, indent=2))
+                return True
+        return False
+
+    async def resume_member(self, member_name: str) -> bool:
+        """suspended 팀원 resume → active."""
+        registry_path = self.team_context_dir / "teammate-registry.json"
+        if registry_path.exists():
+            data = json.loads(registry_path.read_text())
+            if member_name in data and data[member_name].get("state") == "suspended":
+                data[member_name]["state"] = "active"
+                registry_path.write_text(json.dumps(data, indent=2))
+                return True
+        return False
 
     # ── Management methods (file-based) ──────────────────────
 
