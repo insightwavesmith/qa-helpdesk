@@ -143,7 +143,7 @@ describe('BlockType Hooks', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockFetch).toHaveBeenCalledWith(
-      '/api/brick/block-types/1',
+      '/api/brick/block-types/기획v2',
       expect.objectContaining({ method: 'PUT' }),
     );
   });

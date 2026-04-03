@@ -176,7 +176,7 @@ describe('BlockNode', () => {
 
   it('bf002_blocknode_status_border_colors', () => {
     // 7가지 상태별 테두리 색상 변경 확인
-    const statuses: BlockStatus[] = ['idle', 'queued', 'running', 'paused', 'done', 'failed', 'skipped'];
+    const statuses: BlockStatus[] = ['pending', 'queued', 'running', 'gate_checking', 'completed', 'failed', 'suspended'];
 
     for (const status of statuses) {
       const { unmount } = renderWithFlow(

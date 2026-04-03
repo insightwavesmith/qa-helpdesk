@@ -562,7 +562,7 @@ describe('Phase 5 — BrickOverviewPage (BF-120)', () => {
   it('bf120_overview_workflow_list_with_badges', () => {
     const workflows = [
       { id: 'wf1', name: 'CI/CD 파이프라인', description: '배포 자동화', status: 'running' as const, lastRunAt: '2026-04-03 10:00' },
-      { id: 'wf2', name: '코드 리뷰 플로우', description: '리뷰 자동화', status: 'done' as const, lastRunAt: '2026-04-02 15:30' },
+      { id: 'wf2', name: '코드 리뷰 플로우', description: '리뷰 자동화', status: 'completed' as const, lastRunAt: '2026-04-02 15:30' },
       { id: 'wf3', name: '모니터링', description: '상태 감시', status: 'failed' as const },
     ];
 

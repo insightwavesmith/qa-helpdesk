@@ -1,8 +1,10 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-03T11:00:08.106Z",
-  "activeFeatures": [],
-  "primaryFeature": null,
+  "lastUpdated": "2026-04-03T11:05:03.538Z",
+  "activeFeatures": [
+    "engine"
+  ],
+  "primaryFeature": "engine",
   "features": {
     "hook-hardening-v2": {
       "phase": "completed",
@@ -60,6 +62,19 @@
       },
       "phaseTimestamps": {},
       "automationLevel": 2
+    },
+    "engine": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T11:05:03.538Z",
+        "lastUpdated": "2026-04-03T11:05:03.538Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/brick/brick/tests/engine/test_spec_wrapper.py"
     }
   },
   "pipeline": {
@@ -70,9 +85,16 @@
   "session": {
     "startedAt": "2026-04-03T11:00:08.105Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-03T11:00:08.106Z"
+    "lastActivity": "2026-04-03T11:05:03.538Z"
   },
-  "history": [],
+  "history": [
+    {
+      "timestamp": "2026-04-03T11:05:03.538Z",
+      "feature": "engine",
+      "phase": "do",
+      "action": "updated"
+    }
+  ],
   "stateMachine": {
     "defaultWorkflow": "default",
     "activeWorkflows": {},

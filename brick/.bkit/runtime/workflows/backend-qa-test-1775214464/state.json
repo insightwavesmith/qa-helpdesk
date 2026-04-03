@@ -1,0 +1,130 @@
+{
+  "id": "backend-qa-test-1775214464",
+  "definition": {
+    "name": "T-PDCA L0 응급",
+    "description": "프로덕션 장애 — Do + QA only",
+    "blocks": [
+      {
+        "id": "do",
+        "what": "긴급 수정",
+        "done": {
+          "artifacts": [],
+          "metrics": {
+            "tsc_errors": 0,
+            "build_pass": true
+          },
+          "custom": []
+        },
+        "type": "Do",
+        "description": ""
+      },
+      {
+        "id": "qa",
+        "what": "빌드 확인",
+        "done": {
+          "artifacts": [],
+          "metrics": {
+            "build_pass": true
+          },
+          "custom": []
+        },
+        "type": "Check",
+        "description": ""
+      }
+    ],
+    "links": [
+      {
+        "from_block": "do",
+        "to_block": "qa",
+        "type": "sequential"
+      }
+    ],
+    "teams": {
+      "do": {
+        "block_id": "do",
+        "adapter": "claude_agent_teams",
+        "config": {
+          "session": "sdk-cto",
+          "role": "CTO_LEADER"
+        }
+      },
+      "qa": {
+        "block_id": "qa",
+        "adapter": "claude_agent_teams",
+        "config": {
+          "session": "sdk-cto",
+          "role": "CTO_LEADER"
+        }
+      }
+    },
+    "schema": "brick/preset-v2",
+    "level": 0
+  },
+  "feature": "backend-qa-test",
+  "task": "backend-qa-test",
+  "status": "running",
+  "blocks": {
+    "do": {
+      "block": {
+        "id": "do",
+        "what": "긴급 수정",
+        "done": {
+          "artifacts": [],
+          "metrics": {
+            "tsc_errors": 0,
+            "build_pass": true
+          },
+          "custom": []
+        },
+        "type": "Do",
+        "description": "",
+        "timeout": null,
+        "idempotent": true,
+        "metadata": {},
+        "fallback_adapter": null
+      },
+      "status": "queued",
+      "adapter": "claude_agent_teams",
+      "execution_id": null,
+      "artifacts": [],
+      "metrics": {},
+      "retry_count": 0,
+      "started_at": null,
+      "completed_at": null,
+      "error": null
+    },
+    "qa": {
+      "block": {
+        "id": "qa",
+        "what": "빌드 확인",
+        "done": {
+          "artifacts": [],
+          "metrics": {
+            "build_pass": true
+          },
+          "custom": []
+        },
+        "type": "Check",
+        "description": "",
+        "timeout": null,
+        "idempotent": true,
+        "metadata": {},
+        "fallback_adapter": null
+      },
+      "status": "pending",
+      "adapter": "claude_agent_teams",
+      "execution_id": null,
+      "artifacts": [],
+      "metrics": {},
+      "retry_count": 0,
+      "started_at": null,
+      "completed_at": null,
+      "error": null
+    }
+  },
+  "current_block_id": "do",
+  "created_at": 1775214464.546447,
+  "updated_at": 1775214464.547126,
+  "metrics": {},
+  "context": {}
+}

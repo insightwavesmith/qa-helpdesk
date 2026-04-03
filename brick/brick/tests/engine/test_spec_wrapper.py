@@ -217,17 +217,17 @@ class TestSpecWrapperRealFile:
     """SW-008 ~ SW-009: Real YAML file loading."""
 
     def test_sw08_load_real_preset_file(self):
-        """SW-008: load actual t-pdca-l2.yaml -> 6 blocks + 7 links."""
+        """SW-008: load actual t-pdca-l2.yaml -> 5 blocks + 5 links."""
         loader = _real_loader()
         if not (loader.presets_dir / "t-pdca-l2.yaml").exists():
             pytest.skip("t-pdca-l2.yaml not found")
         defn = loader.load("t-pdca-l2")
-        assert len(defn.blocks) == 6
-        assert len(defn.links) == 7
-        assert defn.name == "t-pdca-l2"
+        assert len(defn.blocks) == 5
+        assert len(defn.links) == 5
+        assert defn.name == "T-PDCA L2 표준"
         block_ids = [b.id for b in defn.blocks]
         assert "plan" in block_ids
-        assert "learn" in block_ids
+        assert "act" in block_ids
 
     def test_sw09_extends_with_spec_wrapper(self):
         """SW-009: extends preset also has spec -> merge works."""

@@ -116,7 +116,7 @@ describe('BrickCanvasPage', () => {
   it('bf014_canvas_page_four_area_layout', () => {
     renderWithProviders(<BrickCanvasPage />);
 
-    expect(screen.getByTestId('toolbar')).toBeTruthy();
+    expect(screen.getByTestId('canvas-toolbar')).toBeTruthy();
     expect(screen.getByTestId('block-sidebar')).toBeTruthy();
     expect(screen.getByTestId('react-flow')).toBeTruthy();
     expect(screen.getByTestId('timeline')).toBeTruthy();

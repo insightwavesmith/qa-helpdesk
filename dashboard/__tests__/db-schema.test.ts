@@ -4,13 +4,25 @@ import { testDb } from './setup';
 import * as schema from '../server/db/schema';
 
 describe('DB 스키마', () => {
-  it('13개 테이블이 모두 생성됨', () => {
+  it('25개 테이블이 모두 생성됨', () => {
     const result = testDb.all<{ name: string }>(
       sql`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`,
     );
     const tableNames = result.map((r: any) => r.name).sort();
     expect(tableNames).toEqual([
       'agents',
+      'brick_approvals',
+      'brick_block_types',
+      'brick_execution_logs',
+      'brick_executions',
+      'brick_gate_results',
+      'brick_invariant_history',
+      'brick_invariants',
+      'brick_learning_proposals',
+      'brick_links',
+      'brick_presets',
+      'brick_projects',
+      'brick_teams',
       'budget_incidents',
       'budget_policies',
       'cost_events',
