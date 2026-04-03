@@ -144,7 +144,7 @@ describe('Phase 6: Notify Block (BF-121 ~ BF-135)', () => {
   it('bf124_notify_node_success_green_border', () => {
     renderWithFlow(
       <NotifyNode
-        {...makeNotifyProps({ status: 'done', lastResult: 'success' })}
+        {...makeNotifyProps({ status: 'completed', lastResult: 'success' })}
       />,
     );
     const node = screen.getByTestId('notify-node');
