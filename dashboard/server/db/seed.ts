@@ -1,5 +1,6 @@
 import { db } from './index.js';
 import { agents, routines, workflowChains, workflowSteps } from './schema.js';
+import { seedAll as seedBrick } from './seed-brick.js';
 
 export function seed() {
   // 기본 PDCA 체인
@@ -334,6 +335,9 @@ export function seed() {
       }).onConflictDoNothing().run();
     }
   }
+
+  // Brick 도메인 시딩 (블록 타입 10종 + 팀 3개 + 프리셋 4개)
+  seedBrick(db);
 
   console.log('[seed] 실제 팀 에이전트 7명 + 반복작업 5개 + PDCA 체인 12개 생성 완료');
 }

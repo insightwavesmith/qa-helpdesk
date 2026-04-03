@@ -115,6 +115,82 @@ export function registerTeamRoutes(app: Application, db: BetterSQLite3Database) 
     }
   });
 
+  // POST /api/brick/teams/:id/members — 팀원 추가
+  app.post('/api/brick/teams/:id/members', (req: Request, res: Response) => {
+    try {
+      const id = Number(req.params.id);
+      const team = db.select().from(brickTeams).where(eq(brickTeams.id, id)).get();
+      if (!team) {
+        return res.status(404).json({ error: '팀 없음' });
+      }
+      const { name, role, model } = req.body;
+      if (!name || !role) {
+        return res.status(400).json({ error: '필수: name, role' });
+      }
+      const members = (team.members ?? []) as Array<{ name: string; role: string; model?: string }>;
+      if (members.some(m => m.name === name)) {
+        return res.status(409).json({ error: '동일 이름 팀원 존재' });
+      }
+      members.push({ name, role, model: model || 'opus' });
+      db.update(brickTeams)
+        .set({ members, updatedAt: new Date().toISOString() })
+        .where(eq(brickTeams.id, id))
+        .run();
+      console.log(`[brick/teams] 팀원 추가: ${id} ${name}`);
+      res.status(201).json({ name, role });
+    } catch (e) {
+      res.status(500).json({ error: String(e) });
+    }
+  });
+
+  // DELETE /api/brick/teams/:id/members/:memberId — 팀원 제거
+  app.delete('/api/brick/teams/:id/members/:memberId', (req: Request, res: Response) => {
+    try {
+      const id = Number(req.params.id);
+      const team = db.select().from(brickTeams).where(eq(brickTeams.id, id)).get();
+      if (!team) {
+        return res.status(404).json({ error: '팀 없음' });
+      }
+      const members = (team.members ?? []) as Array<{ name: string; role: string }>;
+      const idx = members.findIndex(m => m.name === req.params.memberId);
+      if (idx === -1) {
+        return res.status(404).json({ error: '팀원 없음' });
+      }
+      members.splice(idx, 1);
+      db.update(brickTeams)
+        .set({ members, updatedAt: new Date().toISOString() })
+        .where(eq(brickTeams.id, id))
+        .run();
+      console.log(`[brick/teams] 팀원 제거: ${id} ${req.params.memberId}`);
+      res.status(204).end();
+    } catch (e) {
+      res.status(500).json({ error: String(e) });
+    }
+  });
+
+  // PUT /api/brick/teams/:id/mcp — MCP 서버 설정
+  app.put('/api/brick/teams/:id/mcp', (req: Request, res: Response) => {
+    try {
+      const id = Number(req.params.id);
+      const existing = db.select().from(brickTeams).where(eq(brickTeams.id, id)).get();
+      if (!existing) {
+        return res.status(404).json({ error: '팀 없음' });
+      }
+      const { servers } = req.body;
+      if (servers === undefined) {
+        return res.status(400).json({ error: '필수: servers' });
+      }
+      const updated = db.update(brickTeams)
+        .set({ mcpServers: servers, updatedAt: new Date().toISOString() })
+        .where(eq(brickTeams.id, id))
+        .returning().get();
+      console.log(`[brick/teams] MCP 설정: ${id}`);
+      res.json(updated);
+    } catch (e) {
+      res.status(500).json({ error: String(e) });
+    }
+  });
+
   // PUT /api/brick/teams/:id/skills — 스킬 갱신
   app.put('/api/brick/teams/:id/skills', (req: Request, res: Response) => {
     try {

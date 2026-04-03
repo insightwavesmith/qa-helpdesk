@@ -1,12 +1,44 @@
 // dashboard/server/routes/brick/executions.ts — Brick 실행 API (5개 엔드포인트)
 import type { Application } from 'express';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, sql, and } from 'drizzle-orm';
 import { brickExecutions, brickExecutionLogs, brickPresets } from '../../db/schema/brick.js';
 import { emitThinkLog } from '../../brick/engine/executor.js';
 import { parse as parseYaml } from 'yaml';
 
 export function registerExecutionRoutes(app: Application, db: BetterSQLite3Database) {
+  // GET /api/brick/executions — 실행 목록
+  app.get('/api/brick/executions', (req, res) => {
+    try {
+      const limit = Math.min(Number(req.query.limit) || 50, 200);
+      const offset = Number(req.query.offset) || 0;
+      const status = req.query.status as string | undefined;
+
+      let query = db.select().from(brickExecutions);
+      if (status) {
+        query = query.where(eq(brickExecutions.status, status)) as typeof query;
+      }
+
+      const data = query
+        .orderBy(desc(brickExecutions.id))
+        .limit(limit)
+        .offset(offset)
+        .all();
+
+      // total count
+      let countQuery = db.select({ count: sql<number>`count(*)` }).from(brickExecutions);
+      if (status) {
+        countQuery = countQuery.where(eq(brickExecutions.status, status)) as typeof countQuery;
+      }
+      const totalResult = countQuery.get();
+      const total = totalResult?.count ?? 0;
+
+      res.json({ data, total, limit, offset });
+    } catch (e) {
+      res.status(500).json({ error: String(e) });
+    }
+  });
+
   // POST /api/brick/executions — 실행 시작
   app.post('/api/brick/executions', (req, res) => {
     try {

@@ -1,5 +1,41 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
+const BASE = '/api/brick';
+
+interface Execution {
+  id: number;
+  presetId: number;
+  feature: string;
+  status: string;
+  blocksState: string;
+  startedAt: string;
+  engineWorkflowId?: string;
+}
+
+interface ExecutionsResponse {
+  data: Execution[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+// ── 실행 목록 조회 ──
+export function useExecutions(options?: { status?: string; limit?: number }) {
+  const params = new URLSearchParams();
+  if (options?.status) params.set('status', options.status);
+  if (options?.limit) params.set('limit', String(options.limit));
+  const qs = params.toString();
+
+  return useQuery<ExecutionsResponse>({
+    queryKey: ['brick', 'executions', options],
+    queryFn: async () => {
+      const res = await fetch(`${BASE}/executions${qs ? `?${qs}` : ''}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    },
+  });
+}
+
 // ── 실행 시작 ──
 export function useStartExecution() {
   const queryClient = useQueryClient();

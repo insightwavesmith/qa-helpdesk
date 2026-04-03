@@ -44,8 +44,8 @@ export function useCreateBlockType() {
 export function useUpdateBlockType() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: string; name?: string; what?: string; done?: string }) =>
-      fetchJson<BlockTypeItem>(`/block-types/${id}`, {
+    mutationFn: ({ name, ...data }: { name: string; what?: string; done?: string; icon?: string; description?: string }) =>
+      fetchJson<BlockTypeItem>(`/block-types/${name}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -57,8 +57,8 @@ export function useUpdateBlockType() {
 export function useDeleteBlockType() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      fetchJson(`/block-types/${id}`, { method: 'DELETE' }),
+    mutationFn: (name: string) =>
+      fetchJson(`/block-types/${name}`, { method: 'DELETE' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['brick', 'blockTypes'] }),
   });
 }
