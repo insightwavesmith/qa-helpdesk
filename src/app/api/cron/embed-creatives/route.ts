@@ -27,6 +27,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/db";
+import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 import { fetchAccountAds } from "@/lib/protractor/meta-collector";
 import {
   fetchCreativeDetails,
@@ -53,6 +54,8 @@ export async function GET(req: NextRequest) {
   if (!verifyCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const runId = await startCronRun("embed-creatives");
 
   const token = process.env.META_ACCESS_TOKEN;
   if (!token) {
@@ -233,6 +236,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    await completeCronRun(runId, stats.errors.length > 0 ? "partial" : "success", stats.newCreatives);
+
     return NextResponse.json({
       message: "embed-creatives completed",
       ...stats,
@@ -240,6 +245,7 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     console.error("[embed-creatives] Fatal error:", err);
+    await completeCronRun(runId, "error", 0, errorMessage);
     return NextResponse.json(
       { error: errorMessage, ...stats },
       { status: 500 },

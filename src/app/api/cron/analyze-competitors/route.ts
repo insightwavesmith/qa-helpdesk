@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/db";
 import { uploadCompetitorMedia } from "@/lib/competitor/competitor-storage";
+import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -249,7 +250,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const runId = await startCronRun("analyze-competitors");
+
   if (!GEMINI_API_KEY) {
+    await completeCronRun(runId, "success", 0);
     return NextResponse.json(
       { error: "GEMINI_API_KEY 미설정", processed: 0 },
       { status: 200 },
@@ -444,6 +448,8 @@ export async function GET(req: NextRequest) {
   console.log(
     `[analyze-competitors] 처리 완료 — total: ${items.length}, completed: ${completed}, failed: ${failed}, skipped: ${skipped}, media_stored: ${mediaStoredCount}`,
   );
+
+  await completeCronRun(runId, failed > 0 ? "partial" : "success", completed);
 
   return NextResponse.json({
     processed: items.length,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/db";
 import { searchMetaAds, MetaAdError } from "@/lib/competitor/meta-ad-library";
+import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,8 +35,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const runId = await startCronRun("competitor-check");
+
   const apiKey = process.env.SEARCH_API_KEY;
   if (!apiKey) {
+    await completeCronRun(runId, "success", 0);
     return NextResponse.json(
       { error: "SEARCH_API_KEY 미설정", processed: 0 },
       { status: 200 },
@@ -180,6 +184,8 @@ export async function GET(req: NextRequest) {
       );
     }
   }
+
+  await completeCronRun(runId, "success", processed);
 
   return NextResponse.json({
     processed,

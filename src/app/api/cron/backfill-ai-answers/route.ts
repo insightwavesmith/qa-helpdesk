@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/db";
 import { createAIAnswerForQuestion } from "@/lib/rag";
+import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 
 export async function POST(request: NextRequest) {
   // CRON_SECRET 인증 (CLI 호출용)
@@ -16,6 +17,8 @@ export async function POST(request: NextRequest) {
   if (!isCron) {
     return NextResponse.json({ error: "인증 필요" }, { status: 401 });
   }
+
+  const runId = await startCronRun("backfill-ai-answers");
 
   const svc = createServiceClient();
 
@@ -28,6 +31,7 @@ export async function POST(request: NextRequest) {
     .order("created_at", { ascending: false });
 
   if (qErr) {
+    await completeCronRun(runId, "error", 0, qErr.message);
     return NextResponse.json({ error: qErr.message }, { status: 500 });
   }
 
@@ -45,6 +49,7 @@ export async function POST(request: NextRequest) {
   );
 
   if (unanswered.length === 0) {
+    await completeCronRun(runId, "success", 0);
     return NextResponse.json({ message: "AI 답변 생성 필요한 질문 없음", count: 0 });
   }
 
@@ -69,6 +74,7 @@ export async function POST(request: NextRequest) {
   }
 
   const successCount = results.filter(r => r.success).length;
+  await completeCronRun(runId, successCount < unanswered.length ? "partial" : "success", successCount);
   return NextResponse.json({
     message: `${successCount}/${unanswered.length}건 AI 답변 생성 완료`,
     count: unanswered.length,

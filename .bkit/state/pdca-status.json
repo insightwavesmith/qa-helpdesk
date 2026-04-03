@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-02T23:30:39.514Z",
+  "lastUpdated": "2026-04-03T00:06:03.673Z",
   "activeFeatures": [
     "run-prescription",
     "video-saliency",
@@ -8,7 +8,24 @@
     "schema",
     "db",
     "brick",
-    "server"
+    "server",
+    "bscamp",
+    "organic-benchmark",
+    "collect-daily-1",
+    "collect-daily-2",
+    "collect-daily-3",
+    "collect-daily-4",
+    "cleanup-deleted",
+    "backfill-ai-answers",
+    "publish-scheduled",
+    "analyze-lp-saliency",
+    "precompute",
+    "analyze-competitors",
+    "competitor-check",
+    "embed-creatives",
+    "crawl-lps",
+    "creative-saliency",
+    "track-performance"
   ],
   "primaryFeature": "run-prescription",
   "features": {
@@ -91,7 +108,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-02T22:57:23.634Z",
-        "lastUpdated": "2026-04-02T22:57:33.093Z"
+        "lastUpdated": "2026-04-03T00:05:18.711Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/video-saliency/route.ts"
     },
@@ -104,7 +121,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-02T22:57:38.233Z",
-        "lastUpdated": "2026-04-02T22:57:45.627Z"
+        "lastUpdated": "2026-04-03T00:05:24.755Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/video-scene-analysis/route.ts"
     },
@@ -159,6 +176,227 @@
         "lastUpdated": "2026-04-02T23:30:39.514Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/dashboard/server/app.ts"
+    },
+    "bscamp": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:00:40.681Z",
+        "lastUpdated": "2026-04-03T00:01:21.754Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/lib/cron-logger.ts"
+    },
+    "organic-benchmark": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:02:29.519Z",
+        "lastUpdated": "2026-04-03T00:02:51.015Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/organic-benchmark/route.ts"
+    },
+    "collect-daily-1": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:02:30.856Z",
+        "lastUpdated": "2026-04-03T00:05:59.410Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/collect-daily-1/route.ts"
+    },
+    "collect-daily-2": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:02:32.175Z",
+        "lastUpdated": "2026-04-03T00:06:00.797Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/collect-daily-2/route.ts"
+    },
+    "collect-daily-3": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:02:33.971Z",
+        "lastUpdated": "2026-04-03T00:06:02.506Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/collect-daily-3/route.ts"
+    },
+    "collect-daily-4": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:02:35.337Z",
+        "lastUpdated": "2026-04-03T00:06:03.673Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/collect-daily-4/route.ts"
+    },
+    "cleanup-deleted": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:02:36.347Z",
+        "lastUpdated": "2026-04-03T00:03:10.863Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/cleanup-deleted/route.ts"
+    },
+    "backfill-ai-answers": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:03:18.170Z",
+        "lastUpdated": "2026-04-03T00:03:38.707Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/backfill-ai-answers/route.ts"
+    },
+    "publish-scheduled": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:03:20.388Z",
+        "lastUpdated": "2026-04-03T00:03:50.568Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/publish-scheduled/route.ts"
+    },
+    "analyze-lp-saliency": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:03:24.450Z",
+        "lastUpdated": "2026-04-03T00:03:55.102Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/analyze-lp-saliency/route.ts"
+    },
+    "precompute": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:03:27.128Z",
+        "lastUpdated": "2026-04-03T00:04:00.856Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/precompute/route.ts"
+    },
+    "analyze-competitors": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:04:08.049Z",
+        "lastUpdated": "2026-04-03T00:04:24.829Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/analyze-competitors/route.ts"
+    },
+    "competitor-check": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:04:10.632Z",
+        "lastUpdated": "2026-04-03T00:04:29.573Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/competitor-check/route.ts"
+    },
+    "embed-creatives": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:04:11.980Z",
+        "lastUpdated": "2026-04-03T00:04:35.564Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/embed-creatives/route.ts"
+    },
+    "crawl-lps": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:04:13.284Z",
+        "lastUpdated": "2026-04-03T00:04:40.804Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/crawl-lps/route.ts"
+    },
+    "creative-saliency": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:04:46.992Z",
+        "lastUpdated": "2026-04-03T00:05:05.352Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/creative-saliency/route.ts"
+    },
+    "track-performance": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T00:04:48.326Z",
+        "lastUpdated": "2026-04-03T00:05:11.743Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/track-performance/route.ts"
     }
   },
   "pipeline": {
@@ -169,7 +407,7 @@
   "session": {
     "startedAt": "2026-04-02T17:03:00.193Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-02T23:30:39.514Z"
+    "lastActivity": "2026-04-03T00:06:03.673Z"
   },
   "history": [
     {
@@ -319,6 +557,348 @@
     {
       "timestamp": "2026-04-02T23:30:39.514Z",
       "feature": "server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:00:40.681Z",
+      "feature": "bscamp",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:01:05.700Z",
+      "feature": "bscamp",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:01:11.350Z",
+      "feature": "bscamp",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:01:21.754Z",
+      "feature": "bscamp",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:02:29.519Z",
+      "feature": "organic-benchmark",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:02:30.856Z",
+      "feature": "collect-daily-1",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:02:32.175Z",
+      "feature": "collect-daily-2",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:02:33.971Z",
+      "feature": "collect-daily-3",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:02:35.337Z",
+      "feature": "collect-daily-4",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:02:36.347Z",
+      "feature": "cleanup-deleted",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:02:51.015Z",
+      "feature": "organic-benchmark",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:02:55.464Z",
+      "feature": "collect-daily-1",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:02:58.470Z",
+      "feature": "collect-daily-2",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:03:01.100Z",
+      "feature": "collect-daily-3",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:03:04.209Z",
+      "feature": "collect-daily-4",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:03:10.863Z",
+      "feature": "cleanup-deleted",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:03:18.170Z",
+      "feature": "backfill-ai-answers",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:03:20.388Z",
+      "feature": "publish-scheduled",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:03:24.450Z",
+      "feature": "analyze-lp-saliency",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:03:27.128Z",
+      "feature": "precompute",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:03:32.979Z",
+      "feature": "backfill-ai-answers",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:03:34.756Z",
+      "feature": "backfill-ai-answers",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:03:36.986Z",
+      "feature": "backfill-ai-answers",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:03:38.707Z",
+      "feature": "backfill-ai-answers",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:03:46.371Z",
+      "feature": "publish-scheduled",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:03:50.568Z",
+      "feature": "publish-scheduled",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:03:55.102Z",
+      "feature": "analyze-lp-saliency",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:03:57.673Z",
+      "feature": "precompute",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:04:00.856Z",
+      "feature": "precompute",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:04:08.049Z",
+      "feature": "analyze-competitors",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:04:10.632Z",
+      "feature": "competitor-check",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:04:11.980Z",
+      "feature": "embed-creatives",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:04:13.284Z",
+      "feature": "crawl-lps",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:04:21.472Z",
+      "feature": "analyze-competitors",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:04:24.829Z",
+      "feature": "analyze-competitors",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:04:27.502Z",
+      "feature": "competitor-check",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:04:29.573Z",
+      "feature": "competitor-check",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:04:32.271Z",
+      "feature": "embed-creatives",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:04:35.564Z",
+      "feature": "embed-creatives",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:04:37.344Z",
+      "feature": "crawl-lps",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:04:40.804Z",
+      "feature": "crawl-lps",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:04:46.992Z",
+      "feature": "creative-saliency",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:04:48.326Z",
+      "feature": "track-performance",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:04:50.116Z",
+      "feature": "video-saliency",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:04:51.760Z",
+      "feature": "video-scene-analysis",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:05:00.034Z",
+      "feature": "creative-saliency",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:05:05.352Z",
+      "feature": "creative-saliency",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:05:08.608Z",
+      "feature": "track-performance",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:05:11.743Z",
+      "feature": "track-performance",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:05:13.777Z",
+      "feature": "video-saliency",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:05:18.711Z",
+      "feature": "video-saliency",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:05:20.889Z",
+      "feature": "video-scene-analysis",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:05:24.755Z",
+      "feature": "video-scene-analysis",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:05:59.410Z",
+      "feature": "collect-daily-1",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:06:00.797Z",
+      "feature": "collect-daily-2",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:06:02.506Z",
+      "feature": "collect-daily-3",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T00:06:03.673Z",
+      "feature": "collect-daily-4",
       "phase": "do",
       "action": "updated"
     }

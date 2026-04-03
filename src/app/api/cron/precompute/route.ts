@@ -13,6 +13,7 @@ import { createServiceClient } from "@/lib/db";
 import { precomputeT3Scores } from "@/lib/precompute/t3-precompute";
 import { precomputeStudentPerformance } from "@/lib/precompute/student-precompute";
 import { precomputeDiagnosis } from "@/lib/precompute/diagnosis-precompute";
+import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,6 +38,8 @@ export async function GET(req: NextRequest) {
   if (!authHeader || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const runId = await startCronRun("precompute");
 
   const { searchParams } = new URL(req.url);
   const only = searchParams.get("only"); // t3 | student | diagnosis | null(전체)
@@ -119,6 +122,10 @@ export async function GET(req: NextRequest) {
 
   result.totalMs = Date.now() - startAll;
   console.log(`[precompute] 전체 완료: ${result.totalMs}ms`);
+
+  const totalCount = (result.t3?.count ?? 0) + (result.student?.count ?? 0) + (result.diagnosis?.count ?? 0);
+  const hasErrors = [result.t3, result.student, result.diagnosis].some(r => r?.errors && r.errors.length > 0);
+  await completeCronRun(runId, hasErrors ? "partial" : "success", totalCount);
 
   return NextResponse.json(result);
 }

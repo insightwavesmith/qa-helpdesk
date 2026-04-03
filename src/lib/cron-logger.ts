@@ -1,5 +1,6 @@
 "use server";
 import { createServiceClient } from "@/lib/db";
+import { notifyCronError } from "@/lib/cron-alert";
 
 export async function startCronRun(cronName: string): Promise<string | null> {
   try {
@@ -31,5 +32,16 @@ export async function completeCronRun(
       error_message: errorMessage || null,
       ...(details !== undefined && { details }),
     }).eq("id", id);
+
+    if (status === "error" || status === "partial") {
+      const { data: run } = await db
+        .from("cron_runs")
+        .select("cron_name")
+        .eq("id", id)
+        .single();
+      if (run?.cron_name) {
+        await notifyCronError(run.cron_name, errorMessage || "unknown", recordsCount);
+      }
+    }
   } catch (e) { console.error("[cron-logger] complete exception:", e); }
 }

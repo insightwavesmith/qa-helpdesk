@@ -20,6 +20,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/db";
 import { getChannelClient } from "@/lib/channel-api/get-client";
 import type { TransformChannel } from "@/types/distribution";
+import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 
 // 최대 재시도 횟수 (초과 시 최종 실패)
 const MAX_RETRY_COUNT = 3;
@@ -35,6 +36,8 @@ export async function GET(req: Request) {
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "인증 실패" }, { status: 401 });
   }
+
+  const runId = await startCronRun("publish-scheduled");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = createServiceClient() as any;
@@ -183,6 +186,7 @@ export async function GET(req: Request) {
     }
 
     // 4) 결과 반환
+    await completeCronRun(runId, failCount > 0 ? "partial" : "success", successCount);
     return NextResponse.json({
       published: successCount,
       failed: failCount,
@@ -190,6 +194,7 @@ export async function GET(req: Request) {
     });
   } catch (e) {
     console.error("publish-scheduled: 크론 실행 중 예외 발생", e);
+    await completeCronRun(runId, "error", 0, e instanceof Error ? e.message : String(e));
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "크론 실행 실패" },
       { status: 500 }

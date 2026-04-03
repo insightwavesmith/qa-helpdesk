@@ -11,6 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/db";
+import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,6 +53,8 @@ export async function GET(req: NextRequest) {
   if (!authHeader || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const runId = await startCronRun("creative-saliency");
 
   try {
     const pipelineUrl = process.env.CREATIVE_PIPELINE_URL
@@ -320,6 +323,8 @@ export async function GET(req: NextRequest) {
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
 
+    await completeCronRun(runId, "success", totalCards);
+
     return NextResponse.json({
       message: "creative-saliency 완료",
       elapsed: `${elapsed}s`,
@@ -332,6 +337,7 @@ export async function GET(req: NextRequest) {
   } catch (e) {
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
     console.error(`[creative-saliency] 에러 (${elapsed}s):`, e);
+    await completeCronRun(runId, "error", 0, e instanceof Error ? e.message : String(e));
     return NextResponse.json(
       {
         error: e instanceof Error ? e.message : String(e),

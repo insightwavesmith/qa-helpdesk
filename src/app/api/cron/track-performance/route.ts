@@ -12,6 +12,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/db";
+import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -142,6 +143,8 @@ async function handleTrack(req: NextRequest) {
   if (!verifyCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const runId = await startCronRun("track-performance");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = createServiceClient() as any;
@@ -294,6 +297,8 @@ async function handleTrack(req: NextRequest) {
       }
     }
 
+    await completeCronRun(runId, stats.errors > 0 ? "partial" : "success", stats.processed);
+
     return NextResponse.json({
       message: "성과 변화 추적 완료",
       total: pendingLogs.length,
@@ -301,6 +306,7 @@ async function handleTrack(req: NextRequest) {
     });
   } catch (err) {
     console.error("[track-performance] Fatal:", err);
+    await completeCronRun(runId, "error", 0, err instanceof Error ? err.message : String(err));
     return NextResponse.json(
       { error: err instanceof Error ? err.message : String(err), ...stats },
       { status: 500 },

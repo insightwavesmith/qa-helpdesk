@@ -7,6 +7,7 @@
 import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/db";
+import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 import { crawlV2 } from "@/lib/cloud-run-crawler";
 import { downloadLpMedia, type MediaAsset } from "@/lib/lp-media-downloader";
 import { uploadToGcs } from "@/lib/gcs-storage";
@@ -56,6 +57,8 @@ async function handleCrawl(req: NextRequest) {
   if (!verifyCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const runId = await startCronRun("crawl-lps");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = createServiceClient() as any;
@@ -291,6 +294,8 @@ async function handleCrawl(req: NextRequest) {
       }
     }
 
+    await completeCronRun(runId, stats.errors > 0 ? "partial" : "success", stats.crawled);
+
     return NextResponse.json({
       message: "crawl-lps v2 완료",
       ...stats,
@@ -298,6 +303,7 @@ async function handleCrawl(req: NextRequest) {
     });
   } catch (err) {
     console.error("[crawl-lps v2] Fatal:", err);
+    await completeCronRun(runId, "error", 0, err instanceof Error ? err.message : String(err));
     return NextResponse.json(
       {
         error: err instanceof Error ? err.message : String(err),

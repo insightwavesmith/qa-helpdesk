@@ -16,6 +16,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/db";
 import { triggerNext } from "@/lib/pipeline-chain";
+import { startCronRun, completeCronRun } from "@/lib/cron-logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -465,7 +466,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const runId = await startCronRun("video-scene-analysis");
+
   if (!GEMINI_API_KEY) {
+    await completeCronRun(runId, "error", 0, "GEMINI_API_KEY 미설정");
     return NextResponse.json(
       { error: "GEMINI_API_KEY 미설정" },
       { status: 500 },
@@ -802,6 +806,8 @@ export async function GET(req: NextRequest) {
       chainTriggered = true;
     }
 
+    await completeCronRun(runId, errors > 0 ? "partial" : "success", analyzed);
+
     return NextResponse.json({
       message: "video-scene-analysis 완료",
       elapsed: `${elapsed}s`,
@@ -814,6 +820,7 @@ export async function GET(req: NextRequest) {
   } catch (e) {
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
     console.error(`[video-scene-analysis] 치명적 에러 (${elapsed}s):`, e);
+    await completeCronRun(runId, "error", 0, e instanceof Error ? e.message : String(e));
     return NextResponse.json(
       {
         error: e instanceof Error ? e.message : String(e),
