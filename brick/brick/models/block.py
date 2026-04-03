@@ -12,8 +12,22 @@ class DoneCondition:
 
 
 @dataclass
+class ApprovalConfig:
+    """승인 Gate 전용 설정."""
+    approver: str = ""
+    channel: str = "slack"
+    slack_channel: str = "C0AN7ATS4DD"
+    dashboard_url: str = ""
+    timeout_seconds: int = 86400
+    on_timeout: str = "escalate"
+    reminder_interval: int = 3600
+    max_reminders: int = 3
+    context_artifacts: list[str] = field(default_factory=list)
+
+
+@dataclass
 class GateHandler:
-    type: str  # command | http | prompt | agent | metric
+    type: str  # command | http | prompt | agent | metric | approval
     command: str | None = None
     url: str | None = None
     headers: dict | None = None
@@ -26,6 +40,7 @@ class GateHandler:
     retries: int = 1
     metric: str | None = None  # metric name (e.g. match_rate, build_pass)
     threshold: float | None = None  # metric threshold value
+    approval: ApprovalConfig | None = None  # approval 타입일 때 사용
 
 
 @dataclass

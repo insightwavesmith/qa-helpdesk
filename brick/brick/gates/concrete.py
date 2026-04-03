@@ -352,3 +352,77 @@ class ConcreteGateExecutor(GateExecutor):
             metadata={"metric": metric_name, "threshold": threshold, "actual": actual_val},
             metrics={metric_name: actual_val},
         )
+
+    # ── approval gate ─────────────────────────────────────────
+
+    async def _run_approval(self, handler: GateHandler, context: dict) -> GateResult:
+        """승인 Gate — 사람의 명시적 승인을 기다림."""
+        approval_config = handler.approval
+        if not approval_config:
+            return GateResult(
+                passed=False,
+                detail="ApprovalConfig not provided",
+                type="approval",
+            )
+
+        action = context.get("approval_action", "pending")
+
+        if action == "approve":
+            return GateResult(
+                passed=True,
+                detail=f"CEO 승인: {approval_config.approver}",
+                type="approval",
+                metadata={
+                    "status": "approved",
+                    "approver": approval_config.approver,
+                    "approved_at": context.get("timestamp", ""),
+                },
+            )
+
+        if action == "reject":
+            return GateResult(
+                passed=False,
+                detail=f"CEO 반려: {context.get('reject_reason', '')}",
+                type="approval",
+                metadata={
+                    "status": "rejected",
+                    "approver": approval_config.approver,
+                    "reject_reason": context.get("reject_reason", ""),
+                },
+            )
+
+        if action == "timeout":
+            on_timeout = approval_config.on_timeout
+            if on_timeout == "auto_approve":
+                return GateResult(
+                    passed=True,
+                    detail="타임아웃 자동 승인",
+                    type="approval",
+                    metadata={"status": "auto_approved"},
+                )
+            if on_timeout == "reject":
+                return GateResult(
+                    passed=False,
+                    detail="타임아웃 자동 반려",
+                    type="approval",
+                    metadata={"status": "timeout_rejected"},
+                )
+            return GateResult(
+                passed=False,
+                detail="타임아웃 — 긴급 에스컬레이션",
+                type="approval",
+                metadata={"status": "escalated"},
+            )
+
+        # 대기 중
+        return GateResult(
+            passed=False,
+            detail="CEO 승인 대기 중",
+            type="approval",
+            metadata={
+                "status": "waiting",
+                "approver": approval_config.approver,
+                "channel": approval_config.channel,
+                "timeout_seconds": approval_config.timeout_seconds,
+            },
+        )

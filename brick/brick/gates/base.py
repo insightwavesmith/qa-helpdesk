@@ -24,6 +24,8 @@ class GateExecutor:
                 return await self._run_review(handler, context)
             case "metric":
                 return await self._run_metric(handler, context)
+            case "approval":
+                return await self._run_approval(handler, context)
             case _:
                 raise ValueError(f"Unknown gate type: {handler.type}")
 
@@ -86,3 +88,6 @@ class GateExecutor:
 
     async def _run_metric(self, handler: GateHandler, context: dict) -> GateResult:
         raise NotImplementedError("Metric gate not implemented in base")
+
+    async def _run_approval(self, handler: GateHandler, context: dict) -> GateResult:
+        raise NotImplementedError("Approval gate not implemented in base")

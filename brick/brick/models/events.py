@@ -20,8 +20,10 @@ class BlockStatus(Enum):
     QUEUED = "queued"
     RUNNING = "running"
     GATE_CHECKING = "gate_checking"
+    WAITING_APPROVAL = "waiting_approval"
     COMPLETED = "completed"
     FAILED = "failed"
+    REJECTED = "rejected"
     SUSPENDED = "suspended"
 
 

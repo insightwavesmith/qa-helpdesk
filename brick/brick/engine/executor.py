@@ -58,6 +58,21 @@ class PresetLoader:
             if gate_data:
                 handlers = []
                 for h in gate_data.get("handlers", []):
+                    approval_data = h.get("approval")
+                    approval_config = None
+                    if approval_data:
+                        from brick.models.block import ApprovalConfig
+                        approval_config = ApprovalConfig(
+                            approver=approval_data.get("approver", ""),
+                            channel=approval_data.get("channel", "slack"),
+                            slack_channel=approval_data.get("slack_channel", "C0AN7ATS4DD"),
+                            dashboard_url=approval_data.get("dashboard_url", ""),
+                            timeout_seconds=approval_data.get("timeout_seconds", 86400),
+                            on_timeout=approval_data.get("on_timeout", "escalate"),
+                            reminder_interval=approval_data.get("reminder_interval", 3600),
+                            max_reminders=approval_data.get("max_reminders", 3),
+                            context_artifacts=approval_data.get("context_artifacts", []),
+                        )
                     handlers.append(GateHandler(
                         type=h["type"],
                         command=h.get("command"),
@@ -72,6 +87,7 @@ class PresetLoader:
                         retries=h.get("retries", 1),
                         metric=h.get("metric"),
                         threshold=h.get("threshold"),
+                        approval=approval_config,
                     ))
                 gate_config = GateConfig(
                     handlers=handlers,

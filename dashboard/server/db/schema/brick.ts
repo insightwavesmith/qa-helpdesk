@@ -112,3 +112,21 @@ export const brickLearningProposals = sqliteTable('brick_learning_proposals', {
   rejectReason: text('reject_reason'),
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
+
+// ── Approvals (CEO 승인 Gate) ──
+export const brickApprovals = sqliteTable('brick_approvals', {
+  id: text('id').primaryKey(),  // uuid() 앱 레이어 생성
+  executionId: integer('execution_id').references(() => brickExecutions.id).notNull(),
+  blockId: text('block_id').notNull(),
+  approver: text('approver').notNull(),
+  status: text('status').notNull().default('waiting'),  // waiting|approved|rejected|escalated|timeout
+  summary: text('summary'),
+  artifacts: text('artifacts').default('[]'),  // JSON 문자열
+  rejectReason: text('reject_reason'),
+  comment: text('comment'),
+  reminderCount: integer('reminder_count').default(0),
+  timeoutAt: text('timeout_at').notNull(),
+  resolvedAt: text('resolved_at'),
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+});

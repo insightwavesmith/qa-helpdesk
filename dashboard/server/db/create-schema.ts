@@ -331,6 +331,24 @@ const createTableStatements = [
     reject_reason TEXT,
     created_at TEXT NOT NULL
   )`,
+
+  // B9: brick_approvals
+  `CREATE TABLE IF NOT EXISTS brick_approvals (
+    id TEXT PRIMARY KEY,
+    execution_id INTEGER NOT NULL REFERENCES brick_executions(id),
+    block_id TEXT NOT NULL,
+    approver TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'waiting' CHECK(status IN ('waiting','approved','rejected','escalated','timeout')),
+    summary TEXT,
+    artifacts TEXT DEFAULT '[]',
+    reject_reason TEXT,
+    comment TEXT,
+    reminder_count INTEGER DEFAULT 0,
+    timeout_at TEXT NOT NULL,
+    resolved_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
 ];
 
 const createIndexStatements = [
@@ -350,6 +368,10 @@ const createIndexStatements = [
   // Brick 인덱스
   `CREATE INDEX IF NOT EXISTS idx_brick_links_workflow ON brick_links(workflow_id)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_brick_links_pair ON brick_links(workflow_id, from_block, to_block)`,
+
+  // Approval 인덱스
+  `CREATE INDEX IF NOT EXISTS idx_brick_approvals_status ON brick_approvals(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_brick_approvals_execution ON brick_approvals(execution_id)`,
 ];
 
 export function createSchema(sqlite: { exec: (sql: string) => void }) {

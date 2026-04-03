@@ -13,6 +13,7 @@ import { registerLearningRoutes } from './learning.js';
 import { registerSystemRoutes } from './system.js';
 import { registerReviewRoutes } from './review.js';
 import { registerNotifyRoutes } from './notify.js';
+import { registerApprovalRoutes } from './approvals.js';
 
 export function registerBrickRoutes(app: Application, db: BetterSQLite3Database) {
   registerBlockTypeRoutes(app, db);
@@ -26,4 +27,5 @@ export function registerBrickRoutes(app: Application, db: BetterSQLite3Database)
   registerSystemRoutes(app, db);
   registerReviewRoutes(app, db);
   registerNotifyRoutes(app, db);
+  registerApprovalRoutes(app, db);
 }
