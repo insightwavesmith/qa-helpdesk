@@ -1,8 +1,10 @@
 {
-  "version": "3.0",
-  "lastUpdated": "2026-04-03T11:08:03.951Z",
-  "activeFeatures": [],
-  "primaryFeature": null,
+  "feature": "brick-project-layer",
+  "phase": "do",
+  "status": "completed",
+  "updatedAt": "2026-04-03T20:13:48.667594",
+  "notes": "TASK 1: 프로젝트 레이어(PL-001~034) 완료. TASK 2: 프론트 Phase 6~7(BF-121~145) 100% 확인. 긴급수정 INV-EB-3 9가지 + ceo_approval Approval 타입 완료.",
+  "matchRate": 100,
   "features": {
     "hook-hardening-v2": {
       "phase": "completed",
@@ -62,31 +64,7 @@
       "automationLevel": 2
     }
   },
-  "pipeline": {
-    "currentPhase": 1,
-    "level": "Dynamic",
-    "phaseHistory": []
-  },
-  "session": {
-    "startedAt": "2026-04-03T11:08:03.951Z",
-    "onboardingCompleted": false,
-    "lastActivity": "2026-04-03T11:08:03.951Z"
-  },
-  "history": [],
-  "stateMachine": {
-    "defaultWorkflow": "default",
-    "activeWorkflows": {},
-    "totalTransitions": 0
-  },
-  "automation": {
-    "globalLevel": 2,
-    "trustScore": 40,
-    "pendingApprovals": 0,
-    "lastGateResult": null
-  },
-  "team": {
-    "enabled": true,
-    "stateFile": ".bkit/runtime/agent-state.json",
-    "eventsFile": ".bkit/runtime/agent-events.jsonl"
-  }
+  "primaryFeature": "prescription-pipeline-v3",
+  "lastUpdated": "2026-04-03T19:49:58.529178",
+  "_autoSyncNote": "auto-synced at 2026-04-03 20:13:48, last commit: ebc82bd2"
 }
