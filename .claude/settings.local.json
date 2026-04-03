@@ -42,6 +42,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/enforce-agent-teams.sh",
+            "timeout": 3000
+          },
+          {
+            "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/destructive-detector.sh",
             "timeout": 5000
           },
@@ -110,6 +115,11 @@
       {
         "matcher": "Edit|Write",
         "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/enforce-agent-teams.sh",
+            "timeout": 3000
+          },
           {
             "type": "command",
             "command": "bash /Users/smith/projects/bscamp/.bkit/hooks/validate-delegate.sh",
