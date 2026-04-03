@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import json
+import shlex
 import signal
 
 import httpx
 
 from brick.gates.base import GateExecutor
+from brick.gates.command_allowlist import validate_command
 from brick.gates.prompt_eval import PromptEvalGate
 from brick.gates.agent_eval import AgentEvalGate
 from brick.models.block import GateHandler
@@ -25,36 +27,45 @@ class ConcreteGateExecutor(GateExecutor):
     # ── command gate ──────────────────────────────────────────
 
     async def _run_command(self, handler: GateHandler, context: dict) -> GateResult:
-        cmd = handler.command or ""
-        if context:
-            try:
-                cmd = cmd.format(**context)
-            except KeyError:
-                pass
+        cmd_template = handler.command or ""
 
-        proc = await asyncio.create_subprocess_shell(
-            cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
+        # 1. context 값 이스케이프 (Shell Injection 방어)
+        safe_context = {}
+        if context:
+            for key, value in context.items():
+                safe_context[key] = shlex.quote(str(value))
+
         try:
+            cmd_str = cmd_template.format(**safe_context)
+        except KeyError:
+            return GateResult(passed=False, detail="명령 템플릿 키 누락", type="command")
+
+        # 2. 명령 파싱 + allowlist 검증
+        try:
+            cmd_parts = shlex.split(cmd_str)
+        except ValueError as e:
+            return GateResult(passed=False, detail=f"명령 파싱 실패: {e}", type="command")
+
+        allowed, reason = validate_command(cmd_parts)
+        if not allowed:
+            return GateResult(passed=False, detail=f"명령 거부: {reason}", type="command")
+
+        # 3. subprocess_exec로 실행 (shell=False)
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                *cmd_parts,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
             stdout, stderr = await asyncio.wait_for(
-                proc.communicate(), timeout=handler.timeout
+                proc.communicate(),
+                timeout=handler.timeout or 60,
             )
         except asyncio.TimeoutError:
-            # SIGTERM first, wait 5s, then SIGKILL
-            try:
-                proc.terminate()
-                await asyncio.sleep(0.1)
-            except ProcessLookupError:
-                pass
-            try:
-                proc.kill()
-            except ProcessLookupError:
-                pass
+            proc.kill()
             return GateResult(
                 passed=False,
-                detail="Command timed out",
+                detail="명령 실행 타임아웃",
                 type="command",
                 metadata={"timeout": handler.timeout},
             )

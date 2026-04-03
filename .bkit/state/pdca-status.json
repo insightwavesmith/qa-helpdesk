@@ -1,10 +1,10 @@
 {
-  "feature": "brick-project-layer",
-  "phase": "do",
-  "status": "completed",
-  "updatedAt": "2026-04-04T01:05:45.891783",
-  "notes": "TASK 1: 프로젝트 레이어(PL-001~034) 완료. TASK 2: 프론트 Phase 6~7(BF-121~145) 100% 확인. 긴급수정 INV-EB-3 9가지 + ceo_approval Approval 타입 완료.",
-  "matchRate": 100,
+  "version": "3.0",
+  "lastUpdated": "2026-04-03T17:03:48.401Z",
+  "activeFeatures": [
+    "gates"
+  ],
+  "primaryFeature": "gates",
   "features": {
     "hook-hardening-v2": {
       "phase": "completed",
@@ -62,9 +62,65 @@
       },
       "phaseTimestamps": {},
       "automationLevel": 2
+    },
+    "gates": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T17:03:17.697Z",
+        "lastUpdated": "2026-04-03T17:03:48.401Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/brick/brick/gates/concrete.py"
     }
   },
-  "primaryFeature": "prescription-pipeline-v3",
-  "lastUpdated": "2026-04-03T19:49:58.529178",
-  "_autoSyncNote": "auto-synced at 2026-04-04 01:05:45, last commit: 7948df29"
+  "pipeline": {
+    "currentPhase": 1,
+    "level": "Dynamic",
+    "phaseHistory": []
+  },
+  "session": {
+    "startedAt": "2026-04-03T16:06:10.313Z",
+    "onboardingCompleted": false,
+    "lastActivity": "2026-04-03T17:03:48.401Z"
+  },
+  "history": [
+    {
+      "timestamp": "2026-04-03T17:03:17.697Z",
+      "feature": "gates",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:03:30.973Z",
+      "feature": "gates",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T17:03:48.401Z",
+      "feature": "gates",
+      "phase": "do",
+      "action": "updated"
+    }
+  ],
+  "stateMachine": {
+    "defaultWorkflow": "default",
+    "activeWorkflows": {},
+    "totalTransitions": 0
+  },
+  "automation": {
+    "globalLevel": 2,
+    "trustScore": 40,
+    "pendingApprovals": 0,
+    "lastGateResult": null
+  },
+  "team": {
+    "enabled": true,
+    "stateFile": ".bkit/runtime/agent-state.json",
+    "eventsFile": ".bkit/runtime/agent-events.jsonl"
+  }
 }
