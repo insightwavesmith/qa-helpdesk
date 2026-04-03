@@ -171,7 +171,7 @@ class WorkflowExecutor:
         self.checkpoint.save(instance.id, instance)
 
         for cmd in commands:
-            await self._execute_command(instance, cmd)
+            instance = await self._execute_command(instance, cmd)
 
         return instance.id
 
@@ -184,17 +184,40 @@ class WorkflowExecutor:
         if not block_inst:
             raise ValueError(f"Block {block_id} not found")
 
+        # QUEUED/PENDING 상태에서 complete 호출 시 먼저 block.started 전이
+        if block_inst.status in (BlockStatus.QUEUED, BlockStatus.PENDING):
+            started_event = Event(
+                type="block.started",
+                data={"block_id": block_id},
+            )
+            instance, _ = self.state_machine.transition(instance, started_event)
+            self.checkpoint.save(workflow_id, instance)
+            self.checkpoint.save_event(workflow_id, started_event)
+            self.event_bus.publish(started_event)
+            block_inst = instance.blocks.get(block_id)
+
+        # block.completed 이벤트 발행 → RUNNING→GATE_CHECKING 전이
+        completed_event = Event(
+            type="block.completed",
+            data={"block_id": block_id},
+        )
+        instance, _cmds = self.state_machine.transition(instance, completed_event)
+        self.checkpoint.save(workflow_id, instance)
+        self.checkpoint.save_event(workflow_id, completed_event)
+        self.event_bus.publish(completed_event)
+
+        # GATE_CHECKING 상태에서 Gate 실행
         gate_result = await self.gate_executor.run_gates(block_inst, instance.context)
 
         event_type = "block.gate_passed" if gate_result.passed else "block.gate_failed"
-        event = Event(type=event_type, data={"block_id": block_id})
+        gate_event = Event(type=event_type, data={"block_id": block_id})
 
-        instance, commands = self.state_machine.transition(instance, event)
+        instance, commands = self.state_machine.transition(instance, gate_event)
         self.checkpoint.save(workflow_id, instance)
-        self.checkpoint.save_event(workflow_id, event)
+        self.checkpoint.save_event(workflow_id, gate_event)
 
         for cmd in commands:
-            await self._execute_command(instance, cmd)
+            instance = await self._execute_command(instance, cmd)
 
         return gate_result
 
@@ -214,7 +237,9 @@ class WorkflowExecutor:
 
         return instance
 
-    async def _execute_command(self, instance: WorkflowInstance, cmd):
+    async def _execute_command(
+        self, instance: WorkflowInstance, cmd
+    ) -> WorkflowInstance:
         if isinstance(cmd, StartBlockCommand):
             adapter = self.adapter_pool.get(cmd.adapter)
             if adapter:
@@ -224,11 +249,20 @@ class WorkflowExecutor:
                         block_inst.block, {"workflow_id": instance.id}
                     )
                     block_inst.execution_id = execution_id
-                    self.checkpoint.save(instance.id, instance)
-                    self.event_bus.publish(
-                        Event("block.started", {"block_id": cmd.block_id})
+
+                    # block.started를 state_machine에 전달 → QUEUED→RUNNING
+                    started_event = Event(
+                        type="block.started",
+                        data={"block_id": cmd.block_id},
                     )
+                    instance, _extra = self.state_machine.transition(
+                        instance, started_event
+                    )
+                    self.checkpoint.save(instance.id, instance)
+                    self.checkpoint.save_event(instance.id, started_event)
+                    self.event_bus.publish(started_event)
         elif isinstance(cmd, EmitEventCommand) and cmd.event:
             self.event_bus.publish(cmd.event)
         elif isinstance(cmd, SaveCheckpointCommand):
             self.checkpoint.save(instance.id, instance)
+        return instance

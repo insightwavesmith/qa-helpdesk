@@ -1,0 +1,23 @@
+$schema: brick/preset-v2
+name: "Research"
+description: "조사/분석 — Research + Report"
+level: 1
+
+blocks:
+  - id: research
+    type: Research
+    what: "조사 + 분석"
+    done:
+      artifacts: ["docs/03-analysis/{feature}.md"]
+  - id: report
+    type: Report
+    what: "보고서 작성"
+    done:
+      artifacts: ["docs/04-report/{feature}.md"]
+
+links:
+  - {from: research, to: report, type: sequential}
+
+teams:
+  research: {adapter: claude_agent_teams, config: {session: sdk-pm, role: PM_LEADER}}
+  report: {adapter: claude_agent_teams, config: {session: sdk-pm, role: PM_LEADER}}
