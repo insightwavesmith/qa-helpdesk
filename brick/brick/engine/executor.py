@@ -19,6 +19,8 @@ from brick.models.events import (
     CheckGateCommand,
     EmitEventCommand,
     SaveCheckpointCommand,
+    RetryAdapterCommand,
+    NotifyCommand,
 )
 from brick.models.link import LinkDefinition
 from brick.models.team import TeamDefinition
@@ -323,27 +325,123 @@ class WorkflowExecutor:
     ) -> WorkflowInstance:
         if isinstance(cmd, StartBlockCommand):
             adapter = self.adapter_pool.get(cmd.adapter)
-            if adapter:
-                block_inst = instance.blocks.get(cmd.block_id)
-                if block_inst:
-                    execution_id = await adapter.start_block(
-                        block_inst.block, {"workflow_id": instance.id}
-                    )
-                    block_inst.execution_id = execution_id
+            if not adapter:
+                # adapter 없음 → 즉시 adapter_failed
+                event = Event(type="block.adapter_failed", data={
+                    "block_id": cmd.block_id,
+                    "error": f"Adapter '{cmd.adapter}' not found in pool",
+                })
+                instance, cmds = self.state_machine.transition(instance, event)
+                self.checkpoint.save(instance.id, instance)
+                await self._execute_commands(instance, cmds)
+                return instance
 
-                    # block.started를 state_machine에 전달 → QUEUED→RUNNING
-                    started_event = Event(
-                        type="block.started",
-                        data={"block_id": cmd.block_id},
-                    )
-                    instance, _extra = self.state_machine.transition(
-                        instance, started_event
-                    )
-                    self.checkpoint.save(instance.id, instance)
-                    self.checkpoint.save_event(instance.id, started_event)
-                    self.event_bus.publish(started_event)
+            block_inst = instance.blocks.get(cmd.block_id)
+            if not block_inst:
+                return instance
+
+            try:
+                execution_id = await adapter.start_block(block_inst.block, {
+                    "workflow_id": instance.id,
+                    "block_id": cmd.block_id,
+                    "block_what": block_inst.block.what,
+                    "block_type": block_inst.block.type,
+                    "project_context": instance.context,
+                })
+                block_inst.execution_id = execution_id
+
+                event = Event(type="block.started", data={"block_id": cmd.block_id})
+                instance, cmds = self.state_machine.transition(instance, event)
+                self.checkpoint.save(instance.id, instance)
+                self.checkpoint.save_event(instance.id, event)
+                self.event_bus.publish(event)
+                await self._execute_commands(instance, cmds)
+
+                # 핸드오프 이벤트: 팀 전환 감지
+                if block_inst.block.team != self._get_previous_team(instance, cmd.block_id):
+                    self.event_bus.publish(Event(type="block.handoff", data={
+                        "workflow_id": instance.id,
+                        "from_block": self._get_previous_block_id(instance, cmd.block_id),
+                        "to_block": cmd.block_id,
+                        "from_team": self._get_previous_team(instance, cmd.block_id),
+                        "to_team": block_inst.block.team,
+                    }))
+
+                # 모니터링 시작
+                import asyncio
+                asyncio.create_task(self._monitor_block(instance, cmd.block_id))
+
+            except Exception as e:
+                event = Event(type="block.adapter_failed", data={
+                    "block_id": cmd.block_id,
+                    "error": str(e),
+                })
+                instance, cmds = self.state_machine.transition(instance, event)
+                self.checkpoint.save(instance.id, instance)
+                await self._execute_commands(instance, cmds)
+
+        elif isinstance(cmd, RetryAdapterCommand):
+            # 지수 백오프 대기
+            import asyncio
+            await asyncio.sleep(cmd.delay)
+
+            adapter = self.adapter_pool.get(cmd.adapter)
+            if not adapter:
+                # adapter 자체가 없으면 재시도 무의미
+                event = Event(type="block.failed", data={
+                    "block_id": cmd.block_id,
+                    "error": f"Adapter '{cmd.adapter}' not found in pool",
+                })
+                instance, cmds = self.state_machine.transition(instance, event)
+                await self._execute_commands(instance, cmds)
+                return instance
+
+            block_inst = instance.blocks.get(cmd.block_id)
+            if not block_inst:
+                return instance
+
+            try:
+                execution_id = await adapter.start_block(block_inst.block, {
+                    "workflow_id": instance.id,
+                    "block_id": cmd.block_id,
+                    "block_what": block_inst.block.what,
+                    "block_type": block_inst.block.type,
+                    "project_context": instance.context,
+                    "retry_count": cmd.retry_count,
+                })
+                block_inst.execution_id = execution_id
+
+                event = Event(type="block.started", data={"block_id": cmd.block_id})
+                instance, cmds = self.state_machine.transition(instance, event)
+                self.checkpoint.save(instance.id, instance)
+                await self._execute_commands(instance, cmds)
+
+                # 모니터링 재시작
+                import asyncio as _asyncio
+                _asyncio.create_task(self._monitor_block(instance, cmd.block_id))
+
+            except Exception as e:
+                event = Event(type="block.adapter_failed", data={
+                    "block_id": cmd.block_id,
+                    "error": str(e),
+                })
+                instance, cmds = self.state_machine.transition(instance, event)
+                self.checkpoint.save(instance.id, instance)
+                await self._execute_commands(instance, cmds)
+
+        elif isinstance(cmd, NotifyCommand):
+            self.event_bus.publish(Event(type=cmd.type, data=cmd.data))
+            self.checkpoint.save(instance.id, instance)
+
         elif isinstance(cmd, EmitEventCommand) and cmd.event:
             self.event_bus.publish(cmd.event)
         elif isinstance(cmd, SaveCheckpointCommand):
             self.checkpoint.save(instance.id, instance)
+        return instance
+
+    async def _execute_commands(
+        self, instance: WorkflowInstance, commands: list
+    ) -> WorkflowInstance:
+        for cmd in commands:
+            instance = await self._execute_command(instance, cmd)
         return instance

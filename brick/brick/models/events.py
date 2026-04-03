@@ -63,3 +63,18 @@ class EmitEventCommand(Command):
 @dataclass
 class SaveCheckpointCommand(Command):
     type: str = "save_checkpoint"
+
+
+@dataclass
+class RetryAdapterCommand(Command):
+    type: str = "retry_adapter"
+    block_id: str = ""
+    adapter: str = ""
+    retry_count: int = 0
+    delay: float = 5.0
+
+
+@dataclass
+class NotifyCommand(Command):
+    type: str = "notify"
+    data: dict = field(default_factory=dict)

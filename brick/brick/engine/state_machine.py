@@ -8,6 +8,7 @@ import time
 from brick.models.events import (
     Event, Command, StartBlockCommand, CheckGateCommand,
     EmitEventCommand, SaveCheckpointCommand,
+    RetryAdapterCommand, NotifyCommand,
     WorkflowStatus, BlockStatus,
 )
 from brick.models.workflow import WorkflowInstance, BlockInstance
@@ -153,6 +154,39 @@ class StateMachine:
             block_inst.status = BlockStatus.FAILED
             block_inst.error = event.data.get("error", "Block execution failed")
             wf.status = WorkflowStatus.FAILED
+            commands.append(SaveCheckpointCommand())
+
+        elif event.type == "block.adapter_failed":
+            # adapter 실패 재시도 — gate_failed의 retry 패턴 재사용
+            block_config = block_inst.block
+            max_retries = block_config.adapter_max_retries if hasattr(block_config, 'adapter_max_retries') else 3
+
+            if block_inst.retry_count < max_retries:
+                block_inst.retry_count += 1
+                block_inst.status = BlockStatus.QUEUED  # QUEUED로 복귀 (RUNNING이 아님)
+                block_inst.error = None
+                commands.append(RetryAdapterCommand(
+                    block_id=block_id,
+                    adapter=block_inst.adapter,
+                    retry_count=block_inst.retry_count,
+                    delay=5 * (3 ** (block_inst.retry_count - 1)),  # 5s, 15s, 45s
+                ))
+            else:
+                # 재시도 소진 → 워크플로우 FAILED + 알림 이벤트
+                block_inst.status = BlockStatus.FAILED
+                block_inst.error = f"Adapter 재시도 {max_retries}회 소진: {event.data.get('error', '')}"
+                wf.status = WorkflowStatus.FAILED
+                commands.append(NotifyCommand(
+                    type="adapter_exhausted",
+                    data={
+                        "workflow_id": wf.id,
+                        "block_id": block_id,
+                        "adapter": block_inst.adapter,
+                        "retries": max_retries,
+                        "error": block_inst.error,
+                    }
+                ))
+
             commands.append(SaveCheckpointCommand())
 
         return wf, commands
