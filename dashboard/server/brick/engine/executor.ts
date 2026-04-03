@@ -1,0 +1,139 @@
+// server/brick/engine/executor.ts — Brick 블록 실행 엔진
+// ThinkLog 이벤트 자동 발행 (HP-001)
+// think_log는 항상 저장. think_log_required는 Gate 검증용으로만 사용.
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { eq } from 'drizzle-orm';
+import {
+  brickExecutions,
+  brickExecutionLogs,
+  brickBlockTypes,
+} from '../../db/schema/brick.js';
+
+export interface BlockContext {
+  executionId: number;
+  blockId: string;
+  blockType: string;
+  feature: string;
+}
+
+export interface ThinkLogEntry {
+  blockId: string;
+  executionId: number;
+  thought: string;
+  timestamp: string;
+  optionsConsidered: number;
+}
+
+/**
+ * 블록 실행 시작 시 ThinkLog 이벤트 자동 발행
+ * - 모든 블록 실행 시작 시 eventType='think_log' 자동 생성
+ * - think_log는 항상 저장 (on/off 없음)
+ */
+export function emitThinkLog(
+  db: BetterSQLite3Database,
+  ctx: BlockContext,
+  thought: string,
+  optionsConsidered: number = 0,
+): ThinkLogEntry {
+  const now = new Date().toISOString();
+  const entry: ThinkLogEntry = {
+    blockId: ctx.blockId,
+    executionId: ctx.executionId,
+    thought,
+    timestamp: now,
+    optionsConsidered,
+  };
+
+  db.insert(brickExecutionLogs).values({
+    executionId: ctx.executionId,
+    eventType: 'think_log',
+    blockId: ctx.blockId,
+    data: entry,
+  }).run();
+
+  return entry;
+}
+
+/**
+ * 블록 실행 시작 — think_log 자동 발행 + block.started 이벤트
+ */
+export function startBlock(
+  db: BetterSQLite3Database,
+  executionId: number,
+  blockId: string,
+  blockType: string,
+  feature: string,
+  initialThought?: string,
+) {
+  const now = new Date().toISOString();
+  const ctx: BlockContext = { executionId, blockId, blockType, feature };
+
+  // 1. block.started 이벤트
+  db.insert(brickExecutionLogs).values({
+    executionId,
+    eventType: 'block.started',
+    blockId,
+    data: { feature, blockType, startedAt: now },
+  }).run();
+
+  // 2. ThinkLog 자동 발행 (항상 저장)
+  const thought = initialThought ?? `[${blockId}] 블록 실행 시작. 블록 타입: ${blockType}, 피처: ${feature}`;
+  emitThinkLog(db, ctx, thought, 0);
+
+  // 3. execution 상태 업데이트
+  db.update(brickExecutions)
+    .set({ currentBlock: blockId, status: 'running' })
+    .where(eq(brickExecutions.id, executionId))
+    .run();
+
+  return ctx;
+}
+
+/**
+ * 블록 완료 — block.completed 이벤트
+ */
+export function completeBlock(
+  db: BetterSQLite3Database,
+  executionId: number,
+  blockId: string,
+  result?: Record<string, unknown>,
+) {
+  const now = new Date().toISOString();
+
+  db.insert(brickExecutionLogs).values({
+    executionId,
+    eventType: 'block.completed',
+    blockId,
+    data: { completedAt: now, ...result },
+  }).run();
+}
+
+/**
+ * think_log_required Gate 검증
+ * - 해당 블록에 think_log 이벤트가 1건 이상 존재하는지 확인
+ */
+export function validateThinkLogGate(
+  db: BetterSQLite3Database,
+  executionId: number,
+  blockId: string,
+): { passed: boolean; count: number } {
+  const logs = db.select().from(brickExecutionLogs)
+    .where(eq(brickExecutionLogs.executionId, executionId))
+    .all()
+    .filter(l => l.blockId === blockId && l.eventType === 'think_log');
+
+  return { passed: logs.length > 0, count: logs.length };
+}
+
+/**
+ * 블록 타입의 think_log_required 설정 조회
+ */
+export function isThinkLogRequired(
+  db: BetterSQLite3Database,
+  blockTypeName: string,
+): boolean {
+  const blockType = db.select().from(brickBlockTypes)
+    .where(eq(brickBlockTypes.name, blockTypeName))
+    .get();
+  return blockType?.thinkLogRequired === true;
+}

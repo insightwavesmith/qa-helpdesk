@@ -1,0 +1,17 @@
+kind: Team
+name: coo-team
+labels:
+  role: reporting
+spec:
+  display_name: "운영팀"
+  adapter: claude_agent_teams
+  adapter_config:
+    session: mozzi
+    role: COO
+    max_depth: 1
+    permitted_tools:
+      - Read
+      - Glob
+      - Grep
+      - Write
+      - Think

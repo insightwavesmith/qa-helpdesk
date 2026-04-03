@@ -1,0 +1,18 @@
+kind: Team
+name: pm-team
+labels:
+  role: planning
+spec:
+  display_name: "기획팀"
+  adapter: claude_agent_teams
+  adapter_config:
+    session: sdk-pm
+    role: PM_LEADER
+    max_depth: 1
+    permitted_tools:
+      - Read
+      - Glob
+      - Grep
+      - Think
+      - WebSearch
+      - WebFetch

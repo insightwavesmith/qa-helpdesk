@@ -3,6 +3,7 @@ import type { Application } from 'express';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { eq, desc } from 'drizzle-orm';
 import { brickExecutions, brickExecutionLogs } from '../../db/schema/brick.js';
+import { emitThinkLog } from '../../brick/engine/executor.js';
 
 export function registerExecutionRoutes(app: Application, db: BetterSQLite3Database) {
   // POST /api/brick/executions — 실행 시작
@@ -32,6 +33,14 @@ export function registerExecutionRoutes(app: Application, db: BetterSQLite3Datab
         blockId: 'plan',
         data: JSON.stringify({ feature, startedAt: now }),
       }).run();
+
+      // ThinkLog 자동 발행 (HP-001: 항상 저장)
+      emitThinkLog(db, {
+        executionId: execution.id,
+        blockId: 'plan',
+        blockType: 'plan',
+        feature,
+      }, `[plan] 실행 시작. 피처: ${feature}`, 0);
 
       console.log('[brick-executions] 실행 시작:', execution.id, feature);
       res.status(201).json(execution);

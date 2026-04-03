@@ -1,0 +1,51 @@
+kind: Preset
+name: t-pdca-l0
+labels:
+  level: l0
+  type: emergency
+  phase: pdca
+spec:
+  blocks:
+    - id: do
+      type: implement
+      what: "긴급 핫픽스 구현"
+      done:
+        artifacts:
+          - "src/**/*.ts"
+      config:
+        think_log_required: false
+
+    - id: check
+      type: test
+      what: "빌드 검증"
+      done:
+        artifacts: []
+      config: {}
+
+  links:
+    - from: do
+      to: check
+      type: sequential
+
+  teams:
+    do: cto-team
+    check: cto-team
+
+  gates:
+    do:
+      - type: command
+        command: "npx tsc --noEmit --quiet"
+        description: "TypeScript 컴파일 통과"
+      - type: command
+        command: "npm run build"
+        description: "빌드 성공"
+
+    check: []
+
+  events:
+    on_complete:
+      - type: notify
+        channel: slack
+        message: "[{feature}] L0 핫픽스 완료"
+
+readonly: true

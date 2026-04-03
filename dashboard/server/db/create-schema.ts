@@ -217,7 +217,6 @@ const createTableStatements = [
     learned_at TEXT NOT NULL DEFAULT (datetime('now')),
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
-];
 
   // ── Brick 도메인 ──
 

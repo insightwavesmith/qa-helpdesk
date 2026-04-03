@@ -1,0 +1,293 @@
+{
+  "id": "think-log-always-save-1775180434",
+  "definition": {
+    "name": "T-PDCA L2 표준",
+    "description": "일반 기능 개발 — Plan + Design + Do + Check + Act",
+    "blocks": [
+      {
+        "id": "plan",
+        "what": "요구사항 분석 + Plan 문서 작성",
+        "done": {
+          "artifacts": [
+            "docs/01-plan/features/{feature}.plan.md"
+          ],
+          "metrics": {},
+          "custom": []
+        },
+        "type": "Plan",
+        "description": ""
+      },
+      {
+        "id": "design",
+        "what": "상세 설계 + TDD 케이스",
+        "done": {
+          "artifacts": [
+            "docs/02-design/features/{feature}.design.md"
+          ],
+          "metrics": {},
+          "custom": []
+        },
+        "type": "Design",
+        "description": ""
+      },
+      {
+        "id": "do",
+        "what": "구현",
+        "done": {
+          "artifacts": [],
+          "metrics": {
+            "tsc_errors": 0,
+            "build_pass": true
+          },
+          "custom": []
+        },
+        "type": "Do",
+        "description": ""
+      },
+      {
+        "id": "check",
+        "what": "Gap 분석",
+        "done": {
+          "artifacts": [],
+          "metrics": {
+            "match_rate": 90
+          },
+          "custom": []
+        },
+        "type": "Check",
+        "description": ""
+      },
+      {
+        "id": "act",
+        "what": "배포 + 보고",
+        "done": {
+          "artifacts": [],
+          "metrics": {},
+          "custom": []
+        },
+        "type": "Act",
+        "description": ""
+      }
+    ],
+    "links": [
+      {
+        "from_block": "plan",
+        "to_block": "design",
+        "type": "sequential"
+      },
+      {
+        "from_block": "design",
+        "to_block": "do",
+        "type": "sequential"
+      },
+      {
+        "from_block": "do",
+        "to_block": "check",
+        "type": "sequential"
+      },
+      {
+        "from_block": "check",
+        "to_block": "do",
+        "type": "loop"
+      },
+      {
+        "from_block": "check",
+        "to_block": "act",
+        "type": "sequential"
+      }
+    ],
+    "teams": {
+      "plan": {
+        "block_id": "plan",
+        "adapter": "claude_agent_teams",
+        "config": {
+          "session": "sdk-pm",
+          "role": "PM_LEADER"
+        }
+      },
+      "design": {
+        "block_id": "design",
+        "adapter": "claude_agent_teams",
+        "config": {
+          "session": "sdk-pm",
+          "role": "PM_LEADER"
+        }
+      },
+      "do": {
+        "block_id": "do",
+        "adapter": "claude_agent_teams",
+        "config": {
+          "session": "sdk-cto",
+          "role": "CTO_LEADER"
+        }
+      },
+      "check": {
+        "block_id": "check",
+        "adapter": "claude_agent_teams",
+        "config": {
+          "session": "sdk-cto",
+          "role": "CTO_LEADER"
+        }
+      },
+      "act": {
+        "block_id": "act",
+        "adapter": "claude_agent_teams",
+        "config": {
+          "session": "sdk-cto",
+          "role": "CTO_LEADER"
+        }
+      }
+    },
+    "schema": "brick/preset-v2",
+    "level": 2
+  },
+  "feature": "think-log-always-save",
+  "task": "ThinkLog 자동 저장 구현",
+  "status": "running",
+  "blocks": {
+    "plan": {
+      "block": {
+        "id": "plan",
+        "what": "요구사항 분석 + Plan 문서 작성",
+        "done": {
+          "artifacts": [
+            "docs/01-plan/features/{feature}.plan.md"
+          ],
+          "metrics": {},
+          "custom": []
+        },
+        "type": "Plan",
+        "description": "",
+        "timeout": null,
+        "idempotent": true,
+        "metadata": {},
+        "fallback_adapter": null
+      },
+      "status": "queued",
+      "adapter": "claude_agent_teams",
+      "execution_id": null,
+      "artifacts": [],
+      "metrics": {},
+      "retry_count": 0,
+      "started_at": null,
+      "completed_at": null,
+      "error": null
+    },
+    "design": {
+      "block": {
+        "id": "design",
+        "what": "상세 설계 + TDD 케이스",
+        "done": {
+          "artifacts": [
+            "docs/02-design/features/{feature}.design.md"
+          ],
+          "metrics": {},
+          "custom": []
+        },
+        "type": "Design",
+        "description": "",
+        "timeout": null,
+        "idempotent": true,
+        "metadata": {},
+        "fallback_adapter": null
+      },
+      "status": "pending",
+      "adapter": "claude_agent_teams",
+      "execution_id": null,
+      "artifacts": [],
+      "metrics": {},
+      "retry_count": 0,
+      "started_at": null,
+      "completed_at": null,
+      "error": null
+    },
+    "do": {
+      "block": {
+        "id": "do",
+        "what": "구현",
+        "done": {
+          "artifacts": [],
+          "metrics": {
+            "tsc_errors": 0,
+            "build_pass": true
+          },
+          "custom": []
+        },
+        "type": "Do",
+        "description": "",
+        "timeout": null,
+        "idempotent": true,
+        "metadata": {},
+        "fallback_adapter": null
+      },
+      "status": "pending",
+      "adapter": "claude_agent_teams",
+      "execution_id": null,
+      "artifacts": [],
+      "metrics": {},
+      "retry_count": 0,
+      "started_at": null,
+      "completed_at": null,
+      "error": null
+    },
+    "check": {
+      "block": {
+        "id": "check",
+        "what": "Gap 분석",
+        "done": {
+          "artifacts": [],
+          "metrics": {
+            "match_rate": 90
+          },
+          "custom": []
+        },
+        "type": "Check",
+        "description": "",
+        "timeout": null,
+        "idempotent": true,
+        "metadata": {},
+        "fallback_adapter": null
+      },
+      "status": "pending",
+      "adapter": "claude_agent_teams",
+      "execution_id": null,
+      "artifacts": [],
+      "metrics": {},
+      "retry_count": 0,
+      "started_at": null,
+      "completed_at": null,
+      "error": null
+    },
+    "act": {
+      "block": {
+        "id": "act",
+        "what": "배포 + 보고",
+        "done": {
+          "artifacts": [],
+          "metrics": {},
+          "custom": []
+        },
+        "type": "Act",
+        "description": "",
+        "timeout": null,
+        "idempotent": true,
+        "metadata": {},
+        "fallback_adapter": null
+      },
+      "status": "pending",
+      "adapter": "claude_agent_teams",
+      "execution_id": null,
+      "artifacts": [],
+      "metrics": {},
+      "retry_count": 0,
+      "started_at": null,
+      "completed_at": null,
+      "error": null
+    }
+  },
+  "current_block_id": "plan",
+  "created_at": 1775180434.398164,
+  "updated_at": 1775180456.766776,
+  "metrics": {},
+  "context": {}
+}

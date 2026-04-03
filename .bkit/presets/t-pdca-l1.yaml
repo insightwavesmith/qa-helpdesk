@@ -1,0 +1,74 @@
+kind: Preset
+name: t-pdca-l1
+labels:
+  level: l1
+  type: lightweight
+  phase: pdca
+spec:
+  blocks:
+    - id: design
+      type: design
+      what: "경량 설계"
+      done:
+        artifacts:
+          - "docs/02-design/features/{feature}.design.md"
+      config:
+        think_log_required: true
+
+    - id: do
+      type: implement
+      what: "설계 기반 구현"
+      done:
+        artifacts:
+          - "src/**/*.ts"
+          - "__tests__/**/*.test.ts"
+      config:
+        think_log_required: false
+
+    - id: check
+      type: test
+      what: "빌드 + 테스트 검증"
+      done:
+        artifacts: []
+      config: {}
+
+  links:
+    - from: design
+      to: do
+      type: sequential
+
+    - from: do
+      to: check
+      type: sequential
+
+  teams:
+    design: pm-team
+    do: cto-team
+    check: cto-team
+
+  gates:
+    design:
+      - type: command
+        command: "test -f docs/02-design/features/{feature}.design.md"
+        description: "Design 문서 존재 확인"
+
+    do:
+      - type: command
+        command: "npx tsc --noEmit --quiet"
+        description: "TypeScript 컴파일 통과"
+      - type: command
+        command: "npm run build"
+        description: "빌드 성공"
+      - type: command
+        command: "npx vitest run --reporter=json"
+        description: "테스트 전체 통과"
+
+    check: []
+
+  events:
+    on_complete:
+      - type: notify
+        channel: slack
+        message: "[{feature}] L1 경량 PDCA 완료"
+
+readonly: true

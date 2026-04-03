@@ -1,0 +1,30 @@
+kind: Team
+name: cto-team
+labels:
+  role: implementation
+spec:
+  display_name: "개발팀"
+  adapter: claude_agent_teams
+  adapter_config:
+    session: sdk-cto
+    role: CTO_LEADER
+    max_depth: 2
+    permitted_tools:
+      - Read
+      - Glob
+      - Grep
+      - Write
+      - Edit
+      - Bash
+      - Agent
+      - Think
+  members:
+    - name: cto-leader
+      role: leader
+      model: opus
+    - name: frontend-dev
+      role: developer
+      model: opus
+    - name: backend-dev
+      role: developer
+      model: opus

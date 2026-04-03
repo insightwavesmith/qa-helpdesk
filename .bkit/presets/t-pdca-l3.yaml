@@ -1,0 +1,230 @@
+kind: Preset
+name: t-pdca-l3
+labels:
+  level: l3
+  type: full
+  phase: pdca
+spec:
+  blocks:
+    - id: plan
+      type: plan
+      what: "기능 계획 수립 + 옵션 비교"
+      done:
+        artifacts:
+          - "docs/01-plan/features/{feature}.plan.md"
+      config:
+        think_log_required: true
+
+    - id: adr
+      type: design
+      what: "Architecture Decision Record 작성"
+      done:
+        artifacts:
+          - "docs/adr/ADR-{number}-{feature}.md"
+      config:
+        think_log_required: true
+
+    - id: design
+      type: design
+      what: "상세 설계 + TDD 케이스 작성"
+      done:
+        artifacts:
+          - "docs/02-design/features/{feature}.design.md"
+      config:
+        think_log_required: true
+
+    - id: do
+      type: implement
+      what: "설계 기반 구현 + 테스트"
+      done:
+        artifacts:
+          - "src/**/*.ts"
+          - "__tests__/**/*.test.ts"
+      config:
+        think_log_required: false
+
+    - id: check
+      type: test
+      what: "Gap 분석 (설계 vs 구현)"
+      done:
+        artifacts:
+          - "docs/03-analysis/features/{feature}.gap.md"
+      config:
+        min_match_rate: 95
+
+    - id: security_audit
+      type: test
+      what: "보안 감사 (OWASP Top 10)"
+      done:
+        artifacts:
+          - "docs/03-analysis/features/{feature}.security.md"
+      config: {}
+
+    - id: review
+      type: review
+      what: "산출물 검토 + 승인"
+      done:
+        artifacts: []
+      config:
+        reviewers:
+          - smith
+        required_approvals: 1
+
+    - id: learn
+      type: custom
+      what: "회고 + 교훈 기록"
+      done:
+        artifacts:
+          - "docs/04-report/features/{feature}.report.md"
+      config:
+        think_log_required: false
+
+  links:
+    - from: plan
+      to: adr
+      type: sequential
+
+    - from: adr
+      to: design
+      type: sequential
+
+    - from: design
+      to: do
+      type: sequential
+
+    - from: do
+      to: check
+      type: sequential
+
+    - from: check
+      to: do
+      type: loop
+      condition: "match_rate < 95"
+
+    - from: check
+      to: security_audit
+      type: branch
+      condition: "match_rate >= 95"
+
+    - from: security_audit
+      to: review
+      type: sequential
+
+    - from: review
+      to: do
+      type: loop
+      condition: "review_status == 'changes_requested'"
+
+    - from: review
+      to: learn
+      type: branch
+      condition: "review_status == 'approved'"
+
+  teams:
+    plan: pm-team
+    adr: pm-team
+    design: pm-team
+    do:
+      team: cto-team
+      override:
+        permitted_tools:
+          - Read
+          - Glob
+          - Grep
+          - Write
+          - Edit
+          - Bash
+          - Agent
+          - Think
+    check:
+      team: cto-team
+      override:
+        permitted_tools:
+          - Read
+          - Glob
+          - Grep
+          - Think
+          - Bash
+    security_audit:
+      team: cto-team
+      override:
+        permitted_tools:
+          - Read
+          - Glob
+          - Grep
+          - Think
+    review: null
+    learn: coo-team
+
+  gates:
+    plan:
+      - type: command
+        command: "test -f docs/01-plan/features/{feature}.plan.md"
+        description: "Plan 문서 존재 확인"
+      - type: prompt
+        prompt: "Plan 문서에 think_log(판단 근거)가 포함되어 있는가? 옵션이 2개 이상인가?"
+        threshold: 0.8
+        description: "판단 로그 + 옵션 2개 이상"
+
+    adr:
+      - type: command
+        command: "ls docs/adr/ADR-*-{feature}.md"
+        description: "ADR 문서 존재 확인"
+
+    design:
+      - type: command
+        command: "test -f docs/02-design/features/{feature}.design.md"
+        description: "Design 문서 존재 확인"
+      - type: prompt
+        prompt: "Design TDD 섹션이 모든 동작을 1:1 커버하는가? Gap 0%인가?"
+        threshold: 0.85
+        description: "TDD Gap 0%"
+
+    do:
+      - type: command
+        command: "npx tsc --noEmit --quiet"
+        description: "TypeScript 컴파일 통과"
+      - type: command
+        command: "npm run build"
+        description: "빌드 성공"
+      - type: command
+        command: "npx vitest run --reporter=json"
+        description: "테스트 전체 통과"
+
+    check:
+      - type: http
+        url: "http://localhost:3001/api/brick/gates/{execution_id}/gap-result"
+        method: GET
+        match: "match_rate >= 95"
+        description: "Match Rate 95% 이상"
+
+    security_audit:
+      - type: command
+        command: "test -f docs/03-analysis/features/{feature}.security.md"
+        description: "보안 감사 문서 존재"
+
+    review:
+      - type: review
+        required_approvals: 1
+        description: "Smith님 승인"
+
+    learn:
+      - type: command
+        command: "test -f docs/04-report/features/{feature}.report.md"
+        description: "회고 문서 존재 확인"
+
+  events:
+    on_block_failed:
+      - type: notify
+        channel: slack
+        message: "[{feature}] {block_id} 블록 실패: {error}"
+    on_gate_failed:
+      - type: notify
+        channel: slack
+        message: "[{feature}] {block_id} Gate 실패: {gate_description}"
+    on_complete:
+      - type: notify
+        channel: slack
+        message: "[{feature}] L3 PDCA 사이클 완료. Match Rate: {match_rate}%"
+
+readonly: true
