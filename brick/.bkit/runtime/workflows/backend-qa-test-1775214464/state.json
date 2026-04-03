@@ -83,14 +83,14 @@
         "metadata": {},
         "fallback_adapter": null
       },
-      "status": "queued",
+      "status": "completed",
       "adapter": "claude_agent_teams",
       "execution_id": null,
       "artifacts": [],
       "metrics": {},
       "retry_count": 0,
-      "started_at": null,
-      "completed_at": null,
+      "started_at": 1775214500.037449,
+      "completed_at": 1775214500.039093,
       "error": null
     },
     "qa": {
@@ -111,7 +111,7 @@
         "metadata": {},
         "fallback_adapter": null
       },
-      "status": "pending",
+      "status": "queued",
       "adapter": "claude_agent_teams",
       "execution_id": null,
       "artifacts": [],
@@ -122,9 +122,11 @@
       "error": null
     }
   },
-  "current_block_id": "do",
+  "current_block_id": "qa",
   "created_at": 1775214464.546447,
-  "updated_at": 1775214464.547126,
+  "updated_at": 1775214500.03909,
   "metrics": {},
-  "context": {}
+  "context": {
+    "duration_sec": 120
+  }
 }
