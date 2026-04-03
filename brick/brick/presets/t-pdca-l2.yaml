@@ -25,6 +25,13 @@ blocks:
     what: "Gap 분석"
     done:
       metrics: {match_rate: 90}
+    gate:
+      handlers:
+        - type: metric
+          metric: match_rate
+          threshold: 90
+      on_fail: retry
+      max_retries: 3
   - id: act
     type: Act
     what: "배포 + 보고"

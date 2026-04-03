@@ -1,8 +1,12 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-03T09:46:11.849Z",
+  "lastUpdated": "2026-04-03T09:49:31.522Z",
   "activeFeatures": [
-    "creative-saliency"
+    "creative-saliency",
+    "brick",
+    "gates",
+    "engine",
+    "protractor"
   ],
   "primaryFeature": "creative-saliency",
   "features": {
@@ -72,9 +76,61 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-03T09:46:11.849Z",
-        "lastUpdated": "2026-04-03T09:46:11.849Z"
+        "lastUpdated": "2026-04-03T09:48:04.490Z"
       },
       "lastFile": "/Users/smith/projects/bscamp/src/app/api/cron/creative-saliency/route.ts"
+    },
+    "brick": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T09:46:47.161Z",
+        "lastUpdated": "2026-04-03T09:49:04.213Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/brick/brick/models/block.py"
+    },
+    "gates": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T09:46:48.952Z",
+        "lastUpdated": "2026-04-03T09:49:14.356Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/brick/brick/gates/concrete.py"
+    },
+    "engine": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T09:49:17.525Z",
+        "lastUpdated": "2026-04-03T09:49:24.438Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/brick/brick/engine/executor.py"
+    },
+    "protractor": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-04-03T09:49:31.522Z",
+        "lastUpdated": "2026-04-03T09:49:31.522Z"
+      },
+      "lastFile": "/Users/smith/projects/bscamp/src/lib/protractor/prescription-engine.ts"
     }
   },
   "pipeline": {
@@ -85,12 +141,90 @@
   "session": {
     "startedAt": "2026-04-03T09:46:11.847Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-03T09:46:11.849Z"
+    "lastActivity": "2026-04-03T09:49:31.522Z"
   },
   "history": [
     {
       "timestamp": "2026-04-03T09:46:11.849Z",
       "feature": "creative-saliency",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T09:46:47.161Z",
+      "feature": "brick",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T09:46:48.952Z",
+      "feature": "gates",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T09:46:50.791Z",
+      "feature": "gates",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T09:47:56.003Z",
+      "feature": "creative-saliency",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T09:48:04.490Z",
+      "feature": "creative-saliency",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T09:49:02.721Z",
+      "feature": "brick",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T09:49:04.213Z",
+      "feature": "brick",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T09:49:05.686Z",
+      "feature": "gates",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T09:49:07.773Z",
+      "feature": "gates",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T09:49:14.356Z",
+      "feature": "gates",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T09:49:17.525Z",
+      "feature": "engine",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T09:49:24.438Z",
+      "feature": "engine",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-03T09:49:31.522Z",
+      "feature": "protractor",
       "phase": "do",
       "action": "updated"
     }

@@ -11,7 +11,7 @@ from brick.engine.event_bus import EventBus
 from brick.engine.state_machine import StateMachine
 from brick.engine.validator import Validator
 from brick.gates.base import GateExecutor
-from brick.models.block import Block, DoneCondition
+from brick.models.block import Block, DoneCondition, GateHandler, GateConfig
 from brick.models.events import (
     BlockStatus,
     Event,
@@ -53,6 +53,33 @@ class PresetLoader:
         blocks = []
         for b in inner.get("blocks", []):
             done_data = b.get("done", {})
+            gate_config = None
+            gate_data = b.get("gate")
+            if gate_data:
+                handlers = []
+                for h in gate_data.get("handlers", []):
+                    handlers.append(GateHandler(
+                        type=h["type"],
+                        command=h.get("command"),
+                        url=h.get("url"),
+                        headers=h.get("headers"),
+                        prompt=h.get("prompt"),
+                        model=h.get("model"),
+                        agent_prompt=h.get("agent_prompt"),
+                        timeout=h.get("timeout", 30),
+                        on_fail=h.get("on_fail", "fail"),
+                        confidence_threshold=h.get("confidence_threshold", 0.8),
+                        retries=h.get("retries", 1),
+                        metric=h.get("metric"),
+                        threshold=h.get("threshold"),
+                    ))
+                gate_config = GateConfig(
+                    handlers=handlers,
+                    evaluation=gate_data.get("evaluation", "sequential"),
+                    on_fail=gate_data.get("on_fail", "retry"),
+                    max_retries=gate_data.get("max_retries", 3),
+                )
+
             blocks.append(
                 Block(
                     id=b["id"],
@@ -64,6 +91,7 @@ class PresetLoader:
                     ),
                     type=b.get("type", "Custom"),
                     description=b.get("description", ""),
+                    gate=gate_config,
                 )
             )
         links = []

@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/db";
 import { startCronRun, completeCronRun } from "@/lib/cron-logger";
+import { triggerNext } from "@/lib/pipeline-chain";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -325,6 +326,16 @@ export async function GET(req: NextRequest) {
 
     await completeCronRun(runId, "success", totalCards);
 
+    // triggerNext 체인 — video-scene-analysis
+    const searchParams = new URL(req.url).searchParams;
+    const isChain = searchParams.get("chain") === "true";
+    let chainTriggered = false;
+    if (isChain && (syncUpdated > 0 || hashReuseCount > 0)) {
+      await triggerNext("video-scene-analysis");
+      console.log("[creative-saliency] chain → video-scene-analysis triggered");
+      chainTriggered = true;
+    }
+
     return NextResponse.json({
       message: "creative-saliency 완료",
       elapsed: `${elapsed}s`,
@@ -333,6 +344,7 @@ export async function GET(req: NextRequest) {
       accounts: accountList.length,
       syncUpdated,
       image: accountResults,
+      chainTriggered,
     });
   } catch (e) {
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);

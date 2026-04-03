@@ -13,7 +13,7 @@ class DoneCondition:
 
 @dataclass
 class GateHandler:
-    type: str  # command | http | prompt | agent
+    type: str  # command | http | prompt | agent | metric
     command: str | None = None
     url: str | None = None
     headers: dict | None = None
@@ -24,6 +24,8 @@ class GateHandler:
     on_fail: str = "fail"  # fail | warn | skip
     confidence_threshold: float = 0.8
     retries: int = 1
+    metric: str | None = None  # metric name (e.g. match_rate, build_pass)
+    threshold: float | None = None  # metric threshold value
 
 
 @dataclass

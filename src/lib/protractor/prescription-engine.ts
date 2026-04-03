@@ -548,7 +548,8 @@ export async function generatePrescription(
     andromeda_analyzed: true,
     has_performance_data: hasPerformanceData,
     analysis_source: media.analysis_json ? 'existing' : 'fresh',
-    video_multimodal: media.media_type === 'VIDEO',
+    video_multimodal: media.media_type === 'VIDEO' && promptParts.mediaPart !== null && typeof promptParts.mediaPart === 'object' && 'file_data' in promptParts.mediaPart,
+    scene_analysis_injected: sceneAnalysis !== null,
   };
 
   // STEP 13: 최종 조립

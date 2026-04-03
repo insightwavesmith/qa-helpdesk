@@ -312,3 +312,43 @@ class ConcreteGateExecutor(GateExecutor):
             type="review",
             metadata={"status": "waiting"},
         )
+
+    # ── metric gate ───────────────────────────────────────────
+
+    async def _run_metric(self, handler: GateHandler, context: dict) -> GateResult:
+        metric_name = handler.metric or ""
+        threshold = handler.threshold
+        if threshold is None:
+            return GateResult(
+                passed=False,
+                detail=f"No threshold configured for metric '{metric_name}'",
+                type="metric",
+            )
+
+        actual = context.get(metric_name)
+        if actual is None:
+            return GateResult(
+                passed=False,
+                detail=f"Metric '{metric_name}' not found in context",
+                type="metric",
+                metadata={"metric": metric_name, "threshold": threshold},
+            )
+
+        try:
+            actual_val = float(actual)
+        except (TypeError, ValueError):
+            return GateResult(
+                passed=False,
+                detail=f"Metric '{metric_name}' is not numeric: {actual}",
+                type="metric",
+                metadata={"metric": metric_name, "threshold": threshold, "actual": actual},
+            )
+
+        passed = actual_val >= threshold
+        return GateResult(
+            passed=passed,
+            detail=f"{metric_name}={actual_val} vs threshold={threshold}",
+            type="metric",
+            metadata={"metric": metric_name, "threshold": threshold, "actual": actual_val},
+            metrics={metric_name: actual_val},
+        )

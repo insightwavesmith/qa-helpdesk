@@ -43,7 +43,9 @@
             "type": "object",
             "required": ["type"],
             "properties": {
-              "type": {"type": "string", "enum": ["command", "http", "prompt", "agent"]},
+              "type": {"type": "string", "enum": ["command", "http", "prompt", "agent", "metric"]},
+              "metric": {"type": "string"},
+              "threshold": {"type": "number"},
               "command": {"type": "string"},
               "url": {"type": "string"},
               "prompt": {"type": "string"},

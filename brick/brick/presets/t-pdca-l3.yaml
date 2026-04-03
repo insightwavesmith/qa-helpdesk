@@ -25,6 +25,13 @@ blocks:
     what: "Gap 분석"
     done:
       metrics: {match_rate: 95}
+    gate:
+      handlers:
+        - type: metric
+          metric: match_rate
+          threshold: 95
+      on_fail: retry
+      max_retries: 3
   - id: security
     type: Review
     what: "보안 감사"

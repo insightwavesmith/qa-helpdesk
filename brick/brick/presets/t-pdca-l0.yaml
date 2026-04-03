@@ -15,6 +15,13 @@ blocks:
     what: "빌드 확인"
     done:
       metrics: {build_pass: true}
+    gate:
+      handlers:
+        - type: metric
+          metric: build_pass
+          threshold: 1
+      on_fail: retry
+      max_retries: 1
 
 links:
   - {from: do, to: qa, type: sequential}
