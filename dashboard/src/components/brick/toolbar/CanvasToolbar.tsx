@@ -12,6 +12,7 @@ export interface CanvasToolbarProps {
   isExecuting: boolean;
   isPaused: boolean;
   onSave?: () => void;
+  onExecute?: () => void;
   onLayoutVertical?: () => void;
   onLayoutHorizontal?: () => void;
   onAutoLayout?: () => void;
@@ -23,6 +24,7 @@ export function CanvasToolbar({
   isExecuting,
   isPaused,
   onSave,
+  onExecute,
   onLayoutVertical,
   onLayoutHorizontal,
   onAutoLayout,
@@ -33,8 +35,12 @@ export function CanvasToolbar({
   const cancelExecution = useCancelExecution();
 
   const handleStart = useCallback(() => {
-    startExecution.mutate(presetId);
-  }, [startExecution, presetId]);
+    if (onExecute) {
+      onExecute();
+    } else {
+      startExecution.mutate(presetId);
+    }
+  }, [onExecute, startExecution, presetId]);
 
   const handlePause = useCallback(() => {
     if (executionId) pauseExecution.mutate(executionId);

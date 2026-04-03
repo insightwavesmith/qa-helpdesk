@@ -18,9 +18,12 @@ import { brickEdgeTypes } from '../../components/brick/edges';
 import { BlockSidebar } from '../../components/brick/BlockSidebar';
 import { LINK_TYPES, STATUS_BORDER_COLORS, type BlockType, type BlockStatus, type LinkType } from '../../components/brick/nodes/types';
 import { validateConnection } from '../../lib/brick/connection-validator';
-import { yamlToFlow, flowToYaml } from '../../lib/brick/serializer';
+import { yamlToFlow, flowToYamlFull } from '../../lib/brick/serializer';
 import { DetailPanel } from '../../components/brick/panels/DetailPanel';
 import { ExecutionTimeline, type TimelineEvent } from '../../components/brick/timeline/ExecutionTimeline';
+import { CanvasToolbar } from '../../components/brick/toolbar/CanvasToolbar';
+import { ExecuteDialog } from '../../components/brick/dialogs/ExecuteDialog';
+import { useExecutionStatus, useExecutionLogs } from '../../hooks/brick/useExecutions';
 
 const LINK_TYPE_LABELS: Record<LinkType, string> = {
   sequential: '순차',
@@ -29,6 +32,17 @@ const LINK_TYPE_LABELS: Record<LinkType, string> = {
   loop: '반복',
   cron: '크론',
   branch: '분기',
+};
+
+// 백엔드 → 프론트엔드 블록 상태 매핑
+const BACKEND_STATUS_MAP: Record<string, BlockStatus> = {
+  pending: 'idle',
+  queued: 'queued',
+  running: 'running',
+  gate_checking: 'running',
+  completed: 'done',
+  failed: 'failed',
+  suspended: 'paused',
 };
 
 function BrickCanvasInner() {
@@ -44,11 +58,22 @@ function BrickCanvasInner() {
 
   // 실행 상태
   const [isExecuting, setIsExecuting] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [executionId, setExecutionId] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
 
+  // 실행 다이얼로그
+  const [showExecuteDialog, setShowExecuteDialog] = useState(false);
+
   // 프리셋 ID (URL에서 가져올 수 있음)
   const presetId = 'default';
+
+  // 실행 상태 폴링 (3초)
+  const { data: executionData } = useExecutionStatus(executionId);
+
+  // 실행 로그 폴링 (5초)
+  const { data: logs } = useExecutionLogs(executionId);
 
   // BF-092: 실행 중 블록 상태 변경 시 노드 테두리 색상 실시간 반영
   const styledNodes = useMemo(() => {
@@ -95,23 +120,152 @@ function BrickCanvasInner() {
       });
   }, [presetId, setNodes, setEdges]);
 
+  // blocksState → 노드 상태 동기화
+  useEffect(() => {
+    if (!executionData?.blocksState) return;
+
+    let blocksState: Record<string, { status: string }>;
+    try {
+      blocksState = typeof executionData.blocksState === 'string'
+        ? JSON.parse(executionData.blocksState)
+        : executionData.blocksState;
+    } catch {
+      return;
+    }
+
+    setNodes((nds) =>
+      nds.map((node) => {
+        const blockId = (node.data as Record<string, unknown>).blockId as string;
+        const blockState = blocksState[blockId];
+        if (!blockState) return node;
+
+        const frontStatus = BACKEND_STATUS_MAP[blockState.status] || 'idle';
+        return {
+          ...node,
+          data: { ...node.data, status: frontStatus },
+        };
+      })
+    );
+
+    // 실행 완료/실패 감지
+    if (executionData.status === 'completed' || executionData.status === 'failed') {
+      setIsExecuting(false);
+    }
+    if (executionData.status === 'paused') {
+      setIsPaused(true);
+    } else {
+      setIsPaused(false);
+    }
+  }, [executionData, setNodes]);
+
+  // 활성 엣지 판정
+  useEffect(() => {
+    if (!executionData?.blocksState) return;
+
+    let blocksState: Record<string, { status: string }>;
+    try {
+      blocksState = typeof executionData.blocksState === 'string'
+        ? JSON.parse(executionData.blocksState)
+        : executionData.blocksState;
+    } catch {
+      return;
+    }
+
+    const runningBlockIds = Object.entries(blocksState)
+      .filter(([, v]) => v.status === 'running')
+      .map(([k]) => k);
+
+    setEdges((eds) =>
+      eds.map((edge) => {
+        const isActive = runningBlockIds.includes(edge.source);
+        return {
+          ...edge,
+          data: { ...edge.data, isActive },
+        };
+      })
+    );
+  }, [executionData, setEdges]);
+
+  // 로그 → 타임라인 이벤트 변환
+  useEffect(() => {
+    if (!logs || !Array.isArray(logs)) return;
+
+    const statusMap: Record<string, BlockStatus> = {
+      'block.started': 'running',
+      'block.completed': 'done',
+      'block.failed': 'failed',
+      'block.gate_passed': 'done',
+      'block.gate_failed': 'failed',
+    };
+
+    const events: TimelineEvent[] = logs.map((log: {
+      id: number;
+      eventType: string;
+      blockId?: string;
+      timestamp: string;
+      data?: string;
+    }) => ({
+      timestamp: log.timestamp,
+      blockName: log.blockId || '',
+      status: statusMap[log.eventType] || 'idle',
+    }));
+
+    setTimelineEvents(events);
+  }, [logs]);
+
+  // beforeunload 경고 (unsaved changes)
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
+
   // 캔버스 저장 (BF-078)
-  const handleSave = useCallback(() => {
-    const yaml = flowToYaml(nodes, edges, presetId);
-    fetch(`/api/brick/presets/${presetId}`, {
+  const handleSave = useCallback(async () => {
+    const yaml = flowToYamlFull(nodes, edges, presetId);
+    await fetch(`/api/brick/presets/${presetId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(yaml),
-    }).then(() => {
-      setIsDirty(false);
     });
+    setIsDirty(false);
   }, [nodes, edges, presetId]);
+
+  // 실행 핸들러
+  const handleExecute = useCallback(async (feature: string) => {
+    // isDirty면 자동 저장
+    if (isDirty) {
+      await handleSave();
+    }
+
+    const res = await fetch('/api/brick/executions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ presetId, feature }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert(`실행 실패: ${err.error}`);
+      return;
+    }
+
+    const execution = await res.json();
+    setExecutionId(String(execution.id));
+    setIsExecuting(true);
+    setShowExecuteDialog(false);
+  }, [isDirty, handleSave, presetId]);
 
   // BF-137: isValidConnection — ReactFlow 내장 연결 유효성 검사
   const isValidConnection = useCallback(
-    (connection: Connection) => {
-      if (!connection.source || !connection.target) return false;
-      return validateConnection(connection.source, connection.target, edges).valid;
+    (connection: Edge | Connection) => {
+      if (!("source" in connection) || !connection.source || !connection.target) return false;
+      return validateConnection(connection.source as string, connection.target as string, edges).valid;
     },
     [edges],
   );
@@ -228,19 +382,15 @@ function BrickCanvasInner() {
           </div>
         )}
 
-        {/* 툴바 */}
-        <div data-testid="toolbar" className="h-12 border-b border-gray-200 bg-white flex items-center px-4 gap-2">
-          <button className="px-3 py-1 text-sm rounded bg-green-500 text-white hover:bg-green-600">실행</button>
-          <button className="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300">정지</button>
-          <div className="flex-1" />
-          <button
-            data-testid="save-btn"
-            onClick={handleSave}
-            className="px-3 py-1 text-sm rounded bg-primary text-white hover:bg-primary-hover"
-          >
-            저장
-          </button>
-        </div>
+        {/* 툴바 — CanvasToolbar 사용 */}
+        <CanvasToolbar
+          presetId={presetId}
+          executionId={executionId}
+          isExecuting={isExecuting}
+          isPaused={isPaused}
+          onSave={handleSave}
+          onExecute={() => setShowExecuteDialog(true)}
+        />
 
         {/* 캔버스 */}
         <div
@@ -320,6 +470,13 @@ function BrickCanvasInner() {
           </div>
         </div>
       )}
+
+      {/* 실행 다이얼로그 */}
+      <ExecuteDialog
+        open={showExecuteDialog}
+        onConfirm={handleExecute}
+        onCancel={() => setShowExecuteDialog(false)}
+      />
     </div>
   );
 }
