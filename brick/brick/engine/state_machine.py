@@ -227,7 +227,19 @@ class StateMachine:
                 next_ids.append(link.to_block)
 
             elif link.type == "cron":
-                pass
+                # cron은 즉시 큐잉하지 않음 → 스케줄러에 등록
+                if hasattr(self, 'cron_scheduler') and self.cron_scheduler:
+                    from brick.engine.cron_scheduler import CronJob
+                    to_block = wf.blocks.get(link.to_block)
+                    self.cron_scheduler.register(CronJob(
+                        workflow_id=wf.id,
+                        from_block_id=block_id,
+                        to_block_id=link.to_block,
+                        adapter=to_block.adapter if to_block else "",
+                        schedule=link.schedule or "0 * * * *",  # 기본: 매시간
+                        max_runs=link.max_retries or 999,
+                    ))
+                # next_ids에 추가하지 않음 — 스케줄러가 나중에 큐잉
 
         return next_ids
 

@@ -9,6 +9,7 @@ from pathlib import Path
 import yaml
 
 from brick.engine.checkpoint import CheckpointStore
+from brick.engine.cron_scheduler import CronScheduler
 from brick.engine.event_bus import EventBus
 from brick.engine.preset_validator import PresetValidator
 from brick.engine.state_machine import StateMachine
@@ -24,6 +25,7 @@ from brick.models.events import (
     SaveCheckpointCommand,
     RetryAdapterCommand,
     NotifyCommand,
+    WorkflowStatus,
 )
 from brick.models.link import LinkDefinition
 from brick.models.team import TeamDefinition
@@ -221,6 +223,7 @@ class WorkflowExecutor:
         adapter_pool: dict | None = None,
         preset_loader: PresetLoader | None = None,
         validator: Validator | None = None,
+        cron_scheduler: CronScheduler | None = None,
     ):
         self.state_machine = state_machine
         self.event_bus = event_bus
@@ -229,6 +232,8 @@ class WorkflowExecutor:
         self.adapter_pool = adapter_pool or {}
         self.preset_loader = preset_loader
         self.validator = validator
+        self.cron_scheduler = cron_scheduler or CronScheduler()
+        self.state_machine.cron_scheduler = self.cron_scheduler  # state_machine에 전달
         self._checkpoint_lock = asyncio.Lock()  # parallel 블록 checkpoint 경합 방지
 
     async def start(self, preset_name: str, feature: str, task: str, initial_context: dict | None = None) -> str:
@@ -270,7 +275,34 @@ class WorkflowExecutor:
         for cmd in commands:
             instance = await self._execute_command(instance, cmd)
 
+        # cron 스케줄러 시작
+        self.cron_scheduler.start(emit_callback=self._cron_emit)
+
         return instance.id
+
+    async def _cron_emit(self, job) -> None:
+        """cron 트리거 시 블록 큐잉."""
+        instance = self.checkpoint.load(job.workflow_id)
+        if not instance or instance.status != WorkflowStatus.RUNNING:
+            self.cron_scheduler.unregister_workflow(job.workflow_id)
+            return
+
+        block_inst = instance.blocks.get(job.to_block_id)
+        if not block_inst:
+            return
+
+        # 블록 재큐잉
+        async with self._checkpoint_lock:
+            block_inst.status = BlockStatus.QUEUED
+            block_inst.retry_count = 0
+            instance.current_block_id = job.to_block_id
+            self.checkpoint.save(instance.id, instance)
+
+        # StartBlockCommand 실행
+        await self._execute_command(instance, StartBlockCommand(
+            block_id=job.to_block_id,
+            adapter=job.adapter,
+        ))
 
     async def complete_block(self, workflow_id: str, block_id: str):
         instance = self.checkpoint.load(workflow_id)
