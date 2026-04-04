@@ -1,12 +1,13 @@
 // dashboard/server/routes/brick/review.ts — Brick 리뷰 API
 import type { Application } from 'express';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { requireApprover } from '../../middleware/brick-auth.js';
 import { and, eq } from 'drizzle-orm';
 import { brickExecutions, brickGateResults } from '../../db/schema/brick.js';
 
 export function registerReviewRoutes(app: Application, db: BetterSQLite3Database) {
   // POST /api/brick/review/:executionId/:blockId/approve — 리뷰 승인
-  app.post('/api/brick/review/:executionId/:blockId/approve', (req, res) => {
+  app.post('/api/brick/review/:executionId/:blockId/approve', requireApprover, (req, res) => {
     try {
       const { executionId, blockId } = req.params;
 
@@ -32,7 +33,7 @@ export function registerReviewRoutes(app: Application, db: BetterSQLite3Database
   });
 
   // POST /api/brick/review/:executionId/:blockId/reject — 리뷰 거부
-  app.post('/api/brick/review/:executionId/:blockId/reject', (req, res) => {
+  app.post('/api/brick/review/:executionId/:blockId/reject', requireApprover, (req, res) => {
     try {
       const { executionId, blockId } = req.params;
       const { rejectReason } = req.body;

@@ -118,5 +118,19 @@ export function requireBrickAuth(req: Request, res: Response, next: NextFunction
   res.status(401).json({ error: '인증 실패: 로그인하거나 유효한 API Key를 제공하세요' });
 }
 
+/**
+ * Brick 거버넌스 API 인증 미들웨어.
+ * 승인/리뷰/override 시 approver/reviewer/overrider 식별 필수.
+ */
+export function requireApprover(req: Request, res: Response, next: NextFunction): void {
+  const { approver, reviewer, overrider } = req.body || {};
+  const identity = approver || reviewer || overrider;
+  if (!identity || typeof identity !== 'string' || identity.trim() === '') {
+    res.status(401).json({ error: '승인자/리뷰어 식별 필수 (approver 또는 reviewer 파라미터)' });
+    return;
+  }
+  next();
+}
+
 // 테스트용 export
 export { activeSessions, SESSION_TTL };

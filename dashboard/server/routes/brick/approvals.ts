@@ -1,6 +1,7 @@
 // dashboard/server/routes/brick/approvals.ts — CEO 승인 Gate API
 import type { Application } from 'express';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { requireApprover } from '../../middleware/brick-auth.js';
 import { eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { brickApprovals, brickExecutions } from '../../db/schema/brick.js';
@@ -50,7 +51,7 @@ export function registerApprovalRoutes(app: Application, db: BetterSQLite3Databa
   });
 
   // 승인
-  app.post('/api/brick/approve/:executionId', async (req, res) => {
+  app.post('/api/brick/approve/:executionId', requireApprover, async (req, res) => {
     try {
       const { executionId } = req.params;
       const { approver, comment } = req.body;
@@ -96,7 +97,7 @@ export function registerApprovalRoutes(app: Application, db: BetterSQLite3Databa
   });
 
   // 반려
-  app.post('/api/brick/reject/:executionId', async (req, res) => {
+  app.post('/api/brick/reject/:executionId', requireApprover, async (req, res) => {
     try {
       const { executionId } = req.params;
       const { approver, reason } = req.body;

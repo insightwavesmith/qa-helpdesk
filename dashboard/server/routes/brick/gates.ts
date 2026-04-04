@@ -1,6 +1,7 @@
 // dashboard/server/routes/brick/gates.ts — Brick Gate API
 import type { Application } from 'express';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { requireApprover } from '../../middleware/brick-auth.js';
 import { eq } from 'drizzle-orm';
 import { brickGateResults } from '../../db/schema/brick.js';
 
@@ -24,7 +25,7 @@ export function registerGateRoutes(app: Application, db: BetterSQLite3Database) 
   });
 
   // POST /api/brick/gates/:gateId/override — Gate 강제 pass
-  app.post('/api/brick/gates/:gateId/override', (req, res) => {
+  app.post('/api/brick/gates/:gateId/override', requireApprover, (req, res) => {
     try {
       const updated = db.update(brickGateResults)
         .set({ passed: true })

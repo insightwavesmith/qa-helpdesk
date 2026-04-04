@@ -182,7 +182,11 @@ export function registerPresetRoutes(app: Application, db: BetterSQLite3Database
     }
   });
 
-  // POST /api/brick/presets/:presetId/apply — 프리셋 적용 (YAML → nodes/edges 변환)
+  /**
+   * POST /api/brick/presets/:presetId/apply
+   * 프리셋 YAML → React Flow nodes/edges 변환 (캔버스 렌더링용).
+   * 워크플로우 실행 시작은 POST /api/brick/executions 사용.
+   */
   app.post('/api/brick/presets/:presetId/apply', (req, res) => {
     try {
       const preset = db.select().from(brickPresets)
