@@ -93,12 +93,12 @@ def test_op03_artifact_gate_register(gate_executor):
 
 
 @pytest.mark.asyncio
-async def test_op04_artifact_gate_pass(gate_executor, tmp_path):
+async def test_op04_artifact_gate_pass(gate_executor, tmp_path, monkeypatch):
     """OP-04: 파일 존재 → GateResult(passed=True)."""
-    artifact = tmp_path / "output.md"
-    artifact.write_text("done")
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "output.md").write_text("done")
     handler = GateHandler(type="artifact")
-    result = await gate_executor.execute(handler, {"artifacts": [str(artifact)]})
+    result = await gate_executor.execute(handler, {"artifacts": ["output.md"]})
     assert result.passed is True
 
 
@@ -111,13 +111,13 @@ async def test_op05_artifact_gate_fail(gate_executor):
 
 
 @pytest.mark.asyncio
-async def test_op06_artifact_gate_glob(gate_executor, tmp_path):
+async def test_op06_artifact_gate_glob(gate_executor, tmp_path, monkeypatch):
     """OP-06: glob 패턴 매칭 — 복수 파일 존재 확인."""
+    monkeypatch.chdir(tmp_path)
     (tmp_path / "plan.md").write_text("plan")
     (tmp_path / "design.md").write_text("design")
     handler = GateHandler(type="artifact")
-    files = [str(tmp_path / "plan.md"), str(tmp_path / "design.md")]
-    result = await gate_executor.execute(handler, {"artifacts": files})
+    result = await gate_executor.execute(handler, {"artifacts": ["plan.md", "design.md"]})
     assert result.passed is True
     assert "2건" in result.detail
 
@@ -145,16 +145,16 @@ def test_op09_project_var_substitution():
 
 
 @pytest.mark.asyncio
-async def test_op10_gate_fail_retry_loop(gate_executor, tmp_path):
+async def test_op10_gate_fail_retry_loop(gate_executor, tmp_path, monkeypatch):
     """OP-10: artifact Gate 실패 → retry → pass."""
-    artifact = tmp_path / "output.md"
+    monkeypatch.chdir(tmp_path)
     handler = GateHandler(type="artifact")
 
-    r1 = await gate_executor.execute(handler, {"artifacts": [str(artifact)]})
+    r1 = await gate_executor.execute(handler, {"artifacts": ["output.md"]})
     assert r1.passed is False
 
-    artifact.write_text("completed")
-    r2 = await gate_executor.execute(handler, {"artifacts": [str(artifact)]})
+    (tmp_path / "output.md").write_text("completed")
+    r2 = await gate_executor.execute(handler, {"artifacts": ["output.md"]})
     assert r2.passed is True
 
 
