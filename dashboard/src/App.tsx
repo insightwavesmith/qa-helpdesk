@@ -56,7 +56,7 @@ export default function App() {
             <Route path="agents" element={<AgentsPage />} />
             <Route path="routines" element={<RoutinesPage />} />
             <Route path="brick" element={<BrickOverviewPage />} />
-            <Route path="brick/canvas/:id" element={<BrickCanvasPage />} />
+            <Route path="brick/canvas/:presetId" element={<BrickCanvasPage />} />
             <Route path="brick/blocks" element={<BlockCatalogPage />} />
             <Route path="brick/teams" element={<TeamManagePage />} />
             <Route path="brick/teams/:id" element={<TeamDetailPage />} />
