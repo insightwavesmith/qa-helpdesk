@@ -121,7 +121,7 @@ class TestSlackSubscriberLink:
     def test_subscribes_to_link_events(self):
         """link.started, link.completed 구독 등록 확인."""
         bus = EventBus()
-        SlackSubscriber(bus, token="xoxb-test")
+        SlackSubscriber(bus, token="xoxb-test", level="verbose")
 
         assert len(bus._handlers.get("link.started", [])) == 1
         assert len(bus._handlers.get("link.completed", [])) == 1
@@ -135,7 +135,7 @@ class TestSlackSubscriberLink:
         mock_post.return_value = mock_resp
 
         bus = EventBus()
-        SlackSubscriber(bus, token="xoxb-test")
+        SlackSubscriber(bus, token="xoxb-test", level="verbose")
         bus.publish(Event(
             type="link.started",
             data={"from_block": "do", "to_block": "qa", "channel": "slack"},
@@ -155,7 +155,7 @@ class TestSlackSubscriberLink:
         mock_post.return_value = mock_resp
 
         bus = EventBus()
-        SlackSubscriber(bus, token="xoxb-test")
+        SlackSubscriber(bus, token="xoxb-test", level="verbose")
         bus.publish(Event(
             type="link.completed",
             data={"from_block": "do", "to_block": "qa", "channel": "slack"},

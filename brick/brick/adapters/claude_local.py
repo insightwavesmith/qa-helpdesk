@@ -51,6 +51,7 @@ class ClaudeLocalAdapter(TeamAdapter):
         self.continue_session = config.get("continueSession", False)
         self.session_id = config.get("sessionId", "")
         self.role = config.get("role", "")
+        self.project = config.get("project", "")  # P1-B3: 프로젝트 필드
         self._processes: dict[str, asyncio.subprocess.Process] = {}
 
     async def start_block(self, block: Block, context: dict) -> str:
@@ -219,6 +220,8 @@ class ClaudeLocalAdapter(TeamAdapter):
                     status=status,
                     artifacts=state.get("artifacts"),
                     error=state.get("error"),
+                    exit_code=state.get("exit_code"),
+                    stderr=state.get("stderr"),
                 )
 
         # staleness: execution_id에서 타임스탬프 추출
@@ -285,7 +288,17 @@ class ClaudeLocalAdapter(TeamAdapter):
 
     def _build_args(self) -> list[str]:
         """CLI 인자 빌드 (Paperclip execute.ts L419-433 패턴)."""
-        args = ["--print", "-", "--output-format", "stream-json", "--verbose", "--bare"]
+        args = ["--print", "-", "--output-format", "stream-json", "--verbose"]
+        # P1-B3: 프로젝트별 에이전트 오버라이드 → --system-prompt-file / --agent
+        if self.role:
+            if self.project and ".." not in self.project:
+                project_agent = Path(f"brick/projects/{self.project}/agents/{self.role}.md")
+                if project_agent.exists():
+                    args.extend(["--system-prompt-file", str(project_agent)])
+                else:
+                    args.extend(["--agent", self.role])
+            else:
+                args.extend(["--agent", self.role])
         if self.model:
             args += ["--model", self.model]
         if self.skip_permissions:
@@ -298,11 +311,6 @@ class ClaudeLocalAdapter(TeamAdapter):
         if self.session_id:
             args += ["--session-id", self.session_id]
         args.extend(self.extra_args)
-        # role → agents/{role}.md 파일을 --system-prompt-file로 주입
-        if self.role:
-            prompt_path = Path(__file__).parent.parent / "agents" / f"{self.role}.md"
-            if prompt_path.exists():
-                args.extend(["--system-prompt-file", str(prompt_path)])
         return args
 
     def _write_state(self, execution_id: str, data: dict) -> None:

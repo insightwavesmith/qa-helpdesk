@@ -98,6 +98,8 @@ class WorkflowDefinition:
     extends: str | None = None
     overrides: dict = field(default_factory=dict)
     level: int = 2  # L0-L3
+    project: str = ""
+    feature: str = ""
 
     def to_dict(self) -> dict:
         return {
@@ -133,6 +135,8 @@ class WorkflowDefinition:
             },
             "schema": self.schema,
             "level": self.level,
+            "project": self.project,
+            "feature": self.feature,
         }
 
     @classmethod
@@ -177,6 +181,8 @@ class WorkflowDefinition:
             teams=teams,
             schema=data.get("schema", "brick/preset-v2"),
             level=data.get("level", 2),
+            project=data.get("project", ""),
+            feature=data.get("feature", ""),
         )
 
 

@@ -1,0 +1,19 @@
+name: brick-engine
+description: "브릭 엔진 — 워크플로우 오케스트레이션"
+
+tech_stack:
+  - Python 3.11+
+  - FastAPI
+  - SQLite (brick.db)
+  - asyncio
+  - pytest + pytest-asyncio
+
+constraints:
+  - "Python 코어. TypeScript 아님"
+  - "dataclass 기반 모델. Pydantic은 API 계층만"
+  - "asyncio 기반 비동기"
+  - "기존 578 테스트 regression 금지"
+
+agents:
+  cto: cto-lead
+  pm: pm-lead

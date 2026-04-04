@@ -1,0 +1,23 @@
+name: bscamp
+description: "자사몰사관학교 — 메타 광고 자동화 플랫폼"
+
+tech_stack:
+  - Next.js 15 (App Router)
+  - Cloud SQL (PostgreSQL이 아닌 SQLite 주의!)
+  - Firebase Auth
+  - GCS (Google Cloud Storage)
+  - Cloud Run
+  - Tailwind CSS + Pretendard 폰트
+
+constraints:
+  - "DB는 SQLite (better-sqlite3 + drizzle-orm). PostgreSQL 문법 사용 금지"
+  - "배포는 Cloud Run. Vercel 아님"
+  - "포트 3200=Express, 3202=Python 엔진"
+  - "Primary 색상: #F75D5D, hover: #E54949"
+  - "한국어 UI 전용. 영어 라벨 금지"
+  - "라이트 모드만. 다크 모드 토글 없음"
+
+agents:
+  cto: cto-lead
+  pm: pm-lead
+  qa: qa-monitor

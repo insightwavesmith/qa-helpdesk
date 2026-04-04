@@ -55,3 +55,5 @@ class AdapterStatus:
     metrics: dict | None = None
     artifacts: list[str] | None = None
     error: str | None = None
+    exit_code: int | None = None
+    stderr: str | None = None

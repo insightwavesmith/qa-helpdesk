@@ -78,6 +78,14 @@ class PresetLoader:
         else:
             inner = data
 
+        # 축1: {project}/{feature} 변수 치환
+        project = data.get("project", "")
+        feature = data.get("feature", "")
+        if project or feature:
+            yaml_str = yaml.dump(inner)
+            yaml_str = yaml_str.replace("{project}", project).replace("{feature}", feature)
+            inner = yaml.safe_load(yaml_str)
+
         blocks = []
         for b in inner.get("blocks", []):
             done_data = b.get("done", {})
@@ -194,6 +202,8 @@ class PresetLoader:
             extends=data.get("extends"),
             overrides=data.get("overrides", {}),
             level=level,
+            project=project,
+            feature=feature,
         )
 
     def _merge(
@@ -285,9 +295,18 @@ class WorkflowExecutor:
 
         instance = WorkflowInstance.from_definition(workflow_def, feature, task)
 
-        # 프로젝트 컨텍스트 주입 (신규) — project 키 아래 네임스페이스로 병합
+        # P1-B2: 프로젝트 컨텍스트 주입 — project.yaml 로딩 + initial_context 병합
+        project_context: dict = {}
+        project_name = initial_context.get("name", "") if initial_context else ""
+        if not project_name:
+            project_name = workflow_def.project
+        if project_name:
+            project_yaml = self._load_project_yaml(project_name)
+            if project_yaml:
+                project_context = project_yaml
         if initial_context:
-            instance.context["project"] = initial_context
+            project_context = {**project_context, **initial_context}  # initial_context 우선
+        instance.context["project"] = project_context
 
         event = Event(type="workflow.start")
         instance, commands = self.state_machine.transition(instance, event)
@@ -335,6 +354,10 @@ class WorkflowExecutor:
         if not block_inst:
             raise ValueError(f"Block {block_id} not found")
 
+        # 축5-f: done.artifacts → context["done_artifacts"]
+        if block_inst and block_inst.block.done.artifacts:
+            instance.context["done_artifacts"] = block_inst.block.done.artifacts
+
         # QUEUED/PENDING 상태에서 complete 호출 시 먼저 block.started 전이
         if block_inst.status in (BlockStatus.QUEUED, BlockStatus.PENDING):
             started_event = Event(
@@ -364,12 +387,55 @@ class WorkflowExecutor:
         if gate_result.metrics:
             instance.context.update(gate_result.metrics)
 
+        # P1-A1: reject_reason을 context에 주입
+        if not gate_result.passed and gate_result.metadata:
+            reject_reason = gate_result.metadata.get("reject_reason", "")
+            if reject_reason:
+                instance.context["reject_reason"] = reject_reason
+                instance.context["reject_block_id"] = block_id
+                instance.context["reject_count"] = instance.context.get("reject_count", 0) + 1
+        # P1-A1: approve 시 reject_reason 제거
+        if gate_result.passed and "reject_reason" in instance.context:
+            instance.context.pop("reject_reason", None)
+            instance.context.pop("reject_block_id", None)
+            instance.context.pop("reject_count", None)
+
+        # 축5-d: gate 이벤트에 detail/metadata 추가 + P1-A2: reject_reason/retry 포함
         event_type = "block.gate_passed" if gate_result.passed else "block.gate_failed"
-        gate_event = Event(type=event_type, data={"block_id": block_id})
+        gate_event_data = {
+            "block_id": block_id,
+            "workflow_id": workflow_id,
+            "gate_detail": gate_result.detail,
+            "gate_metadata": gate_result.metadata or {},
+        }
+        # P1-A2: gate_failed에 reject_reason, retry_count, max_retries 추가
+        if not gate_result.passed:
+            gate_event_data["reject_reason"] = (
+                gate_result.metadata.get("reject_reason", "") if gate_result.metadata else ""
+            )
+            gate_event_data["retry_count"] = block_inst.retry_count if block_inst else 0
+            gate_event_data["max_retries"] = (
+                block_inst.block.gate.max_retries if block_inst and block_inst.block.gate else 3
+            )
+        # P1-A5: project/feature 자동 주입
+        gate_event_data = self._enrich_event_data(instance, gate_event_data)
+        gate_event = Event(type=event_type, data=gate_event_data)
 
         instance, commands = self.state_machine.transition(instance, gate_event)
         self.checkpoint.save(workflow_id, instance)
         self.checkpoint.save_event(workflow_id, gate_event)
+
+        # 축5-e: approval pending 이벤트 발행
+        if (not gate_result.passed
+                and gate_result.metadata
+                and gate_result.metadata.get("status") == "waiting"):
+            self.event_bus.publish(Event(type="gate.approval_pending", data={
+                "block_id": block_id,
+                "workflow_id": workflow_id,
+                "approver": gate_result.metadata.get("approver", ""),
+                "channel": gate_result.metadata.get("channel", ""),
+                "artifacts": instance.context.get("done_artifacts", []),
+            }))
 
         for cmd in commands:
             instance = await self._execute_command(instance, cmd)
@@ -401,6 +467,7 @@ class WorkflowExecutor:
                 # adapter 없음 → 즉시 adapter_failed
                 event = Event(type="block.adapter_failed", data={
                     "block_id": cmd.block_id,
+                    "workflow_id": instance.id,
                     "error": f"Adapter '{cmd.adapter}' not found in pool",
                 })
                 instance, cmds = self.state_machine.transition(instance, event)
@@ -415,6 +482,10 @@ class WorkflowExecutor:
             try:
                 team_def = instance.definition.teams.get(cmd.block_id)
                 team_config = team_def.config if team_def else {}
+
+                # 축4: team config의 role을 block metadata에 기록
+                if team_def and team_def.config.get("role"):
+                    block_inst.block.metadata["role"] = team_def.config["role"]
 
                 # 프리셋 team_config가 있으면 해당 config로 새 어댑터 인스턴스 생성
                 if team_config:
@@ -455,6 +526,7 @@ class WorkflowExecutor:
             except Exception as e:
                 event = Event(type="block.adapter_failed", data={
                     "block_id": cmd.block_id,
+                    "workflow_id": instance.id,
                     "error": str(e),
                 })
                 instance, cmds = self.state_machine.transition(instance, event)
@@ -508,6 +580,7 @@ class WorkflowExecutor:
             except Exception as e:
                 event = Event(type="block.adapter_failed", data={
                     "block_id": cmd.block_id,
+                    "workflow_id": instance.id,
                     "error": str(e),
                 })
                 instance, cmds = self.state_machine.transition(instance, event)
@@ -618,6 +691,7 @@ class WorkflowExecutor:
                 if time.time() - last_change_time > STALE_HARD_TIMEOUT:
                     event = Event(type="block.adapter_failed", data={
                         "block_id": block_id,
+                        "workflow_id": instance.id,
                         "error": f"Stale 타임아웃: {int(time.time() - last_change_time)}초 간 상태 변화 없음",
                     })
                     async with self._checkpoint_lock:
@@ -646,9 +720,12 @@ class WorkflowExecutor:
                 elif status.status == "failed":
                     event = Event(type="block.adapter_failed", data={
                         "block_id": block_id,
+                        "workflow_id": instance.id,
                         "error": status.error or "Adapter reported failure",
                         "stderr": getattr(status, "stderr", "") or "",
                         "exit_code": getattr(status, "exit_code", None),
+                        "adapter": block_inst.adapter if block_inst else "",
+                        "role": block_inst.block.metadata.get("role", "") if block_inst else "",
                     })
                     async with self._checkpoint_lock:
                         instance, cmds = self.state_machine.transition(instance, event)
@@ -746,6 +823,33 @@ class WorkflowExecutor:
             block_inst.block.metadata["compete_group"] = asdict(group)
             async with self._checkpoint_lock:
                 self.checkpoint.save(instance.id, instance)
+
+    def _enrich_event_data(self, instance: WorkflowInstance, data: dict) -> dict:
+        """P1-A5: 이벤트 data에 project/feature/workflow_id 자동 추가."""
+        project_ctx = instance.context.get("project", {})
+        data.setdefault("project", project_ctx.get("name", "") if isinstance(project_ctx, dict) else "")
+        data.setdefault("feature", instance.feature)
+        data.setdefault("workflow_id", instance.id)
+        return data
+
+    def _load_project_yaml(self, project_name: str) -> dict | None:
+        """P1-B2: brick/projects/{name}/project.yaml 로딩. 없으면 None.
+
+        path traversal 방어: project_name에 '..' 포함 시 거부.
+        """
+        if ".." in project_name:
+            return None
+        candidates = [
+            Path(f"brick/projects/{project_name}/project.yaml"),
+            Path(f"projects/{project_name}/project.yaml"),
+        ]
+        for path in candidates:
+            if path.exists():
+                try:
+                    return yaml.safe_load(path.read_text()) or {}
+                except Exception:
+                    return None
+        return None
 
     def _get_previous_block_id(self, instance: WorkflowInstance, current_block_id: str) -> str | None:
         """링크를 역추적하여 이전 블록 ID 반환."""

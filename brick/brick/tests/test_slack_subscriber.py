@@ -10,7 +10,7 @@ from brick.models.events import Event
 def test_subscribes_to_three_events():
     """구독 이벤트 3종 등록 확인."""
     bus = EventBus()
-    SlackSubscriber(bus, token="xoxb-test")
+    SlackSubscriber(bus, token="xoxb-test", level="verbose")
 
     assert len(bus._handlers.get("block.started", [])) == 1
     assert len(bus._handlers.get("block.completed", [])) == 1
@@ -46,7 +46,7 @@ def test_sends_slack_message(mock_post):
     mock_post.return_value = mock_resp
 
     bus = EventBus()
-    SlackSubscriber(bus, token="xoxb-test")
+    SlackSubscriber(bus, token="xoxb-test", level="verbose")
 
     bus.publish(Event(type="block.started", data={"block_id": "plan"}))
 
@@ -62,7 +62,7 @@ def test_skips_when_no_token(caplog):
     import logging
     with caplog.at_level(logging.WARNING, logger="brick.engine.slack_subscriber"):
         bus = EventBus()
-        SlackSubscriber(bus, token="")
+        SlackSubscriber(bus, token="", level="verbose")
         bus.publish(Event(type="block.started", data={"block_id": "plan"}))
     assert "SLACK_BOT_TOKEN 미설정" in caplog.text
 
