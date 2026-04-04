@@ -18,6 +18,7 @@ from brick.adapters.webhook import WebhookAdapter
 from brick.engine.checkpoint import CheckpointStore
 from brick.engine.event_bus import EventBus
 from brick.engine.executor import PresetLoader, WorkflowExecutor
+from brick.engine.slack_subscriber import SlackSubscriber
 from brick.engine.preset_validator import PresetValidator
 from brick.engine.state_machine import StateMachine
 from brick.engine.validator import Validator
@@ -128,6 +129,9 @@ def init_engine(root: str = ".bkit/") -> None:
         validator=val,
         adapter_pool=adapter_pool,
     )
+
+    # Slack Subscriber — EventBus 구독 (agent-ops 채널 알림)
+    SlackSubscriber(event_bus=eb)
 
     executor = we
     preset_loader = pl
