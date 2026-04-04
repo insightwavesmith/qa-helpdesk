@@ -488,7 +488,10 @@ describe('PresetListPage', () => {
       { id: '1', name: 'PDCA', description: 'PDCA 워크플로우', blockCount: 5, createdAt: '2026-01-01' },
       { id: '2', name: 'CI/CD', description: 'CI/CD 파이프라인', blockCount: 8, createdAt: '2026-01-01' },
     ];
-    mockFetch.mockResolvedValueOnce(mockJsonResponse(presets));
+    // useProjects + usePresets 두 개의 fetch 호출
+    mockFetch
+      .mockResolvedValueOnce(mockJsonResponse([]))      // projects
+      .mockResolvedValueOnce(mockJsonResponse(presets)); // presets
 
     renderWithProviders(<PresetListPage />);
 

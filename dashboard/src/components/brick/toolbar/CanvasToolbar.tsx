@@ -38,7 +38,7 @@ export function CanvasToolbar({
     if (onExecute) {
       onExecute();
     } else {
-      startExecution.mutate(presetId);
+      startExecution.mutate({ presetId, feature: '' });
     }
   }, [onExecute, startExecution, presetId]);
 

@@ -128,7 +128,16 @@ export function GateConfigPanel({
           data-testid={`gate-item-${gate.type}`}
           className="border border-gray-200 rounded p-2 space-y-2"
         >
-          <p className="text-xs font-medium text-gray-600">{GATE_TYPE_LABELS[gate.type]}</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-gray-600">{GATE_TYPE_LABELS[gate.type]}</p>
+            <button
+              data-testid={`gate-delete-${gate.gateId}`}
+              onClick={() => onChange?.(gates.filter((g) => g.gateId !== gate.gateId))}
+              className="text-xs text-red-400 hover:text-red-600"
+            >
+              삭제
+            </button>
+          </div>
 
           {/* command */}
           {gate.type === 'command' && (
@@ -149,6 +158,16 @@ export function GateConfigPanel({
                 onChange={(e) => handleUpdate(gate.gateId, { timeout: Number(e.target.value) })}
                 className="w-full px-2 py-1 text-xs border rounded"
               />
+              <select
+                data-testid="gate-on-failure-select"
+                value={gate.onFailure || 'stop'}
+                onChange={(e) => handleUpdate(gate.gateId, { onFailure: e.target.value as GateConfig['onFailure'] })}
+                className="w-full px-2 py-1 text-xs border rounded"
+              >
+                <option value="stop">중단</option>
+                <option value="skip">건너뛰기</option>
+                <option value="retry">재시도</option>
+              </select>
             </div>
           )}
 
@@ -173,6 +192,14 @@ export function GateConfigPanel({
                 <option value="POST">POST</option>
                 <option value="PUT">PUT</option>
               </select>
+              <input
+                data-testid="gate-status-code-input"
+                type="number"
+                placeholder="기대 상태코드"
+                value={gate.expectedStatus || 200}
+                onChange={(e) => handleUpdate(gate.gateId, { expectedStatus: Number(e.target.value) })}
+                className="w-full px-2 py-1 text-xs border rounded"
+              />
             </div>
           )}
 
@@ -187,6 +214,17 @@ export function GateConfigPanel({
                 className="w-full px-2 py-1 text-xs border rounded"
                 rows={2}
               />
+              <select
+                data-testid="gate-model-select"
+                value={gate.model || ''}
+                onChange={(e) => handleUpdate(gate.gateId, { model: e.target.value })}
+                className="w-full px-2 py-1 text-xs border rounded"
+              >
+                <option value="">모델 선택</option>
+                <option value="claude-opus-4-6">Opus</option>
+                <option value="claude-sonnet-4-6">Sonnet</option>
+                <option value="claude-haiku-4-5">Haiku</option>
+              </select>
               <label className="block text-xs text-gray-400">신뢰도</label>
               <input
                 data-testid="gate-confidence-input"
@@ -197,6 +235,15 @@ export function GateConfigPanel({
                 value={gate.confidence ?? 0.5}
                 onChange={(e) => handleUpdate(gate.gateId, { confidence: Number(e.target.value) })}
                 className="w-full"
+              />
+              <input
+                data-testid="gate-votes-input"
+                type="number"
+                placeholder="투표 수"
+                min="1"
+                value={gate.votes ?? 1}
+                onChange={(e) => handleUpdate(gate.gateId, { votes: Number(e.target.value) })}
+                className="w-full px-2 py-1 text-xs border rounded"
               />
             </div>
           )}
@@ -211,6 +258,23 @@ export function GateConfigPanel({
                 onChange={(e) => handleUpdate(gate.gateId, { agentPrompt: e.target.value })}
                 className="w-full px-2 py-1 text-xs border rounded"
                 rows={2}
+              />
+              <input
+                data-testid="gate-tools-input"
+                type="text"
+                placeholder="도구 (쉼표 구분)"
+                value={gate.tools || ''}
+                onChange={(e) => handleUpdate(gate.gateId, { tools: e.target.value })}
+                className="w-full px-2 py-1 text-xs border rounded"
+              />
+              <input
+                data-testid="gate-max-turns-input"
+                type="number"
+                placeholder="최대 턴 수"
+                min="1"
+                value={gate.maxTurns ?? 5}
+                onChange={(e) => handleUpdate(gate.gateId, { maxTurns: Number(e.target.value) })}
+                className="w-full px-2 py-1 text-xs border rounded"
               />
             </div>
           )}
@@ -228,6 +292,32 @@ export function GateConfigPanel({
                     reviewers: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
                   })
                 }
+                className="w-full px-2 py-1 text-xs border rounded"
+              />
+              <select
+                data-testid="gate-strategy-select"
+                value={gate.strategy || 'any'}
+                onChange={(e) => handleUpdate(gate.gateId, { strategy: e.target.value as GateConfig['strategy'] })}
+                className="w-full px-2 py-1 text-xs border rounded"
+              >
+                <option value="any">1명 이상</option>
+                <option value="all">전원</option>
+                <option value="unanimous">만장일치</option>
+              </select>
+              <input
+                data-testid="gate-review-timeout-input"
+                type="number"
+                placeholder="타임아웃 (시간)"
+                value={gate.reviewTimeout || ''}
+                onChange={(e) => handleUpdate(gate.gateId, { reviewTimeout: Number(e.target.value) })}
+                className="w-full px-2 py-1 text-xs border rounded"
+              />
+              <input
+                data-testid="gate-escalation-input"
+                type="text"
+                placeholder="에스컬레이션 대상"
+                value={gate.escalation || ''}
+                onChange={(e) => handleUpdate(gate.gateId, { escalation: e.target.value })}
                 className="w-full px-2 py-1 text-xs border rounded"
               />
             </div>

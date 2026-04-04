@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { maskTokens } from '../../../lib/brick/mask-tokens';
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
 import type { BlockNodeData } from './types';
@@ -43,6 +44,9 @@ export function BlockNode({ data }: NodeProps) {
   const label = d.label || BLOCK_TYPE_LABELS[d.blockType] || d.blockType;
   const statusIcon = STATUS_ICONS[d.status] ?? '○';
   const isRunning = d.status === 'running';
+  const isApprovalWaiting = d.status === 'gate_checking' && d.gateType === 'approval';
+  const teamName = d.team as string | undefined;
+  const errorMsg = d.error as string | undefined;
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -60,6 +64,16 @@ export function BlockNode({ data }: NodeProps) {
       onContextMenu={handleContextMenu}
     >
       <Handle type="target" position={Position.Top} />
+
+      {/* 승인 대기 뱃지 (BD-027) */}
+      {isApprovalWaiting && (
+        <div
+          data-testid="approval-badge"
+          className="absolute -top-2 -right-2 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-white text-[10px] animate-pulse"
+        >
+          !
+        </div>
+      )}
 
       <div className="px-3 py-2">
         {/* 헤더: 아이콘 + 이름 + 상태 */}
@@ -80,9 +94,9 @@ export function BlockNode({ data }: NodeProps) {
         </div>
 
         {/* 팀 */}
-        {d.team && (
+        {teamName && (
           <div className="mt-1 text-xs text-gray-500">
-            팀: {d.team}
+            팀: {teamName}
           </div>
         )}
 
@@ -97,6 +111,15 @@ export function BlockNode({ data }: NodeProps) {
                 className={`inline-block w-2 h-2 rounded-full ${g.passed ? 'bg-green-500' : 'bg-red-500'}`}
               />
             ))}
+          </div>
+        )}
+        {/* 실패 에러 메시지 (BD-019) */}
+        {d.status === 'failed' && errorMsg && (
+          <div
+            data-testid="block-error"
+            className="text-[10px] text-red-500 mt-1 overflow-hidden whitespace-nowrap text-ellipsis max-w-[200px]"
+          >
+            {maskTokens(errorMsg)}
           </div>
         )}
       </div>

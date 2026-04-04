@@ -5,7 +5,7 @@ import { throttledBlockUpdate } from '../../lib/brick/ws-throttle';
 import type { BlockStatus } from '../../components/brick/nodes/types';
 
 export interface BrickWsMessage {
-  type: 'block' | 'gate' | 'team' | 'review_requested' | 'learning_proposal' | 'execution';
+  type: 'block' | 'gate' | 'team' | 'review_requested' | 'learning_proposal' | 'execution' | 'log';
   data: Record<string, unknown>;
 }
 
@@ -31,11 +31,25 @@ export function useBrickLiveUpdates(options?: { onToast?: ToastFn }) {
           break;
         }
         case 'gate': {
-          onToast?.({
-            title: 'Gate 상태 변경',
-            description: String(msg.data.message ?? ''),
-            variant: 'info',
-          });
+          const { gateType, status: gateStatus } = msg.data as {
+            gateType?: string;
+            status?: string;
+            blockId?: string;
+            message?: string;
+          };
+          if (gateType === 'approval' && gateStatus === 'waiting') {
+            onToast?.({
+              title: '승인 요청',
+              description: `${String(msg.data.blockId ?? '')} 블록이 승인을 대기 중입니다`,
+              variant: 'warning',
+            });
+          } else {
+            onToast?.({
+              title: 'Gate 상태 변경',
+              description: String(msg.data.message ?? ''),
+              variant: 'info',
+            });
+          }
           queryClient.invalidateQueries({ queryKey: ['brick', 'gates'] });
           break;
         }
@@ -67,6 +81,22 @@ export function useBrickLiveUpdates(options?: { onToast?: ToastFn }) {
             store.updateNodeData('__execution__', { isExecuting: false });
           }
           queryClient.invalidateQueries({ queryKey: ['brick', 'executions'] });
+          break;
+        }
+        case 'log': {
+          const { blockId, message, level, timestamp } = msg.data as {
+            blockId: string;
+            message: string;
+            level: string;
+            timestamp: string;
+          };
+          queryClient.setQueryData(
+            ['brick', 'logs', blockId],
+            (old: unknown) => [
+              ...(Array.isArray(old) ? old : []),
+              { blockId, message, level, timestamp },
+            ],
+          );
           break;
         }
       }

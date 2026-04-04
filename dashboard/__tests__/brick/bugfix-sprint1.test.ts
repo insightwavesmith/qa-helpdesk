@@ -75,8 +75,9 @@ function createMockApp(): { app: any; routes: CapturedRoutes } {
   const routes: CapturedRoutes = { get: {}, post: {}, put: {}, delete: {} };
   const app: any = {};
   for (const method of ['get', 'post', 'put', 'delete'] as const) {
-    app[method] = (path: string, handler: HandlerFn) => {
-      routes[method][path] = handler;
+    app[method] = (path: string, ...handlers: HandlerFn[]) => {
+      // 미들웨어 패턴: 마지막 인자가 실제 핸들러
+      routes[method][path] = handlers[handlers.length - 1];
     };
   }
   return { app, routes };

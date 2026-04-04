@@ -198,7 +198,8 @@ describe('DetailPanel', () => {
         selectedEdgeId={null}
       />,
     );
-    expect(screen.getByTestId('block-detail-panel')).toBeTruthy();
+    // Phase 6에서 BlockDetailPanel → ThreeAxisPanel로 교체됨
+    expect(screen.getByTestId('three-axis-panel')).toBeTruthy();
   });
 
   it('bf057_detail_panel_shows_link_detail', () => {
@@ -254,21 +255,21 @@ describe('GateConfigPanel', () => {
     onExecutionModeChange = vi.fn();
   });
 
-  it('bf060_gate_add_button', () => {
+  it('bf060_gate_add_via_checkbox', () => {
     renderWithProviders(
       <GateConfigPanel gates={gates} onChange={onChange} />,
     );
 
-    const addBtn = screen.getByTestId('gate-add-btn');
-    expect(addBtn).toBeTruthy();
-    expect(addBtn.textContent).toBe('Gate 추가');
+    // Phase 6에서 gate-add-btn → 체크박스 그리드(8종)로 변경
+    const commandCheckbox = screen.getByTestId('gate-checkbox-command');
+    expect(commandCheckbox).toBeTruthy();
 
-    fireEvent.click(addBtn);
+    fireEvent.click(commandCheckbox);
     expect(onChange).toHaveBeenCalledTimes(1);
 
     const newGates = onChange.mock.calls[0][0] as GateConfig[];
     expect(newGates).toHaveLength(1);
-    expect(newGates[0].type).toBe('command'); // 기본값
+    expect(newGates[0].type).toBe('command');
   });
 
   it('bf061_gate_command_config', () => {
@@ -439,30 +440,30 @@ describe('Link Type Dialog', () => {
     });
   });
 
-  it('bf068_connect_shows_link_type_dialog', async () => {
+  it('bf068_connect_shows_link_type_popover', async () => {
     renderWithProviders(<BrickCanvasPage />);
 
     // 연결 트리거
     const connectBtn = screen.getByTestId('__trigger-connect');
     fireEvent.click(connectBtn);
 
-    // 다이얼로그가 표시되어야 함
+    // 팝오버가 표시되어야 함 (Phase 5에서 dialog → popover로 변경)
     await waitFor(() => {
-      expect(screen.getByTestId('link-type-dialog')).toBeTruthy();
+      expect(screen.getByTestId('link-type-popover')).toBeTruthy();
     });
 
     // 6개 옵션 확인
-    expect(screen.getByTestId('link-type-option-sequential')).toBeTruthy();
-    expect(screen.getByTestId('link-type-option-parallel')).toBeTruthy();
-    expect(screen.getByTestId('link-type-option-compete')).toBeTruthy();
-    expect(screen.getByTestId('link-type-option-loop')).toBeTruthy();
-    expect(screen.getByTestId('link-type-option-cron')).toBeTruthy();
-    expect(screen.getByTestId('link-type-option-branch')).toBeTruthy();
+    expect(screen.getByTestId('link-type-btn-sequential')).toBeTruthy();
+    expect(screen.getByTestId('link-type-btn-parallel')).toBeTruthy();
+    expect(screen.getByTestId('link-type-btn-compete')).toBeTruthy();
+    expect(screen.getByTestId('link-type-btn-loop')).toBeTruthy();
+    expect(screen.getByTestId('link-type-btn-cron')).toBeTruthy();
+    expect(screen.getByTestId('link-type-btn-branch')).toBeTruthy();
 
-    // 옵션 선택 시 다이얼로그 닫힘
-    fireEvent.click(screen.getByTestId('link-type-option-parallel'));
+    // 옵션 선택 시 팝오버 닫힘
+    fireEvent.click(screen.getByTestId('link-type-btn-parallel'));
     await waitFor(() => {
-      expect(screen.queryByTestId('link-type-dialog')).toBeNull();
+      expect(screen.queryByTestId('link-type-popover')).toBeNull();
     });
   });
 });

@@ -287,7 +287,9 @@ describe('Phase 7: Scratch UX (BF-136 ~ BF-145)', () => {
   it('bf143_preset_remix_duplicate', () => {
     render(
       <QueryClientProvider client={createQueryClient()}>
-        <PresetListPage />
+        <MemoryRouter>
+          <PresetListPage />
+        </MemoryRouter>
       </QueryClientProvider>,
     );
 
