@@ -424,6 +424,7 @@ class WorkflowExecutor:
         instance, commands = self.state_machine.transition(instance, gate_event)
         self.checkpoint.save(workflow_id, instance)
         self.checkpoint.save_event(workflow_id, gate_event)
+        self.event_bus.publish(gate_event)
 
         # 축5-e: approval pending 이벤트 발행
         if (not gate_result.passed

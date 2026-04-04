@@ -303,7 +303,10 @@ class ClaudeLocalAdapter(TeamAdapter):
         args = ["--print", "-", "--output-format", "stream-json", "--verbose"]
         # P1-B3: 프로젝트별 에이전트 오버라이드 → --system-prompt-file / --agent
         if self.role:
-            if self.project and ".." not in self.project:
+            if '..' in self.role:
+                import logging
+                logging.getLogger(__name__).warning('role에 path traversal 감지: %s', self.role)
+            elif self.project and ".." not in self.project:
                 project_agent = Path(f"brick/projects/{self.project}/agents/{self.role}.md")
                 if project_agent.exists():
                     args.extend(["--system-prompt-file", str(project_agent)])
