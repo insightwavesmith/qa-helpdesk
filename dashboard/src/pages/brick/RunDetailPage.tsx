@@ -1,6 +1,8 @@
 import { useParams } from 'react-router-dom';
-import { useExecutionStatus, useExecutionLogs } from '../../hooks/brick/useExecutions';
+import { useExecutionStatus, useExecutionLogs, usePauseExecution, useCancelExecution } from '../../hooks/brick/useExecutions';
 import { ExecutionTimeline, type TimelineEvent } from '../../components/brick/timeline/ExecutionTimeline';
+import { RunProgressBar, type RunProgressBarBlock } from '../../components/brick/RunProgressBar';
+import type { BlockStatus } from '../../components/brick/nodes/types';
 
 const STATUS_LABELS: Record<string, string> = {
   running: '실행 중',
@@ -14,6 +16,8 @@ export function RunDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: execution, isLoading: statusLoading } = useExecutionStatus(id ?? null);
   const { data: logs, isLoading: logsLoading } = useExecutionLogs(id ?? null);
+  const pauseExecution = usePauseExecution();
+  const cancelExecution = useCancelExecution();
 
   if (!id) {
     return <p className="p-6 text-gray-500">실행 ID가 없습니다</p>;
@@ -30,9 +34,65 @@ export function RunDetailPage() {
     error: log.error ? String(log.error) : undefined,
   }));
 
+  // blocksState JSON 파싱 → RunProgressBar 블록 목록
+  let progressBlocks: RunProgressBarBlock[] = [];
+  if (execution?.blocksState) {
+    try {
+      const blocksState: Record<string, { status: string; label?: string }> =
+        typeof execution.blocksState === 'string'
+          ? JSON.parse(execution.blocksState)
+          : execution.blocksState;
+      progressBlocks = Object.entries(blocksState).map(([blockId, state]) => ({
+        id: blockId,
+        status: (state.status as BlockStatus) || 'pending',
+        label: state.label ?? blockId,
+      }));
+    } catch {
+      // 파싱 실패 시 빈 배열
+    }
+  }
+
+  const isRunning = execution?.status === 'running';
+
   return (
     <div data-testid="run-detail-page" className="p-6">
-      <h1 className="text-xl font-bold mb-4">실행 상세</h1>
+      {/* 헤더: 실행명 + 상태 + 제어 버튼 */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-bold">
+            {execution?.feature ?? id}
+          </h1>
+          <span className="text-sm text-gray-500">
+            {STATUS_LABELS[execution?.status] ?? execution?.status ?? '-'}
+          </span>
+        </div>
+        <div className="flex gap-2">
+          {isRunning && (
+            <button
+              data-testid="pause-btn"
+              onClick={() => pauseExecution.mutate(id)}
+              className="px-3 py-1.5 text-sm rounded border border-gray-300 hover:bg-gray-50"
+            >
+              ⏸ 일시정지
+            </button>
+          )}
+          <button
+            data-testid="cancel-btn"
+            onClick={() => cancelExecution.mutate(execution?.engineWorkflowId ?? id)}
+            className="px-3 py-1.5 text-sm rounded border border-red-300 text-red-500 hover:bg-red-50"
+          >
+            ⏹ 중지
+          </button>
+        </div>
+      </div>
+
+      {/* 블록 진행률 */}
+      {progressBlocks.length > 0 && (
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <h2 className="text-sm font-semibold mb-3">진행 상황</h2>
+          <RunProgressBar blocks={progressBlocks} />
+        </div>
+      )}
 
       {/* 메타데이터 */}
       <div data-testid="execution-metadata" className="mb-6 p-4 bg-gray-50 rounded-lg">

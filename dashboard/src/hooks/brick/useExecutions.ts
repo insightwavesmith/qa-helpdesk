@@ -37,17 +37,23 @@ export function useExecutions(options?: { status?: string; limit?: number }) {
 }
 
 // ── 실행 시작 ──
+export interface StartExecutionInput {
+  presetId: string;
+  feature: string;
+  task?: string;
+}
+
 export function useStartExecution() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (presetId: string) => {
+    mutationFn: async (input: StartExecutionInput) => {
       const res = await fetch('/api/brick/executions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ presetId }),
+        body: JSON.stringify(input),
       });
       if (!res.ok) throw new Error('실행 시작 실패');
-      return res.json();
+      return res.json() as Promise<{ id: string }>;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brick', 'executions'] });
