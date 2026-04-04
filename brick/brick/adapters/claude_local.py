@@ -189,6 +189,7 @@ class ClaudeLocalAdapter(TeamAdapter):
             self._write_state(execution_id, {
                 "status": "failed",
                 "error": first_line or f"exit code {exit_code}",
+                "exit_code": exit_code,
                 "stderr": stderr_str,
             })
 
