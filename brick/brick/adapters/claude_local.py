@@ -62,6 +62,17 @@ class ClaudeLocalAdapter(TeamAdapter):
         args = self._build_args()
         prompt = f"TASK: {block.what}\n\nCONTEXT:\n{json.dumps(context)}"
 
+        # P1-A1: reject_reason 프롬프트 주입 — 반려 시 에이전트에 사유 전달
+        reject_reason = context.get('reject_reason', '')
+        if reject_reason:
+            reject_count = context.get('reject_count', 1)
+            prompt = (
+                f'⚠️ 이전 산출물이 반려됨 (시도 {reject_count}회)\n'
+                f'반려 사유: {reject_reason}\n'
+                f'이 부분을 수정하여 다시 작성해라.\n\n'
+                + prompt
+            )
+
         # 상태 파일 초기화
         self._write_state(execution_id, {
             "status": "running",

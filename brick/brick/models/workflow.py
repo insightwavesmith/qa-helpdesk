@@ -100,6 +100,7 @@ class WorkflowDefinition:
     level: int = 2  # L0-L3
     project: str = ""
     feature: str = ""
+    notifications: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {

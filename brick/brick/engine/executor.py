@@ -835,18 +835,20 @@ class WorkflowExecutor:
     def _load_project_yaml(self, project_name: str) -> dict | None:
         """P1-B2: brick/projects/{name}/project.yaml 로딩. 없으면 None.
 
-        path traversal 방어: project_name에 '..' 포함 시 거부.
+        path traversal 방어: Path.resolve() 기반 화이트리스트.
         """
-        if ".." in project_name:
-            return None
         candidates = [
-            Path(f"brick/projects/{project_name}/project.yaml"),
-            Path(f"projects/{project_name}/project.yaml"),
+            Path("brick/projects"),
+            Path("projects"),
         ]
-        for path in candidates:
-            if path.exists():
+        for base in candidates:
+            safe_base = base.resolve()
+            candidate = (base / project_name / "project.yaml").resolve()
+            if not str(candidate).startswith(str(safe_base)):
+                return None
+            if candidate.exists():
                 try:
-                    return yaml.safe_load(path.read_text()) or {}
+                    return yaml.safe_load(candidate.read_text()) or {}
                 except Exception:
                     return None
         return None

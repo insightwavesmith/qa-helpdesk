@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import shlex
+import os
 import signal
 from pathlib import Path
 
@@ -470,6 +471,14 @@ class ConcreteGateExecutor(GateExecutor):
 
         missing = []
         for path_str in artifacts:
+            # P1: path traversal 방어 — '..' 또는 절대경로 거부
+            if '..' in path_str or os.path.isabs(path_str):
+                return GateResult(
+                    passed=False,
+                    detail=f"경로 보안 위반: {path_str}",
+                    type="artifact",
+                    metadata={"blocked_path": path_str},
+                )
             p = Path(path_str)
             if not p.exists():
                 missing.append(path_str)

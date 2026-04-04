@@ -26,6 +26,8 @@ TIMEOUT = 5  # seconds
 _SENSITIVE_PATTERNS = [
     (re.compile(r'(SLACK_BOT_TOKEN|API_KEY|SECRET|PASSWORD|TOKEN)=[^\s]+', re.I), r'\1=***'),
     (re.compile(r'(Bearer\s+)[^\s]+', re.I), r'\1***'),
+    (re.compile(r'xox[bp]-[0-9a-zA-Z\-]+'), '***'),
+    (re.compile(r'sk-[0-9a-zA-Z]{20,}'), '***'),
 ]
 
 

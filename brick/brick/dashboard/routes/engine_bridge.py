@@ -138,7 +138,7 @@ def init_engine(root: str = ".bkit/") -> None:
     )
 
     # Slack Subscriber — EventBus 구독 (agent-ops 채널 알림)
-    SlackSubscriber(event_bus=eb)
+    SlackSubscriber(event_bus=eb, level="basic")  # P1-A3: notifications.level 와이어링
 
     executor = we
     preset_loader = pl
