@@ -400,6 +400,36 @@ class WorkflowExecutor:
             instance.context.pop("reject_block_id", None)
             instance.context.pop("reject_count", None)
 
+        # BRK-QA-003: approval waiting → WAITING_APPROVAL 상태 전환 (state_machine 우회)
+        if (not gate_result.passed
+                and gate_result.metadata
+                and gate_result.metadata.get("status") == "waiting"):
+            # deepcopy된 instance에서 block을 가져와야 checkpoint에 반영됨
+            current_block = instance.blocks.get(block_id)
+            if current_block:
+                current_block.status = BlockStatus.WAITING_APPROVAL
+
+            gate_event_data = self._enrich_event_data(instance, {
+                "block_id": block_id,
+                "workflow_id": workflow_id,
+                "gate_detail": gate_result.detail,
+                "gate_metadata": gate_result.metadata or {},
+            })
+            gate_event = Event(type="block.gate_failed", data=gate_event_data)
+            self.checkpoint.save(workflow_id, instance)
+            self.checkpoint.save_event(workflow_id, gate_event)
+            self.event_bus.publish(gate_event)
+
+            self.event_bus.publish(Event(type="gate.approval_pending", data={
+                "block_id": block_id,
+                "workflow_id": workflow_id,
+                "approver": gate_result.metadata.get("approver", ""),
+                "channel": gate_result.metadata.get("channel", ""),
+                "artifacts": instance.context.get("done_artifacts", []),
+            }))
+
+            return gate_result
+
         # 축5-d: gate 이벤트에 detail/metadata 추가 + P1-A2: reject_reason/retry 포함
         event_type = "block.gate_passed" if gate_result.passed else "block.gate_failed"
         gate_event_data = {
@@ -425,18 +455,6 @@ class WorkflowExecutor:
         self.checkpoint.save(workflow_id, instance)
         self.checkpoint.save_event(workflow_id, gate_event)
         self.event_bus.publish(gate_event)
-
-        # 축5-e: approval pending 이벤트 발행
-        if (not gate_result.passed
-                and gate_result.metadata
-                and gate_result.metadata.get("status") == "waiting"):
-            self.event_bus.publish(Event(type="gate.approval_pending", data={
-                "block_id": block_id,
-                "workflow_id": workflow_id,
-                "approver": gate_result.metadata.get("approver", ""),
-                "channel": gate_result.metadata.get("channel", ""),
-                "artifacts": instance.context.get("done_artifacts", []),
-            }))
 
         for cmd in commands:
             instance = await self._execute_command(instance, cmd)

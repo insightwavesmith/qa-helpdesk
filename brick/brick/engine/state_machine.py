@@ -120,7 +120,7 @@ class StateMachine:
                 commands.append(SaveCheckpointCommand())
 
         elif event.type == "block.completed":
-            if block_inst.status == BlockStatus.RUNNING:
+            if block_inst.status in (BlockStatus.RUNNING, BlockStatus.WAITING_APPROVAL):
                 block_inst.status = BlockStatus.GATE_CHECKING
                 block_inst.artifacts = event.data.get("artifacts", [])
                 block_inst.metrics = event.data.get("metrics", {})
