@@ -2,32 +2,40 @@
 
 from __future__ import annotations
 
+from typing import Callable, Awaitable
+
 from brick.models.block import GateHandler, GateConfig
 from brick.models.gate import GateResult
 from brick.models.workflow import BlockInstance
+
+# Type alias for gate handler functions
+GateHandlerFn = Callable[[GateHandler, dict], Awaitable[GateResult]]
 
 
 class GateExecutor:
     """Executes gate handlers (command, http, prompt, agent)."""
 
+    def __init__(self):
+        self._handlers: dict[str, GateHandlerFn] = {}
+        self._register_builtins()
+
+    def _register_builtins(self) -> None:
+        """Subclasses override to register built-in handlers."""
+        pass
+
+    def register_gate(self, type_name: str, handler: GateHandlerFn) -> None:
+        """Register external gate handler. Overwrites existing type."""
+        self._handlers[type_name] = handler
+
+    def registered_gate_types(self) -> set[str]:
+        """Registered gate type names. Used by PresetValidator."""
+        return set(self._handlers.keys())
+
     async def execute(self, handler: GateHandler, context: dict) -> GateResult:
-        match handler.type:
-            case "command":
-                return await self._run_command(handler, context)
-            case "http":
-                return await self._run_http(handler, context)
-            case "prompt":
-                return await self._run_prompt(handler, context)
-            case "agent":
-                return await self._run_agent(handler, context)
-            case "review":
-                return await self._run_review(handler, context)
-            case "metric":
-                return await self._run_metric(handler, context)
-            case "approval":
-                return await self._run_approval(handler, context)
-            case _:
-                raise ValueError(f"Unknown gate type: {handler.type}")
+        fn = self._handlers.get(handler.type)
+        if fn is None:
+            raise ValueError(f"Unknown gate type: {handler.type}")
+        return await fn(handler, context)
 
     async def run_gates(self, block_instance: BlockInstance, context: dict) -> GateResult:
         gate_config = block_instance.block.gate
@@ -70,24 +78,3 @@ class GateExecutor:
             passed=majority,
             detail=f"Vote: {passed_count}/{total} passed",
         )
-
-    async def _run_command(self, handler: GateHandler, context: dict) -> GateResult:
-        raise NotImplementedError("Command gate not implemented in base")
-
-    async def _run_http(self, handler: GateHandler, context: dict) -> GateResult:
-        raise NotImplementedError("HTTP gate not implemented in base")
-
-    async def _run_prompt(self, handler: GateHandler, context: dict) -> GateResult:
-        raise NotImplementedError("Prompt gate not implemented in base")
-
-    async def _run_agent(self, handler: GateHandler, context: dict) -> GateResult:
-        raise NotImplementedError("Agent gate not implemented in base")
-
-    async def _run_review(self, handler: GateHandler, context: dict) -> GateResult:
-        raise NotImplementedError("Review gate not implemented in base")
-
-    async def _run_metric(self, handler: GateHandler, context: dict) -> GateResult:
-        raise NotImplementedError("Metric gate not implemented in base")
-
-    async def _run_approval(self, handler: GateHandler, context: dict) -> GateResult:
-        raise NotImplementedError("Approval gate not implemented in base")

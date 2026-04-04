@@ -9,16 +9,19 @@ from pydantic import BaseModel
 
 from brick.dashboard.middleware.auth import verify_brick_api_key
 
+from brick.adapters.base import TeamAdapter
 from brick.adapters.claude_agent_teams import ClaudeAgentTeamsAdapter
 from brick.adapters.claude_code import ClaudeCodeAdapter
+from brick.adapters.claude_local import ClaudeLocalAdapter
 from brick.adapters.human import HumanAdapter
 from brick.adapters.webhook import WebhookAdapter
 from brick.engine.checkpoint import CheckpointStore
 from brick.engine.event_bus import EventBus
 from brick.engine.executor import PresetLoader, WorkflowExecutor
+from brick.engine.preset_validator import PresetValidator
 from brick.engine.state_machine import StateMachine
 from brick.engine.validator import Validator
-from brick.gates.base import GateExecutor
+from brick.gates.concrete import ConcreteGateExecutor
 from brick.models.events import (
     BlockStatus,
     Event,
@@ -26,6 +29,34 @@ from brick.models.events import (
     WorkflowStatus,
 )
 from brick.models.workflow import WorkflowInstance
+
+class AdapterRegistry:
+    """dict 호환 어댑터 레지스트리. WorkflowExecutor adapter_pool 대체."""
+
+    def __init__(self):
+        self._adapters: dict[str, TeamAdapter] = {}
+
+    def register(self, name: str, adapter: TeamAdapter) -> None:
+        self._adapters[name] = adapter
+
+    def get(self, name: str) -> TeamAdapter:
+        if name not in self._adapters:
+            raise KeyError(f"Unknown adapter: {name}")
+        return self._adapters[name]
+
+    def registered_adapter_types(self) -> set[str]:
+        return set(self._adapters.keys())
+
+    # dict 호환 (WorkflowExecutor 무변경)
+    def __getitem__(self, name: str) -> TeamAdapter:
+        return self.get(name)
+
+    def __contains__(self, name: str) -> bool:
+        return name in self._adapters
+
+    def items(self):
+        return self._adapters.items()
+
 
 router = APIRouter(
     prefix="/engine",
@@ -71,16 +102,22 @@ def init_engine(root: str = ".bkit/") -> None:
     sm = StateMachine()
     eb = EventBus()
     cs = CheckpointStore(base_dir=root_path / "runtime" / "workflows")
-    ge = GateExecutor()
+    ge = ConcreteGateExecutor()
     val = Validator()
     pl = PresetLoader(presets_dir=root_path / "presets")
 
-    adapter_pool = {
-        "claude_agent_teams": ClaudeAgentTeamsAdapter({}),
-        "claude_code": ClaudeCodeAdapter({}),
-        "webhook": WebhookAdapter({}),
-        "human": HumanAdapter({}),
-    }
+    adapter_pool = AdapterRegistry()
+    adapter_pool.register("claude_agent_teams", ClaudeAgentTeamsAdapter({}))
+    adapter_pool.register("claude_code", ClaudeCodeAdapter({}))
+    adapter_pool.register("claude_local", ClaudeLocalAdapter({}))
+    adapter_pool.register("webhook", WebhookAdapter({}))
+    adapter_pool.register("human", HumanAdapter({}))
+
+    preset_validator = PresetValidator(
+        gate_types=ge.registered_gate_types(),
+        link_types=sm.registered_link_types(),
+        adapter_types=adapter_pool.registered_adapter_types(),
+    )
 
     we = WorkflowExecutor(
         state_machine=sm,

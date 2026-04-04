@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import copy
 import time
+from dataclasses import dataclass, field
+from typing import Callable
 
 from brick.models.events import (
     Event, Command, StartBlockCommand, CheckGateCommand,
@@ -13,9 +15,41 @@ from brick.models.events import (
 )
 from brick.models.workflow import WorkflowInstance, BlockInstance
 
+# Type alias for link handler functions
+LinkHandlerFn = Callable[["LinkDefinition", WorkflowInstance, str, dict], "LinkResolveResult"]
+
+
+@dataclass
+class LinkResolveResult:
+    """Result returned by each link handler."""
+    next_ids: list[str]
+    commands: list[Command]
+    context_updates: dict = field(default_factory=dict)
+
 
 class StateMachine:
     """Pure functional state machine. transition() returns a NEW WorkflowInstance."""
+
+    def __init__(self):
+        self._link_handlers: dict[str, LinkHandlerFn] = {}
+        self._register_builtins()
+        self._extra_link_commands: list[Command] = []
+
+    def _register_builtins(self) -> None:
+        self.register_link("sequential", self._resolve_sequential)
+        self.register_link("loop", self._resolve_loop)
+        self.register_link("branch", self._resolve_branch)
+        self.register_link("parallel", self._resolve_parallel)
+        self.register_link("compete", self._resolve_compete)
+        self.register_link("cron", self._resolve_cron)
+
+    def register_link(self, type_name: str, handler: LinkHandlerFn) -> None:
+        """Register external link handler. Overwrites existing type."""
+        self._link_handlers[type_name] = handler
+
+    def registered_link_types(self) -> set[str]:
+        """Registered link type names. Used by PresetValidator."""
+        return set(self._link_handlers.keys())
 
     def transition(
         self, workflow: WorkflowInstance, event: Event
@@ -98,11 +132,10 @@ class StateMachine:
                 block_inst.completed_at = time.time()
 
                 # Find next block via links
-                self._compete_commands = []
                 next_blocks = self._find_next_blocks(wf, block_id)
 
-                # compete commands 추가
-                for cc in self._compete_commands:
+                # extra link commands 추가 (compete 등)
+                for cc in self._extra_link_commands:
                     commands.append(cc)
 
                 if next_blocks:
@@ -114,7 +147,7 @@ class StateMachine:
                             block_id=next_id,
                             adapter=next_block.adapter,
                         ))
-                elif not self._compete_commands:
+                elif not self._extra_link_commands:
                     # Check if all blocks completed
                     if self._all_blocks_completed(wf):
                         wf.status = WorkflowStatus.COMPLETED
@@ -201,66 +234,82 @@ class StateMachine:
         self, wf: WorkflowInstance, block_id: str
     ) -> list[str]:
         """link type과 condition을 평가하여 다음 블록 결정."""
-        from brick.engine.condition_evaluator import evaluate_condition
-
-        next_ids = []
+        next_ids: list[str] = []
+        extra_commands: list[Command] = []
         context = wf.context
 
         for link in wf.definition.links:
             if link.from_block != block_id:
                 continue
 
-            if link.type == "sequential":
-                next_ids.append(link.to_block)
+            handler = self._link_handlers.get(link.type)
+            if handler is None:
+                continue  # 미등록 링크 타입 → 무시 (안전)
 
-            elif link.type == "loop":
-                if evaluate_condition(link.condition, context):
-                    loop_key = f"_loop_{block_id}_{link.to_block}"
-                    loop_count = context.get(loop_key, 0)
-                    max_iter = link.max_retries
-                    if loop_count < max_iter:
-                        context[loop_key] = loop_count + 1
-                        next_ids.append(link.to_block)
+            result = handler(link, wf, block_id, context)
+            next_ids.extend(result.next_ids)
+            extra_commands.extend(result.commands)
+            context.update(result.context_updates)
 
-            elif link.type == "branch":
-                if evaluate_condition(link.condition, context):
-                    next_ids.append(link.to_block)
-
-            elif link.type == "parallel":
-                next_ids.append(link.to_block)
-
-            elif link.type == "compete":
-                if link.teams:
-                    # compete: 여러 팀 경쟁 → CompeteStartCommand 발행
-                    # _compete_commands에 저장 (호출부에서 처리)
-                    if not hasattr(self, '_compete_commands'):
-                        self._compete_commands = []
-                    self._compete_commands.append(CompeteStartCommand(
-                        block_id=link.to_block,
-                        teams=link.teams,
-                        judge=link.judge or {},
-                    ))
-                    # next_ids에 추가하지 않음 — CompeteStartCommand가 별도 처리
-                else:
-                    # teams 미지정 → sequential과 동일 (하위호환)
-                    next_ids.append(link.to_block)
-
-            elif link.type == "cron":
-                # cron은 즉시 큐잉하지 않음 → 스케줄러에 등록
-                if hasattr(self, 'cron_scheduler') and self.cron_scheduler:
-                    from brick.engine.cron_scheduler import CronJob
-                    to_block = wf.blocks.get(link.to_block)
-                    self.cron_scheduler.register(CronJob(
-                        workflow_id=wf.id,
-                        from_block_id=block_id,
-                        to_block_id=link.to_block,
-                        adapter=to_block.adapter if to_block else "",
-                        schedule=link.schedule or "0 * * * *",  # 기본: 매시간
-                        max_runs=link.max_retries or 999,
-                    ))
-                # next_ids에 추가하지 않음 — 스케줄러가 나중에 큐잉
-
+        # 호출부에서 처리할 부가 커맨드 저장
+        self._extra_link_commands = extra_commands
         return next_ids
+
+    # ── 빌트인 링크 핸들러 (로직 변경 0) ────────────────────────────────
+
+    def _resolve_sequential(self, link, wf, block_id, context) -> LinkResolveResult:
+        return LinkResolveResult(next_ids=[link.to_block], commands=[], context_updates={})
+
+    def _resolve_loop(self, link, wf, block_id, context) -> LinkResolveResult:
+        from brick.engine.condition_evaluator import evaluate_condition
+        if evaluate_condition(link.condition, context):
+            loop_key = f"_loop_{block_id}_{link.to_block}"
+            loop_count = context.get(loop_key, 0)
+            max_iter = link.max_retries
+            if loop_count < max_iter:
+                return LinkResolveResult(
+                    next_ids=[link.to_block],
+                    commands=[],
+                    context_updates={loop_key: loop_count + 1},
+                )
+        return LinkResolveResult(next_ids=[], commands=[], context_updates={})
+
+    def _resolve_branch(self, link, wf, block_id, context) -> LinkResolveResult:
+        from brick.engine.condition_evaluator import evaluate_condition
+        if evaluate_condition(link.condition, context):
+            return LinkResolveResult(next_ids=[link.to_block], commands=[], context_updates={})
+        return LinkResolveResult(next_ids=[], commands=[], context_updates={})
+
+    def _resolve_parallel(self, link, wf, block_id, context) -> LinkResolveResult:
+        return LinkResolveResult(next_ids=[link.to_block], commands=[], context_updates={})
+
+    def _resolve_compete(self, link, wf, block_id, context) -> LinkResolveResult:
+        if link.teams:
+            return LinkResolveResult(
+                next_ids=[],
+                commands=[CompeteStartCommand(
+                    block_id=link.to_block,
+                    teams=link.teams,
+                    judge=link.judge or {},
+                )],
+                context_updates={},
+            )
+        # teams 미지정 → sequential과 동일 (하위호환)
+        return LinkResolveResult(next_ids=[link.to_block], commands=[], context_updates={})
+
+    def _resolve_cron(self, link, wf, block_id, context) -> LinkResolveResult:
+        if hasattr(self, 'cron_scheduler') and self.cron_scheduler:
+            from brick.engine.cron_scheduler import CronJob
+            to_block = wf.blocks.get(link.to_block)
+            self.cron_scheduler.register(CronJob(
+                workflow_id=wf.id,
+                from_block_id=block_id,
+                to_block_id=link.to_block,
+                adapter=to_block.adapter if to_block else "",
+                schedule=link.schedule or "0 * * * *",
+                max_runs=link.max_retries or 999,
+            ))
+        return LinkResolveResult(next_ids=[], commands=[], context_updates={})
 
     def _all_blocks_completed(self, wf: WorkflowInstance) -> bool:
         return all(

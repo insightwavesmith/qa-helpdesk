@@ -23,6 +23,16 @@ class ConcreteGateExecutor(GateExecutor):
     def __init__(self, llm_client=None, agent_runner=None):
         self.llm_client = llm_client
         self.agent_runner = agent_runner
+        super().__init__()  # → _register_builtins() 호출
+
+    def _register_builtins(self) -> None:
+        self.register_gate("command", self._run_command)
+        self.register_gate("http", self._run_http)
+        self.register_gate("prompt", self._run_prompt)
+        self.register_gate("agent", self._run_agent)
+        self.register_gate("review", self._run_review)
+        self.register_gate("metric", self._run_metric)
+        self.register_gate("approval", self._run_approval)
 
     # ── command gate ──────────────────────────────────────────
 

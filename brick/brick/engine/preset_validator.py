@@ -5,10 +5,11 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-VALID_LINK_TYPES = {"sequential", "parallel", "compete", "loop", "cron", "branch"}
-VALID_GATE_TYPES = {"command", "http", "prompt", "agent", "review", "metric", "approval"}
-VALID_ADAPTERS = {"claude_agent_teams", "claude_code", "codex", "human",
-                  "human_management", "management", "mcp_bridge", "webhook"}
+# 기본값 상수 (하위호환 — 레지스트리 미전달 시 사용)
+DEFAULT_LINK_TYPES = {"sequential", "parallel", "compete", "loop", "cron", "branch"}
+DEFAULT_GATE_TYPES = {"command", "http", "prompt", "agent", "review", "metric", "approval"}
+DEFAULT_ADAPTERS = {"claude_agent_teams", "claude_code", "claude_local", "codex", "human",
+                    "human_management", "management", "mcp_bridge", "webhook"}
 
 
 @dataclass
@@ -20,6 +21,17 @@ class ValidationError:
 
 class PresetValidator:
     """프리셋 로드 시 스키마 검증. 에러가 있으면 워크플로우 시작을 차단."""
+
+    def __init__(
+        self,
+        gate_types: set[str] | None = None,
+        link_types: set[str] | None = None,
+        adapter_types: set[str] | None = None,
+    ):
+        # 레지스트리 미전달 시 기존 상수를 기본값으로 (하위호환)
+        self._gate_types = gate_types if gate_types is not None else DEFAULT_GATE_TYPES
+        self._link_types = link_types if link_types is not None else DEFAULT_LINK_TYPES
+        self._adapter_types = adapter_types if adapter_types is not None else DEFAULT_ADAPTERS
 
     def validate(self, definition: 'WorkflowDefinition') -> list[ValidationError]:
         errors: list[ValidationError] = []
@@ -56,7 +68,7 @@ class PresetValidator:
                 ))
 
             # 링크 타입 유효성
-            if link.type not in VALID_LINK_TYPES:
+            if link.type not in self._link_types:
                 errors.append(ValidationError(
                     field=f"links[{i}].type",
                     message=f"알 수 없는 링크 타입: '{link.type}'",
@@ -94,7 +106,7 @@ class PresetValidator:
                 ))
             else:
                 team = definition.teams[block.id]
-                if team.adapter not in VALID_ADAPTERS:
+                if team.adapter not in self._adapter_types:
                     errors.append(ValidationError(
                         field=f"teams[{block.id}].adapter",
                         message=f"알 수 없는 어댑터: '{team.adapter}'",
@@ -105,7 +117,7 @@ class PresetValidator:
         for block in definition.blocks:
             if block.gate:
                 for j, handler in enumerate(block.gate.handlers):
-                    if handler.type not in VALID_GATE_TYPES:
+                    if handler.type not in self._gate_types:
                         errors.append(ValidationError(
                             field=f"blocks[{block.id}].gate.handlers[{j}].type",
                             message=f"알 수 없는 게이트 타입: '{handler.type}'",
