@@ -1,9 +1,9 @@
 {
-  "feature": "brick-project-layer",
-  "phase": "do",
+  "feature": "brick-3axis-plugin",
+  "phase": "completed",
   "status": "completed",
-  "updatedAt": "2026-04-04T09:15:51.976082",
-  "notes": "TASK 1: 프로젝트 레이어(PL-001~034) 완료. TASK 2: 프론트 Phase 6~7(BF-121~145) 100% 확인. 긴급수정 INV-EB-3 9가지 + ceo_approval Approval 타입 완료.",
+  "updatedAt": "2026-04-04T09:50:26.605243",
+  "notes": "3축 플러그인 레지스트리(Gate/Link/Adapter) + claude_local 어댑터. TDD 45/45 + 회귀 51/51 = 96건 전체 통과.",
   "matchRate": 100,
   "features": {
     "hook-hardening-v2": {
@@ -64,7 +64,7 @@
       "automationLevel": 2
     }
   },
-  "primaryFeature": "prescription-pipeline-v3",
-  "lastUpdated": "2026-04-03T19:49:58.529178",
-  "_autoSyncNote": "auto-synced at 2026-04-04 09:15:51, last commit: e45db3b8"
+  "primaryFeature": "brick-3axis-plugin",
+  "lastUpdated": "2026-04-04T00:40:03.947884+00:00",
+  "_autoSyncNote": "auto-synced at 2026-04-04 09:50:26, last commit: 3e6e4a5e"
 }
