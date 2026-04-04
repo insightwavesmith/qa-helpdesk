@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -16,23 +16,16 @@ import '@xyflow/react/dist/style.css';
 import { brickNodeTypes } from '../../components/brick/nodes';
 import { brickEdgeTypes } from '../../components/brick/edges';
 import { BlockSidebar } from '../../components/brick/BlockSidebar';
-import { LINK_TYPES, STATUS_BORDER_COLORS, type BlockType, type BlockStatus, type LinkType } from '../../components/brick/nodes/types';
+import { STATUS_BORDER_COLORS, type BlockType, type BlockStatus, type LinkType } from '../../components/brick/nodes/types';
 import { validateConnection } from '../../lib/brick/connection-validator';
 import { yamlToFlow, flowToYamlFull } from '../../lib/brick/serializer';
+import { autoLayout } from '../../lib/brick/layout';
 import { DetailPanel } from '../../components/brick/panels/DetailPanel';
 import { ExecutionTimeline, type TimelineEvent } from '../../components/brick/timeline/ExecutionTimeline';
 import { CanvasToolbar } from '../../components/brick/toolbar/CanvasToolbar';
 import { ExecuteDialog } from '../../components/brick/dialogs/ExecuteDialog';
+import { LinkTypePopover } from '../../components/brick/dialogs/LinkTypePopover';
 import { useExecutionStatus, useExecutionLogs } from '../../hooks/brick/useExecutions';
-
-const LINK_TYPE_LABELS: Record<LinkType, string> = {
-  sequential: '순차',
-  parallel: '병렬',
-  compete: '경쟁',
-  loop: '반복',
-  cron: '크론',
-  branch: '분기',
-};
 
 // 백엔드 상태 → BlockStatus 직접 매핑 (통일 완료)
 const BACKEND_STATUS_MAP: Record<string, BlockStatus> = {
@@ -52,9 +45,11 @@ function BrickCanvasInner() {
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
 
-  // 링크 타입 선택 다이얼로그
+  // 링크 타입 팝오버
   const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [popoverPosition, setPopoverPosition] = useState({ x: 0, y: 0 });
+  const canvasMousePosition = useRef({ x: 0, y: 0 });
 
   // 실행 상태
   const [isExecuting, setIsExecuting] = useState(false);
@@ -261,6 +256,15 @@ function BrickCanvasInner() {
     setShowExecuteDialog(false);
   }, [isDirty, handleSave, presetId]);
 
+  // 자동 레이아웃
+  const handleAutoLayout = useCallback(
+    (direction: 'TB' | 'LR') => {
+      const layouted = autoLayout(nodes, edges, direction);
+      setNodes(layouted);
+    },
+    [nodes, edges, setNodes],
+  );
+
   // BF-137: isValidConnection — ReactFlow 내장 연결 유효성 검사
   const isValidConnection = useCallback(
     (connection: Edge | Connection) => {
@@ -270,7 +274,7 @@ function BrickCanvasInner() {
     [edges],
   );
 
-  // 연결 시 유효성 검사 + 링크 타입 다이얼로그 (BF-068)
+  // 연결 시 유효성 검사 + 링크 타입 팝오버 (BF-068)
   const onConnect = useCallback(
     (connection: Connection) => {
       if (!connection.source || !connection.target) return;
@@ -279,6 +283,7 @@ function BrickCanvasInner() {
         alert(result.reason);
         return;
       }
+      setPopoverPosition({ ...canvasMousePosition.current });
       setPendingConnection(connection);
       setShowLinkDialog(true);
     },
@@ -369,6 +374,14 @@ function BrickCanvasInner() {
     setSelectedEdgeId(null);
   }, []);
 
+  const handleCanvasMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    canvasMousePosition.current = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+  }, []);
+
   return (
     <div data-testid="brick-canvas-page" className="flex h-[calc(100vh-3.5rem)] -m-6">
       {/* 사이드바 */}
@@ -390,6 +403,9 @@ function BrickCanvasInner() {
           isPaused={isPaused}
           onSave={handleSave}
           onExecute={() => setShowExecuteDialog(true)}
+          onLayoutVertical={() => handleAutoLayout('TB')}
+          onLayoutHorizontal={() => handleAutoLayout('LR')}
+          onAutoLayout={() => handleAutoLayout('TB')}
         />
 
         {/* 캔버스 */}
@@ -397,6 +413,7 @@ function BrickCanvasInner() {
           data-testid="canvas"
           className="flex-1 relative"
           style={validationErrors.length > 0 ? { border: '2px solid #DC2626' } : undefined}
+          onMouseMove={handleCanvasMouseMove}
         >
           {/* BF-145: 빈 캔버스 온보딩 가이드 */}
           {nodes.length === 0 && (
@@ -432,6 +449,18 @@ function BrickCanvasInner() {
             <Controls data-testid="controls" />
             <Background variant={BackgroundVariant.Dots} data-testid="background" />
           </ReactFlow>
+
+          {/* 링크 타입 팝오버 (BF-068) */}
+          {showLinkDialog && (
+            <LinkTypePopover
+              position={popoverPosition}
+              onSelect={(lt) => handleLinkTypeSelect(lt as LinkType)}
+              onCancel={() => {
+                setShowLinkDialog(false);
+                setPendingConnection(null);
+              }}
+            />
+          )}
         </div>
 
         {/* 타임라인 */}
@@ -449,27 +478,6 @@ function BrickCanvasInner() {
           selectedEdgeId={selectedEdgeId}
         />
       </div>
-
-      {/* 링크 타입 선택 다이얼로그 (BF-068) */}
-      {showLinkDialog && (
-        <div data-testid="link-type-dialog" className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-4 w-64">
-            <h3 className="text-sm font-semibold mb-3">링크 타입 선택</h3>
-            <div className="space-y-1">
-              {LINK_TYPES.map((lt) => (
-                <button
-                  key={lt}
-                  data-testid={`link-type-option-${lt}`}
-                  onClick={() => handleLinkTypeSelect(lt)}
-                  className="w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-100"
-                >
-                  {LINK_TYPE_LABELS[lt]}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 실행 다이얼로그 */}
       <ExecuteDialog
