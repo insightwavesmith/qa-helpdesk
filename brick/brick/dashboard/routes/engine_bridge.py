@@ -7,6 +7,8 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from brick.auth.middleware import authenticate_request
+from brick.auth.models import BrickUser
 from brick.dashboard.middleware.auth import verify_brick_api_key
 
 from brick.adapters.base import TeamAdapter
@@ -478,3 +480,44 @@ async def trigger_hook(workflow_id: str, link_id: str):
         "status": instance.blocks[target_link.to_block].status.value,
         "execution_id": instance.blocks[target_link.to_block].execution_id,
     }
+
+
+# ── Human Tasks helpers ─────────────────────────────────────────────
+
+import json as _json
+
+
+def _read_human_tasks() -> list[dict]:
+    """runtime 디렉토리에서 waiting_human 상태 task 목록 조회."""
+    runtime_dir = Path(".bkit/runtime")
+    tasks = []
+    if not runtime_dir.exists():
+        return tasks
+    for state_file in runtime_dir.glob("task-state-hu-*.json"):
+        try:
+            data = _json.loads(state_file.read_text())
+            if data.get("status") == "waiting_human":
+                tasks.append(data)
+        except Exception:
+            continue
+    return tasks
+
+
+def _get_user_email(user_id: int) -> str | None:
+    """users 테이블에서 email 조회."""
+    from brick.auth.db import get_db
+    conn = get_db()
+    row = conn.execute("SELECT email FROM users WHERE id = ?", (user_id,)).fetchone()
+    return row["email"] if row else None
+
+
+# ── EP-10: GET /engine/human/tasks ──────────────────────────────────
+
+@router.get("/human/tasks")
+async def get_human_tasks(user: BrickUser = Depends(authenticate_request)):
+    """인증된 사용자의 human task 목록."""
+    tasks = _read_human_tasks()
+    if user.role != "admin":
+        user_email = _get_user_email(user.id)
+        tasks = [t for t in tasks if t.get("assignee") == user_email]
+    return tasks

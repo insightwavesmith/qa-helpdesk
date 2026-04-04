@@ -28,6 +28,10 @@ class CreateUserRequest(BaseModel):
     workspace_id: int = 1
 
 
+class GoogleLoginRequest(BaseModel):
+    credential: str  # Google ID token
+
+
 # ── 엔드포인트 ──
 
 @router.post("/login")
@@ -46,6 +50,44 @@ async def login(body: LoginRequest, request: Request, response: Response):
         max_age=7 * 24 * 3600,
     )
     return {"ok": True, "user": {"id": user.id, "username": user.username, "role": user.role}}
+
+
+@router.post("/google")
+async def google_login(body: GoogleLoginRequest, request: Request, response: Response):
+    """Google Sign-In → 세션 생성."""
+    from brick.auth.google import verify_google_id_token
+    from brick.auth.db import get_db
+
+    payload = await verify_google_id_token(body.credential)
+
+    conn = get_db()
+    row = conn.execute("SELECT * FROM users WHERE email = ?", (payload.email,)).fetchone()
+
+    if row is None:
+        count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+        role = "admin" if count == 0 else "viewer"
+        is_approved = 1 if count == 0 else 0
+        conn.execute(
+            "INSERT INTO users (username, display_name, password_hash, email, provider, "
+            "avatar_url, role, is_approved, workspace_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (payload.email, payload.name or payload.email, "google-oauth",
+             payload.email, "google", payload.picture, role, is_approved, 1),
+        )
+        conn.commit()
+        if is_approved == 0:
+            raise HTTPException(status_code=403, detail="관리자 승인 대기")
+        row = conn.execute("SELECT * FROM users WHERE email = ?", (payload.email,)).fetchone()
+    else:
+        if dict(row).get("is_approved") == 0:
+            raise HTTPException(status_code=403, detail="관리자 승인 대기")
+
+    ip = request.client.host if request.client else None
+    token = create_session(row["id"], row["workspace_id"], ip)
+    response.set_cookie(
+        key="brick_session", value=token,
+        httponly=True, samesite="lax", max_age=7 * 24 * 3600,
+    )
+    return {"ok": True, "user": {"id": row["id"], "email": row["email"], "role": row["role"]}}
 
 
 @router.post("/logout")

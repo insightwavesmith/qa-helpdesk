@@ -17,6 +17,10 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'viewer',
     workspace_id INTEGER NOT NULL DEFAULT 1,
+    email TEXT UNIQUE,
+    provider TEXT DEFAULT 'local',
+    avatar_url TEXT,
+    is_approved INTEGER DEFAULT 1,
     created_at INTEGER NOT NULL DEFAULT (unixepoch()),
     updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
     last_login_at INTEGER,
@@ -67,6 +71,25 @@ CREATE TABLE IF NOT EXISTS agents (
     FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
 );
 
+-- workspace → brick project 매핑
+-- (workspaces 테이블에 brick_project 컬럼 추가는 마이그레이션 섹션 참조)
+
+-- 알림
+CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    recipient_id INTEGER,
+    type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    source_type TEXT,
+    source_id TEXT,
+    read_at INTEGER,
+    created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+    FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_notif_recipient ON notifications(recipient_id, read_at);
+
 -- 인덱스
 CREATE INDEX IF NOT EXISTS idx_users_workspace ON users(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_token ON user_sessions(token_hash);
@@ -77,3 +100,14 @@ CREATE INDEX IF NOT EXISTS idx_agents_status ON agents(status);
 
 -- 기본 워크스페이스 (최초 기동 시)
 INSERT OR IGNORE INTO workspaces (id, name, slug) VALUES (1, 'Default', 'default');
+
+-- ── 마이그레이션 (기존 DB 호환) ──────────────────────────────────────
+
+-- Google Sign-In 확장 (기존 users 테이블에 컬럼 추가)
+-- ALTER TABLE users ADD COLUMN email TEXT UNIQUE;
+-- ALTER TABLE users ADD COLUMN provider TEXT DEFAULT 'local';
+-- ALTER TABLE users ADD COLUMN avatar_url TEXT;
+-- ALTER TABLE users ADD COLUMN is_approved INTEGER DEFAULT 1;
+
+-- workspace → brick project 매핑
+-- ALTER TABLE workspaces ADD COLUMN brick_project TEXT;

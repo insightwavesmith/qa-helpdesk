@@ -1,0 +1,75 @@
+$schema: brick/preset-v2
+name: "T-PDCA L2 + Codex QA"
+description: "기능 개발 + Codex 자동 QA + COO 코드 검토 + Smith님 보고"
+level: 2
+
+blocks:
+  - id: plan
+    type: Plan
+    what: "요구사항 분석 + Plan 문서 작성"
+    done:
+      artifacts: ["docs/01-plan/features/{feature}.plan.md"]
+  - id: design
+    type: Design
+    what: "상세 설계 + TDD 케이스"
+    done:
+      artifacts: ["docs/02-design/features/{feature}.design.md"]
+  - id: do
+    type: Do
+    what: "구현"
+    done:
+      artifacts: []
+      metrics: {tsc_errors: 0, build_pass: true}
+    gate:
+      handlers:
+        - type: command
+          command: "codex review --uncommitted"
+          timeout: 300
+      on_fail: retry
+      max_retries: 5
+  - id: coo-review
+    type: QA
+    what: "COO 코드 검토 — diff 확인 + 품질 판단"
+    gate:
+      handlers:
+        - type: review
+          reviewer: coo
+      on_fail: retry
+      max_retries: 3
+  - id: report
+    type: Act
+    what: "Smith님 Slack 최종 보고"
+    done:
+      artifacts: []
+
+links:
+  - {from: plan, to: design, type: sequential}
+  - {from: design, to: do, type: sequential}
+  - {from: do, to: coo-review, type: sequential}
+  - {from: coo-review, to: do, type: loop, condition: {review_rejected: true}, max_retries: 3}
+  - {from: coo-review, to: report, type: branch, condition: {review_approved: true}}
+
+teams:
+  plan:
+    adapter: claude_local
+    config:
+      dangerouslySkipPermissions: true
+      maxTurns: 50
+      env:
+        CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"
+  design:
+    adapter: claude_local
+    config:
+      dangerouslySkipPermissions: true
+      maxTurns: 50
+      env:
+        CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"
+  do:
+    adapter: claude_local
+    config:
+      dangerouslySkipPermissions: true
+      maxTurns: 100
+      env:
+        CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"
+  coo-review: {adapter: human, config: {channel: slack, notify: D09V1NX98SK}}
+  report: {adapter: webhook, config: {url: "https://slack.com/api/chat.postMessage", channel: D09V1NX98SK}}

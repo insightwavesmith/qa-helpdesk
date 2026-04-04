@@ -1,0 +1,92 @@
+$schema: brick/preset-v2
+name: "Design 보완 → 구현 → QA → 승인"
+description: "PM Design 보완 → CTO 구현 → codex QA → COO 검토 → Smith님 승인 → 보고"
+level: 2
+
+blocks:
+  - id: design-review
+    type: Plan
+    what: "기존 Design에 빠진 항목 보완 (E2E 시나리오 + assignee 아키텍처 + 어댑터)"
+    done:
+      artifacts: []
+      metrics: {}
+
+  - id: do
+    type: Do
+    what: "보완된 Design 기반 구현"
+    done:
+      artifacts: []
+      metrics: {tsc_errors: 0, build_pass: true}
+    gate:
+      handlers:
+        - type: command
+          command: "codex review --uncommitted"
+          timeout: 300
+      on_fail: retry
+      max_retries: 5
+
+  - id: coo-review
+    type: QA
+    what: "COO 코드 검토 — diff 확인 + E2E 동작 검증"
+    gate:
+      handlers:
+        - type: review
+          reviewer: coo
+      on_fail: retry
+      max_retries: 3
+
+  - id: smith-approve
+    type: QA
+    what: "Smith님 최종 승인"
+    gate:
+      handlers:
+        - type: review
+          reviewer: smith
+      on_fail: retry
+      max_retries: 3
+
+  - id: report
+    type: Act
+    what: "완료 보고 — Slack agent-ops + Smith님 DM"
+    done:
+      artifacts: []
+
+links:
+  - {from: design-review, to: do, type: sequential}
+  - {from: do, to: coo-review, type: sequential}
+  - {from: coo-review, to: do, type: loop, condition: {review_rejected: true}, max_retries: 3}
+  - {from: coo-review, to: smith-approve, type: branch, condition: {review_approved: true}}
+  - {from: smith-approve, to: do, type: loop, condition: {review_rejected: true}, max_retries: 3}
+  - {from: smith-approve, to: report, type: branch, condition: {review_approved: true}}
+
+teams:
+  design-review:
+    adapter: claude_local
+    config:
+      dangerouslySkipPermissions: true
+      maxTurns: 100
+      continueSession: true
+      env:
+        CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"
+  do:
+    adapter: claude_local
+    config:
+      dangerouslySkipPermissions: true
+      maxTurns: 100
+      continueSession: true
+      env:
+        CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"
+  coo-review:
+    adapter: human
+    config:
+      channel: slack
+      notify: D09V1NX98SK
+  smith-approve:
+    adapter: human
+    config:
+      channel: slack
+      notify: D09V1NX98SK
+  report:
+    adapter: human
+    config:
+      assignee: coo
