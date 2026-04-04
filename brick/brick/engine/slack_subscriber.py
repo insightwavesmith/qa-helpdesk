@@ -41,6 +41,28 @@ def _format_message(event: Event) -> str:
         from_b = event.data.get("from_block", "")
         to_b = event.data.get("to_block", "")
         return f":white_check_mark: 링크 완료: *{from_b}* → *{to_b}*"
+    elif event.type == "block.adapter_failed":
+        error = event.data.get("error", "")
+        stderr = event.data.get("stderr", "")
+        exit_code = event.data.get("exit_code", "")
+        stderr_lines = stderr.strip().splitlines()[-10:] if stderr else []
+        stderr_text = "\n".join(stderr_lines)
+        return (
+            f":x: 블록 실패: *{block_id}*\n"
+            f"exit code: {exit_code}\n"
+            f"stderr:\n```{stderr_text}```"
+        )
+    elif event.type == "block.gate_failed":
+        error = event.data.get("error", "Gate check failed")
+        return f":warning: 게이트 실패: *{block_id}*\n사유: {error}"
+    elif event.type == "gate.pending":
+        artifacts = event.data.get("artifacts", [])
+        artifacts_text = ", ".join(artifacts) if artifacts else "없음"
+        return (
+            f":mag: 검토 대기: *{block_id}*\n"
+            f"산출물: {artifacts_text}\n"
+            f"approve: POST /api/v1/engine/{workflow_id}/gate/{block_id}/approve"
+        )
     return f"{event.type}: {event.data}"
 
 
@@ -56,6 +78,9 @@ class SlackSubscriber:
         event_bus.subscribe("workflow.completed", self._on_event)
         event_bus.subscribe("link.started", self._on_event)
         event_bus.subscribe("link.completed", self._on_event)
+        event_bus.subscribe("block.adapter_failed", self._on_event)
+        event_bus.subscribe("block.gate_failed", self._on_event)
+        event_bus.subscribe("gate.pending", self._on_event)
 
     def _on_event(self, event: Event) -> None:
         """이벤트 수신 → Slack 전송. 실패해도 엔진에 영향 없음."""

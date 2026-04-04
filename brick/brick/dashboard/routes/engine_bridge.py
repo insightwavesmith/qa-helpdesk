@@ -108,6 +108,7 @@ def init_engine(root: str = ".bkit/") -> None:
     eb = EventBus()
     cs = CheckpointStore(base_dir=root_path / "runtime" / "workflows")
     ge = ConcreteGateExecutor()
+    ge._event_bus = eb  # gate.pending 이벤트 발행용
     val = Validator()
     pl = PresetLoader(presets_dir=root_path / "presets")
 

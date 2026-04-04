@@ -50,6 +50,7 @@ class ClaudeLocalAdapter(TeamAdapter):
         self.runtime_dir = Path(config.get("runtimeDir", ".bkit/runtime"))
         self.continue_session = config.get("continueSession", False)
         self.session_id = config.get("sessionId", "")
+        self.role = config.get("role", "")
         self._processes: dict[str, asyncio.subprocess.Process] = {}
 
     async def start_block(self, block: Block, context: dict) -> str:
@@ -284,7 +285,7 @@ class ClaudeLocalAdapter(TeamAdapter):
 
     def _build_args(self) -> list[str]:
         """CLI 인자 빌드 (Paperclip execute.ts L419-433 패턴)."""
-        args = ["--print", "-", "--output-format", "stream-json", "--verbose"]
+        args = ["--print", "-", "--output-format", "stream-json", "--verbose", "--bare"]
         if self.model:
             args += ["--model", self.model]
         if self.skip_permissions:
@@ -297,6 +298,11 @@ class ClaudeLocalAdapter(TeamAdapter):
         if self.session_id:
             args += ["--session-id", self.session_id]
         args.extend(self.extra_args)
+        # role → agents/{role}.md 파일을 --system-prompt-file로 주입
+        if self.role:
+            prompt_path = Path(__file__).parent.parent / "agents" / f"{self.role}.md"
+            if prompt_path.exists():
+                args.extend(["--system-prompt-file", str(prompt_path)])
         return args
 
     def _write_state(self, execution_id: str, data: dict) -> None:

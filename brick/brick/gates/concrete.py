@@ -6,6 +6,7 @@ import asyncio
 import json
 import shlex
 import signal
+from pathlib import Path
 
 import httpx
 
@@ -23,6 +24,7 @@ class ConcreteGateExecutor(GateExecutor):
     def __init__(self, llm_client=None, agent_runner=None):
         self.llm_client = llm_client
         self.agent_runner = agent_runner
+        self._event_bus = None  # 외부에서 주입 가능 (gate.pending 이벤트 발행용)
         super().__init__()  # → _register_builtins() 호출
 
     def _register_builtins(self) -> None:
@@ -33,6 +35,7 @@ class ConcreteGateExecutor(GateExecutor):
         self.register_gate("review", self._run_review)
         self.register_gate("metric", self._run_metric)
         self.register_gate("approval", self._run_approval)
+        self.register_gate("artifact", self._run_artifact)
 
     # ── command gate ──────────────────────────────────────────
 
@@ -435,7 +438,16 @@ class ConcreteGateExecutor(GateExecutor):
                 metadata={"status": "escalated"},
             )
 
-        # 대기 중
+        # 대기 중 — gate.pending 이벤트 발행
+        if self._event_bus is not None:
+            from brick.models.events import Event
+            self._event_bus.publish(Event(type="gate.pending", data={
+                "block_id": context.get("block_id", ""),
+                "workflow_id": context.get("workflow_id", ""),
+                "artifacts": context.get("artifacts", []),
+                "approver": approval_config.approver,
+            }))
+
         return GateResult(
             passed=False,
             detail="CEO 승인 대기 중",
@@ -447,3 +459,26 @@ class ConcreteGateExecutor(GateExecutor):
                 "timeout_seconds": approval_config.timeout_seconds,
             },
         )
+
+    # ── artifact gate ─────────────────────────────────────────
+
+    async def _run_artifact(self, handler: GateHandler, context: dict) -> GateResult:
+        """산출물 파일 존재 여부 검증 Gate."""
+        artifacts = context.get("artifacts", [])
+        if not artifacts:
+            return GateResult(passed=False, detail="산출물 없음", type="artifact")
+
+        missing = []
+        for path_str in artifacts:
+            p = Path(path_str)
+            if not p.exists():
+                missing.append(path_str)
+
+        if missing:
+            return GateResult(
+                passed=False,
+                detail=f"산출물 파일 누락: {', '.join(missing)}",
+                type="artifact",
+                metadata={"missing": missing},
+            )
+        return GateResult(passed=True, detail=f"산출물 {len(artifacts)}건 확인", type="artifact")

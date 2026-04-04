@@ -81,11 +81,11 @@ def make_gate_handler(gate_type: str) -> GateHandler:
 class TestGateRegistry:
 
     def test_gr01_builtin_7_types_registered(self):
-        """ConcreteGateExecutor 생성 시 빌트인 7종 자동 등록."""
+        """ConcreteGateExecutor 생성 시 빌트인 8종 자동 등록 (artifact 추가)."""
         ge = ConcreteGateExecutor()
         types = ge.registered_gate_types()
-        assert len(types) == 7
-        assert types == {"command", "http", "prompt", "agent", "review", "metric", "approval"}
+        assert len(types) == 8
+        assert types == {"command", "http", "prompt", "agent", "review", "metric", "approval", "artifact"}
 
     def test_gr02_custom_gate_registered_and_executed(self):
         """register_gate 후 execute(type="custom") 성공."""
@@ -203,11 +203,11 @@ class TestGateRegistry:
 class TestLinkRegistry:
 
     def test_lr01_builtin_6_types_registered(self):
-        """StateMachine 생성 시 빌트인 6종 자동 등록."""
+        """StateMachine 생성 시 빌트인 7종 자동 등록 (hook 포함)."""
         sm = StateMachine()
         types = sm.registered_link_types()
-        assert len(types) == 6
-        assert types == {"sequential", "loop", "branch", "parallel", "compete", "cron"}
+        assert len(types) == 7
+        assert types == {"sequential", "loop", "branch", "parallel", "compete", "cron", "hook"}
 
     def test_lr02_custom_link_registered_and_routed(self):
         """register_link 후 _find_next_blocks에서 라우팅됨."""

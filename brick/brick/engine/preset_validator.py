@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 # 기본값 상수 (하위호환 — 레지스트리 미전달 시 사용)
 DEFAULT_LINK_TYPES = {"sequential", "parallel", "compete", "loop", "cron", "branch", "hook"}
-DEFAULT_GATE_TYPES = {"command", "http", "prompt", "agent", "review", "metric", "approval"}
+DEFAULT_GATE_TYPES = {"command", "http", "prompt", "agent", "review", "metric", "approval", "artifact"}
 DEFAULT_ADAPTERS = {"claude_agent_teams", "claude_code", "claude_local", "codex", "human",
                     "human_management", "management", "mcp_bridge", "webhook"}
 

@@ -647,6 +647,8 @@ class WorkflowExecutor:
                     event = Event(type="block.adapter_failed", data={
                         "block_id": block_id,
                         "error": status.error or "Adapter reported failure",
+                        "stderr": getattr(status, "stderr", "") or "",
+                        "exit_code": getattr(status, "exit_code", None),
                     })
                     async with self._checkpoint_lock:
                         instance, cmds = self.state_machine.transition(instance, event)
