@@ -48,10 +48,13 @@ class ClaudeLocalAdapter(TeamAdapter):
         self.env_config: dict[str, str] = config.get("env", {})
         self.extra_args: list[str] = config.get("extraArgs", [])
         self.runtime_dir = Path(config.get("runtimeDir", ".bkit/runtime"))
+        self.continue_session = config.get("continueSession", False)
+        self.session_id = config.get("sessionId", "")
         self._processes: dict[str, asyncio.subprocess.Process] = {}
 
     async def start_block(self, block: Block, context: dict) -> str:
         execution_id = f"cl-{block.id}-{int(time.time())}"
+        workflow_id = context.get("workflow_id", "")
 
         env = self._build_env(execution_id, block.id)
         args = self._build_args()
@@ -91,24 +94,51 @@ class ClaudeLocalAdapter(TeamAdapter):
         self._processes[execution_id] = process
 
         # 백그라운드 모니터 태스크
-        asyncio.create_task(self._monitor_process(execution_id, process))
+        asyncio.create_task(
+            self._monitor_process(
+                execution_id, process,
+                workflow_id=workflow_id, block_id=block.id,
+            )
+        )
 
         return execution_id
 
     async def _monitor_process(
-        self, execution_id: str, process: asyncio.subprocess.Process
+        self,
+        execution_id: str,
+        process: asyncio.subprocess.Process,
+        *,
+        workflow_id: str = "",
+        block_id: str = "",
     ) -> None:
         """백그라운드에서 프로세스 완료를 기다리고 상태 파일 업데이트."""
-        stdout_data = b""
-        stderr_data = b""
+        stdout_chunks: list[bytes] = []
+        stderr_chunks: list[bytes] = []
         timed_out = False
 
+        async def _read_stream(
+            stream: asyncio.StreamReader | None,
+            chunks: list[bytes],
+            max_bytes: int = _MAX_OUTPUT_BYTES,
+        ) -> None:
+            """EOF까지 읽되, max_bytes 초과 시 truncate."""
+            if not stream:
+                return
+            total = 0
+            while True:
+                data = await stream.read(8192)
+                if not data:
+                    break
+                chunks.append(data)
+                total += len(data)
+                if total >= max_bytes:
+                    break
+
         async def _read_all() -> None:
-            nonlocal stdout_data, stderr_data
-            if process.stdout:
-                stdout_data = await process.stdout.read(_MAX_OUTPUT_BYTES)
-            if process.stderr:
-                stderr_data = await process.stderr.read(_MAX_OUTPUT_BYTES)
+            await asyncio.gather(
+                _read_stream(process.stdout, stdout_chunks),
+                _read_stream(process.stderr, stderr_chunks),
+            )
             await process.wait()
 
         try:
@@ -133,6 +163,9 @@ class ClaudeLocalAdapter(TeamAdapter):
 
         exit_code = process.returncode
 
+        stdout_data = b"".join(stdout_chunks)
+        stderr_data = b"".join(stderr_chunks)
+
         if timed_out:
             self._write_state(execution_id, {
                 "status": "failed",
@@ -144,6 +177,8 @@ class ClaudeLocalAdapter(TeamAdapter):
                 "stdout": stdout_data.decode(errors="replace"),
                 "stderr": stderr_data.decode(errors="replace"),
             })
+            # ── 프로세스 완료 → executor.complete_block() 자동 호출 ──
+            await self._notify_complete(workflow_id, block_id)
         else:
             stderr_str = stderr_data.decode(errors="replace")
             first_line = next(
@@ -156,6 +191,22 @@ class ClaudeLocalAdapter(TeamAdapter):
             })
 
         self._processes.pop(execution_id, None)
+
+    async def _notify_complete(
+        self, workflow_id: str, block_id: str
+    ) -> None:
+        """프로세스 성공 완료 시 executor.complete_block()을 호출하여 Gate를 즉시 발동."""
+        if not workflow_id or not block_id:
+            return
+        try:
+            # lazy import — 순환 참조 방지
+            from brick.dashboard.routes.engine_bridge import executor
+
+            if executor:
+                await executor.complete_block(workflow_id, block_id)
+        except Exception:
+            # 실패해도 기존 폴링 fallback 유지
+            pass
 
     async def check_status(self, execution_id: str) -> AdapterStatus:
         """상태 파일 읽기 + 10분 staleness 감지."""
@@ -240,6 +291,11 @@ class ClaudeLocalAdapter(TeamAdapter):
             args.append("--dangerously-skip-permissions")
         if self.max_turns > 0:
             args += ["--max-turns", str(self.max_turns)]
+        # --continue / --session-id 지원
+        if self.continue_session:
+            args.append("--continue")
+        if self.session_id:
+            args += ["--session-id", self.session_id]
         args.extend(self.extra_args)
         return args
 
