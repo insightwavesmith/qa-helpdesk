@@ -285,7 +285,7 @@ def test_eb11_cancel_workflow(client):
 
     resp = client.post(f"/api/v1/engine/cancel/{wf_id}")
     assert resp.status_code == 200
-    assert resp.json()["status"] == "failed"
+    assert resp.json()["status"] == "cancelled"
 
 
 # ── EB-012: EP-7: health check ──────────────────────────────────────

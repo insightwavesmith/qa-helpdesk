@@ -45,9 +45,19 @@ def create_preset(body: ResourceSpec):
 def get_preset(name: str):
     store, _ = _get_deps()
     try:
-        return _to_response(store.get("Preset", name))
+        resource = store.get("Preset", name)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"Preset '{name}' not found")
+    resp = _to_response(resource)
+    # Preset YAML은 blocks/links/teams 등을 top-level에 배치 (spec wrapper 없음)
+    if not resp.get("spec") and resource.file_path:
+        import yaml
+        from pathlib import Path
+        raw = yaml.safe_load(Path(resource.file_path).read_text())
+        meta_keys = {"kind", "name", "labels", "annotations", "readonly",
+                     "version", "updated_at", "status", "spec", "file_path"}
+        resp["spec"] = {k: v for k, v in raw.items() if k not in meta_keys}
+    return resp
 
 
 @router.put("/presets/{name}", response_model=ResourceResponse)

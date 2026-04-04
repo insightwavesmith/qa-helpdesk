@@ -183,6 +183,27 @@ class StateMachine:
                         ))
                 elif self._all_blocks_completed(wf):
                     wf.status = WorkflowStatus.COMPLETED
+            elif on_fail == "route":
+                # 링크의 on_fail 타겟으로 라우팅 (루프백)
+                routed = False
+                for link in wf.definition.links:
+                    if link.from_block == block_id and link.on_fail:
+                        target = link.on_fail
+                        if target in wf.blocks:
+                            target_block = wf.blocks[target]
+                            target_block.status = BlockStatus.QUEUED
+                            target_block.retry_count = 0
+                            wf.current_block_id = target
+                            commands.append(StartBlockCommand(
+                                block_id=target,
+                                adapter=target_block.adapter,
+                            ))
+                            routed = True
+                            break
+                if not routed:
+                    block_inst.status = BlockStatus.FAILED
+                    block_inst.error = event.data.get("error", "Gate check failed")
+                    wf.status = WorkflowStatus.FAILED
             else:
                 block_inst.status = BlockStatus.FAILED
                 block_inst.error = event.data.get("error", "Gate check failed")

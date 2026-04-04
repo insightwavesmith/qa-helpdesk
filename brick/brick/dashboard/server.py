@@ -21,10 +21,12 @@ def create_app(root: str = ".bkit/") -> FastAPI:
     pipeline = ValidationPipeline(store=file_store)
 
     from brick.dashboard.routes import (
+        auth_routes,
         block_types, teams, presets, workflows,
         validation, type_catalog, resources, learning,
         engine_bridge,
     )
+    app.include_router(auth_routes.router, prefix="/api/v1", tags=["auth"])
     app.include_router(block_types.router, prefix="/api/v1", tags=["block-types"])
     app.include_router(teams.router, prefix="/api/v1", tags=["teams"])
     app.include_router(presets.router, prefix="/api/v1", tags=["presets"])

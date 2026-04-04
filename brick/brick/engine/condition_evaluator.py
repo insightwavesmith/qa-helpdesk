@@ -62,6 +62,24 @@ def _evaluate_str_condition(condition: str, context: dict) -> bool:
 def _evaluate_dict_condition(condition: dict, context: dict) -> bool:
     """dict condition 평가. 예: {"match_rate": {"gte": 90}}"""
     for var_name, checks in condition.items():
+        # _below / _above 접미사 호환 (프리셋 YAML 형식)
+        if var_name.endswith("_below"):
+            actual_var = var_name[:-6]  # "match_rate_below" → "match_rate"
+            actual = context.get(actual_var)
+            if actual is None:
+                return False
+            if not (actual < checks):
+                return False
+            continue
+        if var_name.endswith("_above"):
+            actual_var = var_name[:-6]
+            actual = context.get(actual_var)
+            if actual is None:
+                return False
+            if not (actual > checks):
+                return False
+            continue
+
         actual = context.get(var_name)
         if actual is None:
             return False

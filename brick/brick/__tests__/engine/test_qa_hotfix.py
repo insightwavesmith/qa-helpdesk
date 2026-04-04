@@ -218,3 +218,125 @@ async def test_brk_qa_003_approval_approve_resumes(tmp_path):
     # 검증: block 상태가 COMPLETED
     saved = executor.checkpoint.load(instance.id)
     assert saved.blocks["review"].status == BlockStatus.COMPLETED
+
+
+# ── BRK-QA-004: 루프백 핫픽스 — _below/_above + on_fail route ──────────
+
+
+def test_bf13_match_rate_below_condition():
+    """BF-13: {match_rate_below: 90}, context match_rate=80 → True."""
+    from brick.engine.condition_evaluator import evaluate_condition
+    result = evaluate_condition({"match_rate_below": 90}, {"match_rate": 80})
+    assert result is True
+
+
+def test_bf14_match_rate_below_false():
+    """BF-14: {match_rate_below: 90}, context match_rate=95 → False."""
+    from brick.engine.condition_evaluator import evaluate_condition
+    result = evaluate_condition({"match_rate_below": 90}, {"match_rate": 95})
+    assert result is False
+
+
+def test_bf15_gate_fail_route_loopback():
+    """BF-15: on_fail=route, link.on_fail="do" → do 블록 QUEUED."""
+    sm = StateMachine()
+
+    # check → do 루프백: gate 실패 시 do로 라우팅
+    do_block = Block(id="do", type="Do", what="implement", done=DoneCondition())
+    check_block = Block(
+        id="check", type="Check", what="verify",
+        done=DoneCondition(),
+        gate=GateConfig(handlers=[], on_fail="route"),
+    )
+    defn = WorkflowDefinition(
+        name="test-route",
+        blocks=[do_block, check_block],
+        links=[
+            LinkDefinition(from_block="do", to_block="check", type="sequential"),
+            LinkDefinition(from_block="check", to_block="do", type="loop", on_fail="do"),
+        ],
+        teams={
+            "do": TeamDefinition(block_id="do", adapter="mock"),
+            "check": TeamDefinition(block_id="check", adapter="mock"),
+        },
+    )
+    instance = WorkflowInstance.from_definition(defn, feature="test", task="bf15")
+    instance.status = WorkflowStatus.RUNNING
+    instance.blocks["check"].status = BlockStatus.GATE_CHECKING
+    instance.current_block_id = "check"
+
+    gate_failed = Event(type="block.gate_failed", data={"block_id": "check", "error": "match rate low"})
+    new_wf, cmds = sm.transition(instance, gate_failed)
+
+    assert new_wf.blocks["do"].status == BlockStatus.QUEUED
+    assert new_wf.blocks["do"].retry_count == 0
+    assert new_wf.current_block_id == "do"
+    start_cmds = [c for c in cmds if hasattr(c, "block_id") and c.block_id == "do"]
+    assert len(start_cmds) >= 1
+
+
+def test_bf16_gate_fail_no_route_target():
+    """BF-16: on_fail=route, 타겟 없음 → FAILED."""
+    sm = StateMachine()
+
+    check_block = Block(
+        id="check", type="Check", what="verify",
+        done=DoneCondition(),
+        gate=GateConfig(handlers=[], on_fail="route"),
+    )
+    defn = WorkflowDefinition(
+        name="test-no-route",
+        blocks=[check_block],
+        links=[
+            # on_fail이 존재하지 않는 블록 "nonexistent"를 가리킴
+            LinkDefinition(from_block="check", to_block="check", type="loop", on_fail="nonexistent"),
+        ],
+        teams={"check": TeamDefinition(block_id="check", adapter="mock")},
+    )
+    instance = WorkflowInstance.from_definition(defn, feature="test", task="bf16")
+    instance.status = WorkflowStatus.RUNNING
+    instance.blocks["check"].status = BlockStatus.GATE_CHECKING
+    instance.current_block_id = "check"
+
+    gate_failed = Event(type="block.gate_failed", data={"block_id": "check", "error": "no target"})
+    new_wf, cmds = sm.transition(instance, gate_failed)
+
+    assert new_wf.blocks["check"].status == BlockStatus.FAILED
+    assert new_wf.status == WorkflowStatus.FAILED
+
+
+def test_bf17_loop_link_condition_eval():
+    """BF-17: loop check→do, match_rate=80 → do 블록으로 이동."""
+    sm = StateMachine()
+
+    do_block = Block(id="do", type="Do", what="implement", done=DoneCondition())
+    check_block = Block(id="check", type="Check", what="verify", done=DoneCondition())
+    defn = WorkflowDefinition(
+        name="test-loop-condition",
+        blocks=[do_block, check_block],
+        links=[
+            LinkDefinition(from_block="do", to_block="check", type="sequential"),
+            LinkDefinition(
+                from_block="check", to_block="do", type="loop",
+                condition={"match_rate_below": 90},
+                max_retries=5,
+            ),
+        ],
+        teams={
+            "do": TeamDefinition(block_id="do", adapter="mock"),
+            "check": TeamDefinition(block_id="check", adapter="mock"),
+        },
+    )
+    instance = WorkflowInstance.from_definition(defn, feature="test", task="bf17")
+    instance.status = WorkflowStatus.RUNNING
+    instance.context = {"match_rate": 80}  # below 90 → loop 조건 충족
+
+    # check 블록이 gate_passed → _find_next_blocks에서 loop condition 평가
+    instance.blocks["check"].status = BlockStatus.GATE_CHECKING
+    instance.current_block_id = "check"
+
+    gate_passed = Event(type="block.gate_passed", data={"block_id": "check"})
+    new_wf, cmds = sm.transition(instance, gate_passed)
+
+    assert new_wf.blocks["do"].status == BlockStatus.QUEUED
+    assert new_wf.current_block_id == "do"

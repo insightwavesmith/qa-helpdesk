@@ -7,9 +7,8 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from brick.auth.middleware import authenticate_request
+from brick.auth.middleware import authenticate_request, require_role_dep
 from brick.auth.models import BrickUser
-from brick.dashboard.middleware.auth import verify_brick_api_key
 
 from brick.adapters.base import TeamAdapter
 from brick.adapters.claude_agent_teams import ClaudeAgentTeamsAdapter
@@ -64,7 +63,6 @@ class AdapterRegistry:
 router = APIRouter(
     prefix="/engine",
     tags=["engine-bridge"],
-    dependencies=[Depends(verify_brick_api_key)],
 )
 
 # Global instances — initialized via init_engine()
@@ -204,7 +202,7 @@ def _count_active_workflows() -> int:
 # ── EP-1: POST /engine/start ─────────────────────────────────────────
 
 @router.post("/start")
-async def start_workflow(req: StartRequest):
+async def start_workflow(req: StartRequest, user: BrickUser = Depends(require_role_dep("operator"))):
     """Start a new workflow from a preset."""
     if not executor:
         raise HTTPException(status_code=500, detail="Engine not initialized")
@@ -229,7 +227,7 @@ async def start_workflow(req: StartRequest):
 # ── EP-2: POST /engine/complete-block ────────────────────────────────
 
 @router.post("/complete-block")
-async def complete_block(req: CompleteBlockRequest):
+async def complete_block(req: CompleteBlockRequest, user: BrickUser = Depends(require_role_dep("operator"))):
     """Complete a block and run gate checks."""
     if not executor or not checkpoint_store:
         raise HTTPException(status_code=500, detail="Engine not initialized")
@@ -291,7 +289,7 @@ async def complete_block(req: CompleteBlockRequest):
 # ── EP-3: GET /engine/status/{workflow_id} ───────────────────────────
 
 @router.get("/status/{workflow_id}")
-async def get_status(workflow_id: str):
+async def get_status(workflow_id: str, user: BrickUser = Depends(require_role_dep("viewer"))):
     """Get workflow status with events."""
     if not checkpoint_store:
         raise HTTPException(status_code=500, detail="Engine not initialized")
@@ -312,7 +310,7 @@ async def get_status(workflow_id: str):
 # ── EP-4: POST /engine/suspend/{workflow_id} ─────────────────────────
 
 @router.post("/suspend/{workflow_id}")
-async def suspend_workflow(workflow_id: str):
+async def suspend_workflow(workflow_id: str, user: BrickUser = Depends(require_role_dep("operator"))):
     """Suspend a running workflow."""
     if not checkpoint_store or not state_machine:
         raise HTTPException(status_code=500, detail="Engine not initialized")
@@ -331,7 +329,7 @@ async def suspend_workflow(workflow_id: str):
 # ── EP-5: POST /engine/resume/{workflow_id} ──────────────────────────
 
 @router.post("/resume/{workflow_id}")
-async def resume_workflow(workflow_id: str):
+async def resume_workflow(workflow_id: str, user: BrickUser = Depends(require_role_dep("operator"))):
     """Resume a suspended workflow."""
     if not checkpoint_store or not state_machine:
         raise HTTPException(status_code=500, detail="Engine not initialized")
@@ -350,8 +348,8 @@ async def resume_workflow(workflow_id: str):
 # ── EP-6: POST /engine/cancel/{workflow_id} ──────────────────────────
 
 @router.post("/cancel/{workflow_id}")
-async def cancel_workflow(workflow_id: str):
-    """Cancel a workflow (sets status to failed)."""
+async def cancel_workflow(workflow_id: str, user: BrickUser = Depends(require_role_dep("operator"))):
+    """Cancel a workflow."""
     if not checkpoint_store or not state_machine:
         raise HTTPException(status_code=500, detail="Engine not initialized")
 
@@ -363,7 +361,7 @@ async def cancel_workflow(workflow_id: str):
     instance, _commands = state_machine.transition(instance, event)
     checkpoint_store.save(workflow_id, instance)
 
-    return {"workflow_id": workflow_id, "status": instance.status.value}
+    return {"workflow_id": workflow_id, "status": "cancelled"}
 
 
 # ── EP-7: GET /engine/health ─────────────────────────────────────────
@@ -389,7 +387,7 @@ async def health_check():
 # ── EP-8: POST /engine/retry-adapter ────────────────────────────────
 
 @router.post("/retry-adapter")
-async def retry_adapter(req: RetryAdapterRequest):
+async def retry_adapter(req: RetryAdapterRequest, user: BrickUser = Depends(require_role_dep("operator"))):
     """Retry adapter for a QUEUED block."""
     if not executor or not checkpoint_store:
         raise HTTPException(status_code=500, detail="Engine not initialized")
@@ -426,7 +424,7 @@ async def retry_adapter(req: RetryAdapterRequest):
 # ── EP-9: POST /engine/hook/{workflow_id}/{link_id} ────────────────
 
 @router.post("/hook/{workflow_id}/{link_id}")
-async def trigger_hook(workflow_id: str, link_id: str):
+async def trigger_hook(workflow_id: str, link_id: str, user: BrickUser = Depends(require_role_dep("operator"))):
     """외부 이벤트로 hook Link 발동 → 다음 블록 시작."""
     if not executor or not checkpoint_store:
         raise HTTPException(status_code=500, detail="Engine not initialized")
