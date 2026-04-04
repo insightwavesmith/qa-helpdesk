@@ -1,9 +1,10 @@
 import type { Node, Edge } from '@xyflow/react';
-import { BlockDetailPanel } from './BlockDetailPanel';
+import { ThreeAxisPanel, DEFAULT_ADAPTERS, DEFAULT_MODELS, DEFAULT_AGENTS } from './ThreeAxisPanel';
 import { LinkDetailPanel } from './LinkDetailPanel';
 import { ReviewDetailPanel } from './ReviewDetailPanel';
 import { NotifyConfigPanel } from './NotifyConfigPanel';
 import { EmptyDetailPanel } from './EmptyDetailPanel';
+import { ApprovalPanel } from './ApprovalPanel';
 
 interface DetailPanelProps {
   nodes: Node[];
@@ -38,7 +39,29 @@ export function DetailPanel({
     if (node.type === 'notify') {
       return <NotifyConfigPanel node={node} />;
     }
-    return <BlockDetailPanel node={node} onUpdateData={onUpdateNodeData} teams={teams} />;
+    // BD-028: gate_checking + approval → ApprovalPanel
+    const nodeData = node.data as Record<string, unknown>;
+    if (nodeData.status === 'gate_checking' && nodeData.gateType === 'approval') {
+      return (
+        <ApprovalPanel
+          workflowId={String(nodeData.workflowId ?? '')}
+          blockId={String(nodeData.blockId ?? node.id)}
+          approver={String(nodeData.approver ?? '')}
+          artifacts={(nodeData.artifacts as string[]) ?? []}
+        />
+      );
+    }
+
+    return (
+      <ThreeAxisPanel
+        node={node}
+        onUpdateData={onUpdateNodeData ?? (() => {})}
+        teams={teams}
+        adapters={DEFAULT_ADAPTERS}
+        models={DEFAULT_MODELS}
+        agents={DEFAULT_AGENTS}
+      />
+    );
   }
 
   if (selectedEdgeId) {

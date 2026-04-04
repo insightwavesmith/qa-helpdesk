@@ -1,13 +1,16 @@
 import { useState } from 'react';
 
-export type GateType = 'command' | 'http' | 'prompt' | 'agent' | 'review';
+export type GateType =
+  | 'command' | 'http' | 'prompt' | 'agent' | 'review'
+  | 'metric' | 'approval' | 'artifact';
+
 export type ExecutionMode = 'sequential' | 'parallel' | 'voting';
 
 export interface GateConfig {
   gateId: string;
   type: GateType;
   status: string;
-  // command
+  // command / http
   command?: string;
   timeout?: number;
   onFailure?: 'stop' | 'skip' | 'retry';
@@ -29,7 +32,17 @@ export interface GateConfig {
   strategy?: 'any' | 'all' | 'unanimous';
   reviewTimeout?: number;
   escalation?: string;
+  // metric (신규)
+  threshold?: number;
+  // approval (신규)
+  approver?: string;
+  channel?: string;
+  onTimeout?: 'reject' | 'approve' | 'escalate';
 }
+
+const ALL_GATE_TYPES: GateType[] = [
+  'artifact', 'command', 'http', 'prompt', 'agent', 'review', 'approval', 'metric',
+];
 
 const GATE_TYPE_LABELS: Record<GateType, string> = {
   command: '명령어',
@@ -37,9 +50,10 @@ const GATE_TYPE_LABELS: Record<GateType, string> = {
   prompt: '프롬프트',
   agent: '에이전트',
   review: '리뷰',
+  metric: '수치',
+  approval: '승인',
+  artifact: '산출물',
 };
-
-const GATE_TYPES: GateType[] = ['command', 'http', 'prompt', 'agent', 'review'];
 
 interface GateConfigPanelProps {
   gates: GateConfig[];
@@ -54,25 +68,18 @@ export function GateConfigPanel({
   onChange,
   onExecutionModeChange,
 }: GateConfigPanelProps) {
-  const [addType, setAddType] = useState<GateType>('command');
+  const enabledTypes = new Set(gates.map((g) => g.type));
 
-  const handleAdd = () => {
-    const newGate: GateConfig = {
-      gateId: `gate-${Date.now()}`,
-      type: addType,
-      status: 'pending',
-    };
-    onChange?.([...gates, newGate]);
-  };
-
-  const handleDelete = (gateId: string) => {
-    onChange?.(gates.filter((g) => g.gateId !== gateId));
+  const toggleGate = (type: GateType) => {
+    if (enabledTypes.has(type)) {
+      onChange?.(gates.filter((g) => g.type !== type));
+    } else {
+      onChange?.([...gates, { gateId: `gate-${Date.now()}`, type, status: 'pending' }]);
+    }
   };
 
   const handleUpdate = (gateId: string, updates: Partial<GateConfig>) => {
-    onChange?.(
-      gates.map((g) => (g.gateId === gateId ? { ...g, ...updates } : g)),
-    );
+    onChange?.(gates.map((g) => (g.gateId === gateId ? { ...g, ...updates } : g)));
   };
 
   return (
@@ -95,21 +102,35 @@ export function GateConfigPanel({
         ))}
       </div>
 
-      {/* Gate 목록 */}
-      {gates.map((gate) => (
-        <div key={gate.gateId} data-testid={`gate-item-${gate.type}`} className="border border-gray-200 rounded p-2 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium">{GATE_TYPE_LABELS[gate.type]}</span>
-            <button
-              data-testid={`gate-delete-${gate.gateId}`}
-              onClick={() => handleDelete(gate.gateId)}
-              className="text-xs text-red-500 hover:text-red-700"
-            >
-              삭제
-            </button>
-          </div>
+      {/* 체크박스 그리드 (8종) */}
+      <div className="grid grid-cols-2 gap-1.5">
+        {ALL_GATE_TYPES.map((type) => (
+          <label
+            key={type}
+            className="flex items-center gap-1.5 text-xs cursor-pointer select-none"
+          >
+            <input
+              type="checkbox"
+              data-testid={`gate-checkbox-${type}`}
+              checked={enabledTypes.has(type)}
+              onChange={() => toggleGate(type)}
+              className="rounded"
+            />
+            <span>{GATE_TYPE_LABELS[type]}</span>
+          </label>
+        ))}
+      </div>
 
-          {/* command Gate */}
+      {/* 활성화된 Gate 설정 */}
+      {gates.map((gate) => (
+        <div
+          key={gate.gateId}
+          data-testid={`gate-item-${gate.type}`}
+          className="border border-gray-200 rounded p-2 space-y-2"
+        >
+          <p className="text-xs font-medium text-gray-600">{GATE_TYPE_LABELS[gate.type]}</p>
+
+          {/* command */}
           {gate.type === 'command' && (
             <div className="space-y-1">
               <input
@@ -128,20 +149,10 @@ export function GateConfigPanel({
                 onChange={(e) => handleUpdate(gate.gateId, { timeout: Number(e.target.value) })}
                 className="w-full px-2 py-1 text-xs border rounded"
               />
-              <select
-                data-testid="gate-on-failure-select"
-                value={gate.onFailure || 'stop'}
-                onChange={(e) => handleUpdate(gate.gateId, { onFailure: e.target.value as GateConfig['onFailure'] })}
-                className="w-full px-2 py-1 text-xs border rounded"
-              >
-                <option value="stop">중단</option>
-                <option value="skip">건너뛰기</option>
-                <option value="retry">재시도</option>
-              </select>
             </div>
           )}
 
-          {/* http Gate */}
+          {/* http */}
           {gate.type === 'http' && (
             <div className="space-y-1">
               <input
@@ -162,18 +173,10 @@ export function GateConfigPanel({
                 <option value="POST">POST</option>
                 <option value="PUT">PUT</option>
               </select>
-              <input
-                data-testid="gate-status-code-input"
-                type="number"
-                placeholder="예상 상태코드"
-                value={gate.expectedStatus || ''}
-                onChange={(e) => handleUpdate(gate.gateId, { expectedStatus: Number(e.target.value) })}
-                className="w-full px-2 py-1 text-xs border rounded"
-              />
             </div>
           )}
 
-          {/* prompt Gate */}
+          {/* prompt */}
           {gate.type === 'prompt' && (
             <div className="space-y-1">
               <textarea
@@ -184,38 +187,21 @@ export function GateConfigPanel({
                 className="w-full px-2 py-1 text-xs border rounded"
                 rows={2}
               />
-              <select
-                data-testid="gate-model-select"
-                value={gate.model || ''}
-                onChange={(e) => handleUpdate(gate.gateId, { model: e.target.value })}
-                className="w-full px-2 py-1 text-xs border rounded"
-              >
-                <option value="">모델 선택</option>
-                <option value="claude-opus">Claude Opus</option>
-                <option value="claude-sonnet">Claude Sonnet</option>
-              </select>
+              <label className="block text-xs text-gray-400">신뢰도</label>
               <input
                 data-testid="gate-confidence-input"
                 type="range"
                 min="0"
                 max="1"
                 step="0.1"
-                value={gate.confidence || 0.5}
+                value={gate.confidence ?? 0.5}
                 onChange={(e) => handleUpdate(gate.gateId, { confidence: Number(e.target.value) })}
                 className="w-full"
-              />
-              <input
-                data-testid="gate-votes-input"
-                type="number"
-                placeholder="투표 횟수"
-                value={gate.votes || ''}
-                onChange={(e) => handleUpdate(gate.gateId, { votes: Number(e.target.value) })}
-                className="w-full px-2 py-1 text-xs border rounded"
               />
             </div>
           )}
 
-          {/* agent Gate */}
+          {/* agent */}
           {gate.type === 'agent' && (
             <div className="space-y-1">
               <textarea
@@ -226,26 +212,10 @@ export function GateConfigPanel({
                 className="w-full px-2 py-1 text-xs border rounded"
                 rows={2}
               />
-              <input
-                data-testid="gate-tools-input"
-                type="text"
-                placeholder="도구 목록 (쉼표 구분)"
-                value={gate.tools || ''}
-                onChange={(e) => handleUpdate(gate.gateId, { tools: e.target.value })}
-                className="w-full px-2 py-1 text-xs border rounded"
-              />
-              <input
-                data-testid="gate-max-turns-input"
-                type="number"
-                placeholder="최대 턴 수"
-                value={gate.maxTurns || ''}
-                onChange={(e) => handleUpdate(gate.gateId, { maxTurns: Number(e.target.value) })}
-                className="w-full px-2 py-1 text-xs border rounded"
-              />
             </div>
           )}
 
-          {/* review Gate */}
+          {/* review */}
           {gate.type === 'review' && (
             <div className="space-y-1">
               <input
@@ -260,59 +230,72 @@ export function GateConfigPanel({
                 }
                 className="w-full px-2 py-1 text-xs border rounded"
               />
-              <select
-                data-testid="gate-strategy-select"
-                value={gate.strategy || 'any'}
-                onChange={(e) => handleUpdate(gate.gateId, { strategy: e.target.value as GateConfig['strategy'] })}
-                className="w-full px-2 py-1 text-xs border rounded"
-              >
-                <option value="any">any</option>
-                <option value="all">all</option>
-                <option value="unanimous">unanimous</option>
-              </select>
+            </div>
+          )}
+
+          {/* metric (신규) */}
+          {gate.type === 'metric' && (
+            <div className="space-y-1">
+              <label className="block text-xs text-gray-400">임계값 ({gate.threshold ?? 90})</label>
               <input
-                data-testid="gate-review-timeout-input"
-                type="number"
-                placeholder="타임아웃 (시간)"
-                value={gate.reviewTimeout || ''}
-                onChange={(e) => handleUpdate(gate.gateId, { reviewTimeout: Number(e.target.value) })}
-                className="w-full px-2 py-1 text-xs border rounded"
-              />
-              <input
-                data-testid="gate-escalation-input"
-                type="text"
-                placeholder="에스컬레이션"
-                value={gate.escalation || ''}
-                onChange={(e) => handleUpdate(gate.gateId, { escalation: e.target.value })}
-                className="w-full px-2 py-1 text-xs border rounded"
+                data-testid="gate-threshold-slider"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value={gate.threshold ?? 90}
+                onChange={(e) => handleUpdate(gate.gateId, { threshold: Number(e.target.value) })}
+                className="w-full"
               />
             </div>
           )}
+
+          {/* approval (신규) */}
+          {gate.type === 'approval' && (
+            <div className="space-y-1">
+              <input
+                data-testid="gate-approval-approver"
+                type="text"
+                placeholder="승인자"
+                value={gate.approver || ''}
+                onChange={(e) => handleUpdate(gate.gateId, { approver: e.target.value })}
+                className="w-full px-2 py-1 text-xs border rounded"
+              />
+              <input
+                data-testid="gate-approval-channel"
+                type="text"
+                placeholder="채널 (예: #general)"
+                value={gate.channel || ''}
+                onChange={(e) => handleUpdate(gate.gateId, { channel: e.target.value })}
+                className="w-full px-2 py-1 text-xs border rounded"
+              />
+              <input
+                data-testid="gate-approval-timeout"
+                type="number"
+                placeholder="타임아웃 (초)"
+                value={gate.timeout || ''}
+                onChange={(e) => handleUpdate(gate.gateId, { timeout: Number(e.target.value) })}
+                className="w-full px-2 py-1 text-xs border rounded"
+              />
+              <select
+                data-testid="gate-approval-on-timeout"
+                value={gate.onTimeout || 'reject'}
+                onChange={(e) => handleUpdate(gate.gateId, { onTimeout: e.target.value as GateConfig['onTimeout'] })}
+                className="w-full px-2 py-1 text-xs border rounded"
+              >
+                <option value="reject">거부</option>
+                <option value="approve">승인</option>
+                <option value="escalate">에스컬레이트</option>
+              </select>
+            </div>
+          )}
+
+          {/* artifact (신규) — 설정 없음 */}
+          {gate.type === 'artifact' && (
+            <p className="text-xs text-gray-400">산출물 존재 여부를 확인합니다.</p>
+          )}
         </div>
       ))}
-
-      {/* Gate 추가 */}
-      <div className="flex items-center gap-2">
-        <select
-          data-testid="gate-type-select"
-          value={addType}
-          onChange={(e) => setAddType(e.target.value as GateType)}
-          className="px-2 py-1 text-xs border border-gray-300 rounded"
-        >
-          {GATE_TYPES.map((gt) => (
-            <option key={gt} value={gt}>
-              {GATE_TYPE_LABELS[gt]}
-            </option>
-          ))}
-        </select>
-        <button
-          data-testid="gate-add-btn"
-          onClick={handleAdd}
-          className="px-3 py-1 text-xs rounded bg-primary text-white hover:bg-primary-hover"
-        >
-          Gate 추가
-        </button>
-      </div>
     </div>
   );
 }

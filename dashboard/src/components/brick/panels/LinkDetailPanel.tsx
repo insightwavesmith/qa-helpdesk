@@ -1,5 +1,6 @@
 import type { Edge } from '@xyflow/react';
 import { LINK_TYPES, type LinkType } from '../nodes/types';
+import { ConditionBuilder } from './ConditionBuilder';
 
 const LINK_TYPE_LABELS: Record<LinkType, string> = {
   sequential: '순차',
@@ -9,6 +10,8 @@ const LINK_TYPE_LABELS: Record<LinkType, string> = {
   cron: '크론',
   branch: '분기',
 };
+
+const DEFAULT_METRICS = ['match_rate', 'coverage', 'score'];
 
 interface LinkDetailPanelProps {
   edge: Edge;
@@ -20,12 +23,10 @@ export function LinkDetailPanel({ edge, onUpdateData }: LinkDetailPanelProps) {
   const linkType = (data.linkType as string) || 'sequential';
   const condition = (data.condition as string) || '';
 
+  const showConditionBuilder = linkType === 'loop' || linkType === 'branch';
+
   const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     onUpdateData?.(edge.id, { linkType: e.target.value });
-  };
-
-  const handleConditionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdateData?.(edge.id, { condition: e.target.value });
   };
 
   return (
@@ -48,17 +49,13 @@ export function LinkDetailPanel({ edge, onUpdateData }: LinkDetailPanelProps) {
         </select>
       </div>
 
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">조건</label>
-        <input
-          data-testid="link-condition-input"
-          type="text"
-          value={condition}
-          onChange={handleConditionChange}
-          placeholder="조건 입력"
-          className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+      {showConditionBuilder && (
+        <ConditionBuilder
+          condition={condition}
+          onChange={(newCondition) => onUpdateData?.(edge.id, { condition: newCondition })}
+          availableMetrics={DEFAULT_METRICS}
         />
-      </div>
+      )}
     </div>
   );
 }
