@@ -56,12 +56,14 @@ def test_sends_slack_message(mock_post):
     assert "plan" in call_kwargs.kwargs["json"]["text"]
 
 
+@patch.dict("os.environ", {}, clear=True)
 def test_skips_when_no_token(caplog):
     """토큰 미설정 시 경고 로그만 남기고 스킵."""
-    bus = EventBus()
-    SlackSubscriber(bus, token="")
-
-    bus.publish(Event(type="block.started", data={"block_id": "plan"}))
+    import logging
+    with caplog.at_level(logging.WARNING, logger="brick.engine.slack_subscriber"):
+        bus = EventBus()
+        SlackSubscriber(bus, token="")
+        bus.publish(Event(type="block.started", data={"block_id": "plan"}))
     assert "SLACK_BOT_TOKEN 미설정" in caplog.text
 
 

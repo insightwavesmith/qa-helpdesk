@@ -42,6 +42,7 @@ class StateMachine:
         self.register_link("parallel", self._resolve_parallel)
         self.register_link("compete", self._resolve_compete)
         self.register_link("cron", self._resolve_cron)
+        self.register_link("hook", self._resolve_hook)
 
     def register_link(self, type_name: str, handler: LinkHandlerFn) -> None:
         """Register external link handler. Overwrites existing type."""
@@ -242,6 +243,22 @@ class StateMachine:
             if link.from_block != block_id:
                 continue
 
+            notify = link.notify or {}
+
+            # link.started 이벤트 (notify.on_start 설정 시)
+            if notify.get("on_start"):
+                extra_commands.append(EmitEventCommand(
+                    event=Event(
+                        type="link.started",
+                        data={
+                            "from_block": link.from_block,
+                            "to_block": link.to_block,
+                            "link_type": link.type,
+                            "channel": notify["on_start"],
+                        },
+                    ),
+                ))
+
             handler = self._link_handlers.get(link.type)
             if handler is None:
                 continue  # 미등록 링크 타입 → 무시 (안전)
@@ -250,6 +267,20 @@ class StateMachine:
             next_ids.extend(result.next_ids)
             extra_commands.extend(result.commands)
             context.update(result.context_updates)
+
+            # link.completed 이벤트 (notify.on_complete 설정 시)
+            if notify.get("on_complete") and result.next_ids:
+                extra_commands.append(EmitEventCommand(
+                    event=Event(
+                        type="link.completed",
+                        data={
+                            "from_block": link.from_block,
+                            "to_block": link.to_block,
+                            "link_type": link.type,
+                            "channel": notify["on_complete"],
+                        },
+                    ),
+                ))
 
         # 호출부에서 처리할 부가 커맨드 저장
         self._extra_link_commands = extra_commands
@@ -309,6 +340,12 @@ class StateMachine:
                 schedule=link.schedule or "0 * * * *",
                 max_runs=link.max_retries or 999,
             ))
+        return LinkResolveResult(next_ids=[], commands=[], context_updates={})
+
+    def _resolve_hook(self, link, wf, block_id, context) -> LinkResolveResult:
+        """hook Link: from 블록 완료 후 대기. 외부 API 호출 시 발동."""
+        # hook은 _find_next_blocks에서 다음 블록을 반환하지 않음.
+        # 외부 트리거가 와야 다음 블록 시작.
         return LinkResolveResult(next_ids=[], commands=[], context_updates={})
 
     def _all_blocks_completed(self, wf: WorkflowInstance) -> bool:

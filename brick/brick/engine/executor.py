@@ -151,6 +151,7 @@ class PresetLoader:
                     schedule=link.get("schedule", ""),
                     branches=link.get("branches", []),
                     on_fail=link.get("on_fail"),
+                    notify=link.get("notify", {}),
                 )
             )
         teams: dict[str, TeamDefinition] = {}

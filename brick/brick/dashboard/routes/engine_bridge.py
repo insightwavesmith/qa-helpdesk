@@ -93,6 +93,10 @@ class RetryAdapterRequest(BaseModel):
     block_id: str
 
 
+class TriggerHookRequest(BaseModel):
+    event: str | None = None  # optional: condition matching용
+
+
 # ── Init ─────────────────────────────────────────────────────────────
 
 def init_engine(root: str = ".bkit/") -> None:
@@ -413,4 +417,63 @@ async def retry_adapter(req: RetryAdapterRequest):
         "block_id": req.block_id,
         "status": instance.blocks[req.block_id].status.value,
         "execution_id": instance.blocks[req.block_id].execution_id,
+    }
+
+
+# ── EP-9: POST /engine/hook/{workflow_id}/{link_id} ────────────────
+
+@router.post("/hook/{workflow_id}/{link_id}")
+async def trigger_hook(workflow_id: str, link_id: str):
+    """외부 이벤트로 hook Link 발동 → 다음 블록 시작."""
+    if not executor or not checkpoint_store:
+        raise HTTPException(status_code=500, detail="Engine not initialized")
+
+    instance = checkpoint_store.load(workflow_id)
+    if not instance:
+        raise HTTPException(status_code=404, detail="workflow_not_found")
+
+    if instance.status != WorkflowStatus.RUNNING:
+        raise HTTPException(status_code=409, detail="workflow_not_running")
+
+    # link_id 형식: "{from_block}_{to_block}" (예: "do_codex-qa")
+    target_link = None
+    for link in instance.definition.links:
+        lid = f"{link.from_block}_{link.to_block}"
+        if lid == link_id and link.type == "hook":
+            target_link = link
+            break
+
+    if not target_link:
+        raise HTTPException(status_code=404, detail="hook_link_not_found")
+
+    # from 블록이 완료 상태인지 확인
+    from_block = instance.blocks.get(target_link.from_block)
+    if not from_block or from_block.status != BlockStatus.COMPLETED:
+        raise HTTPException(
+            status_code=409,
+            detail=f"from_block '{target_link.from_block}' not completed (current: {from_block.status.value if from_block else 'missing'})",
+        )
+
+    # to 블록 시작
+    to_block = instance.blocks.get(target_link.to_block)
+    if not to_block:
+        raise HTTPException(status_code=404, detail="to_block_not_found")
+
+    to_block.status = BlockStatus.QUEUED
+    instance.current_block_id = target_link.to_block
+    checkpoint_store.save(workflow_id, instance)
+
+    # StartBlockCommand 실행
+    cmd = StartBlockCommand(block_id=target_link.to_block, adapter=to_block.adapter)
+    instance = await executor._execute_command(instance, cmd)
+
+    # Reload
+    instance = checkpoint_store.load(workflow_id)
+
+    return {
+        "workflow_id": workflow_id,
+        "link_id": link_id,
+        "triggered_block": target_link.to_block,
+        "status": instance.blocks[target_link.to_block].status.value,
+        "execution_id": instance.blocks[target_link.to_block].execution_id,
     }

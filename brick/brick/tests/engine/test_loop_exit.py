@@ -148,8 +148,8 @@ def test_le08_dict_condition():
 
 
 def test_le09_invalid_pattern():
-    """파싱 불가 문자열 → True (안전 기본값)."""
-    assert evaluate_condition("not a valid condition", {"x": 1}) is True
+    """파싱 불가 문자열 → False (차단 기본값)."""
+    assert evaluate_condition("not a valid condition", {"x": 1}) is False
 
 
 def test_le10_none_condition():

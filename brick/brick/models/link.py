@@ -8,7 +8,7 @@ from typing import Any
 class LinkDefinition:
     from_block: str
     to_block: str
-    type: str = "sequential"  # sequential|parallel|compete|loop|cron|branch
+    type: str = "sequential"  # sequential|parallel|compete|loop|cron|branch|hook
     condition: str | dict = field(default_factory=dict)
     max_retries: int = 3
     merge_strategy: str = "all"  # all|any|n_of_m (for parallel)
@@ -17,6 +17,7 @@ class LinkDefinition:
     schedule: str = ""  # for cron
     branches: list[dict] = field(default_factory=list)  # for branch
     on_fail: str | None = None
+    notify: dict = field(default_factory=dict)  # {"on_start": "slack", "on_complete": "slack"}
 
 
 @dataclass

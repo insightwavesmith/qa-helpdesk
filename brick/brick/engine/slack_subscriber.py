@@ -33,6 +33,14 @@ def _format_message(event: Event) -> str:
         return f":white_check_mark: 블록 완료: *{block_id}*"
     elif event.type == "workflow.completed":
         return f":tada: 워크플로우 완료: *{workflow_id}*"
+    elif event.type == "link.started":
+        from_b = event.data.get("from_block", "")
+        to_b = event.data.get("to_block", "")
+        return f":link: 링크 시작: *{from_b}* → *{to_b}*"
+    elif event.type == "link.completed":
+        from_b = event.data.get("from_block", "")
+        to_b = event.data.get("to_block", "")
+        return f":white_check_mark: 링크 완료: *{from_b}* → *{to_b}*"
     return f"{event.type}: {event.data}"
 
 
@@ -46,6 +54,8 @@ class SlackSubscriber:
         event_bus.subscribe("block.started", self._on_event)
         event_bus.subscribe("block.completed", self._on_event)
         event_bus.subscribe("workflow.completed", self._on_event)
+        event_bus.subscribe("link.started", self._on_event)
+        event_bus.subscribe("link.completed", self._on_event)
 
     def _on_event(self, event: Event) -> None:
         """이벤트 수신 → Slack 전송. 실패해도 엔진에 영향 없음."""

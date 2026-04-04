@@ -114,7 +114,17 @@ class WorkflowDefinition:
                 for b in self.blocks
             ],
             "links": [
-                {"from_block": l.from_block, "to_block": l.to_block, "type": l.type}
+                {
+                    "from_block": l.from_block,
+                    "to_block": l.to_block,
+                    "type": l.type,
+                    "condition": l.condition,
+                    "max_retries": l.max_retries,
+                    **({"schedule": l.schedule} if l.schedule else {}),
+                    **({"branches": l.branches} if l.branches else {}),
+                    **({"on_fail": l.on_fail} if l.on_fail else {}),
+                    **({"notify": l.notify} if l.notify else {}),
+                }
                 for l in self.links
             ],
             "teams": {
@@ -146,6 +156,12 @@ class WorkflowDefinition:
                 from_block=l["from_block"],
                 to_block=l["to_block"],
                 type=l.get("type", "sequential"),
+                condition=l.get("condition", {}),
+                max_retries=l.get("max_retries", 3),
+                schedule=l.get("schedule", ""),
+                branches=l.get("branches", []),
+                on_fail=l.get("on_fail"),
+                notify=l.get("notify", {}),
             )
             for l in data.get("links", [])
         ]

@@ -7,7 +7,7 @@ import pytest
 
 from brick.adapters.base import TeamAdapter
 from brick.adapters.claude_agent_teams import ClaudeAgentTeamsAdapter
-from brick.adapters.claude_code import SingleClaudeCodeAdapter
+from brick.adapters.claude_code import ClaudeCodeAdapter
 from brick.adapters.human import HumanAdapter
 from brick.adapters.webhook import WebhookAdapter
 from brick.adapters.codex import CodexAdapter
@@ -25,7 +25,7 @@ class TestAdapterIsinstance:
         """BK-52: 모든 adapter isinstance(TeamAdapter) 체크."""
         adapters = [
             ClaudeAgentTeamsAdapter(),
-            SingleClaudeCodeAdapter(),
+            ClaudeCodeAdapter(),
             HumanAdapter(),
             WebhookAdapter(),
             CodexAdapter(),
@@ -51,14 +51,17 @@ class TestClaudeAgentTeamsAdapter:
     @pytest.mark.asyncio
     async def test_bk54_check_status(self, tmp_path):
         """BK-54: ClaudeAgentTeams check_status."""
+        import time
+        recent_ts = int(time.time())
+        eid = f"plan-{recent_ts}"
         adapter = ClaudeAgentTeamsAdapter({"team_context_dir": str(tmp_path)})
-        # No state file → running
-        status = await adapter.check_status("plan-123")
+        # No state file → running (recent timestamp, not stale)
+        status = await adapter.check_status(eid)
         assert status.status == "running"
         # With state file → completed
-        state_file = tmp_path / "task-state-plan-123.json"
+        state_file = tmp_path / f"task-state-{eid}.json"
         state_file.write_text('{"status": "completed"}')
-        status = await adapter.check_status("plan-123")
+        status = await adapter.check_status(eid)
         assert status.status == "completed"
 
     @pytest.mark.asyncio
@@ -73,13 +76,14 @@ class TestClaudeAgentTeamsAdapter:
 
 class TestHumanAdapter:
     @pytest.mark.asyncio
-    async def test_bk56_start_block_cli_output(self, simple_block, capsys):
-        """BK-56: Human start_block CLI 출력."""
-        adapter = HumanAdapter()
+    async def test_bk56_start_block_state_file(self, simple_block, tmp_path):
+        """BK-56: Human start_block 상태 파일 생성."""
+        adapter = HumanAdapter({"runtime_dir": str(tmp_path)})
         eid = await adapter.start_block(simple_block, {"workflow_id": "wf-1"})
-        assert eid.startswith("human-plan-")
-        captured = capsys.readouterr()
-        assert "Block: Create plan" in captured.out
+        assert eid.startswith("hu-plan-")
+        # 상태 파일 생성 확인
+        state_file = tmp_path / f"task-state-{eid}.json"
+        assert state_file.exists()
 
     @pytest.mark.asyncio
     async def test_bk57_complete_file_completed(self, tmp_path):
@@ -115,7 +119,7 @@ class TestAdapterInterchangeability:
             mock_proc = AsyncMock()
             mock_proc.communicate = AsyncMock(return_value=(b"", b""))
             mock_exec.return_value = mock_proc
-            claude = SingleClaudeCodeAdapter()
+            claude = ClaudeCodeAdapter()
             eid2 = await claude.start_block(simple_block, {})
             assert isinstance(eid2, str) and len(eid2) > 0
 

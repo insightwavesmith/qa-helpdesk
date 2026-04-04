@@ -15,7 +15,7 @@ from brick.engine.validator import Validator
 from brick.gates.base import GateExecutor
 from brick.adapters.human import HumanAdapter
 from brick.adapters.claude_agent_teams import ClaudeAgentTeamsAdapter
-from brick.adapters.claude_code import SingleClaudeCodeAdapter
+from brick.adapters.claude_code import ClaudeCodeAdapter
 from brick.adapters.webhook import WebhookAdapter
 from brick.adapters.codex import CodexAdapter
 from brick.gates.artifact_exists import ArtifactExistsGate
@@ -109,7 +109,7 @@ class TestIntegration:
         """BK-95: entry_points adapter 발견."""
         # Verify all adapters are importable
         from brick.adapters.claude_agent_teams import ClaudeAgentTeamsAdapter
-        from brick.adapters.claude_code import SingleClaudeCodeAdapter
+        from brick.adapters.claude_code import ClaudeCodeAdapter
         from brick.adapters.human import HumanAdapter
         from brick.adapters.webhook import WebhookAdapter
         assert ClaudeAgentTeamsAdapter is not None

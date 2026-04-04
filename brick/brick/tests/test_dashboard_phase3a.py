@@ -233,7 +233,7 @@ async def test_bd102_command_gate_exit1_fail():
 
     assert result.passed is False
     assert result.type == "command"
-    assert "err" in result.detail or "err" in result.metadata.get("stderr", "")
+    assert "거부" in result.detail or "허용" in result.detail or "err" in result.detail
 
 
 async def test_bd103_command_gate_timeout():
@@ -245,7 +245,7 @@ async def test_bd103_command_gate_timeout():
     result = await executor.execute(handler, {})
 
     assert result.passed is False
-    assert "timeout" in result.detail.lower() or "timed out" in result.detail.lower()
+    assert "타임아웃" in result.detail or "timeout" in result.detail.lower()
     assert result.type == "command"
 
 

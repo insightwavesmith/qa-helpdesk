@@ -77,6 +77,19 @@ def app(tmp_path):
         "teams": _teams_ab,
     }))
 
+    # Hook preset: a → b with hook link (external trigger)
+    (presets_dir / "test-hook.yaml").write_text(yaml.dump({
+        "name": "test-hook",
+        "blocks": [
+            {"id": "a", "what": "block a", "done": {}},
+            {"id": "b", "what": "block b", "done": {}},
+        ],
+        "links": [
+            {"from": "a", "to": "b", "type": "hook", "condition": {"event": "git.commit"}},
+        ],
+        "teams": _teams_ab,
+    }))
+
     # Invalid DAG preset (cycle: a → b → a, non-loop) + teams for passing INV-5
     (presets_dir / "test-invalid.yaml").write_text(yaml.dump({
         "name": "test-invalid",
@@ -120,7 +133,7 @@ def test_eb01_start_workflow_returns_blocks(client):
     assert "workflow_id" in data
     assert data["status"] == "running"
     assert "blocks_state" in data
-    assert data["blocks_state"]["a"]["status"] == "queued"
+    assert data["blocks_state"]["a"]["status"] == "running"  # adapter 즉시 시작
     assert data["blocks_state"]["b"]["status"] == "pending"
     assert data["current_block_id"] is not None
 
@@ -155,7 +168,7 @@ def test_eb04_complete_block_gate_pass(client):
     data = resp.json()
     assert data["gate_result"]["passed"] is True
     assert data["blocks_state"]["a"]["status"] == "completed"
-    assert data["blocks_state"]["b"]["status"] == "queued"
+    assert data["blocks_state"]["b"]["status"] == "running"  # adapter 즉시 시작
     assert "b" in data["next_blocks"]
 
 
@@ -337,7 +350,7 @@ def test_eb14_loop_max_iterations(client):
 
     # Verify loop happened: a should be queued again
     status = client.get(f"/api/v1/engine/status/{wf_id}").json()
-    assert status["blocks_state"]["a"]["status"] == "queued"
+    assert status["blocks_state"]["a"]["status"] == "running"  # adapter 즉시 시작
 
     # The loop counter _loop_b_a should be in context
     assert "_loop_b_a" in status["context"]
@@ -381,8 +394,8 @@ def test_eb15_parallel_next_blocks(client):
     })
     assert resp.status_code == 200
     data = resp.json()
-    assert data["blocks_state"]["b"]["status"] == "queued"
-    assert data["blocks_state"]["c"]["status"] == "queued"
+    assert data["blocks_state"]["b"]["status"] == "running"  # adapter 즉시 시작
+    assert data["blocks_state"]["c"]["status"] == "running"  # adapter 즉시 시작
     assert len(data["next_blocks"]) == 2
 
 
@@ -424,8 +437,8 @@ def test_eb46_adapter_start_block_called(client):
         "block_id": "a",
     })
     data = resp.json()
-    # Block b should be queued (StartBlockCommand was issued but no adapter to handle it)
-    assert data["blocks_state"]["b"]["status"] == "queued"
+    # Block b should be running (adapter starts immediately)
+    assert data["blocks_state"]["b"]["status"] == "running"
 
 
 # ── EB-047: adapter failure → block stays queued ─────────────────────
@@ -442,8 +455,8 @@ def test_eb47_adapter_failure_block_stays_queued(client):
     })
 
     status = client.get(f"/api/v1/engine/status/{wf_id}").json()
-    # b stays queued since no adapter to start it
-    assert status["blocks_state"]["b"]["status"] == "queued"
+    # b is running since adapter starts it immediately
+    assert status["blocks_state"]["b"]["status"] == "running"
 
 
 # ── EB-048: EP-8 retries adapter ─────────────────────────────────────
@@ -458,16 +471,14 @@ def test_eb48_adapter_retry_ep8(client):
         "block_id": "a",
     })
 
-    # Retry adapter for block b (which is QUEUED)
+    # Block b is RUNNING (adapter starts immediately), retry rejects non-QUEUED
     resp = client.post("/api/v1/engine/retry-adapter", json={
         "workflow_id": wf_id,
         "block_id": "b",
     })
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["block_id"] == "b"
+    assert resp.status_code == 409  # RUNNING, not QUEUED
 
-    # Try retry on non-queued block (a is completed → should fail)
+    # Block a is COMPLETED → also rejected
     resp = client.post("/api/v1/engine/retry-adapter", json={
         "workflow_id": wf_id,
         "block_id": "a",
@@ -494,7 +505,7 @@ def test_eb49_concurrent_two_workflows(client):
 
     # Workflow 2 should be unaffected
     status2 = client.get(f"/api/v1/engine/status/{wf_id2}").json()
-    assert status2["blocks_state"]["a"]["status"] == "queued"
+    assert status2["blocks_state"]["a"]["status"] == "running"  # adapter 즉시 시작
     assert status2["blocks_state"]["b"]["status"] == "pending"
 
 
@@ -520,3 +531,59 @@ def test_eb50_concurrent_complete_same_block(client):
     # Should either error or return the existing state
     # The executor will try to transition COMPLETED→RUNNING which is invalid
     assert resp2.status_code in (200, 400, 409, 500)
+
+
+# ── EB-051: hook link → from 완료 후 대기, API로 발동 ───────────────
+
+def test_eb51_hook_link_waits_after_from_complete(client):
+    """hook Link: from 블록 완료 후 다음 블록 시작 안 됨 (대기)."""
+    start = _start_workflow(client, preset="test-hook")
+    wf_id = start.json()["workflow_id"]
+
+    # Complete block a → hook link이므로 b 시작 안 됨
+    resp = client.post("/api/v1/engine/complete-block", json={
+        "workflow_id": wf_id,
+        "block_id": "a",
+    })
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["blocks_state"]["b"]["status"] == "pending"
+    assert data["next_blocks"] == []
+
+
+def test_eb52_hook_trigger_starts_block(client):
+    """hook Link: API 호출 시 다음 블록 시작됨."""
+    start = _start_workflow(client, preset="test-hook")
+    wf_id = start.json()["workflow_id"]
+
+    # Complete block a
+    client.post("/api/v1/engine/complete-block", json={
+        "workflow_id": wf_id,
+        "block_id": "a",
+    })
+
+    # Trigger hook link
+    resp = client.post(f"/api/v1/engine/hook/{wf_id}/a_b")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["triggered_block"] == "b"
+    assert data["status"] == "running"
+
+
+def test_eb53_hook_trigger_invalid_link(client):
+    """hook Link: 잘못된 link_id → 404."""
+    start = _start_workflow(client, preset="test-hook")
+    wf_id = start.json()["workflow_id"]
+
+    resp = client.post(f"/api/v1/engine/hook/{wf_id}/nonexistent_link")
+    assert resp.status_code == 404
+
+
+def test_eb54_hook_trigger_from_not_completed(client):
+    """hook Link: from 블록 미완료 시 → 409."""
+    start = _start_workflow(client, preset="test-hook")
+    wf_id = start.json()["workflow_id"]
+
+    # Don't complete block a → try to trigger hook
+    resp = client.post(f"/api/v1/engine/hook/{wf_id}/a_b")
+    assert resp.status_code == 409
