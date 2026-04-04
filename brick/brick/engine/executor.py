@@ -415,6 +415,10 @@ class WorkflowExecutor:
                 team_def = instance.definition.teams.get(cmd.block_id)
                 team_config = team_def.config if team_def else {}
 
+                # 프리셋 team_config가 있으면 해당 config로 새 어댑터 인스턴스 생성
+                if team_config:
+                    adapter = adapter.__class__(team_config)
+
                 execution_id = await adapter.start_block(block_inst.block, {
                     "workflow_id": instance.id,
                     "block_id": cmd.block_id,
@@ -476,6 +480,12 @@ class WorkflowExecutor:
                 return instance
 
             try:
+                # 프리셋 team_config 반영 (재시도에서도 동일 config 적용)
+                team_def = instance.definition.teams.get(cmd.block_id)
+                team_config = team_def.config if team_def else {}
+                if team_config:
+                    adapter = adapter.__class__(team_config)
+
                 execution_id = await adapter.start_block(block_inst.block, {
                     "workflow_id": instance.id,
                     "block_id": cmd.block_id,
