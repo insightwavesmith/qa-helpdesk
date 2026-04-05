@@ -222,7 +222,7 @@ class TestLinkRegistry:
             links=[LinkDefinition(from_block="A", to_block="B", type="priority")]
         )
         wf.context = {}
-        next_ids = sm._find_next_blocks(wf, "A")
+        next_ids, _ = sm._find_next_blocks(wf, "A")
         assert "B" in next_ids
 
     def test_lr03_unregistered_link_ignored(self):
@@ -232,7 +232,7 @@ class TestLinkRegistry:
             links=[LinkDefinition(from_block="A", to_block="B", type="unknown-link-type")]
         )
         wf.context = {}
-        next_ids = sm._find_next_blocks(wf, "A")
+        next_ids, _ = sm._find_next_blocks(wf, "A")
         assert next_ids == []
 
     def test_lr04_sequential_link_regression(self):
@@ -242,7 +242,7 @@ class TestLinkRegistry:
             links=[LinkDefinition(from_block="A", to_block="B", type="sequential")]
         )
         wf.context = {}
-        next_ids = sm._find_next_blocks(wf, "A")
+        next_ids, _ = sm._find_next_blocks(wf, "A")
         assert next_ids == ["B"]
 
     def test_lr05_loop_link_regression_condition_met(self):
@@ -255,7 +255,7 @@ class TestLinkRegistry:
             )]
         )
         wf.context = {"count": 1}
-        next_ids = sm._find_next_blocks(wf, "A")
+        next_ids, _ = sm._find_next_blocks(wf, "A")
         assert "A" in next_ids
 
     def test_lr06_custom_link_preset_validator_passes(self):

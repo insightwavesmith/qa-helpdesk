@@ -166,7 +166,7 @@ def test_le11_loop_activated_on_low_rate():
     """match_rate=85: loop(check→do) 활성, branch(check→review) 비활성."""
     sm = StateMachine()
     wf = _make_check_workflow(match_rate=85)
-    next_blocks = sm._find_next_blocks(wf, "check")
+    next_blocks, _ = sm._find_next_blocks(wf, "check")
     assert "do" in next_blocks
     assert "review" not in next_blocks
 
@@ -175,7 +175,7 @@ def test_le12_branch_activated_on_high_rate():
     """match_rate=95: branch(check→review) 활성, loop(check→do) 비활성."""
     sm = StateMachine()
     wf = _make_check_workflow(match_rate=95)
-    next_blocks = sm._find_next_blocks(wf, "check")
+    next_blocks, _ = sm._find_next_blocks(wf, "check")
     assert "review" in next_blocks
     assert "do" not in next_blocks
 
@@ -184,7 +184,7 @@ def test_le13_no_double_activation():
     """match_rate=95: do와 review가 동시 활성화되면 안 됨."""
     sm = StateMachine()
     wf = _make_check_workflow(match_rate=95)
-    next_blocks = sm._find_next_blocks(wf, "check")
+    next_blocks, _ = sm._find_next_blocks(wf, "check")
     assert next_blocks == ["review"]
 
 
@@ -192,7 +192,7 @@ def test_le14_sequential_always_active():
     """sequential link은 항상 진행."""
     sm = StateMachine()
     wf = _make_full_pdca_workflow()
-    next_blocks = sm._find_next_blocks(wf, "plan")
+    next_blocks, _ = sm._find_next_blocks(wf, "plan")
     assert "design" in next_blocks
 
 
@@ -201,7 +201,7 @@ def test_le15_loop_max_iterations():
     sm = StateMachine()
     wf = _make_check_workflow(match_rate=85)
     wf.context["_loop_check_do"] = 3  # max_retries=3 도달
-    next_blocks = sm._find_next_blocks(wf, "check")
+    next_blocks, _ = sm._find_next_blocks(wf, "check")
     assert "do" not in next_blocks
 
 
@@ -231,7 +231,7 @@ def test_le17_parallel_ignores_condition():
     wf = WorkflowInstance.from_definition(defn, "f", "t")
     wf.context = {}
     sm = StateMachine()
-    next_blocks = sm._find_next_blocks(wf, "a")
+    next_blocks, _ = sm._find_next_blocks(wf, "a")
     assert "b" in next_blocks
 
 
@@ -249,7 +249,7 @@ def test_le18_cron_excluded():
     )
     wf = WorkflowInstance.from_definition(defn, "f", "t")
     sm = StateMachine()
-    next_blocks = sm._find_next_blocks(wf, "a")
+    next_blocks, _ = sm._find_next_blocks(wf, "a")
     assert next_blocks == []
 
 
@@ -272,7 +272,7 @@ def test_le19_multiple_branches():
     wf = WorkflowInstance.from_definition(defn, "f", "t")
     wf.context = {"x": 2}
     sm = StateMachine()
-    next_blocks = sm._find_next_blocks(wf, "check")
+    next_blocks, _ = sm._find_next_blocks(wf, "check")
     assert next_blocks == ["b"]
 
 
@@ -280,7 +280,7 @@ def test_le20_no_links_from_block():
     """마지막 블록 (outgoing links 없음) → 빈 리스트."""
     sm = StateMachine()
     wf = _make_check_workflow(match_rate=95)
-    next_blocks = sm._find_next_blocks(wf, "review")
+    next_blocks, _ = sm._find_next_blocks(wf, "review")
     assert next_blocks == []
 
 
@@ -295,12 +295,12 @@ def test_le21_pdca_loop_then_exit():
     wf = _make_full_pdca_workflow(match_rate=85)
 
     # 1차: match_rate=85 → do로 loop
-    next1 = sm._find_next_blocks(wf, "check")
+    next1, _ = sm._find_next_blocks(wf, "check")
     assert "do" in next1
 
     # 2차: match_rate=95로 업데이트 → review로 분기
     wf.context["match_rate"] = 95
-    next2 = sm._find_next_blocks(wf, "check")
+    next2, _ = sm._find_next_blocks(wf, "check")
     assert "review" in next2
     assert "do" not in next2
 
@@ -309,7 +309,7 @@ def test_le22_pdca_direct_pass():
     """match_rate=95로 시작 → check에서 바로 review."""
     sm = StateMachine()
     wf = _make_full_pdca_workflow(match_rate=95)
-    next_blocks = sm._find_next_blocks(wf, "check")
+    next_blocks, _ = sm._find_next_blocks(wf, "check")
     assert next_blocks == ["review"]
 
 
@@ -318,7 +318,7 @@ def test_le23_review_loop_back():
     sm = StateMachine()
     wf = _make_full_pdca_workflow()
     wf.context["review_status"] = "changes_requested"
-    next_blocks = sm._find_next_blocks(wf, "review")
+    next_blocks, _ = sm._find_next_blocks(wf, "review")
     assert "do" in next_blocks
     assert "learn" not in next_blocks
 
@@ -328,7 +328,7 @@ def test_le24_review_approve_forward():
     sm = StateMachine()
     wf = _make_full_pdca_workflow()
     wf.context["review_status"] = "approved"
-    next_blocks = sm._find_next_blocks(wf, "review")
+    next_blocks, _ = sm._find_next_blocks(wf, "review")
     assert "learn" in next_blocks
     assert "do" not in next_blocks
 
@@ -339,11 +339,11 @@ def test_le25_max_loop_forced_exit():
     wf = _make_check_workflow(match_rate=85, loop_max_retries=3)
 
     for i in range(3):
-        result = sm._find_next_blocks(wf, "check")
+        result, _ = sm._find_next_blocks(wf, "check")
         assert "do" in result, f"Iteration {i+1} should loop back"
 
     # 4회째: max_retries=3 도달 → do 미포함
-    result = sm._find_next_blocks(wf, "check")
+    result, _ = sm._find_next_blocks(wf, "check")
     assert "do" not in result
 
 
@@ -440,5 +440,5 @@ def test_le30_compete_link_always_active():
     )
     wf = WorkflowInstance.from_definition(defn, "f", "t")
     sm = StateMachine()
-    next_blocks = sm._find_next_blocks(wf, "a")
+    next_blocks, _ = sm._find_next_blocks(wf, "a")
     assert "b" in next_blocks

@@ -86,6 +86,43 @@ class BlockInstance:
             "error": self.error,
         }
 
+
+    @staticmethod
+    def _serialize_gate(gate) -> dict | None:
+        if gate is None:
+            return None
+        return {
+            "handlers": [
+                {
+                    "type": h.type,
+                    "command": h.command,
+                    "url": h.url,
+                    "prompt": h.prompt,
+                    "model": h.model,
+                    "agent_prompt": h.agent_prompt,
+                    "timeout": h.timeout,
+                    "on_fail": h.on_fail,
+                    "confidence_threshold": h.confidence_threshold,
+                    "retries": h.retries,
+                    "metric": h.metric,
+                    "threshold": h.threshold,
+                }
+                for h in gate.handlers
+            ],
+            "evaluation": gate.evaluation,
+            "on_fail": gate.on_fail,
+            "max_retries": gate.max_retries,
+        }
+
+    @staticmethod
+    def _serialize_input(input_cfg) -> dict | None:
+        if input_cfg is None:
+            return None
+        return {
+            "from_block": input_cfg.from_block,
+            "artifacts": input_cfg.artifacts,
+        }
+
     @classmethod
     def from_dict(cls, data: dict) -> BlockInstance:
         block_data = data["block"]
@@ -143,6 +180,44 @@ class BlockInstance:
             metadata=block_data.get("metadata", {}),
             fallback_adapter=block_data.get("fallback_adapter"),
         )
+        # gate 복원
+        gate_data = block_data.get("gate")
+        gate = None
+        if gate_data:
+            from brick.models.block import GateHandler as _GH, GateConfig as _GC
+            gate = _GC(
+                handlers=[
+                    _GH(
+                        type=h.get("type", "command"),
+                        command=h.get("command"),
+                        url=h.get("url"),
+                        prompt=h.get("prompt"),
+                        model=h.get("model"),
+                        agent_prompt=h.get("agent_prompt"),
+                        timeout=h.get("timeout", 30),
+                        on_fail=h.get("on_fail", "fail"),
+                        confidence_threshold=h.get("confidence_threshold", 0.8),
+                        retries=h.get("retries", 1),
+                        metric=h.get("metric"),
+                        threshold=h.get("threshold"),
+                    )
+                    for h in gate_data.get("handlers", [])
+                ],
+                evaluation=gate_data.get("evaluation", "sequential"),
+                on_fail=gate_data.get("on_fail", "retry"),
+                max_retries=gate_data.get("max_retries", 3),
+            )
+        block.gate = gate
+
+        # input 복원
+        input_data = block_data.get("input")
+        if input_data:
+            from brick.models.block import InputConfig as _IC
+            block.input = _IC(
+                from_block=input_data.get("from_block", ""),
+                artifacts=input_data.get("artifacts", []),
+            )
+
         return cls(
             block=block,
             status=BlockStatus(data["status"]),

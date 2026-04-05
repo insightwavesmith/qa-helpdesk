@@ -36,6 +36,9 @@ ALLOWED_COMMANDS: set[str] = {
     # brick 전용
     "brick-check",
     "brick-lint",
+
+    # codex (Phase 2 adapter)
+    "codex",
 }
 
 # 셸 메타문자 패턴 — 인자에 포함되면 인젝션으로 간주
@@ -67,6 +70,13 @@ BLOCKED_ARGS: list[str] = [
     "| bash",
     "$((",
     "`",
+    # Phase 0 보안 강화: 명령 치환/체이닝 차단
+    "$(",      # command substitution
+    ";",       # command chaining
+    "&&",      # AND chaining
+    "||",      # OR chaining
+    "<(",      # process substitution (input)
+    ">(",      # process substitution (output)
 ]
 
 

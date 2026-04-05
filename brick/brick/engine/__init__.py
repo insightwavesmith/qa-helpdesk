@@ -1,5 +1,8 @@
 """Brick engine core — state machine, event bus, checkpoint, task queue, validator."""
 
+from __future__ import annotations
+
+
 from brick.engine.state_machine import StateMachine
 from brick.engine.event_bus import EventBus
 from brick.engine.checkpoint import CheckpointStore

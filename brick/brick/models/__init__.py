@@ -1,5 +1,8 @@
 """Brick models — pure dataclasses."""
 
+from __future__ import annotations
+
+
 from brick.models.events import Event, Command, StartBlockCommand, CheckGateCommand, EmitEventCommand, SaveCheckpointCommand, WorkflowStatus, BlockStatus
 from brick.models.block import Block, DoneCondition, GateConfig, GateHandler, InputConfig, ReviewConfig, ReviewRejectConfig
 from brick.models.team import TeamDefinition, TeamConfig, AdapterStatus
