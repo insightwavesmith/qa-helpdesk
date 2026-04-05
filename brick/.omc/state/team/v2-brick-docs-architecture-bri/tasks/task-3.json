@@ -1,0 +1,11 @@
+{
+  "id": "3",
+  "subject": "Worker 3: 브릭 엔진 v2 아키텍처 리뷰. brick/docs/architecture-brick-engine-v2.md 읽고 검토해라. ",
+  "description": "브릭 엔진 v2 아키텍처 리뷰. brick/docs/architecture-brick-engine-v2.md 읽고 검토해라. 1) 모듈 분리 적절한가 2) ArtifactManager 설계 맞는가 3) 확장성 빠진 것 없는가 4) 구현 Phase 순서 맞는가 5) 놓친 구조 문제. 결과를 brick/docs/architecture-review-omc.md에 작성",
+  "status": "completed",
+  "owner": "worker-3",
+  "result": null,
+  "created_at": "2026-04-05T08:17:09.417Z",
+  "version": 3,
+  "completed_at": "2026-04-05T08:21:04.918Z"
+}

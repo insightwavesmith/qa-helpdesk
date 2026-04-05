@@ -1,0 +1,69 @@
+# 보안 + QA 통합 프리셋
+# Do 완료 → 보안 스캔 → 브라우저 QA → 보고서
+name: security-qa
+description: "보안 테스트 + 브라우저 QA 통합"
+
+blocks:
+  - id: do
+    type: Do
+    what: "구현"
+    
+  - id: security
+    type: QA
+    what: "보안 테스트 (Shannon)"
+    gate:
+      handlers:
+        - type: command
+          command: "echo 'Shannon security scan placeholder'"
+      on_fail: retry
+      max_retries: 2
+
+  - id: browser-qa
+    type: QA
+    what: "브라우저 QA (OpenChrome)"
+    gate:
+      handlers:
+        - type: command
+          command: "echo 'OpenChrome browser QA placeholder'"
+      on_fail: retry
+      max_retries: 2
+
+  - id: report
+    type: Report
+    what: "보안 + QA 결과 보고서"
+
+links:
+  - from: do
+    to: security
+    type: sequential
+  - from: security
+    to: browser-qa
+    type: sequential
+  - from: browser-qa
+    to: report
+    type: sequential
+
+teams:
+  do:
+    adapter: claude_local
+    config:
+      role: cto-lead
+      model: claude-opus-4-6
+      dangerouslySkipPermissions: true
+      env:
+        CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"
+  security:
+    adapter: claude_local
+    config:
+      role: qa-monitor
+      model: claude-sonnet-4-6
+  browser-qa:
+    adapter: claude_local
+    config:
+      role: qa-monitor
+      model: claude-sonnet-4-6
+  report:
+    adapter: claude_local
+    config:
+      role: report-generator
+      model: claude-sonnet-4-6

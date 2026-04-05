@@ -1,0 +1,59 @@
+$schema: brick/preset-v2
+name: "Feature Full"
+description: "DB/Auth/인프라/마이그레이션 — Plan + ADR + Design + Do + Check + Security + Act"
+
+blocks:
+  - id: plan
+    type: Plan
+    what: "요구사항 분석 + Plan + ADR 문서"
+    done:
+      artifacts: ["brick/projects/{project}/plans/{feature}.plan.md", "brick/projects/{project}/reports/{feature}-adr.md"]
+  - id: design
+    type: Design
+    what: "상세 설계 + 롤백 전략 + TDD 케이스"
+    done:
+      artifacts: ["brick/projects/{project}/designs/{feature}.design.md"]
+  - id: do
+    type: Do
+    what: "구현"
+    done:
+      artifacts: []
+      metrics: {tsc_errors: 0, build_pass: true}
+  - id: check
+    type: Check
+    what: "Gap 분석"
+    done:
+      metrics: {match_rate: 95}
+    gate:
+      handlers:
+        - type: metric
+          metric: match_rate
+          threshold: 95
+      on_fail: retry
+      max_retries: 3
+  - id: security
+    type: Review
+    what: "보안 감사"
+    done:
+      artifacts: ["brick/projects/{project}/reports/security-{feature}.md"]
+  - id: act
+    type: Act
+    what: "배포 + 보고"
+    done:
+      artifacts: []
+
+links:
+  - {from: plan, to: design, type: sequential}
+  - {from: design, to: do, type: sequential}
+  - {from: do, to: check, type: sequential}
+  - {from: check, to: do, type: loop, condition: {match_rate_below: 95}, max_retries: 3}
+  - {from: check, to: security, type: sequential}
+  - {from: security, to: act, type: sequential}
+
+teams:
+  plan: {adapter: claude_agent_teams, config: {session: sdk-pm, role: PM_LEADER}}
+  design: {adapter: claude_agent_teams, config: {session: sdk-pm, role: PM_LEADER}}
+  do: {adapter: claude_agent_teams, config: {session: sdk-cto, role: CTO_LEADER}}
+  check: {adapter: claude_agent_teams, config: {session: sdk-cto, role: CTO_LEADER}}
+  security: {adapter: claude_agent_teams, config: {session: sdk-cto, role: CTO_LEADER}}
+  act: {adapter: claude_agent_teams, config: {session: sdk-cto, role: CTO_LEADER}}

@@ -1,0 +1,92 @@
+$schema: brick/preset-v2
+name: "Feature Approval"
+description: "일반 기능 개발 — Plan + Design + COO 검토 + CEO 승인 + Do + Check + Act"
+
+blocks:
+  - id: plan
+    type: Plan
+    what: "요구사항 분석 + Plan 문서 작성"
+    done:
+      artifacts: ["brick/projects/{project}/plans/{feature}.plan.md"]
+  - id: design
+    type: Design
+    what: "상세 설계 + TDD 케이스"
+    done:
+      artifacts: ["brick/projects/{project}/designs/{feature}.design.md"]
+  - id: coo_review
+    type: Review
+    what: "COO 산출물 검토 (완성도 + 일관성)"
+    done:
+      artifacts: []
+    gate:
+      handlers:
+        - type: agent
+          agent_prompt: |
+            Design 문서를 검토하라.
+            확인 항목: (1) TDD 섹션 존재 여부 (2) Plan과의 일관성 (3) 누락 기능.
+            verdict: pass/fail + 사유.
+          timeout: 300
+          on_fail: fail
+  - id: ceo_approval
+    type: Approval
+    what: "CEO(Smith님) 방향성 승인"
+    done:
+      artifacts: []
+    gate:
+      handlers:
+        - type: approval
+          approval:
+            approver: smith
+            channel: both
+            slack_channel: "C0AN7ATS4DD"
+            dashboard_url: "/approvals"
+            timeout_seconds: 86400
+            on_timeout: escalate
+            reminder_interval: 3600
+            max_reminders: 3
+            context_artifacts:
+              - "brick/projects/{project}/plans/{feature}.plan.md"
+              - "brick/projects/{project}/designs/{feature}.design.md"
+      evaluation: sequential
+  - id: do
+    type: Do
+    what: "구현"
+    done:
+      artifacts: []
+      metrics: {tsc_errors: 0, build_pass: true}
+  - id: check
+    type: Check
+    what: "Gap 분석"
+    done:
+      metrics: {match_rate: 90}
+    gate:
+      handlers:
+        - type: metric
+          metric: match_rate
+          threshold: 90
+      on_fail: retry
+      max_retries: 3
+  - id: act
+    type: Act
+    what: "배포 + 보고"
+    done:
+      artifacts: []
+
+links:
+  - {from: plan, to: design, type: sequential}
+  - {from: design, to: coo_review, type: sequential}
+  - {from: coo_review, to: ceo_approval, type: sequential}
+  - {from: ceo_approval, to: do, type: sequential}
+  - {from: ceo_approval, to: design, type: loop, condition: {approval_status: rejected}, max_retries: 3}
+  - {from: do, to: check, type: sequential}
+  - {from: check, to: do, type: loop, condition: {match_rate_below: 90}, max_retries: 3}
+  - {from: check, to: act, type: sequential}
+
+teams:
+  plan: {adapter: claude_agent_teams, config: {session: sdk-pm, role: PM_LEADER}}
+  design: {adapter: claude_agent_teams, config: {session: sdk-pm, role: PM_LEADER}}
+  coo_review: {adapter: claude_agent_teams, config: {session: sdk-coo, role: COO}}
+  ceo_approval: {adapter: human, config: {approver: smith}}
+  do: {adapter: claude_agent_teams, config: {session: sdk-cto, role: CTO_LEADER}}
+  check: {adapter: claude_agent_teams, config: {session: sdk-cto, role: CTO_LEADER}}
+  act: {adapter: claude_agent_teams, config: {session: sdk-cto, role: CTO_LEADER}}

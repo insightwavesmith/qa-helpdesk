@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brick Engine — P2 UX Wireframe</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Pretendard', -apple-system, sans-serif; background: #0a0a0a; color: #e0e0e0; }
+  
+  /* === 전체 레이아웃 === */
+  .app { display: flex; height: 100vh; }
+  .sidebar { width: 260px; background: #111; border-right: 1px solid #222; display: flex; flex-direction: column; }
+  .main { flex: 1; display: flex; flex-direction: column; position: relative; }
+  
+  /* === 사이드바 === */
+  .sidebar-header { padding: 20px; border-bottom: 1px solid #222; }
+  .sidebar-header h1 { font-size: 16px; font-weight: 700; color: #fff; }
+  .sidebar-header span { font-size: 11px; color: #666; }
+  
+  .sidebar-section { padding: 12px 16px; }
+  .sidebar-section h3 { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  
+  .project-item { 
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px; 
+    border-radius: 6px; cursor: pointer; margin-bottom: 2px;
+  }
+  .project-item:hover { background: #1a1a1a; }
+  .project-item.active { background: #1a2332; border-left: 2px solid #3b82f6; }
+  .project-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .project-name { font-size: 13px; font-weight: 500; }
+  .project-badge { font-size: 10px; background: #1a2332; color: #3b82f6; padding: 2px 6px; border-radius: 10px; margin-left: auto; }
+  
+  .sidebar-agents { margin-top: auto; padding: 16px; border-top: 1px solid #222; }
+  .agent-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+  .agent-avatar { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+  .agent-name { font-size: 12px; }
+  .agent-status { width: 6px; height: 6px; border-radius: 50%; margin-left: auto; }
+  .status-busy { background: #22c55e; }
+  .status-idle { background: #666; }
+  
+  /* === 메인: SkyOffice 뷰 === */
+  .topbar { height: 48px; background: #111; border-bottom: 1px solid #222; display: flex; align-items: center; padding: 0 20px; gap: 12px; }
+  .topbar-tab { font-size: 13px; padding: 6px 14px; border-radius: 6px; cursor: pointer; color: #888; }
+  .topbar-tab.active { background: #1a1a1a; color: #fff; }
+  .topbar-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .btn { padding: 6px 16px; border-radius: 6px; font-size: 12px; cursor: pointer; border: none; font-weight: 600; }
+  .btn-primary { background: #3b82f6; color: #fff; }
+  .btn-ghost { background: transparent; color: #888; border: 1px solid #333; }
+  
+  /* === SkyOffice 맵 === */
+  .skyoffice { flex: 1; position: relative; overflow: hidden; background: #0d1117; }
+  
+  .office-grid {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    display: grid; grid-template-columns: repeat(3, 200px); grid-template-rows: repeat(2, 160px);
+    gap: 16px;
+  }
+  
+  .room {
+    background: #161b22; border: 2px solid #21262d; border-radius: 12px;
+    padding: 16px; position: relative; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .room:hover { border-color: #3b82f6; transform: scale(1.02); }
+  .room.active-room { border-color: #22c55e; box-shadow: 0 0 20px rgba(34,197,94,0.1); }
+  .room.completed { border-color: #22c55e; opacity: 0.7; }
+  .room.waiting { border-color: #eab308; }
+  
+  .room-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+  .room-name { font-size: 15px; font-weight: 600; margin-top: 4px; }
+  .room-status { font-size: 11px; margin-top: 8px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+  .status-running { background: #132337; color: #3b82f6; }
+  .status-done { background: #0d2818; color: #22c55e; }
+  .status-pending { background: #1a1a1a; color: #666; }
+  .status-review { background: #2d2005; color: #eab308; }
+  
+  .room-agent {
+    position: absolute; bottom: 12px; right: 12px;
+    display: flex; gap: -4px;
+  }
+  .room-agent-avatar {
+    width: 28px; height: 28px; border-radius: 50%; border: 2px solid #161b22;
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    margin-left: -6px;
+  }
+  
+  /* === 연결선 (SVG 오버레이) === */
+  .connections { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+  
+  /* === 블록 조합 모드 (오버레이) === */
+  .builder-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85); z-index: 10; display: none;
+    flex-direction: column;
+  }
+  .builder-overlay.show { display: flex; }
+  
+  .builder-toolbar {
+    height: 56px; background: #111; border-bottom: 1px solid #222;
+    display: flex; align-items: center; padding: 0 20px; gap: 12px;
+  }
+  .block-palette {
+    display: flex; gap: 8px;
+  }
+  .palette-item {
+    width: 44px; height: 44px; background: #1a1a1a; border: 1px solid #333;
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    cursor: grab; font-size: 20px;
+  }
+  .palette-item:hover { border-color: #3b82f6; }
+  
+  .builder-canvas { flex: 1; position: relative; }
+  
+  .builder-node {
+    position: absolute; width: 160px; background: #161b22; border: 2px solid #21262d;
+    border-radius: 10px; padding: 12px; cursor: move;
+  }
+  .builder-node.selected { border-color: #3b82f6; }
+  .node-type { font-size: 10px; color: #666; text-transform: uppercase; }
+  .node-name { font-size: 13px; font-weight: 600; margin-top: 2px; }
+  .node-port { 
+    width: 10px; height: 10px; background: #3b82f6; border-radius: 50%;
+    position: absolute; cursor: crosshair;
+  }
+  .node-port.out { right: -5px; top: 50%; transform: translateY(-50%); }
+  .node-port.in { left: -5px; top: 50%; transform: translateY(-50%); }
+  
+  /* === 하단 패널: 채팅 + 로그 === */
+  .bottom-panel {
+    height: 200px; background: #111; border-top: 1px solid #222;
+    display: flex;
+  }
+  .chat-panel { flex: 1; border-right: 1px solid #222; display: flex; flex-direction: column; }
+  .log-panel { flex: 1; display: flex; flex-direction: column; }
+  
+  .panel-header { height: 32px; display: flex; align-items: center; padding: 0 12px; border-bottom: 1px solid #222; }
+  .panel-header span { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+  .panel-body { flex: 1; padding: 8px 12px; overflow-y: auto; font-size: 12px; }
+  
+  .chat-msg { margin-bottom: 8px; }
+  .chat-sender { font-weight: 600; color: #3b82f6; }
+  .chat-text { color: #999; margin-top: 2px; }
+  
+  .log-line { color: #666; margin-bottom: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .log-line .time { color: #444; }
+  .log-line .event { color: #22c55e; }
+  .log-line .error { color: #ef4444; }
+  
+  .chat-input { 
+    height: 36px; border-top: 1px solid #222; display: flex; align-items: center; padding: 0 12px; 
+  }
+  .chat-input input { 
+    flex: 1; background: transparent; border: none; color: #e0e0e0; 
+    font-size: 12px; outline: none; 
+  }
+  .chat-input input::placeholder { color: #444; }
+  
+  /* === 진행률 바 === */
+  .progress-bar { 
+    height: 3px; background: #222; position: absolute; bottom: 200px; left: 260px; right: 0; z-index: 5;
+  }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #22c55e); width: 40%; transition: width 0.5s; }
+  
+  /* === 사이드 설정 패널 === */
+  .settings-panel {
+    width: 300px; background: #111; border-left: 1px solid #222;
+    padding: 20px; display: none;
+  }
+  .settings-panel.show { display: block; }
+  .settings-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+  .settings-field { margin-bottom: 12px; }
+  .settings-label { font-size: 11px; color: #666; margin-bottom: 4px; }
+  .settings-select { 
+    width: 100%; background: #1a1a1a; border: 1px solid #333; 
+    border-radius: 6px; padding: 8px; color: #e0e0e0; font-size: 12px; 
+  }
+  .settings-toggle { display: flex; justify-content: space-between; align-items: center; }
+  .toggle { width: 36px; height: 20px; background: #333; border-radius: 10px; position: relative; cursor: pointer; }
+  .toggle.on { background: #3b82f6; }
+  .toggle::after { content: ''; width: 16px; height: 16px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: 0.2s; }
+  .toggle.on::after { left: 18px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- 사이드바 -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>🧱 Brick Engine</h1>
+      <span>v0.2.0 — 3 projects</span>
+    </div>
+    
+    <div class="sidebar-section">
+      <h3>Projects</h3>
+      <div class="project-item active">
+        <div class="project-icon" style="background:#1a2332;">📦</div>
+        <span class="project-name">bscamp</span>
+        <span class="project-badge">3 active</span>
+      </div>
+      <div class="project-item">
+        <div class="project-icon" style="background:#1a1a1a;">🧱</div>
+        <span class="project-name">brick-engine</span>
+        <span class="project-badge">1 active</span>
+      </div>
+      <div class="project-item">
+        <div class="project-icon" style="background:#1a1a1a;">🏢</div>
+        <span class="project-name">skyoffice</span>
+      </div>
+    </div>
+    
+    <div class="sidebar-section">
+      <h3>Workflows</h3>
+      <div class="project-item active">
+        <span class="project-name" style="font-size:12px;">▶ brick-p0-3axis</span>
+        <span class="project-badge" style="background:#0d2818;color:#22c55e;">40%</span>
+      </div>
+      <div class="project-item">
+        <span class="project-name" style="font-size:12px;">⏸ brick-p1-ops</span>
+        <span class="project-badge">queued</span>
+      </div>
+    </div>
+    
+    <div class="sidebar-agents">
+      <h3 style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Agents</h3>
+      <div class="agent-row">
+        <div class="agent-avatar" style="background:#1e3a5f;">🤖</div>
+        <span class="agent-name">CTO (cto-lead)</span>
+        <div class="agent-status status-busy"></div>
+      </div>
+      <div class="agent-row">
+        <div class="agent-avatar" style="background:#3a1e5f;">🤖</div>
+        <span class="agent-name">PM (pm-lead)</span>
+        <div class="agent-status status-idle"></div>
+      </div>
+      <div class="agent-row">
+        <div class="agent-avatar" style="background:#1e5f3a;">🔍</div>
+        <span class="agent-name">QA (qa-monitor)</span>
+        <div class="agent-status status-idle"></div>
+      </div>
+      <div class="agent-row">
+        <div class="agent-avatar" style="background:#5f3a1e;">👤</div>
+        <span class="agent-name">Smith (admin)</span>
+        <div class="agent-status status-busy"></div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 메인 -->
+  <div class="main">
+    <!-- 상단 바 -->
+    <div class="topbar">
+      <div class="topbar-tab active">🏢 Office</div>
+      <div class="topbar-tab">🔧 Builder</div>
+      <div class="topbar-tab">📊 Timeline</div>
+      <div class="topbar-right">
+        <span style="font-size:12px;color:#666;">⏱ 12:34 elapsed</span>
+        <button class="btn btn-primary">▶ New Workflow</button>
+      </div>
+    </div>
+    
+    <!-- SkyOffice 맵 -->
+    <div class="skyoffice">
+      <div class="office-grid">
+        <!-- Plan 방 -->
+        <div class="room completed">
+          <div class="room-label">Phase 1</div>
+          <div class="room-name">📋 Plan</div>
+          <div class="room-status status-done">✅ completed</div>
+        </div>
+        
+        <!-- Design 방 -->
+        <div class="room completed">
+          <div class="room-label">Phase 2</div>
+          <div class="room-name">📐 Design</div>
+          <div class="room-status status-done">✅ completed</div>
+        </div>
+        
+        <!-- Review 방 -->
+        <div class="room waiting">
+          <div class="room-label">Gate</div>
+          <div class="room-name">🔍 Review</div>
+          <div class="room-status status-review">⏳ waiting approval</div>
+          <div class="room-agent">
+            <div class="room-agent-avatar" style="background:#5f3a1e;">👤</div>
+          </div>
+        </div>
+        
+        <!-- Do 방 -->
+        <div class="room active-room">
+          <div class="room-label">Phase 3</div>
+          <div class="room-name">⚡ Do</div>
+          <div class="room-status status-running">🔄 running</div>
+          <div class="room-agent">
+            <div class="room-agent-avatar" style="background:#1e3a5f;">🤖</div>
+            <div class="room-agent-avatar" style="background:#2a4a6f;">👥</div>
+            <div class="room-agent-avatar" style="background:#2a4a6f;">👥</div>
+          </div>
+        </div>
+        
+        <!-- QA 방 -->
+        <div class="room">
+          <div class="room-label">Phase 4</div>
+          <div class="room-name">🧪 QA</div>
+          <div class="room-status status-pending">— pending</div>
+        </div>
+        
+        <!-- Report 방 -->
+        <div class="room">
+          <div class="room-label">Phase 5</div>
+          <div class="room-name">📊 Report</div>
+          <div class="room-status status-pending">— pending</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 진행률 -->
+    <div class="progress-bar">
+      <div class="progress-fill"></div>
+    </div>
+    
+    <!-- 하단 패널 -->
+    <div class="bottom-panel">
+      <!-- 채팅 -->
+      <div class="chat-panel">
+        <div class="panel-header">
+          <span>💬 Chat — Do Room</span>
+        </div>
+        <div class="panel-body">
+          <div class="chat-msg">
+            <div class="chat-sender">🤖 CTO</div>
+            <div class="chat-text">축1 artifact Gate 구현 완료. 팀원한테 축2 위임함.</div>
+          </div>
+          <div class="chat-msg">
+            <div class="chat-sender">👥 backend-dev-1</div>
+            <div class="chat-text">claude_local.py --bare 제거 + --agent 주입 완료.</div>
+          </div>
+          <div class="chat-msg">
+            <div class="chat-sender">👥 backend-dev-2</div>
+            <div class="chat-text">SlackSubscriber 실패 이벤트 3개 추가 중...</div>
+          </div>
+        </div>
+        <div class="chat-input">
+          <input type="text" placeholder="CTO에게 메시지 보내기..." />
+        </div>
+      </div>
+      
+      <!-- 로그 -->
+      <div class="log-panel">
+        <div class="panel-header">
+          <span>📋 Activity Log</span>
+        </div>
+        <div class="panel-body">
+          <div class="log-line"><span class="time">18:42</span> <span class="event">▶ block.started</span> do — cto-lead (Opus 4.6)</div>
+          <div class="log-line"><span class="time">18:41</span> <span class="event">✅ block.completed</span> design-review — approved by smith@bscamp.kr</div>
+          <div class="log-line"><span class="time">18:38</span> <span class="event">✅ gate.passed</span> design — artifact: designs/brick-p0.md ✓</div>
+          <div class="log-line"><span class="time">18:35</span> <span class="error">❌ gate.failed</span> design — artifact missing: designs/brick-p0.md</div>
+          <div class="log-line"><span class="time">18:30</span> <span class="event">🔄 block.retry</span> design — attempt 2/3</div>
+          <div class="log-line"><span class="time">18:25</span> <span class="event">✅ block.completed</span> plan — artifact: plans/brick-p0.md ✓</div>
+          <div class="log-line"><span class="time">18:20</span> <span class="event">▶ workflow.started</span> brick-p0-3axis — preset: t-pdca-l2</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 설정 패널 (방 클릭 시) -->
+  <div class="settings-panel show">
+    <div class="settings-title">⚡ Do Block</div>
+    
+    <div class="settings-field">
+      <div class="settings-label">ADAPTER</div>
+      <select class="settings-select">
+        <option selected>🤖 claude_local (Claude Code)</option>
+        <option>🌐 webhook (External API)</option>
+        <option>👤 human (Manual)</option>
+        <option>🔧 gastown (Gas Town)</option>
+      </select>
+    </div>
+    
+    <div class="settings-field">
+      <div class="settings-label">AGENT</div>
+      <select class="settings-select">
+        <option selected>cto-lead</option>
+        <option>pm-lead</option>
+        <option>qa-monitor</option>
+      </select>
+    </div>
+    
+    <div class="settings-field">
+      <div class="settings-label">MODEL</div>
+      <select class="settings-select">
+        <option selected>Claude Opus 4.6</option>
+        <option>Claude Sonnet 4.6</option>
+        <option>Gemini 2.5 Flash</option>
+        <option>GPT-4o</option>
+      </select>
+    </div>
+    
+    <div class="settings-field">
+      <div class="settings-toggle">
+        <span class="settings-label" style="margin:0;">AGENT TEAMS</span>
+        <div class="toggle on"></div>
+      </div>
+    </div>
+    
+    <div class="settings-field">
+      <div class="settings-toggle">
+        <span class="settings-label" style="margin:0;">ARTIFACT GATE</span>
+        <div class="toggle on"></div>
+      </div>
+    </div>
+    
+    <div class="settings-field">
+      <div class="settings-toggle">
+        <span class="settings-label" style="margin:0;">APPROVAL GATE</span>
+        <div class="toggle"></div>
+      </div>
+    </div>
+    
+    <div class="settings-field">
+      <div class="settings-label">ARTIFACT PATH</div>
+      <input class="settings-select" value="projects/bscamp/reports/{feature}.md" />
+    </div>
+    
+    <div class="settings-field">
+      <div class="settings-label">MAX RETRIES</div>
+      <input class="settings-select" type="number" value="3" />
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

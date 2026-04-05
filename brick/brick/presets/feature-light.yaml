@@ -1,0 +1,37 @@
+$schema: brick/preset-v2
+name: "Feature Light"
+description: "버그 원인 명확 — Design + Do + Check"
+
+blocks:
+  - id: design
+    type: Design
+    what: "상황 설계"
+    done:
+      artifacts: ["brick/projects/{project}/designs/{feature}.design.md"]
+  - id: do
+    type: Do
+    what: "구현"
+    done:
+      artifacts: []
+      metrics: {tsc_errors: 0, build_pass: true}
+  - id: check
+    type: Check
+    what: "결과 확인"
+    done:
+      metrics: {build_pass: true}
+    gate:
+      handlers:
+        - type: metric
+          metric: build_pass
+          threshold: 1
+      on_fail: retry
+      max_retries: 1
+
+links:
+  - {from: design, to: do, type: sequential}
+  - {from: do, to: check, type: sequential}
+
+teams:
+  design: {adapter: claude_agent_teams, config: {session: sdk-pm, role: PM_LEADER}}
+  do: {adapter: claude_agent_teams, config: {session: sdk-cto, role: CTO_LEADER}}
+  check: {adapter: claude_agent_teams, config: {session: sdk-cto, role: CTO_LEADER}}

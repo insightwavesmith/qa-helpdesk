@@ -1,0 +1,109 @@
+$schema: brick/preset-v2
+name: "Feature COO Review"
+description: "TASK 승인 후 자동 체인 — Plan + Design + COO 검토 + Do + COO 검토 + Report"
+
+blocks:
+  - id: plan
+    type: Plan
+    what: "요구사항 분석 + Plan 문서 작성"
+    done:
+      artifacts: ["brick/projects/{project}/plans/{feature}.plan.md"]
+  - id: design
+    type: Design
+    what: "상세 설계 + TDD 케이스"
+    done:
+      artifacts: ["brick/projects/{project}/designs/{feature}.design.md"]
+  - id: design-review
+    type: Review
+    what: "COO Design 검토 (완성도 + Plan 일관성 + TDD 존재)"
+    done:
+      artifacts: []
+    gate:
+      handlers:
+        - type: review
+          reviewer: coo
+      on_fail: retry
+      max_retries: 3
+  - id: do
+    type: Do
+    what: "구현"
+    done:
+      artifacts: []
+      metrics: {build_pass: true}
+    gate:
+      handlers:
+        - type: command
+          command: "npx vitest run --reporter=verbose"
+          timeout: 120
+      on_fail: retry
+      max_retries: 3
+  - id: do-review
+    type: Review
+    what: "COO 구현 검토 (Design 대비 구현 GAP + 테스트 통과 확인)"
+    done:
+      artifacts: []
+    gate:
+      handlers:
+        - type: review
+          reviewer: coo
+      on_fail: retry
+      max_retries: 3
+  - id: report
+    type: Act
+    what: "완료 보고 — Smith님 Slack"
+    done:
+      artifacts: []
+
+links:
+  - {from: plan, to: design, type: sequential}
+  - {from: design, to: design-review, type: sequential}
+  - {from: design-review, to: design, type: loop, condition: {review_rejected: true}, max_retries: 3}
+  - {from: design-review, to: do, type: branch, condition: {review_approved: true}}
+  - {from: do, to: do-review, type: sequential}
+  - {from: do-review, to: do, type: loop, condition: {review_rejected: true}, max_retries: 3}
+  - {from: do-review, to: report, type: branch, condition: {review_approved: true}}
+
+teams:
+  plan:
+    adapter: claude_local
+    config:
+      role: pm-lead
+      model: claude-opus-4-6
+      dangerouslySkipPermissions: true
+      maxTurns: 50
+      env:
+        CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"
+  design:
+    adapter: claude_local
+    config:
+      role: pm-lead
+      model: claude-opus-4-6
+      dangerouslySkipPermissions: true
+      maxTurns: 100
+      env:
+        CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"
+  design-review:
+    adapter: human
+    config:
+      assignee: coo
+      channel: slack
+      timeout_seconds: 86400
+  do:
+    adapter: claude_local
+    config:
+      role: cto-lead
+      model: claude-opus-4-6
+      dangerouslySkipPermissions: true
+      maxTurns: 100
+      env:
+        CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"
+  do-review:
+    adapter: human
+    config:
+      assignee: coo
+      channel: slack
+      timeout_seconds: 86400
+  report:
+    adapter: human
+    config:
+      assignee: coo

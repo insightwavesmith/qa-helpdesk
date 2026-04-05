@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🧱 Brick Engine — 사용 가이드</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net/npm/pretendard@latest/dist/web/static/" />
+  <style>
+    @import url('https://cdn.jsdelivr.net/npm/pretendard@latest/dist/web/static/pretendard.css');
+
+    /* ─── Reset & Base ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0a0a0a;
+      --bg-2:        #111111;
+      --bg-3:        #161616;
+      --border:      #1f1f1f;
+      --border-2:    #2a2d3e;
+      --text:        #e0e0e0;
+      --text-2:      #a0a0a0;
+      --text-3:      #666;
+      --accent:      #6c63ff;
+      --accent-2:    #4f46e5;
+      --accent-glow: rgba(108, 99, 255, 0.15);
+      --code-bg:     #161b22;
+      --sidebar-w:   260px;
+      --content-max: 860px;
+      --radius:      8px;
+      --radius-sm:   4px;
+    }
+
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── Layout ─── */
+    .layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ─── Sidebar ─── */
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      overflow-y: auto;
+      background: var(--bg-2);
+      border-right: 1px solid var(--border);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-track { background: transparent; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+
+    .sidebar-header {
+      padding: 24px 20px 16px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .logo-icon {
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .logo-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .logo-name {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .logo-version {
+      font-size: 11px;
+      color: var(--text-3);
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    .sidebar-nav {
+      padding: 12px 0 24px;
+      flex: 1;
+    }
+
+    .nav-section {
+      margin-bottom: 4px;
+    }
+
+    .nav-label {
+      padding: 6px 20px 4px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-3);
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 20px;
+      font-size: 13.5px;
+      color: var(--text-2);
+      text-decoration: none;
+      border-radius: 0;
+      transition: all 0.15s ease;
+      line-height: 1.4;
+      position: relative;
+    }
+
+    .nav-link:hover {
+      color: var(--text);
+      background: var(--bg-3);
+    }
+
+    .nav-link.active {
+      color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .nav-link.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--accent);
+      border-radius: 0 2px 2px 0;
+    }
+
+    .nav-sub {
+      padding-left: 16px;
+    }
+
+    .nav-sub .nav-link {
+      font-size: 13px;
+      padding: 5px 20px 5px 24px;
+    }
+
+    /* ─── Main Content ─── */
+    .main {
+      flex: 1;
+      margin-left: var(--sidebar-w);
+      min-width: 0;
+    }
+
+    /* ─── Top Header Banner ─── */
+    .hero {
+      border-bottom: 1px solid var(--border);
+      padding: 56px 64px 40px;
+      background: linear-gradient(180deg, #0d0d1a 0%, var(--bg) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(108,99,255,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: var(--accent-glow);
+      border: 1px solid rgba(108, 99, 255, 0.3);
+      border-radius: 99px;
+      font-size: 11.5px;
+      color: #9b8dff;
+      font-weight: 500;
+      margin-bottom: 20px;
+      letter-spacing: 0.02em;
+    }
+
+    .hero-title {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: #fff;
+      margin-bottom: 12px;
+      line-height: 1.15;
+    }
+
+    .hero-title .emoji { margin-right: 8px; }
+
+    .hero-subtitle {
+      font-size: 16px;
+      color: var(--text-2);
+      max-width: 540px;
+      line-height: 1.6;
+    }
+
+    /* ─── Content Area ─── */
+    .content {
+      max-width: var(--content-max);
+      padding: 56px 64px 120px;
+    }
+
+    /* ─── Typography ─── */
+    .content h2 {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: #fff;
+      margin: 56px 0 20px;
+      padding-top: 56px;
+      border-top: 1px solid var(--border);
+      scroll-margin-top: 24px;
+      line-height: 1.25;
+    }
+
+    .content h2:first-child {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+
+    .content h3 {
+      font-size: 17px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin: 32px 0 14px;
+      scroll-margin-top: 24px;
+    }
+
+    .content h4 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-2);
+      margin: 24px 0 10px;
+    }
+
+    .content p {
+      margin-bottom: 16px;
+      color: var(--text-2);
+      font-size: 15px;
+    }
+
+    .content ul, .content ol {
+      margin: 12px 0 16px 24px;
+    }
+
+    .content li {
+      color: var(--text-2);
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+
+    .content em {
+      font-style: italic;
+      color: var(--text);
+    }
+
+    .content strong {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* ─── Anchor Links ─── */
+    .anchor-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .anchor-link .anchor-icon {
+      opacity: 0;
+      color: var(--text-3);
+      font-size: 16px;
+      transition: opacity 0.15s;
+    }
+
+    .anchor-link:hover .anchor-icon { opacity: 1; }
+
+    h2:hover .anchor-icon,
+    h3:hover .anchor-icon { opacity: 0.6; }
+
+    /* ─── Blockquote ─── */
+    .content blockquote {
+      border-left: 3px solid var(--accent);
+      padding: 12px 20px;
+      background: var(--accent-glow);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      margin: 0 0 20px;
+    }
+
+    .content blockquote p {
+      margin: 0;
+      font-size: 15px;
+      color: var(--text-2);
+    }
+
+    /* ─── Divider ─── */
+    .content hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 40px 0;
+    }
+
+    /* ─── Code Inline ─── */
+    .content code:not(pre code) {
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+      font-size: 13px;
+      background: var(--code-bg);
+      border: 1px solid var(--border-2);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      color: #c9b4ff;
+    }
+
+    /* ─── Code Block ─── */
+    .code-wrapper {
+      position: relative;
+      margin: 20px 0;
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      background: #0e1117;
+      border: 1px solid var(--border-2);
+      border-bottom: none;
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+
+    .code-lang {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 11px;
+      color: var(--text-3);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .copy-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      background: transparent;
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-sm);
+      color: var(--text-3);
+      font-size: 11.5px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s ease;
+    }
+
+    .copy-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .copy-btn.copied {
+      border-color: #3fb950;
+      color: #3fb950;
+      background: rgba(63, 185, 80, 0.1);
+    }
+
+    .content pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border-2);
+      border-top: none;
+      border-radius: 0 0 var(--radius) var(--radius);
+      padding: 20px;
+      overflow-x: auto;
+      margin: 0;
+    }
+
+    .content pre code {
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+      font-size: 13.5px;
+      line-height: 1.65;
+      color: #c9d1d9;
+      background: none;
+      border: none;
+      padding: 0;
+    }
+
+    pre::-webkit-scrollbar { height: 4px; }
+    pre::-webkit-scrollbar-track { background: transparent; }
+    pre::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+
+    /* ─── Syntax highlights (minimal) ─── */
+    .content pre code .kw  { color: #ff7b72; }  /* keywords */
+    .content pre code .str { color: #a5d6ff; }  /* strings */
+    .content pre code .cmt { color: #8b949e; font-style: italic; }  /* comments */
+    .content pre code .num { color: #79c0ff; }  /* numbers */
+    .content pre code .fn  { color: #d2a8ff; }  /* functions */
+    .content pre code .key { color: #7ee787; }  /* keys */
+
+    /* ─── Tables ─── */
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 20px 0;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    .content table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .content th {
+      background: #0e1117;
+      color: var(--text-2);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .content td {
+      padding: 11px 16px;
+      color: var(--text-2);
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .content tr:last-child td { border-bottom: none; }
+
+    .content tbody tr:nth-child(even) { background: rgba(255,255,255,0.015); }
+    .content tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+    .content td code, .content th code {
+      font-size: 12px;
+    }
+
+    /* ─── Info Box ─── */
+    .info-box {
+      display: flex;
+      gap: 12px;
+      padding: 16px 20px;
+      background: rgba(108, 99, 255, 0.07);
+      border: 1px solid rgba(108, 99, 255, 0.2);
+      border-radius: var(--radius);
+      margin: 20px 0;
+    }
+
+    .info-box .icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .info-box p { margin: 0; font-size: 14px; color: var(--text-2); }
+
+    /* ─── Section number badge ─── */
+    .step-grid {
+      display: grid;
+      gap: 4px;
+      margin: 16px 0;
+    }
+
+    /* ─── Mobile Hamburger ─── */
+    .mobile-header {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      background: var(--bg-2);
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 200;
+    }
+
+    .mobile-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .hamburger {
+      background: none;
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-sm);
+      color: var(--text-2);
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.15s;
+    }
+
+    .hamburger:hover { border-color: var(--accent); color: var(--accent); }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 90;
+      backdrop-filter: blur(2px);
+    }
+
+    /* ─── Back to top ─── */
+    .back-top {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      width: 40px;
+      height: 40px;
+      background: var(--bg-2);
+      border: 1px solid var(--border-2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-3);
+      font-size: 16px;
+      text-decoration: none;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all 0.2s ease;
+      z-index: 50;
+    }
+
+    .back-top.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .back-top:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 900px) {
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+        box-shadow: 0 0 40px rgba(0,0,0,0.5);
+      }
+
+      .sidebar-overlay.open { display: block; }
+
+      .mobile-header { display: flex; }
+
+      .main {
+        margin-left: 0;
+        padding-top: 56px;
+      }
+
+      .hero {
+        padding: 32px 24px 28px;
+      }
+
+      .hero-title { font-size: 26px; }
+
+      .content {
+        padding: 32px 24px 80px;
+      }
+
+      .content h2 { font-size: 22px; }
+    }
+
+    @media (max-width: 480px) {
+      .hero { padding: 24px 16px 20px; }
+      .content { padding: 24px 16px 60px; }
+      .hero-title { font-size: 22px; }
+      .content h2 { font-size: 20px; }
+      .back-top { bottom: 20px; right: 16px; }
+    }
+
+    /* ─── Scrollbar global ─── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3d4057; }
+  </style>
+</head>
+<body>
+
+<!-- Mobile Header -->
+<header class="mobile-header">
+  <div class="mobile-logo"><span>🧱</span> Brick Engine</div>
+  <button class="hamburger" id="hamburger" aria-label="메뉴 열기">☰</button>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+
+  <!-- ─── Sidebar ─── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a class="logo" href="#top">
+        <span class="logo-icon">🧱</span>
+        <div class="logo-text">
+          <span class="logo-name">Brick Engine</span>
+          <span class="logo-version">v1.0 · 사용 가이드</span>
+        </div>
+      </a>
+    </div>
+
+    <nav class="sidebar-nav">
+
+      <div class="nav-section">
+        <div class="nav-label">시작하기</div>
+        <a class="nav-link" href="#what-is-brick">브릭이 뭔가?</a>
+        <div class="nav-sub">
+          <a class="nav-link" href="#quickstart">빠른 시작 (5분)</a>
+          <a class="nav-link" href="#step-1">1. 서버 시작</a>
+          <a class="nav-link" href="#step-2">2. 헬스체크</a>
+          <a class="nav-link" href="#step-3">3. 프리셋 목록</a>
+          <a class="nav-link" href="#step-4">4. 워크플로우 시작</a>
+          <a class="nav-link" href="#step-5">5. 상태 확인</a>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">설정</div>
+        <a class="nav-link" href="#preset-yaml">프리셋 YAML 만들기</a>
+        <div class="nav-sub">
+          <a class="nav-link" href="#minimal-example">최소 예시</a>
+          <a class="nav-link" href="#gate-config">Gate 추가</a>
+          <a class="nav-link" href="#approval-gate">승인 Gate</a>
+          <a class="nav-link" href="#link-types">Link 종류</a>
+          <a class="nav-link" href="#adapter-types">어댑터 종류</a>
+        </div>
+        <a class="nav-link" href="#agent-prompts">에이전트 프롬프트</a>
+        <a class="nav-link" href="#project-config">프로젝트 설정</a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">레퍼런스</div>
+        <a class="nav-link" href="#api-reference">API 레퍼런스</a>
+        <div class="nav-sub">
+          <a class="nav-link" href="#api-engine">엔진</a>
+          <a class="nav-link" href="#api-auth">인증</a>
+          <a class="nav-link" href="#api-resources">리소스</a>
+          <a class="nav-link" href="#rbac">RBAC 권한</a>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">운영</div>
+        <a class="nav-link" href="#approval-flow">승인/반려 흐름</a>
+        <a class="nav-link" href="#slack-notifications">Slack 알림</a>
+        <a class="nav-link" href="#artifact-gate">문서 산출물 강제</a>
+        <a class="nav-link" href="#security">보안</a>
+        <a class="nav-link" href="#file-structure">파일 구조</a>
+        <a class="nav-link" href="#next-steps">다음 단계 (P2)</a>
+      </div>
+
+    </nav>
+  </aside>
+
+  <!-- ─── Main ─── -->
+  <main class="main" id="top">
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-badge">📖 Documentation · v1.0</div>
+      <h1 class="hero-title"><span class="emoji">🧱</span>Brick Engine 사용 가이드</h1>
+      <p class="hero-subtitle">AI 팀이 일하는 워크플로우 엔진. TASK 넣으면 자동으로 돌아간다.</p>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- ── 브릭이 뭔가? ── -->
+      <h2 id="what-is-brick">
+        <a class="anchor-link" href="#what-is-brick">브릭이 뭔가? <span class="anchor-icon">#</span></a>
+      </h2>
+
+      <p>브릭은 <strong>3축</strong>으로 동작한다:</p>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <span class="code-lang">concept</span>
+          <button class="copy-btn" onclick="copyCode(this)">⎘ 복사</button>
+        </div>
+        <pre><code>Block (뭘)  × Team (누가)  × Link (순서)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Plan 블록      PM (Claude)     순차
+Design 블록    CTO (Claude)    분기
+Do 블록        사람 (Smith)     병렬
+QA 블록        Gemini          루프
+Review 블록    ChatGPT         경쟁</code></pre>
+      </div>
+
+      <ul>
+        <li><strong>Block</strong>: 뭘 할 건지 (Plan, Design, Do, QA, Review…)</li>
+        <li><strong>Team</strong>: 누가 할 건지 (AI, 사람, 외부 API — 아무거나)</li>
+        <li><strong>Link</strong>: 어떤 순서로 할 건지 (순차, 분기, 병렬, 루프, 경쟁…)</li>
+      </ul>
+
+      <p>이 3가지를 YAML로 조합하면 워크플로우가 된다.</p>
+
+      <hr />
+
+      <!-- ── 빠른 시작 ── -->
+      <h2 id="quickstart">
+        <a class="anchor-link" href="#quickstart">빠른 시작 (5분) <span class="anchor-icon">#</span></a>
+      </h2>
+
+      <!-- Step 1 -->
+      <h3 id="step-1">
+        <a class="anchor-link" href="#step-1">1. 서버 시작 <span class="anchor-icon">#</span></a>
+      </h3>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">⎘ 복사</button>
+        </div>
+        <pre><code>cd /Users/smith/projects/bscamp/brick
+python3 -m uvicorn brick.dashboard.server:create_app --factory --port 3202</code></pre>
+      </div>
+
+      <!-- Step 2 -->
+      <h3 id="step-2">
+        <a class="anchor-link" href="#step-2">2. 헬스체크 <span class="anchor-icon">#</span></a>
+      </h3>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">⎘ 복사</button>
+        </div>
+        <pre><code>curl http://localhost:3202/api/v1/engine/health</code></pre>
+      </div>
+
+      <p>응답:</p>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <span class="code-lang">json</span>
+          <button class="copy-btn" onclick="copyCode(this)">⎘ 복사</button>
+        </div>
+        <pre><code>{
+  "status": "ok",
+  "presets": 10,
+  "active_workflows": 0
+}</code></pre>
+      </div>
+
+      <!-- Step 3 -->
+      <h3 id="step-3">
+        <a class="anchor-link" href="#step-3">3. 프리셋 목록 확인 <span class="anchor-icon">#</span></a>
+      </h3>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">⎘ 복사</button>
+        </div>
+        <pre><code>curl http://localhost:3202/api/v1/presets</code></pre>
+      </div>
+
+      <p>10개 프리셋 중 선택:</p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>프리셋</th>
+              <th>용도</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>hotfix</code></td><td>긴급 수정 (Do만)</td></tr>
+            <tr><td><code>t-pdca-l0</code></td><td>최소 (Plan→Do)</td></tr>
+            <tr><td><code>t-pdca-l1</code></td><td>경량 (Plan→Do→QA)</td></tr>
+            <tr><td><code>t-pdca-l2</code></td><td>표준 (Plan→Design→Do→QA)</td></tr>
+            <tr><td><code>t-pdca-l2-approval</code></td><td>표준 + 승인 Gate</td></tr>
+            <tr><td><code>t-pdca-l3</code></td><td>아키텍처 (전체 PDCA)</td></tr>
+            <tr><td><code>do-codex-qa</code></td><td>Design 있을 때 (Do→QA만)</td></tr>
+            <tr><td><code>research</code></td><td>리서치 전용</td></tr>
+            <tr><td><code>design-dev-qa-approve</code></td><td>Design→Do→QA→승인</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Step 4 -->
+      <h3 id="step-4">
+        <a class="anchor-link" href="#step-4">4. 워크플로우 시작 <span class="anchor-icon">#</span></a>
+      </h3>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">⎘ 복사</button>
+        </div>
+        <pre><code>curl -X POST http://localhost:3202/api/v1/engine/start \
+  -H "Content-Type: application/json" \
+  -d '{
+    "preset_name": "hotfix",
+    "feature": "my-first-task",
+    "task": "버그 수정: 로그인 페이지 500 에러"
+  }'</code></pre>
+      </div>
+
+      <p>응답:</p>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <span class="code-lang">json</span>
+          <button class="copy-btn" onclick="copyCode(this)">⎘ 복사</button>
+        </div>
+        <pre><code>{
+  "workflow_id": "hotfix-my-first-task-1234567890",
+  "status": "running"
+}</code></pre>
+      </div>
+
+      <!-- Step 5 -->
+      <h3 id="step-5">
+        <a class="anchor-link" href="#step-5">5. 상태 확인 <span class="anchor-icon">#</span></a>
+      </h3>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">⎘ 복사</button>
+        </div>
+        <pre><code>curl http://localhost:3202/api/v1/engine/status/hotfix-my-first-task-1234567890</code></pre>
+      </div>
+
+      <hr />
+
+      <!-- ── 프리셋 YAML ── -->
+      <h2 id="preset-yaml">
+        <a class="anchor-link" href="#preset-yaml">프리셋 YAML 만들기 <span class="anchor-icon">#</span></a>
+      </h2>
+
+      <p>프리셋 = 워크플로우 레시피. <code>brick/presets/</code> 폴더에 YAML로 작성.</p>
+
+      <h3 id="minimal-example">
+        <a class="anchor-link" href="#minimal-example">최소 예시 <span class="anchor-icon">#</span></a>
+      </h3>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <span class="code-lang">yaml</span>
+          <button class="copy-btn" onclick="copyCode(this)">⎘ 복사</button>
+        </div>
+        <pre><code># brick/presets/my-preset.yaml
+name: my-preset
+project: bscamp
+feature: "{feature}"   # API 호출 시 치환됨
+
+blocks:
+  - id: plan
+    what: "Plan 문서 작성"
+  - id: do
+    what: "구현"
+
+links:
+  - from: plan
+    to: do
+    type: sequential
+
+teams:
+  plan:
+    adapter: claude_local
+    config:
+      role: pm-lead
+      model: claude-opus-4-6
+  do:
+    adapter: claude_local
+    config:
+      role: cto-lead
+      model: claude-opus-4-6
+      dangerouslySkipPermissions: true
+      env:
+        CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"</code></pre>
+      </div>
+
+      <h3 id="gate-config">
+        <a class="anchor-link" href="#gate-config">Gate 추가 (품질 검증) <span class="anchor-icon">#</span></a>
+      </h3>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <span class="code-lang">yaml</span>
+          <button class="copy-btn" onclick="copyCode(this)">⎘ 복사</button>
+        </div>
+        <pre><code>blocks:
+  - id: plan
+    what: "Plan 문서 작성"
+    done:
+      artifacts:
+        - "brick/projects/{project}/plans/{feature}.md"
+    gate:
+      handlers:
+        - type: artifact    # 파일 있으면 pass
+      on_fail: retry        # 없으면 재작성
+      max_retries: 3</code></pre>
+      </div>
+
+      <h3 id="approval-gate">
+        <a class="anchor-link" href="#approval-gate">승인 Gate <span class="anchor-icon">#</span></a>
+      </h3>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <span class="code-lang">yaml</span>
+          <button class="copy-btn" onclick="copyCode(this)">⎘ 복사</button>
+        </div>
+        <pre><code>    gate:
+      handlers:
+        - type: approval
+          approval:
+            approver: "smith@bscamp.kr"
+      on_fail: retry    # 반려 → 재작성</code></pre>
+      </div>
+
+      <h3 id="link-types">
+        <a class="anchor-link" href="#link-types">Link 종류 <span class="anchor-icon">#</span></a>
+      </h3>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Link</th>
+              <th>비유</th>
+              <th>YAML</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>sequential</code></td><td>줄 서기</td><td><code>type: sequential</code></td></tr>
+            <tr><td><code>branch</code></td><td>갈림길</td><td><code>type: branch</code> + <code>condition: "..."</code></td></tr>
+            <tr><td><code>loop</code></td><td>되돌아가기</td><td><code>type: loop</code> + <code>condition: "..."</code></td></tr>
+            <tr><td><code>parallel</code></td><td>동시 출발</td><td><code>type: parallel</code></td></tr>
+            <tr><td><code>compete</code></td><td>경쟁 입찰</td><td><code>type: compete</code></td></tr>
+            <tr><td><code>cron</code></td><td>알람 시계</td><td><code>type: cron</code> + <code>schedule: "0 9 * * *"</code></td></tr>
+            <tr><td><code>hook</code></td><td>이벤트 트리거</td><td><code>type: hook</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="adapter-types">
+        <a class="anchor-link" href="#adapter-types">어댑터 종류 <span class="anchor-icon">#</span></a>
+      </h3>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>어댑터</th>
+              <th>누가</th>
+              <th>설정</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>claude_local</code></td><td>Claude Code</td><td><code>role</code>, <code>model</code>, <code>env</code></td></tr>
+            <tr><td><code>human</code></td><td>사람</td><td><code>assignee: "email"</code></td></tr>
+            <tr><td><code>webhook</code></td><td>외부 API</td><td><code>url</code>, <code>auth_type</code>, <code>auth_value</code></td></tr>
+            <tr><td><code>claude_agent_teams</code></td><td>Claude 팀</td><td>tmux 기반</td></tr>
+            <tr><td><code>codex</code></td><td>OpenAI Codex</td><td>(Phase 2)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr />
+
+      <!-- ── 에이전트 프롬프트 ── -->
+      <h2 id="agent-prompts">
+        <a class="anchor-link" href="#agent-prompts">에이전트 프롬프트 설정 <span class="anchor-icon">#</span></a>
+      </h2>
+
+      <p><code>.claude/agents/</code> 디렉토리에 역할별 프롬프트 파일:</p>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <span class="code-lang">tree</span>
+          <button class="copy-btn" onclick="copyCode(this)">⎘ 복사</button>
+        </div>
+        <pre><code>.claude/agents/
+├── cto-lead.md          # CTO — 구현 조율
+├── pm-lead.md           # PM — 기획/설계
+├── qa-monitor.md        # QA — 테스트 검증
+└── report-generator.md  # 보고서 작성</code></pre>
+      </div>
+
+      <p>frontmatter로 도구 제한:</p>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <span class="code-lang">yaml</span>
+          <button class="copy-btn" onclick="copyCode(this)">⎘ 복사</button>
+        </div>
+        <pre><code>---
+name: pm-lead
+model: opus
+permissionMode: plan
+tools: [Read, Write, Grep, Glob]
+disallowedTools: [Bash]    # PM은 명령어 실행 불가
+---</code></pre>
+      </div>
+
+      <hr />
+
+      <!-- ── 프로젝트 설정 ── -->
+      <h2 id="project-config">
+        <a class="anchor-link" href="#project-config">프로젝트 설정 <span class="anchor-icon">#</span></a>
+      </h2>
+
+      <p><code>brick/projects/{프로젝트명}/project.yaml</code>:</p>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <span class="code-lang">yaml</span>
+          <button class="copy-btn" onclick="copyCode(this)">⎘ 복사</button>
+        </div>
+        <pre><code>name: bscamp
+tech_stack: [Next.js, Cloud SQL, GCS]
+constraints:
+  - "DB는 SQLite (PostgreSQL 아님)"
+  - "포트 3202는 브릭 전용"
+agents:
+  cto: cto-lead
+  pm: pm-lead</code></pre>
+      </div>
+
+      <p>블록 실행 시 이 규칙이 자동으로 에이전트한테 전달된다.</p>
+
+      <hr />
+
+      <!-- ── API 레퍼런스 ── -->
+      <h2 id="api-reference">
+        <a class="anchor-link" href="#api-reference">API 레퍼런스 <span class="anchor-icon">#</span></a>
+      </h2>
+
+      <h3 id="api-engine">
+        <a class="anchor-link" href="#api-engine">엔진 <span class="anchor-icon">#</span></a>
+      </h3>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>메서드</th>
+              <th>경로</th>
+              <th>권한</th>
+              <th>설명</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>GET</code></td><td><code>/api/v1/engine/health</code></td><td>없음</td><td>헬스체크</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/v1/engine/start</code></td><td>operator</td><td>워크플로우 시작</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/v1/engine/status/{id}</code></td><td>viewer</td><td>상태 조회</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/v1/engine/complete-block</code></td><td>operator</td><td>블록 완료/승인/반려</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/v1/engine/suspend/{id}</code></td><td>operator</td><td>일시중지</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/v1/engine/resume/{id}</code></td><td>operator</td><td>재개</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/v1/engine/cancel/{id}</code></td><td>operator</td><td>취소</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/v1/engine/hook/{id}/{link}</code></td><td>operator</td><td>Hook Link 트리거</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/v1/engine/human/tasks</code></td><td>operator</td><td>수동 블록 목록</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="api-auth">
+        <a class="anchor-link" href="#api-auth">인증 <span class="anchor-icon">#</span></a>
+      </h3>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>메서드</th>
+              <th>경로</th>
+              <th>설명</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>POST</code></td><td><code>/api/v1/auth/login</code></td><td>로컬 로그인</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/v1/auth/google</code></td><td>Google Sign-In</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/v1/auth/logout</code></td><td>로그아웃</td></tr>
+            <tr><td><code>GET</code></td><td><code>/api/v1/auth/me</code></td><td>현재 사용자</td></tr>
+            <tr><td><code>POST</code></td><td><code>/api/v1/auth/users</code></td><td>사용자 생성 (admin)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="api-resources">
+        <a class="anchor-link" href="#api-resources">리소스 <span class="anchor-icon">#</span></a>
+      </h3>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>메서드</th>
+              <th>경로</th>
+              <th>설명</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>GET/POST</code></td><td><code>/api/v1/presets</code></td><td>프리셋 CRUD</td></tr>
+            <tr><td><code>GET/POST</code></td><td><code>/api/v1/block-types</code></td><td>블록 타입 CRUD</td></tr>
+            <tr><td><code>GET/POST</code></td><td><code>/api/v1/teams</code></td><td>팀 CRUD</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="rbac">
+        <a class="anchor-link" href="#rbac">RBAC 권한 <span class="anchor-icon">#</span></a>
+      </h3>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <span class="code-lang">text</span>
+          <button class="copy-btn" onclick="copyCode(this)">⎘ 복사</button>
+        </div>
+        <pre><code>viewer:   조회만 (GET)
+operator: 실행 + 승인 (POST)
+admin:    모든 것 + 사용자 관리</code></pre>
+      </div>
+
+      <hr />
+
+      <!-- ── 승인/반려 흐름 ── -->
+      <h2 id="approval-flow">
+        <a class="anchor-link" href="#approval-flow">승인/반려 흐름 <span class="anchor-icon">#</span></a>
+      </h2>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <span class="code-lang">flow</span>
+          <button class="copy-btn" onclick="copyCode(this)">⎘ 복사</button>
+        </div>
+        <pre><code>블록 완료 → approval Gate → Slack 알림 "검토해라"
+→ 승인:
+  curl -X POST /api/v1/engine/complete-block \
+    -d '{"workflow_id":"...", "block_id":"review", "approval_action":"approve"}'
+→ 반려:
+  curl -X POST /api/v1/engine/complete-block \
+    -d '{"workflow_id":"...", "block_id":"review", "approval_action":"reject", "reject_reason":"TDD 누락"}'
+→ 반려 시 → 이전 블록으로 되돌아감 (loop Link)
+→ 에이전트에게 "⚠️ 반려 사유: TDD 누락" 자동 전달</code></pre>
+      </div>
+
+      <hr />
+
+      <!-- ── Slack 알림 ── -->
+      <h2 id="slack-notifications">
+        <a class="anchor-link" href="#slack-notifications">Slack 알림 <span class="anchor-icon">#</span></a>
+      </h2>
+
+      <p><code>SLACK_BOT_TOKEN</code> 환경변수 설정 시 <strong>agent-ops</strong> 채널에 자동 알림:</p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>레벨</th><th>알림 항목</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>basic</code></td><td>워크플로우 완료, 블록 실패, Gate 실패, 승인 대기</td></tr>
+            <tr><td><code>verbose</code></td><td>basic + 블록 시작/완료, 링크 이동</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>실패 시 stderr 마지막 10줄 + exit code 표시. 토큰/시크릿 자동 마스킹.</p>
+
+      <hr />
+
+      <!-- ── 문서 산출물 강제 ── -->
+      <h2 id="artifact-gate">
+        <a class="anchor-link" href="#artifact-gate">문서 산출물 강제 <span class="anchor-icon">#</span></a>
+      </h2>
+
+      <p><code>artifact</code> Gate를 설정하면 블록이 끝날 때 파일이 있어야 통과:</p>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <span class="code-lang">yaml</span>
+          <button class="copy-btn" onclick="copyCode(this)">⎘ 복사</button>
+        </div>
+        <pre><code>gate:
+  handlers:
+    - type: artifact
+      command: "brick/projects/{project}/plans/{feature}.md"
+  on_fail: retry</code></pre>
+      </div>
+
+      <ul>
+        <li>파일 없으면 → Gate fail → 블록 재실행 (최대 3회)</li>
+        <li>파일 있으면 → Gate pass → 다음 블록으로</li>
+      </ul>
+
+      <hr />
+
+      <!-- ── 보안 ── -->
+      <h2 id="security">
+        <a class="anchor-link" href="#security">보안 <span class="anchor-icon">#</span></a>
+      </h2>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>항목</th><th>내용</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Path Traversal</td><td><code>..</code> 또는 절대경로 자동 차단</td></tr>
+            <tr><td>토큰 마스킹</td><td><code>xoxb-*</code>, <code>sk-*</code>, <code>Bearer</code>, <code>TOKEN=</code> 패턴</td></tr>
+            <tr><td>RBAC</td><td>API 권한 3단계 (viewer / operator / admin)</td></tr>
+            <tr><td>세션</td><td>SHA-256 해시, 7일 만료</td></tr>
+            <tr><td>Google Sign-In</td><td>aud 검증</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr />
+
+      <!-- ── 파일 구조 ── -->
+      <h2 id="file-structure">
+        <a class="anchor-link" href="#file-structure">파일 구조 <span class="anchor-icon">#</span></a>
+      </h2>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <span class="code-lang">tree</span>
+          <button class="copy-btn" onclick="copyCode(this)">⎘ 복사</button>
+        </div>
+        <pre><code>brick/
+├── brick/              # 엔진 코어 (Python)
+│   ├── engine/         # 상태머신, executor, EventBus
+│   ├── gates/          # Gate 8종
+│   ├── adapters/       # 어댑터 10종
+│   ├── models/         # 데이터 모델
+│   ├── auth/           # 인증 (Google, RBAC, 세션)
+│   └── dashboard/      # FastAPI 서버 + 라우트
+├── presets/            # 프리셋 YAML 10개
+├── projects/           # 프로젝트별 산출물
+│   ├── bscamp/
+│   └── brick-engine/
+├── templates/          # 문서 템플릿 5개
+└── docs/               # 문서
+    ├── GUIDE.md        # ← 이 파일
+    ├── TASK-ROADMAP.md
+    └── QA-brick-full.md
+
+.claude/agents/         # 에이전트 프롬프트
+.claude/skills/         # 스킬 (PM Discovery, Security 등)</code></pre>
+      </div>
+
+      <hr />
+
+      <!-- ── 다음 단계 ── -->
+      <h2 id="next-steps">
+        <a class="anchor-link" href="#next-steps">다음 단계 (P2) <span class="anchor-icon">#</span></a>
+      </h2>
+
+      <ul>
+        <li>🔧 <strong>플러그인 레지스트리</strong>: 커스텀 Gate/Link/어댑터 <code>pip install</code></li>
+        <li>🏢 <strong>SkyOffice UI</strong>: 에이전트가 일하는 걸 실시간으로 보는 메타버스</li>
+        <li>🔄 <strong>하네스 교체</strong>: Gas Town, Multiclaude 등 다른 오케스트레이터 연결</li>
+        <li>🌐 <strong>오픈소스</strong>: <code>pip install brick-engine</code></li>
+      </ul>
+
+    </div><!-- /.content -->
+  </main>
+</div><!-- /.layout -->
+
+<!-- Back to top -->
+<a class="back-top" id="backTop" href="#top" aria-label="맨 위로">↑</a>
+
+<script>
+  // ─── Hamburger toggle ───
+  const hamburger = document.getElementById('hamburger');
+  const sidebar   = document.getElementById('sidebar');
+  const overlay   = document.getElementById('overlay');
+
+  function openSidebar() {
+    sidebar.classList.add('open');
+    overlay.classList.add('open');
+    hamburger.setAttribute('aria-label', '메뉴 닫기');
+    hamburger.textContent = '✕';
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+    hamburger.setAttribute('aria-label', '메뉴 열기');
+    hamburger.textContent = '☰';
+  }
+
+  hamburger.addEventListener('click', () => {
+    sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+  });
+  overlay.addEventListener('click', closeSidebar);
+
+  // Close on nav link click (mobile)
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth < 900) closeSidebar();
+    });
+  });
+
+  // ─── Active nav link (IntersectionObserver) ───
+  const sections = document.querySelectorAll('[id]');
+  const navLinks = document.querySelectorAll('.nav-link');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.getAttribute('id');
+        navLinks.forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('href') === '#' + id) {
+            link.classList.add('active');
+          }
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(sec => observer.observe(sec));
+
+  // ─── Copy button ───
+  function copyCode(btn) {
+    const pre = btn.closest('.code-wrapper').querySelector('pre');
+    const text = pre.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ 복사됨';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = '⎘ 복사';
+        btn.classList.remove('copied');
+      }, 2000);
+    }).catch(() => {
+      // fallback
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      btn.textContent = '✓ 복사됨';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = '⎘ 복사';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  // ─── Back to top ───
+  const backTop = document.getElementById('backTop');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 400) {
+      backTop.classList.add('visible');
+    } else {
+      backTop.classList.remove('visible');
+    }
+  });
+</script>
+</body>
+</html>
