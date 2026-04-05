@@ -38,6 +38,20 @@ ALLOWED_COMMANDS: set[str] = {
     "brick-lint",
 }
 
+# 셸 메타문자 패턴 — 인자에 포함되면 인젝션으로 간주
+SHELL_METACHAR_PATTERNS: list[str] = [
+    "|",     # 파이프
+    ";",     # 명령 체이닝
+    "&&",    # AND 체이닝
+    "&",     # 백그라운드 / AND
+    "$(",    # 서브셸
+    "`",     # 백틱 명령 치환
+    ">",     # 리다이렉트
+    ">>",    # 어펜드 리다이렉트
+    "<",     # 입력 리다이렉트
+    "\n",   # 개행문자
+]
+
 # 절대 차단 — allowlist에 있어도 이 인자 패턴이 있으면 거부
 BLOCKED_ARGS: list[str] = [
     "--force",
@@ -69,10 +83,21 @@ def validate_command(cmd_parts: list[str]) -> tuple[bool, str]:
     if not cmd_parts:
         return False, "빈 명령"
 
-    binary = cmd_parts[0].rsplit("/", 1)[-1]  # /usr/bin/npm → npm
+    # 환경변수 오버라이드 차단 (VAR=val 패턴)
+    binary = cmd_parts[0]
+    if "=" in binary and not binary.startswith("-"):
+        return False, f"차단된 패턴: 환경변수 오버라이드 ({binary})"
+
+    binary = binary.rsplit("/", 1)[-1]  # /usr/bin/npm → npm
 
     if binary not in ALLOWED_COMMANDS:
         return False, f"허용되지 않은 명령: {binary}"
+
+    # 셸 메타문자 인젝션 검사 (개별 인자 단위)
+    for part in cmd_parts:
+        for meta in SHELL_METACHAR_PATTERNS:
+            if meta in part:
+                return False, f"차단된 셸 메타문자: {meta}"
 
     # 인자 패턴 검사
     full_cmd = " ".join(cmd_parts)

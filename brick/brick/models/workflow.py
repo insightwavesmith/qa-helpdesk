@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from brick.models.events import WorkflowStatus, BlockStatus
-from brick.models.block import Block, DoneCondition, GateConfig
+from brick.models.block import Block, DoneCondition, GateConfig, GateHandler, InputConfig
 from brick.models.team import TeamDefinition
 from brick.models.link import LinkDefinition
 
@@ -26,22 +26,55 @@ class BlockInstance:
     error: str | None = None
 
     def to_dict(self) -> dict:
-        return {
-            "block": {
-                "id": self.block.id,
-                "what": self.block.what,
-                "done": {
-                    "artifacts": self.block.done.artifacts,
-                    "metrics": self.block.done.metrics,
-                    "custom": self.block.done.custom,
-                },
-                "type": self.block.type,
-                "description": self.block.description,
-                "timeout": self.block.timeout,
-                "idempotent": self.block.idempotent,
-                "metadata": self.block.metadata,
-                "fallback_adapter": self.block.fallback_adapter,
+        block_dict = {
+            "id": self.block.id,
+            "what": self.block.what,
+            "done": {
+                "artifacts": self.block.done.artifacts,
+                "metrics": self.block.done.metrics,
+                "custom": self.block.done.custom,
             },
+            "type": self.block.type,
+            "description": self.block.description,
+            "timeout": self.block.timeout,
+            "idempotent": self.block.idempotent,
+            "metadata": self.block.metadata,
+            "fallback_adapter": self.block.fallback_adapter,
+        }
+        if self.block.input is not None:
+            block_dict["input"] = {
+                "from_block": self.block.input.from_block,
+                "artifacts": self.block.input.artifacts,
+            }
+        else:
+            block_dict["input"] = None
+        if self.block.gate is not None:
+            block_dict["gate"] = {
+                "handlers": [
+                    {
+                        "type": h.type,
+                        "command": h.command,
+                        "url": h.url,
+                        "prompt": h.prompt,
+                        "model": h.model,
+                        "agent_prompt": h.agent_prompt,
+                        "timeout": h.timeout,
+                        "on_fail": h.on_fail,
+                        "confidence_threshold": h.confidence_threshold,
+                        "retries": h.retries,
+                        "metric": h.metric,
+                        "threshold": h.threshold,
+                    }
+                    for h in self.block.gate.handlers
+                ],
+                "evaluation": self.block.gate.evaluation,
+                "on_fail": self.block.gate.on_fail,
+                "max_retries": self.block.gate.max_retries,
+            }
+        else:
+            block_dict["gate"] = None
+        return {
+            "block": block_dict,
             "status": self.status.value,
             "adapter": self.adapter,
             "execution_id": self.execution_id,
@@ -56,6 +89,43 @@ class BlockInstance:
     @classmethod
     def from_dict(cls, data: dict) -> BlockInstance:
         block_data = data["block"]
+        # input 복원
+        input_data = block_data.get("input")
+        input_config = None
+        if input_data:
+            input_config = InputConfig(
+                from_block=input_data.get("from_block", ""),
+                artifacts=input_data.get("artifacts", []),
+            )
+
+        # gate 복원
+        gate_data = block_data.get("gate")
+        gate_config = None
+        if gate_data:
+            handlers = [
+                GateHandler(
+                    type=h.get("type", "command"),
+                    command=h.get("command"),
+                    url=h.get("url"),
+                    prompt=h.get("prompt"),
+                    model=h.get("model"),
+                    agent_prompt=h.get("agent_prompt"),
+                    timeout=h.get("timeout", 30),
+                    on_fail=h.get("on_fail", "fail"),
+                    confidence_threshold=h.get("confidence_threshold", 0.8),
+                    retries=h.get("retries", 1),
+                    metric=h.get("metric"),
+                    threshold=h.get("threshold"),
+                )
+                for h in gate_data.get("handlers", [])
+            ]
+            gate_config = GateConfig(
+                handlers=handlers,
+                evaluation=gate_data.get("evaluation", "sequential"),
+                on_fail=gate_data.get("on_fail", "retry"),
+                max_retries=gate_data.get("max_retries", 3),
+            )
+
         block = Block(
             id=block_data["id"],
             what=block_data["what"],
@@ -66,6 +136,8 @@ class BlockInstance:
             ),
             type=block_data.get("type", "Custom"),
             description=block_data.get("description", ""),
+            gate=gate_config,
+            input=input_config,
             timeout=block_data.get("timeout"),
             idempotent=block_data.get("idempotent", True),
             metadata=block_data.get("metadata", {}),
