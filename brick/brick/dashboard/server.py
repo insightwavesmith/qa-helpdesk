@@ -42,6 +42,18 @@ def create_app(root: str = "brick/") -> FastAPI:
     app.include_router(learning.router, prefix="/api/v1", tags=["learning"])
 
     engine_bridge.init_engine(root=root)
+    # DI: EngineContainer를 app.state.engine에 저장 (Phase 1 #3)
+    from brick.engine.engine_bootstrap import init_engine as _bootstrap_init
+    from brick.engine.container import EngineContainer
+    if not hasattr(app.state, "engine"):
+        app.state.engine = EngineContainer(
+            executor=engine_bridge.executor,
+            preset_loader=engine_bridge.preset_loader,
+            checkpoint_store=engine_bridge.checkpoint_store,
+            state_machine=engine_bridge.state_machine,
+            event_bus=engine_bridge.engine_event_bus,
+            skyoffice_bridge=engine_bridge.skyoffice_bridge,
+        )
     app.include_router(engine_bridge.router, prefix="/api/v1", tags=["engine-bridge"])
 
     # SkyOffice Bridge — Phase 3 실시간 상태 동기화
