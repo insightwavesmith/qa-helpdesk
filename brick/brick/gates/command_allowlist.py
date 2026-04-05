@@ -36,6 +36,9 @@ ALLOWED_COMMANDS: set[str] = {
     # brick 전용
     "brick-check",
     "brick-lint",
+
+    # AI 코드 리뷰
+    "codex",
 }
 
 # 절대 차단 — allowlist에 있어도 이 인자 패턴이 있으면 거부
@@ -55,6 +58,10 @@ BLOCKED_ARGS: list[str] = [
     "`",
 ]
 
+# 인터프리터 인라인 코드 실행 차단
+INTERPRETER_COMMANDS: set[str] = {"python", "python3", "node", "perl", "ruby", "php"}
+INTERPRETER_BLOCKED_ARGS: set[str] = {"-c", "-e", "-r", "--eval"}
+
 
 def validate_command(cmd_parts: list[str]) -> tuple[bool, str]:
     """
@@ -73,6 +80,12 @@ def validate_command(cmd_parts: list[str]) -> tuple[bool, str]:
 
     if binary not in ALLOWED_COMMANDS:
         return False, f"허용되지 않은 명령: {binary}"
+
+    # 인터프리터 인라인 코드 실행 차단
+    if binary in INTERPRETER_COMMANDS and len(cmd_parts) > 1:
+        first_arg = cmd_parts[1]
+        if first_arg in INTERPRETER_BLOCKED_ARGS:
+            return False, f"인터프리터 인라인 코드 실행 차단: {binary} {first_arg}"
 
     # 인자 패턴 검사
     full_cmd = " ".join(cmd_parts)

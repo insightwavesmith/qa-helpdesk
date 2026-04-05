@@ -26,22 +26,30 @@ class BlockInstance:
     error: str | None = None
 
     def to_dict(self) -> dict:
-        return {
-            "block": {
-                "id": self.block.id,
-                "what": self.block.what,
-                "done": {
-                    "artifacts": self.block.done.artifacts,
-                    "metrics": self.block.done.metrics,
-                    "custom": self.block.done.custom,
-                },
-                "type": self.block.type,
-                "description": self.block.description,
-                "timeout": self.block.timeout,
-                "idempotent": self.block.idempotent,
-                "metadata": self.block.metadata,
-                "fallback_adapter": self.block.fallback_adapter,
+        block_dict: dict = {
+            "id": self.block.id,
+            "what": self.block.what,
+            "done": {
+                "artifacts": self.block.done.artifacts,
+                "metrics": self.block.done.metrics,
+                "custom": self.block.done.custom,
             },
+            "type": self.block.type,
+            "description": self.block.description,
+            "timeout": self.block.timeout,
+            "idempotent": self.block.idempotent,
+            "metadata": self.block.metadata,
+            "fallback_adapter": self.block.fallback_adapter,
+        }
+        if self.block.input is not None:
+            block_dict["input"] = {
+                "from_block": self.block.input.from_block,
+                "artifacts": self.block.input.artifacts,
+            }
+        if self.block.gate is not None:
+            block_dict["gate"] = self.block.gate.to_dict()
+        return {
+            "block": block_dict,
             "status": self.status.value,
             "adapter": self.adapter,
             "execution_id": self.execution_id,
@@ -56,6 +64,9 @@ class BlockInstance:
     @classmethod
     def from_dict(cls, data: dict) -> BlockInstance:
         block_data = data["block"]
+        from brick.models.block import InputConfig
+        input_data = block_data.get("input")
+        gate_data = block_data.get("gate")
         block = Block(
             id=block_data["id"],
             what=block_data["what"],
@@ -66,6 +77,11 @@ class BlockInstance:
             ),
             type=block_data.get("type", "Custom"),
             description=block_data.get("description", ""),
+            input=InputConfig(
+                from_block=input_data["from_block"],
+                artifacts=input_data.get("artifacts", []),
+            ) if input_data else None,
+            gate=GateConfig.from_dict(gate_data) if gate_data else None,
             timeout=block_data.get("timeout"),
             idempotent=block_data.get("idempotent", True),
             metadata=block_data.get("metadata", {}),
@@ -97,7 +113,6 @@ class WorkflowDefinition:
     schema: str = "brick/preset-v2"
     extends: str | None = None
     overrides: dict = field(default_factory=dict)
-    level: int = 2  # L0-L3
     project: str = ""
     feature: str = ""
     notifications: dict = field(default_factory=dict)
@@ -135,7 +150,6 @@ class WorkflowDefinition:
                 for k, v in self.teams.items()
             },
             "schema": self.schema,
-            "level": self.level,
             "project": self.project,
             "feature": self.feature,
         }
@@ -181,7 +195,6 @@ class WorkflowDefinition:
             links=links,
             teams=teams,
             schema=data.get("schema", "brick/preset-v2"),
-            level=data.get("level", 2),
             project=data.get("project", ""),
             feature=data.get("feature", ""),
         )

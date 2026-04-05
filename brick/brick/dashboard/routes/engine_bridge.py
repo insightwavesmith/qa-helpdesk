@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-import asyncio as _asyncio
-import logging as _bridge_logger_mod
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -12,20 +10,12 @@ from pydantic import BaseModel
 from brick.auth.middleware import authenticate_request, require_role_dep
 from brick.auth.models import BrickUser
 
-from brick.adapters.base import TeamAdapter
-from brick.adapters.claude_agent_teams import ClaudeAgentTeamsAdapter
-from brick.adapters.claude_code import ClaudeCodeAdapter
-from brick.adapters.claude_local import ClaudeLocalAdapter
-from brick.adapters.human import HumanAdapter
-from brick.adapters.webhook import WebhookAdapter
 from brick.engine.checkpoint import CheckpointStore
+from brick.engine.container import AdapterRegistry  # re-export 하위 호환
 from brick.engine.event_bus import EventBus
+from brick.engine.engine_bootstrap import init_engine as _bootstrap_init_engine
 from brick.engine.executor import PresetLoader, WorkflowExecutor
-from brick.engine.slack_subscriber import SlackSubscriber
-from brick.engine.preset_validator import PresetValidator
 from brick.engine.state_machine import StateMachine
-from brick.engine.validator import Validator
-from brick.gates.concrete import ConcreteGateExecutor
 from brick.models.events import (
     BlockStatus,
     Event,
@@ -33,33 +23,6 @@ from brick.models.events import (
     WorkflowStatus,
 )
 from brick.models.workflow import WorkflowInstance
-
-class AdapterRegistry:
-    """dict 호환 어댑터 레지스트리. WorkflowExecutor adapter_pool 대체."""
-
-    def __init__(self):
-        self._adapters: dict[str, TeamAdapter] = {}
-
-    def register(self, name: str, adapter: TeamAdapter) -> None:
-        self._adapters[name] = adapter
-
-    def get(self, name: str) -> TeamAdapter:
-        if name not in self._adapters:
-            raise KeyError(f"Unknown adapter: {name}")
-        return self._adapters[name]
-
-    def registered_adapter_types(self) -> set[str]:
-        return set(self._adapters.keys())
-
-    # dict 호환 (WorkflowExecutor 무변경)
-    def __getitem__(self, name: str) -> TeamAdapter:
-        return self.get(name)
-
-    def __contains__(self, name: str) -> bool:
-        return name in self._adapters
-
-    def items(self):
-        return self._adapters.items()
 
 
 router = APIRouter(
@@ -103,84 +66,38 @@ class TriggerHookRequest(BaseModel):
 
 # ── Init ─────────────────────────────────────────────────────────────
 
-_bridge_logger = _bridge_logger_mod.getLogger(__name__)
+
+def init_engine(root: str = "brick/") -> None:
+    """Initialize engine components. Called from server.py create_app().
+
+    실제 조립은 engine_bootstrap.init_engine()에 위임.
+    하위 호환을 위해 글로벌 변수에도 할당.
+    """
+    global executor, preset_loader, checkpoint_store, state_machine, engine_event_bus, skyoffice_bridge
+
+    container = _bootstrap_init_engine(root)
+    executor = container.executor
+    preset_loader = container.preset_loader
+    checkpoint_store = container.checkpoint_store
+    state_machine = container.state_machine
+    engine_event_bus = container.event_bus
+    skyoffice_bridge = container.skyoffice_bridge
 
 
 async def _auto_recover_workflows() -> None:
-    """서버 재시작 후 RUNNING 상태 워크플로우 자동 모니터링 재개."""
+    """하위 호환 래퍼 — 글로벌 변수 기반 자동 복구."""
     if not checkpoint_store or not executor:
         return
+    import asyncio
+
     active_ids = checkpoint_store.list_active()
-    _bridge_logger.info("auto-recover: %d active workflow(s) found", len(active_ids))
     for wf_id in active_ids:
         instance = checkpoint_store.load(wf_id)
         if not instance:
             continue
         for block_id, bi in instance.blocks.items():
             if bi.status == BlockStatus.RUNNING and bi.execution_id:
-                _bridge_logger.info("auto-recover: resume monitoring %s/%s", wf_id, block_id)
-                _asyncio.create_task(executor._monitor_block(instance, block_id))
-
-
-def init_engine(root: str = "brick/") -> None:
-    """Initialize engine components. Called from server.py create_app()."""
-    global executor, preset_loader, checkpoint_store, state_machine, engine_event_bus, skyoffice_bridge
-
-    root_path = Path(root)
-    sm = StateMachine()
-    eb = EventBus()
-    cs = CheckpointStore(base_dir=root_path / "runtime" / "workflows")
-    ge = ConcreteGateExecutor()
-    ge._event_bus = eb  # gate.pending 이벤트 발행용
-    val = Validator()
-    pl = PresetLoader(presets_dir=root_path / "presets")
-
-    adapter_pool = AdapterRegistry()
-    adapter_pool.register("claude_agent_teams", ClaudeAgentTeamsAdapter({}))
-    adapter_pool.register("claude_code", ClaudeCodeAdapter({}))
-    adapter_pool.register("claude_local", ClaudeLocalAdapter({}))
-    adapter_pool.register("webhook", WebhookAdapter({}))
-    adapter_pool.register("human", HumanAdapter({}))
-
-    preset_validator = PresetValidator(
-        gate_types=ge.registered_gate_types(),
-        link_types=sm.registered_link_types(),
-        adapter_types=adapter_pool.registered_adapter_types(),
-    )
-
-    we = WorkflowExecutor(
-        state_machine=sm,
-        event_bus=eb,
-        checkpoint=cs,
-        gate_executor=ge,
-        preset_loader=pl,
-        validator=val,
-        adapter_pool=adapter_pool,
-    )
-
-    # Slack Subscriber — EventBus 구독 (agent-ops 채널 알림)
-    SlackSubscriber(event_bus=eb, level="basic")  # P1-A3: notifications.level 와이어링
-
-    # SkyOffice Bridge — EventBus 구독 (Phase 3: 에이전트 상태 동기화)
-    from brick.integrations.skyoffice_bridge import SkyOfficeBridge
-    skyoffice = SkyOfficeBridge(event_bus=eb)
-
-    executor = we
-    engine_event_bus = eb
-    skyoffice_bridge = skyoffice
-    preset_loader = pl
-    checkpoint_store = cs
-    state_machine = sm
-
-    # 서버 재시작 후 활성 워크플로우 자동 복구
-    try:
-        loop = _asyncio.get_event_loop()
-        if loop.is_running():
-            loop.create_task(_auto_recover_workflows())
-        else:
-            loop.call_soon(lambda: _asyncio.ensure_future(_auto_recover_workflows()))
-    except RuntimeError:
-        pass  # no event loop — FastAPI startup에서 호출 시 자동 처리
+                asyncio.create_task(executor._monitor_block(instance, block_id))
 
 
 # ── Helpers ──────────────────────────────────────────────────────────

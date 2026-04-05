@@ -69,15 +69,15 @@ def test_c01_sequential_abc_order():
     wf = _make_sequential_workflow()
 
     # A 완료 → B로
-    next_from_a = sm._find_next_blocks(wf, "A")
+    next_from_a, _ = sm._find_next_blocks(wf, "A")
     assert next_from_a == ["B"], f"A 다음은 B여야 함, got {next_from_a}"
 
     # B 완료 → C로
-    next_from_b = sm._find_next_blocks(wf, "B")
+    next_from_b, _ = sm._find_next_blocks(wf, "B")
     assert next_from_b == ["C"], f"B 다음은 C여야 함, got {next_from_b}"
 
     # C 완료 → 없음
-    next_from_c = sm._find_next_blocks(wf, "C")
+    next_from_c, _ = sm._find_next_blocks(wf, "C")
     assert next_from_c == [], f"C 다음은 없어야 함, got {next_from_c}"
 
 
@@ -126,7 +126,7 @@ def test_c03_loop_gate_fail_returns():
     wf.context = {"score": 50}  # 조건 충족 → loop 발동
 
     sm = StateMachine()
-    next_blocks = sm._find_next_blocks(wf, "check")
+    next_blocks, _ = sm._find_next_blocks(wf, "check")
     assert "do" in next_blocks, "score < 90이면 do로 되돌아가야 함"
 
 
@@ -151,17 +151,17 @@ def test_c04_loop_max_retries_exit():
     sm = StateMachine()
 
     # 1회: loop 발동
-    r1 = sm._find_next_blocks(wf, "check")
+    r1, _ = sm._find_next_blocks(wf, "check")
     assert "do" in r1
     assert wf.context["_loop_check_do"] == 1
 
     # 2회: loop 발동 (max=2이므로 마지막)
-    r2 = sm._find_next_blocks(wf, "check")
+    r2, _ = sm._find_next_blocks(wf, "check")
     assert "do" in r2
     assert wf.context["_loop_check_do"] == 2
 
     # 3회: max 도달 → 탈출
-    r3 = sm._find_next_blocks(wf, "check")
+    r3, _ = sm._find_next_blocks(wf, "check")
     assert "do" not in r3, "max_retries 초과 시 loop 탈출해야 함"
 
 
@@ -186,12 +186,12 @@ def test_c05_loop_condition_matching():
 
     # 조건 충족 (score=50 < 90)
     wf.context = {"score": 50}
-    assert "do" in sm._find_next_blocks(wf, "check")
+    assert "do" in sm._find_next_blocks(wf, "check")[0]
 
     # 조건 미충족 (score=95 >= 90)
     wf2 = WorkflowInstance.from_definition(defn, "test", "test")
     wf2.context = {"score": 95}
-    assert "do" not in sm._find_next_blocks(wf2, "check")
+    assert "do" not in sm._find_next_blocks(wf2, "check")[0]
 
 
 # ===========================================================================
@@ -217,7 +217,7 @@ def test_c06_branch_condition_true_goes_b():
     wf.context = {"status": "approved"}
 
     sm = StateMachine()
-    next_blocks = sm._find_next_blocks(wf, "A")
+    next_blocks, _ = sm._find_next_blocks(wf, "A")
     assert "B" in next_blocks, "status=approved이면 B로 가야 함"
     assert "C" not in next_blocks
 
@@ -240,7 +240,7 @@ def test_c07_branch_condition_false_goes_c():
     wf.context = {"status": "rejected"}
 
     sm = StateMachine()
-    next_blocks = sm._find_next_blocks(wf, "A")
+    next_blocks, _ = sm._find_next_blocks(wf, "A")
     assert "C" in next_blocks, "status=rejected이면 C로 가야 함"
     assert "B" not in next_blocks
 
@@ -266,7 +266,7 @@ def test_c08_branch_no_match_default():
     wf.context = {"x": 999}  # 어떤 branch 조건도 안 맞음
 
     sm = StateMachine()
-    next_blocks = sm._find_next_blocks(wf, "A")
+    next_blocks, _ = sm._find_next_blocks(wf, "A")
     assert "B" not in next_blocks
     assert "C" not in next_blocks
     assert "D" in next_blocks, "branch 미매칭 시 sequential default로 가야 함"
@@ -294,7 +294,7 @@ def test_c09_parallel_ab_simultaneous():
     wf = WorkflowInstance.from_definition(defn, "test", "test")
 
     sm = StateMachine()
-    next_blocks = sm._find_next_blocks(wf, "A")
+    next_blocks, _ = sm._find_next_blocks(wf, "A")
     assert "B" in next_blocks, "B가 병렬 시작되어야 함"
     assert "C" in next_blocks, "C가 병렬 시작되어야 함"
     assert len(next_blocks) == 2
@@ -392,13 +392,12 @@ def test_c12_compete_winner_adopted():
     wf = WorkflowInstance.from_definition(defn, "test", "test")
 
     sm = StateMachine()
-    next_blocks = sm._find_next_blocks(wf, "A")
+    next_blocks, extra_cmds = sm._find_next_blocks(wf, "A")
 
     # teams 있으면 next_ids=[] (외부 경쟁 결과 대기)
     assert next_blocks == [], "compete with teams는 next_ids 빈 리스트"
 
     # CompeteStartCommand 발행 확인
-    extra_cmds = sm._extra_link_commands
     compete_cmds = [c for c in extra_cmds if isinstance(c, CompeteStartCommand)]
     assert len(compete_cmds) == 1
     cmd = compete_cmds[0]
@@ -422,11 +421,11 @@ def test_c13_compete_fallback_no_teams():
     wf = WorkflowInstance.from_definition(defn, "test", "test")
 
     sm = StateMachine()
-    next_blocks = sm._find_next_blocks(wf, "A")
+    next_blocks, extra_cmds = sm._find_next_blocks(wf, "A")
 
     # teams 없으면 sequential과 동일하게 to_block 반환
     assert next_blocks == ["B"], "teams 없으면 sequential fallback"
-    compete_cmds = [c for c in sm._extra_link_commands if isinstance(c, CompeteStartCommand)]
+    compete_cmds = [c for c in extra_cmds if isinstance(c, CompeteStartCommand)]
     assert len(compete_cmds) == 0, "teams 없으면 CompeteStartCommand 미발행"
 
 
@@ -457,7 +456,7 @@ def test_c14_cron_schedule_trigger():
     mock_scheduler = MagicMock()
     sm.cron_scheduler = mock_scheduler
 
-    next_blocks = sm._find_next_blocks(wf, "A")
+    next_blocks, _ = sm._find_next_blocks(wf, "A")
 
     # cron은 next_ids=[] (스케줄러가 나중에 트리거)
     assert next_blocks == [], "cron link는 즉시 다음 블록 시작 안 함"
@@ -491,7 +490,7 @@ def test_c15_hook_api_trigger():
     wf = WorkflowInstance.from_definition(defn, "test", "test")
 
     sm = StateMachine()
-    next_blocks = sm._find_next_blocks(wf, "A")
+    next_blocks, _ = sm._find_next_blocks(wf, "A")
 
     # hook은 next_ids=[] (외부 POST /engine/hook/... 대기)
     assert next_blocks == [], "hook link는 외부 트리거 전까지 대기"
@@ -520,9 +519,7 @@ def test_c16_notify_link_events():
     wf = WorkflowInstance.from_definition(defn, "test", "test")
 
     sm = StateMachine()
-    sm._find_next_blocks(wf, "A")
-
-    extra_cmds = sm._extra_link_commands
+    _, extra_cmds = sm._find_next_blocks(wf, "A")
     emit_cmds = [c for c in extra_cmds if isinstance(c, EmitEventCommand)]
 
     # on_start → link.started 이벤트

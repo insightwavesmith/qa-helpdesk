@@ -134,7 +134,6 @@ def _make_workflow_instance(block_id="review"):
     defn = WorkflowDefinition(
         name="test-approval",
         schema="brick/preset-v2",
-        level=2,
         blocks=[block],
         links=[],
         teams={block_id: TeamDefinition(block_id=block_id, adapter="human", config={})},

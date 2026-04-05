@@ -47,7 +47,7 @@ class ClaudeLocalAdapter(TeamAdapter):
         self.skip_permissions = config.get("dangerouslySkipPermissions", False)
         self.env_config: dict[str, str] = config.get("env", {})
         self.extra_args: list[str] = config.get("extraArgs", [])
-        self.runtime_dir = Path(config.get("runtimeDir", ".bkit/runtime"))
+        self.runtime_dir = Path(config.get("runtimeDir", "brick/runtime"))
         self.continue_session = config.get("continueSession", False)
         self.session_id = config.get("sessionId", "")
         self.role = config.get("role", "")
@@ -57,6 +57,13 @@ class ClaudeLocalAdapter(TeamAdapter):
     async def start_block(self, block: Block, context: dict) -> str:
         execution_id = f"cl-{block.id}-{int(time.time())}"
         workflow_id = context.get("workflow_id", "")
+
+        # session_id 자동 전파: context에 session_ids가 있고 같은 팀이면 주입
+        team_key = self._get_team_key()
+        prev_session_id = context.get("session_ids", {}).get(team_key, "")
+        if prev_session_id:
+            self.session_id = prev_session_id
+            self.continue_session = True
 
         env = self._build_env(execution_id, block.id)
         args = self._build_args()
@@ -185,12 +192,18 @@ class ClaudeLocalAdapter(TeamAdapter):
                 "error": f"타임아웃 ({self.timeout_sec}s)",
             })
         elif exit_code == 0:
+            # stdout에서 session_id 파싱 → 저장
+            parsed_sid = self._parse_session_id(stdout_data)
+            if parsed_sid:
+                self._save_session_id(block_id, parsed_sid)
+
             self._write_state(execution_id, {
                 "status": "completed",
                 "stdout": stdout_data.decode(errors="replace"),
                 "stderr": stderr_data.decode(errors="replace"),
+                **({"session_id": parsed_sid} if parsed_sid else {}),
             })
-            # ── 프로세스 완료 → executor.complete_block() 자동 호출 ──
+            # ── 프로세스 완료 → EventBus 이벤트 발행 ──
             await self._notify_complete(workflow_id, block_id)
         else:
             stderr_str = stderr_data.decode(errors="replace")
@@ -209,15 +222,21 @@ class ClaudeLocalAdapter(TeamAdapter):
     async def _notify_complete(
         self, workflow_id: str, block_id: str
     ) -> None:
-        """프로세스 성공 완료 시 executor.complete_block()을 호출하여 Gate를 즉시 발동."""
+        """프로세스 성공 완료 시 EventBus 이벤트 발행으로 Gate 즉시 발동."""
         if not workflow_id or not block_id:
             return
         try:
-            # lazy import — 순환 참조 방지
-            from brick.dashboard.routes.engine_bridge import executor
+            event_bus = getattr(self, "_event_bus", None)
+            if event_bus:
+                from brick.models.events import Event
 
-            if executor:
-                await executor.complete_block(workflow_id, block_id)
+                event_bus.publish(Event(
+                    type="block.process_completed",
+                    data={
+                        "workflow_id": workflow_id,
+                        "block_id": block_id,
+                    },
+                ))
         except Exception:
             # 실패해도 기존 폴링 fallback 유지
             pass
@@ -336,3 +355,45 @@ class ClaudeLocalAdapter(TeamAdapter):
     def _read_state(self, execution_id: str) -> dict | None:
         p = self.runtime_dir / f"task-state-{execution_id}.json"
         return json.loads(p.read_text()) if p.exists() else None
+
+    # ── session-id 전파 헬퍼 ─────────────────────────────────
+
+    def _get_team_key(self) -> str:
+        """세션 전파에 사용할 팀 키 결정."""
+        return self.env_config.get("SESSION_NAME", "") or self.role or ""
+
+    def _parse_session_id(self, stdout_data: bytes) -> str:
+        """stdout stream-json에서 session_id 추출."""
+        for line in stdout_data.decode(errors="replace").splitlines():
+            try:
+                obj = json.loads(line)
+                if obj.get("type") == "system" and "session_id" in obj:
+                    return obj["session_id"]
+            except (json.JSONDecodeError, KeyError):
+                continue
+        return ""
+
+    def _save_session_id(self, block_id: str, session_id: str) -> None:
+        """session-ids.json에 team_key별로 session_id 저장."""
+        path = self.runtime_dir / "session-ids.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        data: dict[str, str] = {}
+        if path.exists():
+            try:
+                data = json.loads(path.read_text())
+            except (json.JSONDecodeError, OSError):
+                data = {}
+        team_key = self._get_team_key() or block_id
+        data[team_key] = session_id
+        path.write_text(json.dumps(data))
+
+    def _load_session_id(self, team_key: str) -> str:
+        """session-ids.json에서 team_key에 해당하는 session_id 로드."""
+        path = self.runtime_dir / "session-ids.json"
+        if path.exists():
+            try:
+                data = json.loads(path.read_text())
+                return data.get(team_key, "")
+            except (json.JSONDecodeError, OSError):
+                pass
+        return ""

@@ -33,7 +33,6 @@ class StateMachine:
     def __init__(self):
         self._link_handlers: dict[str, LinkHandlerFn] = {}
         self._register_builtins()
-        self._extra_link_commands: list[Command] = []
 
     def _register_builtins(self) -> None:
         self.register_link("sequential", self._resolve_sequential)
@@ -133,11 +132,10 @@ class StateMachine:
                 block_inst.completed_at = time.time()
 
                 # Find next block via links
-                next_blocks = self._find_next_blocks(wf, block_id)
+                next_blocks, extra_commands = self._find_next_blocks(wf, block_id)
 
                 # extra link commands 추가 (compete 등)
-                for cc in self._extra_link_commands:
-                    commands.append(cc)
+                commands.extend(extra_commands)
 
                 if next_blocks:
                     for next_id in next_blocks:
@@ -148,7 +146,7 @@ class StateMachine:
                             block_id=next_id,
                             adapter=next_block.adapter,
                         ))
-                elif not self._extra_link_commands:
+                elif not extra_commands:
                     # Check if all blocks completed
                     if self._all_blocks_completed(wf):
                         wf.status = WorkflowStatus.COMPLETED
@@ -172,7 +170,8 @@ class StateMachine:
             elif on_fail == "skip":
                 block_inst.status = BlockStatus.COMPLETED
                 block_inst.completed_at = time.time()
-                next_blocks = self._find_next_blocks(wf, block_id)
+                next_blocks, extra_commands = self._find_next_blocks(wf, block_id)
+                commands.extend(extra_commands)
                 if next_blocks:
                     for next_id in next_blocks:
                         wf.blocks[next_id].status = BlockStatus.QUEUED
@@ -254,7 +253,7 @@ class StateMachine:
 
     def _find_next_blocks(
         self, wf: WorkflowInstance, block_id: str
-    ) -> list[str]:
+    ) -> tuple[list[str], list[Command]]:
         """link type과 condition을 평가하여 다음 블록 결정."""
         next_ids: list[str] = []
         extra_commands: list[Command] = []
@@ -303,9 +302,7 @@ class StateMachine:
                     ),
                 ))
 
-        # 호출부에서 처리할 부가 커맨드 저장
-        self._extra_link_commands = extra_commands
-        return next_ids
+        return next_ids, extra_commands
 
     # ── 빌트인 링크 핸들러 (로직 변경 0) ────────────────────────────────
 

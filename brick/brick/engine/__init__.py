@@ -5,5 +5,6 @@ from brick.engine.event_bus import EventBus
 from brick.engine.checkpoint import CheckpointStore
 from brick.engine.task_queue import TaskQueue
 from brick.engine.validator import Validator
+from brick.engine.preset_loader import PresetLoader
 
-__all__ = ["StateMachine", "EventBus", "CheckpointStore", "TaskQueue", "Validator"]
+__all__ = ["StateMachine", "EventBus", "CheckpointStore", "TaskQueue", "Validator", "PresetLoader"]
