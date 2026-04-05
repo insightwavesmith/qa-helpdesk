@@ -14,19 +14,24 @@ file_store: FileStore | None = None
 pipeline: ValidationPipeline | None = None
 
 
-def create_app(root: str = ".bkit/") -> FastAPI:
+def create_app(root: str = "brick/") -> FastAPI:
     """Create FastAPI app with initialized stores."""
     global file_store, pipeline
     file_store = FileStore(root=root)
     pipeline = ValidationPipeline(store=file_store)
 
+    # Auth DB 초기화
+    from brick.auth.db import init_db
+    init_db()
+
     from brick.dashboard.routes import (
-        auth_routes,
+        auth_routes, agent_routes,
         block_types, teams, presets, workflows,
         validation, type_catalog, resources, learning,
-        engine_bridge,
+        engine_bridge, skyoffice,
     )
     app.include_router(auth_routes.router, prefix="/api/v1", tags=["auth"])
+    app.include_router(agent_routes.router, prefix="/api/v1", tags=["agents"])
     app.include_router(block_types.router, prefix="/api/v1", tags=["block-types"])
     app.include_router(teams.router, prefix="/api/v1", tags=["teams"])
     app.include_router(presets.router, prefix="/api/v1", tags=["presets"])
@@ -38,5 +43,10 @@ def create_app(root: str = ".bkit/") -> FastAPI:
 
     engine_bridge.init_engine(root=root)
     app.include_router(engine_bridge.router, prefix="/api/v1", tags=["engine-bridge"])
+
+    # SkyOffice Bridge — Phase 3 실시간 상태 동기화
+    if engine_bridge.skyoffice_bridge:
+        skyoffice.init_skyoffice(engine_bridge.skyoffice_bridge)
+    app.include_router(skyoffice.router, prefix="/api/v1", tags=["skyoffice"])
 
     return app

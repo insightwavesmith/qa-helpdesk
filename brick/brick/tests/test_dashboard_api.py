@@ -76,7 +76,7 @@ def bkit_dir(tmp_path):
                 "act": {"adapter": "claude_code"},
             },
         },
-        "labels": {"level": "l2"},
+        "labels": {},
         "annotations": {},
     }))
     (presets_dir / "my-custom.yaml").write_text(yaml.dump({
@@ -96,7 +96,8 @@ def bkit_dir(tmp_path):
 
 
 @pytest.fixture
-def client(bkit_dir):
+def client(bkit_dir, monkeypatch):
+    monkeypatch.setenv("BRICK_DEV_MODE", "1")
     app = create_app(root=str(bkit_dir))
     return TestClient(app)
 

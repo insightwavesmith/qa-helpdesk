@@ -120,8 +120,9 @@ def suggestions_dir(tmp_path):
 
 
 @pytest.fixture
-def learning_app(tmp_path):
+def learning_app(tmp_path, monkeypatch):
     """FastAPI test app with learning routes."""
+    monkeypatch.setenv("BRICK_DEV_MODE", "1")
     from brick.dashboard.routes.learning import set_suggester, router
     from brick.engine.learning import RuleSuggester
     from fastapi import FastAPI

@@ -172,8 +172,9 @@ def test_gap03_list_suggestions(tmp_path):
 
 
 @pytest.fixture
-def client_with_learning(tmp_path):
+def client_with_learning(tmp_path, monkeypatch):
     """FastAPI test client with learning routes and temp suggestion data."""
+    monkeypatch.setenv("BRICK_DEV_MODE", "1")
     from brick.dashboard.server import create_app
     from brick.dashboard.routes.learning import set_suggester
     from brick.engine.learning import RuleSuggester

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+import asyncio as _asyncio
+import logging as _bridge_logger_mod
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -70,6 +72,8 @@ executor: WorkflowExecutor | None = None
 preset_loader: PresetLoader | None = None
 checkpoint_store: CheckpointStore | None = None
 state_machine: StateMachine | None = None
+engine_event_bus: EventBus | None = None
+skyoffice_bridge = None  # SkyOfficeBridge — Phase 3
 
 
 # ── Pydantic request models ──────────────────────────────────────────
@@ -99,9 +103,28 @@ class TriggerHookRequest(BaseModel):
 
 # ── Init ─────────────────────────────────────────────────────────────
 
-def init_engine(root: str = ".bkit/") -> None:
+_bridge_logger = _bridge_logger_mod.getLogger(__name__)
+
+
+async def _auto_recover_workflows() -> None:
+    """서버 재시작 후 RUNNING 상태 워크플로우 자동 모니터링 재개."""
+    if not checkpoint_store or not executor:
+        return
+    active_ids = checkpoint_store.list_active()
+    _bridge_logger.info("auto-recover: %d active workflow(s) found", len(active_ids))
+    for wf_id in active_ids:
+        instance = checkpoint_store.load(wf_id)
+        if not instance:
+            continue
+        for block_id, bi in instance.blocks.items():
+            if bi.status == BlockStatus.RUNNING and bi.execution_id:
+                _bridge_logger.info("auto-recover: resume monitoring %s/%s", wf_id, block_id)
+                _asyncio.create_task(executor._monitor_block(instance, block_id))
+
+
+def init_engine(root: str = "brick/") -> None:
     """Initialize engine components. Called from server.py create_app()."""
-    global executor, preset_loader, checkpoint_store, state_machine
+    global executor, preset_loader, checkpoint_store, state_machine, engine_event_bus, skyoffice_bridge
 
     root_path = Path(root)
     sm = StateMachine()
@@ -138,10 +161,26 @@ def init_engine(root: str = ".bkit/") -> None:
     # Slack Subscriber — EventBus 구독 (agent-ops 채널 알림)
     SlackSubscriber(event_bus=eb, level="basic")  # P1-A3: notifications.level 와이어링
 
+    # SkyOffice Bridge — EventBus 구독 (Phase 3: 에이전트 상태 동기화)
+    from brick.integrations.skyoffice_bridge import SkyOfficeBridge
+    skyoffice = SkyOfficeBridge(event_bus=eb)
+
     executor = we
+    engine_event_bus = eb
+    skyoffice_bridge = skyoffice
     preset_loader = pl
     checkpoint_store = cs
     state_machine = sm
+
+    # 서버 재시작 후 활성 워크플로우 자동 복구
+    try:
+        loop = _asyncio.get_event_loop()
+        if loop.is_running():
+            loop.create_task(_auto_recover_workflows())
+        else:
+            loop.call_soon(lambda: _asyncio.ensure_future(_auto_recover_workflows()))
+    except RuntimeError:
+        pass  # no event loop — FastAPI startup에서 호출 시 자동 처리
 
 
 # ── Helpers ──────────────────────────────────────────────────────────
@@ -487,7 +526,7 @@ import json as _json
 
 def _read_human_tasks() -> list[dict]:
     """runtime 디렉토리에서 waiting_human 상태 task 목록 조회."""
-    runtime_dir = Path(".bkit/runtime")
+    runtime_dir = Path("brick/runtime")
     tasks = []
     if not runtime_dir.exists():
         return tasks
