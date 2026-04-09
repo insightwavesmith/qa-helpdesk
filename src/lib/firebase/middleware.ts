@@ -24,6 +24,7 @@ const PUBLIC_PATHS = [
   "/api/cron",
   "/api/internal",
   "/api/competitor",
+  "/api/reviews",
   "/privacy",
   "/sitemap.xml",
   "/robots.txt",
