@@ -80,6 +80,9 @@ export async function createAnswer(formData: {
     return { data: null, error: "답변 작성 권한이 없습니다." };
   }
 
+  // 관리자(admin/assistant)가 작성하면 바로 승인 처리
+  const isStaff = ["admin", "assistant"].includes(profile.role);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (svc.from("answers") as any)
     .insert({
@@ -87,7 +90,8 @@ export async function createAnswer(formData: {
       content: formData.content,
       author_id: toProfileId(user.uid),
       is_ai: false,
-      is_approved: false,
+      is_approved: isStaff,
+      ...(isStaff ? { approved_at: new Date().toISOString() } : {}),
       image_urls: JSON.stringify(formData.imageUrls || []),
     })
     .select("*")
@@ -119,10 +123,43 @@ export async function createAnswer(formData: {
     ).catch(() => {});
   }
 
-  // 답변 등록만 하고, 상태 변경은 관리자 승인 시 처리
+  // 관리자 답변이면 바로 질문 상태 변경 + 알림톡 발송
+  if (isStaff && data) {
+    await svc
+      .from("questions")
+      .update({ status: "answered" })
+      .eq("id", formData.questionId);
+
+    // fire-and-forget: QA 임베딩
+    Promise.resolve(embedQAPair(formData.questionId, data.id))
+      .catch(err => console.error("[QAEmbed] Failed:", err));
+
+    // fire-and-forget: 알림톡 발송
+    Promise.resolve(
+      (async () => {
+        const { data: question } = await svc
+          .from("questions")
+          .select("author_id")
+          .eq("id", formData.questionId)
+          .single();
+        if (!question?.author_id) return;
+
+        const { data: authorProfile } = await svc
+          .from("profiles")
+          .select("phone")
+          .eq("id", question.author_id)
+          .single();
+        if (!authorProfile?.phone) return;
+
+        await sendKakaoNotification(authorProfile.phone, formData.questionId);
+      })()
+    ).catch(err => console.error("[KakaoNotify] Failed:", err));
+  }
+
   revalidatePath(`/questions/${formData.questionId}`);
   revalidatePath("/questions");
   revalidatePath("/dashboard");
+  revalidatePath("/admin/answers");
   return { data, error: null };
 }
 
