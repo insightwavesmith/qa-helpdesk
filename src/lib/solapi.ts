@@ -2,7 +2,7 @@ import { createHmac, randomUUID } from "crypto";
 
 const SOLAPI_API_URL = "https://api.solapi.com/messages/v4/send";
 const KAKAO_PF_ID = "KA01PF260224053759051mFP88hSPjQv";
-const KAKAO_TEMPLATE_ID = "KA01TP2603110817364241yYm61nGS6W";
+const KAKAO_TEMPLATE_ID = "KA01TP260413012618844QdWfpMS1lF4";
 
 function generateAuthHeader(): string {
   const apiKey = process.env.SOLAPI_API_KEY;
@@ -25,8 +25,9 @@ function generateAuthHeader(): string {
  * 솔라피 카카오 알림톡 발송
  * - 전화번호가 없거나 환경변수 미설정이면 조용히 스킵
  * - 발송 실패해도 에러를 throw하지 않음
+ * - questionId가 있으면 질문 페이지 URL을 알림톡 변수로 전달
  */
-export async function sendKakaoNotification(phone: string): Promise<void> {
+export async function sendKakaoNotification(phone: string, questionId?: string): Promise<void> {
   if (!phone) {
     console.log("[Solapi] 전화번호 없음, 스킵");
     return;
@@ -39,6 +40,12 @@ export async function sendKakaoNotification(phone: string): Promise<void> {
 
   // 전화번호 정규화: 하이픈 제거
   const normalizedPhone = phone.replace(/-/g, "");
+
+  // 템플릿 변수: #{url} → 질문 페이지 URL (프로토콜 제외, 템플릿에 https:// 포함)
+  const variables: Record<string, string> = {};
+  if (questionId) {
+    variables["#{url}"] = `bscamp.app/questions/${questionId}`;
+  }
 
   try {
     const res = await fetch(SOLAPI_API_URL, {
@@ -55,6 +62,7 @@ export async function sendKakaoNotification(phone: string): Promise<void> {
             pfId: KAKAO_PF_ID,
             templateId: KAKAO_TEMPLATE_ID,
             disableSms: true,
+            variables,
           },
         },
       }),

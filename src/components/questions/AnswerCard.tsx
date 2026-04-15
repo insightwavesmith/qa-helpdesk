@@ -1,6 +1,5 @@
 import { Bot, User, CheckCircle, ThumbsUp, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { SourceReferences } from "@/components/questions/SourceReferences";
 
 interface AnswerCardProps {
   answer: {
@@ -30,7 +29,7 @@ function timeAgo(dateStr: string | null) {
   return d.toLocaleDateString("ko-KR");
 }
 
-// Smith(관리자) 답변인지 확인
+// 관리자(staff) 답변인지 확인
 function isOfficialAnswer(answer: AnswerCardProps["answer"]): boolean {
   const name = answer.author?.name?.toLowerCase() || "";
   return (
@@ -76,10 +75,8 @@ export function AnswerCard({ answer }: AnswerCardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold">
-              {isAI ? "Smith" : answer.author?.name || "익명"}
+              {answer.author?.name || "관리자"}
             </span>
-
-            {/* AI 뱃지 제거됨 — 고객에게 AI 답변 노출 안 함 */}
 
             {/* 공식 답변 뱃지 — 초록색 + 체크 */}
             {isOfficial && (
@@ -121,13 +118,6 @@ export function AnswerCard({ answer }: AnswerCardProps) {
       >
         {answer.content}
       </div>
-
-      {/* Source references for AI answers */}
-      {isAI && !!answer.source_refs && (
-        <div className="pl-[46px]">
-          <SourceReferences rawSourceRefs={answer.source_refs} />
-        </div>
-      )}
 
       {/* Likes */}
       {answer.like_count > 0 && (

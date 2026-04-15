@@ -8,7 +8,6 @@ import { getCurrentUser } from "@/lib/firebase/auth";
 import { createServiceClient } from "@/lib/db";
 import { toProfileId } from "@/lib/firebase-uid-to-uuid";
 import { ImageGallery } from "@/components/questions/ImageGallery";
-import { SourceReferences } from "@/components/questions/SourceReferences";
 import { Badge } from "@/components/ui/badge";
 import { DeleteQuestionButton } from "@/components/questions/DeleteQuestionButton";
 import { AnswerEditButton } from "./answer-edit-button";
@@ -265,9 +264,8 @@ export default async function QuestionDetailPage({
                     </div>
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <span className="text-sm font-semibold text-foreground">
-                        {isAI ? "Smith" : answer.author?.name || "익명"}
+                        {answer.author?.name || "관리자"}
                       </span>
-                      {/* AI 뱃지 제거됨 — 고객에게 AI 답변 노출 안 함 */}
                       {isOfficial && (
                         <Badge className="gap-1 text-[10px] px-2 py-0.5 h-5 bg-emerald-50 text-emerald-700 hover:bg-emerald-50 border-emerald-200">
                           공식 답변
@@ -294,15 +292,6 @@ export default async function QuestionDetailPage({
                       </div>
                     ) : null;
                   })()}
-
-                  {/* Source references for AI answers — 관리자만 표시 */}
-                  {isAI && isAdmin && (
-                    <div className="pl-[42px]">
-                      <SourceReferences
-                        rawSourceRefs={(answer as Record<string, unknown>).source_refs}
-                      />
-                    </div>
-                  )}
 
                   {/* 수정 버튼 — 본인 답변 또는 관리자 */}
                   {(isAdmin || (currentUserId && answer.author?.id === currentUserId)) && (
@@ -377,7 +366,7 @@ export default async function QuestionDetailPage({
                           )}
                         </div>
                         <span className="text-sm font-semibold">
-                          {isAI ? "Smith" : answer.author?.name || "익명"}
+                          {answer.author?.name || "관리자"}
                         </span>
                         <span className="text-xs text-muted-foreground">{timeAgo(answer.created_at)}</span>
                       </div>

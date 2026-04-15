@@ -69,14 +69,14 @@ export async function createAnswer(formData: {
 
   const svc = createServiceClient();
 
-  // role 체크: student/member/admin만 답변 작성 가능
+  // role 체크: student/member/admin/assistant만 답변 작성 가능
   const { data: profile } = await svc
     .from("profiles")
     .select("role")
     .eq("id", toProfileId(user.uid))
     .single();
 
-  if (!profile || !["student", "member", "admin"].includes(profile.role)) {
+  if (!profile || !["student", "member", "admin", "assistant"].includes(profile.role)) {
     return { data: null, error: "답변 작성 권한이 없습니다." };
   }
 
@@ -90,7 +90,7 @@ export async function createAnswer(formData: {
       is_approved: false,
       image_urls: JSON.stringify(formData.imageUrls || []),
     })
-    .select("*, question:questions!answers_question_id_fkey(id, title)")
+    .select("*")
     .single();
 
   if (error) {
@@ -100,7 +100,13 @@ export async function createAnswer(formData: {
 
   // T5b: 이미지가 있으면 자동 임베딩 (fire-and-forget)
   if (formData.imageUrls && formData.imageUrls.length > 0 && data) {
-    const questionTitle = data.question?.title || "QA 답변";
+    // 질문 제목을 별도 조회
+    const { data: question } = await svc
+      .from("questions")
+      .select("title")
+      .eq("id", formData.questionId)
+      .single();
+    const questionTitle = question?.title || "QA 답변";
     Promise.all(
       formData.imageUrls.map((url: string) =>
         embedImage(url, {
@@ -147,15 +153,35 @@ export async function getPendingAnswers({
 }
 
 export async function approveAnswer(answerId: string) {
-  const db = await requireStaff();
+  const user = await getCurrentUser();
+  if (!user) {
+    return { error: "인증되지 않은 사용자입니다." };
+  }
 
-  // 답변 승인
+  const db = await requireStaff();
+  const approverProfileId = toProfileId(user.uid);
+
+  // 답변 조회 (AI 여부 확인)
+  const { data: existingAnswer } = await db
+    .from("answers")
+    .select("is_ai, question_id")
+    .eq("id", answerId)
+    .single();
+
+  // 답변 승인 — AI 답변이면 author_id를 승인 관리자로 설정
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updateData: Record<string, any> = {
+    is_approved: true,
+    approved_at: new Date().toISOString(),
+  };
+
+  if (existingAnswer?.is_ai) {
+    updateData.author_id = approverProfileId;
+  }
+
   const { data: answer, error } = await db
     .from("answers")
-    .update({
-      is_approved: true,
-      approved_at: new Date().toISOString(),
-    })
+    .update(updateData)
     .eq("id", answerId)
     .select("question_id")
     .single();
@@ -187,7 +213,7 @@ export async function approveAnswer(answerId: string) {
       })()
     ).catch(err => console.error("[QAThread] Failed:", err));
 
-    // fire-and-forget: 질문 작성자에게 카카오 알림톡 발송
+    // fire-and-forget: 질문 작성자에게 카카오 알림톡 발송 (질문 URL 포함)
     const svcForPhone = createServiceClient();
     Promise.resolve(
       (async () => {
@@ -205,7 +231,7 @@ export async function approveAnswer(answerId: string) {
           .single();
         if (!authorProfile?.phone) return;
 
-        await sendKakaoNotification(authorProfile.phone);
+        await sendKakaoNotification(authorProfile.phone, answer.question_id);
       })()
     ).catch(err => console.error("[KakaoNotify] Failed:", err));
 

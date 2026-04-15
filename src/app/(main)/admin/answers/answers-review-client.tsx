@@ -28,7 +28,6 @@ import {
   ImagePlus,
   X,
 } from "lucide-react";
-import { SourceReferences } from "@/components/questions/SourceReferences";
 
 interface Answer {
   id: string;
@@ -352,11 +351,6 @@ export function AnswersReviewClient({
                           </div>
                         ) : null;
                       })()}
-                      {answer.is_ai && !!answer.source_refs && (
-                        <div className="mb-4">
-                          <SourceReferences rawSourceRefs={answer.source_refs} />
-                        </div>
-                      )}
                       <div className="flex flex-wrap gap-2">
                         <Button
                           size="sm"
